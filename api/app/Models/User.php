@@ -2,47 +2,70 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
+// NO global scope: a Super Admin row has institution_id NULL. Reads must say which users they want (inTenant / platform),
+// and inTenant() fails closed without a bound tenant. Never User::where('email', …) alone (docs/templates/laravel-core-files.md).
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, Notifiable, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    const UPDATED_AT = null;
+
     protected $fillable = [
+        'institution_id',
         'name',
         'email',
+        'phone',
+        'username',
         'password',
-    ];
+        'role',
+        'avatar',
+        'is_active',
+        'locale',
+        'fcm_token',
+        'must_change_password',
+        'notification_preferences',
+        'two_factor_enabled',
+        'whatsapp_number',
+        'whatsapp_enabled',
+        'name_alt',
+        'ui_preferences',
+    ];   // NOT failed_login_attempts / locked_until / last_login_at - written only by the login flow
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
-        'remember_token',
+        'fcm_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $casts = [
+        'password' => 'hashed',
+        'is_active' => 'boolean',
+        'last_login_at' => 'datetime',
+        'locked_until' => 'datetime',
+        'must_change_password' => 'boolean',
+        'notification_preferences' => 'array',
+        'two_factor_enabled' => 'boolean',
+        'whatsapp_enabled' => 'boolean',
+        'ui_preferences' => 'array',
+    ];
+
+    public function institution() { return $this->belongsTo(Institution::class); }
+
+    /** Staff/students/parents of the CURRENT institution */
+    public function scopeInTenant(Builder $q): Builder
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        $t = \App\Support\Tenancy::current() ?? throw new \App\Exceptions\TenantNotBoundException(self::class);
+        return $q->where('users.institution_id', $t->id);
+    }
+
+    /** Super Admin accounts only */
+    public function scopePlatform(Builder $q): Builder
+    {
+        return $q->whereNull('users.institution_id')->where('users.role', 'super_admin');
     }
 }
