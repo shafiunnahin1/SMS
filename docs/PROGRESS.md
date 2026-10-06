@@ -20,7 +20,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 ## Release R1  (`docs/AGENT-PLAN-R1.md`)
 
 - [x] 0.1 — this commit — tests: Laravel default ExampleTests (2) — `php artisan test` 2 passed; `php artisan serve` → GET / 200, GET /up 200; tinker: `config('tenancy.base_domain')` = schoolapp.com, `config('institution_types.coaching.terms.batch.bn')` = ব্যাচ
-- [ ] 0.2 — React
+- [x] 0.2 — this commit — no new tests (scaffold); `php artisan test` 2 passed — Laravel + `vite` running: `curl --resolve demo.lvh.me:5173:127.0.0.1 http://demo.lvh.me:5173/` → 200; `/api/v1/health` through the Vite proxy reached Laravel with Host `demo.lvh.me` (checked with a temporary, uncommitted echo route); a non-`.lvh.me` host → 403
 - [ ] 0.3 — .env, Folders, CI Skeleton
 - [ ] 1.1 — Migrations
 - [ ] 1.2 — Models
