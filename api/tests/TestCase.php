@@ -39,4 +39,12 @@ abstract class TestCase extends BaseTestCase
     {
         return Tenancy::as($institution, $fn);
     }
+
+    /** One API request on $host as $user (a fresh Sanctum token and a fresh guard, as in production) */
+    protected function api(string $method, string $host, string $path, ?User $as = null, array $data = []): \Illuminate\Testing\TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+        $headers = $as ? ['Authorization' => 'Bearer ' . $as->createToken('t')->plainTextToken] : [];
+        return $this->json($method, "http://{$host}/api/v1/" . ltrim($path, '/'), $data, $headers);
+    }
 }
