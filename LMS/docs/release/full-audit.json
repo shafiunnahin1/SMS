@@ -1,0 +1,1062 @@
+{
+ "modules_total": 56,
+ "modules_with_task_plan": 15,
+ "features_total": 368,
+ "tables_total": 143,
+ "tables_in_task_plans": 61,
+ "tables_without_task": 82,
+ "external_decisions": 5,
+ "milestones": [
+  {
+   "id": "M1",
+   "release": "R1",
+   "name": "ভিত্তি ও চারটি অপরিহার্য ফিচার",
+   "plan_status": "task-plan",
+   "modules": 8,
+   "with_task_plan": 8,
+   "features": 90
+  },
+  {
+   "id": "M2",
+   "release": "R1.1",
+   "name": "প্রথম সংস্করণের পরপর: নোটিশ, খরচ, রুটিন, ID কার্ড, সহায়তা",
+   "plan_status": "draft",
+   "modules": 6,
+   "with_task_plan": 1,
+   "features": 24
+  },
+  {
+   "id": "M3",
+   "release": "R2",
+   "name": "প্রতিষ্ঠান-গভীরতা: ফল, ভর্তি, অনলাইন-পেমেন্ট, ওয়েবসাইট, একাডেমিক-উন্নত",
+   "plan_status": "draft",
+   "modules": 18,
+   "with_task_plan": 0,
+   "features": 99
+  },
+  {
+   "id": "M4",
+   "release": "R3",
+   "name": "টাকা ও মানুষ: ক্যাশবুক, বেতন, হিসাব-খাত, ইনভেন্টরি, দান",
+   "plan_status": "task-plan",
+   "modules": 6,
+   "with_task_plan": 6,
+   "features": 59
+  },
+  {
+   "id": "M5",
+   "release": "R4",
+   "name": "ক্যাম্পাস ও যন্ত্র: লাইব্রেরি, পরিবহন, হোস্টেল, অনলাইন ক্লাস, কার্ড-যন্ত্র",
+   "plan_status": "draft",
+   "modules": 14,
+   "with_task_plan": 0,
+   "features": 65
+  },
+  {
+   "id": "M6",
+   "release": "R5",
+   "name": "প্ল্যাটফর্ম-ব্যবসা ও বিশ্লেষণ: একাধিক শাখা, অ্যানালিটিক্স",
+   "plan_status": "draft",
+   "modules": 2,
+   "with_task_plan": 0,
+   "features": 7
+  },
+  {
+   "id": "M7",
+   "release": "R6",
+   "name": "বাহ্যিক সংযোগ: বাংলা QR, Nagad, ব্যাংক-API (বাইরের নথি ছাড়া শুরু করা যায় না)",
+   "plan_status": "blocked-external",
+   "modules": 0,
+   "with_task_plan": 0,
+   "features": 0
+  },
+  {
+   "id": "M8",
+   "release": "R7",
+   "name": "মোবাইল-অ্যাপ, AI, GPS",
+   "plan_status": "draft",
+   "modules": 2,
+   "with_task_plan": 0,
+   "features": 6
+  }
+ ],
+ "gaps": {
+  "no_task_plan": [
+   "academic_calendar",
+   "admission_cycle",
+   "admit_card",
+   "ai_assistant",
+   "alumni",
+   "analytics",
+   "attendance_devices",
+   "behavior",
+   "certificates",
+   "cpd",
+   "events",
+   "fee_installment",
+   "gps",
+   "health",
+   "hifz",
+   "homework",
+   "hostel",
+   "id_cards",
+   "leads",
+   "library",
+   "merit_list",
+   "multi_branch",
+   "notices",
+   "online_class",
+   "online_payment",
+   "online_quiz",
+   "parent_meeting",
+   "period_attendance",
+   "promotion_tc",
+   "public_site",
+   "result_sheets",
+   "risk_alerts",
+   "routine",
+   "scholarships",
+   "student_leave",
+   "substitution",
+   "support",
+   "syllabus",
+   "teacher_payouts",
+   "transport",
+   "visitors"
+  ],
+  "api_in_prose_only": [
+   "admit_card",
+   "ai_assistant",
+   "alumni",
+   "analytics",
+   "behavior",
+   "certificates",
+   "cpd",
+   "events",
+   "fee_installment",
+   "gps",
+   "health",
+   "hostel",
+   "library",
+   "multi_branch",
+   "online_class",
+   "online_quiz",
+   "parent_meeting",
+   "scholarships",
+   "transport",
+   "visitors"
+  ],
+  "proposed_placement": [
+   "academic_calendar",
+   "admit_card",
+   "alumni",
+   "analytics",
+   "behavior",
+   "certificates",
+   "cpd",
+   "events",
+   "fee_installment",
+   "health",
+   "multi_branch",
+   "parent_meeting",
+   "promotion_tc",
+   "scholarships",
+   "visitors"
+  ]
+ },
+ "per_module": {
+  "students": {
+   "milestone": "M1",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 12,
+   "route_backed_features": 12,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "academic-structure.md",
+    "student-import.md"
+   ]
+  },
+  "enrollments": {
+   "milestone": "M1",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 13,
+   "route_backed_features": 10,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "academic-structure.md"
+   ]
+  },
+  "attendance": {
+   "milestone": "M1",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 9,
+   "route_backed_features": 8,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "academic-structure.md"
+   ]
+  },
+  "fees": {
+   "milestone": "M1",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 19,
+   "route_backed_features": 13,
+   "gated_routes": 8,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "fees-advanced.md",
+    "online-fee-payment.md"
+   ]
+  },
+  "exams": {
+   "milestone": "M1",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 14,
+   "route_backed_features": 12,
+   "gated_routes": 2,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "grading.md",
+    "report-cards.md"
+   ]
+  },
+  "result_sheets": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 6,
+   "route_backed_features": 6,
+   "gated_routes": 11,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "academics-advanced.md"
+   ]
+  },
+  "period_attendance": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 3,
+   "gated_routes": 3,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "academics-advanced.md"
+   ]
+  },
+  "substitution": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 4,
+   "route_backed_features": 4,
+   "gated_routes": 6,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "academics-advanced.md"
+   ]
+  },
+  "student_leave": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 4,
+   "route_backed_features": 4,
+   "gated_routes": 4,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "academics-advanced.md"
+   ]
+  },
+  "support": {
+   "milestone": "M2",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 3,
+   "gated_routes": 4,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "platform-ops.md"
+   ]
+  },
+  "cashbook": {
+   "milestone": "M4",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 6,
+   "route_backed_features": 5,
+   "gated_routes": 5,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "finance-advanced.md"
+   ]
+  },
+  "data_migration": {
+   "milestone": "M1",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 6,
+   "route_backed_features": 6,
+   "gated_routes": 7,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "data-migration.md"
+   ]
+  },
+  "admission_cycle": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 8,
+   "route_backed_features": 8,
+   "gated_routes": 11,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "admission-cycle.md"
+   ]
+  },
+  "inventory": {
+   "milestone": "M4",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 8,
+   "route_backed_features": 6,
+   "gated_routes": 9,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "inventory.md"
+   ]
+  },
+  "attendance_devices": {
+   "milestone": "M5",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 6,
+   "route_backed_features": 5,
+   "gated_routes": 10,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "attendance-devices.md"
+   ]
+  },
+  "accounting": {
+   "milestone": "M4",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 10,
+   "route_backed_features": 10,
+   "gated_routes": 20,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "accounting.md"
+   ]
+  },
+  "donations": {
+   "milestone": "M4",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 8,
+   "route_backed_features": 6,
+   "gated_routes": 21,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "donations.md"
+   ]
+  },
+  "hifz": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 6,
+   "route_backed_features": 4,
+   "gated_routes": 7,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "madrasa.md"
+   ]
+  },
+  "syllabus": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 8,
+   "route_backed_features": 8,
+   "gated_routes": 16,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "syllabus.md"
+   ]
+  },
+  "risk_alerts": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 5,
+   "route_backed_features": 5,
+   "gated_routes": 6,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "risk-alerts.md"
+   ]
+  },
+  "sms": {
+   "milestone": "M1",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 10,
+   "route_backed_features": 9,
+   "gated_routes": 12,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "notifications.md"
+   ]
+  },
+  "notices": {
+   "milestone": "M2",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 5,
+   "route_backed_features": 5,
+   "gated_routes": 2,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "notifications.md"
+   ]
+  },
+  "reports": {
+   "milestone": "M1",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 7,
+   "route_backed_features": 7,
+   "gated_routes": 2,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "pdf-reports.md"
+   ]
+  },
+  "expenses": {
+   "milestone": "M2",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 4,
+   "route_backed_features": 4,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "panels-and-features.md"
+   ]
+  },
+  "id_cards": {
+   "milestone": "M2",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 1,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "extended-features.md",
+    "pdf-reports.md"
+   ]
+  },
+  "merit_list": {
+   "milestone": "M2",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 1,
+   "gated_routes": 0,
+   "types": [
+    "কোচিং"
+   ],
+   "spec_files": [
+    "coaching-private-batch.md"
+   ]
+  },
+  "online_payment": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 8,
+   "route_backed_features": 6,
+   "gated_routes": 6,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "banglaqr-readiness.md",
+    "online-fee-payment.md",
+    "payment-gateways.md"
+   ]
+  },
+  "public_site": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 12,
+   "route_backed_features": 11,
+   "gated_routes": 14,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
+   "spec_files": [
+    "public-website.md"
+   ]
+  },
+  "leads": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 4,
+   "route_backed_features": 4,
+   "gated_routes": 6,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "coaching-private-batch.md",
+    "public-website.md"
+   ]
+  },
+  "teacher_payouts": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 5,
+   "route_backed_features": 5,
+   "gated_routes": 5,
+   "types": [
+    "কোচিং"
+   ],
+   "spec_files": [
+    "coaching-private-batch.md"
+   ]
+  },
+  "routine": {
+   "milestone": "M2",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 6,
+   "route_backed_features": 5,
+   "gated_routes": 10,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "routine.md",
+    "teacher-subjects.md"
+   ]
+  },
+  "homework": {
+   "milestone": "M3",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 6,
+   "route_backed_features": 4,
+   "gated_routes": 5,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "extended-features.md"
+   ]
+  },
+  "academic_calendar": {
+   "milestone": "M3",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 7,
+   "route_backed_features": 3,
+   "gated_routes": 4,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "academic-calendar.md"
+   ]
+  },
+  "promotion_tc": {
+   "milestone": "M3",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 4,
+   "route_backed_features": 2,
+   "gated_routes": 2,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "academic-sessions.md",
+    "promotion-tc.md"
+   ]
+  },
+  "admit_card": {
+   "milestone": "M3",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "advanced-features.md"
+   ]
+  },
+  "teacher_attendance": {
+   "milestone": "M4",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 4,
+   "route_backed_features": 3,
+   "gated_routes": 2,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "hr-payroll.md"
+   ]
+  },
+  "hr_payroll": {
+   "milestone": "M4",
+   "basis": "derived",
+   "task_plan": true,
+   "features": 23,
+   "route_backed_features": 19,
+   "gated_routes": 66,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "hr-payroll.md",
+    "staff-payroll.md"
+   ]
+  },
+  "fee_installment": {
+   "milestone": "M3",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "extended-features.md"
+   ]
+  },
+  "online_quiz": {
+   "milestone": "M5",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 5,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "extended-features.md"
+   ]
+  },
+  "online_class": {
+   "milestone": "M5",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 5,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "online-class.md"
+   ]
+  },
+  "library": {
+   "milestone": "M5",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 6,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "library.md"
+   ]
+  },
+  "transport": {
+   "milestone": "M5",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 6,
+   "route_backed_features": 0,
+   "gated_routes": 1,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "transport.md"
+   ]
+  },
+  "hostel": {
+   "milestone": "M5",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 7,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "hostel.md"
+   ]
+  },
+  "behavior": {
+   "milestone": "M5",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 4,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল"
+   ],
+   "spec_files": [
+    "extended-features.md"
+   ]
+  },
+  "health": {
+   "milestone": "M5",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল"
+   ],
+   "spec_files": [
+    "extended-features.md"
+   ]
+  },
+  "certificates": {
+   "milestone": "M3",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "extended-features.md"
+   ]
+  },
+  "visitors": {
+   "milestone": "M5",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "extended-features.md"
+   ]
+  },
+  "parent_meeting": {
+   "milestone": "M5",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 4,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল"
+   ],
+   "spec_files": [
+    "extended-features.md"
+   ]
+  },
+  "scholarships": {
+   "milestone": "M5",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 4,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "advanced-features.md"
+   ]
+  },
+  "events": {
+   "milestone": "M5",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 5,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "advanced-features.md"
+   ]
+  },
+  "alumni": {
+   "milestone": "M5",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "extended-features.md"
+   ]
+  },
+  "cpd": {
+   "milestone": "M5",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 4,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ"
+   ],
+   "spec_files": [
+    "advanced-features.md"
+   ]
+  },
+  "multi_branch": {
+   "milestone": "M6",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 4,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "extended-features.md"
+   ]
+  },
+  "analytics": {
+   "milestone": "M6",
+   "basis": "proposed",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "advanced-features.md"
+   ]
+  },
+  "ai_assistant": {
+   "milestone": "M8",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং"
+   ],
+   "spec_files": [
+    "advanced-features.md"
+   ]
+  },
+  "gps": {
+   "milestone": "M8",
+   "basis": "derived",
+   "task_plan": false,
+   "features": 3,
+   "route_backed_features": 0,
+   "gated_routes": 0,
+   "types": [
+    "স্কুল"
+   ],
+   "spec_files": [
+    "advanced-features.md"
+   ]
+  }
+ }
+}

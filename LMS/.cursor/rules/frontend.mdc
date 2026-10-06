@@ -1,0 +1,48 @@
+---
+description: React frontend rules - theme tokens only, terminology via useTerms, AppShell layouts, i18n, a11y
+globs: frontend/**/*.js,frontend/**/*.jsx,frontend/**/*.ts,frontend/**/*.tsx,frontend/**/*.css
+alwaysApply: false
+---
+
+# Frontend rules (see docs/DESIGN-SYSTEM.md, docs/THEMING.md; enforced by `npm run lint:theme`)
+
+## Colour, shape, type - tokens only (D11)
+- No hex colours, no `bg-blue-*`/`text-gray-*`/`bg-white`, no `rounded-lg/xl/md`, no inline colour styles.
+- Use: `bg-surface`, `bg-surface-muted`, `text-content`, `text-content-muted`, `border-line`, `bg-primary text-on-primary`, `text-primary-fg` (brand text/links - dark-mode safe; `text-primary` does not exist), `bg-primary-soft`, `rounded-token`, `p-density`, `shadow-card`, `font-body`.
+- `bg-accent` takes dark text (`text-content`), never white, and is never a text colour (contrast < 3:1 in every theme).
+- Status colours (red/green/yellow) are theme-independent; always pair colour with an icon or text.
+- Charts: `var(--color-primary)` etc., never hex.
+
+## Languages and RTL (D30, docs/I18N.md)
+- Three UI languages: bn (default), en, ar. Arabic is RIGHT-TO-LEFT. All user-visible text goes through `t('key')` (never a literal Bengali / English / Arabic string in JSX); never build a sentence from pieces - use interpolation (`t('absent_notice', { name, date })`).
+- Layout classes must be LOGICAL: `ms-* me-* ps-* pe-* start-* end-* text-start text-end rounded-s/e border-s/e`, and `gap-*` instead of `space-x-*`. Never `ml-/mr-/pl-/pr-/left-/right-/text-left/text-right` (`lint:theme` rule `physical-direction`).
+- Direction-implying icons (Chevron/Arrow Left/Right, Undo, Redo ...) only through `<DirIcon icon={...}/>`. Never import them bare from `lucide-react` (rule `directional-icon`).
+- Bidi: user-written text `dir="auto"` (`<PlainText/>`); phone, email, Student ID, receipt no., amounts `dir="ltr"` (`<Ltr/>`); inputs for those `dir="ltr"` + `text-start`; charts' container `dir="ltr"`.
+- Numbers, money, dates only through `i18n/format.js` (Intl; Latin digits by default). Never hard-code `toLocaleString('bn-BD')` or manual digit tables.
+- Do not read or set `document.dir` yourself - `I18nProvider` owns `<html lang dir data-locale>`.
+- User-entered content (names, notices, subject names) is shown as entered; never auto-translate it.
+
+## Words - terminology (D5)
+Never write Class/Section/Batch/Course/শ্রেণি/শাখা/ব্যাচ/কোর্স in JSX or props. Use `const t = useTerms(); t('batch')`. All user text lives in `src/i18n/{bn,en}.json`.
+
+## UI Packs (D29, docs/UI-PACKS.md)
+- A page is `hook + PageSlot`: `const sheet = useAttendanceSheet(b, d); return <PageSlot name="attendance.take" {...sheet} />`. Logic (data, actions, validation, permissions) lives in `features/<area>/use*.js`, never in a view.
+- Import `Tabs`, `Modal`, `StatCard`, `List` ONLY from `ui/variants/*`. They pick the variant from the active pack; never branch on the pack yourself.
+- Never read `ui_pack` / `preset_key` / `layout_key` or import `ui/packs/*` in pages, components or features (`lint:theme` rule `pack-leak`). Allowed only in `ui/`, `theme/`, `layouts/`, `store/`.
+- Every view renders an element `data-action="<key>"` for EACH key in the hook's `actions`, and `data-row="<id>"` per data row. `PackContractTest` fails the build otherwise.
+- Page slots are a closed list of six (`dashboard`, `students.list`, `students.quickAdd`, `attendance.take`, `fees.collect`, `leads.board`). Do not invent a seventh; component slots are four (`tabs`, `modal`, `stat_card`, `list`).
+- Below 768px `modal` becomes a sheet and `list` becomes cards in EVERY pack (student/parent are forced into the mobile shell).
+
+## Structure
+- Pages do not know the layout. A page renders `PageHeader` + content only. Sidebar/top bar/bottom bar belong to `layouts/*`, chosen by `AppShell` from `theme.layout_key`.
+- The only menu source is `src/nav/menu.js`. Hide by `module`/`feature`/`hideWhen`, never by plan checks in components.
+- Tenant comes from the Host. API base is the relative `/api/v1`. No tenant header, no absolute API URL.
+- State: Zustand for auth/institution/ui; TanStack Query for server data. The bootstrap payload (`/bootstrap`) is the source of theme, terms, modules, settings.
+- Never `dangerouslySetInnerHTML`; institution-written text is plain text.
+- Never compute grades, fees, discounts or totals the server owns; display what the API returns. Never send an amount.
+
+## Quality bar for every page
+loading / empty / error states; 360px and desktop; works in at least two layouts; keyboard reachable with visible focus; inputs >= 16px and touch targets >= 44px on mobile; forms labelled with `aria-describedby` errors; reduced-motion respected.
+
+## Tests
+Vitest for hooks/components; one render test per layout for the nav; `npm run lint:theme` must report 0 violations.

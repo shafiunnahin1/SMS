@@ -1,0 +1,34 @@
+---
+description: Theme system - tokens, layouts, presets, theme folders; attach when touching theme/layout code or themes/ docs
+globs: frontend/src/ui/**,frontend/src/theme/**,frontend/src/layouts/**,frontend/src/nav/**,frontend/tailwind.config.*,themes/**,docs/THEMING.md,docs/DESIGN-SYSTEM.md
+alwaysApply: false
+---
+
+# Theming rules (source: docs/THEMING.md; per-theme: themes/theme-NN/)
+
+## Model
+Five layers: Brand (3 colours, logo, mode) -> Tokens (8 keys) -> Layout (one of 4) -> UI Pack (component variants + page views, `docs/UI-PACKS.md`) -> Preset (a saved bundle of the above, including `ui_pack`). Effective theme = defaults <- preset <- institution overrides. Institutions choose values from fixed sets; they never supply CSS.
+
+## Allowed token values (a new value is a change to the backend rule, tokens.css, docs/THEMING.md AND docs/DESIGN-SYSTEM.md together)
+`font_family`: hind-siliguri | noto-sans-bengali | baloo-da-2 | anek-bangla | inter. `radius`: none|sm|md|lg|xl. `density`: compact|comfortable|spacious. `card_style`: flat|bordered|shadow. `sidebar_style`: light|dark|brand. `table_style`: plain|striped. `login_template`: centered|split|cover. `dashboard_variant`: cards|compact. Layouts: sidebar-classic | sidebar-mini | topnav | mobile-compact.
+
+## Rules
+- `ThemeProvider` writes CSS variables and `data-*` attributes on `<html>`; components read tokens through Tailwind classes only. Show a neutral loader until `/bootstrap` resolves; cache the last theme per hostname to avoid a flash.
+- Dark mode: the user's own choice beats the institution default. In dark mode brand TEXT uses `--color-primary-fg` (60% primary + 40% white); raw primary fails contrast on the dark surface. `card_style=shadow` falls back to a hairline border in dark, forced-colors and print.
+- Every layout satisfies the Layout Contract (logo+name, nav from `nav/menu.js`, notification bell, user menu, plan banner, scrollable children, "Powered by" unless white-label). Adding a layout = one file + one registry line; no page changes.
+- Brand colours: show a contrast warning in the editor; `on_primary` is computed by the backend by relative luminance. Accent never carries white text.
+
+## Languages and fonts
+- `font_family` is the institution's Bangla/Latin font. Arabic glyphs are not in those fonts, so tokens.css defines `--font-body-chosen` (the token's font) and `--font-body` (= chosen, except `[data-locale='ar']` where the Arabic font comes first). Never hard-code a font stack in a component.
+- Every layout, pack variant and view must mirror in RTL (see the mirror table in docs/I18N.md section 4.2) and show the `LanguageSwitcher` (enabled languages only). A theme's DESIGN.md has a "ভাষা ও RTL" section; keep it in sync.
+
+## UI Packs
+- A pack changes PRESENTATION only (4 component slots, 6 page-view slots). The hook (logic, actions, permissions) is shared; a feature can never exist in just one pack.
+- The effective `(layout_key, ui_pack)` pair must be allowed by `config/ui_packs.php` (`mobile` works only with `mobile-compact`). Reject otherwise (422); seeded presets are tested.
+- Institutions choose a pack/preset; they never author UI. Plan gating: via preset every plan, switching the pack separately needs `custom_branding`.
+- Adding a pack = `ui/packs/<key>/manifest.js` + `config/ui_packs.php` + a preset row + `themes/theme-NN/` docs; no page or migration changes. Adding a slot is a spec change (UI-PACKS.md sections 3, 5, 6 together).
+- A difference described in a `themes/theme-NN/COMPONENTS.md` must name its layer (L1 colour / L2 token / L3 layout / L4 variant / L5 view). Do not describe a structural difference that no layer implements.
+
+## themes/ folders (design intent, not code)
+Each `themes/theme-NN/` has `THEME.md` (identity, who for, status), `DESIGN.md` (look and page patterns), `COMPONENTS.md` (component rendering), `TOKENS.md` (exact values, seeder row, measured contrast). TOKENS.md values must equal the seeded preset in `docs/THEMING.md`; if they differ, `docs/THEMING.md` wins and the theme file is fixed. A theme folder never introduces a token, class or layout that does not exist in the system. When you change a preset value, update its `TOKENS.md` and recompute the contrast table in the same commit.
+Presets seeded without a folder (`campus-top`, `royal-dark`, `sunrise`) are token-only until promoted.

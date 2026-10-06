@@ -1,0 +1,30 @@
+---
+description: Tenancy, hosts, module gating, enrollment, payments and queue rules - attach when touching cross-cutting architecture
+globs: api/app/Support/**,api/app/Http/Middleware/**,api/app/Services/**,api/app/Jobs/**,api/bootstrap/**,api/routes/**,api/config/**
+alwaysApply: false
+---
+
+# Architecture rules (see docs/ARCHITECTURE.md, docs/architecture/tenancy.md)
+
+## Tenancy is fail-closed (D25)
+- Tenant-scoped models use `BelongsToInstitution`. With no tenant bound, a query throws `TenantNotBoundException`. Do NOT "fix" it with `withoutGlobalScope`; find out why no tenant is bound.
+- Intentional cross-tenant work uses only: `Tenancy::withoutTenancy(fn)`, `Tenancy::as($institution, fn)`, `Tenancy::each(fn)`, `Model::anyInstitution()`. Creating a row under `withoutTenancy` requires an explicit `institution_id`.
+- `User` and `AuditLog` have a nullable `institution_id`: use `User::inTenant()` / `User::platform()`; never `User::where('email', ...)` alone.
+- Every queued job that touches tenant data uses `TenantAwareJob` and carries `institutionId` (workers are long-lived; a leaked binding hits the next institution).
+- Resolve the tenant ONLY from the request Host (`TenantResolver`). No tenant header, no query parameter.
+
+## Route modes (every route group has exactly one)
+`tenant` (tenant host) · `tenant:central` (central host: signup, gateway callbacks, `/super`) · `tenant:optional` (only `/health`, `/bootstrap`, `/theme/public`, login). Never put tenant data behind `optional`. `/super/*` is wrapped by `tenancy.bypass`. No closures in routes (`route:cache` must work).
+
+## Modules and types
+- One function decides availability: `ModuleGate::allows()` (Super Admin override > institution type > plan). Use `module:<key>` / `feature:<key>` middleware on routes and `useModules()` in the UI. Never check `plan->features[...]` by hand.
+- Institution type changes configuration (modules, terms, onboarding), never code paths: no `if ($type === 'coaching')` branching in controllers. Add behaviour to `config/institution_types.php`.
+
+## Academic structure
+`programs -> batches -> enrollments`. Membership comes from `enrollments`. Attendance, fees, exams carry `batch_id`. Use `Student::inBatch()` / `inProgram()` scopes, never `where('batch_id')` on students.
+
+## Money
+Server computes every amount from dues. One receipt may have several `fee_payments` lines (`receipt_no`, `line_no`). Receipt numbers come from `FeeService::nextReceiptNo()` inside a transaction. Gateways are registry entries (`config/payments.php`) + adapter classes - never hard-code a gateway name in a route, enum or UI. Provider-facing reference is the 20-char `gateway_ref`.
+
+## Layering
+Controller (thin) -> FormRequest -> Service (all business logic) -> Model -> API Resource. A new capability needs its own middleware gate, policy, test.

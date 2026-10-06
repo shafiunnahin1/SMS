@@ -1,0 +1,18 @@
+# infra/github-actions-guard.yml - copy to .github/workflows/agent-guard.yml. NOT executed in the specification environment (no GitHub there); parsed for structure only.
+# The guard that judges a pull request is the copy on the BASE branch, so a PR cannot edit the guard (or its protected-paths list) to pass itself.
+name: agent-guard
+on:
+  pull_request:
+    branches: [develop, main]
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run the guard from the base branch against every commit of the PR
+        run: |
+          git fetch origin "${{ github.base_ref }}"
+          git show "origin/${{ github.base_ref }}:infra/guard/agent_guard.py" > /tmp/agent_guard.py
+          python3 /tmp/agent_guard.py --root . --base "origin/${{ github.base_ref }}" --head HEAD

@@ -1,0 +1,694 @@
+{
+ "release": "R3",
+ "title": "Money & People — টাকা ও মানুষ",
+ "audience": "বেসরকারি প্রতিষ্ঠান আগে (D43); সরকারি/এমপিও ঐচ্ছিক (D44)",
+ "path_note": "R1 → R3 সরাসরি সম্ভব: R3-এর ২৯ টেবিলের কোনো বাধ্যতামূলক (NOT NULL) রেফারেন্স R1-এর বাইরে যায় না। একমাত্র ব্যবহারিক পূর্বশর্ত `expenses` (R1.1) — R3.1-এ আছে।",
+ "prerequisites": {
+  "release": "R1 গৃহীত",
+  "modules": [
+   "expenses"
+  ],
+  "tables": [
+   "expenses"
+  ],
+  "controllers": [
+   "ExpenseController"
+  ]
+ },
+ "modules": [
+  "cashbook",
+  "hr_payroll",
+  "teacher_attendance",
+  "inventory",
+  "accounting",
+  "donations"
+ ],
+ "tables": [
+  "bonus_schemes",
+  "budget_lines",
+  "budgets",
+  "cash_book_closings",
+  "donation_campaigns",
+  "donation_funds",
+  "donations",
+  "donors",
+  "fee_refunds",
+  "inventory_items",
+  "inventory_movements",
+  "leave_applications",
+  "leave_types",
+  "ledger_accounts",
+  "payroll_items",
+  "payroll_runs",
+  "provident_fund_entries",
+  "salary_adjustments",
+  "salary_advances",
+  "salary_components",
+  "salary_pay_accounts",
+  "salary_revisions",
+  "salary_structure_lines",
+  "salary_structures",
+  "staff_attendances",
+  "staff_members",
+  "teacher_attendances",
+  "voucher_lines",
+  "vouchers"
+ ],
+ "optional_cut": {
+  "R3b": [
+   "accounting",
+   "donations"
+  ],
+  "why": "হিসাব-খাত ও দান বাকি R3 মডিউলের উপর নির্ভর করে, কিন্তু বাকিগুলো এদের ছাড়াই চলে। কাজ কমাতে চাইলে R3.10–R3.11 পরের দফায় সরানো যায় (R3a = R3.0–R3.9, R3.12–R3.14)।"
+ },
+ "release_php": {
+  "modules": [
+   "students",
+   "enrollments",
+   "attendance",
+   "fees",
+   "exams",
+   "sms",
+   "reports",
+   "data_migration",
+   "expenses",
+   "cashbook",
+   "hr_payroll",
+   "teacher_attendance",
+   "inventory",
+   "accounting",
+   "donations"
+  ],
+  "roles": [
+   "super_admin",
+   "admin",
+   "teacher",
+   "accountant",
+   "parent"
+  ]
+ },
+ "decisions": [
+  "D32",
+  "D33",
+  "D36",
+  "D38",
+  "D39",
+  "D43",
+  "D44"
+ ],
+ "tasks": [
+  {
+   "id": "R3.0",
+   "title": "পূর্বশর্ত ও রিলিজ-গেট (R3-এর জন্য)",
+   "after": [],
+   "goal": "R3 শুরুর আগে Release 1 সম্পূর্ণ ও গৃহীত কি না নিশ্চিত করা, আর `config/release.php`-কে সংখ্যায় বাড়ানো (R1-এর ৮ + `expenses` + R3-এর ৬ = ১৫ মডিউল)।",
+   "spec": [
+    "docs/RELEASE-3.md",
+    "docs/RELEASE-1.md",
+    "docs/modules/institution-types.md"
+   ],
+   "modules": [],
+   "controllers": [],
+   "tables": [],
+   "tests": [
+    "ReleaseGateTest"
+   ],
+   "done": "Release 1-এর গ্রহণ-শর্ত (`docs/RELEASE-1.md` §৭) সব সত্য। `config(\"release.modules\")` হুবহু `r3-scope.json`-এর `release_php.modules`। R3-মডিউলে `ModuleGate::allows()` শুধু ধরন, plan ও ঐচ্ছিক সুইচ ঠিক থাকলে true; অন্যথায় false (Super Admin override দিয়েও নয়)। `ReleaseGateTest` সবুজ।",
+   "verify": [
+    "python3 infra/spec-verify/verify.py . --deep",
+    "php artisan test --filter=ReleaseGateTest"
+   ],
+   "scope": "এই ধাপে কোনো নতুন টেবিল বা route নেই; শুধু কনফিগ ও গেট।"
+  },
+  {
+   "id": "R3.1",
+   "title": "খরচ (expenses) — ক্যাশবুকের পূর্বশর্ত",
+   "after": [
+    "R3.0"
+   ],
+   "goal": "ক্যাশবুক দিনের খরচ ধরে, তাই `expenses` মডিউল আগে চাই। **R1.1-এ আগেই বানানো হয়ে থাকলে এই ধাপ বাদ**; না হলে এখানে বানান।",
+   "spec": [
+    "docs/modules/panels-and-features.md",
+    "docs/ROADMAP.md"
+   ],
+   "modules": [
+    "expenses"
+   ],
+   "controllers": [
+    "ExpenseController"
+   ],
+   "tables": [
+    "expenses"
+   ],
+   "tests": [],
+   "done": "খরচ তৈরি/সম্পাদনা/মোছা (নরম) ও মাসিক রিপোর্ট; অঙ্ক Decimal (দুই দশমিক); এক প্রতিষ্ঠানের খরচ অন্যে দেখে না; স্কিমার `idx_expenses_inst_date` সূচক ব্যবহারে মাসিক যোগফল (`hot-queries.tsv`: `expenses_month`)। স্পেকে এই মডিউলের নামধারী পরীক্ষা নেই — tenant-বিচ্ছিন্নতা ও যোগফলের পরীক্ষা লিখুন।",
+   "verify": [
+    "php artisan test --filter=Expense",
+    "python3 infra/spec-verify/plan_check.py ."
+   ],
+   "scope": "শুধু R1.1-এর `ExpenseController`; খরচের শ্রেণি/সংযুক্তি যেমন স্পেকে আছে, বাড়তি কিছু নয়।"
+  },
+  {
+   "id": "R3.2",
+   "title": "দৈনিক ক্যাশবুক ও day-end close",
+   "after": [
+    "R3.1"
+   ],
+   "goal": "প্রতিদিনের নগদ আয়-ব্যয়ের হিসাব (ফি-রসিদ + খরচ), দিনের শেষে মিলিয়ে বন্ধ করা; বন্ধ দিনে পরিবর্তন আটকানো, পুনরায় খোলা শুধু Admin ও নথিভুক্ত।",
+   "spec": [
+    "docs/modules/finance-advanced.md",
+    "docs/LOCKED-DECISIONS.md"
+   ],
+   "modules": [
+    "cashbook"
+   ],
+   "controllers": [
+    "CashBookController"
+   ],
+   "tables": [
+    "cash_book_closings"
+   ],
+   "tests": [
+    "CashBookMathTest",
+    "CashBookSourcesTest",
+    "CashBookLockTest",
+    "CashBookTenancyTest"
+   ],
+   "done": "`CashBookMathTest`: স্পেকের উদাহরণে প্রত্যাশিত সমাপনী = **19,400.00** (স্বাধীন গণনা `infra/spec-verify/refs_r11.py`-এর সাথে পয়সা-পর্যন্ত মেলে)। উৎস = ফি-রসিদ ও খরচ (`CashBookSourcesTest`); bKash/অনলাইন রসিদ নগদ-সারিতে নয়। বন্ধ দিনে রসিদ/খরচের পরিবর্তন 422 (`CashBookLockTest`); পুনরায় খোলা নতুন সারি, পুরনোটি মোছা নয় (D32)। এক স্কুল অন্যের ক্যাশবুক দেখে না।",
+   "verify": [
+    "php artisan test --filter=CashBook",
+    "python3 infra/spec-verify/refs_r11.py"
+   ],
+   "scope": "রিপোর্ট PDF/Excel শুধু স্পেকের `report.{ext}`; হিসাব-খাতের ভাউচার এখানে নয় (R3.10)।"
+  },
+  {
+   "id": "R3.3",
+   "title": "ফি রিফান্ড ও reversal",
+   "after": [
+    "R3.2"
+   ],
+   "goal": "ছাত্রের ফি ফেরত: আবেদন → অনুমোদন → পরিশোধ। রসিদ কখনো মোছা বা বদলানো যায় না — রিফান্ড নতুন সারি (D32)।",
+   "spec": [
+    "docs/modules/finance-advanced.md",
+    "docs/modules/fees-advanced.md",
+    "docs/LOCKED-DECISIONS.md"
+   ],
+   "modules": [],
+   "controllers": [
+    "FeeRefundController",
+    "SuperRefundController"
+   ],
+   "tables": [
+    "fee_refunds"
+   ],
+   "tests": [
+    "RefundCapTest",
+    "RefundDueRecalcTest",
+    "RefundImmutabilityTest",
+    "RefundSettlementTest",
+    "SubscriptionRefundTest"
+   ],
+   "done": "ফেরতযোগ্য সীমা = প্রদত্ত − আগের ফেরত; তা পেরোলে 422 (`RefundCapTest`)। রিফান্ডের পর বকেয়া নতুন করে ঠিক বাড়ে (`RefundDueRecalcTest`)। রিফান্ড-সারি অপরিবর্তনীয় (`RefundImmutabilityTest`)। নগদ-ফেরত ক্যাশবুকে ঋণাত্মক সারি হয় (`RefundSettlementTest`)। Super Admin স্কুলের subscription-পেমেন্ট ফেরত দেয় (`SubscriptionRefundTest`)। অনলাইন-পেমেন্টের রিফান্ড **শুধু** online payment মডিউল (R2) থাকলে; না থাকলে সেই শাখা নিষ্ক্রিয়।",
+   "verify": [
+    "php artisan test --filter=Refund",
+    "python3 infra/spec-verify/refs_r11.py"
+   ],
+   "scope": "`fee_payments.online_payment_id` ঐচ্ছিক রেফারেন্স — R2 না থাকলে খালি।"
+  },
+  {
+   "id": "R3.4",
+   "title": "কর্মচারী, উপস্থিতি ও ছুটি",
+   "after": [
+    "R3.3"
+   ],
+   "goal": "অ-শিক্ষক কর্মচারীর প্রোফাইল, শিক্ষক ও কর্মচারীর দৈনিক উপস্থিতি, ছুটির ধরন ও আবেদন (অনুমোদিত ছুটি উপস্থিতি-সারসংক্ষেপে যোগ, অবৈতনিক ছুটি বেতনে কাটে)।",
+   "spec": [
+    "docs/modules/staff-payroll.md",
+    "docs/modules/hr-payroll.md",
+    "docs/LOCKED-DECISIONS.md"
+   ],
+   "modules": [
+    "hr_payroll",
+    "teacher_attendance"
+   ],
+   "controllers": [
+    "StaffController",
+    "StaffAttendanceController",
+    "TeacherAttendanceController",
+    "LeaveTypeController",
+    "LeaveController"
+   ],
+   "tables": [
+    "staff_members",
+    "staff_attendances",
+    "teacher_attendances",
+    "leave_types",
+    "leave_applications"
+   ],
+   "tests": [
+    "AttendanceSummaryTest",
+    "LeaveOverlapTest",
+    "LeaveBalanceTest",
+    "LeavePayrollLinkTest",
+    "LeaveActorTest"
+   ],
+   "done": "কর্মচারী যোগ/সম্পাদনা (`user_id` ঐচ্ছিক — লগইন ছাড়াও কর্মচারী থাকতে পারে); একই `employee_id` প্রতিষ্ঠানে একবারই। ছুটি: একই জনের দুটি `approved/pending` ছুটির সময় ওভারল্যাপ করলে 422 (`LeaveOverlapTest`); বার্ষিক সীমা পেরোলে 422, Admin `override` করলে audit-এ (`LeaveBalanceTest`); আবেদনকারী ঠিক একজন — `user_id` (শিক্ষক) অথবা `staff_id` (`LeaveActorTest`); অনুমোদিত অবৈতনিক ছুটি payroll-এ `lwp_days` (`LeavePayrollLinkTest`); উপস্থিতি-সারসংক্ষেপ ছুটিকে `leave` গণনা করে (`AttendanceSummaryTest`)।",
+   "verify": [
+    "php artisan test --filter=Leave",
+    "php artisan test --filter=AttendanceSummaryTest"
+   ],
+   "scope": "ছুটির route (`/hr/leave-types`, `/hr/leaves`, `/teacher/leave`) R17-তে টেমপ্লেটে যোগ হয়েছে — `hr-payroll.md` বর্ণনা করলেও আগে ছিল না। RFID/device-পাঞ্চ (`StaffPunchTest`) R4-এ।"
+  },
+  {
+   "id": "R3.5",
+   "title": "বেতন-কাঠামো, ইনক্রিমেন্ট ও বোনাস",
+   "after": [
+    "R3.4"
+   ],
+   "goal": "তারিখ-ভিত্তিক বেতন-কাঠামো ও উপাদান, সংশোধন (revision) চক্র, ব্যাচ-ইনক্রিমেন্ট, বোনাস-স্কিম, পরিশোধ-অ্যাকাউন্ট। বেতন-তথ্য সংবেদনশীল (D33)।",
+   "spec": [
+    "docs/modules/staff-payroll.md",
+    "docs/LOCKED-DECISIONS.md"
+   ],
+   "modules": [
+    "hr_payroll"
+   ],
+   "controllers": [
+    "SalaryComponentController",
+    "SalaryStructureController",
+    "SalaryRevisionController",
+    "IncrementBatchController",
+    "BonusSchemeController",
+    "PayAccountController"
+   ],
+   "tables": [
+    "salary_components",
+    "salary_structures",
+    "salary_structure_lines",
+    "salary_revisions",
+    "bonus_schemes",
+    "salary_pay_accounts"
+   ],
+   "tests": [
+    "SalaryStructureTest",
+    "RevisionLifecycleTest",
+    "IncrementBatchTest",
+    "BonusSchemeTest",
+    "SalaryAccessTest"
+   ],
+   "done": "একই ব্যক্তির দুটি কাঠামোর কার্যকর-সময় ওভারল্যাপ করে না (`SalaryStructureTest`)। সংশোধন draft → অনুমোদিত → প্রয়োগকৃত, প্রয়োগের পর অপরিবর্তনীয় (`RevisionLifecycleTest`)। ব্যাচ-ইনক্রিমেন্ট আগে `preview`, তারপর প্রয়োগ (`IncrementBatchTest`)। বোনাস-স্কিম স্পেকের ভিত্তি/ন্যূনতম-চাকরি/আনুপাতিক নিয়মে (`BonusSchemeTest`)। বেতন-তথ্য শুধু অনুমতিপ্রাপ্ত ভূমিকা দেখে; শিক্ষক শুধু নিজেরটা; **Super Admin ও প্ল্যাটফর্ম-সহায়তা কেউ নয়** (`SalaryAccessTest`, D33)।",
+   "verify": [
+    "php artisan test --filter=Salary",
+    "php artisan test --filter=Revision",
+    "php artisan test --filter=Bonus"
+   ],
+   "scope": "গ্র্যাচুইটি ও ছুটি-নগদায়ন সূত্র-ভিত্তিক নয় — ডিফল্টে হাতে-সমন্বয় (`PRODUCT.md` ডিফল্ট)।"
+  },
+  {
+   "id": "R3.6",
+   "title": "সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ",
+   "after": [
+    "R3.5"
+   ],
+   "goal": "বেতনের উপর ইতিবাচক/নেতিবাচক সমন্বয় (জরিমানা, ওভারটাইম, অতিরিক্ত ক্লাস) এবং অগ্রিম/ঋণ, কিস্তিতে স্বয়ংক্রিয় কর্তন।",
+   "spec": [
+    "docs/modules/staff-payroll.md",
+    "docs/modules/finance-advanced.md"
+   ],
+   "modules": [
+    "hr_payroll"
+   ],
+   "controllers": [
+    "SalaryAdjustmentController",
+    "SalaryAdvanceController"
+   ],
+   "tables": [
+    "salary_adjustments",
+    "salary_advances"
+   ],
+   "tests": [
+    "AdvanceRecoveryTest"
+   ],
+   "done": "অগ্রিম অনুমোদন → বিতরণ → কিস্তি বেতন থেকে কাটা; কিস্তি বাদ (skip) ও অবলোপন (write-off) নথিভুক্ত (`AdvanceRecoveryTest`); অগ্রিম বিতরণ ক্যাশবুকে নগদ-বহির্গমন। সমন্বয় নির্দিষ্ট মাসে বাঁধা, অনুমোদনের পর বদলায় না। শিক্ষকের `/teacher/salary/advances` শুধু নিজের।",
+   "verify": [
+    "php artisan test --filter=Advance"
+   ],
+   "scope": "\"অতিরিক্ত ক্লাস\" বদলি-শিক্ষক মডিউলের (R2) সাথে যুক্ত হলে স্বয়ংক্রিয়; না থাকলে হাতে-এন্ট্রি।"
+  },
+  {
+   "id": "R3.7",
+   "title": "Payroll run, payslip ও পরিশোধ",
+   "after": [
+    "R3.6"
+   ],
+   "goal": "মাসিক বেতন-হিসাব (run): গণনা → পর্যালোচনা → maker-checker অনুমোদন → পরিশোধ-নথি → payslip PDF। অনুমোদিত run অপরিবর্তনীয়।",
+   "spec": [
+    "docs/modules/staff-payroll.md",
+    "docs/LOCKED-DECISIONS.md",
+    "infra/spec-verify/payroll_ref.py"
+   ],
+   "modules": [
+    "hr_payroll"
+   ],
+   "controllers": [
+    "PayrollRunController",
+    "PayrollItemController",
+    "PayrollReportController",
+    "TeacherSalaryController"
+   ],
+   "tables": [
+    "payroll_runs",
+    "payroll_items"
+   ],
+   "tests": [
+    "PayrollGoldenTest",
+    "PayrollProrationTest",
+    "ArrearsTest",
+    "MakerCheckerTest",
+    "PayrollImmutabilityTest",
+    "PayrollPaymentTest",
+    "PayrollTenancyTest"
+   ],
+   "done": "`PayrollGoldenTest`: স্পেকের **১৭টি fixture** স্বাধীন গণনা `infra/spec-verify/payroll_ref.py`-এর সাথে পয়সা-পর্যন্ত মেলে (যেমন gross **30,500.00**, নিট **28,532.26**; Decimal, ROUND_HALF_UP)। অর্ধ-মাসের যোগদান/প্রস্থানে আনুপাতিক (`PayrollProrationTest`); পূর্ববর্তী মাসের সংশোধন বকেয়া (`ArrearsTest`)। যে বানায় সে অনুমোদন করতে পারে না — কেবল প্রতিষ্ঠানে একমাত্র অ্যাডমিন থাকলে ব্যতিক্রম, audit-সহ (`MakerCheckerTest`)। অনুমোদিত run বদলানো যায় না; সংশোধন নতুন run (`PayrollImmutabilityTest`)। পরিশোধ ক্যাশবুক/ব্যাংকে (`PayrollPaymentTest`)। শিক্ষক শুধু নিজের payslip (`SalaryAccessTest`)। **ব্যাংক-disbursement ফাইলের ফরম্যাট ফাঁকা স্লট (`TODO(OD-bank-format)`) — অনুমান নয়।** payslip PDF-এর ইঞ্জিন Spike S5c-র ফল।",
+   "verify": [
+    "php artisan test --filter=Payroll",
+    "python3 infra/spec-verify/verify.py . --deep"
+   ],
+   "scope": "ব্যাংক-ফাইল ও কর-হার আপনার হিসাবরক্ষক/ব্যাংক থেকে আসল ফরম্যাট পেলে।"
+  },
+  {
+   "id": "R3.8",
+   "title": "ভবিষ্য তহবিল (PF), কর ও চূড়ান্ত নিষ্পত্তি",
+   "after": [
+    "R3.7"
+   ],
+   "goal": "PF-খতিয়ান (কর্মচারী ও প্রতিষ্ঠানের অংশ), উৎসে-কর (প্যারামিটার, ডিফল্টে বন্ধ), চাকরি-ছাড়ার চূড়ান্ত নিষ্পত্তি।",
+   "spec": [
+    "docs/modules/staff-payroll.md",
+    "docs/LOCKED-DECISIONS.md"
+   ],
+   "modules": [
+    "hr_payroll"
+   ],
+   "controllers": [
+    "ProvidentFundController",
+    "FinalSettlementController"
+   ],
+   "tables": [
+    "provident_fund_entries"
+   ],
+   "tests": [
+    "PfLedgerTest",
+    "TaxModeTest",
+    "FinalSettlementTest"
+   ],
+   "done": "PF-সারি শুধু যোগ (append-only), স্টেটমেন্ট PDF (`PfLedgerTest`)। কর-মোড ডিফল্ট **বন্ধ**; চালু করলে হার প্রতিষ্ঠান-সেটিং থেকে, কোডে ধরা নেই (`TaxModeTest`)। চূড়ান্ত নিষ্পত্তি বকেয়া বেতন + PF + অগ্রিম-সমন্বয় হিসাব করে; গ্র্যাচুইটি/ছুটি-নগদায়ন হাতে-সমন্বয় (`FinalSettlementTest`)।",
+   "verify": [
+    "php artisan test --filter=Pf",
+    "php artisan test --filter=TaxMode",
+    "php artisan test --filter=FinalSettlement"
+   ],
+   "scope": "**আইনি হার (PF, কর, গ্র্যাচুইটি) স্পেকে অনুমান করা নেই — আইনজীবী/হিসাবরক্ষক থেকে নিশ্চিত হওয়া বাধ্যতামূলক (প্রকাশ্য বিক্রির আগে)।**"
+  },
+  {
+   "id": "R3.9",
+   "title": "স্টোর / ইনভেন্টরি",
+   "after": [
+    "R3.2"
+   ],
+   "goal": "স্টকের পণ্য, আসা-যাওয়া (ক্রয়, ইস্যু, বিক্রি, সমন্বয়), গড়-ব্যয় (moving average), বিক্রয়-রসিদ। স্টক শুধু আসা-যাওয়ার মাধ্যমে বদলায়। plan-নির্ভর (Pro+)।",
+   "spec": [
+    "docs/modules/inventory.md",
+    "docs/LOCKED-DECISIONS.md"
+   ],
+   "modules": [
+    "inventory"
+   ],
+   "controllers": [
+    "InventoryItemController",
+    "InventoryMovementController",
+    "InventoryReportController"
+   ],
+   "tables": [
+    "inventory_items",
+    "inventory_movements"
+   ],
+   "tests": [
+    "InventoryGateTest",
+    "StockLedgerTest",
+    "StockConcurrencyTest",
+    "InventoryImmutabilityTest",
+    "StoreReceiptTest",
+    "InventoryTenancyTest"
+   ],
+   "done": "স্টক-সংখ্যা সরাসরি সম্পাদনা নেই — শুধু movement (`StockLedgerTest`); movement অপরিবর্তনীয়, ভুল সংশোধন উল্টো movement (`InventoryImmutabilityTest`)। একই পণ্যে একসাথে ইস্যুতে স্টক কখনো ঋণাত্মক হয় না — সারি-লক (`StockConcurrencyTest`)। গড়-ব্যয় স্পেকের উদাহরণের সাথে মেলে (স্বাধীন গণনা `refs_r11.py`)। বিক্রয়-রসিদ PDF ও ক্যাশবুকে প্রবেশ (`StoreReceiptTest`)। plan-নির্ভর: নিম্ন plan-এ 403 (`InventoryGateTest`)।",
+   "verify": [
+    "php artisan test --filter=Inventory",
+    "php artisan test --filter=Stock",
+    "python3 infra/spec-verify/refs_r11.py"
+   ],
+   "scope": ""
+  },
+  {
+   "id": "R3.10",
+   "title": "হিসাব-খাত (Accounting) — double-entry",
+   "after": [
+    "R3.3",
+    "R3.7",
+    "R3.9"
+   ],
+   "goal": "ডবল-এন্ট্রি খতিয়ান: ডিফল্ট হিসাব-তালিকা, ভাউচার (স্বয়ংক্রিয় ও হাতে), ব্যাংক-মিলকরণ, বাজেট, শুরুর-জের উইজার্ড, সময়-লক। plan-নির্ভর (Pro+)। ফি-রসিদ, রিফান্ড, খরচ, বেতন, অগ্রিম, স্টোর থেকে ভাউচার নিজে তৈরি হয়।",
+   "spec": [
+    "docs/modules/accounting.md",
+    "docs/LOCKED-DECISIONS.md",
+    "infra/spec-verify/refs_r12.py"
+   ],
+   "modules": [
+    "accounting"
+   ],
+   "controllers": [
+    "AccountController",
+    "VoucherController",
+    "BudgetController",
+    "BankReconciliationController",
+    "AccountingReportController",
+    "AccountingSettingController"
+   ],
+   "tables": [
+    "ledger_accounts",
+    "vouchers",
+    "voucher_lines",
+    "budgets",
+    "budget_lines"
+   ],
+   "tests": [
+    "PostingMapTest",
+    "AutoPostingIdempotentTest",
+    "VoucherBalanceTest",
+    "VoucherImmutabilityTest",
+    "TrialBalanceZeroTest",
+    "LedgerCashEqualsCashBookTest",
+    "BudgetActualTest",
+    "BankReconcileTest",
+    "PeriodLockTest",
+    "FundAccountGuardTest",
+    "StartDateTest",
+    "AccountingAccessTest",
+    "AccountingTenancyTest"
+   ],
+   "done": "প্রতিটি ভাউচারে ডেবিট = ক্রেডিট (`VoucherBalanceTest`); পোস্ট-করা ভাউচার অপরিবর্তনীয়, ভুল সংশোধন উল্টো ভাউচার (`VoucherImmutabilityTest`)। স্বয়ংক্রিয় ভাউচার প্রতি উৎস-রেকর্ডে **ঠিক একবার** — ডাটাবেস-স্তরে অনন্য কী (`AutoPostingIdempotentTest`)। স্পেকের উদাহরণে: খতিয়ান `1100` = ক্যাশবুক সমাপনী **19,400.00** (`LedgerCashEqualsCashBookTest`); trial balance ডেবিট-ক্রেডিট ফারাক **0.00** (`TrialBalanceZeroTest`); bKash রসিদ `1300`-এ, `1100`-এ নয় (`PostingMapTest`); বাজেট বনাম বাস্তব **48.00% / −11,000.00 / 0.00%** (`BudgetActualTest`) — সব `refs_r12.py`-এর সাথে মেলে। সময়-লক (`locked_until`) এর আগের তারিখে পোস্ট 422 (`PeriodLockTest`)। হাতে-ভাউচার তহবিল-হিসাব ছুঁতে পারে না (`FundAccountGuardTest`)। ডিফল্ট **নগদ-ভিত্তিক** (accrual নয়)।",
+   "verify": [
+    "php artisan test --filter=Accounting",
+    "php artisan test --filter=Voucher",
+    "python3 infra/spec-verify/refs_r12.py"
+   ],
+   "scope": "হিসাব-তালিকা ও রিপোর্টের ফরম্যাট একজন হিসাবরক্ষক/অডিটরকে দিয়ে দেখাতে হবে (`PRODUCT.md` খোলা কাজ)।"
+  },
+  {
+   "id": "R3.11",
+   "title": "দান ও তহবিল (ঐচ্ছিক মডিউল)",
+   "after": [
+    "R3.10"
+   ],
+   "goal": "দাতা, তহবিল (শ্রেণি শুধু লেবেল), প্রচারণা, দানের রসিদ। তহবিলের বেশি খরচ আটকানো। ঐচ্ছিক (opt-in) মডিউল — চালু না করলে লুকানো।",
+   "spec": [
+    "docs/modules/donations.md",
+    "docs/LOCKED-DECISIONS.md"
+   ],
+   "modules": [
+    "donations"
+   ],
+   "controllers": [
+    "DonorController",
+    "DonationFundController",
+    "DonationCampaignController",
+    "DonationController"
+   ],
+   "tables": [
+    "donors",
+    "donation_funds",
+    "donation_campaigns",
+    "donations"
+   ],
+   "tests": [
+    "DonationGateTest",
+    "DonationReceiptTest",
+    "DonationReversalTest",
+    "DonorPrivacyTest",
+    "FundBalanceEqualsLedgerTest",
+    "FundGuardTest"
+   ],
+   "done": "সীমিত তহবিলে খরচ > জমা হলে 422 `fund_overdrawn` — স্পেকের উদাহরণ: 10,000 − 7,000 সফল, আরও 4,000 প্রত্যাখ্যাত (`FundGuardTest`)। দান-রসিদ `DON-{YYYY}-{ক্রম}` (`DonationReceiptTest`); দান বাতিল = নতুন সারি (`DonationReversalTest`, D32)। দাতার তথ্য শিক্ষক/ছাত্র/অভিভাবক কেউ দেখে না (`DonorPrivacyTest`)। তহবিলের ব্যালেন্স = খতিয়ানের তহবিল-হিসাব (`FundBalanceEqualsLedgerTest`)। `opt_in_modules`-এ না থাকলে 403 (`DonationGateTest`)। **সিস্টেম কোনো ধর্মীয়/আইনি রায় দেয় না — কোন তহবিল থেকে কী খরচ চলবে তা প্রতিষ্ঠান ঠিক করে (D39)।**",
+   "verify": [
+    "php artisan test --filter=Donation",
+    "php artisan test --filter=Fund"
+   ],
+   "scope": "অনলাইন দান ও দাতা-তালিকা প্রকাশ নেই (ডিফল্ট)।"
+  },
+  {
+   "id": "R3.12",
+   "title": "R3-এর পাতা (ফ্রন্টএন্ড), ভূমিকাভেদে",
+   "after": [
+    "R3.11"
+   ],
+   "goal": "প্রতিটি R3 মডিউলের পাতা মেনুতে: ক্যাশবুক, রিফান্ড, কর্মচারী/ছুটি/বেতন, payslip, ইনভেন্টরি, হিসাব-খাত, দান। মডিউল বন্ধ থাকলে মেনু-আইটেম লুকানো।",
+   "spec": [
+    "docs/AUTHORIZATION.md",
+    "docs/UI-PACKS.md",
+    "docs/DESIGN-SYSTEM.md",
+    "docs/I18N.md"
+   ],
+   "modules": [],
+   "controllers": [],
+   "tables": [],
+   "tests": [
+    "MenuReleaseTest"
+   ],
+   "done": "নিচের তালিকার প্রতিটি পাতা আছে ও তার পিছনে route আছে; মডিউল বা plan বন্ধ হলে মেনু-আইটেম ও route দুটোই বন্ধ (`MenuReleaseTest`)। সব পাতা বাংলা ও ইংরেজিতে, মোবাইলে (৩৬০px) ব্যবহারযোগ্য। বেতন/payslip-পাতা শুধু অনুমতিপ্রাপ্ত ভূমিকার মেনুতে।",
+   "verify": [
+    "npm test -- --run MenuReleaseTest",
+    "node infra/check-theme-rules.mjs"
+   ],
+   "scope": "পাতার তালিকা স্বয়ংক্রিয় — `AUTHORIZATION.md`-এর মেনু থেকে R3-মডিউল-সংযুক্ত আইটেম।"
+  },
+  {
+   "id": "R3.13",
+   "title": "টাকা ও বেতন-তথ্যের নিরাপত্তা — সামগ্রিক যাচাই",
+   "after": [
+    "R3.12"
+   ],
+   "goal": "সব R3 টেবিলে স্কুল-বিচ্ছিন্নতা, বেতন-তথ্য প্ল্যাটফর্মের লোকের অগম্য, bulk-লেখা শুধু `TenantBulk`-এর মাধ্যমে।",
+   "spec": [
+    "docs/SECURITY.md",
+    "docs/LOCKED-DECISIONS.md",
+    "docs/modules/platform-ops.md"
+   ],
+   "modules": [],
+   "controllers": [],
+   "tables": [],
+   "tests": [
+    "TenancyArchitectureTest"
+   ],
+   "done": "`TenancyArchitectureTest` সবুজ: R3-এর কোনো মডেল `BelongsToInstitution` ছাড়া নয়, কোনো bulk `insert/upsert` `TenantBulk` ছাড়া নয়। চারটি tenancy-পরীক্ষা (`PayrollTenancyTest`, `AccountingTenancyTest`, `CashBookTenancyTest`, `InventoryTenancyTest`) একসাথে সবুজ। Super Admin বেতন/payslip/PF/অগ্রিম-পথে 403 (D33)। **ব্যাকআপ/export-এ বেতন-ভাগ বাদ** (D33, D38 — tenant export R1.1-এ থাকলে সেখানে যাচাই)। বেতন-অঙ্ক লগ/Sentry-তে যায় না।",
+   "verify": [
+    "php artisan test --filter=Tenancy"
+   ],
+   "scope": ""
+  },
+  {
+   "id": "R3.14",
+   "title": "R3-এর কর্মক্ষমতা (ডেটা বাড়লে)",
+   "after": [
+    "R3.13"
+   ],
+   "goal": "R3-এর ঘন কোয়েরিগুলো ইনডেক্স-যোগ্য রাখা (ডেটা বাড়লে ধীর না হওয়ার জন্য), `hot-queries.tsv`-এ যুক্ত।",
+   "spec": [
+    "infra/scripts/hot-queries.tsv",
+    "docs/ops/performance-benchmarks.md"
+   ],
+   "modules": [],
+   "controllers": [],
+   "tables": [],
+   "tests": [
+    "PerfCatalogueTest"
+   ],
+   "done": "`python3 infra/spec-verify/plan_check.py .` সবুজ — `hot-queries.tsv`-এর R3-কোয়েরিগুলো (payroll-মাস, কর্মচারী-হাজিরা, ভাউচার-সময়কাল, খতিয়ান-হিসাব, স্টক-আসা-যাওয়া, দান) full-scan ছাড়া, প্রথম equality-কলাম ও তারিখ-সীমা ইনডেক্সের ভিতরে। আসল MySQL-এ `perf-check.py`-এর ধাঁচে মাপা (এখনো চালানো হয়নি)।",
+   "verify": [
+    "python3 infra/spec-verify/plan_check.py ."
+   ],
+   "scope": "নতুন ইনডেক্স শুধু ক্যাটালগের নাম-ধরা কোয়েরির জন্য (লেখা ধীর করে)।"
+  },
+  {
+   "id": "R3.A",
+   "title": "R3 গ্রহণ-পরীক্ষা, তারপর চালু",
+   "after": [
+    "R3.14"
+   ],
+   "goal": "নিচের গ্রহণ-শর্ত সব সত্য হলে তবেই R3-মডিউল গ্রাহকের জন্য চালু।",
+   "spec": [
+    "docs/RELEASE-3.md"
+   ],
+   "modules": [],
+   "controllers": [],
+   "tables": [],
+   "tests": [],
+   "done": "`docs/RELEASE-3.md` §গ্রহণ-শর্ত সবগুলো সত্য ও লিখিত; payroll-এর আইনি/হিসাব-যাচাই হয়েছে; আসল MySQL-এ আচরণ-পরীক্ষা সবুজ।",
+   "verify": [
+    "python3 infra/spec-verify/verify.py . --deep",
+    "bash infra/scripts/mysql-smoke.sh"
+   ],
+   "scope": ""
+  }
+ ],
+ "acceptance": [
+  "দিনের শেষে ক্যাশবুক মিলিয়ে বন্ধ করা যায়; বন্ধ দিনে রসিদ/খরচ বদলানো যায় না; পুনরায় খোলা শুধু Admin ও নথিভুক্ত",
+  "ফি রিফান্ড সীমা পেরোলে প্রত্যাখ্যাত; রিফান্ডের পর বকেয়া ঠিক; রিফান্ড-সারি অপরিবর্তনীয়",
+  "কর্মচারী যোগ, শিক্ষক-কর্মচারীর উপস্থিতি, ছুটি আবেদন → অনুমোদন; অবৈতনিক ছুটি বেতনে কাটে",
+  "তারিখ-ভিত্তিক বেতন-কাঠামো, ব্যাচ-ইনক্রিমেন্ট (আগে preview), বোনাস-স্কিম",
+  "payroll run: ১৭টি fixture পয়সা-পর্যন্ত মেলে; যে বানায় সে অনুমোদন করে না; অনুমোদিত run অপরিবর্তনীয়; payslip PDF (বাংলা ঠিক)",
+  "অগ্রিম কিস্তিতে কাটে; জরিমানা/ওভারটাইম সমন্বয় নির্দিষ্ট মাসে বাঁধা",
+  "PF-খতিয়ান ও চূড়ান্ত নিষ্পত্তি; কর-মোড ডিফল্টে বন্ধ",
+  "ইনভেন্টরি: স্টক শুধু movement-এ; একসাথে ইস্যুতে ঋণাত্মক হয় না",
+  "হিসাব-খাত: স্বয়ংক্রিয় ভাউচার প্রতি উৎসে একবার; trial balance 0.00; খতিয়ান 1100 = ক্যাশবুক",
+  "দান: তহবিলের বেশি খরচ আটকানো; দাতার তথ্য শিক্ষক/অভিভাবক দেখে না",
+  "Super Admin কোনো বেতন-তথ্য দেখতে পায় না; এক স্কুল অন্যের R3-তথ্য দেখে না (tenancy-পরীক্ষা সবুজ)",
+  "আসল MySQL-এ স্কিমা ও আচরণ-পরীক্ষা সবুজ; R3 hot-query পরীক্ষা সবুজ",
+  "payroll-এর আইনি/হিসাব যাচাই (PF, কর, গ্র্যাচুইটি, কর্তনের নিয়ম) একজন হিসাবরক্ষক ও আইনজীবী করেছেন"
+ ],
+ "must_have_routes": [
+  "POST /expenses",
+  "POST /cashbook/{date}/close",
+  "POST /cashbook/{date}/reopen",
+  "POST /fee-refunds",
+  "POST /fee-refunds/{id}/{action}",
+  "POST /super/payments/{id}/refund",
+  "POST /hr/staff",
+  "POST /hr/leaves",
+  "PATCH /hr/leaves/{id}/{action}",
+  "POST /teacher/leave",
+  "POST /hr/revisions",
+  "POST /hr/revisions/{id}/approve",
+  "POST /hr/increment-batches/preview",
+  "POST /hr/advances",
+  "POST /hr/payroll-runs",
+  "POST /hr/payroll-runs/{id}/{action}",
+  "GET /hr/payroll-items/{id}/slip.pdf",
+  "GET /teacher/salary/slips/{id}.pdf",
+  "POST /hr/final-settlement/{type}/{id}/start",
+  "POST /inventory/{type}",
+  "GET /inventory/stock",
+  "POST /accounting/vouchers",
+  "GET /accounting/reports/{name}",
+  "POST /accounting/budgets/{id}/approve",
+  "POST /donations",
+  "POST /donations/{id}/reverse",
+  "POST /donation-funds"
+ ],
+ "external": [
+  "ব্যাংক-disbursement ফাইলের আসল ফরম্যাট (TODO OD-bank-format)",
+  "PF, উৎসে-কর, গ্র্যাচুইটি, ছুটি-নগদায়নের আইনি নিয়ম — আইনজীবী ও হিসাবরক্ষক",
+  "হিসাব-তালিকা ও রিপোর্টের ফরম্যাট — একজন হিসাবরক্ষক/অডিটর",
+  "হিসাব-পদ্ধতি: নগদ-ভিত্তিক না accrual (ডিফল্ট নগদ-ভিত্তিক)",
+  "payslip/রিপোর্ট PDF-এর ইঞ্জিন (Spike S5c)"
+ ]
+}

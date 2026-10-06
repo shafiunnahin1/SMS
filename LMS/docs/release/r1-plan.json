@@ -1,0 +1,1110 @@
+{
+ "release": "R1",
+ "generated_from": [
+  "docs/release/r1-scope.json",
+  "docs/BUILD-SEQUENCE.md",
+  "docs/database/schema.sql",
+  "docs/templates/laravel-core-files.md"
+ ],
+ "tasks": [
+  {
+   "id": "0.1",
+   "title": "Laravel",
+   "depends_on": null,
+   "spec_refs": [
+    "docs/architecture/folder-structure.md",
+    "docs/architecture/environment-variables.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "`php artisan serve` চলে; `config('tenancy.base_domain')` ও `config('institution_types.coaching.terms.batch.bn')` tinker-এ মান দেয়।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "0.2",
+   "title": "React",
+   "depends_on": "0.1",
+   "spec_refs": [],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "`http://demo.lvh.me:5173` খোলে এবং `fetch('/api/v1/health')` Laravel-এ পৌঁছায় (Host header `demo.lvh.me` অক্ষত)।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "0.3",
+   "title": ".env, Folders, CI Skeleton",
+   "depends_on": "0.2",
+   "spec_refs": [
+    "docs/architecture/environment-variables.md",
+    "docs/architecture/folder-structure.md",
+    "docs/ops/git-workflow.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "দুই project-এর `.env.example` সম্পূর্ণ; CI-তে `php artisan test`, `npm test` (খালি হলেও) ও `npm run lint:theme` চলে।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "1.1",
+   "title": "Migrations",
+   "depends_on": "0.3",
+   "spec_refs": [],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "`php artisan migrate:fresh` ত্রুটিহীন; database-এ ১৪৩টি table (+ Laravel-এর নিজস্ব); `users`-এ `(institution_id, email)`, `(institution_id, phone)`, `(institution_id, username)` unique index আছে।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan migrate:fresh --seed",
+    "bash infra/scripts/mysql-smoke.sh",
+    "bash infra/scripts/schema-diff.sh lms lms_smoke   # with SCHEMA_DIFF_ONLY=docs/release/r1-tables.txt",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "1.2",
+   "title": "Models",
+   "depends_on": "1.1",
+   "spec_refs": [
+    "docs/templates/laravel-core-files.md",
+    "docs/architecture/system-design-patterns.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "১৪৩টি model; `BelongsToInstitution` নেই শুধু `Institution`, `SubscriptionPlan`, `ThemePreset`, `OtpToken`, `Coupon`, `PlatformSetting`-এ।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan migrate:fresh --seed",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "1.3",
+   "title": "Seeders",
+   "depends_on": "1.2",
+   "spec_refs": [
+    "docs/database/seeders.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "৫টি plan, ৬টি theme preset, ১টি super admin DB-তে।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan migrate:fresh --seed",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "2.1",
+   "title": "Tenancy",
+   "depends_on": "1.3",
+   "spec_refs": [
+    "docs/templates/laravel-core-files.md",
+    "docs/architecture/tenancy.md",
+    "docs/modules/custom-domain.md"
+   ],
+   "tables": [
+    "institutions"
+   ],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [
+    "TenantResolverTest",
+    "TenantModeTest",
+    "TenantFailClosedTest",
+    "QueueTenantLeakTest",
+    "TenancyArchitectureTest"
+   ],
+   "done_when": "(Fail-closed, D25) tenant ছাড়া `Student::count()` `TenantNotBoundException` দেয়; `Tenancy::withoutTenancy()` ভেতরে চলে, বাইরে নয়; একটি job-এর পরে অন্য প্রতিষ্ঠানের job চালালে আগেরটির tenant জমে থাকে না; `TenancyArchitectureTest` অনুমোদিত তালিকার বাইরে কোনো `withoutGlobalScope(s)`/`app()->instance('currentInstitution'`/raw `DB::table` ধরে। এবং: অজানা host → 404 `institution_not_found`; reserved slug resolve হয় না; `tenant` route central host-এ 404, `tenant:central` route tenant host-এ 404; Super Admin token tenant host-এ 403 `forbidden_host`, tenant user-এর token central host-এ বা অন্য tenant-এর host-এ 403 `institution_mismatch`; suspended institution শুধু auth/bootstrap/subscription/billing পথে ঢুকতে পারে।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=TenantResolverTest|TenantModeTest|TenantFailClosedTest|QueueTenantLeakTest|TenancyArchitectureTest",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "2.2",
+   "title": "Institution Types, Module Gate, Terminology",
+   "depends_on": "2.1",
+   "spec_refs": [
+    "docs/modules/institution-types.md",
+    "docs/modules/subscription.md",
+    "docs/templates/laravel-core-files.md"
+   ],
+   "tables": [],
+   "routes": [
+    "GET /admin/settings/terminology -> TerminologyController@show [role:admin]",
+    "PUT /admin/settings/terminology -> TerminologyController@update [role:admin]"
+   ],
+   "routes_excluded": [],
+   "tests": [
+    "ModuleGateTest",
+    "TerminologyTest",
+    "ReleaseGateTest"
+   ],
+   "done_when": "একটি test route-এ `module:hostel` — coaching tenant-এ 403 `module_disabled`, Basic-plan school-এ 403 `feature_not_available`, Enterprise school-এ 200, override দিলে উল্টো। **D47:** `SubscriptionCheck`-এ plan-সীমা (`max_students`, `max_batches`) **বানাবেন না** — সংখ্যা বা স্টোরেজের কোনো সীমা নেই। মডিউল-গেট (ধরন, মডিউল-তালিকা, রিলিজ-গেট) যেমন আছে তেমন; plan-ভিত্তিক গেট নয় (পুনর্লিখন: `docs/PRICING-MODEL.md` PM-1)।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=ModuleGateTest|TerminologyTest|ReleaseGateTest",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "2.3",
+   "title": "Authentication",
+   "depends_on": "2.2",
+   "spec_refs": [
+    "docs/AUTHORIZATION.md",
+    "docs/API-ERRORS.md"
+   ],
+   "tables": [
+    "users",
+    "otp_tokens"
+   ],
+   "routes": [
+    "POST /auth/login -> LoginController@login",
+    "POST /auth/verify-otp -> LoginController@verifyOtp",
+    "POST /auth/forgot-password -> PasswordResetController@sendResetLink",
+    "POST /auth/reset-password -> PasswordResetController@reset",
+    "POST /auth/logout -> LoginController@logout [role:super_admin]",
+    "GET /auth/me -> LoginController@me [role:super_admin]",
+    "POST /auth/logout -> LoginController@logout",
+    "GET /auth/me -> LoginController@me",
+    "PATCH /auth/change-password -> PasswordResetController@changePassword",
+    "GET /auth/sessions -> SessionController@index",
+    "DELETE /auth/sessions/{id} -> SessionController@destroy",
+    "POST /auth/logout-all -> SessionController@logoutAll",
+    "POST /admin/users/{id}/force-logout -> SessionController@forceLogout [role:admin]",
+    "POST /admin/users/{id}/unlock -> SessionController@unlock [role:admin]",
+    "PUT /auth/locale -> LoginController@locale"
+   ],
+   "routes_excluded": [
+    "PUT /auth/ui-preferences -> LoginController@uiPreferences  (accessibility mode is later)"
+   ],
+   "tests": [
+    "LoginIdentifierTest",
+    "CrossTenantHostTest",
+    "TokenLifetimeTest",
+    "PasswordPolicyTest",
+    "LockoutTest",
+    "ReleaseRolesTest",
+    "LocaleTest"
+   ],
+   "done_when": "তিন ধরনের identifier-এ login হয়; অন্য tenant-এর token অন্য host-এ 403। এবং (D26): মেয়াদ-উত্তীর্ণ token 401; idle-সীমা পার হলে 401 (Sanctum callback-এ — middleware-এ নয়); ৬ষ্ঠ লগইনে সবচেয়ে পুরনো token বাতিল; পাসওয়ার্ড বদলালে/ব্যবহারকারী নিষ্ক্রিয় হলে সব token বাতিল; লক হওয়া ও ভুল-পাসওয়ার্ডের উত্তর হুবহু এক; `/auth/sessions`, `/auth/logout-all`, Admin `force-logout`/`unlock`।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=LoginIdentifierTest|CrossTenantHostTest|TokenLifetimeTest|PasswordPolicyTest|LockoutTest|ReleaseRolesTest|LocaleTest",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "2.4",
+   "title": "Theme Service + Bootstrap Endpoint",
+   "depends_on": "2.3",
+   "spec_refs": [
+    "docs/modules/institution-branding.md",
+    "docs/THEMING.md",
+    "docs/modules/institution-types.md"
+   ],
+   "tables": [
+    "theme_presets"
+   ],
+   "routes": [
+    "GET /bootstrap -> BootstrapController@show",
+    "GET /settings -> SettingController@index [role:admin]",
+    "PUT /settings -> SettingController@update [role:admin]",
+    "GET /admin/settings/general -> SettingController@general [role:admin]",
+    "PUT /admin/settings/general -> SettingController@updateGeneral [role:admin]",
+    "GET /admin/theme -> ThemeController@show [role:admin]",
+    "PUT /admin/theme -> ThemeController@update [role:admin]",
+    "POST /admin/theme/logo -> ThemeController@logo [role:admin]",
+    "GET /admin/settings/language -> SettingController@language [role:admin]",
+    "PUT /admin/settings/language -> SettingController@updateLanguage [role:admin]"
+   ],
+   "routes_excluded": [
+    "PUT /admin/theme/tokens -> ThemeController@tokens  (theme editor is R2; R1 has logo and brand colour only)",
+    "PUT /admin/theme/layout -> ThemeController@layout  (theme editor is R2; R1 has logo and brand colour only)",
+    "PUT /admin/theme/pack -> ThemeController@pack  (theme editor is R2; R1 has logo and brand colour only)",
+    "POST /admin/theme/preset -> ThemeController@preset  (theme editor is R2; R1 has logo and brand colour only)",
+    "POST /admin/theme/favicon -> ThemeController@favicon  (theme editor is R2; R1 has logo and brand colour only)"
+   ],
+   "tests": [
+    "ThemeResolutionTest"
+   ],
+   "done_when": "`curl -H \"Host: <slug>.lvh.me\" /api/v1/bootstrap` — `terms`, `modules`, `theme` (৮টি token সহ) ফেরত দেয়; central host-এ `is_central: true`।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=ThemeResolutionTest",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "2.5",
+   "title": "Programs, Batches, Enrollment",
+   "depends_on": "2.4",
+   "spec_refs": [
+    "docs/modules/academic-structure.md",
+    "docs/modules/institution-types.md"
+   ],
+   "tables": [
+    "academic_years",
+    "programs",
+    "batches",
+    "subjects",
+    "enrollments",
+    "batch_teachers",
+    "teacher_subjects"
+   ],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [
+    "EnrollmentServiceTest",
+    "EnrollmentCacheSyncTest"
+   ],
+   "done_when": "test পাস; এবং Step 1.3-এর বাকি তিনটি demo seeder চলে — `php artisan migrate:fresh --seed` ত্রুটিহীন, তিনটি demo tenant তৈরি।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=EnrollmentServiceTest|EnrollmentCacheSyncTest",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "2.6",
+   "title": "Shared Services",
+   "depends_on": "2.5",
+   "spec_refs": [
+    "docs/templates/laravel-core-files.md",
+    "docs/modules/academic-structure.md",
+    "docs/modules/grading.md",
+    "docs/modules/notifications.md",
+    "docs/modules/pdf-reports.md",
+    "docs/architecture/backend-pattern.md"
+   ],
+   "tables": [
+    "audit_logs"
+   ],
+   "routes": [
+    "GET /notifications -> NotificationController@index",
+    "PATCH /notifications/{id}/read -> NotificationController@markRead",
+    "PATCH /notifications/read-all -> NotificationController@markAllRead",
+    "GET /audit-logs -> AuditLogController@index [role:admin]",
+    "GET /audit-logs/{id} -> AuditLogController@show [role:admin]"
+   ],
+   "routes_excluded": [
+    "PATCH /user/fcm-token -> NotificationController@updateFcmToken  (push / mobile app is R7)"
+   ],
+   "tests": [
+    "TenantBulkGuardTest",
+    "FileDiskNamesTest"
+   ],
+   "done_when": "প্রতিটি service class আছে ও resolve হয়; `FeeResolutionTest` পাস।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=TenantBulkGuardTest|FileDiskNamesTest",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "2.7",
+   "title": "Routes Skeleton",
+   "depends_on": "2.6",
+   "spec_refs": [
+    "docs/templates/laravel-core-files.md",
+    "routes/api.php",
+    "docs/API.md",
+    "docs/SECURITY.md"
+   ],
+   "tables": [],
+   "routes": [
+    "GET /health -> HealthController@__invoke"
+   ],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "`php artisan route:list` ত্রুটিহীন এবং `php artisan route:cache` সফল (duplicate route name নেই); `GET /api/v1/health` বিনা token-এ 200; `TenantIsolationTest`-এর কাঠামো (চার type-এর দুটি করে tenant) চালু।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "S",
+   "title": "Walking-skeleton Spike and Gate (D28)",
+   "depends_on": "2.7",
+   "spec_refs": [
+    "docs/spike/walking-skeleton.md",
+    "docs/spike/SPIKE-READY.md",
+    "docs/spike/SPIKE-RUNBOOK.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "Gate recorded and signed in docs/SPIKE-LOG.md. If the Gate says Adjust/Stop, STOP and return to the owner - do not start Phase 3.",
+   "scope_note": "S0-S8 incl. S5b/S5c/S5d. Run mysql-smoke.sh (exit must be 0) and perf-check.py first (SPIKE-RUNBOOK step 0, S1b).",
+   "blocked": null,
+   "verify": [
+    "bash infra/scripts/mysql-smoke.sh",
+    "python3 infra/scripts/perf-check.py --scale 0.1",
+    "bash infra/scripts/schema-diff.sh lms lms_smoke"
+   ]
+  },
+  {
+   "id": "3.1",
+   "title": "Core Infrastructure",
+   "depends_on": "S",
+   "spec_refs": [
+    "docs/templates/react-core-files.md",
+    "docs/architecture/zustand-stores.md",
+    "docs/architecture/redis-cache-strategy.md",
+    "docs/architecture/system-design-patterns.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "`http://alokito-coaching.lvh.me:5173` লোড হলে `/bootstrap` একবার call হয় এবং store ভরে; `admin.lvh.me`-এ `isCentral = true`।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "3.2",
+   "title": "Theme System",
+   "depends_on": "3.1",
+   "spec_refs": [
+    "docs/THEMING.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "তিনটি demo tenant তিনটি ভিন্ন রঙ, font ও radius-এ দেখায়; reload-এ default নীল ঝলকায় না।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "3.3",
+   "title": "Layouts & Navigation",
+   "depends_on": "3.2",
+   "spec_refs": [
+    "docs/THEMING.md",
+    "docs/design/user-journeys.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [
+    "MenuReleaseTest"
+   ],
+   "done_when": "একটি খালি Dashboard page চারটি layout-এই (DB-তে `layout_key` বদলে) সঠিক দেখায় — desktop ও 360px মোবাইলে; coaching tenant-এ \"কোর্সসমূহ/ব্যাচসমূহ\", school-এ \"শ্রেণিসমূহ/শাখাসমূহ\" মেনু।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=MenuReleaseTest",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "3.4",
+   "title": "Shared Components",
+   "depends_on": "3.3",
+   "spec_refs": [
+    "docs/design/component-library.md",
+    "docs/templates/react-core-files.md",
+    "docs/THEMING.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "`/dev/components` (dev-only route)-এ সব component render হয়; theme বদলালে প্রতিটি বদলায়; CI-র দুই grep script খালি।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "3.5",
+   "title": "Auth Pages",
+   "depends_on": "3.4",
+   "spec_refs": [
+    "docs/templates/react-page-examples.md",
+    "docs/AUTHORIZATION.md",
+    "docs/THEMING.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "তিনটি demo tenant-এ নিজ নিজ identifier দিয়ে login → role অনুযায়ী dashboard; login পেজে প্রতিষ্ঠানের লোগো/রঙ।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "3.6",
+   "title": "UI Pack Runtime (পর্যায় A, D29)",
+   "depends_on": "3.5",
+   "spec_refs": [
+    "docs/UI-PACKS.md",
+    "docs/THEMING.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [
+    "PackContractTest",
+    "PackRegistryTest",
+    "ThemePackCompatTest"
+   ],
+   "done_when": "`classic` pack-এ সব পাতা আগের মতো চলে; অজানা `ui_pack` মানে `classic` (ফাঁকা পাতা নয়); একটি পরীক্ষামূলক pack (`test-fixture`, শুধু test-এ) একটি view ও একটি variant override করে এবং `PackContractTest` তার `data-action` অসম্পূর্ণ হলে ব্যর্থ হয়; `layout`-অসঙ্গত pack বাছলে 422।",
+   "scope_note": "UI Pack runtime Phase A only (classic pack). Kept because pages written without PageSlot are expensive to retrofit.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=PackContractTest|PackRegistryTest|ThemePackCompatTest",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "3.7",
+   "title": "Languages & RTL Foundation (D30)",
+   "depends_on": "3.6",
+   "spec_refs": [
+    "docs/I18N.md",
+    "docs/THEMING.md",
+    "docs/UI-PACKS.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [
+    "I18nParityTest",
+    "TermsFallbackTest",
+    "LocaleResolutionTest",
+    "ApiMessageLocaleTest",
+    "SmsSegmentsTest",
+    "SmsLocaleTest",
+    "LanguageSettingsTest",
+    "RtlComponentTest",
+    "I18nProviderTest"
+   ],
+   "done_when": "`docs/I18N.md` §১৪ \"Done When (Step 3.7)\": বাংলা↔ইংরেজি reload ছাড়া বদলায়, `lang/dir` ঠিক, `Accept-Language` যায়, `users.locale` সংরক্ষিত; মাদ্রাসা demo tenant-এ আরবি চালু করলে তিন থিমে `AppShell` আয়না হয় ও `lint:theme` ০ লঙ্ঘন।",
+   "scope_note": "i18n infrastructure (bn + en) only. No Arabic content, no RTL snapshots (logical Tailwind classes are still mandatory).",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=I18nParityTest|TermsFallbackTest|LocaleResolutionTest|ApiMessageLocaleTest|SmsSegmentsTest|SmsLocaleTest|LanguageSettingsTest|RtlComponentTest",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "3.8",
+   "title": "E2E, Visual & a11y Harness (Playwright)",
+   "depends_on": "3.7",
+   "spec_refs": [
+    "docs/E2E-TESTING.md",
+    "docs/THEMING.md",
+    "docs/UI-PACKS.md",
+    "docs/I18N.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "`docs/E2E-TESTING.md` §৭ — ১২-কম্বিনেশনে লগইন-পাতা baseline সবুজ; axe serious/critical ০; ইচ্ছাকৃত RTL-ভাঙা ও কনট্রাস্ট-ভাঙায় পরীক্ষা ব্যর্থ।\n**পর্যায় C (Step 6.5) এই ধাপের পরে।**",
+   "scope_note": "Smoke subset: F1 login, F2 enrol->fee->receipt->parent, F5 language toggle. Not the 12-combination matrix.",
+   "blocked": null,
+   "verify": [
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "4.1",
+   "title": "Programs & Batches UI",
+   "depends_on": "3.8",
+   "spec_refs": [
+    "docs/modules/academic-structure.md",
+    "docs/modules/panels-and-features.md"
+   ],
+   "tables": [
+    "teachers"
+   ],
+   "routes": [
+    "GET /programs -> ProgramController@index",
+    "GET /batches -> BatchController@index",
+    "GET /teachers -> TeacherController@index [role:admin]",
+    "POST /teachers -> TeacherController@store [role:admin]",
+    "GET /teachers/{id} -> TeacherController@show [role:admin]",
+    "PUT /teachers/{id} -> TeacherController@update [role:admin]",
+    "DELETE /teachers/{id} -> TeacherController@destroy [role:admin]",
+    "POST /programs -> ProgramController@store [role:admin]",
+    "GET /programs/{id} -> ProgramController@show [role:admin]",
+    "PUT /programs/{id} -> ProgramController@update [role:admin]",
+    "DELETE /programs/{id} -> ProgramController@destroy [role:admin]",
+    "POST /batches -> BatchController@store [role:admin]",
+    "GET /batches/{id} -> BatchController@show [role:admin]",
+    "PUT /batches/{id} -> BatchController@update [role:admin]",
+    "DELETE /batches/{id} -> BatchController@destroy [role:admin]",
+    "GET /batches/{id}/students -> BatchController@students [role:admin]",
+    "GET /subjects -> SubjectController@index [role:admin]",
+    "POST /subjects -> SubjectController@store [role:admin]",
+    "GET /subjects/{id} -> SubjectController@show [role:admin]",
+    "PUT /subjects/{id} -> SubjectController@update [role:admin]",
+    "DELETE /subjects/{id} -> SubjectController@destroy [role:admin]",
+    "GET /teacher/batches -> BatchController@mine [role:teacher]"
+   ],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "school-এ শ্রেণি (program) ও শাখা (batch) তৈরি/সম্পাদনা; শাখায় শ্রেণিশিক্ষক ও বিষয়-শিক্ষক নিয়োগ; শাখা-ভিত্তিক ছাত্র-তালিকা; terminology-প্রিসেটে 'শ্রেণি/শাখা' শব্দ দেখায় (`GET /bootstrap`)।",
+   "scope_note": null,
+   "blocked": null,
+   "verify": [
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "4.2",
+   "title": "Students & Enrollment",
+   "depends_on": "4.1",
+   "spec_refs": [
+    "docs/modules/fees-advanced.md",
+    "docs/modules/data-migration.md",
+    "docs/modules/student-import.md",
+    "docs/modules/coaching-private-batch.md",
+    "docs/templates/react-page-examples.md"
+   ],
+   "tables": [
+    "students",
+    "parent_student",
+    "consents",
+    "import_jobs",
+    "import_rows"
+   ],
+   "routes": [
+    "GET /students/{id}/consents -> ConsentController@index [role:admin]",
+    "POST /students/{id}/consents -> ConsentController@store [role:admin]",
+    "GET /students/{id}/consent-form.pdf -> ConsentController@form [role:admin]",
+    "GET /students -> StudentController@index [role:admin]",
+    "POST /students -> StudentController@store [role:admin]",
+    "GET /students/{id} -> StudentController@show [role:admin]",
+    "PUT /students/{id} -> StudentController@update [role:admin]",
+    "DELETE /students/{id} -> StudentController@destroy [role:admin]",
+    "GET /students/{id}/enrollments -> EnrollmentController@forStudent [role:admin]",
+    "POST /enrollments -> EnrollmentController@store [role:admin]",
+    "PUT /enrollments/{id} -> EnrollmentController@update [role:admin]",
+    "POST /enrollments/{id}/end -> EnrollmentController@end [role:admin]",
+    "POST /enrollments/{id}/transfer -> EnrollmentController@transfer [role:admin]",
+    "GET /imports/ -> ImportController@index [role:admin]",
+    "POST /imports/ -> ImportController@store [role:admin]",
+    "GET /imports/templates/{kind}.xlsx -> ImportController@template [role:admin]",
+    "GET /imports/{id} -> ImportController@show [role:admin]",
+    "PUT /imports/{id}/mapping -> ImportController@mapping [role:admin]",
+    "POST /imports/{id}/{action} -> ImportController@transition [role:admin]",
+    "GET /imports/{id}/errors.xlsx -> ImportController@errors [role:admin]",
+    "GET /parent/consents -> ConsentController@mine [role:parent]",
+    "PUT /parent/consents/{type} -> ConsentController@update [role:parent]"
+   ],
+   "routes_excluded": [
+    "GET /students/{id}/card -> StudentController@idCard  (ID card, TC/transfer and promotion are later modules)",
+    "POST /students/{id}/transfer -> StudentController@issueTC  (ID card, TC/transfer and promotion are later modules)",
+    "POST /students/promote -> StudentController@promote  (ID card, TC/transfer and promotion are later modules)"
+   ],
+   "tests": [
+    "StudentImportTest",
+    "PerInstitutionUniqueTest",
+    "ConsentTest",
+    "FilePathPrefixTest",
+    "FileCollisionTest",
+    "ImportKindsTest"
+   ],
+   "done_when": "school-এ ছাত্র ভর্তি (CRUD, ছাত্র-ID স্বয়ংক্রিয়, অভিভাবকের ফোন থেকে parent অ্যাকাউন্ট); দ্বিতীয় সক্রিয় enrollment চাইলে 422 error; plan-এর `max_students` পূর্ণ হলে 403 `student_limit_reached`; Excel (`kind=students`) আমদানি: ফাইল → dry-run → চালান, ৩০০ ছাত্রে ত্রুটিপূর্ণ সারি আলাদা রিপোর্টে, আবার চালালে দ্বিতীয়বার সব skipped; `kind=teachers` অনুরোধে 422 `kind_not_available`; ছাত্র মুছলে/বেনামি করলে ছবি-সহ সব ফাইল মোছে। **D47:** ছাত্র-সংখ্যার সীমা (`student_limit_reached` 403, `max_students`) **বানাবেন না — এই শেষ-শর্ত বাতিল**; ছাত্র বা শাখার সংখ্যার কোনো সীমা নেই।",
+   "scope_note": "Students, enrollment, student-ID, Excel import of students. The import API (/imports) lives in module data_migration, which IS in release.modules for R1 but restricted by config('release.import_kinds') = ['students']; other kinds (teachers, fee_history, results, attendance) are R1.1. The OLD /students/import/* endpoints of student-import.md are SUPERSEDED (that document remains the row-validation and template-column spec).",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=StudentImportTest|PerInstitutionUniqueTest|ConsentTest|FilePathPrefixTest|FileCollisionTest|ImportKindsTest",
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "4.3",
+   "title": "Attendance",
+   "depends_on": "4.2",
+   "spec_refs": [
+    "docs/modules/academic-structure.md",
+    "docs/templates/laravel-core-files.md",
+    "docs/templates/react-page-examples.md"
+   ],
+   "tables": [
+    "attendances",
+    "holidays"
+   ],
+   "routes": [
+    "GET /attendance/summary/{id} -> AttendanceController@summary",
+    "GET /attendance -> AttendanceController@index [role:admin,teacher]",
+    "POST /attendance -> AttendanceController@store [role:admin,teacher]",
+    "PUT /attendance/{id} -> AttendanceController@update [role:admin,teacher]",
+    "GET /attendance/report -> AttendanceController@report [role:admin,teacher]",
+    "GET /parent/children/{id}/attendance -> AttendanceController@forParent [role:parent]"
+   ],
+   "routes_excluded": [
+    "GET /student/attendance -> AttendanceController@forStudent  (student login is R1.1)"
+   ],
+   "tests": [
+    "BatchAttendanceTest",
+    "AttendanceServiceTest",
+    "AttendanceBulkQueryCountTest",
+    "BatchReportQueryCountTest",
+    "ParentAttendanceAccessTest"
+   ],
+   "done_when": "school-এ শিক্ষক নিজের শাখার হাজিরা তোলে ('সবাই উপস্থিত' বোতামসহ, মোবাইলে কার্ড-ধরন); ছুটির দিনে 422 `holiday_date`; অনুপস্থিত ছাত্রের অভিভাবকের জন্য SMS queue-তে যায়; অভিভাবক `/parent/children/{id}/attendance`-এ সন্তানের হাজিরা দেখে, অন্যের সন্তান নয়; ৪০ ছাত্রের সংরক্ষণ ≤ ৬টি কোয়েরি।",
+   "scope_note": "Daily attendance, holidays, absence SMS. Parents read via /parent/children/{id}/attendance.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=BatchAttendanceTest|AttendanceServiceTest|AttendanceBulkQueryCountTest|BatchReportQueryCountTest|ParentAttendanceAccessTest",
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "4.4",
+   "title": "Fees",
+   "depends_on": "4.3",
+   "spec_refs": [
+    "docs/modules/academic-structure.md",
+    "docs/modules/fees-advanced.md",
+    "docs/templates/laravel-core-files.md",
+    "docs/modules/extended-features.md",
+    "docs/templates/react-page-examples.md"
+   ],
+   "tables": [
+    "fee_categories",
+    "fee_structures",
+    "fee_payments"
+   ],
+   "routes": [
+    "GET /fees/payments/student/{id} -> FeeController@studentPayments",
+    "GET /fees/categories -> FeeController@categories [role:admin]",
+    "POST /fees/categories -> FeeController@storeCategory [role:admin]",
+    "PUT /fees/categories/{id} -> FeeController@updateCategory [role:admin]",
+    "GET /fees/report -> FeeController@report [role:admin]",
+    "GET /fees/payments -> FeeController@payments [role:admin,accountant]",
+    "POST /fees/collect -> FeeController@collect [role:admin,accountant]",
+    "GET /fees/dues -> FeeController@dues [role:admin,accountant]",
+    "GET /fees/receipt/{id} -> FeeController@receipt [role:admin,accountant]",
+    "GET /parent/fees -> FeeController@dues [role:parent]"
+   ],
+   "routes_excluded": [
+    "GET /fees/waivers -> FeeController@waivers  (waivers are R2)",
+    "PATCH /fees/waivers/{id}/approve -> FeeController@approveWaiver  (waivers are R2)",
+    "PATCH /fees/waivers/{id}/reject -> FeeController@rejectWaiver  (waivers are R2)"
+   ],
+   "tests": [
+    "FeeServiceTest",
+    "FeeResolutionTest",
+    "FeeCollectionTest"
+   ],
+   "done_when": "দুই batch-এর student-এর এক receipt-এ দুই line; `fee_override` কার্যকর; receipt PDF-এ প্রতিষ্ঠানের লোগো ও রঙ, QR-এ `primaryUrl()`।",
+   "scope_note": "Fee categories, structures, collection, receipts, dues. NOT: expenses, installments, waivers, online payment, refunds, cash book.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=FeeServiceTest|FeeResolutionTest|FeeCollectionTest",
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "4.5",
+   "title": "Exams & Results",
+   "depends_on": "4.4",
+   "spec_refs": [
+    "docs/modules/grading.md",
+    "docs/modules/extended-features.md",
+    "docs/modules/report-cards.md",
+    "docs/modules/academic-structure.md",
+    "docs/modules/coaching-private-batch.md"
+   ],
+   "tables": [
+    "exams",
+    "exam_subjects",
+    "results"
+   ],
+   "routes": [
+    "GET /exams -> ExamController@index [role:admin]",
+    "POST /exams -> ExamController@store [role:admin]",
+    "GET /exams/{id} -> ExamController@show [role:admin]",
+    "PUT /exams/{id} -> ExamController@update [role:admin]",
+    "DELETE /exams/{id} -> ExamController@destroy [role:admin]",
+    "POST /exams/{id}/publish -> ExamController@publish [role:admin]",
+    "GET /exams/{id}/subjects -> ExamController@subjects [role:admin]",
+    "PUT /exams/{id}/subjects -> ExamController@updateSubjects [role:admin]",
+    "GET /results -> ResultController@index [role:admin,teacher]",
+    "GET /exams/{id}/subjects/{subjectId}/entry -> ResultController@entrySheet [role:admin,teacher]",
+    "POST /results/bulk -> ResultController@bulkStore [role:admin,teacher]",
+    "PUT /results/{id} -> ResultController@update [role:admin,teacher]",
+    "GET /results/marksheet/{studentId} -> ResultController@marksheet [role:admin,teacher,parent]",
+    "GET /parent/children/{id}/results -> ResultController@forParent [role:parent]"
+   ],
+   "routes_excluded": [
+    "POST /exams/{id}/seat-plan/generate -> ExamController@generateSeatPlan  (seat plan and merit list are R1.1+)",
+    "GET /exams/{id}/seat-plan -> ExamController@seatPlan  (seat plan and merit list are R1.1+)",
+    "PUT /exams/{id}/seat-plan/{studentId} -> ExamController@adjustSeat  (seat plan and merit list are R1.1+)",
+    "GET /exams/{id}/seat-plan/print -> ExamController@printSeatPlan  (seat plan and merit list are R1.1+)",
+    "GET /exams/{id}/merit-list -> ExamController@meritList  (seat plan and merit list are R1.1+)",
+    "GET /student/results -> ResultController@forStudent  (student login is R1.1)"
+   ],
+   "tests": [
+    "ResultScoringTest",
+    "ExamSubjectsTest",
+    "ParentResultAccessTest",
+    "MarksheetAccessTest"
+   ],
+   "done_when": "school-এ নম্বর-এন্ট্রি (শিক্ষক শুধু নিজের বিষয়ে); GPA marksheet PDF (শতকরা + component-ভিত্তিক পাস নিয়ম অনুযায়ী, বাংলা যুক্তাক্ষর ঠিক) `GET /results/marksheet/{studentId}`: admin/শিক্ষক যেকোনো ছাত্রের, অভিভাবক শুধু নিজের সন্তানের, শুধু প্রকাশিত পরীক্ষার (অপ্রকাশিতে 403); ফল প্রকাশ → অভিভাবক-পোর্টালে দৃশ্যমান; একই (exam, student, subject) দুবার নয়।",
+   "scope_note": "Exams, marks entry, grading, marksheet PDF. NOT: admit card, merit list, weighted result sheets, due-blocking. Parents read results via /parent/children/{id}/results and the marksheet via /results/marksheet/{studentId} (admin, teacher, parent of the child, student) - published exams only.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=ResultScoringTest|ExamSubjectsTest|ParentResultAccessTest|MarksheetAccessTest",
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "4.6",
+   "title": "Notifications & SMS",
+   "depends_on": "4.5",
+   "spec_refs": [
+    "docs/modules/notifications.md",
+    "docs/templates/laravel-core-files.md",
+    "docs/modules/coaching-private-batch.md"
+   ],
+   "tables": [
+    "sms_logs",
+    "sms_credit_transactions"
+   ],
+   "routes": [
+    "GET /sms-logs -> SmsLogController@index [role:admin,accountant]"
+   ],
+   "routes_excluded": [],
+   "tests": [
+    "SmsCreditTest",
+    "SmsSenderResolutionTest",
+    "SmsLogTest",
+    "SmsCreditBalanceTest"
+   ],
+   "done_when": "sandbox/log driver-এ SMS queue হয়ে `sms_logs`-এ যায়; quota ও credit কাটে (বাংলা বার্তার অংশ-গণনা সঠিক, `sms_logs.segments`); platform default sender + প্রতিষ্ঠানের নামের suffix যুক্ত হয়; gateway ব্যর্থ হলে retry ও `fallback_used`; admin `GET /sms-logs` (cursor-pagination) ও `GET /subscription/sms-credits` (ব্যালেন্স + লেনদেন) দেখে।",
+   "scope_note": "SMS (absence alert after attendance is saved, receipt SMS after a payment), credits, SMS log + balance view (GET /sms-logs, GET /subscription/sms-credits), platform sender with institution suffix. NOT: notices, bulk fee-due reminders (R1.1), templates/campaigns/emergency (R2), the institution's own sender-ID approval flow (R2).",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=SmsCreditTest|SmsSenderResolutionTest|SmsLogTest|SmsCreditBalanceTest",
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "4.7",
+   "title": "Dashboards & Role Panels",
+   "depends_on": "4.6",
+   "spec_refs": [
+    "docs/modules/panels-and-features.md",
+    "docs/design/user-journeys.md",
+    "docs/templates/react-page-examples.md",
+    "docs/modules/coaching-private-batch.md"
+   ],
+   "tables": [],
+   "routes": [
+    "GET /super/dashboard -> DashboardController@superAdmin [role:super_admin]",
+    "GET /admin/dashboard -> DashboardController@admin [role:admin]",
+    "GET /accountant/dashboard -> DashboardController@accountant [role:accountant]",
+    "GET /teacher/dashboard -> DashboardController@teacher [role:teacher]",
+    "GET /parent/children -> DashboardController@parentChildren [role:parent]",
+    "GET /parent/dashboard -> DashboardController@parent [role:parent]"
+   ],
+   "routes_excluded": [
+    "GET /student/dashboard -> DashboardController@student  (student login is R1.1)"
+   ],
+   "tests": [],
+   "done_when": "প্রতিটি role দিয়ে login করে প্রতিটি menu item খোলে (কোনো 404 নয়); tutor demo-তে ৫-tab bottom bar।",
+   "scope_note": "Admin, teacher, accountant, PARENT panels. NOT: student login.",
+   "blocked": null,
+   "verify": [
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "4.8",
+   "title": "Core PDF & Reports",
+   "depends_on": "4.7",
+   "spec_refs": [
+    "docs/modules/pdf-reports.md",
+    "docs/modules/extended-features.md"
+   ],
+   "tables": [],
+   "routes": [
+    "GET /admin/reports/{type} -> ReportController@generate [role:admin]",
+    "GET /accountant/reports/{type} -> ReportController@financial [role:accountant]"
+   ],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "প্রতিটি PDF endpoint আসল PDF দেয়; label terminology অনুযায়ী।",
+   "scope_note": "Receipt, marksheet, due list, attendance report, class list. NOT: ID cards, certificates.",
+   "blocked": null,
+   "verify": [
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "5.1",
+   "title": "Signup & Onboarding",
+   "depends_on": "4.8",
+   "spec_refs": [
+    "docs/modules/onboarding.md",
+    "docs/modules/subscription.md",
+    "docs/architecture/system-design-patterns.md"
+   ],
+   "tables": [],
+   "routes": [
+    "POST /public/signup -> SignupController@store",
+    "GET /public/slug-check -> SignupController@slugCheck",
+    "GET /public/plans -> SignupController@plans"
+   ],
+   "routes_excluded": [],
+   "tests": [
+    "SignupModeTest"
+   ],
+   "done_when": "চার type-এর প্রতিটিতে signup → নিজ subdomain-এ login → wizard → dashboard; default Program/Batch ও preset type অনুযায়ী।",
+   "scope_note": "Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.",
+   "blocked": "**D47:** সাইন-আপে plan বাছাই ও plan-ভিত্তিক ট্রায়াল বাতিল হচ্ছে; মডিউল-ভিত্তিক সাবস্ক্রিপশনের স্পেক (`docs/PRICING-MODEL.md` PM-1) লেখা ও মালিক-অনুমোদিত না হওয়া পর্যন্ত **বানানো নিষিদ্ধ**।",
+   "verify": [
+    "php artisan test --filter=SignupModeTest",
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "5.2",
+   "title": "Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম)",
+   "depends_on": "5.1",
+   "spec_refs": [
+    "docs/modules/payment-gateways.md",
+    "docs/modules/subscription.md"
+   ],
+   "tables": [
+    "subscription_plans",
+    "payments",
+    "subscription_invoices"
+   ],
+   "routes": [
+    "POST /billing/ssl/success -> SslCommerzController@success",
+    "POST /billing/ssl/fail -> SslCommerzController@fail",
+    "POST /billing/ssl/cancel -> SslCommerzController@cancel",
+    "POST /billing/ssl/ipn -> SslCommerzController@ipn",
+    "POST /super/institutions/{id}/sms-credits -> SmsCreditController@adjust [role:super_admin]",
+    "GET /subscription -> SubscriptionController@show [role:admin]",
+    "POST /subscription/checkout -> SubscriptionController@checkout [role:admin]",
+    "POST /subscription/sms-credits -> SmsCreditController@purchase [role:admin]",
+    "GET /subscription/sms-credits -> SmsCreditController@balance [role:admin]"
+   ],
+   "routes_excluded": [],
+   "tests": [
+    "SubscriptionLimitTest"
+   ],
+   "done_when": "sandbox-এ subscription payment → মেয়াদ বাড়ে + invoice + status `active`; মেয়াদ শেষ → grace → suspended, কিন্তু suspended admin তখনও login ও পেমেন্ট করে আবার চালু করতে পারে; callback central domain-এ ফিরে tenant-এর primary URL-এ redirect।",
+   "scope_note": "Plans, trial, grace, suspend, invoices, SSLCommerz subscription payment, SMS-credit purchase. Tax/VAT parameter fixed at 0 until OD-4.",
+   "blocked": "**D47:** plan-ভিত্তিক সাবস্ক্রিপশন ও বিলিং (`subscription_plans`, `max_*`, plan-গেট) বাতিল; মডিউল-ভিত্তিক সাবস্ক্রিপশন-স্পেক (PM-1) লেখার আগে **বানানো নিষিদ্ধ**।",
+   "verify": [
+    "php artisan test --filter=SubscriptionLimitTest",
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "5.3",
+   "title": "Super Admin Panel",
+   "depends_on": "5.2",
+   "spec_refs": [
+    "docs/modules/panels-and-features.md",
+    "docs/business/saas-metrics.md"
+   ],
+   "tables": [],
+   "routes": [
+    "GET /super/institutions -> InstitutionController@index [role:super_admin]",
+    "POST /super/institutions -> InstitutionController@store [role:super_admin]",
+    "GET /super/institutions/{id} -> InstitutionController@show [role:super_admin]",
+    "PUT /super/institutions/{id} -> InstitutionController@update [role:super_admin]",
+    "DELETE /super/institutions/{id} -> InstitutionController@destroy [role:super_admin]",
+    "PATCH /super/institutions/{id}/toggle -> InstitutionController@toggleStatus [role:super_admin]",
+    "GET /super/plans -> PlanController@index [role:super_admin]",
+    "POST /super/plans -> PlanController@store [role:super_admin]",
+    "GET /super/plans/{id} -> PlanController@show [role:super_admin]",
+    "PUT /super/plans/{id} -> PlanController@update [role:super_admin]",
+    "DELETE /super/plans/{id} -> PlanController@destroy [role:super_admin]",
+    "GET /super/payments -> PaymentController@index [role:super_admin]"
+   ],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "`admin.lvh.me`-এ শুধু super_admin login করতে পারে; module override দিলে সেই tenant-এর menu সঙ্গে সঙ্গে (cache invalidation) বদলায়।",
+   "scope_note": "Super Admin: institutions, plans, payments, SMS credits and sender status. NOT: support tickets, coupons, impersonation.",
+   "blocked": null,
+   "verify": [
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "8.1",
+   "title": "Privacy and children's data (D27)",
+   "depends_on": "5.3",
+   "spec_refs": [
+    "docs/legal/privacy-and-consent.md",
+    "docs/architecture/file-storage.md",
+    "docs/SECURITY.md"
+   ],
+   "tables": [],
+   "routes": [
+    "GET /super/tenant-purge/candidates -> TenantPurgeController@candidates [role:super_admin]",
+    "POST /super/tenant-purge/{institutionId}/dry-run -> TenantPurgeController@dryRun [role:super_admin]",
+    "POST /super/tenant-purge/{institutionId}/execute -> TenantPurgeController@execute [role:super_admin]",
+    "POST /students/{id}/anonymize -> StudentPrivacyController@anonymize [role:admin]",
+    "GET /parent/children/{id}/export -> StudentPrivacyController@export [role:parent]"
+   ],
+   "routes_excluded": [],
+   "tests": [
+    "ErasureRemovesAllStudentFilesTest",
+    "TenantPurgeFilesTest",
+    "RetentionPurgeTest"
+   ],
+   "done_when": "ErasureRemovesAllStudentFilesTest, TenantPurgeFilesTest, RetentionPurgeTest green; privacy/terms pages render from the owner-supplied text.",
+   "scope_note": "StudentErasureService (one deleteDirectory under institutions/{id}/students/{sid}/ + rows); tenant:purge; sms:trim and audit:trim retention (NOT leads:purge, tenants:purge-due, devices:prune, risk:prune - those modules are later); /privacy and /terms pages (text supplied by the owner's lawyer); INCIDENT-RUNBOOK.md; the restore drill.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=Erasure",
+    "php artisan test --filter=Retention"
+   ]
+  },
+  {
+   "id": "8.2",
+   "title": "Security hardening",
+   "depends_on": "8.1",
+   "spec_refs": [
+    "docs/SECURITY.md",
+    "docs/ops/security-checklist.md",
+    "docs/AUTHORIZATION.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "Checklist ticked with evidence in docs/PROGRESS.md; RouteMiddlewareContractTest, CrossTenantRouteTest, RoleMatrixContractTest green.",
+   "scope_note": "Every item of the checklist; permission matrix (SECURITY.md) vs RoleMatrixContractTest; token lifetimes per role (D26); rate limits; cross-tenant tests for EVERY R1 route (CrossTenantRouteTest).",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=Contract",
+    "php artisan test --filter=CrossTenant"
+   ]
+  },
+  {
+   "id": "8.5",
+   "title": "Load and scale test (before SIGNUP_MODE=open)",
+   "depends_on": "8.2",
+   "spec_refs": [
+    "docs/ops/performance-benchmarks.md",
+    "infra/loadtest/peak-hour.k6.mjs"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "No FULLSCAN/SORT/SLOW; p95 within the owner's limit at the measured peak; scaling triggers in performance-benchmarks.md replaced by measured numbers.",
+   "scope_note": "perf-check.py at SCALE=1 on target-like hardware; then the k6 peak-hour profile against a disposable database.",
+   "blocked": null,
+   "verify": [
+    "python3 infra/scripts/perf-check.py",
+    "k6 run -e INPUT=infra/loadtest/inputs.json infra/loadtest/peak-hour.k6.mjs"
+   ]
+  },
+  {
+   "id": "9.1",
+   "title": "Deployment, backup, monitoring",
+   "depends_on": "8.5",
+   "spec_refs": [
+    "docs/ops/deployment-plan.md",
+    "docs/ops/docker-setup.md",
+    "infra/nginx.conf",
+    "infra/Caddyfile",
+    "infra/github-actions-cicd.yml",
+    "docs/ops/performance-benchmarks.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "push to main runs tests, builds and deploys; a backup is restored on a clean machine and mysql-smoke.sh passes against it; alerts fire on a forced error.",
+   "scope_note": "Docker (staging), Nginx internal + Caddy edge, WILDCARD subdomain only (custom domain is R2: skip custom-domain.md Part C), CI/CD, MySQL backup + a rehearsed restore, slow-query log (long_query_time 0.5), queue-depth and error monitoring, FILES_DRIVER=s3 if more than one server.",
+   "blocked": null,
+   "verify": [
+    "bash infra/scripts/mysql-smoke.sh"
+   ]
+  },
+  {
+   "id": "A",
+   "title": "Release 1 acceptance, then open signup",
+   "depends_on": "9.1",
+   "spec_refs": [
+    "docs/RELEASE-1.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "All boxes ticked; the owner flips SIGNUP_MODE=open (an owner decision, never the agent's).",
+   "scope_note": "Tick every box in RELEASE-1.md section 7 with evidence; the non-code launch checklist (section 5); closed beta first: SIGNUP_MODE=invite.",
+   "blocked": null,
+   "verify": [
+    "python3 infra/spec-verify/verify.py . --deep"
+   ]
+  }
+ ]
+}

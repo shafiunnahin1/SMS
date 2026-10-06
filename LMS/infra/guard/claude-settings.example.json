@@ -1,0 +1,35 @@
+{
+  "_comment": "EXAMPLE for the coding agent's tool permissions (guardrail G13). The syntax below is the author's understanding of Claude Code's .claude/settings.json and is NOT verified against your tool version - check your tool's documentation. Other tools: set the equivalent allow/ask/deny lists.",
+  "permissions": {
+    "allow": [
+      "Bash(php artisan test:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(python3 infra/spec-verify/verify.py:*)",
+      "Bash(python3 infra/guard/agent_guard.py:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git log:*)"
+    ],
+    "ask": [
+      "Bash(composer require:*)",
+      "Bash(composer update:*)",
+      "Bash(npm install:*)",
+      "Bash(php artisan migrate:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(rm -rf:*)",
+      "Bash(php artisan migrate\\:fresh:*)",
+      "Bash(php artisan db\\:wipe:*)",
+      "Bash(curl:*)",
+      "Read(./.env)",
+      "Read(./api/.env)"
+    ]
+  }
+}

@@ -1,0 +1,150 @@
+# .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: edu_saas_test
+        ports: ['3306:3306']
+        options: --health-cmd="mysqladmin ping" --health-interval=10s
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, mysql, redis, gd, zip
+          coverage: none
+
+      - name: Install Laravel Dependencies
+        run: |
+          cd api
+          composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Laravel Test Setup
+        run: |
+          cd api
+          cp .env.testing .env
+          php artisan key:generate
+          php artisan migrate:fresh --seed --env=testing
+
+      - name: Run PHPUnit Tests
+        run: cd api && php artisan test --parallel
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies & Test
+        run: |
+          cd frontend
+          npm ci
+          npm run test -- --run
+          npm run build
+
+  deploy:
+    name: Deploy to Server
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build React Frontend
+        run: |
+          cd frontend
+          npm ci
+          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" > .env
+          npm run build
+
+      - name: Upload Build to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "frontend/dist/*"
+          target: "/tmp/frontend-build/"
+          strip_components: 2
+
+      - name: Deploy Laravel API + Restart Services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            echo "=== Pulling Latest Code ==="
+            cd /var/www/api
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "=== Installing Dependencies ==="
+            composer install --no-dev --optimize-autoloader --no-interaction
+
+            echo "=== Running Migrations ==="
+            php artisan migrate --force
+
+            echo "=== Caching Config & Routes ==="
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache
+
+            echo "=== Copying Frontend Build ==="
+            rsync -av --delete /tmp/frontend-build/ /var/www/frontend/dist/
+            rm -rf /tmp/frontend-build
+
+            echo "=== Restarting Queue Workers ==="
+            supervisorctl restart laravel-worker:*
+            supervisorctl restart laravel-scheduler
+
+            echo "=== Health Check ==="
+            sleep 3
+            curl -f https://schoolapp.com/api/v1/health || exit 1
+
+            echo "=== Deploy Complete ==="
+
+  notify:
+    name: Notify Deployment
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Send Slack/Email notification
+        run: |
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "Deploy successful!"
+            # curl -X POST ${{ secrets.SLACK_WEBHOOK }} -d '{"text":"✅ Deploy successful!"}'
+          else
+            echo "Deploy failed!"
+            # curl -X POST ${{ secrets.SLACK_WEBHOOK }} -d '{"text":"❌ Deploy FAILED!"}'
+          fi

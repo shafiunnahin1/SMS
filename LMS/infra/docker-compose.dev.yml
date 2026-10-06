@@ -1,0 +1,35 @@
+# infra/docker-compose.dev.yml - local MySQL 8 / Redis / mail catcher for the Spike (docs/spike/SPIKE-READY.md, SPIKE-RUNBOOK.md).
+# NOT executed in the specification environment (no Docker there); parsed for structure only. Image tags are the usual public ones - confirm they still exist.
+# The server flags reproduce what Laravel's `strict => true` MySQL connection sets, plus utf8mb4_unicode_ci (the Laravel default), so schema problems show up HERE, not in production.
+name: lms-dev
+services:
+  mysql:
+    image: mysql:8.0                      # MySQL, NOT MariaDB: JSON, ENUM, index and window-function behaviour differ
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --sql-mode=ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+      - --default-time-zone=+00:00        # the app stores UTC (backend.mdc); Dhaka time is a display concern
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: lms
+    ports: ["3307:3306"]                  # 3307 so a local MySQL on 3306 does not clash
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes: ["lms-mysql:/var/lib/mysql"]
+  redis:
+    image: redis:7-alpine
+    ports: ["6380:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  mailpit:                                # catches outgoing mail in development
+    image: axllent/mailpit
+    ports: ["8025:8025", "1025:1025"]
+volumes:
+  lms-mysql: {}

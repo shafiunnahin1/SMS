@@ -1,0 +1,23 @@
+---
+description: Schema, migrations, indexes and seeders - schema.sql is the single source of truth
+globs: api/database/**/*.php,docs/database/**,**/*.sql
+alwaysApply: false
+---
+
+# Database rules (see docs/DATABASE.md; truth = docs/database/schema.sql)
+
+- `docs/database/schema.sql` is the only schema truth. A column mentioned only in a module doc does not exist. To add a table/column: edit `schema.sql` FIRST, then the migration, then the module doc.
+- Performance (R14): every list/report screen's main query belongs in `infra/scripts/hot-queries.tsv`; `python3 infra/spec-verify/plan_check.py .` must stay green (no full scan; leading filter + date range inside the index; ordered lists need no sort). Add an index only for a catalogued query - indexes slow writes. No tenant table may have zero indexes (InnoDB indexes FK columns itself; tables without FKs need their own). Partitioned MySQL tables cannot have foreign keys.
+- Every tenant table: `institution_id BIGINT UNSIGNED NOT NULL` + FK to `institutions`. Only `subscription_plans`, `institutions`, `otp_tokens`, `theme_presets`, `coupons`, `platform_settings` have none (`users`, `audit_logs` allow NULL).
+- Business codes are unique PER INSTITUTION: `UNIQUE (institution_id, student_id)`, `(institution_id, receipt_no, line_no)`, etc. Never a global unique on a business code.
+- MySQL treats NULLs as distinct inside UNIQUE. Optional columns in a unique key are `NOT NULL DEFAULT 0` (see `fee_structures`, `batch_teachers`, `teacher_payouts`).
+- Extensible values are `VARCHAR`, not `ENUM` (`gateway`, `payment_method`, consent `type`, `flow`, `ui_pack`, `users.locale`, `sms_logs.encoding`). A new language or pack must never need a migration. ENUM only for closed sets (status, role).
+- Money `DECIMAL(10,2)` (`(12,2)` for aggregates). JSON columns: `array` cast; filter on real columns, not inside JSON.
+- Soft deletes only on `students, teachers, staff_members, users, notices, homeworks, class_materials`.
+- Polymorphic payee: `payee_type` ('teacher'|'staff') + `payee_id` with no FK is allowed ONLY for the salary/payroll/PF tables; the service validates the pair and the tenant scope applies. Never invent other polymorphic keys.
+- Index with `institution_id` first. Add the index when you add the filter that needs it.
+- One table = one `create_*` migration; `ALTER`s listed in `schema.sql` are folded into the create migration (exceptions are named in `docs/database/migrations.md`). Framework tables (`personal_access_tokens`, `notifications`, `jobs`, `failed_jobs`) come from artisan.
+- Never `migrate:fresh` against anything but local/CI. Destructive migrations need a down() and a note in `docs/DECISIONS.md`.
+- Seeders bind their own tenant and release it at the end. Demo tenants: school, coaching, private_batch (`docs/database/seeders.md`).
+- A new table also goes into: the purge order test (`TenantPurgeTest`), `docs/DATABASE.md` groups, and `docs/database/migrations.md`.
+- Sensitive columns (`credentials`, `account_number`) use the `encrypted` cast. Never rotate `APP_KEY` without `payments:reencrypt`.

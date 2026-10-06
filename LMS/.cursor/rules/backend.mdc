@@ -1,0 +1,32 @@
+---
+description: Laravel backend conventions - controllers, requests, services, errors, jobs, tests, logging
+globs: api/**/*.php
+alwaysApply: false
+---
+
+# Backend rules (see docs/architecture/backend-pattern.md, docs/API.md, docs/API-ERRORS.md)
+
+- Pattern: `Controller -> FormRequest -> Service -> Resource`. Controllers stay thin: no business logic, no query building beyond loading the model.
+- Every endpoint: auth, role (`RoleMiddleware`), `module:`/`feature:` where applicable, FormRequest validation, tenant scope, API Resource. Policies for per-record access (a teacher sees only own batches; a parent only own children).
+- Never accept `institution_id`, `role`, an amount, a fee, a discount or a grade from the client. Compute on the server.
+- Errors use the contract in `docs/API-ERRORS.md` (`success=false`, stable `error` code, Bengali `message`). Throw `BusinessException` with a code, not bare strings.
+- Money: `DECIMAL(10,2)` columns; round to 2 decimals and compare with a tolerance (never `==` on floats). Multi-row writes in `DB::transaction()`. Payments: idempotent, row-locked (`lockForUpdate`), unique references.
+- Authorization is `users.role` + `RoleMiddleware` + policies (D17). No permission packages.
+- Queues: jobs carry ids not models; implement `TenantAwareJob`; `tries`/`backoff` set; `failed()` logs masked data only.
+- Logging/Sentry: never phone numbers, names, health/behaviour text, message bodies, credentials. Mask (`01711*****`).
+- Bulk writes (R15, D40-D42): never call `Model::insert()/upsert()` on a tenant model directly (events are skipped, so the cross-tenant guard is too) - use `TenantBulk::insert/upsert`. Never `where('<date col>', 'like', ...)` (use `whereBetween`). Code names only the disks `private` and `public`; every file path is `institutions/{id}/...` and anything tied to a student lives under `students/{sid}/` (erasure). No per-tenant databases, no table partitioning without a measured need (D41, D42).
+- Files: students' photos and documents go to the private disk and are served by `temporaryUrl()` (5-10 min). `Storage::url()` only for logos / hero images.
+- Credentials and account numbers: `encrypted` cast, `$hidden`, never returned by any API (return a `credentials_hint`).
+- Language (D30, docs/I18N.md): the locale comes from `SetLocale` (user, then Accept-Language, then institution default, limited to the institution's ENABLED languages). API `message`/`errors` are translated via `lang/{bn,en,ar}`; the `error` code is stable and language-neutral. New code uses translation keys, never a Bengali literal in a message. `BusinessException` takes a key.
+- SMS: compose in the RECIPIENT's language, then count with `SmsSegments::count()` and charge/log by SEGMENTS (Unicode = 70 / 67 per part, GSM-7 = 160 / 153). Never charge "1 per SMS". Do not mix scripts in one template. The gateway's unicode flag is unverified (`TODO(OD-sms-unicode)`) - do not guess it.
+- PDF/Excel: the engine must shape Bengali conjuncts and Arabic (shaping + RTL + bidi); embed the fonts; set `<html lang dir>` per document. Do not finalise a PDF layout before the engine choice (spike S5c). Arabic Excel sheets are RTL.
+- Payroll (D32/D33, docs/modules/staff-payroll.md): money in `DECIMAL` and PHP `bcmath`/Decimal-style rounding half-up to 2 places, never floats. A salary structure is effective-dated and never edited (close the old row, insert a new one). An approved payroll run/item is frozen; fix mistakes with new adjustment/supplementary lines. The preparer cannot approve their own run, revision or adjustment (maker-checker; the sole-admin exception is audited). Salary figures, pay accounts and PF appear only through `SalaryPolicy` (Teacher: own only; Student/Parent/Super Admin/impersonation: 403) and never in logs, Sentry or `audit_logs` values. Attendance for pay is looked up by payee id (`teacher_id`/`staff_id`), never `user_id`. Payroll jobs are `TenantAwareJob`s.
+- Corrections are append-only: receipts, results and payroll are fixed by reversing/new-version lines, not by editing history.
+- Append-only money (D32, D36, D39): posted vouchers, donation receipts, refunds, payroll and results are never edited - fix with a reversing / new-version row. Automatic vouchers are idempotent per source record. Restricted donation funds cannot be overdrawn; spend only via `expenses.fund_id`. Do not post to accounting before `settings.accounting.start_date`.
+- Public and device endpoints (D35, D37): device punches are HMAC-signed, idempotent and never auto-matched when the credential is unknown; never store a biometric template. Lotteries use the committed seed and HMAC over the random `application_no` (never the sequential id); the seed is never stored server-side before the draw. Verification pages return minimal, masked data and are throttled.
+- Impersonation (D34): requires an open support ticket grant, read-only by default, one-time code exchange, and always 403 `sensitive_scope` for payroll, pay accounts, PF, student documents/health/behaviour/consents, messages, credentials. Export/import (D38): encrypted with the requester's passphrase (never stored), import only into a NEW institution, Super-Admin `backup` excludes the payroll group.
+- Opt-in modules (`hifz`, `donations`) need `settings.opt_in_modules`; never enable them by writing `enabled_modules` (that is the Super Admin override).
+- Performance (R14): `Model::preventLazyLoading(! app()->isProduction())`; every list paginated (`per_page` <= 100), big logs `cursorPaginate()`; bulk work in `chunkById` jobs (`TenantAwareJob`); heavy reports on the `reports` queue; dashboard counts cached per institution (60s).
+- Time zone `Asia/Dhaka`; store UTC timestamps; dates as `Y-m-d`.
+- Tests: PHPUnit under `tests/Feature/<Area>/`; use the `bindTenant()` helper; every new service gets a unit test, every endpoint a feature test incl. one cross-tenant 403/404 test. Factories enroll students via `EnrollmentService`.
+- Unfinished / unknown third-party API detail: leave a clearly marked `TODO(<question id>)` and a failing-fast guard; do not invent values.
