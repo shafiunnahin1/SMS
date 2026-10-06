@@ -19,7 +19,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 
 ## Release R1  (`docs/AGENT-PLAN-R1.md`)
 
-- [ ] 0.1 — Laravel
+- [x] 0.1 — this commit — tests: Laravel default ExampleTests (2) — `php artisan test` 2 passed; `php artisan serve` → GET / 200, GET /up 200; tinker: `config('tenancy.base_domain')` = schoolapp.com, `config('institution_types.coaching.terms.batch.bn')` = ব্যাচ
 - [ ] 0.2 — React
 - [ ] 0.3 — .env, Folders, CI Skeleton
 - [ ] 1.1 — Migrations
