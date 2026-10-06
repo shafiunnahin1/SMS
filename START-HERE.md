@@ -46,8 +46,8 @@
 ```bash
 cd /home/user/SMS
 mkdir -p .github/workflows
-cp LMS/infra/github-actions-guard.yml .github/workflows/guard.yml
-cp LMS/infra/github-actions-cicd.yml .github/workflows/ci.yml
+cp infra/github-actions-guard.yml .github/workflows/guard.yml
+cp infra/github-actions-cicd.yml .github/workflows/ci.yml
 ```
 
 ### **Step 2: Branch Protection Rules Setup**
@@ -67,7 +67,7 @@ cp LMS/infra/github-actions-cicd.yml .github/workflows/ci.yml
 ### **Step 3: CODEOWNERS Setup**
 
 ```bash
-cp LMS/infra/CODEOWNERS.template .github/CODEOWNERS
+cp infra/CODEOWNERS.template .github/CODEOWNERS
 ```
 
 `.github/CODEOWNERS` এ এডিট করুন:
@@ -75,7 +75,7 @@ cp LMS/infra/CODEOWNERS.template .github/CODEOWNERS
 # Protected specs and rules
 docs/** @shafiunnahin1
 AGENTS.md @shafiunnahin1
-LMS/.cursor/** @shafiunnahin1
+.cursor/** @shafiunnahin1
 infra/** @shafiunnahin1
 .github/** @shafiunnahin1
 
@@ -86,7 +86,7 @@ infra/** @shafiunnahin1
 ### **Step 4: Local Pre-commit Hook**
 
 ```bash
-bash LMS/infra/guard/install-hooks.sh
+bash infra/guard/install-hooks.sh
 ```
 
 এটি প্রতিটি commit-এর আগে স্বয়ংক্রিয়ভাবে guard চালায়।
@@ -464,10 +464,10 @@ python3 infra/guard/agent_guard.py --staged
 git commit -m "..." && git push origin r1/task-name
 
 # 🔍 Spec Verification
-python3 LMS/infra/spec-verify/verify.py LMS --deep
+python3 infra/spec-verify/verify.py . --deep
 
 # 📊 Progress দেখুন
-cat LMS/docs/PROGRESS.md
+cat docs/PROGRESS.md
 
 # 🧪 সবকিছু Test করুন
 cd api && php artisan test
@@ -480,10 +480,10 @@ cd ../frontend && npm run dev
 # http://demo.lvh.me:5173
 
 # 📝 নতুন Decision যোগ করুন
-echo "D48 - পরিকল্পনা..." >> LMS/docs/DECISIONS.md
+echo "D48 - পরিকল্পনা..." >> docs/DECISIONS.md
 
 # ⚠️ কোথায় আটকেছি
-cat LMS/docs/BLOCKED.md
+cat docs/BLOCKED.md
 ```
 
 ---
@@ -549,10 +549,10 @@ Discussions ব্যবহার:
 # 1. GitHub Setup করুন (উপরের Part 2️⃣)
 cd /home/user/SMS
 mkdir -p .github/workflows
-cp LMS/infra/github-actions-*.yml .github/workflows/
+cp infra/github-actions-*.yml .github/workflows/
 
 # 2. CODEOWNERS সেটআপ
-cp LMS/infra/CODEOWNERS.template .github/CODEOWNERS
+cp infra/CODEOWNERS.template .github/CODEOWNERS
 
 # 3. Local প্রস্তুত করুন
 cd api
@@ -561,7 +561,7 @@ php artisan migrate:fresh --seed
 
 # 4. Git setup
 cd ..
-bash LMS/infra/guard/install-hooks.sh
+bash infra/guard/install-hooks.sh
 
 # 5. প্রথম commit
 git add .github/
@@ -591,7 +591,7 @@ gh pr create --base develop --title "Setup: CI/CD Pipeline" \
   → php artisan migrate:fresh --seed
 
 ❓ নতুন decision দরকার
-  → LMS/docs/DECISIONS.md এ add করুন
+  → docs/DECISIONS.md এ add করুন
 ```
 
 ---
