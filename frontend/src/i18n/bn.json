@@ -92,6 +92,20 @@
   "status": {
    "paid": "পরিশোধিত",
    "partial": "আংশিক"
+  },
+  "attendance": {
+   "title": "উপস্থিতি নেওয়া",
+   "date": "তারিখ",
+   "all_present": "সবাই উপস্থিত",
+   "reset": "আগের মতো",
+   "saved": "{{count}} জনের উপস্থিতি সংরক্ষিত",
+   "holiday": "ছুটি: {{title}}",
+   "status": {
+    "present": "উপস্থিত",
+    "absent": "অনুপস্থিত",
+    "late": "দেরি",
+    "leave": "ছুটি"
+   }
   }
  },
  "nav": {}

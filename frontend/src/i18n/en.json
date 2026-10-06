@@ -92,6 +92,20 @@
   "status": {
    "paid": "Paid",
    "partial": "Partial"
+  },
+  "attendance": {
+   "title": "Take attendance",
+   "date": "Date",
+   "all_present": "All present",
+   "reset": "Undo changes",
+   "saved": "Attendance saved for {{count}}",
+   "holiday": "Holiday: {{title}}",
+   "status": {
+    "present": "Present",
+    "absent": "Absent",
+    "late": "Late",
+    "leave": "Leave"
+   }
   }
  },
  "nav": {

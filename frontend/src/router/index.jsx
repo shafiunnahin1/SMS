@@ -13,6 +13,7 @@ const StudentList = lazy(() => import('../pages/admin/students/StudentList'))
 const StudentAdd  = lazy(() => import('../pages/admin/students/StudentAdd'))
 const FeeCollect  = lazy(() => import('../pages/admin/fees/FeeCollect'))
 const ParentFees  = lazy(() => import('../pages/parent/Fees'))
+const Attendance  = lazy(() => import('../pages/attendance/Take'))
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
 const area = (path, role, children) => ({
@@ -27,12 +28,13 @@ export const tenantRoutes = [
     { path: 'students', element: S(StudentList) },
     { path: 'students/add', element: S(StudentAdd) },
     { path: 'fees/collect', element: S(FeeCollect) },
+    { path: 'attendance', element: S(Attendance) },
   ]),
   area('/accountant', 'accountant', [
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'fees/collect', element: S(FeeCollect) },
   ]),
-  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }]),
+  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }]),
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'fees', element: S(ParentFees) },

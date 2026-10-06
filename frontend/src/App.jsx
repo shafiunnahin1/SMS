@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import ThemeProvider from './theme/ThemeProvider'
 import { I18nProvider } from './ui/I18nProvider'
+import { UIProvider } from './ui/UIProvider'
 import { useInstitutionStore } from './store/institutionStore'
 import { makeRouter } from './router'
 import Loader from './components/Loader'
@@ -27,8 +28,10 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <I18nProvider>
-          <Routes />
-          <Toaster />
+          <UIProvider>
+            <Routes />
+            <Toaster />
+          </UIProvider>
         </I18nProvider>
       </ThemeProvider>
     </QueryClientProvider>

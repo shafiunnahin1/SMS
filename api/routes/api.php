@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Academic\{BatchController, EnrollmentController, StudentController};
+use App\Http\Controllers\Academic\{AttendanceController, BatchController, EnrollmentController, StudentController};
 use App\Http\Controllers\Admin\{SettingController, TerminologyController, ThemeController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
@@ -65,6 +65,12 @@ Route::prefix('v1')->group(function () {
                 Route::get('/students/{id}',              [StudentController::class, 'show'])->whereNumber('id');
             });
             Route::post('/enrollments',                   [EnrollmentController::class, 'store'])->middleware('module:enrollments');
+        });
+
+        // ── Admin + Teacher: attendance (Step 4.3; Spike S5b) ──
+        Route::middleware(['role:admin,teacher', 'module:attendance'])->group(function () {
+            Route::get('/attendance',                     [AttendanceController::class, 'index']);    // ?batch_id=&date=
+            Route::post('/attendance',                    [AttendanceController::class, 'store']);    // { batch_id, date, records[] }
         });
 
         // ── Fees (Step 4.4; slice: dues -> collect -> receipt) ──

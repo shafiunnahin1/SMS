@@ -117,6 +117,27 @@ class WalkingSkeletonSliceTest extends TestCase
             ->assertJsonPath('data.0.name', 'A')->assertJsonPath('data.0.program.name', 'Class 9');
     }
 
+    public function test_the_attendance_sheet_lists_the_batch_and_saves_once_per_student_and_day(): void
+    {
+        [$inst, $admin, $a] = $this->tenant('alokito', 'coaching');
+        $host = $this->hostOf($inst);
+        $s1 = $this->admit($inst, $admin, $a, 'এক');
+        $s2 = $this->admit($inst, $admin, $a, 'দুই');
+        $teacher = $this->makeUser($inst, 'teacher');
+        $date = now()->toDateString();
+
+        $sheet = $this->api('GET', $host, "attendance?batch_id={$a->id}&date={$date}", $teacher)->assertOk()->json('data');
+        $this->assertSame([null, null], array_column($sheet['rows'], 'status'));
+        $this->api('POST', $host, 'attendance', $teacher, ['batch_id' => $a->id, 'date' => $date,
+            'records' => [['student_id' => $s1['id'], 'status' => 'present'], ['student_id' => $s2['id'], 'status' => 'absent']]])
+            ->assertCreated()->assertJsonPath('data.absent_count', 1);
+        $this->api('POST', $host, 'attendance', $teacher, ['batch_id' => $a->id, 'date' => $date, 'records' => [['student_id' => $s2['id'], 'status' => 'late']]])->assertCreated();
+        $this->assertSame(['present', 'late'], array_column($this->api('GET', $host, "attendance?batch_id={$a->id}&date={$date}", $admin)->json('data.rows'), 'status'));
+        $this->api('POST', $host, 'attendance', $teacher, ['batch_id' => $a->id, 'date' => now()->addDay()->toDateString(), 'records' => [['student_id' => $s1['id'], 'status' => 'present']]])
+            ->assertStatus(422);   // not in the future
+        $this->api('GET', $host, "attendance?batch_id={$a->id}&date={$date}", $this->makeUser($inst, 'accountant'))->assertForbidden();
+    }
+
     public function test_a_private_batch_without_the_portal_creates_no_parent_account(): void
     {
         [$inst, $admin, $a] = $this->tenant('tutor', 'private_batch');
