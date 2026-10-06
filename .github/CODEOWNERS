@@ -1,0 +1,24 @@
+# infra/CODEOWNERS.template - copy to .github/CODEOWNERS and replace @shafiunnahin1 with the human reviewer (or a team).
+# Together with branch protection ("require review from Code Owners") this is the HUMAN approval for the paths the agent may not change on its own (infra/guard/protected-paths.txt).
+/AGENTS.md                  @shafiunnahin1
+/CLAUDE.md                  @shafiunnahin1
+/.cursor/                   @shafiunnahin1
+/.claude/                   @shafiunnahin1
+/docs/                      @shafiunnahin1
+# the four agent-maintained logs need no owner (a later line overrides the earlier one):
+/docs/PROGRESS.md
+/docs/DECISIONS.md
+/docs/IDEAS.md
+/docs/BLOCKED.md
+/infra/                     @shafiunnahin1
+/.github/                   @shafiunnahin1
+/api/phpunit.xml            @shafiunnahin1
+/api/.env.example           @shafiunnahin1
+/api/tests/Fixtures/        @shafiunnahin1
+/frontend/scripts/          @shafiunnahin1
+/frontend/eslint.config.*   @shafiunnahin1
+/frontend/.eslintrc*        @shafiunnahin1
+**/Fixtures/                @shafiunnahin1
+**/fixtures/                @shafiunnahin1
+*golden*                    @shafiunnahin1
+*Golden*                    @shafiunnahin1
