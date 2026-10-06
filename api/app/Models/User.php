@@ -56,6 +56,19 @@ class User extends Authenticatable
 
     public function institution() { return $this->belongsTo(Institution::class); }
 
+    /** Bangladeshi mobile numbers are always stored as 01XXXXXXXXX (+880…/880…/01… all match the same user) */
+    protected function phone(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(set: fn (?string $v) => self::normalisePhone($v));
+    }
+
+    public static function normalisePhone(?string $v): ?string
+    {
+        if ($v === null || trim($v) === '') return null;
+        $digits = preg_replace('/\D/', '', $v);
+        return preg_match('/^(88)?01[3-9]\d{8}$/', $digits) ? substr($digits, -11) : trim($v);
+    }
+
     /** Staff/students/parents of the CURRENT institution */
     public function scopeInTenant(Builder $q): Builder
     {

@@ -1,15 +1,15 @@
 <?php
 
 use App\Exceptions\TenantNotBoundException;
-use App\Http\Middleware\{AcademicYearMiddleware, EnsureUserBelongsToTenant, FeatureMiddleware, ModuleMiddleware, PlatformScope,
+use App\Http\Middleware\{AcademicYearMiddleware, EnsureHostUser, EnsurePasswordChanged, EnsureUserBelongsToTenant, FeatureMiddleware, ModuleMiddleware, PlatformScope,
     RoleMiddleware, SubscriptionCheck, TenantMiddleware};
 use Illuminate\Auth\AuthenticationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Psr\Log\LogLevel;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -23,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant'         => TenantMiddleware::class,            // modes: tenant | tenant:optional | tenant:central
             'tenant.user'    => EnsureUserBelongsToTenant::class,
+            'host.user'      => EnsureHostUser::class,              // routes on both hosts (/auth/me, /auth/logout)
+            'password.fresh' => EnsurePasswordChanged::class,
             'tenancy.bypass' => PlatformScope::class,               // Super Admin /super/* only
             'module'         => ModuleMiddleware::class,
             'feature'        => FeatureMiddleware::class,
@@ -41,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ? response()->json(['success' => false, 'error' => 'unauthenticated', 'message' => 'লগিন করুন'], 401) : null);
         $exceptions->render(fn (ValidationException $e, Request $request) => $api($request)
             ? response()->json(['success' => false, 'error' => 'validation_failed', 'message' => 'ইনপুট যাচাইয়ে ত্রুটি', 'errors' => $e->errors()], 422) : null);
-        $exceptions->render(fn (ModelNotFoundException $e, Request $request) => $api($request)
+        // Laravel turns ModelNotFoundException into this before render callbacks run; also covers unknown API paths
+        $exceptions->render(fn (NotFoundHttpException $e, Request $request) => $api($request)
             ? response()->json(['success' => false, 'error' => 'not_found', 'message' => 'তথ্য পাওয়া যায়নি'], 404) : null);
     })->create();
