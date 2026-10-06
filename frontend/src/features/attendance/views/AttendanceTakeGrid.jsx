@@ -24,7 +24,7 @@ export default function AttendanceTakeGrid({ state, data, actions }) {
           <tbody>
             {data.rows.map(r => (
               <tr key={r.student_id} data-row={r.student_id} className="border-b h-row">
-                <td><Ltr>{r.roll_no}</Ltr></td><td dir="auto">{r.name}</td>
+                <td><Ltr>{r.roll_no}</Ltr></td><td><bdi>{r.name}</bdi></td>
                 {STATUSES.map(s => (
                   <td key={s} className="text-center">
                     <input type="radio" name={`st-${r.student_id}`} data-action={s === 'present' ? 'setStatus' : undefined}

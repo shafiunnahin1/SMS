@@ -32,3 +32,12 @@ describe('buildNav', () => {
     }
   })
 })
+
+it('a menu label without a translation falls back to the Bengali text itself, never to English (ar -> bn)', async () => {
+  const { default: i18n, navLabel } = await import('../i18n')
+  await i18n.changeLanguage('ar')
+  expect(navLabel('ড্যাশবোর্ড')).toBe('ড্যাশবোর্ড')
+  await i18n.changeLanguage('en')
+  expect(navLabel('ড্যাশবোর্ড')).toBe('Dashboard')
+  await i18n.changeLanguage('bn')
+})

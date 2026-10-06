@@ -85,7 +85,7 @@ export default function FeeCollect() {
                   {lines.map(l => (
                     <tr key={l.key} className="border-b h-row">
                       <td><input type="checkbox" aria-label={`${l.category} ${l.period}`} checked={Boolean(picked[l.key])} onChange={e => setPicked(p => ({ ...p, [l.key]: e.target.checked }))} className="h-4 w-4 accent-[var(--color-primary)]" /></td>
-                      <td dir="auto">{l.category}</td><td dir="auto">{dues.data.batches?.[l.batch_id] ?? ''}</td><td><Ltr>{l.period}</Ltr></td>
+                      <td><bdi>{l.category}</bdi></td><td><bdi>{dues.data.batches?.[l.batch_id] ?? ''}</bdi></td><td><Ltr>{l.period}</Ltr></td>
                       <td className="text-end"><Ltr>{fmtMoney(l.amount, locale)}</Ltr></td>
                     </tr>
                   ))}
