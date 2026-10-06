@@ -21,7 +21,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 
 - [x] 0.1 — this commit — tests: Laravel default ExampleTests (2) — `php artisan test` 2 passed; `php artisan serve` → GET / 200, GET /up 200; tinker: `config('tenancy.base_domain')` = schoolapp.com, `config('institution_types.coaching.terms.batch.bn')` = ব্যাচ
 - [x] 0.2 — this commit — no new tests (scaffold); `php artisan test` 2 passed — Laravel + `vite` running: `curl --resolve demo.lvh.me:5173:127.0.0.1 http://demo.lvh.me:5173/` → 200; `/api/v1/health` through the Vite proxy reached Laravel with Host `demo.lvh.me` (checked with a temporary, uncommitted echo route); a non-`.lvh.me` host → 403
-- [ ] 0.3 — .env, Folders, CI Skeleton
+- [ ] 0.3 — .env, Folders, CI Skeleton — local: `php artisan test` 2 passed (also with `.env.example` copied to `.env`), `npm test` exit 0 (no tests yet; a throw-away jsdom component test passed), `npm run lint:theme` 0 violations, `npm run build` ok, `node infra/check-schema-parity.mjs` 0 divergences — waiting for the first GitHub CI run before [x]
 - [ ] 1.1 — Migrations
 - [ ] 1.2 — Models
 - [ ] 1.3 — Seeders
