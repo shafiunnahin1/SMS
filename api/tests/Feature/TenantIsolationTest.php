@@ -2,7 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\{AuditLog, Institution, User};
+use App\Models\{AuditLog, Batch, FeeCategory, FeePayment, Institution, Program, Student, User};
+use App\Services\{FeeService, StudentService};
 use App\Notifications\GeneralNotification;
 use App\Support\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -37,6 +38,7 @@ class TenantIsolationTest extends TestCase
                 });
                 $admin->createToken("seed {$slug}");
                 $this->tenants[$slug] = ['institution' => $inst, 'admin' => $admin];
+                $this->seedReceipt($this->tenants[$slug]);
             }
         }
     }
@@ -50,7 +52,35 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/admin/users/{id}/force-logout'    => fn (array $other) => $other['admin']->id,
             'POST api/v1/admin/users/{id}/unlock'          => fn (array $other) => $other['admin']->id,
             'GET api/v1/audit-logs/{id}'                   => fn (array $other) => Tenancy::as($other['institution'], fn () => AuditLog::value('id')),
+            'GET api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/fees/payments/student/{id}'        => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/fees/receipt/{id}'                 => fn (array $other) => $this->seedReceipt($other),
         ];
+    }
+
+    /** A student (named after the tenant's marker) in a batch with a monthly fee - created once per tenant */
+    private function seedStudent(array $t): int
+    {
+        return Tenancy::as($t['institution'], function () use ($t) {
+            $slug = $t['institution']->slug;
+            if ($id = Student::where('student_id', 'like', 'ISO%')->value('id')) return $id;
+            \Illuminate\Support\Facades\Queue::fake();
+            FeeCategory::create(['name' => "fee {$slug}", 'amount' => 100, 'frequency' => 'monthly']);
+            $batch = Batch::create(['program_id' => Program::create(['name' => "program {$slug}"])->id, 'name' => "batch {$slug}"]);
+            return app(StudentService::class)->create(['name' => "student {$slug}", 'student_id' => 'ISO' . $t['institution']->id, 'guardian_phone' => '01711111111'], $batch)->id;
+        });
+    }
+
+    /** One receipt line of the tenant's student (collected once) */
+    private function seedReceipt(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], function () use ($student) {
+            if ($id = FeePayment::value('id')) return $id;
+            $fees = app(FeeService::class);
+            $s = Student::findOrFail($student);
+            return $fees->collect($s, [['key' => $fees->dueLines($s)->first()['key']]])->first()->id;
+        });
     }
 
     /** @return RouteDef[] the routes that only run on a tenant host */

@@ -31,7 +31,9 @@ class DemoTutorSeeder extends Seeder
             FeeCategory::create(['name' => 'মাসিক ফি', 'amount' => 800, 'frequency' => 'monthly']);
 
             for ($i = 1; $i <= 5; $i++) {
-                $st = Student::create(['student_id' => sprintf('RS-%04d', $i), 'guardian_phone' => sprintf('019200000%02d', $i),
+                $code = sprintf('RS-%04d', $i);   // Spike S4 finding: a student's name lives only on users (as the school seeder)
+                $u = User::create(['institution_id' => $inst->id, 'name' => "ছাত্র $i", 'username' => $code, 'password' => $code, 'role' => 'student', 'must_change_password' => true]);
+                $st = Student::create(['user_id' => $u->id, 'student_id' => $code, 'guardian_phone' => sprintf('019200000%02d', $i),
                     'admission_date' => now()->subMonth(), 'status' => 'active']);
                 app(EnrollmentService::class)->enroll($st, $batch);
             }

@@ -43,7 +43,10 @@ class DemoCoachingSeeder extends Seeder
 
             $svc = app(EnrollmentService::class);
             for ($i = 1; $i <= 8; $i++) {
-                $st = Student::create(['student_id' => sprintf('ALO-2026-%04d', $i), 'guardian_phone' => sprintf('018200000%02d', $i),
+                // Spike S4 finding: the spec seeds no student user, but a student's name lives only on users - same as the school seeder
+                $code = sprintf('ALO-2026-%04d', $i);
+                $u = User::create(['institution_id' => $inst->id, 'name' => "শিক্ষার্থী $i", 'username' => $code, 'password' => $code, 'role' => 'student', 'must_change_password' => true]);
+                $st = Student::create(['user_id' => $u->id, 'student_id' => $code, 'guardian_phone' => sprintf('018200000%02d', $i),
                     'studying_at' => 'কুমিল্লা ভিক্টোরিয়া সরকারি কলেজ', 'admission_date' => now()->subMonth(), 'status' => 'active']);
                 $svc->enroll($st, $b1, $i === 1 ? ['fee_override' => 800] : []);
                 if ($i <= 3) $svc->enroll($st, $b2);

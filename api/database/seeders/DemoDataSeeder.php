@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\{AcademicYear, Batch, Institution, Program, Student, Subject, Teacher, User};
+use App\Models\{AcademicYear, Batch, Institution, ParentStudent, Program, Student, Subject, Teacher, User};
 use App\Services\EnrollmentService;
 use App\Support\Tenancy;
 use Illuminate\Database\Seeder;
@@ -30,6 +30,7 @@ class DemoDataSeeder extends Seeder
 
             // never write program_id / batch_id / roll_no on students directly - EnrollmentService does it
             $enrollments = app(EnrollmentService::class);
+            $first = [];
             for ($i = 1; $i <= 10; $i++) {
                 $code = sprintf('DHA-2025-%04d', $i);
                 $studentUser = User::create([
@@ -41,7 +42,14 @@ class DemoDataSeeder extends Seeder
                     'father_name' => "অভিভাবক $i", 'admission_date' => now()->subMonths(3), 'status' => 'active',
                 ]);
                 $enrollments->enroll($student, $batchA, ['roll_no' => $i]);
+                if ($i <= 2) $first[] = $student;
             }
+
+            // Spike S6: a demo parent of the first two students (to try the child switcher). Not in seeders.md -
+            // DECISIONS 2026-10-06 S. Real parents get a random password and set their own through "forgot password".
+            $parent = User::create(['institution_id' => $institution->id, 'name' => 'অভিভাবক ১', 'phone' => '01900000001',
+                'password' => 'Parent@1234', 'role' => 'parent']);
+            foreach ($first as $child) ParentStudent::create(['parent_user_id' => $parent->id, 'student_id' => $child->id, 'relationship' => 'guardian', 'is_primary' => true]);
 
             User::create([
                 'institution_id' => $institution->id, 'name' => 'হিসাবরক্ষক', 'email' => 'accountant@dhanmondischool.edu.bd',

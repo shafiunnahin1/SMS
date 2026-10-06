@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Academic\{EnrollmentController, StudentController};
 use App\Http\Controllers\Admin\{SettingController, TerminologyController, ThemeController};
+use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\Shared\{AuditLogController, NotificationController};
+use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +55,28 @@ Route::prefix('v1')->group(function () {
             Route::post('/admin/theme/logo',              [ThemeController::class, 'logo']);
             Route::get('/audit-logs',                     [AuditLogController::class, 'index']);
             Route::get('/audit-logs/{id}',                [AuditLogController::class, 'show'])->whereNumber('id');
+
+            // Students & enrollment (Step 4.2; the walking-skeleton slice builds these first)
+            Route::middleware('module:students')->group(function () {
+                Route::get('/students',                   [StudentController::class, 'index']);
+                Route::post('/students',                  [StudentController::class, 'store']);
+                Route::get('/students/{id}',              [StudentController::class, 'show'])->whereNumber('id');
+            });
+            Route::post('/enrollments',                   [EnrollmentController::class, 'store'])->middleware('module:enrollments');
         });
+
+        // ── Fees (Step 4.4; slice: dues -> collect -> receipt) ──
+        Route::middleware('module:fees')->group(function () {
+            Route::get('/fees/payments/student/{id}',     [FeeController::class, 'studentPayments'])->whereNumber('id');   // admin, accountant, own child's parent
+            Route::middleware('role:admin,accountant')->group(function () {
+                Route::post('/fees/collect',              [FeeController::class, 'collect']);
+                Route::get('/fees/dues',                  [FeeController::class, 'dues']);
+                Route::get('/fees/receipt/{id}',          [FeeController::class, 'receipt'])->whereNumber('id');
+            });
+            Route::get('/parent/fees',                    [FeeController::class, 'dues'])->middleware('role:parent');
+        });
+
+        // ── Parent (Step 4.7) ──
+        Route::get('/parent/children',                    [DashboardController::class, 'parentChildren'])->middleware('role:parent');
     });
 });
