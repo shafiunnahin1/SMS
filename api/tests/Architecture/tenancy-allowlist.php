@@ -1,0 +1,13 @@
+<?php
+
+// Files under app/ that may leave or set the tenant directly (D25). Every entry needs its reason.
+// TenancyArchitectureTest fails on any such call in a file not listed here.
+return [
+    'app/Http/Middleware/TenantMiddleware.php' => 'binds the tenant resolved from the Host - the only request-path binding',
+    'app/Support/Tenancy.php' => 'defines Tenancy::as() / withoutTenancy() - the named API everything else must use',
+    'app/Traits/BelongsToInstitution.php' => 'defines the named exits anyInstitution() / forInstitution()',
+    'app/Traits/BelongsToOptionalInstitution.php' => 'defines anyInstitution() for AuditLog',
+    'app/Http/Middleware/PlatformScope.php' => 'Super Admin /super/* group runs inside withoutTenancy() (central host only)',
+    'app/Exceptions/TenantNotBoundException.php' => 'only its message text names withoutTenancy() / anyInstitution() as advice; no call',
+    'app/Support/TenantBulk.php' => 'the only bulk insert/upsert; checks every row belongs to the bound tenant',
+];
