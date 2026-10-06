@@ -109,6 +109,14 @@ class WalkingSkeletonSliceTest extends TestCase
         $this->api('GET', $host, 'students', $parent)->assertForbidden();
     }
 
+    public function test_the_batch_list_for_the_admission_form_shows_running_batches_with_their_program(): void
+    {
+        [$inst, $admin, $a, $b] = $this->tenant('alokito', 'coaching');
+        Tenancy::as($inst, fn () => $b->forceFill(['status' => 'archived'])->save());
+        $this->api('GET', $this->hostOf($inst), 'batches', $admin)->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'A')->assertJsonPath('data.0.program.name', 'Class 9');
+    }
+
     public function test_a_private_batch_without_the_portal_creates_no_parent_account(): void
     {
         [$inst, $admin, $a] = $this->tenant('tutor', 'private_batch');

@@ -1,0 +1,124 @@
+{
+ "app": {
+  "common": {
+   "loading": "Loading…",
+   "retry": "Try again",
+   "save": "Save",
+   "cancel": "Cancel",
+   "search": "Search",
+   "logout": "Log out",
+   "empty": "Nothing found",
+   "error": "Could not load the data",
+   "total": "Total",
+   "back": "Back",
+   "menu": "Menu",
+   "more": "More",
+   "powered_by": "Powered by {{name}}",
+   "language": "Language",
+   "next": "Next",
+   "previous": "Previous",
+   "page": "Page {{page}} of {{last}}",
+   "close": "Close",
+   "not_built": "This screen comes in a later step"
+  },
+  "errors": {
+   "network": "Check your internet connection",
+   "forbidden": "You are not allowed to do this",
+   "too_many": "Too many requests. Please wait a moment.",
+   "server": "Server problem. Please try again.",
+   "bootstrap": "Could not load the institution"
+  },
+  "auth": {
+   "title": "Log in",
+   "login": "Email / phone / ID",
+   "password": "Password",
+   "submit": "Log in",
+   "failed": "Login failed — check your details",
+   "must_change": "First login: you must change your password (coming in the next step)",
+   "otp": "Two-step verification is not part of this spike",
+   "welcome": "Welcome to {{name}}"
+  },
+  "dashboard": {
+   "title": "Dashboard",
+   "hello": "Hello, {{name}}",
+   "spike_note": "This dashboard is filled in Step 4.7."
+  },
+  "students": {
+   "title": "Students",
+   "add": "New admission",
+   "name": "Name",
+   "student_id": "ID",
+   "guardian_phone": "Guardian phone",
+   "roll": "Roll",
+   "father_name": "Father's name",
+   "mother_name": "Mother's name",
+   "admitted": "Admitted: {{id}}",
+   "search_hint": "Name, ID or phone",
+   "auto_id": "Leave empty for automatic",
+   "select_unit": "Select",
+   "collect": "Collect fee"
+  },
+  "fees": {
+   "collect_title": "Fee collection",
+   "find_student": "Find student",
+   "dues": "Dues",
+   "category": "Category",
+   "period": "Period",
+   "amount": "Amount",
+   "pay": "Collect",
+   "no_dues": "No dues",
+   "collected": "Collected — receipt {{no}}",
+   "receipt": "Receipt",
+   "open_pdf": "Receipt PDF",
+   "method": "Method",
+   "cash": "Cash",
+   "selected_total": "Selected total",
+   "receipts": "Receipts",
+   "paid_at": "Date",
+   "pick_child": "Choose child",
+   "methods": {
+    "cash": "Cash",
+    "bkash": "bKash",
+    "nagad": "Nagad",
+    "card": "Card",
+    "bank_transfer": "Bank transfer",
+    "cheque": "Cheque"
+   }
+  },
+  "parent": {
+   "title": "Fees & payments",
+   "children": "My children"
+  },
+  "status": {
+   "paid": "Paid",
+   "partial": "Partial"
+  }
+ },
+ "nav": {
+  "ড্যাশবোর্ড": "Dashboard",
+  "ছাত্রছাত্রী": "Students",
+  "শিক্ষক": "Teachers",
+  "একাডেমিক": "Academic",
+  "বিষয়": "Subjects",
+  "রুটিন": "Routine",
+  "উপস্থিতি": "Attendance",
+  "পরীক্ষা ও ফলাফল": "Exams & results",
+  "ফি": "Fees",
+  "ফি আদায়": "Collect fee",
+  "বকেয়া": "Dues",
+  "ফি-র খাত": "Fee categories",
+  "SMS": "SMS",
+  "রিপোর্ট": "Reports",
+  "সেটিংস": "Settings",
+  "সাধারণ": "General",
+  "শব্দ-কোষ": "Terminology",
+  "ডেটা আমদানি (পুরনো সিস্টেম থেকে)": "Data import",
+  "সাবস্ক্রিপশন": "Subscription",
+  "নম্বর এন্ট্রি": "Mark entry",
+  "ফি ও পেমেন্ট": "Fees & payments",
+  "ফলাফল": "Results",
+  "আদায়": "Collection",
+  "বকেয়া তালিকা": "Due list",
+  "খরচ": "Expenses"
+ }
+}

@@ -1,0 +1,31 @@
+import { forwardRef, useId } from 'react'
+
+// One labelled input/select with its validation message. `ltr` for phone, ID, numbers (docs/I18N.md section 3.3).
+const base = 'w-full h-10 rounded-token bg-surface text-content px-3 [border:1px_solid_var(--line)] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-fg'
+
+export const Input = forwardRef(function Input({ label, error, hint, ltr = false, className = '', ...props }, ref) {
+  const id = useId()
+  return (
+    <div className={`flex flex-col gap-1 ${className}`}>
+      {label && <label htmlFor={id} className="text-sm font-medium text-content">{label}</label>}
+      <input id={id} ref={ref} dir={ltr ? 'ltr' : undefined} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-e` : undefined}
+        className={`${base} ${ltr ? 'text-start' : ''}`} {...props} />
+      {hint && !error && <p className="text-xs text-content-muted">{hint}</p>}
+      {error && <p id={`${id}-e`} className="text-xs text-red-600">{error}</p>}
+    </div>
+  )
+})
+
+export const Select = forwardRef(function Select({ label, error, options = [], placeholder, className = '', ...props }, ref) {
+  const id = useId()
+  return (
+    <div className={`flex flex-col gap-1 ${className}`}>
+      {label && <label htmlFor={id} className="text-sm font-medium text-content">{label}</label>}
+      <select id={id} ref={ref} aria-invalid={Boolean(error)} className={base} {...props}>
+        {placeholder && <option value="">{placeholder}</option>}
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  )
+})

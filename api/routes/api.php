@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Academic\{EnrollmentController, StudentController};
+use App\Http\Controllers\Academic\{BatchController, EnrollmentController, StudentController};
 use App\Http\Controllers\Admin\{SettingController, TerminologyController, ThemeController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
@@ -37,6 +37,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/notifications',              [NotificationController::class, 'index']);
         Route::patch('/notifications/read-all',   [NotificationController::class, 'markAllRead']);
         Route::patch('/notifications/{id}/read',  [NotificationController::class, 'markRead']);
+
+        Route::get('/batches',                    [BatchController::class, 'index']);   // Step 4.1 (slice: the admission form's list)
 
         // ── Institution Admin ─────────────────────────────────
         Route::middleware('role:admin')->group(function () {

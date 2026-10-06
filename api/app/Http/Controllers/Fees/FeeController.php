@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Fees;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Fees\CollectFeeRequest;
-use App\Models\{FeePayment, ParentStudent, Student};
+use App\Models\{Batch, FeePayment, ParentStudent, Student};
 use App\Services\{FeeService, PdfService};
 use App\Support\Money;
 use Illuminate\Http\Request;
@@ -25,6 +25,7 @@ class FeeController extends Controller
         return response()->json(['success' => true, 'data' => [
             'student' => ['id' => $student->id, 'student_id' => $student->student_id, 'name' => $student->user?->name],
             'lines'   => $lines->values(),
+            'batches' => Batch::whereIn('id', $lines->pluck('batch_id')->unique())->pluck('name', 'id'),   // names for the batch column
             'total'   => Money::format($lines->sum(fn ($l) => Money::toPaisa($l['amount']))),
         ]]);
     }
