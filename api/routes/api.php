@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\{SettingController, TerminologyController, ThemeController};
-use App\Http\Controllers\Public\BootstrapController;
+use App\Http\Controllers\Public\{BootstrapController, HealthController};
 use App\Http\Controllers\Shared\{AuditLogController, NotificationController};
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
 use Illuminate\Support\Facades\Route;
@@ -11,6 +11,7 @@ Route::prefix('v1')->group(function () {
 
     // ─── 1. Any host ───────────────────────────────────────────
     Route::middleware('tenant:optional')->group(function () {
+        Route::get('/health',                 HealthController::class);   // invokable: a closure would break route:cache
         Route::get('/bootstrap',              [BootstrapController::class, 'show']);
         Route::post('/auth/login',            [LoginController::class, 'login'])->middleware('throttle:login');
         Route::post('/auth/verify-otp',       [LoginController::class, 'verifyOtp'])->middleware('throttle:login');

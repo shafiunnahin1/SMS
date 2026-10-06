@@ -1,0 +1,123 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\{AuditLog, Institution, User};
+use App\Notifications\GeneralNotification;
+use App\Support\Tenancy;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Route as RouteDef;
+use Illuminate\Support\Facades\Route;
+use Tests\TestCase;
+
+// docs/TESTING.md "TenantIsolationTest": two tenants of each of the four types; no tenant-scoped endpoint ever returns another
+// tenant's row. The framework discovers the routes itself, so every route added in later steps is checked without editing
+// this file - except a route with an {id}, which must say below how to make a row of another tenant (the test fails until it does).
+class TenantIsolationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private const TYPES = ['school', 'college', 'coaching', 'private_batch'];
+
+    /** @var array<string, array{institution: Institution, admin: User}> keyed by slug (the slug doubles as a marker in every row) */
+    private array $tenants = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        foreach (self::TYPES as $type) {
+            foreach (['a', 'b'] as $n) {
+                $slug = 'iso' . str_replace('_', '', $type) . $n;
+                $inst = $this->makeInstitution($slug, $type);
+                $admin = $this->makeUser($inst, 'admin');
+                $admin->forceFill(['name' => "admin {$slug}"])->save();
+                Tenancy::as($inst, function () use ($admin, $slug) {
+                    $admin->notify(new GeneralNotification('notice', "note {$slug}", 'notice'));
+                    AuditLog::record('isolation.seed', $admin, ['marker' => $slug]);
+                });
+                $admin->createToken("seed {$slug}");
+                $this->tenants[$slug] = ['institution' => $inst, 'admin' => $admin];
+            }
+        }
+    }
+
+    /** How to make a row of $other that a route's {id} could point at. Every tenant route with a parameter must be listed. */
+    private function foreignIds(): array
+    {
+        return [
+            'PATCH api/v1/notifications/{id}/read'         => fn (array $other) => $other['admin']->notifications()->value('id'),
+            'DELETE api/v1/auth/sessions/{id}'             => fn (array $other) => $other['admin']->tokens()->value('id'),
+            'POST api/v1/admin/users/{id}/force-logout'    => fn (array $other) => $other['admin']->id,
+            'POST api/v1/admin/users/{id}/unlock'          => fn (array $other) => $other['admin']->id,
+            'GET api/v1/audit-logs/{id}'                   => fn (array $other) => Tenancy::as($other['institution'], fn () => AuditLog::value('id')),
+        ];
+    }
+
+    /** @return RouteDef[] the routes that only run on a tenant host */
+    private function tenantRoutes(): array
+    {
+        return array_values(array_filter(Route::getRoutes()->getRoutes(), fn (RouteDef $r) => in_array('tenant', $r->gatherMiddleware(), true)));
+    }
+
+    private static function key(RouteDef $r, string $method): string { return "{$method} {$r->uri()}"; }
+
+    public function test_the_framework_has_two_tenants_of_each_type_and_finds_the_tenant_routes(): void
+    {
+        $this->assertSame(array_merge(...array_map(fn ($t) => [$t, $t], self::TYPES)), array_values(array_map(fn ($t) => $t['institution']->institution_type, $this->tenants)));
+        $this->assertNotEmpty($this->tenantRoutes());
+        $this->assertNotContains('GET api/v1/bootstrap', array_map(fn ($r) => self::key($r, 'GET'), $this->tenantRoutes()), 'any-host routes are not tenant routes');
+    }
+
+    public function test_every_tenant_list_endpoint_returns_only_the_callers_own_rows(): void
+    {
+        $lists = array_filter($this->tenantRoutes(), fn (RouteDef $r) => in_array('GET', $r->methods(), true) && !str_contains($r->uri(), '{'));
+        $this->assertNotEmpty($lists);
+
+        foreach ($this->tenants as $slug => $me) {
+            $others = array_diff(array_keys($this->tenants), [$slug]);
+            foreach ($lists as $route) {
+                $path = substr($route->uri(), strlen('api/v1/'));
+                $res = $this->api('GET', $this->hostOf($me['institution']), $path, $me['admin']);
+                $where = "{$slug} GET {$path}";
+                $this->assertLessThan(500, $res->status(), $where);
+                if ($res->status() !== 200) continue;   // a feature or module this type does not have: nothing leaks either way
+                foreach ($others as $other) $this->assertStringNotContainsString($other, $res->getContent(), "{$where} leaked {$other}");
+                foreach (self::institutionIds($res->json()) as $id) $this->assertSame($me['institution']->id, $id, "{$where} returned institution_id {$id}");
+            }
+        }
+    }
+
+    public function test_every_tenant_route_with_an_id_refuses_another_tenants_row(): void
+    {
+        $byId = [];
+        foreach ($this->tenantRoutes() as $route) {
+            if (!str_contains($route->uri(), '{')) continue;
+            foreach (array_diff($route->methods(), ['HEAD']) as $method) $byId[self::key($route, $method)] = true;
+        }
+        $this->assertSame([], array_keys(array_diff_key($byId, $this->foreignIds())), 'add these routes to foreignIds()');
+
+        $me = $this->tenants['isoschoola'];
+        foreach ($this->foreignIds() as $key => $make) {
+            [$method, $uri] = explode(' ', $key, 2);
+            foreach ($this->tenants as $slug => $other) {
+                if ($slug === 'isoschoola') continue;
+                $id = $make($other);
+                $this->assertNotNull($id, "{$key}: no row seeded for {$slug}");
+                $path = str_replace('{id}', (string) $id, substr($uri, strlen('api/v1/')));
+                $this->api($method, $this->hostOf($me['institution']), $path, $me['admin'])->assertNotFound();
+            }
+        }
+        $this->assertSame(7, User::whereKeyNot($me['admin']->id)->whereHas('tokens')->count(), 'no other tenant lost a session');
+    }
+
+    private static function institutionIds(mixed $json): array
+    {
+        if (!is_array($json)) return [];
+        $ids = [];
+        foreach ($json as $k => $v) {
+            if ($k === 'institution_id' && $v !== null) $ids[] = (int) $v;
+            elseif (is_array($v)) array_push($ids, ...self::institutionIds($v));
+        }
+        return $ids;
+    }
+}
