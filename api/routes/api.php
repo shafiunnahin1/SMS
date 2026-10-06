@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\Admin\TerminologyController;
+use App\Http\Controllers\Admin\{SettingController, TerminologyController, ThemeController};
+use App\Http\Controllers\Public\BootstrapController;
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
 use Illuminate\Support\Facades\Route;
 
@@ -9,6 +10,7 @@ Route::prefix('v1')->group(function () {
 
     // ─── 1. Any host ───────────────────────────────────────────
     Route::middleware('tenant:optional')->group(function () {
+        Route::get('/bootstrap',              [BootstrapController::class, 'show']);
         Route::post('/auth/login',            [LoginController::class, 'login'])->middleware('throttle:login');
         Route::post('/auth/verify-otp',       [LoginController::class, 'verifyOtp'])->middleware('throttle:login');
         Route::post('/auth/forgot-password',  [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:login');
@@ -35,6 +37,15 @@ Route::prefix('v1')->group(function () {
             Route::post('/admin/users/{id}/unlock',       [SessionController::class, 'unlock'])->whereNumber('id');
             Route::get('/admin/settings/terminology',     [TerminologyController::class, 'show']);
             Route::put('/admin/settings/terminology',     [TerminologyController::class, 'update']);
+            Route::get('/settings',                       [SettingController::class, 'index']);
+            Route::put('/settings',                       [SettingController::class, 'update']);
+            Route::get('/admin/settings/general',         [SettingController::class, 'general']);
+            Route::put('/admin/settings/general',         [SettingController::class, 'updateGeneral']);
+            Route::get('/admin/settings/language',        [SettingController::class, 'language']);
+            Route::put('/admin/settings/language',        [SettingController::class, 'updateLanguage']);
+            Route::get('/admin/theme',                    [ThemeController::class, 'show']);
+            Route::put('/admin/theme',                    [ThemeController::class, 'update']);
+            Route::post('/admin/theme/logo',              [ThemeController::class, 'logo']);
         });
     });
 });
