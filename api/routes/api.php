@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Academic\{AttendanceController, BatchController, EnrollmentController, StudentController};
+use App\Http\Controllers\Academic\{AttendanceController, BatchController, ConsentController, EnrollmentController, StudentController};
 use App\Http\Controllers\Admin\{SettingController, TerminologyController, ThemeController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
@@ -85,6 +85,10 @@ Route::prefix('v1')->group(function () {
         });
 
         // ── Parent (Step 4.7) ──
-        Route::get('/parent/children',                    [DashboardController::class, 'parentChildren'])->middleware('role:parent');
+        Route::middleware('role:parent')->group(function () {
+            Route::get('/parent/children',                [DashboardController::class, 'parentChildren']);
+            Route::get('/parent/consents',                [ConsentController::class, 'mine'])->middleware('module:students');
+            Route::put('/parent/consents/{type}',         [ConsentController::class, 'update'])->middleware('module:students');
+        });
     });
 });

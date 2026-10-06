@@ -55,6 +55,8 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/payments/student/{id}'        => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/receipt/{id}'                 => fn (array $other) => $this->seedReceipt($other),
+            // the parameter is not a row id: the route only touches the caller's own children (WalkingSkeletonSliceTest, consent test)
+            'PUT api/v1/parent/consents/{type}'            => null,
         ];
     }
 
@@ -127,7 +129,7 @@ class TenantIsolationTest extends TestCase
         $this->assertSame([], array_keys(array_diff_key($byId, $this->foreignIds())), 'add these routes to foreignIds()');
 
         $me = $this->tenants['isoschoola'];
-        foreach ($this->foreignIds() as $key => $make) {
+        foreach (array_filter($this->foreignIds()) as $key => $make) {
             [$method, $uri] = explode(' ', $key, 2);
             foreach ($this->tenants as $slug => $other) {
                 if ($slug === 'isoschoola') continue;

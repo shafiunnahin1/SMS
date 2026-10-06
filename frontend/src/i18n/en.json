@@ -106,6 +106,28 @@
     "late": "Late",
     "leave": "Leave"
    }
+  },
+  "consent": {
+   "title": "Privacy & consent",
+   "intro": "Please read how the institution will use the data of your child ({{names}}) and give your consent. You can change it later in settings.",
+   "data_processing": {
+    "title": "Keeping and using the data",
+    "body": "The institution keeps your child's data for admission, attendance, results and fees. The portal cannot be used without this."
+   },
+   "sms": {
+    "title": "SMS notifications",
+    "body": "Absence, notice and reminder SMS. Payment receipts and password codes are always sent."
+   },
+   "photo": {
+    "title": "Publishing photos",
+    "body": "Use of your child's photo at events or on the website (other than the ID card)."
+   },
+   "health_data": {
+    "title": "Health data",
+    "body": "Keeping health records."
+   },
+   "save": "Save consent",
+   "draft_note": "This text is a draft; a lawyer reviews it before release."
   }
  },
  "nav": {

@@ -138,6 +138,32 @@ class WalkingSkeletonSliceTest extends TestCase
         $this->api('GET', $host, "attendance?batch_id={$a->id}&date={$date}", $this->makeUser($inst, 'accountant'))->assertForbidden();
     }
 
+    public function test_a_parent_gives_and_withdraws_consent_for_their_own_children_only_and_it_is_audited(): void
+    {
+        [$inst, $admin, $a] = $this->tenant('dhanmondi', 'school');
+        $host = $this->hostOf($inst);
+        $mine = $this->admit($inst, $admin, $a, 'রাহিম', '01744444444');
+        $this->admit($inst, $admin, $a, 'করিম', '01744444444');                  // sibling: same parent
+        $other = $this->admit($inst, $admin, $a, 'অন্য', '01755555555');
+        $parent = Tenancy::as($inst, fn () => User::inTenant()->where('role', 'parent')->where('phone', '01744444444')->firstOrFail());
+        $parent->forceFill(['must_change_password' => false])->save();
+
+        $this->api('GET', $host, 'parent/consents', $parent)->assertOk()->assertJsonPath('data.needs_data_consent', true)->assertJsonCount(2, 'data.children');
+        $this->api('PUT', $host, 'parent/consents/data_processing', $parent, ['status' => 'granted'])->assertOk()
+            ->assertJsonPath('data.needs_data_consent', false)->assertJsonPath('data.children.0.consents.data_processing.method', 'portal');
+        $this->api('PUT', $host, 'parent/consents/sms', $parent, ['status' => 'revoked'])->assertOk();
+        $this->api('PUT', $host, 'parent/consents/marketing', $parent, ['status' => 'granted'])->assertNotFound();
+
+        Tenancy::as($inst, function () use ($other) {
+            $this->assertSame(4, \App\Models\Consent::count(), '2 children x 2 types; the other family untouched');
+            $this->assertFalse(app(\App\Services\ConsentService::class)->allowsSms('01744444444'));
+            $this->assertTrue(app(\App\Services\ConsentService::class)->allowsSms('01755555555'));
+            $this->assertSame(0, \App\Models\Consent::where('student_id', $other['id'])->count());
+            $this->assertSame(['consent.granted' => 2, 'consent.revoked' => 2], \App\Models\AuditLog::where('action', 'like', 'consent.%')->get()->countBy('action')->sortKeys()->all());
+        });
+        $this->api('GET', $host, 'parent/consents', $admin)->assertForbidden();
+    }
+
     public function test_a_private_batch_without_the_portal_creates_no_parent_account(): void
     {
         [$inst, $admin, $a] = $this->tenant('tutor', 'private_batch');
