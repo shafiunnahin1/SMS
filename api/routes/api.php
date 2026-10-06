@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\{SettingController, TerminologyController, ThemeController};
 use App\Http\Controllers\Public\BootstrapController;
+use App\Http\Controllers\Shared\{AuditLogController, NotificationController};
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +31,9 @@ Route::prefix('v1')->group(function () {
         Route::delete('/auth/sessions/{id}',  [SessionController::class, 'destroy'])->whereNumber('id');
         Route::post('/auth/logout-all',       [SessionController::class, 'logoutAll']);
         Route::put('/auth/locale',            [LoginController::class, 'locale']);
+        Route::get('/notifications',              [NotificationController::class, 'index']);
+        Route::patch('/notifications/read-all',   [NotificationController::class, 'markAllRead']);
+        Route::patch('/notifications/{id}/read',  [NotificationController::class, 'markRead']);
 
         // ── Institution Admin ─────────────────────────────────
         Route::middleware('role:admin')->group(function () {
@@ -46,6 +50,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/admin/theme',                    [ThemeController::class, 'show']);
             Route::put('/admin/theme',                    [ThemeController::class, 'update']);
             Route::post('/admin/theme/logo',              [ThemeController::class, 'logo']);
+            Route::get('/audit-logs',                     [AuditLogController::class, 'index']);
+            Route::get('/audit-logs/{id}',                [AuditLogController::class, 'show'])->whereNumber('id');
         });
     });
 });

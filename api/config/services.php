@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    // SMS (docs/modules/notifications.md). Driver `log` writes to the log only (G17: development/testing, and until the
+    // gateway contract is confirmed - TODO(OD-sms-gateway)). With an SSL Wireless token set, the default becomes `ssl_wireless`.
+    'sms' => [
+        'driver' => env('SMS_DRIVER', env('SSL_WIRELESS_TOKEN') ? 'ssl_wireless' : 'log'),
+    ],
+    'ssl_wireless' => [
+        'token' => env('SSL_WIRELESS_TOKEN'),
+        'sid' => env('SMS_DEFAULT_SENDER', env('SSL_WIRELESS_SID')),
+    ],
+
 ];

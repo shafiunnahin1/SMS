@@ -84,7 +84,8 @@ class ThemeService
     {
         $old = $this->getTheme($i);
         if ($i->logo_path) Storage::disk('public')->delete($i->logo_path);
-        $path = $file->store("institutions/{$i->id}/branding", 'public');
+        // docs/architecture/file-storage.md: server UUID name, extension from the sniffed MIME type - never the client's
+        $path = $file->storeAs("institutions/{$i->id}/branding", 'logo-' . \Illuminate\Support\Str::uuid() . '.' . $file->extension(), 'public');
         $i->forceFill(['logo_path' => $path, 'theme_updated_by' => $userId, 'theme_updated_at' => now()])->save();
         $this->logAndFlush($i, $old);
         return Storage::disk('public')->url($path);

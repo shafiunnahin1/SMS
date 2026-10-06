@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Observers\UserObserver;
+use App\Services\{ModuleGate, NotificationService, PdfService, SmsService, ThemeService};
+use App\Services\Sms\{LogSmsGateway, SmsGateway, SslWirelessGateway};
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,7 +16,13 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->bind(SmsGateway::class, fn () => match (config('services.sms.driver')) {
+            'ssl_wireless' => new SslWirelessGateway(),
+            default        => new LogSmsGateway(),
+        });
+        foreach ([SmsService::class, PdfService::class, NotificationService::class, ThemeService::class, ModuleGate::class] as $service) {
+            $this->app->singleton($service);
+        }
     }
 
     public function boot(): void

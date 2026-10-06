@@ -13,7 +13,7 @@ class TenancyArchitectureTest extends TestCase
         'anyInstitution('                  => '/(?<![\w$])anyInstitution\s*\(/',
         'withoutTenancy('                  => '/withoutTenancy\s*\(/',
         'raw DB:: query'                   => '/DB::(?:table|select|statement|affectingStatement|insert|update|delete|unprepared)\s*\(/',
-        'bulk Model::insert/upsert'        => '/(?<![\w$\\\\])[A-Z]\w*::(?:insert|upsert)\s*\(/',
+        'bulk Model::insert/upsert'        => '/(?<![\w$\\\\])(?!TenantBulk::)[A-Z]\w*::(?:insert|upsert)\s*\(/',   // TenantBulk:: is the sanctioned path
     ];
 
     private static function root(): string { return dirname(__DIR__, 2); }
@@ -68,6 +68,7 @@ class TenancyArchitectureTest extends TestCase
             $this->assertMatchesRegularExpression($rx, $samples[$i]);
         }
         $this->assertDoesNotMatchRegularExpression(self::FORBIDDEN['bulk Model::insert/upsert'], 'return $model::insert($rows);');
+        $this->assertDoesNotMatchRegularExpression(self::FORBIDDEN['bulk Model::insert/upsert'], 'TenantBulk::upsert(Attendance::class, $rows, [], []);');
     }
 
     public function test_every_queued_class_that_touches_a_tenant_model_uses_tenant_aware_job(): void
