@@ -15,6 +15,8 @@ const FeeCollect  = lazy(() => import('../pages/admin/fees/FeeCollect'))
 const ParentFees  = lazy(() => import('../pages/parent/Fees'))
 const Attendance  = lazy(() => import('../pages/attendance/Take'))
 const ParentHome  = lazy(() => import('../pages/parent/Home'))
+const Landing     = lazy(() => import('../pages/central/Landing'))
+const Signup      = lazy(() => import('../pages/central/Signup'))
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
 const area = (path, role, children) => ({
@@ -44,8 +46,10 @@ export const tenantRoutes = [
   { path: '*', element: <Navigate to="/login" replace /> },
 ]
 
-// Central host (landing, signup, Super Admin): the spike only proves the split; the Super Admin panel is Phase 5
+// Central host (Step 3.1): landing, signup (Step 5.1 is blocked - placeholder), login, Super Admin (its panel is Phase 5)
 export const centralRoutes = [
+  { path: '/', element: S(Landing) },
+  { path: '/signup', element: S(Signup) },
   { path: '/login', element: <Login /> },
   area('/super-admin', 'super_admin', [{ path: 'dashboard', element: S(Dashboard) }]),
   { path: '*', element: <Navigate to="/login" replace /> },

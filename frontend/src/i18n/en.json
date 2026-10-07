@@ -135,6 +135,12 @@
    },
    "save": "Save consent",
    "draft_note": "This text is a draft; a lawyer reviews it before release."
+  },
+  "central": {
+   "tagline": "Students, attendance, fees and results in one place for schools, colleges, coaching centres and private batches.",
+   "login": "Log in",
+   "signup": "Sign up",
+   "signup_soon": "Sign-up for new institutions opens soon. Please contact the platform for now."
   }
  },
  "nav": {

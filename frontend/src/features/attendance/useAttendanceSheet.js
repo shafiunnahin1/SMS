@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
 import i18n from '../../i18n'
+import { STALE } from '../../lib/queryClient'
 
 export const STATUSES = ['present', 'absent', 'late', 'leave']
 
@@ -10,7 +11,7 @@ export const STATUSES = ['present', 'absent', 'late', 'leave']
 // element per action key (data-action) and one per student (data-row). Unmarked students are saved as present (the usual default).
 export function useAttendanceSheet(batchId, date) {
   const qc = useQueryClient()
-  const query = useQuery({ queryKey: ['attendance', batchId, date], enabled: Boolean(batchId && date),
+  const query = useQuery({ queryKey: ['attendance', batchId, date], enabled: Boolean(batchId && date), staleTime: STALE.attendance,
     queryFn: () => api.get('/attendance', { params: { batch_id: batchId, date } }).then(r => r.data.data) })
   const [marks, setMarks] = useState({})
   const [saving, setSaving] = useState(false)

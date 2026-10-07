@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { RouterProvider } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import ThemeProvider from './theme/ThemeProvider'
 import { I18nProvider } from './ui/I18nProvider'
@@ -8,10 +8,11 @@ import { UIProvider } from './ui/UIProvider'
 import { useInstitutionStore } from './store/institutionStore'
 import { makeRouter } from './router'
 import Loader from './components/Loader'
+import { makeQueryClient } from './lib/queryClient'
 import Toaster from './components/Toaster'
 import { ErrorState } from './components/StateViews'
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
+const queryClient = makeQueryClient()
 
 function Routes() {
   const { t } = useTranslation()
