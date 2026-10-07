@@ -4,6 +4,7 @@ import ProtectedRoute from './ProtectedRoute'
 import AppShell from '../layouts/AppShell'
 import Login from '../pages/auth/Login'
 import Loader from '../components/Loader'
+import { MENU } from '../nav/menu'
 
 // docs/templates/react-core-files.md "src/router/index.jsx" (Revision 6): ONE AppShell for every role; the walking skeleton routes the
 // slice's pages; every other menu path inside a role opens NotBuilt (never a 404).
@@ -19,10 +20,18 @@ const Landing     = lazy(() => import('../pages/central/Landing'))
 const Signup      = lazy(() => import('../pages/central/Signup'))
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
-const area = (path, role, children) => ({
-  path, element: <ProtectedRoute role={role}><AppShell /></ProtectedRoute>,
-  children: [...children, { path: '*', element: S(NotBuilt) }],
-})
+// MenuReleaseTest: every menu item a role can see in this release has a route of its own - a built page or, until its step, NotBuilt.
+// The paths come from nav/menu.js so a new menu entry cannot silently 404.
+const menuPaths = (role, prefix) => (MENU[role] ?? []).flatMap(i => i.children ?? [i]).map(i => i.path).filter(p => p?.startsWith(prefix + '/'))
+const area = (path, role, children) => {
+  const built = new Set(children.map(c => c.path))
+  const placeholders = [...new Set(menuPaths(role, path))].map(p => p.slice(path.length + 1)).filter(p => !built.has(p))
+    .map(p => ({ path: p, element: S(NotBuilt) }))
+  return {
+    path, element: <ProtectedRoute role={role}><AppShell /></ProtectedRoute>,
+    children: [...children, ...placeholders, { path: '*', element: S(NotBuilt) }],
+  }
+}
 
 export const tenantRoutes = [
   { path: '/login', element: <Login /> },

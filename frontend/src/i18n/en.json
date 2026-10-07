@@ -141,6 +141,15 @@
    "login": "Log in",
    "signup": "Sign up",
    "signup_soon": "Sign-up for new institutions opens soon. Please contact the platform for now."
+  },
+  "notifications": {
+   "title": "Notifications ({{count}} unread)",
+   "heading": "Notifications",
+   "read_all": "Mark all read",
+   "empty": "No notifications"
+  },
+  "plan": {
+   "suspended": "The institution's subscription is suspended — read only. Please contact the platform."
   }
  },
  "nav": {

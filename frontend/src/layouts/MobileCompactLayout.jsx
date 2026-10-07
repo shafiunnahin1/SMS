@@ -8,6 +8,8 @@ import UserMenu from './parts/UserMenu'
 import LanguageSwitcher from './parts/LanguageSwitcher'
 import PoweredBy from './parts/PoweredBy'
 import { navIcon } from './parts/navIcons'
+import PlanBanner from './parts/PlanBanner'
+import NotificationBell from '../components/NotificationBell'
 
 // docs/THEMING.md layout table: content max-w-md in the centre, an app-like tab bar at the bottom: up to 4 `primary` items + "More"
 const flat = (nav) => nav.flatMap(i => i.children ? i.children.map(c => ({ ...c, icon: c.icon ?? i.icon })) : [i])
@@ -22,9 +24,10 @@ export default function MobileCompactLayout({ nav, user, institution, theme, chi
       <header className="sticky top-0 z-30 bg-sidebar text-on-sidebar border-b print:hidden">
         <div className="max-w-md mx-auto h-14 flex items-center justify-between gap-2 px-4">
           <BrandLogo institution={institution} theme={theme} />
-          <UserMenu user={user} compact />
+          <div className="flex items-center gap-1"><NotificationBell /><UserMenu user={user} compact /></div>
         </div>
       </header>
+      <PlanBanner institution={institution} />
       <main className="max-w-md mx-auto p-density pb-24">{children}<PoweredBy theme={theme} /></main>
       {more && (
         <div className="fixed inset-0 z-40 bg-black/40 flex items-end print:hidden" onClick={() => setMore(false)}>
