@@ -70,3 +70,59 @@ jobs:
         with:
           node-version: '20'
       - run: node infra/check-schema-parity.mjs
+
+  e2e:
+    name: Browser smoke (Playwright, D54)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: edu_saas_test
+        ports: ['3306:3306']
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: edu_saas_test
+      DB_USERNAME: root
+      DB_PASSWORD: password
+      REDIS_HOST: 127.0.0.1
+      APP_BASE_DOMAIN: lvh.me
+      CENTRAL_DOMAINS: lvh.me,admin.lvh.me
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, pdo_mysql, redis, gd, zip
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: API with the three demo tenants (a throwaway CI database)
+        working-directory: api
+        run: |
+          composer install --no-interaction --prefer-dist
+          cp .env.example .env && php artisan key:generate
+          php artisan migrate:fresh --seed --force
+          nohup php artisan serve --host=127.0.0.1 --port=8000 > /tmp/api.log 2>&1 &
+      - name: Frontend dev server and Chromium
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          nohup npx vite --port 5173 > /tmp/vite.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:5173/ >/dev/null && break; sleep 1; done
+      - name: Smoke + axe
+        working-directory: frontend
+        run: npm run e2e
+      - if: failure()
+        run: tail -n 100 /tmp/api.log /tmp/vite.log
