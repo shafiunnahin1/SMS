@@ -8,6 +8,7 @@ use App\Models\ThemePreset;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 // docs/modules/institution-branding.md (Layer 1: colours, logo, mode) + docs/THEMING.md (effective theme contract, presets).
 // Release 1 edits brand colours, mode and logo only; tokens/layout/pack/preset editing is the R2 theme editor.
@@ -39,7 +40,7 @@ class ThemeService
             return [
                 'preset_key'      => $preset?->key,
                 'layout_key'      => $layout,
-                'ui_pack'         => $this->packFor($i, $preset),
+                'ui_pack'         => $this->packFor($i, $preset, $layout),
                 'primary_color'   => $primary,
                 'secondary_color' => $i->secondary_color ?? self::DEFAULT_BRAND['secondary_color'],
                 'accent_color'    => $i->accent_color ?? self::DEFAULT_BRAND['accent_color'],
@@ -66,11 +67,22 @@ class ThemeService
         ];
     }
 
-    /** Known packs come from config/ui_packs.php (Step 3.6); until it exists only `classic` is known */
-    public function packFor(Institution $i, ?ThemePreset $preset): string
+    /** Known packs come from config/ui_packs.php (docs/UI-PACKS.md section 7); an unknown key is classic - never a blank page */
+    /** With $layout: a stored pair the pack does not fit (an older row, a later layout override) also reads as classic */
+    public function packFor(Institution $i, ?ThemePreset $preset, ?string $layout = null): string
     {
         $pack = $i->ui_pack ?? $preset?->ui_pack ?? 'classic';
-        return array_key_exists($pack, config('ui_packs', ['classic' => []])) ? $pack : 'classic';
+        if (!array_key_exists($pack, config('ui_packs', ['classic' => []]))) return 'classic';
+        return $layout && !in_array($layout, config("ui_packs.{$pack}.layouts", []), true) ? 'classic' : $pack;
+    }
+
+    /** docs/UI-PACKS.md section 7: the effective (layout, pack) pair must be one the pack lists, else 422 */
+    public function assertCompatible(string $layout, string $pack): void
+    {
+        $layouts = config("ui_packs.{$pack}.layouts", []);
+        if (!in_array($layout, $layouts, true)) {
+            throw ValidationException::withMessages(['ui_pack' => "'{$pack}' UI Pack '{$layout}' লেআউটের সাথে চলে না"]);
+        }
     }
 
     public function update(Institution $i, array $data, int $userId): Institution
@@ -96,6 +108,9 @@ class ThemeService
     {
         $allowed = $preset->allowed_types;
         abort_if($allowed && !in_array($i->institution_type, $allowed, true), 422, 'এই থিম এই ধরনের প্রতিষ্ঠানের জন্য নয়');
+
+        $layout = $preset->layout_key ?? config("institution_types.{$i->institution_type}.default_layout") ?? 'sidebar-classic';
+        $this->assertCompatible($layout, $this->packFor(new Institution(), $preset));   // the pair the institution would get
 
         $old = $this->getTheme($i);
         $i->forceFill([

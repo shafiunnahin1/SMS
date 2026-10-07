@@ -7,7 +7,7 @@ import api from '../../../api/axios'
 import { useTerms } from '../../../hooks/useTerms'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
-import DataTable from '../../../components/DataTable'
+import List from '../../../ui/variants/List'
 import { Input } from '../../../components/FormField'
 import Ltr from '../../../components/bidi/Ltr'
 
@@ -37,7 +37,7 @@ export default function StudentList() {
         </Link>} />
       <Card className="flex flex-col gap-3">
         <Input type="search" placeholder={t('students.search_hint')} aria-label={t('common.search')} value={q} onChange={e => { setQ(e.target.value); setPage(1) }} />
-        <DataTable columns={columns} data={query.data?.data ?? []} loading={query.isPending} error={query.isError} onRetry={query.refetch}
+        <List columns={columns} rows={query.data?.data ?? []} loading={query.isPending} error={query.isError} onRetry={query.refetch}
           pagination={query.data?.meta ? { page: query.data.meta.current_page, last: query.data.meta.last_page, onChange: setPage } : null} />
       </Card>
     </div>
