@@ -105,6 +105,13 @@
     "absent": "Absent",
     "late": "Late",
     "leave": "Leave"
+   },
+   "state": {
+    "new": "Not saved yet — everyone is marked 'present' below",
+    "saved": "Saved: {{count}}/{{total}}",
+    "changed": "Unsaved changes (saved before: {{count}})",
+    "when": "first saved {{time}} by {{by}}",
+    "update": "Update"
    }
   },
   "consent": {

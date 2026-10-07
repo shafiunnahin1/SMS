@@ -39,7 +39,7 @@ export function useAttendanceSheet(batchId, date) {
   return {
     query,
     state: { marks, saving, dirty, counts },
-    data: { batch: query.data?.batch, date, holiday: query.data?.holiday, rows: query.data?.rows ?? [] },
+    data: { batch: query.data?.batch, date, holiday: query.data?.holiday, rows: query.data?.rows ?? [], saved: query.data?.saved ?? { count: 0 } },
     actions,
   }
 }

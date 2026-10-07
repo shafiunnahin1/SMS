@@ -21,3 +21,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Redis snapshot written when redis-server runs from this folder (never commit)
+dump.rdb

@@ -10,7 +10,7 @@ const FIXTURES = {
   'attendance.take': {
     state: { marks: { 1: 'present', 2: 'absent' }, saving: false, dirty: false, counts: { present: 1, absent: 1, late: 0, leave: 0 } },
     data: { batch: { id: 9, name: 'A', program: 'Class 6' }, date: '2026-10-06', rows: [
-      { student_id: 1, name: 'রাহিম', roll_no: 1, status: 'present' }, { student_id: 2, name: 'করিম', roll_no: 2, status: 'absent' }] },
+      { student_id: 1, name: 'রাহিম', roll_no: 1, status: 'present' }, { student_id: 2, name: 'করিম', roll_no: 2, status: 'absent' }], saved: { count: 2, first_saved_at: '2026-10-06T03:15:00Z', taken_by: 'Teacher' } },
     actions: { setStatus: () => {}, markAll: () => {}, save: () => {}, reset: () => {} },
   },
 }
@@ -26,6 +26,7 @@ describe.each(Object.keys(PACKS))('pack %s', (packKey) => {
       expect([...actions].sort()).toEqual(Object.keys(f.actions).sort())
       const rows = [...container.querySelectorAll('[data-row]')].map(e => e.getAttribute('data-row'))
       expect(rows.sort()).toEqual(f.data.rows.map(r => String(r.student_id)).sort())
+      if (slot === 'attendance.take') expect(container.querySelector('[data-saved-state="saved"]')).not.toBeNull()   // owner 2026-10-07: show it was saved
       container.querySelectorAll('[data-action]').forEach(el => expect(el.tagName).toMatch(/BUTTON|INPUT/))   // reachable by keyboard
       cleanup()
     })

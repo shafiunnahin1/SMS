@@ -3,6 +3,7 @@ import Button from '../../../../components/Button'
 import { EmptyState } from '../../../../components/StateViews'
 import Ltr from '../../../../components/bidi/Ltr'
 import { STATUSES } from '../../../../features/attendance/useAttendanceSheet'
+import SaveStatus from '../../../../features/attendance/views/SaveStatus'
 
 // mobile pack, attendance.take: one card per student with a thumb-sized segmented control (the order mirrors in RTL by itself:
 // it is a flex row of logical items). Same hook, same actions as the grid - PackContractTest checks the data-action set.
@@ -16,6 +17,7 @@ export default function AttendanceTakeSegmented({ state, data, actions }) {
         <p className="font-semibold text-sm" dir="auto">{data.batch?.name} · <Ltr>{data.date}</Ltr></p>
         <Button variant="ghost" data-action="reset" onClick={actions.reset} disabled={!state.dirty}>{t('attendance.reset')}</Button>
       </div>
+      <SaveStatus saved={data.saved} dirty={state.dirty} total={data.rows.length} />
       <Button variant="secondary" data-action="markAll" onClick={() => actions.markAll('present')} className="w-full">{t('attendance.all_present')}</Button>
       {!data.rows.length ? <EmptyState /> : (
         <ul className="flex flex-col gap-2">
@@ -41,7 +43,7 @@ export default function AttendanceTakeSegmented({ state, data, actions }) {
       <div className="fixed bottom-16 inset-x-0 z-20 px-4">
         <div className="max-w-md mx-auto flex items-center gap-2 bg-surface rounded-token shadow-card p-2 [border:var(--card-border)]">
           <span className="flex-1 text-xs text-content-muted">{t('attendance.status.absent')}: {state.counts.absent}</span>
-          <Button data-action="save" onClick={actions.save} loading={state.saving}>{t('common.save')}</Button>
+          <Button data-action="save" onClick={actions.save} loading={state.saving}>{data.saved?.count ? t('attendance.state.update') : t('common.save')}</Button>
         </div>
       </div>
     </div>

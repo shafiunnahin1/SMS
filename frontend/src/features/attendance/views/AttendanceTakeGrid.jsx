@@ -4,6 +4,7 @@ import Card from '../../../components/Card'
 import { EmptyState } from '../../../components/StateViews'
 import Ltr from '../../../components/bidi/Ltr'
 import { STATUSES } from '../useAttendanceSheet'
+import SaveStatus from './SaveStatus'
 
 // Default view of attendance.take (classic pack): a row grid, one radio group per student
 export default function AttendanceTakeGrid({ state, data, actions }) {
@@ -11,7 +12,10 @@ export default function AttendanceTakeGrid({ state, data, actions }) {
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-semibold" dir="auto">{data.batch?.program} · {data.batch?.name} · <Ltr>{data.date}</Ltr></p>
+        <div className="flex flex-col gap-1">
+          <p className="font-semibold" dir="auto">{data.batch?.program} · {data.batch?.name} · <Ltr>{data.date}</Ltr></p>
+          <SaveStatus saved={data.saved} dirty={state.dirty} total={data.rows.length} />
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" data-action="markAll" onClick={() => actions.markAll('present')}>{t('attendance.all_present')}</Button>
           <Button variant="ghost" data-action="reset" onClick={actions.reset} disabled={!state.dirty}>{t('attendance.reset')}</Button>
@@ -39,7 +43,7 @@ export default function AttendanceTakeGrid({ state, data, actions }) {
       )}
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-content-muted">{STATUSES.map(s => `${t(`attendance.status.${s}`)}: ${state.counts[s]}`).join(' · ')}</p>
-        <Button data-action="save" onClick={actions.save} loading={state.saving}>{t('common.save')}</Button>
+        <Button data-action="save" onClick={actions.save} loading={state.saving}>{data.saved?.count ? t('attendance.state.update') : t('common.save')}</Button>
       </div>
     </Card>
   )

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Academic;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attendance\StoreAttendanceRequest;
-use App\Models\{Attendance, Batch, Enrollment, Holiday};
+use App\Models\{Attendance, Batch, Enrollment, Holiday, User};
 use App\Services\AttendanceService;
 use Illuminate\Http\Request;
 
@@ -19,7 +19,9 @@ class AttendanceController extends Controller
     {
         $data = $request->validate(['batch_id' => 'required|integer', 'date' => 'required|date_format:Y-m-d']);
         $batch = Batch::with('program:id,name')->findOrFail($data['batch_id']);
-        $saved = Attendance::where('batch_id', $batch->id)->whereDate('date', $data['date'])->pluck('status', 'student_id');
+        $records = Attendance::where('batch_id', $batch->id)->whereDate('date', $data['date'])->get(['student_id', 'status', 'taken_by', 'created_at']);
+        $saved = $records->pluck('status', 'student_id');
+        $last = $records->sortByDesc('created_at')->first();
         $rows = Enrollment::where('batch_id', $batch->id)->where('status', 'active')->with('student.user:id,name')->orderBy('roll_no')->orderBy('id')->get()
             ->map(fn ($e) => ['student_id' => $e->student_id, 'name' => $e->student?->user?->name, 'code' => $e->student?->student_id,
                 'roll_no' => $e->roll_no, 'status' => $saved[$e->student_id] ?? null]);
@@ -27,6 +29,9 @@ class AttendanceController extends Controller
         return response()->json(['success' => true, 'data' => [
             'batch' => ['id' => $batch->id, 'name' => $batch->name, 'program' => $batch->program?->name],
             'date' => $data['date'], 'holiday' => Holiday::whereDate('date', $data['date'])->value('title'), 'rows' => $rows,
+            // was this sheet saved before? (the table keeps the first save time only - it has no updated_at)
+            'saved' => ['count' => $records->count(), 'first_saved_at' => $last?->created_at?->toIso8601String(),
+                'taken_by' => $last?->taken_by ? User::inTenant()->whereKey($last->taken_by)->value('name') : null],
         ]]);
     }
 

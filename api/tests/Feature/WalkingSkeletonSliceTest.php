@@ -128,11 +128,15 @@ class WalkingSkeletonSliceTest extends TestCase
 
         $sheet = $this->api('GET', $host, "attendance?batch_id={$a->id}&date={$date}", $teacher)->assertOk()->json('data');
         $this->assertSame([null, null], array_column($sheet['rows'], 'status'));
+        $this->assertSame(0, $sheet['saved']['count'], 'a sheet nobody saved says so');
         $this->api('POST', $host, 'attendance', $teacher, ['batch_id' => $a->id, 'date' => $date,
             'records' => [['student_id' => $s1['id'], 'status' => 'present'], ['student_id' => $s2['id'], 'status' => 'absent']]])
             ->assertCreated()->assertJsonPath('data.absent_count', 1);
         $this->api('POST', $host, 'attendance', $teacher, ['batch_id' => $a->id, 'date' => $date, 'records' => [['student_id' => $s2['id'], 'status' => 'late']]])->assertCreated();
-        $this->assertSame(['present', 'late'], array_column($this->api('GET', $host, "attendance?batch_id={$a->id}&date={$date}", $admin)->json('data.rows'), 'status'));
+        $again = $this->api('GET', $host, "attendance?batch_id={$a->id}&date={$date}", $admin)->json('data');
+        $this->assertSame(['present', 'late'], array_column($again['rows'], 'status'));
+        $this->assertSame([2, 'teacher'], [$again['saved']['count'], $again['saved']['taken_by']], 'reopening shows it was saved, and by whom');
+        $this->assertNotNull($again['saved']['first_saved_at']);
         $this->api('POST', $host, 'attendance', $teacher, ['batch_id' => $a->id, 'date' => now()->addDay()->toDateString(), 'records' => [['student_id' => $s1['id'], 'status' => 'present']]])
             ->assertStatus(422);   // not in the future
         $this->api('GET', $host, "attendance?batch_id={$a->id}&date={$date}", $this->makeUser($inst, 'accountant'))->assertForbidden();
