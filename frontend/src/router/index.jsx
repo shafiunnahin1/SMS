@@ -18,6 +18,7 @@ const Attendance  = lazy(() => import('../pages/attendance/Take'))
 const ParentHome  = lazy(() => import('../pages/parent/Home'))
 const Landing     = lazy(() => import('../pages/central/Landing'))
 const Signup      = lazy(() => import('../pages/central/Signup'))
+const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
 // MenuReleaseTest: every menu item a role can see in this release has a route of its own - a built page or, until its step, NotBuilt.
@@ -41,6 +42,8 @@ export const tenantRoutes = [
     { path: 'students/add', element: S(StudentAdd) },
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'attendance', element: S(Attendance) },
+    // Step 3.4: the component gallery - development builds only (import.meta.env.DEV is false in `vite build`)
+    ...(import.meta.env.DEV ? [{ path: 'dev/components', element: S(DevComponents) }] : []),
   ]),
   area('/accountant', 'accountant', [
     { path: 'dashboard', element: S(Dashboard) },

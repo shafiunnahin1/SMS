@@ -19,7 +19,8 @@
    "previous": "Previous",
    "page": "Page {{page}} of {{last}}",
    "close": "Close",
-   "not_built": "This screen comes in a later step"
+   "not_built": "This screen comes in a later step",
+   "confirm": "Confirm"
   },
   "errors": {
    "network": "Check your internet connection",
@@ -91,7 +92,18 @@
   },
   "status": {
    "paid": "Paid",
-   "partial": "Partial"
+   "partial": "Partial",
+   "active": "Active",
+   "inactive": "Inactive",
+   "due": "Due",
+   "pending": "Pending",
+   "published": "Published",
+   "present": "Present",
+   "absent": "Absent",
+   "late": "Late",
+   "leave": "Leave",
+   "granted": "Granted",
+   "revoked": "Withdrawn"
   },
   "attendance": {
    "title": "Take attendance",
@@ -150,6 +162,19 @@
   },
   "plan": {
    "suspended": "The institution's subscription is suspended — read only. Please contact the platform."
+  },
+  "upload": {
+   "choose": "Choose a file or drop it here",
+   "limits": "{{types}} · up to {{max}} MB",
+   "too_big": "The file is larger than {{max}} MB",
+   "wrong_type": "Only {{types}}"
+  },
+  "range": {
+   "from": "From",
+   "to": "To",
+   "this_month": "This month",
+   "last_month": "Last month",
+   "this_year": "This year"
   }
  },
  "nav": {

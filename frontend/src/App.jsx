@@ -10,6 +10,7 @@ import { makeRouter } from './router'
 import Loader from './components/Loader'
 import { makeQueryClient } from './lib/queryClient'
 import Toaster from './components/Toaster'
+import ConfirmModal from './components/ConfirmModal'
 import { ErrorState } from './components/StateViews'
 
 const queryClient = makeQueryClient()
@@ -32,6 +33,7 @@ export default function App() {
           <UIProvider>
             <Routes />
             <Toaster />
+            <ConfirmModal />
           </UIProvider>
         </I18nProvider>
       </ThemeProvider>

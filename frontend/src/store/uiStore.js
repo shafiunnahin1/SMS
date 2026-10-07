@@ -6,6 +6,7 @@ let toastId = 0
 export const useUiStore = create((set) => ({
   sidebarOpen: false,
   toasts: [],
+  confirmModal: null,
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   closeSidebar: () => set({ sidebarOpen: false }),
@@ -16,4 +17,7 @@ export const useUiStore = create((set) => ({
     setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), duration)
   },
   removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+
+  openConfirm: (config) => set({ confirmModal: config }),
+  closeConfirm: () => set({ confirmModal: null }),
 }))

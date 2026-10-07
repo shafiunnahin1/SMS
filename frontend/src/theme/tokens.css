@@ -54,3 +54,7 @@ body { font-family: var(--font-body); background: var(--surface-muted); color: v
 [dir='rtl'] .skeleton::after { animation-direction: reverse; }
 @keyframes skeleton-shimmer { to { transform: translateX(100%); } }
 @media (prefers-reduced-motion: reduce) { .skeleton::after { animation: none; display: none; } }
+
+/* Status colours (not brand): success / danger / warning / info - used by StatusBadge and the charts, which need a colour VALUE (SVG fill) */
+:root { --status-success: #16A34A; --status-danger: #DC2626; --status-warning: #D97706; --status-info: var(--color-primary); --status-muted: #94A3B8; }
+.dark { --status-success: #4ADE80; --status-danger: #F87171; --status-warning: #FBBF24; --status-muted: #64748B; }
