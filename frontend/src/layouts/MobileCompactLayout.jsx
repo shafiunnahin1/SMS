@@ -21,7 +21,7 @@ export default function MobileCompactLayout({ nav, user, institution, theme, chi
   const tabs = items.filter(i => i.primary).slice(0, 4)
   return (
     <div className="min-h-screen bg-surface-muted text-content" data-layout="mobile-compact">
-      <header className="sticky top-0 z-30 bg-sidebar text-on-sidebar border-b print:hidden">
+      <header data-testid="app-topbar" className="sticky top-0 z-30 bg-sidebar text-on-sidebar border-b print:hidden">
         <div className="max-w-md mx-auto h-14 flex items-center justify-between gap-2 px-4">
           <BrandLogo institution={institution} theme={theme} />
           <div className="flex items-center gap-1"><NotificationBell /><UserMenu user={user} compact /></div>
@@ -37,7 +37,7 @@ export default function MobileCompactLayout({ nav, user, institution, theme, chi
           </nav>
         </div>
       )}
-      <nav aria-label={t('common.menu')} className="fixed bottom-0 inset-x-0 z-30 bg-surface border-t print:hidden">
+      <nav aria-label={t('common.menu')} data-testid="app-nav" className="fixed bottom-0 inset-x-0 z-30 bg-surface border-t print:hidden">
         <ul className="max-w-md mx-auto grid grid-cols-5">
           {tabs.map(i => {
             const Icon = navIcon(i.icon)

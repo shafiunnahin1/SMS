@@ -21,11 +21,11 @@ export default function TopNavLayout({ nav, user, institution, theme, children }
   const item = 'h-10 px-3 inline-flex items-center gap-1 rounded-token text-sm whitespace-nowrap'
   return (
     <div className="min-h-screen flex flex-col bg-surface-muted text-content" data-layout="topnav">
-      <header className="bg-sidebar text-on-sidebar border-b print:hidden relative z-30">
+      <header data-testid="app-topbar" className="bg-sidebar text-on-sidebar border-b print:hidden relative z-30">
         <div className="max-w-7xl mx-auto min-h-14 py-2 flex items-center gap-3 px-4">
           <MenuButton />
           <div className="shrink-0 max-w-[14rem]"><BrandLogo institution={institution} theme={theme} /></div>
-          <nav aria-label={t('common.menu')} className="hidden lg:flex flex-1 flex-wrap items-center gap-1 ms-2 min-w-0">
+          <nav aria-label={t('common.menu')} data-testid="app-nav" className="hidden lg:flex flex-1 flex-wrap items-center gap-1 ms-2 min-w-0">
             {nav.map(i => i.children ? (
               <div key={i.key} className="relative">
                 <button type="button" aria-expanded={drop === i.key} onClick={() => setDrop(d => (d === i.key ? null : i.key))} className={`${item} hover:bg-primary-soft`}>

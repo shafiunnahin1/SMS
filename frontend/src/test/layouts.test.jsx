@@ -33,6 +33,9 @@ describe.each([['sidebar-classic', SidebarClassicLayout], ['sidebar-mini', Sideb
     expect(document.querySelector(`[data-layout="${key}"]`)).not.toBeNull()
     expect(screen.getAllByText('D').length + screen.queryAllByText('Demo School').length).toBeGreaterThan(0)
     expect(screen.getByTestId('bell')).toBeInTheDocument()
+    // docs/E2E-TESTING.md section 5: the fixed data-testid contract the browser tests rely on
+    expect(screen.getAllByTestId('app-nav').length).toBe(1)
+    expect(screen.getAllByTestId('app-topbar').length).toBe(1)
     const hrefs = [...document.querySelectorAll('a')].map(a => a.getAttribute('href'))
     EXPECTED[key].forEach(p => expect(hrefs).toContain(p))
   })

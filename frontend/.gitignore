@@ -25,3 +25,8 @@ dist-ssr
 
 # Local environment (commit only .env.example)
 .env
+
+# Playwright output (npm run e2e)
+test-results/
+playwright-report/
+e2e/results.xml

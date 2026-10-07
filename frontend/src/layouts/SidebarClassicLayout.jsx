@@ -18,13 +18,13 @@ export default function SidebarClassicLayout({ nav, user, institution, theme, ch
     <div className="min-h-screen flex bg-surface-muted text-content" data-layout="sidebar-classic">
       <aside className="hidden lg:flex flex-col w-[260px] shrink-0 bg-sidebar text-on-sidebar border-e print:hidden">
         <div className="h-14 flex items-center px-4 border-b"><BrandLogo institution={institution} theme={theme} /></div>
-        <nav aria-label={t('common.menu')} className="flex flex-col gap-1 p-3 overflow-y-auto">
+        <nav aria-label={t('common.menu')} data-testid="app-nav" className="flex flex-col gap-1 p-3 overflow-y-auto">
           {nav.map(item => <NavItem key={item.key} item={item} onNavigate={closeSidebar} />)}
         </nav>
       </aside>
       <NavDrawer nav={nav} institution={institution} theme={theme} />
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-14 flex items-center gap-3 px-4 bg-surface border-b print:hidden">
+        <header data-testid="app-topbar" className="h-14 flex items-center gap-3 px-4 bg-surface border-b print:hidden">
           <MenuButton />
           <div className="lg:hidden min-w-0"><BrandLogo institution={institution} theme={theme} compact /></div>
           <div className="ms-auto flex items-center gap-2"><LanguageSwitcher /><NotificationBell /><UserMenu user={user} /></div>

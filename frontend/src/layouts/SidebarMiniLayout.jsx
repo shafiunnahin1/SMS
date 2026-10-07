@@ -22,7 +22,7 @@ export default function SidebarMiniLayout({ nav, user, institution, theme, child
     <div className="min-h-screen flex bg-surface-muted text-content" data-layout="sidebar-mini">
       <aside className="hidden lg:flex flex-col items-center w-[72px] shrink-0 bg-sidebar text-on-sidebar border-e print:hidden relative z-30">
         <div className="h-14 flex items-center justify-center"><BrandLogo institution={institution} theme={theme} compact /></div>
-        <nav aria-label={t('common.menu')} className="flex flex-col items-center gap-1 py-2 overflow-y-auto">
+        <nav aria-label={t('common.menu')} data-testid="app-nav" className="flex flex-col items-center gap-1 py-2 overflow-y-auto">
           {nav.map(item => {
             const Icon = navIcon(item.icon)
             if (item.children) return (
@@ -49,7 +49,7 @@ export default function SidebarMiniLayout({ nav, user, institution, theme, child
       </aside>
       <NavDrawer nav={nav} institution={institution} theme={theme} />
       <div className="flex-1 min-w-0 flex flex-col" onClick={() => open && setOpen(null)}>
-        <header className="h-14 flex items-center gap-3 px-4 bg-surface border-b print:hidden">
+        <header data-testid="app-topbar" className="h-14 flex items-center gap-3 px-4 bg-surface border-b print:hidden">
           <MenuButton />
           <div className="min-w-0"><BrandLogo institution={institution} theme={theme} /></div>
           <div className="ms-auto flex items-center gap-2"><LanguageSwitcher /><NotificationBell /><UserMenu user={user} /></div>

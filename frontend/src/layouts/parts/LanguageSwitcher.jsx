@@ -9,7 +9,7 @@ export default function LanguageSwitcher({ className = '' }) {
   const { locale, setLocale, enabled } = useLocale()
   if (!enabled || enabled.length < 2) return null
   return (
-    <label className={`inline-flex items-center gap-1 text-sm ${className}`}>
+    <label data-testid="language-switcher" className={`inline-flex items-center gap-1 text-sm ${className}`}>
       <Languages aria-hidden="true" className="h-4 w-4" />
       <span className="sr-only">{t('common.language')}</span>
       <select value={locale} onChange={e => setLocale(e.target.value)} className="bg-transparent text-inherit rounded-token h-8 px-1 [border:1px_solid_var(--line)]">
