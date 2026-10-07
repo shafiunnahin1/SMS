@@ -22,7 +22,7 @@ class NotificationController extends Controller
     public function markRead(Request $request, string $id)
     {
         $request->user()->notifications()->whereKey($id)->firstOrFail()->markAsRead();
-        return response()->json(['success' => true, 'message' => 'Marked as read']);
+        return response()->json(['success' => true, 'message' => __('messages.marked_read')]);
     }
 
     public function markAllRead(Request $request)

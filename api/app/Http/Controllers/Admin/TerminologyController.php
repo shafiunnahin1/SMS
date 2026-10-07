@@ -21,6 +21,6 @@ class TerminologyController extends Controller
         $institution->update(['terminology' => $request->overrides() ?: null]);
         Cache::forget("bootstrap:{$institution->id}");
 
-        return response()->json(['success' => true, 'data' => new TerminologyResource($institution->fresh()), 'message' => 'Terminology updated']);
+        return response()->json(['success' => true, 'data' => new TerminologyResource($institution->fresh()), 'message' => __('messages.terminology_saved')]);
     }
 }

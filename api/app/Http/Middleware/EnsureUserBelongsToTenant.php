@@ -15,7 +15,7 @@ class EnsureUserBelongsToTenant
         $tenant = app('currentInstitution');          // `tenant` middleware ran first, so this is bound
         if (!$user || $user->role === 'super_admin' || (int) $user->institution_id !== (int) $tenant->id) {
             return response()->json(['success' => false, 'error' => 'institution_mismatch',
-                                     'message' => 'Access denied — institution mismatch'], 403);
+                                     'message' => __('errors.institution_mismatch')], 403);
         }
         return $next($request);
     }

@@ -3,14 +3,14 @@
 namespace App\Services;
 
 use App\Exceptions\BusinessException;
-use App\Models\{Institution, SmsCreditTransaction, SmsLog};
+use App\Models\{Institution, SmsCreditTransaction, SmsLog, User};
 use App\Services\Sms\SmsGateway;
-use App\Support\Tenancy;
+use App\Support\{SmsSegments, Tenancy};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 // docs/modules/notifications.md "SmsService" + docs/modules/coaching-private-batch.md "SMS Credits".
-// Unicode segment counting and per-segment charging arrive with Step 3.7 (docs/I18N.md section 7); until then 1 message = 1 credit.
+// Quota and credit are counted in SMS PARTS (docs/I18N.md section 7, SmsSegments): a Bengali text over 70 units costs 2 or more.
 class SmsService
 {
     public function __construct(private SmsGateway $gateway) {}
@@ -28,19 +28,27 @@ class SmsService
         return $sender['own'] ? $message : $message . ' -' . (($i->settings ?? [])['sms_short_name'] ?? Str::limit($i->name, 30, ''));
     }
 
-    /** Monthly plan quota first, then prepaid credits (sms_balance); neither left -> sms_quota_exceeded */
-    public function canSend(Institution $i): bool
+    /** Monthly plan quota first, then prepaid credits (sms_balance); not enough for all the parts -> sms_quota_exceeded */
+    public function canSend(Institution $i, int $segments = 1): bool
     {
-        return $this->quotaLeft($i) > 0 || $i->fresh()->sms_balance > 0;
+        $quota = $this->quotaLeft($i);
+        return $quota === PHP_INT_MAX || max(0, $quota) + $i->fresh()->sms_balance >= $segments;
+    }
+
+    /** docs/I18N.md section 7: the recipient's language - the parent user's own choice, else the institution's SMS language */
+    public function localeFor(?User $recipient, Institution $i): string
+    {
+        $lang = app(InstitutionSettings::class)->language($i);
+        return in_array($recipient?->locale, $lang['enabled'], true) ? $recipient->locale : $lang['sms_locale'];
     }
 
     public function send(string $phone, string $message, ?int $sentBy = null): bool
     {
         $i = Tenancy::current() ?? throw new \App\Exceptions\TenantNotBoundException(SmsLog::class);
-        if (!$this->canSend($i)) throw new BusinessException('SMS কোটা ও ক্রেডিট শেষ', 'sms_quota_exceeded', 402);
-
         $sender = $this->senderFor($i);
         $text = $this->compose($message, $sender, $i);
+        if (!$this->canSend($i, SmsSegments::count($text)['segments'])) throw new BusinessException('SMS quota and credit used up', 'sms_quota_exceeded', 402);
+
         $ok = $this->gateway->send($phone, $text, $sender['sid']);
         $fallback = false;
 
@@ -52,24 +60,28 @@ class SmsService
             $fallback = true;
         }
 
+        $parts = SmsSegments::count($text);
         $log = SmsLog::create([
             'to_phone' => $phone, 'message' => $text, 'status' => $ok ? 'sent' : 'failed', 'sender_id' => $sender['sid'],
+            'segments' => max(1, $parts['segments']), 'encoding' => $parts['encoding'],
             'fallback_used' => $fallback, 'error' => $ok ? null : 'gateway_error', 'sent_by' => $sentBy,
         ]);
-        if ($ok) $this->chargeOne($i, $log);
+        if ($ok) $this->charge($i, $log);
         return $ok;
     }
 
-    /** A sent message uses the monthly quota while it lasts, then one prepaid credit (ledger row `usage`) */
-    private function chargeOne(Institution $i, SmsLog $log): void
+    /** A sent message's parts use the monthly quota while it lasts; the parts beyond it take prepaid credits (ledger row `usage`) */
+    private function charge(Institution $i, SmsLog $log): void
     {
-        if ($this->sentThisMonth() <= $this->monthlyQuota($i)) return;   // counted after logging: this message was inside the quota
+        // counted after logging: the parts of this message that do not fit in the quota
+        $over = min($log->segments, $this->sentThisMonth() - $this->monthlyQuota($i));
+        if ($over <= 0) return;
 
-        DB::transaction(function () use ($i, $log) {
+        DB::transaction(function () use ($i, $log, $over) {
             $locked = Institution::whereKey($i->id)->lockForUpdate()->first();
-            $balance = max(0, $locked->sms_balance - 1);
+            $balance = max(0, $locked->sms_balance - $over);
             $locked->forceFill(['sms_balance' => $balance])->save();
-            SmsCreditTransaction::create(['type' => 'usage', 'quantity' => -1, 'balance_after' => $balance, 'reference' => "sms_log:{$log->id}"]);
+            SmsCreditTransaction::create(['type' => 'usage', 'quantity' => -$over, 'balance_after' => $balance, 'reference' => "sms_log:{$log->id}"]);
         });
     }
 
@@ -81,7 +93,7 @@ class SmsService
 
     private function sentThisMonth(): int
     {
-        return SmsLog::where('status', 'sent')->where('sent_at', '>=', now()->startOfMonth())->count();
+        return (int) SmsLog::where('status', 'sent')->where('sent_at', '>=', now()->startOfMonth())->sum('segments');
     }
 
     private function quotaLeft(Institution $i): int

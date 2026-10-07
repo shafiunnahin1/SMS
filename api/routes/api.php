@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     // ─── 1. Any host ───────────────────────────────────────────
-    Route::middleware('tenant:optional')->group(function () {
+    Route::middleware(['tenant:optional', 'locale'])->group(function () {
         Route::get('/health',                 HealthController::class);   // invokable: a closure would break route:cache
         Route::get('/bootstrap',              [BootstrapController::class, 'show']);
         Route::post('/auth/login',            [LoginController::class, 'login'])->middleware('throttle:login');
@@ -28,7 +28,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // ─── 3. Tenant host only ───────────────────────────────────
-    Route::middleware(['tenant', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription'])->group(function () {
+    Route::middleware(['tenant', 'locale', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription'])->group(function () {
         Route::patch('/auth/change-password', [PasswordResetController::class, 'changePassword']);
         Route::get('/auth/sessions',          [SessionController::class, 'index']);
         Route::delete('/auth/sessions/{id}',  [SessionController::class, 'destroy'])->whereNumber('id');

@@ -105,11 +105,11 @@ class FeeService
             $receipt = $this->nextReceiptNo();
             $n = 0;
             $rows = collect($lines)->map(function ($l) use ($s, $dues, $method, $receipt, &$n) {
-                if (!$dues->has($l['key'] ?? '')) throw ValidationException::withMessages(['lines' => 'বকেয়াটি আর প্রযোজ্য নয়']);
+                if (!$dues->has($l['key'] ?? '')) throw ValidationException::withMessages(['lines' => __('errors.due_not_applicable')]);
                 $d = $dues[$l['key']];
                 $due = Money::toPaisa($d['amount']);
                 $paid = min(Money::toPaisa($l['paid_amount'] ?? $d['amount']), $due);
-                if ($paid <= 0) throw ValidationException::withMessages(['lines' => 'পরিমাণ শূন্যের বেশি হতে হবে']);
+                if ($paid <= 0) throw ValidationException::withMessages(['lines' => __('errors.amount_positive')]);
                 return FeePayment::create([
                     'student_id' => $s->id, 'enrollment_id' => $d['enrollment_id'], 'batch_id' => $d['batch_id'],
                     'fee_category_id' => $d['fee_category_id'], 'amount' => $d['gross'], 'discount' => $d['discount'],
@@ -120,7 +120,8 @@ class FeeService
             });
             $total = Money::format($rows->sum(fn ($r) => Money::toPaisa($r->paid_amount)));
             // sender + institution suffix are added by SmsService::compose()
-            SendSmsJob::dispatch($s->guardian_phone, "BDT {$total} received. Receipt: {$receipt}.", Tenancy::current()->id)->afterCommit();
+            $locale = app(SmsService::class)->localeFor($s->primaryParent(), Tenancy::current());
+            SendSmsJob::dispatch($s->guardian_phone, __('sms.fee_received', ['amount' => $total, 'receipt' => $receipt], $locale), Tenancy::current()->id)->afterCommit();
             return $rows;
         });
     }

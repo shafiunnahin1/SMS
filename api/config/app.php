@@ -78,7 +78,7 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => env('APP_LOCALE', 'bn'),               // docs/I18N.md: the last fallback is bn; SetLocale sets it per request
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 

@@ -24,6 +24,6 @@ class UpdateLanguageRequest extends FormRequest
 
     public function after(): array
     {
-        return [fn ($v) => in_array('bn', (array) $this->input('enabled', []), true) ? null : $v->errors()->add('enabled', 'Bengali (bn) cannot be disabled.')];
+        return [fn ($v) => in_array('bn', (array) $this->input('enabled', []), true) ? null : $v->errors()->add('enabled', __('errors.bn_required'))];
     }
 }

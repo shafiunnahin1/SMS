@@ -81,7 +81,7 @@ class ThemeService
     {
         $layouts = config("ui_packs.{$pack}.layouts", []);
         if (!in_array($layout, $layouts, true)) {
-            throw ValidationException::withMessages(['ui_pack' => "'{$pack}' UI Pack '{$layout}' লেআউটের সাথে চলে না"]);
+            throw ValidationException::withMessages(['ui_pack' => __('errors.ui_pack_layout', ['pack' => $pack, 'layout' => $layout])]);
         }
     }
 
@@ -107,7 +107,7 @@ class ThemeService
     public function applyPreset(Institution $i, ThemePreset $preset, ?int $userId = null): Institution
     {
         $allowed = $preset->allowed_types;
-        abort_if($allowed && !in_array($i->institution_type, $allowed, true), 422, 'এই থিম এই ধরনের প্রতিষ্ঠানের জন্য নয়');
+        abort_if($allowed && !in_array($i->institution_type, $allowed, true), 422, __('errors.theme_not_allowed'));
 
         $layout = $preset->layout_key ?? config("institution_types.{$i->institution_type}.default_layout") ?? 'sidebar-classic';
         $this->assertCompatible($layout, $this->packFor(new Institution(), $preset));   // the pair the institution would get

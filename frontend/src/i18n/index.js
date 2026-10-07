@@ -15,6 +15,7 @@ i18n.use(initReactI18next).init({
 })
 
 // The Bengali menu text IS the key, so a missing translation must fall back to it (ar -> bn), not on to English
-export const navLabel = (label) => i18n.getResource(i18n.language, 'nav', label) ?? label
+// `lng` lets a render use the language it is switching TO (i18next changes after the render, in an effect)
+export const navLabel = (label, lng = i18n.language) => i18n.getResource(lng, 'nav', label) ?? label
 
 export default i18n

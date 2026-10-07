@@ -23,13 +23,13 @@ class SessionController extends Controller
     public function destroy(Request $request, int $id)
     {
         $request->user()->tokens()->whereKey($id)->firstOrFail()->delete();
-        return response()->json(['success' => true, 'message' => 'Session ended']);
+        return response()->json(['success' => true, 'message' => __('messages.session_ended')]);
     }
 
     public function logoutAll(Request $request)
     {
         $this->tokens->revokeAll($request->user());
-        return response()->json(['success' => true, 'message' => 'Logged out everywhere']);
+        return response()->json(['success' => true, 'message' => __('messages.logged_out_all')]);
     }
 
     /** Admin: only users of the admin's own institution are found (User::inTenant) */
@@ -38,7 +38,7 @@ class SessionController extends Controller
         $user = User::inTenant()->findOrFail($id);
         $this->tokens->revokeAll($user);
         AuditLog::record('auth.force_logout', $user);
-        return response()->json(['success' => true, 'message' => 'User logged out everywhere']);
+        return response()->json(['success' => true, 'message' => __('messages.user_logged_out')]);
     }
 
     public function unlock(int $id)
@@ -46,6 +46,6 @@ class SessionController extends Controller
         $user = User::inTenant()->findOrFail($id);
         $user->forceFill(['locked_until' => null, 'failed_login_attempts' => 0])->save();
         AuditLog::record('auth.unlocked', $user);
-        return response()->json(['success' => true, 'message' => 'Account unlocked']);
+        return response()->json(['success' => true, 'message' => __('messages.account_unlocked')]);
     }
 }

@@ -36,7 +36,7 @@ class FeeController extends Controller
         $data = $request->validated();
         $rows = $this->fees->collect(Student::findOrFail($data['student_id']), $data['lines'], $data['payment_method']);
 
-        return response()->json(['success' => true, 'message' => 'আদায় সম্পন্ন', 'data' => $this->receiptData($rows->first()->receipt_no)], 201);
+        return response()->json(['success' => true, 'message' => __('messages.fee_collected'), 'data' => $this->receiptData($rows->first()->receipt_no)], 201);
     }
 
     /** GET /fees/receipt/{id} - {id} is any line of the receipt; the PDF carries every line of that receipt */

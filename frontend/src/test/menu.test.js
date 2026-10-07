@@ -41,3 +41,14 @@ it('a menu label without a translation falls back to the Bengali text itself, ne
   expect(navLabel('ড্যাশবোর্ড')).toBe('Dashboard')
   await i18n.changeLanguage('bn')
 })
+
+it('every R1 Bengali menu label of every role has an English translation (term keys and Latin labels are not nav text)', async () => {
+  const { default: i18n, navLabel } = await import('../i18n')
+  const missing = []
+  for (const role of ['admin', 'teacher', 'accountant', 'parent', 'student', 'super_admin']) {
+    const all = buildNav(role, { ...R1, settings: { ...R1.settings, parent_portal: true }, roles: [...R1.roles, role] })
+    for (const item of all.flatMap(i => [i, ...(i.children ?? [])])) if (/[\u0980-\u09FF]/.test(item.label) && navLabel(item.label, 'en') === item.label) missing.push(`${role}: ${item.label}`)
+  }
+  expect(missing).toEqual([])
+  expect(i18n.language).toBeDefined()
+})

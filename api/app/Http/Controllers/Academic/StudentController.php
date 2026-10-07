@@ -35,7 +35,7 @@ class StudentController extends Controller
         $student = $this->students->create(collect($data)->except(['batch_id', 'roll_no', 'fee_override'])->all(), $batch, $enrollment);
 
         return (new StudentResource($student->load(['user:id,name', 'program:id,name', 'batch:id,name', 'activeEnrollments.batch', 'activeEnrollments.program'])))
-            ->additional(['success' => true, 'message' => 'ভর্তি সম্পন্ন'])->response()->setStatusCode(201);
+            ->additional(['success' => true, 'message' => __('messages.admitted')])->response()->setStatusCode(201);
     }
 
     public function show(int $id)

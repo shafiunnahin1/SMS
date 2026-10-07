@@ -21,19 +21,18 @@ use Illuminate\Support\Facades\Crypt;
 class LoginController extends Controller
 {
     /** Identical for unknown user, wrong password, locked and inactive accounts */
-    private const GENERIC = ['success' => false, 'error' => 'invalid_credentials',
-        'message' => 'লগইন তথ্য ভুল, অথবা অ্যাকাউন্ট সাময়িকভাবে বন্ধ। কিছুক্ষণ পরে চেষ্টা করুন।'];
+    private static function generic(): array { return ['success' => false, 'error' => 'invalid_credentials', 'message' => __('errors.invalid_credentials')]; }
 
     public function __construct(private LoginService $login, private OtpService $otp, private TokenService $tokens) {}
 
     public function login(LoginRequest $request)
     {
         $user = $this->login->attempt($this->login->findUser($request->input('login')), $request->input('password'));
-        if (!$user) return response()->json(self::GENERIC, 401);
+        if (!$user) return response()->json(self::generic(), 401);
 
         // roles this release does not ship (R1: student) get no token (config/release.php)
         if (!in_array($user->role, config('release.roles', []), true)) {
-            return response()->json(['success' => false, 'error' => 'role_not_available', 'message' => 'This role is not available yet'], 403);
+            return response()->json(['success' => false, 'error' => 'role_not_available', 'message' => __('errors.role_not_available')], 403);
         }
 
         if ($this->login->needsSecondFactor($user)) {
@@ -49,7 +48,7 @@ class LoginController extends Controller
 
     public function verifyOtp(VerifyOtpRequest $request)
     {
-        $fail = response()->json(['success' => false, 'error' => 'invalid_otp', 'message' => 'কোডটি ভুল বা মেয়াদোত্তীর্ণ'], 401);
+        $fail = response()->json(['success' => false, 'error' => 'invalid_otp', 'message' => __('errors.invalid_otp')], 401);
         try {
             $c = json_decode(Crypt::decryptString($request->input('challenge')), true);
         } catch (DecryptException) {
@@ -68,7 +67,7 @@ class LoginController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
         if ($request->hasSession()) $request->session()->invalidate();   // D51: the web session ends with its token
-        return response()->json(['success' => true, 'message' => 'Logged out']);
+        return response()->json(['success' => true, 'message' => __('messages.logged_out')]);
     }
 
     public function me(Request $request)

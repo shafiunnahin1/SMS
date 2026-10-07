@@ -19,7 +19,7 @@ class EnsureHostUser
             : ($user?->role === 'super_admin' && $user->institution_id === null);
         if (!$ok) {
             return response()->json(['success' => false, 'error' => $user?->role === 'super_admin' ? 'forbidden_host' : 'institution_mismatch',
-                'message' => 'Access denied for this host'], 403);
+                'message' => __('errors.' . ($user?->role === 'super_admin' ? 'forbidden_host' : 'institution_mismatch'))], 403);
         }
         return $next($request);
     }

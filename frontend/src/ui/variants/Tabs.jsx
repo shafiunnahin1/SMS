@@ -6,7 +6,7 @@ import { usePick } from './pick'
 function UnderlineTabs({ items, value, onChange, label }) {
   const list = useRef(null)
   const onKey = (e) => {
-    const rtl = getComputedStyle(list.current).direction === 'rtl'
+    const rtl = (list.current.closest('[dir]')?.getAttribute('dir') ?? document.documentElement.dir) === 'rtl'
     const step = { ArrowRight: rtl ? -1 : 1, ArrowLeft: rtl ? 1 : -1 }[e.key]   // theme-lint-ignore: keyboard key names, not icons
     let i = items.findIndex(it => it.key === value)
     if (step) i = (i + step + items.length) % items.length

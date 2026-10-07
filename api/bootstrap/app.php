@@ -26,6 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('api', \App\Http\Middleware\SessionBearer::class);
         // Laravel sorts middleware by priority and would run `auth:sanctum` first: the session's token must be in place before it
         $middleware->prependToPriorityList(\Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, \App\Http\Middleware\SessionBearer::class);
+        // docs/I18N.md section 6: the tenant, then its language, BEFORE `auth:sanctum` - so even "please log in" is in the right language
+        $middleware->prependToPriorityList(\Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, TenantMiddleware::class);
+        $middleware->prependToPriorityList(\Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, \App\Http\Middleware\SetLocale::class);
         $middleware->alias([
             'tenant'         => TenantMiddleware::class,            // modes: tenant | tenant:optional | tenant:central
             'tenant.user'    => EnsureUserBelongsToTenant::class,
@@ -37,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'           => RoleMiddleware::class,
             'subscription'   => SubscriptionCheck::class,
             'academic_year'  => AcademicYearMiddleware::class,
+            'locale'         => \App\Http\Middleware\SetLocale::class,     // right after `tenant` (docs/I18N.md section 6, D53)
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -46,10 +50,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // Standard error envelope for the API (docs/API-ERRORS.md)
         $api = fn (Request $request) => $request->is('api/*');
         $exceptions->render(fn (AuthenticationException $e, Request $request) => $api($request)
-            ? response()->json(['success' => false, 'error' => 'unauthenticated', 'message' => 'লগিন করুন'], 401) : null);
+            ? response()->json(['success' => false, 'error' => 'unauthenticated', 'message' => __('errors.unauthenticated')], 401) : null);
         $exceptions->render(fn (ValidationException $e, Request $request) => $api($request)
-            ? response()->json(['success' => false, 'error' => 'validation_failed', 'message' => 'ইনপুট যাচাইয়ে ত্রুটি', 'errors' => $e->errors()], 422) : null);
+            ? response()->json(['success' => false, 'error' => 'validation_failed', 'message' => __('errors.validation_failed'), 'errors' => $e->errors()], 422) : null);
         // Laravel turns ModelNotFoundException into this before render callbacks run; also covers unknown API paths
-        $exceptions->render(fn (NotFoundHttpException $e, Request $request) => $api($request)
-            ? response()->json(['success' => false, 'error' => 'not_found', 'message' => 'তথ্য পাওয়া যায়নি'], 404) : null);
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) use ($api) {
+            if (!$api($request)) return null;
+            // an unknown path matched no route, so SetLocale never ran: the app's own language code still decides
+            if (!$request->route() && in_array($l = \App\Http\Middleware\SetLocale::fromHeader($request), config('i18n.supported'), true)) app()->setLocale($l);
+            return response()->json(['success' => false, 'error' => 'not_found', 'message' => __('errors.not_found')], 404);
+        });
     })->create();

@@ -14,7 +14,7 @@ class EnsurePasswordChanged
     public function handle(Request $request, Closure $next)
     {
         if ($request->user()?->must_change_password && !$request->is(...self::ALLOWED)) {
-            return response()->json(['success' => false, 'error' => 'must_change_password', 'message' => 'Please change your password first'], 403);
+            return response()->json(['success' => false, 'error' => 'must_change_password', 'message' => __('errors.must_change_password')], 403);
         }
         return $next($request);
     }

@@ -24,7 +24,7 @@ class SubscriptionCheck
         if ($expires && $expires->copy()->addDays(self::GRACE_DAYS)->isPast()) {
             return response()->json([
                 'success' => false, 'error' => 'subscription_expired',
-                'message' => 'Your subscription has expired. Please renew to continue.',
+                'message' => __('errors.subscription_expired'),
                 'expired_at' => $expires, 'renew_url' => url('/admin/subscription'),
             ], 403);
         }

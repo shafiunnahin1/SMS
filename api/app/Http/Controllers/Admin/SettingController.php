@@ -25,7 +25,7 @@ class SettingController extends Controller
         $i = app('currentInstitution');
         $i->forceFill($request->validated())->save();
         app(ThemeService::class)->flush($i);
-        return response()->json(['success' => true, 'data' => $this->profile(), 'message' => 'Settings saved']);
+        return response()->json(['success' => true, 'data' => $this->profile(), 'message' => __('messages.saved')]);
     }
 
     public function general()
@@ -37,7 +37,7 @@ class SettingController extends Controller
     {
         $i = app('currentInstitution');
         $this->settings->merge($i, $request->validated());
-        return response()->json(['success' => true, 'data' => $this->settings->general($i->fresh()), 'message' => 'Settings saved']);
+        return response()->json(['success' => true, 'data' => $this->settings->general($i->fresh()), 'message' => __('messages.saved')]);
     }
 
     public function language()
@@ -53,7 +53,7 @@ class SettingController extends Controller
             'default_locale' => $request->input('default'),
             'sms_locale' => $request->input('sms_locale') ?? $request->input('default'),
         ]);
-        return response()->json(['success' => true, 'data' => $this->settings->language($i->fresh()), 'message' => 'Settings saved']);
+        return response()->json(['success' => true, 'data' => $this->settings->language($i->fresh()), 'message' => __('messages.saved')]);
     }
 
     private function profile(): array

@@ -23,9 +23,7 @@ export default function AppShell() {
     : (['student', 'parent'].includes(user.role) && narrow) ? 'mobile-compact' : theme?.layout_key
   const Layout = LAYOUTS[key] ?? LAYOUTS[DEFAULT_LAYOUT]
   const nav = useMemo(
-    () => buildNav(user.role, { modules, settings, roles, release: release?.id, features: plan?.features ?? {} }, term, navLabel),
-    // locale: labels are translated when the language changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => buildNav(user.role, { modules, settings, roles, release: release?.id, features: plan?.features ?? {} }, term, (label) => navLabel(label, locale)),
     [user.role, modules, settings, roles, release, plan, term, locale],
   )
 

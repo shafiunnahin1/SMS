@@ -14,7 +14,7 @@ class ModuleMiddleware
     public function handle(Request $request, Closure $next, string $module)
     {
         if (!$this->gate->allows(app('currentInstitution'), $module)) {
-            return response()->json(['success' => false, 'error' => 'module_disabled', 'message' => 'This module is not enabled for your institution', 'module' => $module], 403);
+            return response()->json(['success' => false, 'error' => 'module_disabled', 'message' => __('errors.module_disabled'), 'module' => $module], 403);
         }
         return $next($request);
     }

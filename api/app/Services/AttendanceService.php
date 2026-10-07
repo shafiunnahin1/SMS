@@ -22,7 +22,7 @@ class AttendanceService
         $date = $data['date'];
 
         if (in_array($institution->institution_type, ['school', 'college'], true) && Holiday::where('date', $date)->exists()) {
-            throw new BusinessException("ছুটির দিনে উপস্থিতি নেওয়া যায় না ({$date})", 'holiday_date');
+            throw new BusinessException("Holiday: {$date}", 'holiday_date', 422, ['date' => $date]);
         }
 
         $enrolled = Enrollment::where('batch_id', $batch->id)->where('status', 'active')
@@ -33,7 +33,7 @@ class AttendanceService
             $rows = [];
             foreach ($data['records'] as $r) {
                 if (!$enrolled->has($r['student_id'])) {
-                    throw new BusinessException("Student #{$r['student_id']} এই batch-এ ভর্তি নন", 'not_enrolled');
+                    throw new BusinessException("Student #{$r['student_id']} not enrolled", 'not_enrolled', 422, ['student' => $r['student_id'], 'batch' => term('batch')]);
                 }
                 $rows[] = ['institution_id' => $institution->id, 'student_id' => $r['student_id'], 'batch_id' => $batch->id, 'date' => $date,
                            'program_id' => $batch->program_id, 'status' => $r['status'], 'taken_by' => auth()->id(), 'note' => $r['note'] ?? null, 'created_at' => now()];
@@ -49,11 +49,14 @@ class AttendanceService
     private function notifyAbsentParents(array $studentIds, string $date, Batch $batch): void
     {
         $when = Carbon::parse($date)->format('d/m/Y');
-        Student::with('user')->whereIn('id', $studentIds)->get()->each(function (Student $s) use ($when, $batch) {
-            $prefs = $s->primaryParent()?->notification_preferences ?? [];
+        $sms = app(SmsService::class);
+        Student::with('user')->whereIn('id', $studentIds)->get()->each(function (Student $s) use ($when, $batch, $sms) {
+            $parent = $s->primaryParent();
+            $prefs = $parent?->notification_preferences ?? [];
             if (($prefs['sms'] ?? true) && ($prefs['absent_alert'] ?? true)) {
                 $name = $s->user?->name ?? $s->student_id;
-                SendSmsJob::dispatch($s->guardian_phone, "প্রিয় অভিভাবক, {$name} {$when} তারিখে {$batch->name}-এ অনুপস্থিত ছিল।", Tenancy::current()->id);
+                $text = __('sms.absent', ['name' => $name, 'date' => $when, 'batch' => $batch->name], $sms->localeFor($parent, Tenancy::current()));
+                SendSmsJob::dispatch($s->guardian_phone, $text, Tenancy::current()->id);
             }
         });
     }

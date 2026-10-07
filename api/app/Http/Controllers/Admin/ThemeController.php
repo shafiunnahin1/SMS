@@ -27,15 +27,15 @@ class ThemeController extends Controller
         $i = app('currentInstitution');
         if (!$this->gate->feature($i, 'custom_branding')) {
             return response()->json(['success' => false, 'error' => 'feature_not_available', 'feature' => 'custom_branding',
-                'message' => 'Theme customization is not available for your institution'], 403);
+                'message' => __('errors.feature_not_available')], 403);
         }
         $updated = $this->themes->update($i, $request->validated(), $request->user()->id);
-        return response()->json(['success' => true, 'data' => ['theme' => $this->themes->getTheme($updated)], 'message' => 'Theme updated']);
+        return response()->json(['success' => true, 'data' => ['theme' => $this->themes->getTheme($updated)], 'message' => __('messages.theme_updated')]);
     }
 
     public function logo(UploadLogoRequest $request)
     {
         $url = $this->themes->uploadLogo(app('currentInstitution'), $request->file('logo'), $request->user()->id);
-        return response()->json(['success' => true, 'data' => ['logo_url' => $url], 'message' => 'Logo uploaded']);
+        return response()->json(['success' => true, 'data' => ['logo_url' => $url], 'message' => __('messages.logo_uploaded')]);
     }
 }

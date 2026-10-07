@@ -32,12 +32,12 @@ class PasswordResetController extends Controller
             }
         }
         // the same answer whether or not the account exists
-        return response()->json(['success' => true, 'message' => 'অ্যাকাউন্ট থাকলে রিসেটের নির্দেশনা পাঠানো হয়েছে।']);
+        return response()->json(['success' => true, 'message' => __('messages.reset_sent')]);
     }
 
     public function reset(ResetPasswordRequest $request)
     {
-        $invalid = response()->json(['success' => false, 'error' => 'invalid_token', 'message' => 'লিংক বা কোডটি ভুল বা মেয়াদোত্তীর্ণ'], 422);
+        $invalid = response()->json(['success' => false, 'error' => 'invalid_token', 'message' => __('errors.invalid_token')], 422);
         $user = $this->login->findUser($request->input('login'));
         if (!$user || !$user->is_active || !$this->otp->find($user, OtpService::RESET, $request->input('token'))) return $invalid;
 
@@ -47,13 +47,13 @@ class PasswordResetController extends Controller
         // UserObserver revokes every token (a lost device is the usual reason for a reset)
         $user->forceFill(['password' => $request->input('password'), 'must_change_password' => false,
             'failed_login_attempts' => 0, 'locked_until' => null])->save();
-        return response()->json(['success' => true, 'message' => 'পাসওয়ার্ড বদলানো হয়েছে, আবার লগইন করুন।']);
+        return response()->json(['success' => true, 'message' => __('messages.password_reset')]);
     }
 
     public function changePassword(ChangePasswordRequest $request)
     {
         // UserObserver keeps the token in use and revokes the others
         $request->user()->forceFill(['password' => $request->input('password'), 'must_change_password' => false])->save();
-        return response()->json(['success' => true, 'message' => 'পাসওয়ার্ড বদলানো হয়েছে।']);
+        return response()->json(['success' => true, 'message' => __('messages.password_changed')]);
     }
 }

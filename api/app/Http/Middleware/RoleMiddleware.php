@@ -39,6 +39,6 @@ class RoleMiddleware
 
     private function fail(string $error, string $message, int $status)
     {
-        return response()->json(['success' => false, 'error' => $error, 'message' => $message], $status);
+        return response()->json(['success' => false, 'error' => $error, 'message' => __("errors.{$error}")], $status);
     }
 }

@@ -1,0 +1,30 @@
+<?php
+
+// docs/I18N.md section 6 + docs/API-ERRORS.md: the `error` code never changes; `message` = __("errors.{code}") in the request's language.
+return [
+    'unauthenticated'       => 'Please log in to continue.',
+    'validation_failed'     => 'Some fields need attention.',
+    'not_found'             => 'Not found.',
+    'forbidden'             => 'You do not have permission to do this.',
+    'forbidden_host'        => 'Super Admin can only be used on the admin domain.',
+    'institution_mismatch'  => 'Access denied for this institution.',
+    'institution_not_found' => 'No institution found for this address.',
+    'institution_suspended' => 'This institution\'s account is suspended.',
+    'role_not_available'    => 'This role is not available here yet.',
+    'must_change_password'  => 'Please change your password first.',
+    'module_disabled'       => 'This module is not enabled for your institution.',
+    'feature_not_available' => 'This feature is not available for your institution.',
+    'subscription_expired'  => 'Your subscription has expired. Please renew to continue.',
+    'invalid_credentials'   => 'Wrong login details, or the account is temporarily locked. Please try again later.',
+    'invalid_otp'           => 'The code is wrong or has expired.',
+    'invalid_token'         => 'The link or code is wrong or has expired.',
+    'sms_quota_exceeded'    => 'SMS quota and credit are used up.',
+    'holiday_date'          => 'Attendance cannot be taken on a holiday (:date).',
+    'not_enrolled'          => 'Student #:student is not enrolled in this :batch.',
+    'theme_not_allowed'     => 'This theme is not for this type of institution.',
+    'ui_pack_layout'        => 'The ":pack" UI pack does not work with the ":layout" layout.',
+    'bn_required'           => 'Bengali (bn) cannot be switched off.',
+    'locale_not_enabled'    => 'This language is not enabled for your institution.',
+    'due_not_applicable'    => 'This due no longer applies.',
+    'amount_positive'       => 'The amount must be more than zero.',
+];

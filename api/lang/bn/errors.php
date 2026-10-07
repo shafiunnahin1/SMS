@@ -1,0 +1,30 @@
+<?php
+
+// docs/I18N.md section 6 + docs/API-ERRORS.md: the `error` code never changes; `message` = __("errors.{code}") in the request's language.
+return [
+    'unauthenticated'       => 'চালিয়ে যেতে লগইন করুন।',
+    'validation_failed'     => 'কিছু ঘর ঠিক করতে হবে।',
+    'not_found'             => 'তথ্য পাওয়া যায়নি।',
+    'forbidden'             => 'এই কাজের অনুমতি আপনার নেই।',
+    'forbidden_host'        => 'Super Admin শুধু অ্যাডমিন ডোমেইনে ব্যবহার করা যায়।',
+    'institution_mismatch'  => 'এই প্রতিষ্ঠানে আপনার প্রবেশাধিকার নেই।',
+    'institution_not_found' => 'এই ঠিকানায় কোনো প্রতিষ্ঠান পাওয়া যায়নি।',
+    'institution_suspended' => 'এই প্রতিষ্ঠানের অ্যাকাউন্ট স্থগিত আছে।',
+    'role_not_available'    => 'এই ভূমিকা এখানে এখনো চালু নয়।',
+    'must_change_password'  => 'আগে পাসওয়ার্ড বদলান।',
+    'module_disabled'       => 'এই মডিউল আপনার প্রতিষ্ঠানে চালু নেই।',
+    'feature_not_available' => 'এই সুবিধা আপনার প্রতিষ্ঠানে নেই।',
+    'subscription_expired'  => 'সাবস্ক্রিপশনের মেয়াদ শেষ। চালিয়ে যেতে নবায়ন করুন।',
+    'invalid_credentials'   => 'লগইন তথ্য ভুল, অথবা অ্যাকাউন্ট সাময়িকভাবে বন্ধ। কিছুক্ষণ পরে চেষ্টা করুন।',
+    'invalid_otp'           => 'কোডটি ভুল বা মেয়াদোত্তীর্ণ।',
+    'invalid_token'         => 'লিংক বা কোডটি ভুল বা মেয়াদোত্তীর্ণ।',
+    'sms_quota_exceeded'    => 'SMS কোটা ও ক্রেডিট শেষ।',
+    'holiday_date'          => 'ছুটির দিনে উপস্থিতি নেওয়া যায় না (:date)।',
+    'not_enrolled'          => 'Student #:student এই :batch-এ ভর্তি নন।',
+    'theme_not_allowed'     => 'এই থিম এই ধরনের প্রতিষ্ঠানের জন্য নয়।',
+    'ui_pack_layout'        => '":pack" UI Pack ":layout" লেআউটের সাথে চলে না।',
+    'bn_required'           => 'বাংলা (bn) বন্ধ করা যায় না।',
+    'locale_not_enabled'    => 'এই ভাষা আপনার প্রতিষ্ঠানে চালু নেই।',
+    'due_not_applicable'    => 'বকেয়াটি আর প্রযোজ্য নয়।',
+    'amount_positive'       => 'পরিমাণ শূন্যের বেশি হতে হবে।',
+];
