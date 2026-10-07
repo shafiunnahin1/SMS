@@ -51,7 +51,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
     - S4b (k6 peak-hour load) not run: k6 is not installed and the only server available is `php artisan serve` (one PHP process), so any number would describe the dev server, not production; it needs php-fpm/nginx (or the target host) - left open for the owner (listed under D48's open items).
     - Agent's Gate recommendation: **Go, with conditions** - before Phase 4's PDFs the owner chooses the PDF renderer (BLOCKED) and decides S7 (auth) and the font shipping; the unmeasured items above stay open and are listed for the owner.
 - [x] 3.1 — this commit — tests: bootstrap.test (3: one call, store filled + cached, central host, failure with/without cache), locale.test (3, D53) — `npx vitest run` 26 passed; `npm run lint:theme` 0 violations; `php artisan test` 233 passed; browser (Chromium, en-US): `alokito-coaching.lvh.me:5173` → 1 request to /api/v1/bootstrap, store ready, 8 modules, page in bn (D53); `admin.lvh.me:5173` → 1 request, isCentral true, landing page
-- [ ] 3.2 — Theme System
+- [x] 3.2 — this commit — tests: ThemeProvider.test (3: CSS variables + data attributes, user dark mode wins, theme change replaces values), fonts.test (2, D52) — `npx vitest run` 31 passed; `npm run lint:theme` 0 violations; `php artisan test` 233 passed; browser (Chromium via the proxy): school #185FA5 / radius 0.5rem / Hind Siliguri loaded, coaching #0F766E / 0.875rem / Anek Bangla loaded, tutor #7C3AED / 1.25rem / Hind Siliguri; Google Fonts responses 200; after reload the primary colour at first paint is the tenant's own (no default-blue flash)
 - [ ] 3.3 — Layouts & Navigation
 - [ ] 3.4 — Shared Components
 - [ ] 3.5 — Auth Pages
