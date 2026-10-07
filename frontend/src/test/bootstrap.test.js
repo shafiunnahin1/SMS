@@ -1,7 +1,7 @@
 import { vi, beforeEach } from 'vitest'
 
 // Step 3.1 Done When: loading the app calls /bootstrap ONCE and fills the store; the central host sets isCentral
-vi.mock('../api/axios', () => ({ default: { get: vi.fn() } }))
+vi.mock('../api/axios', () => ({ bindAuthStore: () => {}, default: { get: vi.fn() } }))
 const { default: api } = await import('../api/axios')
 const { useInstitutionStore, readCachedBootstrap } = await import('../store/institutionStore')
 

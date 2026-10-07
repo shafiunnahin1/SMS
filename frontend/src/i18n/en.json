@@ -27,7 +27,8 @@
    "forbidden": "You are not allowed to do this",
    "too_many": "Too many requests. Please wait a moment.",
    "server": "Server problem. Please try again.",
-   "bootstrap": "Could not load the institution"
+   "bootstrap": "Could not load the institution",
+   "expired": "The page expired, please try again"
   },
   "auth": {
    "title": "Log in",
@@ -35,9 +36,29 @@
    "password": "Password",
    "submit": "Log in",
    "failed": "Login failed — check your details",
-   "must_change": "First login: you must change your password (coming in the next step)",
+   "must_change": "First login — please set your own password.",
    "otp": "Two-step verification is not part of this spike",
-   "welcome": "Welcome to {{name}}"
+   "welcome": "Welcome to {{name}}",
+   "required": "Please fill this in",
+   "otp_label": "Verification code",
+   "otp_hint": "The code sent to your phone/email",
+   "verify": "Verify",
+   "forgot": "Forgot password?",
+   "forgot_title": "Recover password",
+   "forgot_sent": "If the account exists, a link was emailed or a code was sent to the phone.",
+   "have_code": "I have a code — set a new password",
+   "back_to_login": "Back to login",
+   "send_reset": "Send instructions",
+   "reset_title": "New password",
+   "code": "Code",
+   "new_password": "New password",
+   "confirm_password": "New password again",
+   "reset_submit": "Change password",
+   "reset_done": "Password changed, please log in again",
+   "change_title": "Change password",
+   "current_password": "Current password",
+   "change_submit": "Save",
+   "changed": "Password changed"
   },
   "dashboard": {
    "title": "Dashboard",

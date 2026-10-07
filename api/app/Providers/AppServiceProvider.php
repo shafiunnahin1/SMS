@@ -36,7 +36,9 @@ class AppServiceProvider extends ServiceProvider
             $user = $accessToken->tokenable;
             if (!$user || !$user->is_active) return false;
             [, $idle] = config("auth_policy.tokens.{$user->role}") ?? [null, 60];
-            return !($accessToken->last_used_at && $accessToken->last_used_at->lt(now()->subMinutes($idle)));
+            // a token never used since login is idle from its creation (found in Step 3.5: last_used_at is NULL until the first use)
+            $lastSeen = $accessToken->last_used_at ?? $accessToken->created_at;
+            return !($lastSeen && $lastSeen->lt(now()->subMinutes($idle)));
         });
 
         // IP + identifier: slows guessing before the account lockout kicks in

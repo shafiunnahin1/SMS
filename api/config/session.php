@@ -32,7 +32,9 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+    // D51: the web session only carries the Sanctum token, whose per-role absolute/idle limits (config/auth_policy.php) decide when a
+    // login ends. The session must therefore live at least as long as the longest idle limit (parents: 7 days), whatever .env says.
+    'lifetime' => max((int) env('SESSION_LIFETIME', 120), (int) env('TOKEN_IDLE_PARENT', 10080)),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

@@ -18,13 +18,15 @@ return [
     |
     */
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
-        Sanctum::currentApplicationUrlWithPort(),
-        // Sanctum::currentRequestHost(),
+    // D51: the SPA and the API share each tenant's host (and custom domains later), so "stateful" = the host of the current request.
+    // SANCTUM_STATEFUL_DOMAINS can still list extra hosts.
+    'stateful' => array_values(array_filter(array_merge(
+        [ltrim(Sanctum::currentRequestHost(), ',')],          // the helper returns ',__PLACEHOLDER__' (made for sprintf)
+        explode(',', (string) env('SANCTUM_STATEFUL_DOMAINS', '')),
     ))),
 
+    // the CSRF-cookie route lives under the API prefix, so the dev proxy and the web server need no extra rule
+    'prefix' => 'api/v1/sanctum',
     /*
     |--------------------------------------------------------------------------
     | Sanctum Guards

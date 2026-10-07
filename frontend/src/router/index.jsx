@@ -3,6 +3,9 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import AppShell from '../layouts/AppShell'
 import Login from '../pages/auth/Login'
+const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'))
+const ResetPassword  = lazy(() => import('../pages/auth/ResetPassword'))
+const ChangePassword = lazy(() => import('../pages/auth/ChangePassword'))
 import Loader from '../components/Loader'
 import { MENU } from '../nav/menu'
 
@@ -21,6 +24,13 @@ const Signup      = lazy(() => import('../pages/central/Signup'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
+// Step 3.5: the auth pages exist on both hosts; /change-password needs a login (any role)
+const authRoutes = [
+  { path: '/login', element: <Login /> },
+  { path: '/forgot-password', element: S(ForgotPassword) },
+  { path: '/reset-password', element: S(ResetPassword) },
+  { path: '/change-password', element: <ProtectedRoute>{S(ChangePassword)}</ProtectedRoute> },
+]
 // MenuReleaseTest: every menu item a role can see in this release has a route of its own - a built page or, until its step, NotBuilt.
 // The paths come from nav/menu.js so a new menu entry cannot silently 404.
 const menuPaths = (role, prefix) => (MENU[role] ?? []).flatMap(i => i.children ?? [i]).map(i => i.path).filter(p => p?.startsWith(prefix + '/'))
@@ -35,7 +45,7 @@ const area = (path, role, children) => {
 }
 
 export const tenantRoutes = [
-  { path: '/login', element: <Login /> },
+  ...authRoutes,
   area('/admin', 'admin', [
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'students', element: S(StudentList) },
@@ -62,7 +72,7 @@ export const tenantRoutes = [
 export const centralRoutes = [
   { path: '/', element: S(Landing) },
   { path: '/signup', element: S(Signup) },
-  { path: '/login', element: <Login /> },
+  ...authRoutes,
   area('/super-admin', 'super_admin', [{ path: 'dashboard', element: S(Dashboard) }]),
   { path: '*', element: <Navigate to="/login" replace /> },
 ]

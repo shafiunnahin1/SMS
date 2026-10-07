@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\SessionBearer;
 use App\Http\Requests\Auth\LocaleRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\VerifyOtpRequest;
@@ -66,6 +67,7 @@ class LoginController extends Controller
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
+        if ($request->hasSession()) $request->session()->invalidate();   // D51: the web session ends with its token
         return response()->json(['success' => true, 'message' => 'Logged out']);
     }
 
@@ -85,11 +87,19 @@ class LoginController extends Controller
         return response()->json(['success' => true, 'data' => ['locale' => $request->input('locale')]]);
     }
 
+    /** D51: a browser on our own host (Sanctum's stateful request - it has a session) gets an HttpOnly session; the token stays on the
+     *  server. Any other client (mobile app, API) gets the Bearer token in the body as before. */
     private function tokenResponse(User $user, Request $request)
     {
+        $token = $this->tokens->issue($user, $request);
+        $web = $request->hasSession();
+        if ($web) {
+            $request->session()->regenerate();                       // no session fixation
+            $request->session()->put(SessionBearer::KEY, $token);
+        }
         return response()->json(['success' => true, 'data' => [
-            'token' => $this->tokens->issue($user, $request),
-            'token_type' => 'Bearer',
+            'token' => $web ? null : $token,
+            'token_type' => $web ? 'session' : 'Bearer',
             'user' => new UserResource($user),
             'must_change_password' => (bool) $user->must_change_password,
         ]]);

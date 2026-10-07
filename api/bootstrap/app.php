@@ -20,6 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // D51: requests from our own SPA (same host) get a session + CSRF check (Sanctum stateful); SessionBearer then uses the
+        // session's token. Requests without a matching Referer/Origin (mobile, API clients, tests) stay stateless Bearer requests.
+        $middleware->statefulApi();
+        $middleware->appendToGroup('api', \App\Http\Middleware\SessionBearer::class);
+        // Laravel sorts middleware by priority and would run `auth:sanctum` first: the session's token must be in place before it
+        $middleware->prependToPriorityList(\Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, \App\Http\Middleware\SessionBearer::class);
         $middleware->alias([
             'tenant'         => TenantMiddleware::class,            // modes: tenant | tenant:optional | tenant:central
             'tenant.user'    => EnsureUserBelongsToTenant::class,

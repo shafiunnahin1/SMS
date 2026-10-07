@@ -1,17 +1,33 @@
 import { create } from 'zustand'
+import api, { bindAuthStore } from '../api/axios'
 
-// docs/templates/react-core-files.md "authStore", EXCEPT the token is kept in memory only: guardrail G8 forbids tokens in
-// localStorage/sessionStorage (AUTHORIZATION.md says localStorage; the guardrail ranks higher - DECISIONS 2026-10-06 S (S5)).
-// A reload therefore asks for the password again until Spike S7 settles Bearer vs cookie-SPA.
+// docs/templates/react-core-files.md "authStore" + decision D51: the web logs in with an HttpOnly session cookie; NO token is held in
+// JavaScript (the server keeps it in the session). After a reload, restore() asks GET /auth/me whether the session is still alive.
+// `checked` = that question has been answered, so routes can wait instead of bouncing to /login.
 export const useAuthStore = create((set, get) => ({
-  token: null,
+  token: null,                 // only a non-web client would ever set one; the web leaves it null
   user: null,
   role: null,
   isAuthenticated: false,
+  checked: false,
 
-  setAuth: (token, user) => set({ token, user, role: user.role, isAuthenticated: true }),
+  setAuth: (token, user) => set({ token, user, role: user.role, isAuthenticated: true, checked: true }),
   updateUser: (userData) => set((state) => ({ user: { ...state.user, ...userData } })),
-  clearAuth: () => set({ token: null, user: null, role: null, isAuthenticated: false }),
+  clearAuth: () => set({ token: null, user: null, role: null, isAuthenticated: false, checked: true }),
+
+  restore: async () => {
+    try {
+      const { data } = await api.get('/auth/me', { skipAuthRedirect: true })
+      get().setAuth(null, (data.data ?? data).user)
+    } catch {
+      set({ checked: true })
+    }
+  },
 
   hasRole: (role) => (Array.isArray(role) ? role.includes(get().role) : get().role === role),
 }))
+
+/** Sanctum's CSRF cookie (XSRF-TOKEN) must exist before the first POST of a session; axios then sends it back on same-origin requests */
+export const ensureCsrf = () => api.get('/sanctum/csrf-cookie', { skipAuthRedirect: true }).catch(() => {})
+
+bindAuthStore(useAuthStore)

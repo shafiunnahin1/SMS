@@ -10,7 +10,7 @@ import TopNavLayout from '../layouts/TopNavLayout'
 import MobileCompactLayout from '../layouts/MobileCompactLayout'
 
 // docs/THEMING.md "Tests": every layout renders the same nav (Layout Contract), the institution, the bell and the page content
-vi.mock('../api/axios', () => ({ default: { get: vi.fn(() => Promise.resolve({ data: { data: [], meta: { unread: 2 } } })), patch: vi.fn() } }))
+vi.mock('../api/axios', () => ({ bindAuthStore: () => {}, default: { get: vi.fn(() => Promise.resolve({ data: { data: [], meta: { unread: 2 } } })), patch: vi.fn() } }))
 const nav = buildNav('admin', { modules: ['students', 'enrollments', 'fees'], settings: {}, roles: ['admin'], release: 'R1' }, k => k)
 const props = { nav, user: { name: 'Admin', role: 'admin' }, institution: { name: 'Demo School', status: 'active' }, theme: { white_label: false } }
 const leaves = nav.flatMap(i => i.children ?? [i])

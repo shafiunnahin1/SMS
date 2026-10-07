@@ -40,6 +40,14 @@ class TokenLifetimeTest extends AuthTestCase
         $this->callWithToken('GET', $host, 'auth/me', $token)->assertUnauthorized()->assertJson(['error' => 'unauthenticated']);
     }
 
+    public function test_a_token_never_used_after_login_is_idle_from_its_creation(): void
+    {
+        $school = $this->makeInstitution('dhanmondi');
+        $admin = $this->issue($this->user($school, 'admin', ['email' => 'a@d.test']));        // idle 60, not used yet
+        $this->travel(61)->minutes();
+        $this->callWithToken('GET', $this->hostOf($school), 'auth/me', $admin)->assertUnauthorized();
+    }
+
     public function test_an_idle_token_is_401_after_the_role_idle_limit(): void
     {
         $school = $this->makeInstitution('dhanmondi');
