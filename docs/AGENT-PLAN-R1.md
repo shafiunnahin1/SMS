@@ -234,7 +234,7 @@ CREATE TABLE institutions (
     terminology JSON NULL,                       -- label overrides: {"batch": {"bn": "শাখা", "en": "Section"}}
     settings JSON NULL,                          -- {"fee_proration": "none", "use_programs": true, ...}
     sms_balance DECIMAL(10,2) NOT NULL DEFAULT 0, -- D56: SMS wallet in TAKA (recharged online / by Super Admin; each sent part costs the platform rate)
-    sms_sender_id VARCHAR(11) NULL,              -- R6.2: institution's own sender/masking ID (see docs/modules/notifications.md)
+    sms_sender_id VARCHAR(20) NULL,              -- D59: the institution's own sender ID on its own API (masking name or a 13-digit number)
     sms_sender_status ENUM('none','pending','approved','rejected') NOT NULL DEFAULT 'none',
     sms_sender_note VARCHAR(255) NULL,           -- rejection reason / Super Admin note
     onboarding_completed TINYINT(1) DEFAULT 0,
