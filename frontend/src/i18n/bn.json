@@ -73,7 +73,31 @@
   "dashboard": {
    "title": "ড্যাশবোর্ড",
    "hello": "স্বাগতম, {{name}}",
-   "spike_note": "এই ড্যাশবোর্ড ধাপ ৪.৭-এ ভরবে।"
+   "students": "সক্রিয় ছাত্রছাত্রী",
+   "teachers": "শিক্ষক",
+   "sms_balance": "SMS ক্রেডিট",
+   "attendance_today": "আজকের উপস্থিতি",
+   "batches_taken": "হাজিরা নেওয়া হয়েছে ({{unit}})",
+   "exams_open": "চলমান পরীক্ষা (অপ্রকাশিত)",
+   "collection": "ফি আদায়",
+   "today": "আজ",
+   "this_month": "এই মাসে",
+   "receipts_today": "{{count}}টি রসিদ",
+   "recent_receipts": "সাম্প্রতিক রসিদ",
+   "my_batches": "আমার {{unit}}",
+   "marks_pending": "নম্বর দেওয়া বাকি",
+   "latest_result": "সর্বশেষ ফল",
+   "institutions": "মোট প্রতিষ্ঠান",
+   "trial": "ট্রায়াল",
+   "signups_30": "গত ৩০ দিনে নতুন",
+   "by_type": "ধরন অনুযায়ী",
+   "expiring": "৭ দিনের মধ্যে মেয়াদ শেষ",
+   "types": {
+    "school": "স্কুল",
+    "college": "কলেজ",
+    "coaching": "কোচিং",
+    "private_batch": "প্রাইভেট ব্যাচ"
+   }
   },
   "students": {
    "title": "ছাত্রছাত্রী",

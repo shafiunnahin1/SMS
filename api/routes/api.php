@@ -29,6 +29,11 @@ Route::prefix('v1')->group(function () {
         });
     });
 
+    // ─── 2. Central host only: Super Admin (Step 4.7 dashboard; the rest of the panel is Phase 5) ───
+    Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:super_admin', 'tenancy.bypass'])->prefix('super')->group(function () {
+        Route::get('/dashboard',              [DashboardController::class, 'superAdmin']);
+    });
+
     // ─── 3. Tenant host only ───────────────────────────────────
     Route::middleware(['tenant', 'locale', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription'])->group(function () {
         Route::patch('/auth/change-password', [PasswordResetController::class, 'changePassword']);
@@ -146,6 +151,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/subscription/sms-credits',       [SmsCreditController::class, 'balance'])->middleware('role:admin');
         });
 
+        // ── Dashboards (Step 4.7) ──
+        Route::get('/admin/dashboard',                    [DashboardController::class, 'admin'])->middleware('role:admin');
+        Route::get('/accountant/dashboard',               [DashboardController::class, 'accountant'])->middleware('role:accountant');
+        Route::get('/teacher/dashboard',                  [DashboardController::class, 'teacher'])->middleware('role:teacher');
+
         // ── Exams & results (Step 4.5) ──
         Route::middleware('module:exams')->group(function () {
             Route::middleware('role:admin')->group(function () {
@@ -171,6 +181,7 @@ Route::prefix('v1')->group(function () {
         // ── Parent (Step 4.7) ──
         Route::middleware('role:parent')->group(function () {
             Route::get('/parent/children',                [DashboardController::class, 'parentChildren']);
+            Route::get('/parent/dashboard',               [DashboardController::class, 'parent']);
             Route::get('/parent/children/{id}/attendance', [AttendanceController::class, 'forParent'])->whereNumber('id')->middleware('module:attendance');
             Route::get('/parent/consents',                [ConsentController::class, 'mine'])->middleware('module:students');
             Route::put('/parent/consents/{type}',         [ConsentController::class, 'update'])->middleware('module:students');

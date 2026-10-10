@@ -72,8 +72,32 @@
   },
   "dashboard": {
    "title": "Dashboard",
-   "hello": "Hello, {{name}}",
-   "spike_note": "This dashboard is filled in Step 4.7."
+   "hello": "Welcome, {{name}}",
+   "students": "Active students",
+   "teachers": "Teachers",
+   "sms_balance": "SMS credit",
+   "attendance_today": "Attendance today",
+   "batches_taken": "Attendance taken ({{unit}})",
+   "exams_open": "Open exams (unpublished)",
+   "collection": "Fee collection",
+   "today": "Today",
+   "this_month": "This month",
+   "receipts_today": "{{count}} receipt(s)",
+   "recent_receipts": "Recent receipts",
+   "my_batches": "My {{unit}}",
+   "marks_pending": "Marks to enter",
+   "latest_result": "Latest result",
+   "institutions": "Institutions",
+   "trial": "Trial",
+   "signups_30": "New in 30 days",
+   "by_type": "By type",
+   "expiring": "Expiring within 7 days",
+   "types": {
+    "school": "School",
+    "college": "College",
+    "coaching": "Coaching",
+    "private_batch": "Private batch"
+   }
   },
   "students": {
    "title": "Students",
