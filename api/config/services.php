@@ -38,8 +38,15 @@ return [
     // SMS (docs/modules/notifications.md). Driver `log` writes to the log only (G17: development/testing, and until the
     // gateway contract is confirmed - TODO(OD-sms-gateway)). With an SSL Wireless token set, the default becomes `ssl_wireless`.
     'sms' => [
-        'driver' => env('SMS_DRIVER', env('SSL_WIRELESS_TOKEN') ? 'ssl_wireless' : 'log'),
+        'driver' => env('SMS_DRIVER', env('BULKSMSBD_API_KEY') ? 'bulksmsbd' : (env('SSL_WIRELESS_TOKEN') ? 'ssl_wireless' : 'log')),
         'rate' => env('SMS_RATE', '0.40'),          // D56: taka per billable SMS part; Super Admin's platform setting wins
+    ],
+    // D57: the universal API (BulkSMSBD). The Super Admin's platform setting overrides key and sender (stored encrypted).
+    'bulksmsbd' => [
+        'url' => env('BULKSMSBD_URL', 'http://bulksmsbd.net/api/smsapi'),
+        'api_key' => env('BULKSMSBD_API_KEY'),
+        'sender_id' => env('BULKSMSBD_SENDER_ID'),
+        'success_codes' => array_map('intval', explode(',', env('BULKSMSBD_SUCCESS_CODES', '202'))),
     ],
     'ssl_wireless' => [
         'token' => env('SSL_WIRELESS_TOKEN'),

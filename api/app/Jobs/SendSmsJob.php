@@ -11,7 +11,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 
-// Carries one message; SmsService decides sender, suffix, quota and credit. Runs inside its institution (TenantAwareJob).
+// Carries one message; SmsService decides the route (own / universal, D59), suffix and charge. Runs inside its institution (TenantAwareJob).
 class SendSmsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, TenantAwareJob;
@@ -31,9 +31,9 @@ class SendSmsJob implements ShouldQueue
             $sms->send($this->phone, $this->message, $this->sentBy, $this->transactional, finalAttempt: $this->attempts() >= $this->tries);
         } catch (BusinessException $e) {
             // An automatic message (receipt, absence alert) must never fail the work that triggered it, and retrying
-            // cannot create credit. Direct sends from the UI still get the 402 from SmsService.
-            if ($e->errorCode !== 'sms_quota_exceeded') throw $e;
-            Log::warning('sms skipped: no quota or credit left', ['institution_id' => $this->institutionId]);
+            // cannot create credit (D56) or switch SMS back on (D59). Direct sends from the UI still get the 402 from SmsService.
+            if (!in_array($e->errorCode, ['sms_quota_exceeded', 'sms_disabled'], true)) throw $e;
+            Log::warning('sms skipped: wallet empty or SMS switched off', ['institution_id' => $this->institutionId]);
         }
     }
 }

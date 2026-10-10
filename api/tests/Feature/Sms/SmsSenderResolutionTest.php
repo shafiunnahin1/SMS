@@ -10,9 +10,10 @@ use App\Services\SmsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-// docs/TESTING.md "SmsSenderResolutionTest" (R1 part; the sender-ID approval flow is R2): an approved ID -> that sid, no suffix;
-// pending / rejected / none -> the platform sid + the institution suffix; the own ID failing -> one retry with the platform
-// sender and fallback_used, the stored status untouched. Plus the Step 4.6 retry: a refused message is retried by the queue.
+// docs/TESTING.md "SmsSenderResolutionTest", restated for D59 (owner, 2026-10-10 - the institution's own API replaces the
+// sender-ID approval flow): the own route switched on (key + sender) -> that sid, no suffix; otherwise - whatever the old
+// approval status says - the platform sid + the institution suffix; the own ID failing -> one retry with the platform sender
+// and fallback_used, the stored settings untouched. Plus the Step 4.6 retry: a refused message is retried by the queue.
 class SmsSenderResolutionTest extends TestCase
 {
     use RefreshDatabase;
@@ -28,20 +29,21 @@ class SmsSenderResolutionTest extends TestCase
     private function institution(string $status, ?string $sid = 'DHANMONDI')
     {
         $i = $this->makeInstitution('snd' . $status);
-        $i->forceFill(['sms_sender_id' => $sid, 'sms_sender_status' => $status, 'sms_balance' => 100, 'settings' => ['sms_short_name' => 'Dhanmondi']])->save();
+        $i->forceFill(['sms_sender_id' => $sid, 'sms_sender_status' => $status === 'own' ? 'none' : $status, 'sms_balance' => 100, 'settings' => ['sms_short_name' => 'Dhanmondi'],
+            'sms_own_enabled' => $status === 'own', 'sms_api_key' => $status === 'own' ? 'own-key-1' : null])->save();
         $this->bindTenant($i->fresh());
         return $i;
     }
 
-    public function test_approved_uses_its_own_id_without_the_suffix_anything_else_the_platform_sender_with_it(): void
+    public function test_the_own_route_uses_its_own_id_without_the_suffix_anything_else_the_platform_sender_with_it(): void
     {
         $platform = (string) config('services.ssl_wireless.sid');
         $this->gateway();
-        $this->institution('approved');
+        $this->institution('own');
         app(SmsService::class)->send('01711111111', 'hello');
         $this->assertSame(['DHANMONDI', 'hello', false], [SmsLog::first()->sender_id, SmsLog::first()->message, (bool) SmsLog::first()->fallback_used]);
 
-        foreach (['pending', 'rejected', 'none'] as $status) {
+        foreach (['approved', 'pending', 'rejected', 'none'] as $status) {      // D59: the old approval status no longer picks the sender
             $this->gateway();
             $this->institution($status, $status === 'none' ? null : 'DHANMONDI');
             app(SmsService::class)->send('01711111111', 'hello');
@@ -53,12 +55,12 @@ class SmsSenderResolutionTest extends TestCase
     public function test_the_own_id_failing_falls_back_once_and_keeps_its_status(): void
     {
         $g = $this->gateway(['DHANMONDI']);
-        $i = $this->institution('approved');
+        $i = $this->institution('own');
         $this->assertTrue(app(SmsService::class)->send('01711111111', 'hello'));
         $this->assertSame(['DHANMONDI', (string) config('services.ssl_wireless.sid')], array_column($g->sent, 'senderId'), 'exactly one retry');
         $log = SmsLog::first();
         $this->assertSame(['sent', true, 'hello -Dhanmondi'], [$log->status, (bool) $log->fallback_used, $log->message]);
-        $this->assertSame('approved', $i->fresh()->sms_sender_status, 'a failure never flips the approval');
+        $this->assertSame([true, 'DHANMONDI'], [$i->fresh()->sms_own_enabled, $i->fresh()->sms_sender_id], 'a failure never switches the own route off');
     }
 
     public function test_a_refused_message_is_retried_by_the_queue_and_only_the_last_attempt_is_logged(): void

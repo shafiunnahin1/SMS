@@ -6,21 +6,31 @@ use App\Exceptions\{BusinessException, SmsGatewayException};
 use App\Models\{Institution, PlatformSetting, SmsCreditTransaction, SmsLog, User};
 use App\Services\Sms\SmsGateway;
 use App\Support\{Money, SmsSegments, Tenancy};
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\{Crypt, DB};
 use Illuminate\Support\Str;
 
 // docs/modules/notifications.md "SmsService" + D56 (owner, 2026-10-10): the institution's SMS wallet is money (taka). Every
 // sent message costs its billable parts x the platform rate (SmsSegments::billable - 150 GSM / 70-67 Unicode chars), taken
 // from the wallet with a ledger row; not enough money -> 402 and nothing is sent. No plan quota any more (D55).
+// D59: the institution's own API (switched on, key + sender set) is used instead - never charged; when it fails and the
+// universal switch is on, ONE fallback through the universal API (charged). Both switched off -> nothing is sent.
 class SmsService
 {
     public function __construct(private SmsGateway $gateway) {}
 
-    /** ['sid' => string, 'own' => bool]: the institution's approved masking ID, else the platform sender */
-    public function senderFor(Institution $i): array
+    /** D59: the institution's own BulkSMSBD API - only when switched on AND both its key and sender are set */
+    public function ownRoute(Institution $i): ?array
     {
-        if ($i->sms_sender_status === 'approved' && $i->sms_sender_id) return ['sid' => $i->sms_sender_id, 'own' => true];
-        return ['sid' => (string) config('services.ssl_wireless.sid'), 'own' => false];
+        if (!$i->sms_own_enabled || !$i->sms_api_key || !$i->sms_sender_id) return null;
+        return ['sid' => $i->sms_sender_id, 'key' => $i->sms_api_key, 'own' => true];
+    }
+
+    /** D57: the universal API - the Super Admin's key/sender (key stored encrypted), else the server config */
+    public function universalRoute(): array
+    {
+        $key = PlatformSetting::read('sms_universal_api_key');
+        $sid = PlatformSetting::read('sms_universal_sender_id') ?: config('services.bulksmsbd.sender_id') ?: config('services.ssl_wireless.sid');
+        return ['sid' => (string) $sid, 'key' => $key ? Crypt::decryptString($key) : null, 'own' => false];
     }
 
     /** Adds the institution suffix only when the platform sender is used */
@@ -61,31 +71,40 @@ class SmsService
     {
         $i = Tenancy::current() ?? throw new \App\Exceptions\TenantNotBoundException(SmsLog::class);
         if (!$transactional && !app(ConsentService::class)->allowsSms(User::normalisePhone($phone) ?? $phone)) return false;
-        $sender = $this->senderFor($i);
-        $text = $this->compose($message, $sender, $i);
-        if (!$this->canSend($i, $text)) throw new BusinessException('SMS wallet balance too low', 'sms_quota_exceeded', 402);
+        $own = $this->ownRoute($i);
+        $universal = (bool) $i->sms_universal_enabled;
+        if (!$own && !$universal) throw new BusinessException('SMS is switched off for this institution', 'sms_disabled', 409);
 
-        $ok = $this->gateway->send($phone, $text, $sender['sid']);
         $fallback = false;
-
-        // The institution's own ID failed: retry ONCE with the platform sender. Never flips the stored approval status.
-        if (!$ok && $sender['own']) {
-            $sender = ['sid' => (string) config('services.ssl_wireless.sid'), 'own' => false];
+        $ok = false;
+        if ($own) {
+            // D59: the own API - no wallet, no charge, no suffix
+            $sender = $own;
             $text = $this->compose($message, $sender, $i);
-            $ok = $this->gateway->send($phone, $text, $sender['sid']);
-            $fallback = true;
+            $ok = $this->gateway->send($phone, $text, $sender['sid'], $sender['key']);
+            // the own API failed: ONE try through the universal API, only if it is on and the wallet can pay for it
+            if (!$ok && $universal && $this->canSend($i, $this->compose($message, $this->universalRoute(), $i))) {
+                $fallback = true;
+            }
+        }
+        if (!$own || $fallback) {
+            $sender = $this->universalRoute();
+            $text = $this->compose($message, $sender, $i);
+            if (!$fallback && !$this->canSend($i, $text)) throw new BusinessException('SMS wallet balance too low', 'sms_quota_exceeded', 402);
+            $ok = $this->gateway->send($phone, $text, $sender['sid'], $sender['key']);
         }
 
         if (!$ok && !$finalAttempt) throw new SmsGatewayException('sms gateway refused the message');
 
         $parts = SmsSegments::count($text);
-        $cost = $ok ? $this->costOf($text) : 0;
+        $charged = $ok && !$sender['own'];
+        $cost = $charged ? $this->costOf($text) : 0;
         $log = SmsLog::create([
             'to_phone' => $phone, 'message' => $text, 'status' => $ok ? 'sent' : 'failed', 'sender_id' => $sender['sid'],
-            'segments' => max(1, $parts['segments']), 'encoding' => $parts['encoding'], 'cost' => Money::format($cost), 'route' => 'universal',
-            'fallback_used' => $fallback, 'error' => $ok ? null : 'gateway_error', 'sent_by' => $sentBy,
+            'segments' => max(1, $parts['segments']), 'encoding' => $parts['encoding'], 'cost' => Money::format($cost),
+            'route' => $sender['own'] ? 'own' : 'universal', 'fallback_used' => $fallback, 'error' => $ok ? null : 'gateway_error', 'sent_by' => $sentBy,
         ]);
-        if ($ok) $this->charge($i, $log, SmsSegments::billable($text), $cost);
+        if ($charged) $this->charge($i, $log, SmsSegments::billable($text), $cost);
         return $ok;
     }
 

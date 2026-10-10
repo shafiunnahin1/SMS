@@ -4,7 +4,7 @@ use App\Http\Controllers\Academic\{AttendanceController, BatchController, Consen
 use App\Http\Controllers\Admin\{ImportController, SettingController, TerminologyController, ThemeController};
 use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
-use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController};
+use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -151,6 +151,12 @@ Route::prefix('v1')->group(function () {
         Route::middleware('module:sms')->group(function () {
             Route::get('/sms-logs',                       [SmsLogController::class, 'index'])->middleware('role:admin,accountant');
             Route::get('/subscription/sms-credits',       [SmsCreditController::class, 'balance'])->middleware('role:admin');
+            // D59: the universal / own API switches and the institution's own BulkSMSBD key + masking sender
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/admin/settings/sms-sender',    [SmsSenderController::class, 'show']);
+                Route::put('/admin/settings/sms-sender',    [SmsSenderController::class, 'update']);
+                Route::delete('/admin/settings/sms-sender', [SmsSenderController::class, 'destroy']);
+            });
         });
 
         // ── Dashboards (Step 4.7) ──

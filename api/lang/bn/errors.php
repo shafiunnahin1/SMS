@@ -19,6 +19,8 @@ return [
     'invalid_otp'           => 'কোডটি ভুল বা মেয়াদোত্তীর্ণ।',
     'invalid_token'         => 'লিংক বা কোডটি ভুল বা মেয়াদোত্তীর্ণ।',
     'sms_quota_exceeded'    => 'SMS ব্যালেন্সে যথেষ্ট টাকা নেই — রিচার্জ করুন।',
+    'sms_disabled'          => 'এই প্রতিষ্ঠানের SMS বন্ধ আছে — সেটিংসে ইউনিভার্সাল বা নিজস্ব sender চালু করুন।',
+    'sms_own_incomplete'    => 'নিজস্ব SMS চালু করতে API key ও sender ID দুটোই দিন।',
     'holiday_date'          => 'ছুটির দিনে উপস্থিতি নেওয়া যায় না (:date)।',
     'not_enrolled'          => 'Student #:student এই :batch-এ ভর্তি নন।',
     'theme_not_allowed'     => 'এই থিম এই ধরনের প্রতিষ্ঠানের জন্য নয়।',

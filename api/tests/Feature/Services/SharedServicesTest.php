@@ -143,9 +143,10 @@ class SharedServicesTest extends TestCase
         $this->assertSame(2, SmsLog::count());
     }
 
-    public function test_an_approved_masking_id_is_used_without_the_suffix(): void
+    public function test_the_own_masking_id_is_used_without_the_suffix(): void
     {
-        $this->inst->forceFill(['sms_sender_id' => 'DHANMONDI', 'sms_sender_status' => 'approved', 'sms_balance' => 5])->save();
+        // D59: the institution's own API (switched on, key + sender) replaces the approved-sender rule
+        $this->inst->forceFill(['sms_sender_id' => 'DHANMONDI', 'sms_own_enabled' => true, 'sms_api_key' => 'own-key-1', 'sms_balance' => 5])->save();
         $this->bindTenant($this->inst->fresh());
 
         app(SmsService::class)->send('01711111111', 'hello');

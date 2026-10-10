@@ -59,15 +59,17 @@ class SmsLocaleTest extends TestCase
     public function test_quota_and_credit_count_parts_and_the_log_keeps_them(): void
     {
         $i = $this->makeInstitution('smsparts');
-        $i->forceFill(['sms_balance' => '2.00', 'sms_sender_id' => 'OWN', 'sms_sender_status' => 'approved'])->save();
+        // the universal route (charged) with no suffix: a blank short name is not possible, so the texts below count the
+        // institution suffix " -Smsparts" (10 chars) - D59 removed the approved-sender shortcut this test used before
+        $i->forceFill(['sms_balance' => '2.00'])->save();
         $this->bindTenant($i->fresh());
         $sms = app(SmsService::class);
 
-        $sms->send('01711111111', str_repeat('ক', 100));             // Unicode: 2 parts = 0.80
+        $sms->send('01711111111', str_repeat('ক', 100));             // Unicode: 110 chars = 2 parts = 0.80
         $this->assertSame([2, 'unicode', '0.80'], [SmsLog::first()->segments, SmsLog::first()->encoding, SmsLog::first()->cost]);
         $this->assertSame('1.20', $i->fresh()->sms_balance);
 
-        $sms->send('01711111111', str_repeat('a', 155));             // GSM: 1 gateway part (<=160) but 2 billable parts (150 each) = 0.80
+        $sms->send('01711111111', str_repeat('a', 145));             // GSM: 145 + 10 = 155 - 1 gateway part (<=160) but 2 billable parts (150 each) = 0.80
         $this->assertSame([1, 'gsm', '0.80'], [SmsLog::latest('id')->first()->segments, SmsLog::latest('id')->first()->encoding, SmsLog::latest('id')->first()->cost]);
         $this->assertSame('0.40', $i->fresh()->sms_balance);
         $this->assertSame([-2, '-0.80'], [SmsCreditTransaction::first()->quantity, SmsCreditTransaction::first()->amount]);

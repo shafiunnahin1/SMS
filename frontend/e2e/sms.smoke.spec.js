@@ -12,3 +12,22 @@ test('4.6 sms: balance, log and ledger', async ({ page }, testInfo) => {
   await expect(page.locator('main')).toContainText(/ক্রেডিট/)
   noErrors()
 })
+
+// Step 5.3 (D59): the SMS settings page - the two switches, the route in use, the own key is never shown back
+test('5.3 sms settings: switches and own API', async ({ page }, testInfo) => {
+  const noErrors = watchConsole(page)
+  await login(page, ...tenantOf(testInfo).admin)
+  await page.goto('/admin/settings/sms')
+  await expect(page.locator('[data-testid="sms-effective"]')).toContainText('ইউনিভার্সাল API')
+  await page.locator('[data-field="own_enabled"]').check()
+  await page.locator('input[name="sender_id"]').fill('MYSENDER')
+  await page.locator('input[name="api_key"]').fill('e2e-key-12345678')
+  await page.locator('[data-action="save"]').click()
+  await expect(page.locator('[data-testid="sms-effective"]')).toContainText('নিজস্ব API')
+  await expect(page.locator('main')).toContainText('••••5678')
+  await expect(page.locator('input[name="api_key"]')).toHaveValue('')
+  await page.locator('[data-action="remove"]').click()
+  await page.getByRole('alertdialog').getByRole('button', { name: /নিশ্চিত|মুছুন|Confirm/ }).last().click()
+  await expect(page.locator('[data-testid="sms-effective"]')).toContainText('ইউনিভার্সাল API')
+  noErrors()
+})

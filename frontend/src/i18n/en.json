@@ -506,7 +506,27 @@
    },
    "spent_this_month": "Spent this month",
    "sent_count": "{{count}} SMS",
-   "rate": "Price per part"
+   "rate": "Price per part",
+   "settings": {
+    "title": "SMS settings",
+    "effective": "SMS goes through",
+    "routes": {
+     "own": "your own API (not charged)",
+     "universal": "the universal API (charged from the SMS wallet)",
+     "off": "nothing - SMS is switched off"
+    },
+    "universal": "Universal sender",
+    "universal_hint": "The platform's API and sender ({{sender}}); each SMS part costs {{rate}} from the SMS wallet.",
+    "own": "Own sender",
+    "own_hint": "Your own BulkSMSBD API key and masking sender. Nothing is taken from the wallet. If it fails and the universal sender is on, the SMS is sent once through the universal API (charged).",
+    "own_api": "Your own BulkSMSBD API",
+    "sender_id": "Sender ID / masking",
+    "api_key": "API key",
+    "key_set": "A key is saved:",
+    "key_none": "No key saved yet. The key is kept encrypted and never shown again.",
+    "remove": "Remove own API",
+    "remove_confirm": "Remove your own API key and sender? The own sender is switched off."
+   }
   },
   "reports": {
    "title": "Reports",

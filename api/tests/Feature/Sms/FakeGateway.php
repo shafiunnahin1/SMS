@@ -11,9 +11,9 @@ class FakeGateway implements SmsGateway
 
     public function __construct(public array $refuse = []) {}
 
-    public function send(string $phone, string $text, string $senderId): bool
+    public function send(string $phone, string $text, string $senderId, ?string $apiKey = null): bool
     {
-        $this->sent[] = compact('phone', 'text', 'senderId');
+        $this->sent[] = compact('phone', 'text', 'senderId', 'apiKey');
         return !in_array($senderId, $this->refuse, true) && !in_array('*', $this->refuse, true);
     }
 }

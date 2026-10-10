@@ -506,7 +506,27 @@
    },
    "spent_this_month": "এই মাসে খরচ",
    "sent_count": "{{count}}টি SMS",
-   "rate": "প্রতি অংশের দাম"
+   "rate": "প্রতি অংশের দাম",
+   "settings": {
+    "title": "SMS সেটিং",
+    "effective": "SMS যাচ্ছে",
+    "routes": {
+     "own": "নিজস্ব API দিয়ে (টাকা কাটে না)",
+     "universal": "ইউনিভার্সাল API দিয়ে (SMS ওয়ালেট থেকে টাকা কাটে)",
+     "off": "কোথাও না — SMS বন্ধ"
+    },
+    "universal": "ইউনিভার্সাল sender",
+    "universal_hint": "প্ল্যাটফর্মের API ও sender ({{sender}}); প্রতি SMS-অংশে ওয়ালেট থেকে {{rate}} কাটে।",
+    "own": "নিজস্ব sender",
+    "own_hint": "আপনার নিজের BulkSMSBD API key ও মাস্কিং sender। ওয়ালেট থেকে টাকা কাটে না। এটি ব্যর্থ হলে ও ইউনিভার্সাল চালু থাকলে SMS একবার ইউনিভার্সাল দিয়ে যায় (টাকা কাটে)।",
+    "own_api": "নিজস্ব BulkSMSBD API",
+    "sender_id": "Sender ID / মাস্কিং",
+    "api_key": "API key",
+    "key_set": "একটি key সংরক্ষিত আছে:",
+    "key_none": "এখনো কোনো key নেই। key এনক্রিপ্ট করে রাখা হয়, আর কখনো দেখানো হয় না।",
+    "remove": "নিজস্ব API মুছুন",
+    "remove_confirm": "নিজস্ব API key ও sender মুছবেন? নিজস্ব sender বন্ধ হয়ে যাবে।"
+   }
   },
   "reports": {
    "title": "রিপোর্ট",

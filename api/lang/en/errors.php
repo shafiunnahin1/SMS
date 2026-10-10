@@ -19,6 +19,8 @@ return [
     'invalid_otp'           => 'The code is wrong or has expired.',
     'invalid_token'         => 'The link or code is wrong or has expired.',
     'sms_quota_exceeded'    => 'Not enough money in the SMS wallet - please recharge.',
+    'sms_disabled'          => 'SMS is switched off for this institution - turn on the universal or your own sender in Settings.',
+    'sms_own_incomplete'    => 'Give both the API key and the sender ID to switch on your own SMS.',
     'holiday_date'          => 'Attendance cannot be taken on a holiday (:date).',
     'not_enrolled'          => 'Student #:student is not enrolled in this :batch.',
     'theme_not_allowed'     => 'This theme is not for this type of institution.',

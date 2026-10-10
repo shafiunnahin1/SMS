@@ -8,10 +8,10 @@ use Illuminate\Support\Facades\Http;
 // delivery reports against SSL Wireless's current API documentation before production use.
 class SslWirelessGateway implements SmsGateway
 {
-    public function send(string $phone, string $text, string $senderId): bool
+    public function send(string $phone, string $text, string $senderId, ?string $apiKey = null): bool
     {
         $r = Http::timeout(15)->post('https://sms.sslwireless.com/api/v3/send-sms', [
-            'api_token' => config('services.ssl_wireless.token'),
+            'api_token' => $apiKey ?? config('services.ssl_wireless.token'),
             'sid'       => $senderId,
             'msisdn'    => '88' . $phone,                 // stored as 01XXXXXXXXX; the gateway wants the country code
             'sms'       => $text,
