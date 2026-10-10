@@ -11,6 +11,7 @@ import Button from '../../../components/Button'
 import Loader from '../../../components/Loader'
 import { ErrorState } from '../../../components/StateViews'
 import { Input } from '../../../components/FormField'
+import { secretInputProps } from '../../../components/secretInput'
 import Ltr from '../../../components/bidi/Ltr'
 
 // D59 /admin/settings/sms: two switches (the universal API, charged from the SMS wallet; the institution's own BulkSMSBD API,
@@ -63,7 +64,7 @@ export default function SmsSettings() {
       <Card className="flex flex-col gap-3">
         <h2 className="font-semibold">{t('sms.settings.own_api')}</h2>
         <Input label={t('sms.settings.sender_id')} ltr maxLength={20} value={form.sender_id} onChange={e => set('sender_id', e.target.value)} error={errors.sender_id?.[0]} name="sender_id" />
-        <Input label={t('sms.settings.api_key')} ltr type="password" autoComplete="off" value={form.api_key} onChange={e => set('api_key', e.target.value)} error={errors.api_key?.[0]} name="api_key"
+        <Input label={t('sms.settings.api_key')} ltr {...secretInputProps} value={form.api_key} onChange={e => set('api_key', e.target.value)} error={errors.api_key?.[0]} name="api_key"
           hint={d.api_key_set ? <>{t('sms.settings.key_set')} <Ltr>{d.api_key_hint}</Ltr></> : t('sms.settings.key_none')} />
         <div className="flex flex-wrap justify-end gap-2">
           {(d.api_key_set || d.sender_id) && <Button variant="secondary" onClick={remove} data-action="remove">{t('sms.settings.remove')}</Button>}

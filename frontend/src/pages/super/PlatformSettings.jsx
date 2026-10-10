@@ -11,6 +11,7 @@ import Button from '../../components/Button'
 import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
 import { Input } from '../../components/FormField'
+import { secretInputProps } from '../../components/secretInput'
 import Ltr from '../../components/bidi/Ltr'
 import StatCard from '../../ui/variants/StatCard'
 import StatusBadge from '../../components/StatusBadge'
@@ -52,7 +53,7 @@ export default function PlatformSettings() {
         <p className="text-sm text-content-muted">{t('super.universal_hint')}</p>
         <Input label={t('super.rate_label')} ltr inputMode="decimal" value={form.rate} onChange={e => set('rate', e.target.value)} error={errors.rate?.[0]} name="rate" hint={t('super.rate_hint')} />
         <Input label={t('sms.settings.sender_id')} ltr maxLength={20} value={form.sender_id} onChange={e => set('sender_id', e.target.value)} error={errors.sender_id?.[0]} name="sender_id" />
-        <Input label={t('sms.settings.api_key')} ltr type="password" autoComplete="off" value={form.api_key} onChange={e => set('api_key', e.target.value)} error={errors.api_key?.[0]} name="api_key"
+        <Input label={t('sms.settings.api_key')} ltr {...secretInputProps} value={form.api_key} onChange={e => set('api_key', e.target.value)} error={errors.api_key?.[0]} name="api_key"
           hint={d.api_key_set ? <>{t(d.api_key_source === 'panel' ? 'sms.settings.key_set' : 'super.key_from_server')} <Ltr>{d.api_key_hint}</Ltr></> : t('super.key_none')} />
         <p className="text-xs text-content-muted">{t('super.driver')}: <Ltr>{d.driver}</Ltr></p>
         <div className="flex flex-wrap justify-end gap-2">
@@ -100,10 +101,10 @@ function BkashCard({ d, onSaved }) {
         <input type="checkbox" checked={f.sandbox} onChange={e => set('sandbox', e.target.checked)} name="sandbox" className="h-4 w-4 accent-[var(--color-primary)]" />
         {t('super.bkash.sandbox')}
       </label>
-      <Input label={t('super.bkash.base_url')} ltr value={f.base_url} onChange={e => set('base_url', e.target.value)} error={errors.base_url?.[0]} name="base_url" hint={t('super.bkash.base_url_hint')} />
+      <Input label={t('super.bkash.base_url')} ltr autoComplete="off" spellCheck={false} data-lpignore="true" value={f.base_url} onChange={e => set('base_url', e.target.value)} error={errors.base_url?.[0]} name="base_url" hint={t('super.bkash.base_url_hint')} />
       <div className="grid gap-3 sm:grid-cols-2">
         {BKASH_SECRETS.map(k => (
-          <Input key={k} label={t(`super.bkash.${k}`)} ltr type="password" autoComplete="off" value={f[k]} onChange={e => set(k, e.target.value)} error={errors[k]?.[0]} name={`bkash_${k}`} hint={hint(k)} />
+          <Input key={k} label={t(`super.bkash.${k}`)} ltr {...secretInputProps} value={f[k]} onChange={e => set(k, e.target.value)} error={errors[k]?.[0]} name={`bkash_${k}`} hint={hint(k)} />
         ))}
       </div>
       {test !== null && <div className="text-sm" data-testid="bkash-test" role="status">
