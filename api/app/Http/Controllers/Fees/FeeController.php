@@ -119,6 +119,7 @@ class FeeController extends Controller
         $user = $request->user();
         if (!in_array($user->role, ['admin', 'accountant', 'parent'], true)) abort(403);
         $student = Student::with('user:id,name')->findOrFail($id);
+        // another family's child in the SAME institution: 403 as the walking-skeleton spec (S6) says; another institution's: 404 (tenant scope)
         if ($user->role === 'parent' && !ParentStudent::where('parent_user_id', $user->id)->where('student_id', $student->id)->exists()) {
             abort(403);
         }

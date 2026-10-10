@@ -151,7 +151,7 @@ Route::prefix('v1')->group(function () {
 
         // ── Fees (Step 4.4; slice: dues -> collect -> receipt) ──
         Route::middleware('module:fees')->group(function () {
-            Route::get('/fees/payments/student/{id}',     [FeeController::class, 'studentPayments'])->whereNumber('id');   // admin, accountant, own child's parent
+            Route::get('/fees/payments/student/{id}',     [FeeController::class, 'studentPayments'])->whereNumber('id')->middleware('role:admin,accountant,parent');   // parent: own child only (404)
             Route::middleware('role:admin,accountant')->group(function () {
                 Route::post('/fees/collect',              [FeeController::class, 'collect']);
                 Route::get('/fees/dues',                  [FeeController::class, 'dues']);
