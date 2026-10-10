@@ -6,6 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
+use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
 use Illuminate\Support\Facades\Route;
@@ -108,6 +109,7 @@ Route::prefix('v1')->group(function () {
                 Route::delete('/students/{id}',           [StudentController::class, 'destroy'])->whereNumber('id');
                 Route::get('/students/{id}/consents',     [ConsentController::class, 'index'])->whereNumber('id');
                 Route::post('/students/{id}/consents',    [ConsentController::class, 'store'])->whereNumber('id');
+                Route::get('/students/{id}/consent-form.pdf', [ConsentController::class, 'form'])->whereNumber('id');
             });
             Route::middleware('module:enrollments')->group(function () {
                 Route::post('/enrollments',               [EnrollmentController::class, 'store']);
@@ -155,6 +157,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/admin/dashboard',                    [DashboardController::class, 'admin'])->middleware('role:admin');
         Route::get('/accountant/dashboard',               [DashboardController::class, 'accountant'])->middleware('role:accountant');
         Route::get('/teacher/dashboard',                  [DashboardController::class, 'teacher'])->middleware('role:teacher');
+
+        // ── Reports (Step 4.8): PDF / Excel ──
+        Route::middleware('module:reports')->group(function () {
+            Route::get('/admin/reports/{type}',           [ReportController::class, 'generate'])->middleware('role:admin');
+            Route::get('/accountant/reports/{type}',      [ReportController::class, 'financial'])->middleware('role:accountant');
+        });
 
         // ── Exams & results (Step 4.5) ──
         Route::middleware('module:exams')->group(function () {

@@ -154,7 +154,8 @@
     "portal": "parent portal",
     "otp": "SMS code",
     "public_form": "online form"
-   }
+   },
+   "consent_form_pdf": "Consent form (PDF)"
   },
   "fees": {
    "collect_title": "Fee collection",
@@ -506,6 +507,22 @@
     "adjustment": "Adjustment",
     "refund": "Refund"
    }
+  },
+  "reports": {
+   "title": "Reports",
+   "types": {
+    "students": "Class list",
+    "attendance": "Monthly attendance",
+    "dues": "Due list",
+    "fees": "Fee collection"
+   },
+   "hints": {
+    "students": "Active students of the chosen {{unit}}, by roll.",
+    "attendance": "Daily attendance of one {{unit}} for the month (P/A/L/V, H = holiday) and the rate.",
+    "dues": "Every unpaid due per student - the same numbers as the counter.",
+    "fees": "Every receipt line of the month and the total."
+   },
+   "pick_scope": "Choose a {{unit}}."
   }
  },
  "nav": {

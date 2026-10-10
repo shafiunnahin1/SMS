@@ -24,6 +24,7 @@ const MarksEntry  = lazy(() => import('../pages/exams/MarksEntry'))
 const MyMarks     = lazy(() => import('../pages/teacher/MyMarks'))
 const ParentResults = lazy(() => import('../pages/parent/Results'))
 const SmsCenter   = lazy(() => import('../pages/admin/sms/SmsCenter'))
+const Reports     = lazy(() => import('../pages/reports/Reports'))
 const ParentFees  = lazy(() => import('../pages/parent/Fees'))
 const Attendance  = lazy(() => import('../pages/attendance/Take'))
 const ParentHome  = lazy(() => import('../pages/parent/Home'))
@@ -73,6 +74,7 @@ export const tenantRoutes = [
     { path: 'fees/categories', element: S(FeeCategories) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
+    { path: 'reports', element: S(Reports) },
     { path: 'exams', element: S(ExamList) },
     { path: 'exams/:id', element: S(ExamDetail) },
     { path: 'exams/:examId/entry/:subjectId', element: S(MarksEntry) },
@@ -89,6 +91,7 @@ export const tenantRoutes = [
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/dues', element: S(FeeLedger) },
+    { path: 'reports', element: S(Reports) },
   ]),
   area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }]),
   area('/parent', 'parent', [

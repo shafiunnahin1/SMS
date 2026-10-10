@@ -70,6 +70,9 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
             'DELETE api/v1/students/{id}'                  => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/students/{id}/consents'            => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/students/{id}/consent-form.pdf'    => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/admin/reports/{type}'              => null,   // {type} is a report name, not a row; ReportTest: a foreign program_id is a 422
+            'GET api/v1/accountant/reports/{type}'         => null,
             'POST api/v1/students/{id}/consents'           => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/students/{id}/enrollments'         => fn (array $other) => $this->seedStudent($other),
             'PUT api/v1/enrollments/{id}'                  => fn (array $other) => $this->rowOf($other, \App\Models\Enrollment::class),

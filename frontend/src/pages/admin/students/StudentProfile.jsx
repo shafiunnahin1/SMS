@@ -22,6 +22,7 @@ import Tabs from '../../../ui/variants/Tabs'
 import List from '../../../ui/variants/List'
 import Modal from '../../../ui/variants/Modal'
 import { toFormData, multipart } from '../../../features/students/formData'
+import { usePrint } from '../../../hooks/usePrint'
 
 const GENDERS = ['male', 'female', 'other']
 const PROFILE_FIELDS = ['name', 'student_id', 'guardian_phone', 'father_name', 'mother_name', 'gender', 'date_of_birth', 'blood_group', 'religion', 'address', 'studying_at', 'admission_date']
@@ -162,6 +163,7 @@ function Consents({ studentId }) {
   const { t } = useTranslation()
   const { locale } = useLocale()
   const qc = useQueryClient()
+  const { preview, loading } = usePrint()
   const list = useQuery({ queryKey: ['students', 'consents', studentId], queryFn: () => api.get(`/students/${studentId}/consents`).then(r => r.data.data) })
   const set = async (type, status) => {
     await api.post(`/students/${studentId}/consents`, { type, status })
@@ -172,7 +174,10 @@ function Consents({ studentId }) {
   if (list.isError) return <ErrorState onRetry={list.refetch} />
   return (
     <Card>
-      <p className="text-sm text-content-muted mb-3">{t('students.consent_paper')}</p>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <p className="text-sm text-content-muted">{t('students.consent_paper')}</p>
+        <Button variant="secondary" loading={loading} onClick={() => preview(`/students/${studentId}/consent-form.pdf`)}>{t('students.consent_form_pdf')}</Button>
+      </div>
       <ul className="flex flex-col divide-y divide-line">
         {list.data.map(c => (
           <li key={c.type} className="flex flex-wrap items-center justify-between gap-2 py-3">

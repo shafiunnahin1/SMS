@@ -69,4 +69,13 @@ class ConsentController extends Controller
     {
         return Student::whereHas('parents', fn ($q) => $q->whereKey($request->user()->id))->orderBy('id')->get();
     }
+
+    /** GET /students/{id}/consent-form.pdf (admin): the paper form the guardian signs (D50 Chromium; text is a lawyer-review draft) */
+    public function form(int $id, \App\Services\PdfService $pdf)
+    {
+        $student = \App\Models\Student::with('user:id,name')->findOrFail($id);
+        return response($pdf->render('pdf.consent-form', ['student' => $student]), 200, [
+            'Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="consent-' . $student->student_id . '.pdf"',
+        ]);
+    }
 }

@@ -14,4 +14,21 @@ return [
         'total' => 'Total', 'percentage' => 'Percentage', 'result' => 'Result', 'passed' => 'Passed', 'failed' => 'Failed',
         'class_teacher' => 'Class teacher', 'head' => 'Head of institution', 'guardian' => 'Guardian',
     ],
+    'reports' => [
+        'students' => 'Class list', 'attendance' => 'Monthly attendance', 'dues' => 'Due list', 'fees' => 'Fee collection',
+        'roll' => 'Roll', 'id' => 'ID', 'name' => 'Name', 'guardian_phone' => 'Guardian phone', 'items' => 'Unpaid items', 'amount' => 'Amount',
+        'total' => 'Total', 'count' => ':count student(s)', 'all' => 'All', 'empty' => 'No data', 'printed' => 'Printed',
+        'legend' => 'P present, A absent, L late, V leave, H holiday',
+    ],
+    'consent_form' => [
+        'title' => 'Guardian consent form', 'student' => 'Student', 'guardian_phone' => 'Guardian phone',
+        'intro' => 'Tick the box of each item you agree to. All but the starred one are optional and can be changed later.',
+        'types' => [
+            'data_processing' => ['title' => 'Keeping and using the data', 'body' => "The institution keeps your child's data for admission, attendance, results and fees."],
+            'sms' => ['title' => 'SMS notifications', 'body' => 'Absence, notice and reminder SMS. Payment receipts and password codes are always sent.'],
+            'photo' => ['title' => 'Publishing photos', 'body' => "Use of your child's photo at events or on the website (other than the ID card)."],
+            'health_data' => ['title' => 'Health data', 'body' => 'Keeping health records.'],
+        ],
+        'guardian_sign' => "Guardian's name and signature", 'date' => 'Date', 'draft' => 'This text is a draft; a lawyer reviews it before release.',
+    ],
 ];
