@@ -205,7 +205,9 @@
    "running": "Running",
    "completed": "Completed",
    "archived": "Archived",
-   "ongoing": "Ongoing"
+   "ongoing": "Ongoing",
+   "sent": "Sent",
+   "failed": "Failed"
   },
   "attendance": {
    "title": "Take attendance",
@@ -456,6 +458,30 @@
    "percentage": "Percentage",
    "passed": "Passed",
    "failed": "Failed"
+  },
+  "sms": {
+   "title": "SMS",
+   "balance": "Prepaid credit",
+   "used_this_month": "Sent this month (parts)",
+   "quota_left": "Monthly quota left",
+   "unlimited": "Unlimited",
+   "parts_hint": "A Bengali SMS part is 70 characters (67 when split); every part counts. The monthly quota is used first, then prepaid credit.",
+   "log": "Sent SMS",
+   "ledger": "Credit ledger",
+   "no_ledger": "No credit movements yet",
+   "no_log": "No SMS sent yet",
+   "statuses": {
+    "sent": "Sent",
+    "failed": "Failed"
+   },
+   "parts": "{{count}} part(s)",
+   "fallback": "via the platform sender",
+   "types": {
+    "purchase": "Purchase",
+    "usage": "Usage",
+    "adjustment": "Adjustment",
+    "refund": "Refund"
+   }
   }
  },
  "nav": {

@@ -4,6 +4,7 @@ use App\Http\Controllers\Academic\{AttendanceController, BatchController, Consen
 use App\Http\Controllers\Admin\{ImportController, SettingController, TerminologyController, ThemeController};
 use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
+use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
@@ -137,6 +138,12 @@ Route::prefix('v1')->group(function () {
                 Route::get('/fees/report',                [FeeController::class, 'report']);
             });
             Route::get('/parent/fees',                    [FeeController::class, 'dues'])->middleware('role:parent');
+        });
+
+        // ── SMS (Step 4.6): log and balance; sending happens from attendance / fee collection through SendSmsJob ──
+        Route::middleware('module:sms')->group(function () {
+            Route::get('/sms-logs',                       [SmsLogController::class, 'index'])->middleware('role:admin,accountant');
+            Route::get('/subscription/sms-credits',       [SmsCreditController::class, 'balance'])->middleware('role:admin');
         });
 
         // ── Exams & results (Step 4.5) ──

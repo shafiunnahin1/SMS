@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Exceptions\BusinessException;
+use App\Exceptions\{BusinessException, SmsGatewayException};
 use App\Models\{Institution, SmsCreditTransaction, SmsLog, User};
 use App\Services\Sms\SmsGateway;
 use App\Support\{SmsSegments, Tenancy};
@@ -43,8 +43,10 @@ class SmsService
     }
 
     /** $transactional: receipts, OTP, password reset - sent whatever the consent (privacy-and-consent.md section 3); every other
-     *  message (absence alert, reminder, notice) is skipped for a phone whose guardian switched SMS off. Returns false when skipped. */
-    public function send(string $phone, string $message, ?int $sentBy = null, bool $transactional = false): bool
+     *  message (absence alert, reminder, notice) is skipped for a phone whose guardian switched SMS off. Returns false when skipped.
+     *  $finalAttempt = false (a queued job with retries left): a gateway failure throws SmsGatewayException so the queue retries;
+     *  only the last attempt writes the failed row. */
+    public function send(string $phone, string $message, ?int $sentBy = null, bool $transactional = false, bool $finalAttempt = true): bool
     {
         $i = Tenancy::current() ?? throw new \App\Exceptions\TenantNotBoundException(SmsLog::class);
         if (!$transactional && !app(ConsentService::class)->allowsSms(User::normalisePhone($phone) ?? $phone)) return false;
@@ -62,6 +64,8 @@ class SmsService
             $ok = $this->gateway->send($phone, $text, $sender['sid']);
             $fallback = true;
         }
+
+        if (!$ok && !$finalAttempt) throw new SmsGatewayException('sms gateway refused the message');
 
         $parts = SmsSegments::count($text);
         $log = SmsLog::create([
@@ -86,6 +90,14 @@ class SmsService
             $locked->forceFill(['sms_balance' => $balance])->save();
             SmsCreditTransaction::create(['type' => 'usage', 'quantity' => -$over, 'balance_after' => $balance, 'reference' => "sms_log:{$log->id}"]);
         });
+    }
+
+    /** GET /subscription/sms-credits: prepaid balance + this month's use (in SMS parts) */
+    public function usage(Institution $i): array
+    {
+        $quota = $this->monthlyQuota($i);
+        return ['balance' => (int) $i->fresh()->sms_balance, 'used_this_month' => $this->sentThisMonth(),
+            'monthly_quota' => $quota === PHP_INT_MAX ? null : $quota, 'quota_left' => $quota === PHP_INT_MAX ? null : max(0, $quota - $this->sentThisMonth())];
     }
 
     private function monthlyQuota(Institution $i): int

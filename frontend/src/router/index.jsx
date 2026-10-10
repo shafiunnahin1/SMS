@@ -23,6 +23,7 @@ const ExamDetail  = lazy(() => import('../pages/admin/exams/ExamDetail'))
 const MarksEntry  = lazy(() => import('../pages/exams/MarksEntry'))
 const MyMarks     = lazy(() => import('../pages/teacher/MyMarks'))
 const ParentResults = lazy(() => import('../pages/parent/Results'))
+const SmsCenter   = lazy(() => import('../pages/admin/sms/SmsCenter'))
 const ParentFees  = lazy(() => import('../pages/parent/Fees'))
 const Attendance  = lazy(() => import('../pages/attendance/Take'))
 const ParentHome  = lazy(() => import('../pages/parent/Home'))
@@ -71,6 +72,7 @@ export const tenantRoutes = [
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/categories', element: S(FeeCategories) },
     { path: 'fees/dues', element: S(FeeLedger) },
+    { path: 'sms', element: S(SmsCenter) },
     { path: 'exams', element: S(ExamList) },
     { path: 'exams/:id', element: S(ExamDetail) },
     { path: 'exams/:examId/entry/:subjectId', element: S(MarksEntry) },

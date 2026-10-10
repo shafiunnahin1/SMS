@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 
 // docs/design/component-library.md "StatusBadge": a known status gets its tone and its translated word; never colour alone (the word is shown)
 const TONE = {
-  active: 'success', paid: 'success', present: 'success', published: 'info', granted: 'success', ongoing: 'info',
+  active: 'success', paid: 'success', present: 'success', published: 'info', granted: 'success', ongoing: 'info', sent: 'success', failed: 'danger',
   inactive: 'danger', absent: 'danger', due: 'warning', partial: 'warning', pending: 'warning', late: 'warning', leave: 'muted', revoked: 'muted',
 }
 const CLASS = {
