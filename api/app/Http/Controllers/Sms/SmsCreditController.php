@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Sms;
 
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
-use App\Models\{AuditLog, Institution, SmsCreditTransaction};
+use App\Models\{AuditLog, Institution, PlatformSetting, SmsCreditTransaction};
 use App\Services\Billing\BkashService;
 use App\Services\SmsService;
 use App\Support\{Money, Tenancy};
@@ -55,7 +55,9 @@ class SmsCreditController extends Controller
         $i = Tenancy::current();
         $amount = Money::format(Money::toPaisa((string) $f['amount']));
         $ref = 'SMS' . $i->id . 'R' . strtoupper(Str::random(8));                       // <= 20 chars, [A-Z0-9] (online-fee-payment.md)
-        $callback = rtrim((string) config('app.url'), '/') . '/api/v1/billing/bkash/callback?ref=' . $ref;
+        // the Super Admin's public callback address (bKash refuses a local one), else APP_URL
+        $base = PlatformSetting::read('bkash_callback_base') ?: config('app.url');
+        $callback = rtrim((string) $base, '/') . '/api/v1/billing/bkash/callback?ref=' . $ref;
         $payment = $bkash->createPayment($amount, $ref, $callback);
         if (!$payment) {
             // the reason is always in the log; on a local / debug server it is also shown, so the owner can test the sandbox

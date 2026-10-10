@@ -70,7 +70,7 @@ const BKASH_SECRETS = ['app_key', 'app_secret', 'username', 'password']
 
 function BkashCard({ d, onSaved }) {
   const { t } = useTranslation()
-  const empty = { base_url: d.base_url ?? '', sandbox: d.sandbox, app_key: '', app_secret: '', username: '', password: '' }
+  const empty = { base_url: d.base_url ?? '', callback_base: d.callback_base ?? '', sandbox: d.sandbox, app_key: '', app_secret: '', username: '', password: '' }
   const [f, setF] = useState(empty)
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(null)
@@ -88,7 +88,7 @@ function BkashCard({ d, onSaved }) {
       setErrors(Object.fromEntries(Object.entries(errs).map(([k, v]) => [k.replace('bkash.', ''), v])))
     } finally { setBusy(null) }
   }
-  const save = () => send({ bkash: { base_url: f.base_url || null, sandbox: f.sandbox, ...Object.fromEntries(BKASH_SECRETS.filter(k => f[k]).map(k => [k, f[k]])) } }, 'save')
+  const save = () => send({ bkash: { base_url: f.base_url || null, callback_base: f.callback_base || null, sandbox: f.sandbox, ...Object.fromEntries(BKASH_SECRETS.filter(k => f[k]).map(k => [k, f[k]])) } }, 'save')
   const hint = (k) => d[k].set ? <>{t(d[k].source === 'panel' ? 'sms.settings.key_set' : 'super.key_from_server')} <Ltr>{d[k].hint}</Ltr></> : t('super.bkash.not_set')
   return (
     <Card className="flex flex-col gap-3" data-testid="bkash-settings">
@@ -102,6 +102,7 @@ function BkashCard({ d, onSaved }) {
         {t('super.bkash.sandbox')}
       </label>
       <Input label={t('super.bkash.base_url')} ltr autoComplete="off" spellCheck={false} data-lpignore="true" value={f.base_url} onChange={e => set('base_url', e.target.value)} error={errors.base_url?.[0]} name="base_url" hint={t('super.bkash.base_url_hint')} />
+      <Input label={t('super.bkash.callback_base')} ltr autoComplete="off" spellCheck={false} data-lpignore="true" value={f.callback_base} onChange={e => set('callback_base', e.target.value)} error={errors.callback_base?.[0]} name="callback_base" placeholder={d.callback_default ?? ''} hint={t('super.bkash.callback_base_hint')} />
       <div className="grid gap-3 sm:grid-cols-2">
         {BKASH_SECRETS.map(k => (
           <Input key={k} label={t(`super.bkash.${k}`)} ltr {...secretInputProps} value={f[k]} onChange={e => set(k, e.target.value)} error={errors[k]?.[0]} name={`bkash_${k}`} hint={hint(k)} />

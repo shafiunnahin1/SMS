@@ -621,6 +621,8 @@
     "sandbox": "Sandbox (test mode)",
     "base_url": "Base URL",
     "base_url_hint": "Leave empty to use bKash's own address (sandbox or live, by the switch above), or paste the one from your merchant documents.",
+    "callback_base": "Callback address",
+    "callback_base_hint": "bKash sends the payer back to this https address. Empty = APP_URL. bKash refuses a local address (lvh.me): use your own domain or a tunnel; its host must be in CENTRAL_DOMAINS in .env.",
     "app_key": "App key",
     "app_secret": "App secret",
     "username": "Username",

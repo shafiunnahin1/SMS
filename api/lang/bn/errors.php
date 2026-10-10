@@ -22,6 +22,7 @@ return [
     'sms_disabled'          => 'এই প্রতিষ্ঠানের SMS বন্ধ আছে — সেটিংসে ইউনিভার্সাল বা নিজস্ব sender চালু করুন।',
     'sms_own_incomplete'    => 'নিজস্ব SMS চালু করতে API key ও sender ID দুটোই দিন।',
     'bkash_mode_mismatch'   => 'Sandbox চালু থাকলে live (pay.bka.sh) ঠিকানা, আর বন্ধ থাকলে sandbox ঠিকানা দেওয়া যাবে না।',
+    'bkash_callback_not_central' => 'এই ঠিকানার host সার্ভারের CENTRAL_DOMAINS (.env)-এ থাকতে হবে, নইলে bKash থেকে ফেরা প্ল্যাটফর্মে পৌঁছাবে না।',
     'purge_not_eligible'    => 'শুধু :days দিনের বেশি স্থগিত বা মেয়াদোত্তীর্ণ প্রতিষ্ঠান মোছা যায়।',
     'already_anonymized'    => 'এই ছাত্রের তথ্য আগেই বেনামি করা হয়েছে।',
     'confirm_name_mismatch' => 'নিশ্চিত করতে ছাত্রের নাম হুবহু লিখুন।',

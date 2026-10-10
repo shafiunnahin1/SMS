@@ -197,4 +197,26 @@ class SmsRechargeTest extends TestCase
         $this->assertSame([true, false], [BkashService::modeMatches(BkashService::SANDBOX_URL, true), BkashService::modeMatches(BkashService::LIVE_URL, true)]);
         $this->api('PUT', $central, 'super/sms-settings', $admin, ['bkash' => ['app_key' => 'x']])->assertForbidden();
     }
+
+    public function test_the_callback_address_can_be_a_public_one_set_in_the_panel(): void
+    {
+        $this->fakeBkash();
+        $super = User::create(['name' => 'S', 'email' => 's@x.test', 'password' => 'x', 'role' => 'super_admin']);
+        $central = 'admin.' . config('tenancy.base_domain');
+        $this->assertSame('https://' . $this->central, $this->api('GET', $central, 'super/sms-settings', $super)->json('data.bkash.callback_default'));
+
+        // bKash's firewall refuses a local address: a public https one whose host is a central domain is used instead
+        $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['callback_base' => 'https://elsewhere.test']])
+            ->assertStatus(422)->assertJsonValidationErrors('bkash.callback_base');
+        $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['callback_base' => "http://{$central}"]])
+            ->assertStatus(422)->assertJsonValidationErrors('bkash.callback_base');
+        $res = $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['callback_base' => "https://{$central}/"]])->assertOk();
+        $this->assertSame("https://{$central}", $res->json('data.bkash.callback_base'));
+
+        [, , $ref] = $this->start();
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/checkout/create') && $r['callbackURL'] === "https://{$central}/api/v1/billing/bkash/callback?ref={$ref}");
+
+        // emptied: APP_URL again
+        $this->assertNull($this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['callback_base' => null]])->json('data.bkash.callback_base'));
+    }
 }

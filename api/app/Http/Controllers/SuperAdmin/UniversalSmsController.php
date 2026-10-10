@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Crypt;
 // the server config (BULKSMSBD_*, SMS_RATE). The BulkSMSBD account balance itself is not read: no balance API was given (D57).
 // The owner (2026-10-10) also sets the platform's bKash merchant for wallet recharge here (D58): address, sandbox switch and the
 // four credentials - each secret stored encrypted, never returned (last 4 only); `bkash_test` asks bKash for a token.
+// `callback_base` (owner, 2026-10-10): the public https address bKash sends the payer back to, when APP_URL is a local one
+// bKash's firewall refuses (sandbox create answered "Request Rejected" for http://admin.lvh.me). Its host must be a central domain.
 class UniversalSmsController extends Controller
 {
     public function __construct(private SmsService $sms, private BkashService $bkash) {}
@@ -35,6 +37,7 @@ class UniversalSmsController extends Controller
             'bkash'                 => ['sometimes', 'array'],
             'bkash.base_url'        => ['sometimes', 'nullable', 'url:https', 'max:200'],
             'bkash.sandbox'         => ['sometimes', 'boolean'],
+            'bkash.callback_base'   => ['sometimes', 'nullable', 'url:https', 'max:200'],
             'bkash.app_key'         => ['sometimes', 'nullable', 'string', 'max:200'],
             'bkash.app_secret'      => ['sometimes', 'nullable', 'string', 'max:200'],
             'bkash.username'        => ['sometimes', 'nullable', 'string', 'max:200'],
@@ -56,11 +59,16 @@ class UniversalSmsController extends Controller
         if ($nextUrl !== '' && !BkashService::modeMatches($nextUrl, $nextSandbox)) {
             throw \Illuminate\Validation\ValidationException::withMessages(['bkash.base_url' => __('errors.bkash_mode_mismatch')]);
         }
+        // bKash sends the payer back to /billing/bkash/callback, a central-host route: another host would never reach it
+        if (filled($b['callback_base'] ?? null) && !in_array(parse_url($b['callback_base'], PHP_URL_HOST), config('tenancy.central_domains'), true)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['bkash.callback_base' => __('errors.bkash_callback_not_central')]);
+        }
         if ($b['clear'] ?? false) {
-            foreach ([...BkashService::SECRET_FIELDS, 'base_url', 'sandbox'] as $k) PlatformSetting::write("bkash_{$k}", null, $by);
+            foreach ([...BkashService::SECRET_FIELDS, 'base_url', 'sandbox', 'callback_base'] as $k) PlatformSetting::write("bkash_{$k}", null, $by);
             $changed[] = 'bkash';
         }
         if (array_key_exists('base_url', $b)) { PlatformSetting::write('bkash_base_url', $b['base_url'] ?: null, $by); $changed[] = 'bkash.base_url'; }
+        if (array_key_exists('callback_base', $b)) { PlatformSetting::write('bkash_callback_base', $b['callback_base'] ? rtrim($b['callback_base'], '/') : null, $by); $changed[] = 'bkash.callback_base'; }
         if (array_key_exists('sandbox', $b)) { PlatformSetting::write('bkash_sandbox', (bool) $b['sandbox'], $by); $changed[] = 'bkash.sandbox'; }
         foreach (BkashService::SECRET_FIELDS as $k) {
             if (filled($b[$k] ?? null)) { PlatformSetting::write("bkash_{$k}", Crypt::encryptString(trim($b[$k])), $by); $changed[] = "bkash.{$k}"; }
@@ -96,7 +104,8 @@ class UniversalSmsController extends Controller
     {
         $c = $this->bkash->credentials();
         $hint = fn (string $v) => $v === '' ? null : '••••' . substr($v, -4);
-        $out = ['base_url' => $c['base_url'] ?: null, 'sandbox' => $c['sandbox'], 'configured' => $this->bkash->configured()];
+        $out = ['base_url' => $c['base_url'] ?: null, 'sandbox' => $c['sandbox'], 'configured' => $this->bkash->configured(),
+            'callback_base' => PlatformSetting::read('bkash_callback_base'), 'callback_default' => rtrim((string) config('app.url'), '/')];
         foreach (BkashService::SECRET_FIELDS as $k) {
             $out[$k] = ['set' => $c[$k] !== '', 'hint' => $hint($c[$k]), 'source' => PlatformSetting::read("bkash_{$k}") ? 'panel' : ($c[$k] !== '' ? 'server' : null)];
         }

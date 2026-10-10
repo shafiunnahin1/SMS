@@ -621,6 +621,8 @@
     "sandbox": "Sandbox (পরীক্ষা-মোড)",
     "base_url": "Base URL",
     "base_url_hint": "খালি রাখলে bKash-এর নিজের ঠিকানা (ওপরের সুইচ অনুযায়ী sandbox বা live) ব্যবহার হবে; নইলে merchant নথির ঠিকানা দিন।",
+    "callback_base": "Callback ঠিকানা",
+    "callback_base_hint": "bKash পেমেন্টের পর এই https ঠিকানায় ফেরত পাঠায়। খালি রাখলে APP_URL। লোকাল ঠিকানা (lvh.me) bKash ফিরিয়ে দেয় — নিজের ডোমেইন বা tunnel দিন; তার host .env-এর CENTRAL_DOMAINS-এ থাকতে হবে।",
     "app_key": "App key",
     "app_secret": "App secret",
     "username": "Username",

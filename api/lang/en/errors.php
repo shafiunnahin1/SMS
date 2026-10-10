@@ -22,6 +22,7 @@ return [
     'sms_disabled'          => 'SMS is switched off for this institution - turn on the universal or your own sender in Settings.',
     'sms_own_incomplete'    => 'Give both the API key and the sender ID to switch on your own SMS.',
     'bkash_mode_mismatch'   => 'With sandbox on the live address (pay.bka.sh) is not allowed, and with sandbox off the sandbox address is not allowed.',
+    'bkash_callback_not_central' => 'The host of this address must be in CENTRAL_DOMAINS on the server (.env), or the payer coming back from bKash never reaches the platform.',
     'purge_not_eligible'    => 'Only an institution suspended or expired for more than :days days can be removed.',
     'already_anonymized'    => 'This student is already anonymized.',
     'confirm_name_mismatch' => 'Type the student\'s name exactly to confirm.',
