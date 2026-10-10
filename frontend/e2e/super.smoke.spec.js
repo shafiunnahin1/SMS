@@ -8,7 +8,8 @@ const BASE = process.env.E2E_BASE_DOMAIN ?? 'lvh.me:5173'
 test.use({ baseURL: `http://admin.${BASE}` })
 // The Super Admin always signs in with a one-time code; in local/CI the code only goes to the API's log (G17, OtpService::sms)
 const API_LOG = process.env.E2E_API_LOG ?? new URL('../../api/storage/logs/laravel.log', import.meta.url).pathname
-const lastCode = () => [...readFileSync(API_LOG, 'utf8').matchAll(/\[dev sms\] to 017\*+00: \D*(\d{4,8})/g)].at(-1)?.[1]
+const readLog = () => { try { return readFileSync(API_LOG, 'utf8') } catch { return '' } }      // a fresh CI checkout has no log until the first line
+const lastCode = () => [...readLog().matchAll(/\[dev sms\] to 017\*+00: \D*(\d{4,8})/g)].at(-1)?.[1]
 
 async function loginSuper(page) {
   await page.goto('/login')
