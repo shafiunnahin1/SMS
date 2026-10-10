@@ -18,7 +18,8 @@ class SmsRechargeTest extends TestCase
 
     private string $central;
     private ?array $executeAnswer = null;
-    private ?array $createAnswer = null;           // what bKash answers to create (null = a started payment)          // what bKash answers to execute (null = the matching Completed payment)
+    private ?array $createAnswer = null;
+    private ?string $createRaw = null;             // a non-JSON body for create           // what bKash answers to create (null = a started payment)          // what bKash answers to execute (null = the matching Completed payment)
 
     protected function setUp(): void
     {
@@ -32,7 +33,7 @@ class SmsRechargeTest extends TestCase
     {
         Http::fake([
             'bkash.sandbox.test/v1/tokenized/checkout/token/grant' => Http::response(['id_token' => 'tok']),
-            'bkash.sandbox.test/v1/tokenized/checkout/create' => fn ($req) => Http::response($this->createAnswer ?? ['paymentID' => 'PAY1', 'bkashURL' => 'https://sandbox.bkash.test/pay/PAY1',
+            'bkash.sandbox.test/v1/tokenized/checkout/create' => fn ($req) => $this->createRaw !== null ? Http::response($this->createRaw, 200, ['Content-Type' => 'text/html']) : Http::response($this->createAnswer ?? ['paymentID' => 'PAY1', 'bkashURL' => 'https://sandbox.bkash.test/pay/PAY1',
                 'amount' => $req['amount'], 'merchantInvoiceNumber' => $req['merchantInvoiceNumber']]),
             'bkash.sandbox.test/v1/tokenized/checkout/execute' => fn ($req) => Http::response($this->executeAnswer ?? ['paymentID' => 'PAY1', 'trxID' => 'TRX9',
                 'transactionStatus' => 'Completed', 'amount' => '500', 'merchantInvoiceNumber' => Cache::get('last_ref')]),
@@ -111,6 +112,14 @@ class SmsRechargeTest extends TestCase
         config(['app.debug' => true]);
         $this->createAnswer = ['statusCode' => '0000', 'agreementStatus' => 'Initiated'];
         $this->assertStringContainsString('fields: statusCode, agreementStatus', $this->api('POST', $host, 'subscription/sms-credits', $admin, ['amount' => 500])->json('message'));
+        config(['app.debug' => false]);
+
+        // an answer that is not JSON at all says what came back; every call asks for JSON
+        config(['app.debug' => true]);
+        $this->createRaw = '<html>Gateway error</html>';
+        $this->assertStringContainsString('create: HTTP 200 text/html - Gateway error', $this->api('POST', $host, 'subscription/sms-credits', $admin, ['amount' => 500])->json('message'));
+        $this->createRaw = null;
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/checkout/create') && $r->header('Accept')[0] === 'application/json');
         config(['app.debug' => false]);
 
         // bKash refuses the create: 502, and on a debug server the reason is in the message (never a key)

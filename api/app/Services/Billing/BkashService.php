@@ -92,7 +92,7 @@ class BkashService
         $c = $this->credentials();
         return Cache::remember($this->tokenKey(), 3500, function () use ($c) {
             try {
-                $r = Http::timeout(20)->withHeaders(['username' => $c['username'], 'password' => $c['password']])
+                $r = Http::timeout(20)->acceptJson()->withHeaders(['username' => $c['username'], 'password' => $c['password']])
                     ->post($this->url('/tokenized/checkout/token/grant'), ['app_key' => $c['app_key'], 'app_secret' => $c['app_secret']]);
             } catch (\Throwable $e) {                     // unreachable address: "refused", never a 500 for the caller
                 $this->fail('token', self::networkReason($e));
@@ -118,8 +118,13 @@ class BkashService
         try {
             $token = $this->token();
             if (!$token) return [];
-            $r = Http::timeout(30)->withHeaders(['Authorization' => $token, 'X-APP-Key' => $this->credentials()['app_key']])->post($this->url($path), $body);
+            $r = Http::timeout(30)->acceptJson()->withHeaders(['Authorization' => $token, 'X-APP-Key' => $this->credentials()['app_key']])->post($this->url($path), $body);
             $json = (array) $r->json();
+            if ($json === [] && $r->successful()) {
+                // not JSON: say what came back (status, type, the first characters) - an answer never carries our keys
+                $this->fail($step, "HTTP {$r->status()} " . ($r->header('Content-Type') ?: 'no content type') . ' - ' . (mb_substr(trim(strip_tags($r->body())), 0, 120) ?: 'empty body'));
+                return [];
+            }
             // bKash answers HTTP 200 with its own statusCode for refusals ("0000" = fine)
             if (!$r->successful() || (isset($json['statusCode']) && $json['statusCode'] !== '0000')) $this->fail($step, self::bkashReason($r->status(), $json));
             return $json;
