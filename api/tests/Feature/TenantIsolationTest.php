@@ -55,6 +55,8 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/payments/student/{id}'        => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/receipt/{id}'                 => fn (array $other) => $this->seedReceipt($other),
+            'PUT api/v1/fees/categories/{id}'              => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeCategory::value('id')
+                ?? \App\Models\FeeCategory::create(['name' => 'Tuition', 'amount' => 500, 'frequency' => 'monthly'])->id),
             'PUT api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
             'DELETE api/v1/students/{id}'                  => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/students/{id}/consents'            => fn (array $other) => $this->seedStudent($other),

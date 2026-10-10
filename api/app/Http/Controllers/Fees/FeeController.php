@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Fees;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Fees\CollectFeeRequest;
-use App\Models\{Batch, FeePayment, ParentStudent, Student};
-use App\Services\{FeeService, PdfService};
+use App\Http\Requests\Fees\{CollectFeeRequest, FeeCategoryRequest};
+use App\Http\Resources\FeeCategoryResource;
+use App\Models\{Batch, FeeCategory, FeePayment, ParentStudent, Student};
+use App\Services\{DomainService, FeeService, PdfService};
+use App\Support\Tenancy;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\SvgWriter;
 use App\Support\Money;
 use Illuminate\Http\Request;
 
@@ -45,7 +49,10 @@ class FeeController extends Controller
         $receipt = $this->receiptData(FeePayment::findOrFail($id)->receipt_no);
         if ($request->query('format') === 'json') return response()->json(['success' => true, 'data' => $receipt]);
 
-        return response($pdf->render('pdf.receipt', ['receipt' => $receipt], 'a5'), 200, [
+        // QR: the institution's primaryUrl() (custom-domain.md) -> the parent's fee page, where this receipt is listed
+        $url = app(DomainService::class)->primaryUrl(Tenancy::current()) . '/parent/fees?receipt=' . rawurlencode($receipt['receipt_no']);
+        $qr = 'data:image/svg+xml;base64,' . base64_encode((new SvgWriter())->write(new QrCode($url, size: 160, margin: 0))->getString());
+        return response($pdf->render('pdf.receipt', ['receipt' => $receipt, 'qr' => $qr, 'qrUrl' => $url], 'a5'), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="' . $receipt['receipt_no'] . '.pdf"',
         ]);
@@ -64,6 +71,47 @@ class FeeController extends Controller
             ])->values();
 
         return response()->json(['success' => true, 'data' => $receipts]);
+    }
+
+    /** GET /fees/categories (admin) */
+    public function categories()
+    {
+        return FeeCategoryResource::collection(FeeCategory::withExists('payments')->orderBy('id')->get())->additional(['success' => true]);
+    }
+
+    /** POST /fees/categories (admin) */
+    public function storeCategory(FeeCategoryRequest $request)
+    {
+        return (new FeeCategoryResource($this->fees->saveCategory($request->validated())))->additional(['success' => true])->response()->setStatusCode(201);
+    }
+
+    /** PUT /fees/categories/{id} (admin) - no delete route in R1: financial history points at categories (D32) */
+    public function updateCategory(int $id)
+    {
+        $category = FeeCategory::findOrFail($id);          // a foreign id is a 404 before the input is checked
+        $data = app(FeeCategoryRequest::class)->validated();
+        return (new FeeCategoryResource($this->fees->saveCategory($data, $category)->loadExists('payments')))->additional(['success' => true]);
+    }
+
+    /** GET /fees/payments?from=&to=&payment_method=&student_id=&page= (admin, accountant): one row per receipt */
+    public function payments(Request $request)
+    {
+        $f = $request->validate(['from' => 'nullable|date_format:Y-m-d', 'to' => 'nullable|date_format:Y-m-d|after_or_equal:from',
+            'payment_method' => 'nullable|string|max:30', 'student_id' => 'nullable|integer']);
+        $page = $this->fees->receipts($f);
+        return response()->json(['success' => true, 'data' => collect($page->items())->map(fn ($r) => [
+            'id' => (int) $r->id, 'receipt_no' => $r->receipt_no, 'paid_at' => $r->paid_at ? \Illuminate\Support\Carbon::parse($r->paid_at)->toIso8601String() : null,
+            'payment_method' => $r->payment_method, 'total' => Money::format(Money::toPaisa((string) $r->total)), 'lines' => (int) $r->line_count,
+            'student' => ['id' => $r->student_id, 'student_id' => $r->student?->student_id, 'name' => $r->student?->user?->name],
+        ])->values(), 'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'per_page' => $page->perPage(), 'total' => $page->total()]]);
+    }
+
+    /** GET /fees/report?month=&program_id=&fee_category_id= (admin) */
+    public function report(Request $request)
+    {
+        $f = $request->validate(['month' => 'nullable|date_format:Y-m', 'program_id' => 'nullable|integer', 'fee_category_id' => 'nullable|integer']);
+        return response()->json(['success' => true, 'data' => $this->fees->monthlyReport($f['month'] ?? now()->format('Y-m'),
+            isset($f['program_id']) ? (int) $f['program_id'] : null, isset($f['fee_category_id']) ? (int) $f['fee_category_id'] : null)]);
     }
 
     private function reachableStudent(Request $request, int $id): Student

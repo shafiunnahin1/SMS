@@ -127,6 +127,13 @@ Route::prefix('v1')->group(function () {
                 Route::post('/fees/collect',              [FeeController::class, 'collect']);
                 Route::get('/fees/dues',                  [FeeController::class, 'dues']);
                 Route::get('/fees/receipt/{id}',          [FeeController::class, 'receipt'])->whereNumber('id');
+                Route::get('/fees/payments',              [FeeController::class, 'payments']);
+            });
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/fees/categories',            [FeeController::class, 'categories']);
+                Route::post('/fees/categories',           [FeeController::class, 'storeCategory']);
+                Route::put('/fees/categories/{id}',       [FeeController::class, 'updateCategory'])->whereNumber('id');
+                Route::get('/fees/report',                [FeeController::class, 'report']);
             });
             Route::get('/parent/fees',                    [FeeController::class, 'dues'])->middleware('role:parent');
         });

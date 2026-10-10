@@ -157,7 +157,30 @@
     "card": "Card",
     "bank_transfer": "Bank transfer",
     "cheque": "Cheque"
-   }
+   },
+   "categories_title": "Fee heads",
+   "add_category": "New fee head",
+   "edit_category": "Edit fee head",
+   "frequency": "How often",
+   "frequencies": {
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "once": "Once"
+   },
+   "applies_to": "Applies to",
+   "applies": {
+    "all": "Everyone",
+    "program_specific": "Specific class/course"
+   },
+   "frequency_locked": "Money was collected under this head, so how often can no longer change.",
+   "amount_hint": "A new amount applies to unpaid dues only; earlier receipts stay as they are.",
+   "ledger_title": "Dues & collections",
+   "report_title": "Monthly report",
+   "from": "From",
+   "to": "To",
+   "collected_total": "Collected",
+   "by_category": "By fee head",
+   "by_method": "By method"
   },
   "parent": {
    "title": "Fees & payments",

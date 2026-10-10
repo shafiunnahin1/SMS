@@ -16,6 +16,8 @@ const NotBuilt    = lazy(() => import('../pages/common/NotBuilt'))
 const StudentList = lazy(() => import('../pages/admin/students/StudentList'))
 const StudentAdd  = lazy(() => import('../pages/admin/students/StudentAdd'))
 const FeeCollect  = lazy(() => import('../pages/admin/fees/FeeCollect'))
+const FeeCategories = lazy(() => import('../pages/admin/fees/FeeCategories'))
+const FeeLedger   = lazy(() => import('../pages/admin/fees/FeeLedger'))
 const ParentFees  = lazy(() => import('../pages/parent/Fees'))
 const Attendance  = lazy(() => import('../pages/attendance/Take'))
 const ParentHome  = lazy(() => import('../pages/parent/Home'))
@@ -62,6 +64,8 @@ export const tenantRoutes = [
     { path: 'students/:id', element: S(StudentProfile) },
     { path: 'settings/imports', element: S(Imports) },
     { path: 'fees/collect', element: S(FeeCollect) },
+    { path: 'fees/categories', element: S(FeeCategories) },
+    { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'attendance', element: S(Attendance) },
     { path: 'academic/programs', element: S(Programs) },
     { path: 'academic/subjects', element: S(Subjects) },
@@ -74,6 +78,7 @@ export const tenantRoutes = [
   area('/accountant', 'accountant', [
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'fees/collect', element: S(FeeCollect) },
+    { path: 'fees/dues', element: S(FeeLedger) },
   ]),
   area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }]),
   area('/parent', 'parent', [

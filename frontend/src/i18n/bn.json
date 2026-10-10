@@ -157,7 +157,30 @@
     "card": "কার্ড",
     "bank_transfer": "ব্যাংক ট্রান্সফার",
     "cheque": "চেক"
-   }
+   },
+   "categories_title": "ফি-র খাত",
+   "add_category": "নতুন খাত",
+   "edit_category": "খাত সম্পাদনা",
+   "frequency": "কতবার",
+   "frequencies": {
+    "monthly": "মাসিক",
+    "yearly": "বার্ষিক",
+    "once": "একবার"
+   },
+   "applies_to": "কার জন্য",
+   "applies": {
+    "all": "সবার",
+    "program_specific": "নির্দিষ্ট শ্রেণি/কোর্স"
+   },
+   "frequency_locked": "এই খাতে টাকা আদায় হয়েছে, তাই কতবার তা আর বদলানো যাবে না।",
+   "amount_hint": "অঙ্ক বদলালে শুধু অপরিশোধিত বকেয়ায় নতুন অঙ্ক বসবে; আগের রসিদ বদলায় না।",
+   "ledger_title": "বকেয়া ও আদায়",
+   "report_title": "মাসিক রিপোর্ট",
+   "from": "শুরু",
+   "to": "শেষ",
+   "collected_total": "মোট আদায়",
+   "by_category": "খাত অনুযায়ী",
+   "by_method": "পদ্ধতি অনুযায়ী"
   },
   "parent": {
    "title": "ফি ও পেমেন্ট",

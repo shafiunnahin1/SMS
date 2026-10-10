@@ -3,7 +3,8 @@
 namespace App\Services;
 
 use App\Jobs\SendSmsJob;
-use App\Models\{Enrollment, FeeCategory, FeePayment, FeeStructure, Institution, Student};
+use App\Exceptions\BusinessException;
+use App\Models\{Batch, Enrollment, FeeCategory, FeePayment, FeeStructure, Institution, Student};
 use App\Support\Money;
 use App\Support\Tenancy;
 use Illuminate\Support\Collection;
@@ -124,6 +125,58 @@ class FeeService
             SendSmsJob::dispatch($s->guardian_phone, __('sms.fee_received', ['amount' => $total, 'receipt' => $receipt], $locale), Tenancy::current()->id, auth()->id(), transactional: true)->afterCommit();
             return $rows;
         });
+    }
+
+    /** Create or update a fee category. Once money was collected under it, its frequency is fixed (the periods of paid dues
+     *  would change meaning); the amount may change - it applies to dues not yet paid. */
+    public function saveCategory(array $data, ?FeeCategory $c = null): FeeCategory
+    {
+        $data['applicable_to'] = $data['applicable_to'] ?? 'all';
+        if ($c && $c->frequency !== $data['frequency'] && $c->payments()->exists()) {
+            throw new BusinessException('frequency is fixed once collected', 'in_use', 422);
+        }
+        $c ??= new FeeCategory();
+        $c->fill($data)->save();
+        return $c;
+    }
+
+    /** Receipts (one row per receipt_no) newest first; filters: from, to (dates), payment_method, student_id */
+    public function receipts(array $f, int $perPage = 20)
+    {
+        return FeePayment::query()
+            ->selectRaw('receipt_no, MIN(id) AS id, student_id, payment_method, MAX(paid_at) AS paid_at, SUM(paid_amount) AS total, COUNT(*) AS line_count')
+            ->when($f['from'] ?? null, fn ($q, $d) => $q->where('paid_at', '>=', $d . ' 00:00:00'))
+            ->when($f['to'] ?? null, fn ($q, $d) => $q->where('paid_at', '<=', $d . ' 23:59:59'))
+            ->when($f['payment_method'] ?? null, fn ($q, $m) => $q->where('payment_method', $m))
+            ->when($f['student_id'] ?? null, fn ($q, $s) => $q->where('student_id', $s))
+            ->groupBy('receipt_no', 'student_id', 'payment_method')
+            ->orderByDesc('paid_at')->orderByDesc('receipt_no')
+            ->with('student.user:id,name')
+            ->paginate($perPage);
+    }
+
+    /** Money collected in a month (by paid_at): total, receipts, per category, per method, per day. Optional program / category filter. */
+    public function monthlyReport(string $month, ?int $programId = null, ?int $categoryId = null): array
+    {
+        $from = $month . '-01 00:00:00';
+        $to = date('Y-m-t 23:59:59', strtotime($month . '-01'));
+        $base = fn () => FeePayment::query()->whereBetween('paid_at', [$from, $to])
+            ->when($programId, fn ($q) => $q->whereIn('batch_id', Batch::where('program_id', $programId)->select('id')))
+            ->when($categoryId, fn ($q) => $q->where('fee_category_id', $categoryId));
+        $fmt = fn ($v) => Money::format(Money::toPaisa($v ?? 0));
+        $names = FeeCategory::pluck('name', 'id');
+
+        return [
+            'month' => $month,
+            'total' => $fmt($base()->sum('paid_amount')),
+            'receipts' => $base()->distinct()->count('receipt_no'),
+            'by_category' => $base()->selectRaw('fee_category_id, SUM(paid_amount) AS total')->groupBy('fee_category_id')->get()
+                ->map(fn ($r) => ['id' => $r->fee_category_id, 'name' => $names[$r->fee_category_id] ?? null, 'total' => $fmt($r->total)])->sortByDesc(fn ($r) => Money::toPaisa($r['total']))->values(),
+            'by_method' => $base()->selectRaw('payment_method, SUM(paid_amount) AS total')->groupBy('payment_method')->get()
+                ->map(fn ($r) => ['method' => $r->payment_method, 'total' => $fmt($r->total)])->values(),
+            'by_day' => $base()->selectRaw('DATE(paid_at) AS day, SUM(paid_amount) AS total')->groupBy('day')->orderBy('day')->get()
+                ->map(fn ($r) => ['date' => $r->day, 'total' => $fmt($r->total)])->values(),
+        ];
     }
 
     /** Must run inside a transaction: the institution row lock serialises numbering per institution */

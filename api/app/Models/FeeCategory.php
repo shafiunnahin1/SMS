@@ -22,4 +22,5 @@ class FeeCategory extends Model
     protected $casts = [
         'amount' => 'decimal:2',
     ];
+    public function payments() { return $this->hasMany(FeePayment::class); }
 }
