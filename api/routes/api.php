@@ -9,7 +9,7 @@ use App\Http\Controllers\Public\{BootstrapController, HealthController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
-use App\Http\Controllers\SuperAdmin\{InstitutionController, UniversalSmsController};
+use App\Http\Controllers\SuperAdmin\{InstitutionController, TenantPurgeController, UniversalSmsController};
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +48,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/institutions/{id}/sms-credits', [SmsCreditController::class, 'adjust'])->whereNumber('id');
         Route::get('/sms-settings',                   [UniversalSmsController::class, 'show']);
         Route::put('/sms-settings',                   [UniversalSmsController::class, 'update']);
+        // Step 8.1 (D27, privacy-and-consent.md 5.3): remove an institution for good - manual, two steps
+        Route::get('/tenant-purge/candidates',                      [TenantPurgeController::class, 'candidates']);
+        Route::post('/tenant-purge/{institutionId}/dry-run',        [TenantPurgeController::class, 'dryRun'])->whereNumber('institutionId');
+        Route::post('/tenant-purge/{institutionId}/execute',        [TenantPurgeController::class, 'execute'])->whereNumber('institutionId');
     });
 
     // ─── 3. Tenant host only ───────────────────────────────────

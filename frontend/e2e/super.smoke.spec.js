@@ -54,6 +54,7 @@ test('5.3 super admin: institutions, wallet, modules, settings', async ({ page }
   await page.locator('[data-action="toggle"]').click()
   await page.getByRole('alertdialog').getByRole('button').last().click()
   await expect(page.locator('[data-testid="institution-detail"] [data-status]').first()).toHaveAttribute('data-status', 'suspended')
+  await expect(page.locator('[data-testid="purge"]')).toBeVisible()                 // Step 8.1: "remove for good" appears once suspended
 
   await page.goto('/super-admin/settings')
   await page.locator('input[name="rate"]').fill('0.40')

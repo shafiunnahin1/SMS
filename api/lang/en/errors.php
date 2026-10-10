@@ -21,6 +21,7 @@ return [
     'sms_quota_exceeded'    => 'Not enough money in the SMS wallet - please recharge.',
     'sms_disabled'          => 'SMS is switched off for this institution - turn on the universal or your own sender in Settings.',
     'sms_own_incomplete'    => 'Give both the API key and the sender ID to switch on your own SMS.',
+    'purge_not_eligible'    => 'Only an institution suspended or expired for more than :days days can be removed.',
     'already_anonymized'    => 'This student is already anonymized.',
     'confirm_name_mismatch' => 'Type the student\'s name exactly to confirm.',
     'recharge_unavailable'  => 'Online recharge is not available yet - please contact the platform.',

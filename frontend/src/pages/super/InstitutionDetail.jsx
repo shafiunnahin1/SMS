@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
@@ -81,6 +81,7 @@ export default function InstitutionDetail() {
         </Card>
       </div>
       <Wallet d={d} onDone={apply} />
+      {['suspended', 'expired'].includes(d.status) && <Purge d={d} />}
     </div>
   )
 }
@@ -122,6 +123,53 @@ function Wallet({ d, onDone }) {
             </li>
           ))}
         </ul>
+      )}
+    </Card>
+  )
+}
+
+// Step 8.1 (D27, privacy-and-consent.md 5.3): remove an institution for good - only after 30 days suspended / expired, a dry run
+// first, then the address typed again and the written confirmation that the institution was given its data
+function Purge({ d }) {
+  const { t } = useTranslation()
+  const { locale } = useLocale()
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const [plan, setPlan] = useState(null)
+  const [slug, setSlug] = useState('')
+  const [handed, setHanded] = useState(false)
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const run = async (fn) => {
+    setBusy(true); setError(null)
+    try { await fn() } catch (e) { setError(e.response?.data?.message ?? t('privacy.failed')) } finally { setBusy(false) }
+  }
+  const dryRun = () => run(async () => setPlan((await api.post(`/super/tenant-purge/${d.id}/dry-run`)).data.data))
+  const execute = () => run(async () => {
+    await api.post(`/super/tenant-purge/${d.id}/execute`, { confirm_slug: slug, confirm_export_sent: handed })
+    useUiStore.getState().addToast(t('super.purge.done'))
+    qc.invalidateQueries({ queryKey: ['super'] })
+    navigate('/super-admin/institutions')
+  })
+  const rows = plan ? Object.entries(plan.tables).filter(([, n]) => n > 0) : []
+  return (
+    <Card className="flex flex-col gap-3" data-testid="purge">
+      <h2 className="font-semibold">{t('super.purge.title')}</h2>
+      <p className="text-sm text-content-muted">{t('super.purge.hint')}</p>
+      {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+      {!plan ? <div><Button variant="secondary" onClick={dryRun} loading={busy} data-action="dry-run">{t('super.purge.dry_run')}</Button></div> : (
+        <>
+          <ul className="text-sm grid gap-1 sm:grid-cols-2" data-testid="purge-plan">
+            {rows.map(([table, n]) => <li key={table} className="flex justify-between gap-2"><Ltr>{table}</Ltr><Ltr>{fmtNumber(n, locale)}</Ltr></li>)}
+            <li className="flex justify-between gap-2"><span>{t('super.purge.files')}</span><Ltr>{fmtNumber(plan.files.private + plan.files.public, locale)}</Ltr></li>
+          </ul>
+          <Input label={t('super.purge.type_slug', { slug: d.slug })} ltr value={slug} onChange={e => setSlug(e.target.value)} name="confirm_slug" />
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" checked={handed} onChange={e => setHanded(e.target.checked)} name="confirm_export_sent" className="mt-1 h-4 w-4 accent-[var(--color-primary)]" />
+            {t('super.purge.handed_over')}
+          </label>
+          <div><Button variant="danger" onClick={execute} loading={busy} disabled={slug !== d.slug || !handed} data-action="purge">{t('super.purge.execute')}</Button></div>
+        </>
       )}
     </Card>
   )

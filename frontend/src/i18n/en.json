@@ -629,6 +629,16 @@
     "test": "Test connection",
     "test_ok": "Connected - bKash gave a token.",
     "test_failed": "bKash refused - check the address and the credentials."
+   },
+   "purge": {
+    "title": "Remove for good",
+    "hint": "For an institution suspended or expired for more than 30 days: every row, file and login of it is deleted. Backups age out in 30 days. This cannot be undone.",
+    "dry_run": "Show what would be removed",
+    "files": "Files",
+    "type_slug": "Type the address “{{slug}}” to confirm",
+    "handed_over": "I confirm in writing that the institution was given its data (export) before removal.",
+    "execute": "Remove everything",
+    "done": "The institution was removed."
    }
   },
   "privacy": {
