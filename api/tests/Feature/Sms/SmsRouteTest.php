@@ -141,4 +141,17 @@ class SmsRouteTest extends TestCase
         $this->api('GET', $host, 'admin/settings/sms-sender', $this->makeUser($i, 'accountant'))->assertForbidden();
         $this->api('PUT', $host, 'admin/settings/sms-sender', $admin, ['sender_id' => str_repeat('A', 21)])->assertStatus(422);
     }
+
+    public function test_the_bulksmsbd_gateway_follows_its_code_table(): void
+    {
+        // BulkSMSBD's own table (owner, 2026-10-10): 202 = submitted; 1001-1032 = errors (1007 balance insufficient, 1032 ip not whitelisted)
+        config(['services.bulksmsbd.url' => 'https://bulksmsbd.test/api/smsapi', 'services.bulksmsbd.success_codes' => [202]]);
+        $codes = [202, 1007, 1032];
+        \Illuminate\Support\Facades\Http::fake(['bulksmsbd.test/*' => function () use (&$codes) { return \Illuminate\Support\Facades\Http::response(['response_code' => array_shift($codes)]); }]);
+        $g = new \App\Services\Sms\BulkSmsBdGateway();
+        $this->assertSame([true, false, false], [$g->send('01711111111', 'hi', 'EDU', 'key-1'), $g->send('+8801711111111', 'hi', 'EDU', 'key-1'), $g->send('01711111111', 'hi', 'EDU', 'key-1')]);
+        \Illuminate\Support\Facades\Http::assertSent(fn ($r) => $r['number'] === '8801711111111' && $r['api_key'] === 'key-1' && $r['senderid'] === 'EDU');
+        \Illuminate\Support\Facades\Http::assertNotSent(fn ($r) => str_starts_with((string) $r['number'], '8888'));
+        $this->assertFalse($g->send('01711111111', 'hi', '', 'key-1'), 'no sender -> not sent');
+    }
 }

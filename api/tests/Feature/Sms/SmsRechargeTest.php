@@ -58,7 +58,7 @@ class SmsRechargeTest extends TestCase
         $this->fakeBkash();
         [$i, , $ref] = $this->start();
         $this->assertMatchesRegularExpression('/^[A-Z0-9]{1,20}$/', $ref);
-        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/checkout/create') && $r['amount'] === '500.00' && $r['currency'] === 'BDT'
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/checkout/create') && $r['amount'] === '500.00' && $r['currency'] === 'BDT' && $r['mode'] === '0011' && $r['payerReference'] === $ref
             && $r['callbackURL'] === "https://{$this->central}/api/v1/billing/bkash/callback?ref={$ref}");
 
         $this->returnFromBkash($ref)->assertRedirect('http://' . $this->hostOf($i) . '/admin/sms?recharge=success');

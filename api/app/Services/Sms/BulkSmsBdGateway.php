@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Log;
 
 // D57/D59: BulkSMSBD. The request is the owner's sample (2026-10-10): POST api_key, senderid, number, message to
 // services.bulksmsbd.url. TLS verification stays ON (the sample turned it off). Success: the JSON `response_code` is one of
-// services.bulksmsbd.success_codes - TODO(OD-bulksmsbd-codes): confirm the list against BulkSMSBD's own response-code table.
+// services.bulksmsbd.success_codes - BulkSMSBD's own table (owner, 2026-10-10): only 202 "SMS Submitted Successfully";
+// every other code (1001-1032: invalid number, sender id, balance, IP not whitelisted ...) is a failure and is logged by code only.
 class BulkSmsBdGateway implements SmsGateway
 {
     public function send(string $phone, string $text, string $senderId, ?string $apiKey = null): bool

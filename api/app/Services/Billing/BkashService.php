@@ -6,8 +6,9 @@ use Illuminate\Support\Facades\{Cache, Http, Log};
 
 // docs/modules/payment-gateways.md "BkashService" for the PLATFORM's own merchant (D58: SMS-wallet recharge). Amounts are
 // strings with two decimals, never floats (G9). Nothing about the payer or the amount is logged - only the step and status.
-// Only the calls the spec gives (token/grant, checkout/create, checkout/execute); response fields read: paymentID, bkashURL,
-// transactionStatus ('Completed'), amount, trxID, merchantInvoiceNumber - as in the owner's bKash plugin (2026-10-10).
+// Only the calls the spec gives (token/grant, checkout/create, checkout/execute); create also sends mode '0011' and payerReference
+// as in the owner's tokenized-checkout sample (bkash_2, 2026-10-10); response fields read: paymentID, bkashURL, transactionStatus
+// ('Completed'), amount, trxID, merchantInvoiceNumber - as in the owner's samples.
 class BkashService
 {
     public function configured(): bool
@@ -19,7 +20,7 @@ class BkashService
     /** POST /tokenized/checkout/create -> ['paymentID' => ..., 'bkashURL' => ...] or null */
     public function createPayment(string $amount, string $invoiceNo, string $callbackUrl): ?array
     {
-        $r = $this->call('create', '/tokenized/checkout/create', ['amount' => $amount, 'currency' => 'BDT',
+        $r = $this->call('create', '/tokenized/checkout/create', ['mode' => '0011', 'payerReference' => $invoiceNo, 'amount' => $amount, 'currency' => 'BDT',
             'intent' => 'sale', 'merchantInvoiceNumber' => $invoiceNo, 'callbackURL' => $callbackUrl]);
         return ($r['paymentID'] ?? null) && ($r['bkashURL'] ?? null) ? $r : null;
     }
