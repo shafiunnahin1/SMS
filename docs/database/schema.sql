@@ -34,7 +34,7 @@ CREATE TABLE institutions (
     enabled_modules JSON NULL,                   -- Super Admin overrides: {"hostel": true, "library": false}
     terminology JSON NULL,                       -- label overrides: {"batch": {"bn": "শাখা", "en": "Section"}}
     settings JSON NULL,                          -- {"fee_proration": "none", "use_programs": true, ...}
-    sms_balance INT NOT NULL DEFAULT 0,          -- purchased SMS credits (never expire)
+    sms_balance DECIMAL(10,2) NOT NULL DEFAULT 0, -- D56: SMS wallet in TAKA (recharged online / by Super Admin; each sent part costs the platform rate)
     sms_sender_id VARCHAR(11) NULL,              -- R6.2: institution's own sender/masking ID (see docs/modules/notifications.md)
     sms_sender_status ENUM('none','pending','approved','rejected') NOT NULL DEFAULT 'none',
     sms_sender_note VARCHAR(255) NULL,           -- rejection reason / Super Admin note
@@ -1227,13 +1227,16 @@ CREATE TABLE sms_credit_transactions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     type ENUM('purchase','usage','adjustment','refund') NOT NULL,
-    quantity INT NOT NULL,                       -- positive = credit, negative = debit
-    balance_after INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 0,             -- D56: SMS parts of a `usage` row (negative); 0 for money moves
+    balance_after DECIMAL(10,2) NOT NULL,        -- D56: wallet balance in taka after this row
     reference VARCHAR(100) NULL,                 -- payment trx id / sms_logs id
     created_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
+
+-- D56-D59 (owner, 2026-10-10): the SMS wallet is money; the institution may use its own BulkSMSBD API
+ALTER TABLE sms_credit_transactions ADD COLUMN amount DECIMAL(10,2) NOT NULL DEFAULT 0;   -- taka: + recharge/adjustment, - usage
 
 -- Theme presets (global catalogue, managed by Super Admin) — see docs/THEMING.md
 CREATE TABLE theme_presets (
@@ -1260,6 +1263,10 @@ ALTER TABLE institutions ADD COLUMN theme_preset_id BIGINT UNSIGNED NULL;
 ALTER TABLE institutions ADD COLUMN layout_key VARCHAR(30) NULL;       -- NULL = use preset layout
 ALTER TABLE institutions ADD COLUMN ui_pack VARCHAR(30) NULL;           -- R8: NULL = use the preset's pack (docs/UI-PACKS.md)
 ALTER TABLE institutions ADD COLUMN theme_tokens JSON NULL;            -- overrides on top of preset tokens
+-- D59 (owner, 2026-10-10): the institution's own BulkSMSBD API and the universal/own toggles
+ALTER TABLE institutions ADD COLUMN sms_api_key TEXT NULL;                               -- D59: own BulkSMSBD key, encrypted (Laravel Crypt)
+ALTER TABLE institutions ADD COLUMN sms_universal_enabled TINYINT(1) NOT NULL DEFAULT 1; -- D59 toggle: the platform's universal sender
+ALTER TABLE institutions ADD COLUMN sms_own_enabled TINYINT(1) NOT NULL DEFAULT 0;       -- D59 toggle: the institution's own API + sender ID
 
 -- Custom domains — see docs/modules/custom-domain.md
 CREATE TABLE institution_domains (
@@ -1939,6 +1946,9 @@ ALTER TABLE sms_logs ADD COLUMN campaign_id BIGINT UNSIGNED NULL;
 ALTER TABLE sms_logs ADD COLUMN gateway_msg_id VARCHAR(60) NULL;
 ALTER TABLE sms_logs ADD COLUMN delivery_status VARCHAR(12) NULL;                               -- NULL = unknown | delivered | undelivered | expired
 ALTER TABLE sms_logs ADD COLUMN delivered_at TIMESTAMP NULL;
+-- D56/D59 (owner, 2026-10-10): what the SMS cost and which API sent it
+ALTER TABLE sms_logs ADD COLUMN cost DECIMAL(8,2) NOT NULL DEFAULT 0;                    -- taka charged (0 on the institution's own API)
+ALTER TABLE sms_logs ADD COLUMN route VARCHAR(10) NOT NULL DEFAULT 'universal';         -- universal | own
 ALTER TABLE admission_leads ADD COLUMN cycle_id BIGINT UNSIGNED NULL;
 ALTER TABLE admission_leads ADD COLUMN test_roll VARCHAR(20) NULL;
 ALTER TABLE admission_leads ADD COLUMN test_marks DECIMAL(6,2) NULL;

@@ -903,7 +903,9 @@
     "docs/modules/panels-and-features.md",
     "docs/business/saas-metrics.md"
    ],
-   "tables": [],
+   "tables": [
+    "platform_settings"
+   ],
    "routes": [
     "GET /billing/bkash/callback -> SmsRechargeCallbackController@bkash",
     "GET /super/institutions -> InstitutionController@index [role:super_admin]",

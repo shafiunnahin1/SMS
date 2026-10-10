@@ -17,6 +17,7 @@ institutions
 otp_tokens
 parent_student
 payments
+platform_settings
 programs
 results
 sms_credit_transactions

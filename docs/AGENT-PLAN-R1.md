@@ -59,7 +59,7 @@
 | `4.6` | Notifications & SMS | `4.5` | 2 | 1 | 4 |
 | `4.7` | Dashboards & Role Panels | `4.6` |  | 6 |  |
 | `4.8` | Core PDF & Reports | `4.7` |  | 2 |  |
-| `5.3` | Super Admin Panel | `4.8` |  | 15 | 4 |
+| `5.3` | Super Admin Panel | `4.8` | 1 | 15 | 4 |
 | `8.1` | Privacy and children's data (D27) | `5.3` |  | 5 | 3 |
 | `8.2` | Security hardening | `8.1` |  |  |  |
 | `8.5` | Load and scale test (before SIGNUP_MODE=open) | `8.2` |  |  |  |
@@ -68,7 +68,7 @@
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 | `A` | Release 1 acceptance, then open signup | `5.2` |  |  |  |
 
-**সারসংক্ষেপ:** 38 task · 31 টেবিল · 151 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 38 task · 32 টেবিল · 151 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -233,7 +233,7 @@ CREATE TABLE institutions (
     enabled_modules JSON NULL,                   -- Super Admin overrides: {"hostel": true, "library": false}
     terminology JSON NULL,                       -- label overrides: {"batch": {"bn": "শাখা", "en": "Section"}}
     settings JSON NULL,                          -- {"fee_proration": "none", "use_programs": true, ...}
-    sms_balance INT NOT NULL DEFAULT 0,          -- purchased SMS credits (never expire)
+    sms_balance DECIMAL(10,2) NOT NULL DEFAULT 0, -- D56: SMS wallet in TAKA (recharged online / by Super Admin; each sent part costs the platform rate)
     sms_sender_id VARCHAR(11) NULL,              -- R6.2: institution's own sender/masking ID (see docs/modules/notifications.md)
     sms_sender_status ENUM('none','pending','approved','rejected') NOT NULL DEFAULT 'none',
     sms_sender_note VARCHAR(255) NULL,           -- rejection reason / Super Admin note
@@ -263,6 +263,9 @@ ALTER TABLE institutions ADD COLUMN theme_preset_id BIGINT UNSIGNED NULL;
 ALTER TABLE institutions ADD COLUMN layout_key VARCHAR(30) NULL;
 ALTER TABLE institutions ADD COLUMN ui_pack VARCHAR(30) NULL;
 ALTER TABLE institutions ADD COLUMN theme_tokens JSON NULL;
+ALTER TABLE institutions ADD COLUMN sms_api_key TEXT NULL;
+ALTER TABLE institutions ADD COLUMN sms_universal_enabled TINYINT(1) NOT NULL DEFAULT 1;
+ALTER TABLE institutions ADD COLUMN sms_own_enabled TINYINT(1) NOT NULL DEFAULT 0;
 ```
 </details>
 
@@ -1525,6 +1528,8 @@ ALTER TABLE sms_logs ADD COLUMN campaign_id BIGINT UNSIGNED NULL;
 ALTER TABLE sms_logs ADD COLUMN gateway_msg_id VARCHAR(60) NULL;
 ALTER TABLE sms_logs ADD COLUMN delivery_status VARCHAR(12) NULL;
 ALTER TABLE sms_logs ADD COLUMN delivered_at TIMESTAMP NULL;
+ALTER TABLE sms_logs ADD COLUMN cost DECIMAL(8,2) NOT NULL DEFAULT 0;
+ALTER TABLE sms_logs ADD COLUMN route VARCHAR(10) NOT NULL DEFAULT 'universal';
 CREATE INDEX idx_sms_logs_inst_sent ON sms_logs(institution_id, sent_at);
 CREATE INDEX idx_sms_logs_campaign ON sms_logs(campaign_id);
 
@@ -1532,13 +1537,14 @@ CREATE TABLE sms_credit_transactions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     type ENUM('purchase','usage','adjustment','refund') NOT NULL,
-    quantity INT NOT NULL,                       -- positive = credit, negative = debit
-    balance_after INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 0,             -- D56: SMS parts of a `usage` row (negative); 0 for money moves
+    balance_after DECIMAL(10,2) NOT NULL,        -- D56: wallet balance in taka after this row
     reference VARCHAR(100) NULL,                 -- payment trx id / sms_logs id
     created_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
+ALTER TABLE sms_credit_transactions ADD COLUMN amount DECIMAL(10,2) NOT NULL DEFAULT 0;
 CREATE INDEX idx_sms_credit_inst_created ON sms_credit_transactions(institution_id, created_at);
 ```
 </details>
@@ -1649,6 +1655,22 @@ php artisan test   # whole suite stays green
 
 > **R1 পরিসর (এটিই চূড়ান্ত):** D55-D60 (owner, 2026-10-10): Super Admin opens institutions (no plans), suspends/activates, adds or corrects SMS money; the universal BulkSMSBD API (platform key and sender, the rate per SMS part); the institution's SMS wallet in taka (0.40 per part: 150 GSM / 70 Unicode chars), online recharge with bKash (sandbox until credentials); its own BulkSMSBD key + masking sender with the universal/own on-off toggles (replaces the R2 sender-ID approval). NOT: plans, subscription billing (D55), coupons, support tickets, impersonation.
 
+
+**এই task যে টেবিলের মালিক** (migration Step 1.1-এ; মডেল, service, endpoint ও পরীক্ষা এখানে): `platform_settings`
+
+<details><summary>টেবিলের সংজ্ঞা (schema.sql থেকে, ALTER/index সহ)</summary>
+
+```sql
+CREATE TABLE platform_settings (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(80) NOT NULL,
+    value JSON NOT NULL,
+    updated_by BIGINT UNSIGNED NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_setting_key (setting_key)
+);
+```
+</details>
 
 **R1-এ যে route বানাবেন:**
 ```
@@ -1973,6 +1995,7 @@ python3 infra/spec-verify/verify.py . --deep
 | `subscription_plans` | `5.2` |
 | `payments` | `5.2` |
 | `subscription_invoices` | `5.2` |
+| `platform_settings` | `5.3` |
 
 ## Appendix B — route-সংখ্যা release অনুযায়ী (routes-টেমপ্লেটের সব route)
 

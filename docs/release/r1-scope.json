@@ -53,7 +53,8 @@
   "teacher_subjects",
   "teachers",
   "theme_presets",
-  "users"
+  "users",
+  "platform_settings"
  ],
  "steps_in_release": [
   "0.1",
@@ -290,6 +291,9 @@
    "subscription_plans",
    "payments",
    "subscription_invoices"
+  ],
+  "5.3": [
+   "platform_settings"
   ]
  },
  "controllers": {
