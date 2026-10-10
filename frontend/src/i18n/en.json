@@ -202,6 +202,19 @@
     "changed": "Unsaved changes (saved before: {{count}})",
     "when": "first saved {{time}} by {{by}}",
     "update": "Update"
+   },
+   "take": "Take attendance",
+   "month": "Month",
+   "report": {
+    "title": "Monthly report",
+    "percentage": "Attendance rate",
+    "days": "Days"
+   },
+   "parent": {
+    "title": "Child attendance",
+    "rate": "Attendance this month",
+    "none": "No attendance this month",
+    "daily": "Day by day"
    }
   },
   "consent": {

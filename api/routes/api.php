@@ -115,6 +115,9 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['role:admin,teacher', 'module:attendance'])->group(function () {
             Route::get('/attendance',                     [AttendanceController::class, 'index']);    // ?batch_id=&date=
             Route::post('/attendance',                    [AttendanceController::class, 'store']);    // { batch_id, date, records[] }
+            Route::put('/attendance/{id}',                [AttendanceController::class, 'update'])->whereNumber('id');
+            Route::get('/attendance/report',              [AttendanceController::class, 'report']);   // ?batch_id=&month=
+            Route::get('/attendance/summary/{id}',        [AttendanceController::class, 'summary'])->whereNumber('id');
         });
 
         // ── Fees (Step 4.4; slice: dues -> collect -> receipt) ──
@@ -131,6 +134,7 @@ Route::prefix('v1')->group(function () {
         // ── Parent (Step 4.7) ──
         Route::middleware('role:parent')->group(function () {
             Route::get('/parent/children',                [DashboardController::class, 'parentChildren']);
+            Route::get('/parent/children/{id}/attendance', [AttendanceController::class, 'forParent'])->whereNumber('id')->middleware('module:attendance');
             Route::get('/parent/consents',                [ConsentController::class, 'mine'])->middleware('module:students');
             Route::put('/parent/consents/{type}',         [ConsentController::class, 'update'])->middleware('module:students');
         });

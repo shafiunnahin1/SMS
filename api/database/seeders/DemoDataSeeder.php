@@ -27,6 +27,8 @@ class DemoDataSeeder extends Seeder
             $teacher = Teacher::create([
                 'user_id' => $teacherUser->id, 'employee_id' => 'EMP-2025-0001', 'designation' => 'সহকারী শিক্ষক', 'salary' => 15000,
             ]);
+            // Step 4.3: a teacher takes attendance only in their own batches - the demo teacher is Class 10-A's batch teacher (DECISIONS 2026-10-10 4.3)
+            $batchA->forceFill(['teacher_id' => $teacher->id])->save();
 
             // never write program_id / batch_id / roll_no on students directly - EnrollmentService does it
             $enrollments = app(EnrollmentService::class);

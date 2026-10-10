@@ -47,7 +47,7 @@ class SharedServicesTest extends TestCase
 
     public function test_attendance_upserts_per_batch_and_date_and_alerts_absent_parents(): void
     {
-        Queue::fake();
+        Queue::fake([SendSmsJob::class]);       // the absence job (NotifyAbsentParentsJob) runs; only the SMS it queues is faked
         $batch = Batch::create(['program_id' => Program::create(['name' => 'Class 6'])->id, 'name' => 'A']);
         $svc = app(EnrollmentService::class);
         $a = Student::create(['student_id' => 'A', 'guardian_phone' => '01711111111']);

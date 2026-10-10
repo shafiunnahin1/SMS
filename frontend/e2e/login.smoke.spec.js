@@ -5,7 +5,7 @@ import { login, tenantOf, watchConsole } from './helpers.js'
 test('F1 admin logs in and lands on the dashboard of their layout', async ({ page }, testInfo) => {
   const t = tenantOf(testInfo)
   const noErrors = watchConsole(page)
-  await login(page, ...t.admin)
+  await login(page, ...t.admin, { fresh: true })
   await expect(page).toHaveURL(/\/admin\/dashboard/)
   await expect(page.locator(`[data-layout="${t.layout}"]`)).toBeVisible()
   await expect(page.locator('[data-testid="app-topbar"]')).toBeVisible()

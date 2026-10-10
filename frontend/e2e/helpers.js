@@ -23,12 +23,28 @@ export function watchConsole(page) {
   return () => expect(errors, errors.join('\n')).toEqual([])
 }
 
-export async function login(page, identifier, password) {
+// One worker runs every spec, and the API allows 5 logins a minute per user (throttle:login) - so after the first real login of a
+// user on a host the next specs reuse that session's cookies; the login page sends a signed-in user to their dashboard.
+// F1 passes { fresh: true } to test the form itself.
+const sessions = new Map()
+
+export async function login(page, identifier, password, { fresh = false } = {}) {
   await page.goto('/login')
   await page.waitForLoadState('networkidle')        // the login form re-renders once /bootstrap and the session check answer
+  const key = `${new URL(page.url()).origin}|${identifier}`
+  if (!fresh && sessions.has(key)) {
+    await page.context().addCookies(sessions.get(key))        // after networkidle, so no late guest Set-Cookie overwrites them
+    await page.goto('/login')
+    await page.waitForLoadState('networkidle')
+    if (!/\/login/.test(page.url())) return
+    await page.context().clearCookies()
+    await page.goto('/login')
+    await page.waitForLoadState('networkidle')
+  }
   const fields = page.locator('form input')
   await fields.nth(0).fill(identifier)
   await fields.nth(1).fill(password)
   await page.locator('form button[type="submit"]').click()
   await expect(page).not.toHaveURL(/\/login/)
+  sessions.set(key, await page.context().cookies())
 }

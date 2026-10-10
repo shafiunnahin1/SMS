@@ -76,6 +76,10 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/teachers/{id}'                     => fn (array $other) => $this->seedTeacher($other),
             'PUT api/v1/teachers/{id}'                     => fn (array $other) => $this->seedTeacher($other),
             'DELETE api/v1/teachers/{id}'                  => fn (array $other) => $this->seedTeacher($other),
+            'PUT api/v1/attendance/{id}'                   => fn (array $other) => $this->seedAttendance($other),
+            'GET api/v1/attendance/summary/{id}'           => fn (array $other) => $this->seedStudent($other),
+            // the parent route needs a parent: ParentAttendanceAccessTest checks another tenant's child (404) and another child (403)
+            'GET api/v1/parent/children/{id}/attendance'   => null,
             'GET api/v1/imports/{id}'                      => fn (array $other) => $this->seedImport($other),
             'PUT api/v1/imports/{id}/mapping'              => fn (array $other) => $this->seedImport($other),
             'GET api/v1/imports/{id}/errors.xlsx'          => fn (array $other) => $this->seedImport($other),
@@ -118,6 +122,16 @@ class TenantIsolationTest extends TestCase
     private function seedTeacher(array $t): int
     {
         return Tenancy::as($t['institution'], fn () => Teacher::value('id') ?? Teacher::create(['employee_id' => 'ISO-T'])->id);
+    }
+
+    private function seedAttendance(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], function () use ($student) {
+            $e = \App\Models\Enrollment::where('student_id', $student)->first();
+            return \App\Models\Attendance::value('id') ?? \App\Models\Attendance::create(['student_id' => $student, 'batch_id' => $e->batch_id,
+                'program_id' => $e->program_id, 'date' => now()->toDateString(), 'status' => 'present'])->id;
+        });
     }
 
     private function seedImport(array $t): int

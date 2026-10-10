@@ -8,7 +8,7 @@ const BASE = process.env.E2E_BASE_DOMAIN ?? 'lvh.me:5173'
 const host = (slug) => `http://${slug}.${BASE}`
 
 export const TENANTS = {
-  school:   { slug: 'dhanmondi-school', theme: 'classic-blue', layout: 'sidebar-classic', admin: ['principal@dhanmondischool.edu.bd', 'School@1234'] },
+  school:   { slug: 'dhanmondi-school', theme: 'classic-blue', layout: 'sidebar-classic', admin: ['principal@dhanmondischool.edu.bd', 'School@1234'], batch: 'Class 10 — A' },
   coaching: { slug: 'alokito-coaching', theme: 'modern-mint',  layout: 'sidebar-mini',    admin: ['admin@alokito.test', 'Coaching@1234'] },
   tutor:    { slug: 'rahim-sir',        theme: 'tutor-lite',   layout: 'mobile-compact',  admin: ['01911111111', 'Tutor@1234'] },
 }
@@ -24,7 +24,7 @@ export default defineConfig({
   use: { trace: 'on-first-retry', screenshot: 'only-on-failure', timezoneId: 'Asia/Dhaka', locale: 'bn-BD', launchOptions },
   projects: [
     { name: 'school-desktop',   use: { ...devices['Desktop Chrome'], baseURL: host(TENANTS.school.slug), launchOptions }, metadata: { tenant: 'school' } },
-    { name: 'coaching-desktop', use: { ...devices['Desktop Chrome'], baseURL: host(TENANTS.coaching.slug), launchOptions }, testIgnore: /(slice|students)\.smoke/, metadata: { tenant: 'coaching' } },
-    { name: 'tutor-mobile',     use: { ...devices['Pixel 5'], baseURL: host(TENANTS.tutor.slug), launchOptions }, testIgnore: /(slice|students)\.smoke/, metadata: { tenant: 'tutor' } },
+    { name: 'coaching-desktop', use: { ...devices['Desktop Chrome'], baseURL: host(TENANTS.coaching.slug), launchOptions }, testIgnore: /(slice|students|attendance-school)\.smoke/, metadata: { tenant: 'coaching' } },
+    { name: 'tutor-mobile',     use: { ...devices['Pixel 5'], baseURL: host(TENANTS.tutor.slug), launchOptions }, testIgnore: /(slice|students|attendance-school)\.smoke/, metadata: { tenant: 'tutor' } },
   ],
 })

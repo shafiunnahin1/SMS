@@ -124,6 +124,8 @@ class WalkingSkeletonSliceTest extends TestCase
         $s1 = $this->admit($inst, $admin, $a, 'এক');
         $s2 = $this->admit($inst, $admin, $a, 'দুই');
         $teacher = $this->makeUser($inst, 'teacher');
+        // Step 4.3: a teacher takes attendance only in a batch they are in charge of
+        \App\Support\Tenancy::as($inst, fn () => $a->forceFill(['teacher_id' => \App\Models\Teacher::create(['user_id' => $teacher->id, 'employee_id' => 'T-1'])->id])->save());
         $date = now()->toDateString();
 
         $sheet = $this->api('GET', $host, "attendance?batch_id={$a->id}&date={$date}", $teacher)->assertOk()->json('data');

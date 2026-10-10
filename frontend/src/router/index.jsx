@@ -19,6 +19,7 @@ const FeeCollect  = lazy(() => import('../pages/admin/fees/FeeCollect'))
 const ParentFees  = lazy(() => import('../pages/parent/Fees'))
 const Attendance  = lazy(() => import('../pages/attendance/Take'))
 const ParentHome  = lazy(() => import('../pages/parent/Home'))
+const ParentAttendance = lazy(() => import('../pages/parent/Attendance'))
 const StudentProfile = lazy(() => import('../pages/admin/students/StudentProfile'))
 const Imports     = lazy(() => import('../pages/admin/settings/Imports'))
 const Programs    = lazy(() => import('../pages/admin/academic/Programs'))
@@ -78,6 +79,7 @@ export const tenantRoutes = [
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },
     { path: 'fees', element: S(ParentFees) },
+    { path: 'attendance', element: S(ParentAttendance) },
   ]),
   { path: '/', element: <Navigate to="/login" replace /> },
   { path: '*', element: <Navigate to="/login" replace /> },

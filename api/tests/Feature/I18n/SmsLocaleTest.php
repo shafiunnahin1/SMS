@@ -44,7 +44,7 @@ class SmsLocaleTest extends TestCase
 
     public function test_an_absent_alert_goes_in_the_parents_language(): void
     {
-        Queue::fake();
+        Queue::fake([SendSmsJob::class]);       // NotifyAbsentParentsJob runs and queues the SMS
         [$i, $student, $batch, $teacher] = $this->attendanceSetup();
         $student->primaryParent()->forceFill(['locale' => 'en'])->save();
 
@@ -85,7 +85,8 @@ class SmsLocaleTest extends TestCase
         $i = $this->makeInstitution('smsatt', 'coaching');
         $teacher = $this->makeUser($i, 'teacher');
         return $this->asTenant($i, function () use ($i, $teacher) {
-            $batch = \App\Models\Batch::create(['program_id' => \App\Models\Program::create(['name' => 'P'])->id, 'name' => 'B1']);
+            $batch = \App\Models\Batch::create(['program_id' => \App\Models\Program::create(['name' => 'P'])->id, 'name' => 'B1',
+                'teacher_id' => \App\Models\Teacher::create(['user_id' => $teacher->id, 'employee_id' => 'T-1'])->id]);    // the teacher's own batch (Step 4.3)
             $student = app(\App\Services\StudentService::class)->create(['name' => 'Rahim', 'guardian_phone' => '01722222222'], $batch);
             return [$i, $student->fresh(), $batch, $teacher];
         });

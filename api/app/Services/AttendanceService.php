@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Exceptions\BusinessException;
-use App\Jobs\SendSmsJob;
-use App\Models\{Attendance, Batch, Enrollment, Holiday, Student};
+use App\Jobs\{NotifyAbsentParentsJob, SendSmsJob};
+use App\Models\{Attendance, Batch, BatchTeacher, Enrollment, Holiday, Student, Teacher, User};
 use App\Support\{Tenancy, TenantBulk};
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -42,16 +42,27 @@ class AttendanceService
             TenantBulk::upsert(Attendance::class, $rows, ['institution_id', 'student_id', 'batch_id', 'date'], ['program_id', 'status', 'taken_by', 'note']);
         });
 
-        if ($absent) $this->notifyAbsentParents($absent, $date, $batch);
+        // the alerts are built in the queue, not in the request: saving a sheet stays a fixed handful of queries (AttendanceBulkQueryCountTest)
+        if ($absent) NotifyAbsentParentsJob::dispatch($absent, $date, $batch->id, $institution->id)->afterCommit();
         return ['saved' => count($data['records']), 'absent_count' => count($absent)];
     }
 
-    private function notifyAbsentParents(array $studentIds, string $date, Batch $batch): void
+    /** Admin: every batch. Teacher: the batches they are in charge of or teach a subject in (Step 4.3 Done When). */
+    public function canTake(User $user, Batch $batch): bool
+    {
+        if ($user->role === 'admin') return true;
+        if ($user->role !== 'teacher') return false;
+        $teacher = Teacher::where('user_id', $user->id)->first(['id']);
+        return $teacher && ((int) $batch->teacher_id === $teacher->id || BatchTeacher::where('batch_id', $batch->id)->where('teacher_id', $teacher->id)->exists());
+    }
+
+    /** NotifyAbsentParentsJob: one SMS per absent student's guardian, in the guardian's language */
+    public function notifyAbsentParents(array $studentIds, string $date, Batch $batch): void
     {
         $when = Carbon::parse($date)->format('d/m/Y');
         $sms = app(SmsService::class);
-        Student::with('user')->whereIn('id', $studentIds)->get()->each(function (Student $s) use ($when, $batch, $sms) {
-            $parent = $s->primaryParent();
+        Student::with(['user:id,name', 'parents'])->whereIn('id', $studentIds)->get()->each(function (Student $s) use ($when, $batch, $sms) {
+            $parent = $s->parents->firstWhere('pivot.is_primary', true) ?? $s->parents->first();
             $prefs = $parent?->notification_preferences ?? [];
             if (($prefs['sms'] ?? true) && ($prefs['absent_alert'] ?? true)) {
                 $name = $s->user?->name ?? $s->student_id;
