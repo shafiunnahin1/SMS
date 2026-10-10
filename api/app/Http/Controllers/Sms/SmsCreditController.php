@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Sms;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Models\{AuditLog, Institution, SmsCreditTransaction};
+use App\Services\Billing\BkashService;
 use App\Services\SmsService;
 use App\Support\{Money, Tenancy};
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\{Cache, DB};
+use Illuminate\Support\Str;
 
 // GET /subscription/sms-credits (admin): the wallet and its ledger (Step 4.6, in taka since D56). Step 5.3 (D58): the Super
 // Admin adds or corrects money by hand (`adjust`, an `adjustment` row); the online recharge (`purchase`) is bKash.
@@ -42,5 +44,23 @@ class SmsCreditController extends Controller
         }));
         return response()->json(['success' => true, 'data' => ['balance' => $row->balance_after, 'transaction' => ['id' => $row->id, 'type' => $row->type,
             'amount' => $row->amount, 'balance_after' => $row->balance_after, 'reference' => $row->reference]], 'message' => __('messages.saved')]);
+    }
+
+    /** POST /subscription/sms-credits {amount} (admin, D58): start a bKash payment on the PLATFORM's merchant. The amount is
+     *  kept on our side under a short ref (24 h); the callback trusts only that, never the browser or bKash's echo. */
+    public function purchase(Request $request, BkashService $bkash)
+    {
+        $f = $request->validate(['amount' => ['required', 'numeric', 'regex:/^\d{1,6}(\.\d{1,2})?$/', 'min:10', 'max:50000']]);
+        if (!$bkash->configured()) throw new BusinessException('bKash is not configured', 'recharge_unavailable', 503);
+        $i = Tenancy::current();
+        $amount = Money::format(Money::toPaisa((string) $f['amount']));
+        $ref = 'SMS' . $i->id . 'R' . strtoupper(Str::random(8));                       // <= 20 chars, [A-Z0-9] (online-fee-payment.md)
+        $callback = rtrim((string) config('app.url'), '/') . '/api/v1/billing/bkash/callback?ref=' . $ref;
+        $payment = $bkash->createPayment($amount, $ref, $callback);
+        if (!$payment) throw new BusinessException('bKash did not start the payment', 'recharge_failed', 502);
+        $back = $request->headers->get('origin');
+        Cache::put("sms_recharge:{$ref}", ['institution_id' => $i->id, 'amount' => $amount, 'payment_id' => $payment['paymentID'], 'by' => $request->user()->id,
+            'return' => ($back && parse_url($back, PHP_URL_HOST) === $request->getHost()) ? $back : $request->getSchemeAndHttpHost()], now()->addDay());
+        return response()->json(['success' => true, 'data' => ['bkash_url' => $payment['bkashURL'], 'ref' => $ref, 'amount' => $amount]]);
     }
 }

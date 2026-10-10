@@ -31,6 +31,9 @@ Route::prefix('v1')->group(function () {
         });
     });
 
+    // D58: bKash brings the payer back here after an SMS-wallet recharge (central host, no login - `ref` finds our own record)
+    Route::middleware(['tenant:central', 'throttle:60,1'])->get('/billing/bkash/callback', [\App\Http\Controllers\Billing\SmsRechargeCallbackController::class, 'bkash']);
+
     // ─── 2. Central host only: Super Admin (Step 4.7 dashboard, Step 5.3 panel) ───
     Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:super_admin', 'tenancy.bypass'])->prefix('super')->group(function () {
         Route::get('/dashboard',              [DashboardController::class, 'superAdmin']);
@@ -162,6 +165,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('module:sms')->group(function () {
             Route::get('/sms-logs',                       [SmsLogController::class, 'index'])->middleware('role:admin,accountant');
             Route::get('/subscription/sms-credits',       [SmsCreditController::class, 'balance'])->middleware('role:admin');
+            Route::post('/subscription/sms-credits',      [SmsCreditController::class, 'purchase'])->middleware(['role:admin', 'throttle:10,1']);   // D58: bKash recharge
             // D59: the universal / own API switches and the institution's own BulkSMSBD key + masking sender
             Route::middleware('role:admin')->group(function () {
                 Route::get('/admin/settings/sms-sender',    [SmsSenderController::class, 'show']);

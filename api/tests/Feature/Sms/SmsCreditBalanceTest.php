@@ -35,6 +35,6 @@ class SmsCreditBalanceTest extends TestCase
         $this->assertSame(\App\Support\Money::toPaisa($res->json('data.balance')), array_sum(array_map(fn ($t) => \App\Support\Money::toPaisa($t['amount']), $rows)), 'the ledger adds up to the balance');
 
         $this->api('GET', $host, 'subscription/sms-credits', $this->makeUser($i, 'accountant'))->assertForbidden();
-        $this->api('POST', $host, 'subscription/sms-credits', $admin, ['quantity' => 100])->assertStatus(405);   // buying is Step 5.2
+        $this->api('POST', $host, 'subscription/sms-credits', $admin, ['quantity' => 100])->assertStatus(422);   // D58: buying takes an `amount` in taka (SmsRechargeTest)
     }
 }

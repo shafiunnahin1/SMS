@@ -529,6 +529,16 @@
     "key_none": "No key saved yet. The key is kept encrypted and never shown again.",
     "remove": "Remove own API",
     "remove_confirm": "Remove your own API key and sender? The own sender is switched off."
+   },
+   "recharge": {
+    "button": "Recharge",
+    "title": "Recharge the SMS wallet",
+    "hint": "Pay with bKash; the money is added to your SMS wallet as soon as bKash confirms (10 - 50,000 taka).",
+    "amount": "Amount (taka)",
+    "pay": "Pay with bKash",
+    "success": "Payment received - the SMS wallet is recharged.",
+    "failed": "The payment did not go through; nothing was added.",
+    "cancelled": "The payment was cancelled."
    }
   },
   "reports": {

@@ -21,6 +21,8 @@ return [
     'sms_quota_exceeded'    => 'SMS ব্যালেন্সে যথেষ্ট টাকা নেই — রিচার্জ করুন।',
     'sms_disabled'          => 'এই প্রতিষ্ঠানের SMS বন্ধ আছে — সেটিংসে ইউনিভার্সাল বা নিজস্ব sender চালু করুন।',
     'sms_own_incomplete'    => 'নিজস্ব SMS চালু করতে API key ও sender ID দুটোই দিন।',
+    'recharge_unavailable'  => 'অনলাইন রিচার্জ এখনো চালু হয়নি — প্ল্যাটফর্মের সাথে যোগাযোগ করুন।',
+    'recharge_failed'       => 'bKash পেমেন্ট শুরু করা যায়নি, একটু পরে আবার চেষ্টা করুন।',
     'institution_delete_refused' => 'প্রতিষ্ঠান মোছা যায় না — স্থগিত করুন।',
     'sms_balance_negative'  => 'SMS ব্যালেন্স শূন্যের নিচে যেতে পারে না।',
     'module_not_available'  => 'এই মডিউল এই সংস্করণে নেই।',

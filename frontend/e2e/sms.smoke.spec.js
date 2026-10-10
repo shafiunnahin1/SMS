@@ -31,3 +31,15 @@ test('5.3 sms settings: switches and own API', async ({ page }, testInfo) => {
   await expect(page.locator('[data-testid="sms-effective"]')).toContainText('ইউনিভার্সাল API')
   noErrors()
 })
+
+// Step 5.3 (D58): bKash brings the admin back to /admin/sms?recharge=… - the page says what happened and forgets the flag
+test('5.3 sms recharge: the return from bKash is announced', async ({ page }, testInfo) => {
+  const noErrors = watchConsole(page)
+  await login(page, ...tenantOf(testInfo).admin)
+  await page.goto('/admin/sms?recharge=success')
+  await expect(page.getByText('SMS ওয়ালেট রিচার্জ হয়েছে')).toBeVisible()
+  await expect(page).toHaveURL(/\/admin\/sms$/)
+  await page.locator('[data-action="recharge"]').click()
+  await expect(page.locator('[data-testid="recharge"]')).toBeVisible()
+  noErrors()
+})
