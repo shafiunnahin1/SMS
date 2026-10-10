@@ -57,7 +57,7 @@ class SmsCreditController extends Controller
         $ref = 'SMS' . $i->id . 'R' . strtoupper(Str::random(8));                       // <= 20 chars, [A-Z0-9] (online-fee-payment.md)
         $callback = rtrim((string) config('app.url'), '/') . '/api/v1/billing/bkash/callback?ref=' . $ref;
         $payment = $bkash->createPayment($amount, $ref, $callback);
-        if (!$payment) throw new BusinessException('bKash did not start the payment', 'recharge_failed', 502);
+        if (!$payment) throw new BusinessException('bKash did not start the payment: ' . $bkash->lastError(), 'recharge_failed', 502);   // the reason is in the log; Super Admin sees it in Test connection
         $back = $request->headers->get('origin');
         Cache::put("sms_recharge:{$ref}", ['institution_id' => $i->id, 'amount' => $amount, 'payment_id' => $payment['paymentID'], 'by' => $request->user()->id,
             'return' => ($back && parse_url($back, PHP_URL_HOST) === $request->getHost()) ? $back : $request->getSchemeAndHttpHost()], now()->addDay());

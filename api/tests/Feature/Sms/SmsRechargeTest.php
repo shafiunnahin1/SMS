@@ -145,7 +145,15 @@ class SmsRechargeTest extends TestCase
         // an address that cannot be reached answers "refused", never a server error
         $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['base_url' => 'https://bkash.down.test/v1']])->assertOk();
         Http::fake(['bkash.down.test/*' => fn () => throw new \Illuminate\Http\Client\ConnectionException('down')]);
-        $this->assertFalse($this->api('PUT', $central, 'super/sms-settings', $super, ['bkash_test' => true])->assertOk()->json('data.bkash.test_ok'));
+        $res = $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash_test' => true])->assertOk();
+        $this->assertSame([false, 'token: down'], [$res->json('data.bkash.test_ok'), $res->json('data.bkash.test_error')], 'the reason is shown');
+
+        // bKash's own refusal (HTTP 200 with a statusCode) is shown with its code and message, never a key
+        $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['base_url' => 'https://bkash.refuse.test/v1']])->assertOk();
+        Http::fake(['bkash.refuse.test/*' => Http::response(['statusCode' => '2079', 'statusMessage' => 'Invalid app token'], 200)]);
+        $res = $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash_test' => true])->assertOk();
+        $this->assertSame([false, 'token: HTTP 200 2079 - Invalid app token'], [$res->json('data.bkash.test_ok'), $res->json('data.bkash.test_error')]);
+        $this->assertStringNotContainsString('panel-secret-2222', $res->getContent());
 
         // an empty field keeps the stored secret; with no address the sandbox switch picks bKash's sandbox, never the live one
         $res = $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['app_key' => '', 'base_url' => null]])->assertOk();

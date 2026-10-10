@@ -80,7 +80,7 @@ function BkashCard({ d, onSaved }) {
     try {
       const r = await api.put('/super/sms-settings', body)
       onSaved(r.data.data)
-      if (kind === 'test') setTest(Boolean(r.data.data.bkash.test_ok))
+      if (kind === 'test') setTest({ ok: Boolean(r.data.data.bkash.test_ok), error: r.data.data.bkash.test_error })
       else { useUiStore.getState().addToast(t('common.saved')); setF(x => ({ ...x, app_key: '', app_secret: '', username: '', password: '' })) }
     } catch (e) {
       const errs = e.response?.data?.errors ?? {}
@@ -106,7 +106,10 @@ function BkashCard({ d, onSaved }) {
           <Input key={k} label={t(`super.bkash.${k}`)} ltr type="password" autoComplete="off" value={f[k]} onChange={e => set(k, e.target.value)} error={errors[k]?.[0]} name={`bkash_${k}`} hint={hint(k)} />
         ))}
       </div>
-      {test !== null && <p className="text-sm" data-testid="bkash-test" role="status">{t(test ? 'super.bkash.test_ok' : 'super.bkash.test_failed')}</p>}
+      {test !== null && <div className="text-sm" data-testid="bkash-test" role="status">
+        <p>{t(test.ok ? 'super.bkash.test_ok' : 'super.bkash.test_failed')}</p>
+        {!test.ok && test.error && <p className="text-xs text-content-muted mt-1" data-testid="bkash-test-error"><Ltr>{test.error}</Ltr></p>}
+      </div>}
       <div className="flex flex-wrap justify-end gap-2">
         <Button variant="secondary" onClick={() => send({ bkash_test: true }, 'test')} loading={busy === 'test'} disabled={!d.configured || busy !== null} data-action="bkash-test">{t('super.bkash.test')}</Button>
         <Button onClick={save} loading={busy === 'save'} disabled={busy !== null} data-action="bkash-save">{t('common.save')}</Button>

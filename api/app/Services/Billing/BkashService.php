@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\{Cache, Crypt, Http, Log};
 class BkashService
 {
     public const SECRET_FIELDS = ['app_key', 'app_secret', 'username', 'password'];
+
+    /** Why the last call failed, for the log and the Super Admin's "Test connection" - bKash's own code/message or the network error, never a secret */
+    private ?string $lastError = null;
+
+    public function lastError(): ?string { return $this->lastError; }
     public const SANDBOX_URL = 'https://tokenized.sandbox.bka.sh/v1.2.0-beta/tokenized';
     public const LIVE_URL = 'https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized';
 
@@ -51,7 +56,9 @@ class BkashService
     {
         $r = $this->call('create', '/tokenized/checkout/create', ['mode' => '0011', 'payerReference' => $invoiceNo, 'amount' => $amount, 'currency' => 'BDT',
             'intent' => 'sale', 'merchantInvoiceNumber' => $invoiceNo, 'callbackURL' => $callbackUrl]);
-        return ($r['paymentID'] ?? null) && ($r['bkashURL'] ?? null) ? $r : null;
+        if (($r['paymentID'] ?? null) && ($r['bkashURL'] ?? null)) return $r;
+        if (!$this->lastError) $this->fail('create', 'no paymentID / bkashURL in the answer');
+        return null;
     }
 
     public function executePayment(string $paymentId): array
@@ -67,11 +74,11 @@ class BkashService
                 $r = Http::timeout(20)->withHeaders(['username' => $c['username'], 'password' => $c['password']])
                     ->post($this->url('/tokenized/checkout/token/grant'), ['app_key' => $c['app_key'], 'app_secret' => $c['app_secret']]);
             } catch (\Throwable $e) {                     // unreachable address: "refused", never a 500 for the caller
-                Log::warning('bkash unreachable', ['step' => 'token', 'error' => class_basename($e)]);
+                $this->fail('token', self::networkReason($e));
                 return null;
             }
             if (!$r->successful() || !$r->json('id_token')) {
-                Log::warning('bkash token refused', ['http' => $r->status()]);
+                $this->fail('token', self::bkashReason($r->status(), (array) $r->json()));
                 return null;
             }
             return $r->json('id_token');
@@ -91,12 +98,33 @@ class BkashService
             $token = $this->token();
             if (!$token) return [];
             $r = Http::timeout(30)->withHeaders(['Authorization' => $token, 'X-APP-Key' => $this->credentials()['app_key']])->post($this->url($path), $body);
-            if (!$r->successful()) Log::warning('bkash refused', ['step' => $step, 'http' => $r->status()]);
-            return (array) $r->json();
+            $json = (array) $r->json();
+            // bKash answers HTTP 200 with its own statusCode for refusals ("0000" = fine)
+            if (!$r->successful() || (isset($json['statusCode']) && $json['statusCode'] !== '0000')) $this->fail($step, self::bkashReason($r->status(), $json));
+            return $json;
         } catch (\Throwable $e) {
-            Log::warning('bkash unreachable', ['step' => $step, 'error' => class_basename($e)]);
+            $this->fail($step, self::networkReason($e));
             return [];
         }
+    }
+
+    private function fail(string $step, string $reason): void
+    {
+        $this->lastError = "{$step}: {$reason}";
+        Log::warning('bkash refused', ['step' => $step, 'reason' => $reason]);          // no keys, no phone, no amount (G9)
+    }
+
+    private static function bkashReason(int $http, array $json): string
+    {
+        $code = $json['statusCode'] ?? $json['errorCode'] ?? null;
+        $msg = $json['statusMessage'] ?? $json['errorMessage'] ?? $json['message'] ?? $json['msg'] ?? null;
+        return trim("HTTP {$http}" . ($code ? " {$code}" : '') . ($msg ? ' - ' . mb_substr((string) $msg, 0, 160) : ''));
+    }
+
+    /** "cURL error 60: SSL certificate problem ..." without the URL tail */
+    private static function networkReason(\Throwable $e): string
+    {
+        return mb_substr(trim(preg_replace('/\s*\(see https?:\S+\)|\s+for https?:\S+/', '', $e->getMessage())), 0, 200) ?: class_basename($e);
     }
 
     private function url(string $path): string

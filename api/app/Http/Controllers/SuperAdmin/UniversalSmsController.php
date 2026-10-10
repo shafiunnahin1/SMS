@@ -60,7 +60,10 @@ class UniversalSmsController extends Controller
         }
         if ($changed) AuditLog::record('platform.sms_settings', PlatformSetting::where('setting_key', 'sms_rate')->first() ?? PlatformSetting::first(), ['changed' => $changed]);
         $data = $this->state();
-        if ($f['bkash_test'] ?? false) $data['bkash']['test_ok'] = $this->bkash->test();
+        if ($f['bkash_test'] ?? false) {
+            $data['bkash']['test_ok'] = $this->bkash->test();
+            $data['bkash']['test_error'] = $data['bkash']['test_ok'] ? null : $this->bkash->lastError();   // e.g. "token: cURL error 60: SSL certificate problem ..."
+        }
         return response()->json(['success' => true, 'data' => $data, 'message' => __('messages.saved')]);
     }
 
