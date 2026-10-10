@@ -52,7 +52,7 @@ return [
     // Empty credentials = recharge not available (503). The Super Admin can set all of it in the panel (stored encrypted, wins over
     // .env). The sandbox address comes from the owner's merchant account (never guessed - AGENTS.md "What you do not decide").
     'bkash' => [
-        'base_url' => env('BKASH_BASE_URL'),            // empty: production address only when sandbox is off (BkashService); the Super Admin panel wins
+        'base_url' => env('BKASH_BASE_URL'),            // empty: bKash's sandbox or live address by the sandbox switch (BkashService); the panel wins
         'app_key' => env('BKASH_APP_KEY'),
         'app_secret' => env('BKASH_APP_SECRET'),
         'username' => env('BKASH_USERNAME'),

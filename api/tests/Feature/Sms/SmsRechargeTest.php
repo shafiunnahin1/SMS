@@ -3,6 +3,7 @@
 namespace Tests\Feature\Sms;
 
 use App\Models\{SmsCreditTransaction, User};
+use App\Services\Billing\BkashService;
 use App\Support\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{Cache, Http};
@@ -146,9 +147,10 @@ class SmsRechargeTest extends TestCase
         Http::fake(['bkash.down.test/*' => fn () => throw new \Illuminate\Http\Client\ConnectionException('down')]);
         $this->assertFalse($this->api('PUT', $central, 'super/sms-settings', $super, ['bkash_test' => true])->assertOk()->json('data.bkash.test_ok'));
 
-        // an empty field keeps the stored secret; sandbox without an address is "not configured" (never production by accident)
+        // an empty field keeps the stored secret; with no address the sandbox switch picks bKash's sandbox, never the live one
         $res = $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['app_key' => '', 'base_url' => null]])->assertOk();
-        $this->assertSame([true, false], [$res->json('data.bkash.app_key.set'), $res->json('data.bkash.configured')]);
+        $this->assertSame([true, true, BkashService::SANDBOX_URL], [$res->json('data.bkash.app_key.set'), $res->json('data.bkash.configured'), $res->json('data.bkash.base_url')]);
+        $this->assertSame(BkashService::LIVE_URL, $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['sandbox' => false]])->json('data.bkash.base_url'));
         $this->assertSame([false, null], [$this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['clear' => true]])->json('data.bkash.configured'),
             $this->api('GET', $central, 'super/sms-settings', $super)->json('data.bkash.app_key.hint')]);
         $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['base_url' => 'http://insecure.test']])->assertStatus(422);

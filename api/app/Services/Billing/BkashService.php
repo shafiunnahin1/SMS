@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\{Cache, Crypt, Http, Log};
 class BkashService
 {
     public const SECRET_FIELDS = ['app_key', 'app_secret', 'username', 'password'];
+    public const SANDBOX_URL = 'https://tokenized.sandbox.bka.sh/v1.2.0-beta/tokenized';
+    public const LIVE_URL = 'https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized';
 
     /** The merchant settings in use: the Super Admin's panel values (secrets stored encrypted) win over the server's .env */
     public function credentials(): array
@@ -24,8 +26,9 @@ class BkashService
         }
         $sandbox = PlatformSetting::read('bkash_sandbox');
         $c['sandbox'] = $sandbox === null ? (bool) config('services.bkash.sandbox') : (bool) $sandbox;
-        // a sandbox without its own address stays off - never the production address by accident
-        $c['base_url'] = (string) (PlatformSetting::read('bkash_base_url') ?: config('services.bkash.base_url') ?: ($c['sandbox'] ? '' : 'https://tokenized.pay.bka.sh/v1.2.0-beta'));
+        // default addresses from the owner's bKash sample (bKash-HSL/Checkout-URL-PHP, 2026-10-10): sandbox and live never mix
+        $c['base_url'] = (string) (PlatformSetting::read('bkash_base_url') ?: config('services.bkash.base_url')
+            ?: ($c['sandbox'] ? self::SANDBOX_URL : self::LIVE_URL));
         return $c;
     }
 

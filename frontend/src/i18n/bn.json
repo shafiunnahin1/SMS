@@ -620,7 +620,7 @@
     "hint": "প্ল্যাটফর্মের নিজের bKash tokenized-checkout অ্যাকাউন্ট। প্রতিষ্ঠানগুলো এর মাধ্যমে SMS ওয়ালেট রিচার্জ করে। গোপন তথ্য এনক্রিপ্ট করে রাখা হয়, আর কখনো দেখানো হয় না; ঘর খালি রাখলে আগের মান থাকে।",
     "sandbox": "Sandbox (পরীক্ষা-মোড)",
     "base_url": "Base URL",
-    "base_url_hint": "আপনার bKash merchant নথি থেকে, যেমন …/v1.2.0-beta বা …/v1.2.0-beta/tokenized। Sandbox-মোডে নিজস্ব ঠিকানা লাগবে।",
+    "base_url_hint": "খালি রাখলে bKash-এর নিজের ঠিকানা (ওপরের সুইচ অনুযায়ী sandbox বা live) ব্যবহার হবে; নইলে merchant নথির ঠিকানা দিন।",
     "app_key": "App key",
     "app_secret": "App secret",
     "username": "Username",
