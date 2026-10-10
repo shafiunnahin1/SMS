@@ -7,7 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "barryvdh/laravel-dompdf": "^3.1",
+        "chrome-php/chrome": "^1.16",
         "endroid/qr-code": "^6.0",
         "laravel/framework": "^11.31",
         "laravel/sanctum": "^4.0",
