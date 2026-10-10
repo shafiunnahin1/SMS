@@ -13,3 +13,16 @@ test('F1 admin logs in and lands on the dashboard of their layout', async ({ pag
   expect(primary).not.toBe('')                      // the institution's colour reached the page (ThemeProvider)
   noErrors()
 })
+
+// Step 8.1 (D27): the privacy policy and the terms open from the sign-in screen, without a login; the draft banner shows until
+// the lawyer's text replaces public/legal/*.md
+test('8.1 privacy and terms pages render the owner text', async ({ page }) => {
+  const noErrors = watchConsole(page)
+  await page.goto('/login')
+  await page.locator('[data-testid="legal-links"] a[href="/privacy"]').click()
+  await expect(page.locator('[data-testid="legal-privacy"] h1')).toBeVisible()
+  await expect(page.locator('[data-testid="legal-draft"]')).toBeVisible()
+  await page.locator('nav a[href="/terms"]').last().click()
+  await expect(page.locator('[data-testid="legal-terms"] h1')).toBeVisible()
+  noErrors()
+})

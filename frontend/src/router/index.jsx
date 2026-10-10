@@ -39,6 +39,7 @@ const BatchDetail = lazy(() => import('../pages/admin/batches/BatchDetail'))
 const TeacherList = lazy(() => import('../pages/admin/teachers/TeacherList'))
 const MyBatches   = lazy(() => import('../pages/teacher/MyBatches'))
 const Landing     = lazy(() => import('../pages/central/Landing'))
+const LegalPage   = lazy(() => import('../pages/legal/LegalPage'))
 const Signup      = lazy(() => import('../pages/central/Signup'))
 const Institutions      = lazy(() => import('../pages/super/Institutions'))
 const InstitutionDetail = lazy(() => import('../pages/super/InstitutionDetail'))
@@ -52,6 +53,9 @@ const authRoutes = [
   { path: '/forgot-password', element: S(ForgotPassword) },
   { path: '/reset-password', element: S(ResetPassword) },
   { path: '/change-password', element: <ProtectedRoute>{S(ChangePassword)}</ProtectedRoute> },
+  // Step 8.1 (D27): the privacy policy and the terms, on every host, no login
+  { path: '/privacy', element: <Suspense fallback={<Loader type="page" />}><LegalPage doc="privacy" /></Suspense> },
+  { path: '/terms', element: <Suspense fallback={<Loader type="page" />}><LegalPage doc="terms" /></Suspense> },
 ]
 // MenuReleaseTest: every menu item a role can see in this release has a route of its own - a built page or, until its step, NotBuilt.
 // The paths come from nav/menu.js so a new menu entry cannot silently 404.

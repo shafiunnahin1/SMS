@@ -648,6 +648,11 @@
    "anonymized": "The student's personal data was removed.",
    "failed": "That did not work - please try again.",
    "export": "Download data"
+  },
+  "legal": {
+   "privacy": "Privacy policy",
+   "terms": "Terms of service",
+   "draft": "Draft - this text has not yet been reviewed by a lawyer and is not the final policy."
   }
  },
  "nav": {
