@@ -17,7 +17,8 @@ class SmsRechargeTest extends TestCase
     use RefreshDatabase;
 
     private string $central;
-    private ?array $executeAnswer = null;          // what bKash answers to execute (null = the matching Completed payment)
+    private ?array $executeAnswer = null;
+    private ?array $createAnswer = null;           // what bKash answers to create (null = a started payment)          // what bKash answers to execute (null = the matching Completed payment)
 
     protected function setUp(): void
     {
@@ -31,7 +32,7 @@ class SmsRechargeTest extends TestCase
     {
         Http::fake([
             'bkash.sandbox.test/v1/tokenized/checkout/token/grant' => Http::response(['id_token' => 'tok']),
-            'bkash.sandbox.test/v1/tokenized/checkout/create' => fn ($req) => Http::response(['paymentID' => 'PAY1', 'bkashURL' => 'https://sandbox.bkash.test/pay/PAY1',
+            'bkash.sandbox.test/v1/tokenized/checkout/create' => fn ($req) => Http::response($this->createAnswer ?? ['paymentID' => 'PAY1', 'bkashURL' => 'https://sandbox.bkash.test/pay/PAY1',
                 'amount' => $req['amount'], 'merchantInvoiceNumber' => $req['merchantInvoiceNumber']]),
             'bkash.sandbox.test/v1/tokenized/checkout/execute' => fn ($req) => Http::response($this->executeAnswer ?? ['paymentID' => 'PAY1', 'trxID' => 'TRX9',
                 'transactionStatus' => 'Completed', 'amount' => '500', 'merchantInvoiceNumber' => Cache::get('last_ref')]),
@@ -102,6 +103,15 @@ class SmsRechargeTest extends TestCase
         config(['services.bkash.app_key' => null]);
         $this->api('POST', $host, 'subscription/sms-credits', $admin, ['amount' => 500])->assertStatus(503)->assertJsonPath('error', 'recharge_unavailable');
         Http::assertNothingSent();
+
+        config(['services.bkash.app_key' => 'k']);
+        // bKash refuses the create: 502, and on a debug server the reason is in the message (never a key)
+        config(['app.debug' => true]);
+        $this->createAnswer = ['statusCode' => '2023', 'statusMessage' => 'Insufficient Balance'];
+        $res = $this->api('POST', $host, 'subscription/sms-credits', $admin, ['amount' => 500])->assertStatus(502)->assertJsonPath('error', 'recharge_failed');
+        $this->assertStringContainsString('create: HTTP 200 2023 - Insufficient Balance', $res->json('message'));
+        config(['app.debug' => false]);
+        $this->assertStringNotContainsString('2023', $this->api('POST', $host, 'subscription/sms-credits', $admin, ['amount' => 500])->json('message'));
     }
 
     public function test_the_super_admin_adjustment_writes_an_adjustment_row(): void
