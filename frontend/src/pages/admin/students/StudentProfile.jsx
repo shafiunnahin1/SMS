@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Trash2 } from 'lucide-react'
+import { Trash2, UserX } from 'lucide-react'
 import api from '../../../api/axios'
 import { useTerms } from '../../../hooks/useTerms'
 import { useUiStore } from '../../../store/uiStore'
@@ -35,6 +35,7 @@ export default function StudentProfile() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [tab, setTab] = useState('profile')
+  const [erasing, setErasing] = useState(false)
   const student = useQuery({ queryKey: ['students', 'one', id], queryFn: () => api.get(`/students/${id}`).then(r => r.data.data) })
 
   if (student.isPending) return <Loader type="page" />
@@ -50,7 +51,10 @@ export default function StudentProfile() {
       <PageHeader title={<span className="inline-flex items-center gap-3">
         {s.photo_url && <img src={s.photo_url} alt="" className="h-10 w-10 rounded-full object-cover" />}
         <span dir="auto">{s.name}</span> <span className="text-sm text-content-muted"><Ltr>{s.student_id}</Ltr></span></span>}
-        actions={<Button variant="secondary" onClick={remove}><Trash2 aria-hidden="true" className="h-4 w-4" />{t('common.delete')}</Button>} />
+        actions={<>
+          {!s.anonymized_at && <Button variant="secondary" onClick={() => setErasing(true)} data-action="anonymize"><UserX aria-hidden="true" className="h-4 w-4" />{t('privacy.anonymize')}</Button>}
+          <Button variant="secondary" onClick={remove}><Trash2 aria-hidden="true" className="h-4 w-4" />{t('common.delete')}</Button></>} />
+      <Anonymize open={erasing} student={s} onClose={() => setErasing(false)} onDone={() => { setErasing(false); refresh() }} />
       <Tabs items={[{ key: 'profile', label: t('students.profile') }, { key: 'enrollments', label: t('students.enrollments') }, { key: 'consents', label: t('students.consents') }]}
         value={tab} onChange={setTab} label={s.name} />
       {tab === 'profile' && <ProfileForm student={s} onSaved={refresh} />}
@@ -195,5 +199,33 @@ function Consents({ studentId }) {
         ))}
       </ul>
     </Card>
+  )
+}
+
+// Step 8.1 (D27, privacy-and-consent.md 5.1): cannot be undone - the admin types the student's name to confirm
+function Anonymize({ open, student, onClose, onDone }) {
+  const { t } = useTranslation()
+  const [name, setName] = useState('')
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const go = async () => {
+    setBusy(true); setError(null)
+    try {
+      await api.post(`/students/${student.id}/anonymize`, { confirm_name: name })
+      useUiStore.getState().addToast(t('privacy.anonymized'))
+      setName(''); onDone()
+    } catch (e) { setError(e.response?.data?.message ?? t('privacy.failed')) } finally { setBusy(false) }
+  }
+  return (
+    <Modal open={open} onClose={onClose} title={t('privacy.anonymize')}>
+      <div className="flex flex-col gap-3" data-testid="anonymize">
+        <p className="text-sm">{t('privacy.anonymize_hint')}</p>
+        <Input label={t('privacy.type_name', { name: student.name })} value={name} onChange={e => setName(e.target.value)} error={error} name="confirm_name" />
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="danger" onClick={go} loading={busy} disabled={name.trim() !== (student.name ?? '').trim()} data-action="confirm-anonymize">{t('privacy.anonymize')}</Button>
+        </div>
+      </div>
+    </Modal>
   )
 }

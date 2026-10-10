@@ -6,6 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
+use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
 use App\Http\Controllers\SuperAdmin\{InstitutionController, UniversalSmsController};
@@ -124,6 +125,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/students/{id}/consents',     [ConsentController::class, 'index'])->whereNumber('id');
                 Route::post('/students/{id}/consents',    [ConsentController::class, 'store'])->whereNumber('id');
                 Route::get('/students/{id}/consent-form.pdf', [ConsentController::class, 'form'])->whereNumber('id');
+                Route::post('/students/{id}/anonymize',   [StudentPrivacyController::class, 'anonymize'])->whereNumber('id');   // Step 8.1 (D27)
             });
             Route::middleware('module:enrollments')->group(function () {
                 Route::post('/enrollments',               [EnrollmentController::class, 'store']);
@@ -214,6 +216,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/parent/children/{id}/attendance', [AttendanceController::class, 'forParent'])->whereNumber('id')->middleware('module:attendance');
             Route::get('/parent/consents',                [ConsentController::class, 'mine'])->middleware('module:students');
             Route::put('/parent/consents/{type}',         [ConsentController::class, 'update'])->middleware('module:students');
+            Route::get('/parent/children/{id}/export',    [StudentPrivacyController::class, 'export'])->whereNumber('id');   // Step 8.1: privacy-and-consent.md 5.2
         });
     });
 });

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -8,6 +9,8 @@ import { useLocale } from '../../ui/I18nProvider'
 import { fmtDate, fmtMoney, fmtNumber } from '../../i18n/format'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
+import Button from '../../components/Button'
+import { useUiStore } from '../../store/uiStore'
 import Loader from '../../components/Loader'
 import StatusBadge from '../../components/StatusBadge'
 import { EmptyState, ErrorState } from '../../components/StateViews'
@@ -145,7 +148,10 @@ function ParentView({ d }) {
   if (!d.length) return <EmptyState />
   return d.map(c => (
     <Card key={c.id} className="flex flex-col gap-2" data-testid="parent-child">
-      <h2 className="font-semibold" dir="auto">{c.name}{c.batch ? ` · ${c.batch}` : ''}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold" dir="auto">{c.name}{c.batch ? ` · ${c.batch}` : ''}</h2>
+        <ExportChild child={c} />
+      </div>
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
         <Link to="/parent/attendance" className="rounded-token [border:1px_solid_var(--line)] p-density hover:bg-primary-soft">
           <p className="text-sm text-content-muted">{t('attendance.parent.rate')}</p>
@@ -203,4 +209,21 @@ function SuperView({ d }) {
       </div>
     </>
   )
+}
+
+// Step 8.1 (privacy-and-consent.md 5.2): a parent downloads everything kept about their own child, as JSON
+function ExportChild({ child }) {
+  const { t } = useTranslation()
+  const [busy, setBusy] = useState(false)
+  const go = async () => {
+    setBusy(true)
+    try {
+      const { data } = await api.get(`/parent/children/${child.id}/export`)
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' }))
+      const a = document.createElement('a')
+      a.href = url; a.download = `${data.data.student.student_id || child.id}.json`; a.click()
+      URL.revokeObjectURL(url)
+    } catch { useUiStore.getState().addToast(t('privacy.failed'), 'error') } finally { setBusy(false) }
+  }
+  return <Button variant="ghost" onClick={go} loading={busy} data-action="export-child">{t('privacy.export')}</Button>
 }

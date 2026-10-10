@@ -26,6 +26,7 @@ class StudentResource extends JsonResource
             'admission_date' => $this->admission_date?->toDateString(),
             'photo_url'      => \App\Support\StudentFiles::photoUrl($this->resource),   // 10-minute signed link, never a public url
             'status'         => $this->status,
+            'anonymized_at'  => $this->anonymized_at?->toIso8601String(),      // Step 8.1: personal data removed (D27)
             'roll_no'        => $this->roll_no,
             'program'        => $this->whenLoaded('program', fn () => $this->program ? ['id' => $this->program->id, 'name' => $this->program->name] : null),
             'batch'          => $this->whenLoaded('batch', fn () => $this->batch ? ['id' => $this->batch->id, 'name' => $this->batch->name] : null),

@@ -26,6 +26,11 @@ for (const [role, creds] of ROLES) {
     }
     await expect(page.locator('[data-testid="dashboard"]')).toBeVisible()
     await expect(page.locator('[data-testid="dashboard"] [role="alert"], [data-testid="dashboard"] [data-state="error"]')).toHaveCount(0)
+    if (role === 'parent') {                             // Step 8.1 (privacy-and-consent.md 5.2): the parent downloads their child's data
+      const download = page.waitForEvent('download')
+      await page.locator('[data-action="export-child"]').first().click()
+      expect((await download).suggestedFilename()).toMatch(/\.json$/)
+    }
 
     const nav = page.locator('[data-testid="app-nav"]')
     const hrefs = [...new Set(await nav.locator('a[href]').evaluateAll(as => as.map(a => a.getAttribute('href'))))].filter(h => h.startsWith(`/${role}`))

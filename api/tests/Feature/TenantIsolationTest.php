@@ -53,6 +53,8 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/admin/users/{id}/unlock'          => fn (array $other) => $other['admin']->id,
             'GET api/v1/audit-logs/{id}'                   => fn (array $other) => Tenancy::as($other['institution'], fn () => AuditLog::value('id')),
             'GET api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
+            'POST api/v1/students/{id}/anonymize'          => fn (array $other) => $this->seedStudent($other),     // Step 8.1
+            'GET api/v1/parent/children/{id}/export'       => null,       // parent-only route (the admin is 403); ErasureRemovesAllStudentFilesTest: another child 404
             'GET api/v1/fees/payments/student/{id}'        => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/receipt/{id}'                 => fn (array $other) => $this->seedReceipt($other),
             'GET api/v1/exams/{id}'                        => fn (array $other) => $this->seedExam($other),

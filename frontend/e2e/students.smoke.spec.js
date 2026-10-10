@@ -27,6 +27,15 @@ test('4.2 students: admission, profile and an import', async ({ page }) => {
   await page.getByRole('tab', { name: /সম্মতি|Consents/ }).click()
   await expect(page.locator('main [aria-pressed="true"]').first()).toBeVisible()      // the admission's paper consent shows as given
 
+  // Step 8.1 (D27): anonymize after an erasure request - the button stays off until the name is typed exactly
+  await page.locator('[data-action="anonymize"]').click()
+  const dialog = page.locator('[data-testid="anonymize"]')
+  await expect(dialog.locator('[data-action="confirm-anonymize"]')).toBeDisabled()
+  await dialog.locator('input[name="confirm_name"]').fill(`Profile ${stamp}`)
+  await dialog.locator('[data-action="confirm-anonymize"]').click()
+  await expect(page.locator('[data-testid="page-header"]')).toContainText('Anonymized #')
+  await expect(page.locator('[data-action="anonymize"]')).toHaveCount(0)
+
   await page.goto('/admin/settings/imports')
   const csv = `name,guardian_phone,batch\nImported A ${stamp},01911${stamp.padStart(6, '0')},Class 1 - A\nImported B ${stamp},12345,Class 1 - A\n`
   await page.locator('input[type="file"]').setInputFiles({ name: 'old.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })

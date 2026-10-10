@@ -21,6 +21,8 @@ return [
     'sms_quota_exceeded'    => 'SMS ব্যালেন্সে যথেষ্ট টাকা নেই — রিচার্জ করুন।',
     'sms_disabled'          => 'এই প্রতিষ্ঠানের SMS বন্ধ আছে — সেটিংসে ইউনিভার্সাল বা নিজস্ব sender চালু করুন।',
     'sms_own_incomplete'    => 'নিজস্ব SMS চালু করতে API key ও sender ID দুটোই দিন।',
+    'already_anonymized'    => 'এই ছাত্রের তথ্য আগেই বেনামি করা হয়েছে।',
+    'confirm_name_mismatch' => 'নিশ্চিত করতে ছাত্রের নাম হুবহু লিখুন।',
     'recharge_unavailable'  => 'অনলাইন রিচার্জ এখনো চালু হয়নি — প্ল্যাটফর্মের সাথে যোগাযোগ করুন।',
     'recharge_failed'       => 'bKash পেমেন্ট শুরু করা যায়নি, একটু পরে আবার চেষ্টা করুন।',
     'institution_delete_refused' => 'প্রতিষ্ঠান মোছা যায় না — স্থগিত করুন।',

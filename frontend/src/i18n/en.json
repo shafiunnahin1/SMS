@@ -615,6 +615,14 @@
    "key_none": "No key yet - SMS are only written to the log.",
    "clear_key": "Remove key",
    "driver": "Gateway driver"
+  },
+  "privacy": {
+   "anonymize": "Anonymize",
+   "anonymize_hint": "After an erasure request: name, phones, address, photo and every file of this student are removed, the login and the parent link are closed. Attendance, results and fee receipts stay without a name. This cannot be undone.",
+   "type_name": "Type “{{name}}” to confirm",
+   "anonymized": "The student's personal data was removed.",
+   "failed": "That did not work - please try again.",
+   "export": "Download data"
   }
  },
  "nav": {
