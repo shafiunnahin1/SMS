@@ -11,5 +11,6 @@ return [
     'app/Exceptions/TenantNotBoundException.php' => 'only its message text names withoutTenancy() / anyInstitution() as advice; no call',
     'app/Services/Privacy/TenantPurgeService.php' => 'tenant:purge (D27, privacy-and-consent.md 5.3) deletes a whole institution: raw deletes filtered by that institution_id, Super Admin only',
     'app/Console/Commands/TenantPurge.php' => 'the shell form of tenant:purge runs outside any tenant (withoutTenancy) - the service filters by institution_id',
+    'app/Services/Privacy/RetentionService.php' => 'audit:trim also ages out the platform\'s own audit rows (institution_id NULL) - anyInstitution() limited to whereNull(institution_id)',
     'app/Support/TenantBulk.php' => 'the only bulk insert/upsert; checks every row belongs to the bound tenant',
 ];
