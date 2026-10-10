@@ -105,6 +105,14 @@ class SmsRechargeTest extends TestCase
         Http::assertNothingSent();
 
         config(['services.bkash.app_key' => 'k']);
+        // the v2 spelling (paymentId) is understood; an answer without it names its fields in the reason
+        $this->createAnswer = ['paymentId' => 'PAYV2', 'bkashURL' => 'https://sandbox.bkash.test/pay/PAYV2', 'statusCode' => '0000'];
+        $this->api('POST', $host, 'subscription/sms-credits', $admin, ['amount' => 500])->assertOk()->assertJsonPath('data.bkash_url', 'https://sandbox.bkash.test/pay/PAYV2');
+        config(['app.debug' => true]);
+        $this->createAnswer = ['statusCode' => '0000', 'agreementStatus' => 'Initiated'];
+        $this->assertStringContainsString('fields: statusCode, agreementStatus', $this->api('POST', $host, 'subscription/sms-credits', $admin, ['amount' => 500])->json('message'));
+        config(['app.debug' => false]);
+
         // bKash refuses the create: 502, and on a debug server the reason is in the message (never a key)
         config(['app.debug' => true]);
         $this->createAnswer = ['statusCode' => '2023', 'statusMessage' => 'Insufficient Balance'];

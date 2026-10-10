@@ -65,14 +65,26 @@ class BkashService
     {
         $r = $this->call('create', '/tokenized/checkout/create', ['mode' => '0011', 'payerReference' => $invoiceNo, 'amount' => $amount, 'currency' => 'BDT',
             'intent' => 'sale', 'merchantInvoiceNumber' => $invoiceNo, 'callbackURL' => $callbackUrl]);
+        $r = self::normalise($r);
         if (($r['paymentID'] ?? null) && ($r['bkashURL'] ?? null)) return $r;
-        if (!$this->lastError) $this->fail('create', 'no paymentID / bkashURL in the answer');
+        // name the fields bKash did send (names only, never values) so the next fix needs no guessing
+        if (!$this->lastError) $this->fail('create', 'no paymentID / bkashURL in the answer; fields: ' . (implode(', ', array_keys($r)) ?: 'none (not JSON?)')
+            . (isset($r['statusCode']) ? "; statusCode {$r['statusCode']}" : '') . (isset($r['statusMessage']) ? " - {$r['statusMessage']}" : ''));
         return null;
     }
 
     public function executePayment(string $paymentId): array
     {
-        return $this->call('execute', '/tokenized/checkout/execute', ['paymentID' => $paymentId]);
+        return self::normalise($this->call('execute', '/tokenized/checkout/execute', ['paymentID' => $paymentId]));
+    }
+
+    /** bKash's samples spell some fields two ways (paymentID / paymentId, bkashURL / bkashUrl, trxID / trxId): one spelling here */
+    private static function normalise(array $r): array
+    {
+        foreach (['paymentID' => 'paymentId', 'bkashURL' => 'bkashUrl', 'trxID' => 'trxId'] as $ours => $alt) {
+            if (!isset($r[$ours]) && isset($r[$alt])) $r[$ours] = $r[$alt];
+        }
+        return $r;
     }
 
     private function token(): ?string

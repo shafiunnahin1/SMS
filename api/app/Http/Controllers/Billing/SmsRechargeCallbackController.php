@@ -22,7 +22,7 @@ class SmsRechargeCallbackController extends Controller
         if (!$pending) return response()->json(['success' => false, 'error' => 'not_found', 'message' => __('errors.not_found')], 404);
         $back = fn (string $result) => redirect()->away($pending['return'] . '/admin/sms?recharge=' . $result);
 
-        if ($request->query('paymentID') !== $pending['payment_id']) return $back('failed');
+        if (($request->query('paymentID') ?? $request->query('paymentId')) !== $pending['payment_id']) return $back('failed');   // bKash spells it both ways
         $institution = Institution::findOrFail($pending['institution_id']);
         $reference = "bkash:{$ref}";
         if (Tenancy::as($institution, fn () => SmsCreditTransaction::where('reference', $reference)->exists())) return $back('success');   // already credited
