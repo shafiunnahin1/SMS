@@ -486,11 +486,8 @@
   },
   "sms": {
    "title": "SMS",
-   "balance": "Prepaid credit",
-   "used_this_month": "Sent this month (parts)",
-   "quota_left": "Monthly quota left",
-   "unlimited": "Unlimited",
-   "parts_hint": "A Bengali SMS part is 70 characters (67 when split); every part counts. The monthly quota is used first, then prepaid credit.",
+   "balance": "SMS balance",
+   "parts_hint": "Each SMS part costs {{rate}}: English 150 characters per part, Bengali 70 (67 when split). Your own API is not charged.",
    "log": "Sent SMS",
    "ledger": "Credit ledger",
    "no_ledger": "No credit movements yet",
@@ -502,11 +499,14 @@
    "parts": "{{count}} part(s)",
    "fallback": "via the platform sender",
    "types": {
-    "purchase": "Purchase",
-    "usage": "Usage",
+    "purchase": "Recharge",
+    "usage": "SMS",
     "adjustment": "Adjustment",
     "refund": "Refund"
-   }
+   },
+   "spent_this_month": "Spent this month",
+   "sent_count": "{{count}} SMS",
+   "rate": "Price per part"
   },
   "reports": {
    "title": "Reports",

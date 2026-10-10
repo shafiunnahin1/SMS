@@ -116,18 +116,19 @@ class SharedServicesTest extends TestCase
         $svc->score($es, 26, null, false);
     }
 
+    // D56 (owner, 2026-10-10): no plan quota; each sent part costs the platform rate from the wallet (taka), then 402
     public function test_sms_uses_the_monthly_quota_then_prepaid_credit_then_refuses(): void
     {
-        $plan = SubscriptionPlan::create(['name' => 'Tiny', 'price' => 1, 'duration_days' => 30, 'max_sms' => 1]);
-        $this->inst->forceFill(['subscription_plan_id' => $plan->id, 'sms_balance' => 1])->save();
+        $plan = SubscriptionPlan::create(['name' => 'Tiny', 'price' => 1, 'duration_days' => 30, 'max_sms' => 100]);
+        $this->inst->forceFill(['subscription_plan_id' => $plan->id, 'sms_balance' => '0.80'])->save();
         $this->bindTenant($this->inst->fresh());
         $sms = app(SmsService::class);
 
-        $this->assertTrue($sms->send('01711111111', 'one'));                       // quota
-        $this->assertSame(1, $this->inst->fresh()->sms_balance);
-        $this->assertTrue($sms->send('01711111111', 'two'));                       // credit
-        $this->assertSame(0, $this->inst->fresh()->sms_balance);
-        $this->assertSame([-1, 0], [SmsCreditTransaction::first()->quantity, SmsCreditTransaction::first()->balance_after]);
+        $this->assertTrue($sms->send('01711111111', 'one'));                       // a plan's max_sms no longer pays (D55)
+        $this->assertSame('0.40', $this->inst->fresh()->sms_balance);
+        $this->assertTrue($sms->send('01711111111', 'two'));
+        $this->assertSame('0.00', $this->inst->fresh()->sms_balance);
+        $this->assertSame(['-0.40', '0.00'], [SmsCreditTransaction::latest('id')->first()->amount, SmsCreditTransaction::latest('id')->first()->balance_after]);
 
         try {
             $sms->send('01711111111', 'three');
@@ -138,7 +139,7 @@ class SharedServicesTest extends TestCase
         $this->assertSame(2, SmsLog::count());
         $this->assertStringEndsWith(' -Dhanmondi', SmsLog::first()->message, 'platform sender adds the institution suffix');
 
-        SendSmsJob::dispatchSync('01711111111', 'automatic', $this->inst->id);    // a job never fails on exhausted credit
+        SendSmsJob::dispatchSync('01711111111', 'automatic', $this->inst->id);    // a job never fails on an empty wallet
         $this->assertSame(2, SmsLog::count());
     }
 

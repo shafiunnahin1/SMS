@@ -11,16 +11,19 @@ class Institution extends Model
 
     protected $fillable = [
         'name','slug','institution_type','logo_path','favicon_path','address','phone','email','subscription_plan_id',
-        'subscription_expires_at','status','enabled_modules','terminology','settings','sms_balance',
+        'subscription_expires_at','status','enabled_modules','terminology','settings','sms_balance','sms_universal_enabled','sms_own_enabled',
         'onboarding_completed','onboarding_step','primary_color','secondary_color','accent_color',
         'logo_path','favicon_path','theme_mode','theme_preset_id','layout_key','theme_tokens',
         'theme_updated_by','theme_updated_at','parent_institution_id','branch_name','is_head_office',
     ];
 
+    protected $hidden = ['sms_api_key'];        // D59: the institution's own key never leaves the server
+
     protected $casts = [
         'enabled_modules' => 'array', 'terminology' => 'array', 'settings' => 'array', 'theme_tokens' => 'array',
         'subscription_expires_at' => 'datetime', 'theme_updated_at' => 'datetime',
         'onboarding_completed' => 'boolean', 'is_head_office' => 'boolean',
+        'sms_balance' => 'decimal:2', 'sms_universal_enabled' => 'boolean', 'sms_own_enabled' => 'boolean', 'sms_api_key' => 'encrypted',
     ];
 
     public function subscriptionPlan() { return $this->belongsTo(SubscriptionPlan::class, 'subscription_plan_id'); }

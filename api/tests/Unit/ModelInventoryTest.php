@@ -10,8 +10,8 @@ use PHPUnit\Framework\TestCase;
 
 class ModelInventoryTest extends TestCase
 {
-    /** Platform-level models (docs/BUILD-SEQUENCE.md Step 1.2); Coupon and PlatformSetting belong to later releases */
-    private const NO_TENANT_TRAIT = ['Institution', 'SubscriptionPlan', 'ThemePreset', 'OtpToken'];
+    /** Platform-level models (docs/BUILD-SEQUENCE.md Step 1.2, AGENTS.md rule 8); PlatformSetting joins Release 1 with D57; Coupon is later */
+    private const NO_TENANT_TRAIT = ['Institution', 'SubscriptionPlan', 'ThemePreset', 'OtpToken', 'PlatformSetting'];
 
     /** institution_id may be NULL: own rules (docs/architecture/tenancy.md) */
     private const OWN_RULES = ['User', 'AuditLog'];

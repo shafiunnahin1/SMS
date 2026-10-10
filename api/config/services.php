@@ -39,6 +39,7 @@ return [
     // gateway contract is confirmed - TODO(OD-sms-gateway)). With an SSL Wireless token set, the default becomes `ssl_wireless`.
     'sms' => [
         'driver' => env('SMS_DRIVER', env('SSL_WIRELESS_TOKEN') ? 'ssl_wireless' : 'log'),
+        'rate' => env('SMS_RATE', '0.40'),          // D56: taka per billable SMS part; Super Admin's platform setting wins
     ],
     'ssl_wireless' => [
         'token' => env('SSL_WIRELESS_TOKEN'),

@@ -71,6 +71,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 - [ ] 5.1 — Signup & Onboarding
 - [ ] 5.2 — Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম)
 - [ ] 5.3 — Super Admin Panel
+  - part 1 (this commit, Change-Request: D56,D57): SMS wallet in taka — migration 2026_10_10_000001 (institutions.sms_balance DECIMAL(10,2) converted ×0.40; sms_credit_transactions.amount + DECIMAL balance_after; sms_logs.cost + route; institutions.sms_api_key (encrypted, hidden) + sms_universal_enabled + sms_own_enabled; platform_settings), schema.sql + I18N.md + scope updated (32 R1 tables); SmsService charges billable parts × rate (PlatformSetting `sms_rate`, default 0.40; SmsSegments::billable = 150 GSM / 70-67 Unicode) with a locked ledger row, 402 when the wallet is short, no plan quota (D55); /admin/sms and the dashboard show money — tests: SmsWalletTest (3), SmsCreditTest / SmsCreditBalanceTest / SmsLocaleTest / SharedServicesTest SMS cases restated for D56, ModelInventoryTest knows PlatformSetting — `mysql-smoke.sh` 33 passed; `schema-diff.sh` (32 R1 tables) cols/idx/fk same; `php artisan test` 347 passed; `npx vitest run` 82 passed; `npm run lint:theme` 0; `vite build` ok; e2e sms + dashboard 6 passed; mutation checks (no charge, rate setting ignored) each fail a test.
 - [ ] 8.1 — Privacy and children's data (D27)
 - [ ] 8.2 — Security hardening
 - [ ] 8.5 — Load and scale test (before SIGNUP_MODE=open)

@@ -22,6 +22,8 @@ class SmsLog extends Model
         'fallback_used',
         'error',
         'sent_at',
+        'cost',
+        'route',
         'sent_by',
         'campaign_id',
         'gateway_msg_id',
@@ -32,6 +34,7 @@ class SmsLog extends Model
     protected $casts = [
         'fallback_used' => 'boolean',
         'sent_at' => 'datetime',
+        'cost' => 'decimal:2',
         'delivered_at' => 'datetime',
     ];
 }

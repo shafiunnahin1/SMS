@@ -48,7 +48,7 @@ function AdminView({ d }) {
         <StatCard label={t('dashboard.students')} value={n(d.students)} />
         <StatCard label={t('dashboard.teachers')} value={n(d.teachers)} />
         <StatCard label={term('batches')} value={n(d.batches)} />
-        <StatCard label={t('dashboard.sms_balance')} value={n(d.sms_balance)} />
+        <StatCard label={t('dashboard.sms_balance')} value={fmtMoney(d.sms_balance, locale)} />
       </Grid>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

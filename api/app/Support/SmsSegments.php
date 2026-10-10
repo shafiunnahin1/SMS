@@ -23,4 +23,12 @@ final class SmsSegments
         $units = (int) (strlen(mb_convert_encoding($text, 'UTF-16LE', 'UTF-8')) / 2);       // UTF-16 code units (an emoji = 2)
         return ['segments' => $units <= 70 ? 1 : (int) ceil($units / 67), 'encoding' => 'unicode', 'units' => $units];
     }
+
+    /** D56: the parts the institution PAYS for - GSM (English) one per 150 characters, Unicode (Bengali) as the gateway: 70, then 67 */
+    public static function billable(string $text): int
+    {
+        $c = self::count($text);
+        if ($c['units'] === 0) return 0;
+        return $c['encoding'] === 'gsm' ? (int) ceil($c['units'] / 150) : $c['segments'];
+    }
 }

@@ -18,7 +18,7 @@ return [
     'invalid_credentials'   => 'Wrong login details, or the account is temporarily locked. Please try again later.',
     'invalid_otp'           => 'The code is wrong or has expired.',
     'invalid_token'         => 'The link or code is wrong or has expired.',
-    'sms_quota_exceeded'    => 'SMS quota and credit are used up.',
+    'sms_quota_exceeded'    => 'Not enough money in the SMS wallet - please recharge.',
     'holiday_date'          => 'Attendance cannot be taken on a holiday (:date).',
     'not_enrolled'          => 'Student #:student is not enrolled in this :batch.',
     'theme_not_allowed'     => 'This theme is not for this type of institution.',

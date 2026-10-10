@@ -8,8 +8,8 @@ use App\Services\SmsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-// docs/TESTING.md "SmsCreditTest": within the monthly quota the balance does not move; past it the balance drops with a ledger
-// row; with both used up -> 402. Counted in SMS PARTS: a long Bengali text costs several (docs/I18N.md section 7).
+// docs/TESTING.md "SmsCreditTest", as D56 (owner, 2026-10-10) restates it: no plan quota - every sent part is paid from the
+// wallet (taka) with a ledger row; not enough money -> 402. Counted in billable parts: a long Bengali text costs several.
 class SmsCreditTest extends TestCase
 {
     use RefreshDatabase;
@@ -18,31 +18,30 @@ class SmsCreditTest extends TestCase
     {
         $plan = SubscriptionPlan::create(['name' => 'Two', 'price' => 1, 'duration_days' => 30, 'max_sms' => 2]);
         $i = $this->makeInstitution('credit');
-        $i->forceFill(['subscription_plan_id' => $plan->id, 'sms_balance' => 3, 'settings' => ['sms_short_name' => 'Credit']])->save();
+        $i->forceFill(['subscription_plan_id' => $plan->id, 'sms_balance' => '1.60', 'settings' => ['sms_short_name' => 'Credit']])->save();
         $this->bindTenant($i->fresh());
         $sms = app(SmsService::class);
 
         $this->assertTrue($sms->send('01711111111', 'ok'));
-        $this->assertSame([3, 0], [$i->fresh()->sms_balance, SmsCreditTransaction::count()], 'inside the quota: no credit used');
+        $this->assertSame(['1.20', 1], [$i->fresh()->sms_balance, SmsCreditTransaction::count()], 'max_sms no longer pays: 0.40 taken');
 
         $bengali = str_repeat('আপনার সন্তান আজ অনুপস্থিত। ', 4);          // > 70 Unicode units -> 2 parts (67 each)
         $this->assertTrue($sms->send('01711111111', $bengali));
         $log = SmsLog::latest('id')->first();
-        $this->assertSame(['unicode', 2], [$log->encoding, $log->segments]);
-        // quota 2: part 1 used it up before (1) + this message (2) = 3 -> one part over -> 1 credit
-        $this->assertSame([2, -1, 2], [$i->fresh()->sms_balance, SmsCreditTransaction::first()->quantity, SmsCreditTransaction::first()->balance_after]);
-        $this->assertSame("sms_log:{$log->id}", SmsCreditTransaction::first()->reference);
+        $this->assertSame(['unicode', 2, '0.80'], [$log->encoding, $log->segments, $log->cost]);
+        $row = SmsCreditTransaction::latest('id')->first();
+        $this->assertSame(['0.40', '-0.80', -2], [$i->fresh()->sms_balance, $row->amount, $row->quantity]);
+        $this->assertSame("sms_log:{$log->id}", $row->reference);
 
         $this->assertTrue($sms->send('01711111111', 'ab'));
-        $this->assertTrue($sms->send('01711111111', 'cd'));
-        $this->assertSame(0, $i->fresh()->sms_balance);
+        $this->assertSame('0.00', $i->fresh()->sms_balance);
         try {
             $sms->send('01711111111', 'no more');
             $this->fail('expected 402');
         } catch (BusinessException $e) {
             $this->assertSame(['sms_quota_exceeded', 402], [$e->errorCode, $e->status]);
         }
-        $this->assertSame(4, SmsLog::count(), 'a refused message is not logged as sent');
-        $this->assertSame([-1, -1, -1], SmsCreditTransaction::orderBy('id')->pluck('quantity')->all());
+        $this->assertSame(3, SmsLog::count(), 'a refused message is not logged as sent');
+        $this->assertSame(['-0.40', '-0.80', '-0.40'], SmsCreditTransaction::orderBy('id')->pluck('amount')->all());
     }
 }

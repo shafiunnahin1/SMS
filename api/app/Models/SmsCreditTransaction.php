@@ -16,7 +16,9 @@ class SmsCreditTransaction extends Model
         'type',
         'quantity',
         'balance_after',
+        'amount',
         'reference',
         'created_by',
     ];
+    protected $casts = ['amount' => 'decimal:2', 'balance_after' => 'decimal:2'];
 }

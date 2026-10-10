@@ -3,7 +3,7 @@
 namespace Tests\Feature\I18n;
 
 use App\Jobs\SendSmsJob;
-use App\Models\{SmsCreditTransaction, SmsLog, SubscriptionPlan, User};
+use App\Models\{SmsCreditTransaction, SmsLog, User};
 use App\Services\SmsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -54,30 +54,33 @@ class SmsLocaleTest extends TestCase
         Queue::assertPushed(SendSmsJob::class, fn (SendSmsJob $job) => str_starts_with($job->message, 'Dear guardian,'));
     }
 
+    // D56 (owner, 2026-10-10): the wallet is in taka; the PRICE counts 150 GSM / 70-67 Unicode characters per part, the log keeps
+    // the gateway's own part count (160/153 GSM). No plan quota any more (D55).
     public function test_quota_and_credit_count_parts_and_the_log_keeps_them(): void
     {
         $i = $this->makeInstitution('smsparts');
-        $plan = SubscriptionPlan::create(['name' => 'Tiny', 'price' => 1, 'duration_days' => 30, 'max_sms' => 2]);
-        $i->forceFill(['subscription_plan_id' => $plan->id, 'sms_balance' => 3, 'sms_sender_id' => 'OWN', 'sms_sender_status' => 'approved'])->save();
+        $i->forceFill(['sms_balance' => '2.00', 'sms_sender_id' => 'OWN', 'sms_sender_status' => 'approved'])->save();
         $this->bindTenant($i->fresh());
         $sms = app(SmsService::class);
 
-        $sms->send('01711111111', str_repeat('ক', 100));             // 2 parts: the whole monthly quota
-        $this->assertSame([2, 'unicode'], [SmsLog::first()->segments, SmsLog::first()->encoding]);
-        $this->assertSame(3, $i->fresh()->sms_balance);
+        $sms->send('01711111111', str_repeat('ক', 100));             // Unicode: 2 parts = 0.80
+        $this->assertSame([2, 'unicode', '0.80'], [SmsLog::first()->segments, SmsLog::first()->encoding, SmsLog::first()->cost]);
+        $this->assertSame('1.20', $i->fresh()->sms_balance);
 
-        $sms->send('01711111111', str_repeat('a', 200));             // 2 GSM parts: both from credit
-        $this->assertSame([2, 'gsm'], [SmsLog::latest('id')->first()->segments, SmsLog::latest('id')->first()->encoding]);
-        $this->assertSame(1, $i->fresh()->sms_balance);
-        $this->assertSame(-2, SmsCreditTransaction::first()->quantity);
+        $sms->send('01711111111', str_repeat('a', 155));             // GSM: 1 gateway part (<=160) but 2 billable parts (150 each) = 0.80
+        $this->assertSame([1, 'gsm', '0.80'], [SmsLog::latest('id')->first()->segments, SmsLog::latest('id')->first()->encoding, SmsLog::latest('id')->first()->cost]);
+        $this->assertSame('0.40', $i->fresh()->sms_balance);
+        $this->assertSame([-2, '-0.80'], [SmsCreditTransaction::first()->quantity, SmsCreditTransaction::first()->amount]);
 
         try {
-            $sms->send('01711111111', str_repeat('ক', 100));         // needs 2, only 1 credit left
+            $sms->send('01711111111', str_repeat('ক', 100));         // needs 0.80, only 0.40 left
             $this->fail('expected sms_quota_exceeded');
         } catch (\App\Exceptions\BusinessException $e) {
-            $this->assertSame('sms_quota_exceeded', $e->errorCode);
+            $this->assertSame(['sms_quota_exceeded', 402], [$e->errorCode, $e->status]);
         }
         $this->assertSame(2, SmsLog::count());
+        $this->assertTrue($sms->send('01711111111', 'hi'), 'one short GSM part (0.40) still fits');
+        $this->assertSame('0.00', $i->fresh()->sms_balance);
     }
 
     private function attendanceSetup(): array

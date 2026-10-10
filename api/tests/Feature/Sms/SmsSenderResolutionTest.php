@@ -78,7 +78,7 @@ class SmsSenderResolutionTest extends TestCase
 
         $this->assertFalse(app(SmsService::class)->send('01711111111', 'hello', finalAttempt: true));
         $this->assertSame(['failed', 'gateway_error'], [SmsLog::first()->status, SmsLog::first()->error]);
-        $this->assertSame(100, $i->fresh()->sms_balance, 'a failed SMS costs nothing');
+        $this->assertSame('100.00', $i->fresh()->sms_balance, 'a failed SMS costs nothing');
         $this->assertCount(2, $g->sent);
 
         // the job itself: attempt 1 of 3 throws (the queue retries), attempt 3 logs the failure

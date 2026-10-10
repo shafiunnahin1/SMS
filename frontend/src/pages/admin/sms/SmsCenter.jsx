@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import api from '../../../api/axios'
 import { useLocale } from '../../../ui/I18nProvider'
-import { fmtDate, fmtNumber, fmtTime } from '../../../i18n/format'
+import { fmtDate, fmtMoney, fmtNumber, fmtTime } from '../../../i18n/format'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
 import Button from '../../../components/Button'
@@ -22,18 +22,19 @@ export default function SmsCenter() {
   const { locale } = useLocale()
   const [tab, setTab] = useState('log')
   const credits = useQuery({ queryKey: ['sms', 'credits'], queryFn: () => api.get('/subscription/sms-credits').then(r => r.data) })
-  const n = (v) => (v == null ? t('sms.unlimited') : fmtNumber(v, locale))
+  const d = credits.data?.data
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title={t('sms.title')} />
       {credits.isPending ? <Loader type="cards" count={3} /> : credits.isError ? <ErrorState onRetry={credits.refetch} /> : (
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-3" data-testid="sms-usage">
-          <StatCard label={t('sms.balance')} value={n(credits.data.data.balance)} />
-          <StatCard label={t('sms.used_this_month')} value={n(credits.data.data.used_this_month)} />
-          <StatCard label={t('sms.quota_left')} value={n(credits.data.data.quota_left)} />
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4" data-testid="sms-usage">
+          <StatCard label={t('sms.balance')} value={fmtMoney(d.balance, locale)} />
+          <StatCard label={t('sms.spent_this_month')} value={fmtMoney(d.spent_this_month, locale)} />
+          <StatCard label={t('sms.log')} value={fmtNumber(d.sent_this_month, locale)} />
+          <StatCard label={t('sms.rate')} value={fmtMoney(d.rate, locale)} />
         </div>
       )}
-      <p className="text-sm text-content-muted">{t('sms.parts_hint')}</p>
+      <p className="text-sm text-content-muted">{t('sms.parts_hint', { rate: d ? fmtMoney(d.rate, locale) : '' })}</p>
       <Tabs items={[{ key: 'log', label: t('sms.log') }, { key: 'ledger', label: t('sms.ledger') }]} value={tab} onChange={setTab} label={t('sms.title')} />
       {tab === 'log' ? <SmsLog /> : <Ledger rows={credits.data?.data.transactions ?? []} loading={credits.isPending} />}
     </div>
@@ -87,7 +88,7 @@ function Ledger({ rows, loading }) {
         {rows.map(r => (
           <li key={r.id} className="flex items-center justify-between h-row gap-2">
             <span>{t(`sms.types.${r.type}`)} <span className="text-xs text-content-muted">{r.created_at && fmtDate(r.created_at, locale)}</span></span>
-            <span><Ltr>{r.quantity > 0 ? '+' : ''}{fmtNumber(r.quantity, locale)}</Ltr> <span className="text-xs text-content-muted">→ <Ltr>{fmtNumber(r.balance_after, locale)}</Ltr></span></span>
+            <span><Ltr>{Number(r.amount) > 0 ? '+' : ''}{fmtMoney(r.amount, locale)}</Ltr>{r.quantity ? <span className="text-xs text-content-muted"> ({t('sms.parts', { count: Math.abs(r.quantity) })})</span> : null} <span className="text-xs text-content-muted">→ <Ltr>{fmtMoney(r.balance_after, locale)}</Ltr></span></span>
           </li>
         ))}
       </ul>

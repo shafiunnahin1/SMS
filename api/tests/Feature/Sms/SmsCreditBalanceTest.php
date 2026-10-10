@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 // docs/TESTING.md "SmsCreditBalanceTest": GET /subscription/sms-credits shows the balance and the ledger; credit added and used
-// add up. (Buying credit is Step 5.2, BLOCKED by D47 - the purchase row is written here directly, as that flow would.)
+// add up - in taka since D56 (the purchase row is written here directly; the online recharge has its own test, SmsRechargeTest).
 class SmsCreditBalanceTest extends TestCase
 {
     use RefreshDatabase;
@@ -20,8 +20,8 @@ class SmsCreditBalanceTest extends TestCase
         $i = $this->makeInstitution('bal');
         $i->forceFill(['subscription_plan_id' => $plan->id, 'sms_balance' => 0, 'settings' => ['sms_short_name' => 'Bal']])->save();
         Tenancy::as($i->fresh(), function () use ($i) {
-            $i->forceFill(['sms_balance' => 10])->save();
-            SmsCreditTransaction::create(['type' => 'purchase', 'quantity' => 10, 'balance_after' => 10, 'reference' => 'trx-1']);
+            $i->forceFill(['sms_balance' => '10.00'])->save();
+            SmsCreditTransaction::create(['type' => 'purchase', 'amount' => '10.00', 'balance_after' => '10.00', 'reference' => 'trx-1']);
             app(SmsService::class)->send('01711111111', 'one');
             app(SmsService::class)->send('01711111111', 'two');
         });
@@ -29,10 +29,10 @@ class SmsCreditBalanceTest extends TestCase
         $admin = $this->makeUser($i, 'admin');
 
         $res = $this->api('GET', $host, 'subscription/sms-credits', $admin)->assertOk();
-        $this->assertSame([8, 2, 0, 0], [$res->json('data.balance'), $res->json('data.used_this_month'), $res->json('data.monthly_quota'), $res->json('data.quota_left')]);
+        $this->assertSame(['9.20', '0.40', 2, '0.80'], [$res->json('data.balance'), $res->json('data.rate'), $res->json('data.sent_this_month'), $res->json('data.spent_this_month')]);
         $rows = $res->json('data.transactions');
-        $this->assertSame([['usage', -1, 8], ['usage', -1, 9], ['purchase', 10, 10]], array_map(fn ($t) => [$t['type'], $t['quantity'], $t['balance_after']], $rows));
-        $this->assertSame($res->json('data.balance'), array_sum(array_column($rows, 'quantity')), 'the ledger adds up to the balance');
+        $this->assertSame([['usage', '-0.40', '9.20'], ['usage', '-0.40', '9.60'], ['purchase', '10.00', '10.00']], array_map(fn ($t) => [$t['type'], $t['amount'], $t['balance_after']], $rows));
+        $this->assertSame(\App\Support\Money::toPaisa($res->json('data.balance')), array_sum(array_map(fn ($t) => \App\Support\Money::toPaisa($t['amount']), $rows)), 'the ledger adds up to the balance');
 
         $this->api('GET', $host, 'subscription/sms-credits', $this->makeUser($i, 'accountant'))->assertForbidden();
         $this->api('POST', $host, 'subscription/sms-credits', $admin, ['quantity' => 100])->assertStatus(405);   // buying is Step 5.2
