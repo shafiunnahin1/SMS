@@ -40,6 +40,9 @@ const TeacherList = lazy(() => import('../pages/admin/teachers/TeacherList'))
 const MyBatches   = lazy(() => import('../pages/teacher/MyBatches'))
 const Landing     = lazy(() => import('../pages/central/Landing'))
 const Signup      = lazy(() => import('../pages/central/Signup'))
+const Institutions      = lazy(() => import('../pages/super/Institutions'))
+const InstitutionDetail = lazy(() => import('../pages/super/InstitutionDetail'))
+const PlatformSettings  = lazy(() => import('../pages/super/PlatformSettings'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
@@ -106,12 +109,17 @@ export const tenantRoutes = [
   { path: '*', element: <Navigate to="/login" replace /> },
 ]
 
-// Central host (Step 3.1): landing, signup (Step 5.1 is blocked - placeholder), login, Super Admin (its panel is Phase 5)
+// Central host (Step 3.1): landing, signup (Step 5.1 is blocked - placeholder), login, Super Admin (Step 4.7 dashboard, Step 5.3 panel)
 export const centralRoutes = [
   { path: '/', element: S(Landing) },
   { path: '/signup', element: S(Signup) },
   ...authRoutes,
-  area('/super-admin', 'super_admin', [{ path: 'dashboard', element: S(Dashboard) }]),
+  area('/super-admin', 'super_admin', [
+    { path: 'dashboard', element: S(Dashboard) },
+    { path: 'institutions', element: S(Institutions) },
+    { path: 'institutions/:id', element: S(InstitutionDetail) },
+    { path: 'settings', element: S(PlatformSettings) },
+  ]),
   { path: '*', element: <Navigate to="/login" replace /> },
 ]
 

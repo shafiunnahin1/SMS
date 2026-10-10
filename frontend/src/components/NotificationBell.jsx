@@ -6,17 +6,20 @@ import api from '../api/axios'
 import { useLocale } from '../ui/I18nProvider'
 import { fmtDate } from '../i18n/format'
 import Loader from './Loader'
+import { useInstitutionStore } from '../store/institutionStore'
 
 // Layout Contract: the notification bell (GET /notifications, PATCH /notifications/read-all - Step 2.6). The unread count refreshes
-// every minute; the list loads when it is opened.
+// every minute; the list loads when it is opened. Not on the central host: /notifications is a tenant route, the Super Admin has none.
 export default function NotificationBell() {
   const { t } = useTranslation()
   const { locale } = useLocale()
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
-  const q = useQuery({ queryKey: ['notifications'], queryFn: () => api.get('/notifications', { params: { per_page: 8 } }).then(r => r.data), refetchInterval: 60000, staleTime: 30000 })
+  const central = useInstitutionStore(s => s.isCentral)
+  const q = useQuery({ queryKey: ['notifications'], enabled: !central, queryFn: () => api.get('/notifications', { params: { per_page: 8 } }).then(r => r.data), refetchInterval: 60000, staleTime: 30000 })
   const unread = q.data?.meta?.unread ?? 0
   const readAll = async () => { await api.patch('/notifications/read-all').catch(() => {}); qc.invalidateQueries({ queryKey: ['notifications'] }) }
+  if (central) return null
   return (
     <div className="relative">
       <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open} aria-label={t('notifications.title', { count: unread })}

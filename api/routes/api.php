@@ -8,6 +8,7 @@ use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderCo
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
+use App\Http\Controllers\SuperAdmin\{InstitutionController, UniversalSmsController};
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
 use Illuminate\Support\Facades\Route;
 
@@ -30,9 +31,19 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    // ─── 2. Central host only: Super Admin (Step 4.7 dashboard; the rest of the panel is Phase 5) ───
+    // ─── 2. Central host only: Super Admin (Step 4.7 dashboard, Step 5.3 panel) ───
     Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:super_admin', 'tenancy.bypass'])->prefix('super')->group(function () {
         Route::get('/dashboard',              [DashboardController::class, 'superAdmin']);
+        // Step 5.3 (D55-D58): institutions, their SMS wallet, the universal SMS API
+        Route::get('/institutions',                   [InstitutionController::class, 'index']);
+        Route::post('/institutions',                  [InstitutionController::class, 'store']);
+        Route::get('/institutions/{id}',              [InstitutionController::class, 'show'])->whereNumber('id');
+        Route::put('/institutions/{id}',              [InstitutionController::class, 'update'])->whereNumber('id');
+        Route::delete('/institutions/{id}',           [InstitutionController::class, 'destroy'])->whereNumber('id');
+        Route::patch('/institutions/{id}/toggle',     [InstitutionController::class, 'toggleStatus'])->whereNumber('id');
+        Route::post('/institutions/{id}/sms-credits', [SmsCreditController::class, 'adjust'])->whereNumber('id');
+        Route::get('/sms-settings',                   [UniversalSmsController::class, 'show']);
+        Route::put('/sms-settings',                   [UniversalSmsController::class, 'update']);
     });
 
     // ─── 3. Tenant host only ───────────────────────────────────
