@@ -59,16 +59,16 @@
 | `4.6` | Notifications & SMS | `4.5` | 2 | 1 | 4 |
 | `4.7` | Dashboards & Role Panels | `4.6` |  | 6 |  |
 | `4.8` | Core PDF & Reports | `4.7` |  | 2 |  |
-| `5.1` | Signup & Onboarding | `4.8` |  | 3 | 1 |
-| `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 9 | 1 |
-| `5.3` | Super Admin Panel | `5.2` |  | 12 |  |
+| `5.3` | Super Admin Panel | `4.8` |  | 15 | 4 |
 | `8.1` | Privacy and children's data (D27) | `5.3` |  | 5 | 3 |
 | `8.2` | Security hardening | `8.1` |  |  |  |
 | `8.5` | Load and scale test (before SIGNUP_MODE=open) | `8.2` |  |  |  |
 | `9.1` | Deployment, backup, monitoring | `8.5` |  |  |  |
-| `A` | Release 1 acceptance, then open signup | `9.1` |  |  |  |
+| `5.1` | Signup & Onboarding | `9.1` |  | 3 | 1 |
+| `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
+| `A` | Release 1 acceptance, then open signup | `5.2` |  |  |  |
 
-**সারসংক্ষেপ:** 38 task · 31 টেবিল · 145 route · 60 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 38 task · 31 টেবিল · 151 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -1642,176 +1642,40 @@ php artisan test   # whole suite stays green
 
 ---
 
-### TASK `5.1` — Signup & Onboarding
-
-- **নির্ভর করে:** `4.8`  ·  **Release:** R1
-- **কী পড়বেন:** `docs/modules/onboarding.md`, `docs/modules/subscription.md`, `docs/architecture/system-design-patterns.md`
-
-> **R1 পরিসর (এটিই চূড়ান্ত):** Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.
-
-
-**R1-এ যে route বানাবেন:**
-```
-POST /public/signup -> SignupController@store
-GET /public/slug-check -> SignupController@slugCheck
-GET /public/plans -> SignupController@plans
-```
-
-**পরীক্ষা:** `SignupModeTest`
-
-> **⛔ অবরুদ্ধ (BLOCKED) — এই task এখন বানাবেন না:** **D47:** সাইন-আপে plan বাছাই ও plan-ভিত্তিক ট্রায়াল বাতিল হচ্ছে; মডিউল-ভিত্তিক সাবস্ক্রিপশনের স্পেক (`docs/PRICING-MODEL.md` PM-1) লেখা ও মালিক-অনুমোদিত না হওয়া পর্যন্ত **বানানো নিষিদ্ধ**।
-
-**Done When:** চার type-এর প্রতিটিতে signup → নিজ subdomain-এ login → wizard → dashboard; default Program/Batch ও preset type অনুযায়ী।
-
-**যাচাই (সব সবুজ হলে তবেই পরের task):**
-```bash
-php artisan test --filter=SignupModeTest
-npm test && npm run lint:theme
-php artisan test   # whole suite stays green
-```
-
-<details><summary>মূল Step-এর লেখা (`docs/BUILD-SEQUENCE.md`) — R1-এর চেয়ে বড় হতে পারে; ওপরের "R1 পরিসর" জেতে</summary>
-
-> Central host-এ Landing + Signup (type নির্বাচন, slug check), `OnboardingService`, type-ভিত্তিক wizard, trial শুরু।
-> **Release 1 সংযোজন:** `SIGNUP_MODE=invite|open` (`.env`, নতুন টেবিল নয়)। `invite`: signup-এর জন্য `SIGNUP_INVITE_CODES` (কমা-দিয়ে) থেকে কোড লাগে, ভুল কোডে 403 `signup_closed`; `open`: যে কেউ। ডিফল্ট `invite`। বন্ধ-beta থেকে প্রকাশ্য — শুধু `.env` বদল (`docs/RELEASE-1.md` §৬)। পরীক্ষা: `SignupModeTest`।
-> **Spec Reference:** `docs/modules/onboarding.md` (Revision 6 সহ), `docs/modules/subscription.md`, `docs/architecture/system-design-patterns.md` (welcome mail)
-> **Done When:** চার type-এর প্রতিটিতে signup → নিজ subdomain-এ login → wizard → dashboard; default Program/Batch ও preset type অনুযায়ী।
-</details>
-
----
-
-### TASK `5.2` — Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম)
-
-- **নির্ভর করে:** `5.1`  ·  **Release:** R1
-- **কী পড়বেন:** `docs/modules/payment-gateways.md`, `docs/modules/subscription.md`
-
-> **R1 পরিসর (এটিই চূড়ান্ত):** Plans, trial, grace, suspend, invoices, SSLCommerz subscription payment, SMS-credit purchase. Tax/VAT parameter fixed at 0 until OD-4.
-
-
-**এই task যে টেবিলের মালিক** (migration Step 1.1-এ; মডেল, service, endpoint ও পরীক্ষা এখানে): `subscription_plans`, `payments`, `subscription_invoices`
-
-<details><summary>টেবিলের সংজ্ঞা (schema.sql থেকে, ALTER/index সহ)</summary>
-
-```sql
-CREATE TABLE subscription_plans (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    duration_days INT NOT NULL,
-    max_students INT DEFAULT -1,
-    max_teachers INT DEFAULT -1,
-    max_sms INT DEFAULT 1000,
-    -- R6: NULL = plan is offered to every institution type
-    institution_type ENUM('school','college','coaching','private_batch') NULL,
-    max_batches INT DEFAULT -1,
-    sort_order INT DEFAULT 0,
-    features JSON,
-    is_active TINYINT(1) DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE payments (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    institution_id BIGINT UNSIGNED NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    method ENUM('bkash','nagad','card','cash','ssl','coupon') NOT NULL,   -- R11: 'coupon' = a free-days coupon redeemed with no money moved
-    trx_id VARCHAR(100) UNIQUE,
-    status ENUM('pending','completed','failed','refunded') DEFAULT 'pending',
-    paid_at TIMESTAMP NULL,
-    invoice_no VARCHAR(50) UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (institution_id) REFERENCES institutions(id)
-);
-ALTER TABLE payments ADD COLUMN refunded_amount DECIMAL(10,2) NOT NULL DEFAULT 0;
-ALTER TABLE payments ADD COLUMN refund_note VARCHAR(255) NULL;
-
-CREATE TABLE subscription_invoices (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    institution_id BIGINT UNSIGNED NOT NULL,
-    payment_id BIGINT UNSIGNED NOT NULL,
-    invoice_number VARCHAR(30) UNIQUE NOT NULL,  -- INV-2025-00001
-    plan_name VARCHAR(50) NOT NULL,
-    billing_period VARCHAR(30),   -- 'Jan 2025 - Jan 2026'
-    amount DECIMAL(10,2) NOT NULL,
-    tax DECIMAL(8,2) DEFAULT 0,
-    total DECIMAL(10,2) NOT NULL,
-    issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (institution_id) REFERENCES institutions(id),
-    FOREIGN KEY (payment_id) REFERENCES payments(id)
-);
-ALTER TABLE subscription_invoices ADD COLUMN discount DECIMAL(10,2) NOT NULL DEFAULT 0;
-ALTER TABLE subscription_invoices ADD COLUMN coupon_id BIGINT UNSIGNED NULL;
-ALTER TABLE subscription_invoices ADD COLUMN tax_rate DECIMAL(5,2) NOT NULL DEFAULT 0;
-ALTER TABLE subscription_invoices ADD COLUMN tax_label VARCHAR(30) NULL;
-ALTER TABLE subscription_invoices ADD COLUMN tax_inclusive TINYINT(1) NOT NULL DEFAULT 0;
-ALTER TABLE subscription_invoices ADD COLUMN credit_for_id BIGINT UNSIGNED NULL;
-```
-</details>
-
-**R1-এ যে route বানাবেন:**
-```
-POST /billing/ssl/success -> SslCommerzController@success
-POST /billing/ssl/fail -> SslCommerzController@fail
-POST /billing/ssl/cancel -> SslCommerzController@cancel
-POST /billing/ssl/ipn -> SslCommerzController@ipn
-POST /super/institutions/{id}/sms-credits -> SmsCreditController@adjust [role:super_admin]
-GET /subscription -> SubscriptionController@show [role:admin]
-POST /subscription/checkout -> SubscriptionController@checkout [role:admin]
-POST /subscription/sms-credits -> SmsCreditController@purchase [role:admin]
-GET /subscription/sms-credits -> SmsCreditController@balance [role:admin]
-```
-
-**পরীক্ষা:** `SubscriptionLimitTest`
-
-> **⛔ অবরুদ্ধ (BLOCKED) — এই task এখন বানাবেন না:** **D47:** plan-ভিত্তিক সাবস্ক্রিপশন ও বিলিং (`subscription_plans`, `max_*`, plan-গেট) বাতিল; মডিউল-ভিত্তিক সাবস্ক্রিপশন-স্পেক (PM-1) লেখার আগে **বানানো নিষিদ্ধ**।
-
-**Done When:** sandbox-এ subscription payment → মেয়াদ বাড়ে + invoice + status `active`; মেয়াদ শেষ → grace → suspended, কিন্তু suspended admin তখনও login ও পেমেন্ট করে আবার চালু করতে পারে; callback central domain-এ ফিরে tenant-এর primary URL-এ redirect।
-
-**যাচাই (সব সবুজ হলে তবেই পরের task):**
-```bash
-php artisan test --filter=SubscriptionLimitTest
-npm test && npm run lint:theme
-php artisan test   # whole suite stays green
-```
-
-<details><summary>মূল Step-এর লেখা (`docs/BUILD-SEQUENCE.md`) — R1-এর চেয়ে বড় হতে পারে; ওপরের "R1 পরিসর" জেতে</summary>
-
-> Plan তালিকা (type অনুযায়ী), **SSLCommerz দিয়ে প্ল্যাটফর্মের subscription payment** (প্ল্যাটফর্মের নিজস্ব credential), invoice PDF, lifecycle scheduler (reminder, grace, suspend), upgrade/downgrade, SMS credit কেনা।
-> **Spec Reference:** `docs/modules/payment-gateways.md` (শুধু SSLCommerz Subscription অংশ), `docs/modules/subscription.md`
-> **Tests:** `SubscriptionLimitTest`
-> **Done When:** sandbox-এ subscription payment → মেয়াদ বাড়ে + invoice + status `active`; মেয়াদ শেষ → grace → suspended, কিন্তু suspended admin তখনও login ও পেমেন্ট করে আবার চালু করতে পারে; callback central domain-এ ফিরে tenant-এর primary URL-এ redirect।
-</details>
-
----
-
 ### TASK `5.3` — Super Admin Panel
 
-- **নির্ভর করে:** `5.2`  ·  **Release:** R1
+- **নির্ভর করে:** `4.8`  ·  **Release:** R1
 - **কী পড়বেন:** `docs/modules/panels-and-features.md`, `docs/business/saas-metrics.md`
 
-> **R1 পরিসর (এটিই চূড়ান্ত):** Super Admin: institutions, plans, payments, SMS credits and sender status. NOT: support tickets, coupons, impersonation.
+> **R1 পরিসর (এটিই চূড়ান্ত):** D55-D60 (owner, 2026-10-10): Super Admin opens institutions (no plans), suspends/activates, adds or corrects SMS money; the universal BulkSMSBD API (platform key and sender, the rate per SMS part); the institution's SMS wallet in taka (0.40 per part: 150 GSM / 70 Unicode chars), online recharge with bKash (sandbox until credentials); its own BulkSMSBD key + masking sender with the universal/own on-off toggles (replaces the R2 sender-ID approval). NOT: plans, subscription billing (D55), coupons, support tickets, impersonation.
 
 
 **R1-এ যে route বানাবেন:**
 ```
+GET /billing/bkash/callback -> SmsRechargeCallbackController@bkash
 GET /super/institutions -> InstitutionController@index [role:super_admin]
 POST /super/institutions -> InstitutionController@store [role:super_admin]
 GET /super/institutions/{id} -> InstitutionController@show [role:super_admin]
 PUT /super/institutions/{id} -> InstitutionController@update [role:super_admin]
 DELETE /super/institutions/{id} -> InstitutionController@destroy [role:super_admin]
 PATCH /super/institutions/{id}/toggle -> InstitutionController@toggleStatus [role:super_admin]
-GET /super/plans -> PlanController@index [role:super_admin]
-POST /super/plans -> PlanController@store [role:super_admin]
-GET /super/plans/{id} -> PlanController@show [role:super_admin]
-PUT /super/plans/{id} -> PlanController@update [role:super_admin]
-DELETE /super/plans/{id} -> PlanController@destroy [role:super_admin]
-GET /super/payments -> PaymentController@index [role:super_admin]
+POST /super/institutions/{id}/sms-credits -> SmsCreditController@adjust [role:super_admin]
+GET /super/sms-settings -> UniversalSmsController@show [role:super_admin]
+PUT /super/sms-settings -> UniversalSmsController@update [role:super_admin]
+POST /subscription/sms-credits -> SmsCreditController@purchase [role:admin]
+GET /admin/settings/sms-sender -> SmsSenderController@show [role:admin]
+PUT /admin/settings/sms-sender -> SmsSenderController@update [role:admin]
+DELETE /admin/settings/sms-sender -> SmsSenderController@destroy [role:admin]
+GET /subscription/sms-credits -> SmsCreditController@balance [role:admin]
 ```
 
-**Done When:** `admin.lvh.me`-এ শুধু super_admin login করতে পারে; module override দিলে সেই tenant-এর menu সঙ্গে সঙ্গে (cache invalidation) বদলায়।
+**পরীক্ষা:** `SmsWalletTest`, `SmsRouteTest`, `SmsRechargeTest`, `SuperInstitutionTest`
+
+**Done When:** `admin.lvh.me`-এ শুধু super_admin; প্রতিষ্ঠান খোলা/বন্ধ; SMS-অংশপ্রতি ওয়ালেট থেকে টাকা কাটে (D56), ব্যালেন্স না থাকলে 402; নিজস্ব API চালু থাকলে ইউনিভার্সাল ব্যবহার হয় না ও টাকা কাটে না (D59); bKash sandbox রিচার্জে ওয়ালেট বাড়ে, লেজারে সারি; module override দিলে সেই tenant-এর menu সঙ্গে সঙ্গে বদলায়।
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
+php artisan test --filter=SmsWalletTest|SmsRouteTest|SmsRechargeTest|SuperInstitutionTest
 npm test && npm run lint:theme
 php artisan test   # whole suite stays green
 ```
@@ -1911,9 +1775,154 @@ bash infra/scripts/mysql-smoke.sh
 
 ---
 
-### TASK `A` — Release 1 acceptance, then open signup
+### TASK `5.1` — Signup & Onboarding
 
 - **নির্ভর করে:** `9.1`  ·  **Release:** R1
+- **কী পড়বেন:** `docs/modules/onboarding.md`, `docs/modules/subscription.md`, `docs/architecture/system-design-patterns.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.
+
+
+**R1-এ যে route বানাবেন:**
+```
+POST /public/signup -> SignupController@store
+GET /public/slug-check -> SignupController@slugCheck
+GET /public/plans -> SignupController@plans
+```
+
+**পরীক্ষা:** `SignupModeTest`
+
+> **⛔ অবরুদ্ধ (BLOCKED) — এই task এখন বানাবেন না:** **D47:** সাইন-আপে plan বাছাই ও plan-ভিত্তিক ট্রায়াল বাতিল হচ্ছে; মডিউল-ভিত্তিক সাবস্ক্রিপশনের স্পেক (`docs/PRICING-MODEL.md` PM-1) লেখা ও মালিক-অনুমোদিত না হওয়া পর্যন্ত **বানানো নিষিদ্ধ**। **D55/D60 (2026-10-10):** সাবস্ক্রিপশন সব মডিউলের পরে; ক্রমে এখন 9.1-এর পরে।
+
+**Done When:** চার type-এর প্রতিটিতে signup → নিজ subdomain-এ login → wizard → dashboard; default Program/Batch ও preset type অনুযায়ী।
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=SignupModeTest
+npm test && npm run lint:theme
+php artisan test   # whole suite stays green
+```
+
+<details><summary>মূল Step-এর লেখা (`docs/BUILD-SEQUENCE.md`) — R1-এর চেয়ে বড় হতে পারে; ওপরের "R1 পরিসর" জেতে</summary>
+
+> Central host-এ Landing + Signup (type নির্বাচন, slug check), `OnboardingService`, type-ভিত্তিক wizard, trial শুরু।
+> **Release 1 সংযোজন:** `SIGNUP_MODE=invite|open` (`.env`, নতুন টেবিল নয়)। `invite`: signup-এর জন্য `SIGNUP_INVITE_CODES` (কমা-দিয়ে) থেকে কোড লাগে, ভুল কোডে 403 `signup_closed`; `open`: যে কেউ। ডিফল্ট `invite`। বন্ধ-beta থেকে প্রকাশ্য — শুধু `.env` বদল (`docs/RELEASE-1.md` §৬)। পরীক্ষা: `SignupModeTest`।
+> **Spec Reference:** `docs/modules/onboarding.md` (Revision 6 সহ), `docs/modules/subscription.md`, `docs/architecture/system-design-patterns.md` (welcome mail)
+> **Done When:** চার type-এর প্রতিটিতে signup → নিজ subdomain-এ login → wizard → dashboard; default Program/Batch ও preset type অনুযায়ী।
+</details>
+
+---
+
+### TASK `5.2` — Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম)
+
+- **নির্ভর করে:** `5.1`  ·  **Release:** R1
+- **কী পড়বেন:** `docs/modules/payment-gateways.md`, `docs/modules/subscription.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** Plans, trial, grace, suspend, invoices, SSLCommerz subscription payment, SMS-credit purchase. Tax/VAT parameter fixed at 0 until OD-4.
+
+
+**এই task যে টেবিলের মালিক** (migration Step 1.1-এ; মডেল, service, endpoint ও পরীক্ষা এখানে): `subscription_plans`, `payments`, `subscription_invoices`
+
+<details><summary>টেবিলের সংজ্ঞা (schema.sql থেকে, ALTER/index সহ)</summary>
+
+```sql
+CREATE TABLE subscription_plans (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    duration_days INT NOT NULL,
+    max_students INT DEFAULT -1,
+    max_teachers INT DEFAULT -1,
+    max_sms INT DEFAULT 1000,
+    -- R6: NULL = plan is offered to every institution type
+    institution_type ENUM('school','college','coaching','private_batch') NULL,
+    max_batches INT DEFAULT -1,
+    sort_order INT DEFAULT 0,
+    features JSON,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE payments (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    method ENUM('bkash','nagad','card','cash','ssl','coupon') NOT NULL,   -- R11: 'coupon' = a free-days coupon redeemed with no money moved
+    trx_id VARCHAR(100) UNIQUE,
+    status ENUM('pending','completed','failed','refunded') DEFAULT 'pending',
+    paid_at TIMESTAMP NULL,
+    invoice_no VARCHAR(50) UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id)
+);
+ALTER TABLE payments ADD COLUMN refunded_amount DECIMAL(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE payments ADD COLUMN refund_note VARCHAR(255) NULL;
+
+CREATE TABLE subscription_invoices (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    payment_id BIGINT UNSIGNED NOT NULL,
+    invoice_number VARCHAR(30) UNIQUE NOT NULL,  -- INV-2025-00001
+    plan_name VARCHAR(50) NOT NULL,
+    billing_period VARCHAR(30),   -- 'Jan 2025 - Jan 2026'
+    amount DECIMAL(10,2) NOT NULL,
+    tax DECIMAL(8,2) DEFAULT 0,
+    total DECIMAL(10,2) NOT NULL,
+    issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (payment_id) REFERENCES payments(id)
+);
+ALTER TABLE subscription_invoices ADD COLUMN discount DECIMAL(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE subscription_invoices ADD COLUMN coupon_id BIGINT UNSIGNED NULL;
+ALTER TABLE subscription_invoices ADD COLUMN tax_rate DECIMAL(5,2) NOT NULL DEFAULT 0;
+ALTER TABLE subscription_invoices ADD COLUMN tax_label VARCHAR(30) NULL;
+ALTER TABLE subscription_invoices ADD COLUMN tax_inclusive TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE subscription_invoices ADD COLUMN credit_for_id BIGINT UNSIGNED NULL;
+```
+</details>
+
+**R1-এ যে route বানাবেন:**
+```
+POST /billing/ssl/success -> SslCommerzController@success
+POST /billing/ssl/fail -> SslCommerzController@fail
+POST /billing/ssl/cancel -> SslCommerzController@cancel
+POST /billing/ssl/ipn -> SslCommerzController@ipn
+GET /super/plans -> PlanController@index [role:super_admin]
+POST /super/plans -> PlanController@store [role:super_admin]
+GET /super/plans/{id} -> PlanController@show [role:super_admin]
+PUT /super/plans/{id} -> PlanController@update [role:super_admin]
+DELETE /super/plans/{id} -> PlanController@destroy [role:super_admin]
+GET /super/payments -> PaymentController@index [role:super_admin]
+GET /subscription -> SubscriptionController@show [role:admin]
+POST /subscription/checkout -> SubscriptionController@checkout [role:admin]
+```
+
+**পরীক্ষা:** `SubscriptionLimitTest`
+
+> **⛔ অবরুদ্ধ (BLOCKED) — এই task এখন বানাবেন না:** **D47:** plan-ভিত্তিক সাবস্ক্রিপশন ও বিলিং (`subscription_plans`, `max_*`, plan-গেট) বাতিল; মডিউল-ভিত্তিক সাবস্ক্রিপশন-স্পেক (PM-1) লেখার আগে **বানানো নিষিদ্ধ**। **D55/D60 (2026-10-10):** সাবস্ক্রিপশন সব মডিউলের পরে; ক্রমে এখন 9.1-এর পরে।
+
+**Done When:** sandbox-এ subscription payment → মেয়াদ বাড়ে + invoice + status `active`; মেয়াদ শেষ → grace → suspended, কিন্তু suspended admin তখনও login ও পেমেন্ট করে আবার চালু করতে পারে; callback central domain-এ ফিরে tenant-এর primary URL-এ redirect।
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=SubscriptionLimitTest
+npm test && npm run lint:theme
+php artisan test   # whole suite stays green
+```
+
+<details><summary>মূল Step-এর লেখা (`docs/BUILD-SEQUENCE.md`) — R1-এর চেয়ে বড় হতে পারে; ওপরের "R1 পরিসর" জেতে</summary>
+
+> Plan তালিকা (type অনুযায়ী), **SSLCommerz দিয়ে প্ল্যাটফর্মের subscription payment** (প্ল্যাটফর্মের নিজস্ব credential), invoice PDF, lifecycle scheduler (reminder, grace, suspend), upgrade/downgrade, SMS credit কেনা।
+> **Spec Reference:** `docs/modules/payment-gateways.md` (শুধু SSLCommerz Subscription অংশ), `docs/modules/subscription.md`
+> **Tests:** `SubscriptionLimitTest`
+> **Done When:** sandbox-এ subscription payment → মেয়াদ বাড়ে + invoice + status `active`; মেয়াদ শেষ → grace → suspended, কিন্তু suspended admin তখনও login ও পেমেন্ট করে আবার চালু করতে পারে; callback central domain-এ ফিরে tenant-এর primary URL-এ redirect।
+</details>
+
+---
+
+### TASK `A` — Release 1 acceptance, then open signup
+
+- **নির্ভর করে:** `5.2`  ·  **Release:** R1
 - **লক্ষ্য:** Decide, with evidence, that strangers may sign up.
 - **কী পড়বেন:** `docs/RELEASE-1.md`
 
@@ -1969,10 +1978,10 @@ python3 infra/spec-verify/verify.py . --deep
 
 | Release | route |
 |---|---|
-| R1 | 145 |
+| R1 | 151 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
-| R2 | 153 |
+| R2 | 150 |
 | R2+ | 34 |
 | R3 | 129 |
 | R4 | 11 |
@@ -1985,7 +1994,7 @@ python3 infra/spec-verify/verify.py . --deep
 **Controller (release অনুযায়ী):**
 
 - **R1.1:** `ExpenseController`, `ExportController`, `NoticeAckController`, `NoticeController`, `RoutineController`, `SuperBackupController`, `SuperImportController`, `SuperSupportController`, `SupportTicketController`
-- **R2:** `AdminOnlinePaymentController`, `AdmissionCycleController`, `AdmissionLeadActionController`, `DomainApprovalController`, `DomainController`, `DueBlockController`, `EmergencyController`, `FeePaymentCallbackController`, `FeePaymentController`, `GalleryController`, `InstitutionThemeController`, `LeadController`, `ManifestController`, `MarksLockController`, `MaterialController`, `MessageController`, `NewsController`, `OnlinePaymentReportController`, `PaymentSettingsController`, `PayoutAccountController`, `PeriodAttendanceController`, `PublicAdmissionController`, `PublicAdmissionPayController`, `PublicAdmissionStatusController`, `PublicEventController`, `PublicSiteController`, `PublicTeacherController`, `PublicThemeController`, `ResultSheetController`, `RoutineBlockController`, `SettlementController`, `SitePageController`, `SmsCampaignController`, `SmsSenderApprovalController`, `SmsSenderController`, `SmsTemplateController`, `SmsWebhookController`, `StudentLeaveController`, `SubstitutionController`, `TeacherPayoutController`, `ThemePresetController`, `TlsCheckController`, `WebsiteSettingsController`
+- **R2:** `AdminOnlinePaymentController`, `AdmissionCycleController`, `AdmissionLeadActionController`, `DomainApprovalController`, `DomainController`, `DueBlockController`, `EmergencyController`, `FeePaymentCallbackController`, `FeePaymentController`, `GalleryController`, `InstitutionThemeController`, `LeadController`, `ManifestController`, `MarksLockController`, `MaterialController`, `MessageController`, `NewsController`, `OnlinePaymentReportController`, `PaymentSettingsController`, `PayoutAccountController`, `PeriodAttendanceController`, `PublicAdmissionController`, `PublicAdmissionPayController`, `PublicAdmissionStatusController`, `PublicEventController`, `PublicSiteController`, `PublicTeacherController`, `PublicThemeController`, `ResultSheetController`, `RoutineBlockController`, `SettlementController`, `SitePageController`, `SmsCampaignController`, `SmsSenderApprovalController`, `SmsTemplateController`, `SmsWebhookController`, `StudentLeaveController`, `SubstitutionController`, `TeacherPayoutController`, `ThemePresetController`, `TlsCheckController`, `WebsiteSettingsController`
 - **R2+:** `HifzController`, `HomeworkController`, `LessonPlanController`, `RiskController`, `SyllabusCoverageController`, `SyllabusUnitController`, `VerifyController`
 - **R3:** `AccountController`, `AccountingReportController`, `AccountingSettingController`, `BankReconciliationController`, `BonusSchemeController`, `BudgetController`, `CashBookController`, `DonationCampaignController`, `DonationController`, `DonationFundController`, `DonorController`, `FeeRefundController`, `FinalSettlementController`, `IncrementBatchController`, `InventoryItemController`, `InventoryMovementController`, `InventoryReportController`, `LeaveController`, `LeaveTypeController`, `PayAccountController`, `PayrollItemController`, `PayrollReportController`, `PayrollRunController`, `ProvidentFundController`, `SalaryAdjustmentController`, `SalaryAdvanceController`, `SalaryComponentController`, `SalaryRevisionController`, `SalaryStructureController`, `StaffAttendanceController`, `StaffController`, `SuperRefundController`, `TeacherAttendanceController`, `TeacherSalaryController`, `VoucherController`
 - **R4:** `AttendanceDeviceController`, `DevicePunchController`, `DevicePunchReviewController`, `PersonCredentialController`, `TransportController`

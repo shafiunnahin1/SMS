@@ -499,4 +499,8 @@ Test-এ tenant নির্ধারণ হয় `Host` header দিয়ে
 | `ImportKindsTest` | `release.import_kinds=['students']`: `kind=students` চলে; `teachers`/`fee_history`/`results` ইত্যাদিতে 422 `kind_not_available`; `data_migration` মডিউল ছাড়া `/imports` 403 |
 | `SmsLogTest` | `GET /sms-logs` শুধু নিজের প্রতিষ্ঠানের; cursor-pagination, `per_page ≤ 100`; Teacher/Parent 403; অন্য প্রতিষ্ঠানের সারি দেখা যায় না |
 | `SmsCreditBalanceTest` | `GET /subscription/sms-credits` ব্যালেন্স ও লেনদেন-তালিকা; কেনা ও ব্যবহারে ব্যালেন্স মেলে |
+| `SmsWalletTest` | D56: the wallet is in taka; each sent SMS part costs the platform rate (0.40; 150 GSM / 70 Unicode chars, 67 when split); a ledger row per charge; not enough money → 402 and nothing sent; a failed send costs nothing |
+| `SmsRouteTest` | D57/D59: universal on + own off → universal API, charged; own on → the institution's own BulkSMSBD key and sender, never charged; own fails + universal on → one fallback, charged, `fallback_used`; both off → not sent; keys stored encrypted, never returned in full |
+| `SmsRechargeTest` | D58: POST /subscription/sms-credits creates a bKash payment (sandbox fake); the central-domain callback executes it once; a success adds the amount to the wallet with a `purchase` row; a repeated or failed callback adds nothing; Super Admin `adjust` writes an `adjustment` row |
+| `SuperInstitutionTest` | 5.3: only super_admin on the central host; create an institution with its admin; suspend / activate; a module override changes that tenant's menu at once; another role or host is refused |
 | `LocaleTest` | `PUT /auth/locale` শুধু `bn`\|`en` (R1) সংরক্ষণ করে `users.locale`; অন্য মান 422; পরের লগইনে ভাষা মনে থাকে |

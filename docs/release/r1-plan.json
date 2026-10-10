@@ -896,99 +896,43 @@
    ]
   },
   {
-   "id": "5.1",
-   "title": "Signup & Onboarding",
-   "depends_on": "4.8",
-   "spec_refs": [
-    "docs/modules/onboarding.md",
-    "docs/modules/subscription.md",
-    "docs/architecture/system-design-patterns.md"
-   ],
-   "tables": [],
-   "routes": [
-    "POST /public/signup -> SignupController@store",
-    "GET /public/slug-check -> SignupController@slugCheck",
-    "GET /public/plans -> SignupController@plans"
-   ],
-   "routes_excluded": [],
-   "tests": [
-    "SignupModeTest"
-   ],
-   "done_when": "চার type-এর প্রতিটিতে signup → নিজ subdomain-এ login → wizard → dashboard; default Program/Batch ও preset type অনুযায়ী।",
-   "scope_note": "Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.",
-   "blocked": "**D47:** সাইন-আপে plan বাছাই ও plan-ভিত্তিক ট্রায়াল বাতিল হচ্ছে; মডিউল-ভিত্তিক সাবস্ক্রিপশনের স্পেক (`docs/PRICING-MODEL.md` PM-1) লেখা ও মালিক-অনুমোদিত না হওয়া পর্যন্ত **বানানো নিষিদ্ধ**।",
-   "verify": [
-    "php artisan test --filter=SignupModeTest",
-    "npm test && npm run lint:theme",
-    "php artisan test   # whole suite stays green"
-   ]
-  },
-  {
-   "id": "5.2",
-   "title": "Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম)",
-   "depends_on": "5.1",
-   "spec_refs": [
-    "docs/modules/payment-gateways.md",
-    "docs/modules/subscription.md"
-   ],
-   "tables": [
-    "subscription_plans",
-    "payments",
-    "subscription_invoices"
-   ],
-   "routes": [
-    "POST /billing/ssl/success -> SslCommerzController@success",
-    "POST /billing/ssl/fail -> SslCommerzController@fail",
-    "POST /billing/ssl/cancel -> SslCommerzController@cancel",
-    "POST /billing/ssl/ipn -> SslCommerzController@ipn",
-    "POST /super/institutions/{id}/sms-credits -> SmsCreditController@adjust [role:super_admin]",
-    "GET /subscription -> SubscriptionController@show [role:admin]",
-    "POST /subscription/checkout -> SubscriptionController@checkout [role:admin]",
-    "POST /subscription/sms-credits -> SmsCreditController@purchase [role:admin]",
-    "GET /subscription/sms-credits -> SmsCreditController@balance [role:admin]"
-   ],
-   "routes_excluded": [],
-   "tests": [
-    "SubscriptionLimitTest"
-   ],
-   "done_when": "sandbox-এ subscription payment → মেয়াদ বাড়ে + invoice + status `active`; মেয়াদ শেষ → grace → suspended, কিন্তু suspended admin তখনও login ও পেমেন্ট করে আবার চালু করতে পারে; callback central domain-এ ফিরে tenant-এর primary URL-এ redirect।",
-   "scope_note": "Plans, trial, grace, suspend, invoices, SSLCommerz subscription payment, SMS-credit purchase. Tax/VAT parameter fixed at 0 until OD-4.",
-   "blocked": "**D47:** plan-ভিত্তিক সাবস্ক্রিপশন ও বিলিং (`subscription_plans`, `max_*`, plan-গেট) বাতিল; মডিউল-ভিত্তিক সাবস্ক্রিপশন-স্পেক (PM-1) লেখার আগে **বানানো নিষিদ্ধ**।",
-   "verify": [
-    "php artisan test --filter=SubscriptionLimitTest",
-    "npm test && npm run lint:theme",
-    "php artisan test   # whole suite stays green"
-   ]
-  },
-  {
    "id": "5.3",
    "title": "Super Admin Panel",
-   "depends_on": "5.2",
+   "depends_on": "4.8",
    "spec_refs": [
     "docs/modules/panels-and-features.md",
     "docs/business/saas-metrics.md"
    ],
    "tables": [],
    "routes": [
+    "GET /billing/bkash/callback -> SmsRechargeCallbackController@bkash",
     "GET /super/institutions -> InstitutionController@index [role:super_admin]",
     "POST /super/institutions -> InstitutionController@store [role:super_admin]",
     "GET /super/institutions/{id} -> InstitutionController@show [role:super_admin]",
     "PUT /super/institutions/{id} -> InstitutionController@update [role:super_admin]",
     "DELETE /super/institutions/{id} -> InstitutionController@destroy [role:super_admin]",
     "PATCH /super/institutions/{id}/toggle -> InstitutionController@toggleStatus [role:super_admin]",
-    "GET /super/plans -> PlanController@index [role:super_admin]",
-    "POST /super/plans -> PlanController@store [role:super_admin]",
-    "GET /super/plans/{id} -> PlanController@show [role:super_admin]",
-    "PUT /super/plans/{id} -> PlanController@update [role:super_admin]",
-    "DELETE /super/plans/{id} -> PlanController@destroy [role:super_admin]",
-    "GET /super/payments -> PaymentController@index [role:super_admin]"
+    "POST /super/institutions/{id}/sms-credits -> SmsCreditController@adjust [role:super_admin]",
+    "GET /super/sms-settings -> UniversalSmsController@show [role:super_admin]",
+    "PUT /super/sms-settings -> UniversalSmsController@update [role:super_admin]",
+    "POST /subscription/sms-credits -> SmsCreditController@purchase [role:admin]",
+    "GET /admin/settings/sms-sender -> SmsSenderController@show [role:admin]",
+    "PUT /admin/settings/sms-sender -> SmsSenderController@update [role:admin]",
+    "DELETE /admin/settings/sms-sender -> SmsSenderController@destroy [role:admin]",
+    "GET /subscription/sms-credits -> SmsCreditController@balance [role:admin]"
    ],
    "routes_excluded": [],
-   "tests": [],
-   "done_when": "`admin.lvh.me`-এ শুধু super_admin login করতে পারে; module override দিলে সেই tenant-এর menu সঙ্গে সঙ্গে (cache invalidation) বদলায়।",
-   "scope_note": "Super Admin: institutions, plans, payments, SMS credits and sender status. NOT: support tickets, coupons, impersonation.",
+   "tests": [
+    "SmsWalletTest",
+    "SmsRouteTest",
+    "SmsRechargeTest",
+    "SuperInstitutionTest"
+   ],
+   "done_when": "`admin.lvh.me`-এ শুধু super_admin; প্রতিষ্ঠান খোলা/বন্ধ; SMS-অংশপ্রতি ওয়ালেট থেকে টাকা কাটে (D56), ব্যালেন্স না থাকলে 402; নিজস্ব API চালু থাকলে ইউনিভার্সাল ব্যবহার হয় না ও টাকা কাটে না (D59); bKash sandbox রিচার্জে ওয়ালেট বাড়ে, লেজারে সারি; module override দিলে সেই tenant-এর menu সঙ্গে সঙ্গে বদলায়।",
+   "scope_note": "D55-D60 (owner, 2026-10-10): Super Admin opens institutions (no plans), suspends/activates, adds or corrects SMS money; the universal BulkSMSBD API (platform key and sender, the rate per SMS part); the institution's SMS wallet in taka (0.40 per part: 150 GSM / 70 Unicode chars), online recharge with bKash (sandbox until credentials); its own BulkSMSBD key + masking sender with the universal/own on-off toggles (replaces the R2 sender-ID approval). NOT: plans, subscription billing (D55), coupons, support tickets, impersonation.",
    "blocked": null,
    "verify": [
+    "php artisan test --filter=SmsWalletTest|SmsRouteTest|SmsRechargeTest|SuperInstitutionTest",
     "npm test && npm run lint:theme",
     "php artisan test   # whole suite stays green"
    ]
@@ -1089,9 +1033,77 @@
    ]
   },
   {
+   "id": "5.1",
+   "title": "Signup & Onboarding",
+   "depends_on": "9.1",
+   "spec_refs": [
+    "docs/modules/onboarding.md",
+    "docs/modules/subscription.md",
+    "docs/architecture/system-design-patterns.md"
+   ],
+   "tables": [],
+   "routes": [
+    "POST /public/signup -> SignupController@store",
+    "GET /public/slug-check -> SignupController@slugCheck",
+    "GET /public/plans -> SignupController@plans"
+   ],
+   "routes_excluded": [],
+   "tests": [
+    "SignupModeTest"
+   ],
+   "done_when": "চার type-এর প্রতিটিতে signup → নিজ subdomain-এ login → wizard → dashboard; default Program/Batch ও preset type অনুযায়ী।",
+   "scope_note": "Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.",
+   "blocked": "**D47:** সাইন-আপে plan বাছাই ও plan-ভিত্তিক ট্রায়াল বাতিল হচ্ছে; মডিউল-ভিত্তিক সাবস্ক্রিপশনের স্পেক (`docs/PRICING-MODEL.md` PM-1) লেখা ও মালিক-অনুমোদিত না হওয়া পর্যন্ত **বানানো নিষিদ্ধ**। **D55/D60 (2026-10-10):** সাবস্ক্রিপশন সব মডিউলের পরে; ক্রমে এখন 9.1-এর পরে।",
+   "verify": [
+    "php artisan test --filter=SignupModeTest",
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "5.2",
+   "title": "Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম)",
+   "depends_on": "5.1",
+   "spec_refs": [
+    "docs/modules/payment-gateways.md",
+    "docs/modules/subscription.md"
+   ],
+   "tables": [
+    "subscription_plans",
+    "payments",
+    "subscription_invoices"
+   ],
+   "routes": [
+    "POST /billing/ssl/success -> SslCommerzController@success",
+    "POST /billing/ssl/fail -> SslCommerzController@fail",
+    "POST /billing/ssl/cancel -> SslCommerzController@cancel",
+    "POST /billing/ssl/ipn -> SslCommerzController@ipn",
+    "GET /super/plans -> PlanController@index [role:super_admin]",
+    "POST /super/plans -> PlanController@store [role:super_admin]",
+    "GET /super/plans/{id} -> PlanController@show [role:super_admin]",
+    "PUT /super/plans/{id} -> PlanController@update [role:super_admin]",
+    "DELETE /super/plans/{id} -> PlanController@destroy [role:super_admin]",
+    "GET /super/payments -> PaymentController@index [role:super_admin]",
+    "GET /subscription -> SubscriptionController@show [role:admin]",
+    "POST /subscription/checkout -> SubscriptionController@checkout [role:admin]"
+   ],
+   "routes_excluded": [],
+   "tests": [
+    "SubscriptionLimitTest"
+   ],
+   "done_when": "sandbox-এ subscription payment → মেয়াদ বাড়ে + invoice + status `active`; মেয়াদ শেষ → grace → suspended, কিন্তু suspended admin তখনও login ও পেমেন্ট করে আবার চালু করতে পারে; callback central domain-এ ফিরে tenant-এর primary URL-এ redirect।",
+   "scope_note": "Plans, trial, grace, suspend, invoices, SSLCommerz subscription payment, SMS-credit purchase. Tax/VAT parameter fixed at 0 until OD-4.",
+   "blocked": "**D47:** plan-ভিত্তিক সাবস্ক্রিপশন ও বিলিং (`subscription_plans`, `max_*`, plan-গেট) বাতিল; মডিউল-ভিত্তিক সাবস্ক্রিপশন-স্পেক (PM-1) লেখার আগে **বানানো নিষিদ্ধ**। **D55/D60 (2026-10-10):** সাবস্ক্রিপশন সব মডিউলের পরে; ক্রমে এখন 9.1-এর পরে।",
+   "verify": [
+    "php artisan test --filter=SubscriptionLimitTest",
+    "npm test && npm run lint:theme",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
    "id": "A",
    "title": "Release 1 acceptance, then open signup",
-   "depends_on": "9.1",
+   "depends_on": "5.2",
    "spec_refs": [
     "docs/RELEASE-1.md"
    ],

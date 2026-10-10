@@ -84,7 +84,7 @@ def excluded(ctrl, path):
     return next((e['why'] for e in scope['route_exclude'] if e['controller'] == ctrl and re.search(e['path_regex'], path)), None)
 
 # ---------- task list ----------
-order = ['0.1', '0.2', '0.3', '1.1', '1.2', '1.3', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '2.7', '3.1', '3.2', '3.3', '3.4', '3.5', '3.6', '3.7', '3.8', '4.1', '4.2', '4.3', '4.4', '4.5', '4.6', '4.7', '4.8', '5.1', '5.2', '5.3']
+order = ['0.1', '0.2', '0.3', '1.1', '1.2', '1.3', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '2.7', '3.1', '3.2', '3.3', '3.4', '3.5', '3.6', '3.7', '3.8', '4.1', '4.2', '4.3', '4.4', '4.5', '4.6', '4.7', '4.8', '5.3', '5.1', '5.2']   # D60: 5.3 before the deferred 5.1/5.2 (D55)
 assert [s for s in order] == [s for s in scope['steps_in_release'] if s not in ('8.5',)], 'scope file and the plan order disagree'
 extra = {e['id']: e for e in scope['extra_tasks']}
 seq = []

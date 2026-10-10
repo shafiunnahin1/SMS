@@ -332,6 +332,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/billing/ssl/fail',    [\App\Http\Controllers\Billing\SslCommerzController::class, 'fail']);
         Route::post('/billing/ssl/cancel',  [\App\Http\Controllers\Billing\SslCommerzController::class, 'cancel']);
         Route::post('/billing/ssl/ipn',     [\App\Http\Controllers\Billing\SslCommerzController::class, 'ipn']);
+        // D58: SMS wallet recharge with bKash (platform merchant) - the callback lands on the central domain, then redirects to primaryUrl()
+        Route::get('/billing/bkash/callback', [\App\Http\Controllers\Billing\SmsRechargeCallbackController::class, 'bkash'])->middleware('throttle:60,1');
 
         Route::middleware(['auth:sanctum', 'role:super_admin', 'tenancy.bypass', 'throttle:api'])->prefix('super')->group(function () {
             Route::get('/dashboard',                  [DashboardController::class, 'superAdmin']);
@@ -350,6 +352,8 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('institutions',        InstitutionController::class);      // incl. institution_type, enabled_modules
             Route::patch('/institutions/{id}/toggle', [InstitutionController::class, 'toggleStatus']);
             Route::post('/institutions/{id}/sms-credits', [SmsCreditController::class, 'adjust']);
+            Route::get('/sms-settings',               [UniversalSmsController::class, 'show']);      // D57: the universal BulkSMSBD API + the rate per SMS part (D56)
+            Route::put('/sms-settings',               [UniversalSmsController::class, 'update']);
             Route::post('/institutions/{id}/domains', [DomainApprovalController::class, 'storeFor']);
             Route::apiResource('plans',               PlanController::class);
             Route::get('/payments',                   [PaymentController::class, 'index']);
