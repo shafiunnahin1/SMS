@@ -614,7 +614,22 @@
    "key_from_server": "সার্ভারের key ব্যবহার হচ্ছে:",
    "key_none": "এখনো key নেই — SMS শুধু লগে লেখা হচ্ছে।",
    "clear_key": "key মুছুন",
-   "driver": "গেটওয়ে ড্রাইভার"
+   "driver": "গেটওয়ে ড্রাইভার",
+   "bkash": {
+    "title": "bKash merchant (SMS ওয়ালেট রিচার্জ)",
+    "hint": "প্ল্যাটফর্মের নিজের bKash tokenized-checkout অ্যাকাউন্ট। প্রতিষ্ঠানগুলো এর মাধ্যমে SMS ওয়ালেট রিচার্জ করে। গোপন তথ্য এনক্রিপ্ট করে রাখা হয়, আর কখনো দেখানো হয় না; ঘর খালি রাখলে আগের মান থাকে।",
+    "sandbox": "Sandbox (পরীক্ষা-মোড)",
+    "base_url": "Base URL",
+    "base_url_hint": "আপনার bKash merchant নথি থেকে, যেমন …/v1.2.0-beta বা …/v1.2.0-beta/tokenized। Sandbox-মোডে নিজস্ব ঠিকানা লাগবে।",
+    "app_key": "App key",
+    "app_secret": "App secret",
+    "username": "Username",
+    "password": "Password",
+    "not_set": "দেওয়া হয়নি",
+    "test": "সংযোগ পরীক্ষা",
+    "test_ok": "সংযোগ হয়েছে — bKash token দিয়েছে।",
+    "test_failed": "bKash প্রত্যাখ্যান করেছে — ঠিকানা ও credential দেখুন।"
+   }
   },
   "privacy": {
    "anonymize": "বেনামি করুন",

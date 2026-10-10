@@ -2,7 +2,8 @@
 
 namespace App\Services\Billing;
 
-use Illuminate\Support\Facades\{Cache, Http, Log};
+use App\Models\PlatformSetting;
+use Illuminate\Support\Facades\{Cache, Crypt, Http, Log};
 
 // docs/modules/payment-gateways.md "BkashService" for the PLATFORM's own merchant (D58: SMS-wallet recharge). Amounts are
 // strings with two decimals, never floats (G9). Nothing about the payer or the amount is logged - only the step and status.
@@ -11,10 +12,35 @@ use Illuminate\Support\Facades\{Cache, Http, Log};
 // ('Completed'), amount, trxID, merchantInvoiceNumber - as in the owner's samples.
 class BkashService
 {
+    public const SECRET_FIELDS = ['app_key', 'app_secret', 'username', 'password'];
+
+    /** The merchant settings in use: the Super Admin's panel values (secrets stored encrypted) win over the server's .env */
+    public function credentials(): array
+    {
+        $c = [];
+        foreach (self::SECRET_FIELDS as $f) {
+            $stored = PlatformSetting::read("bkash_{$f}");
+            $c[$f] = $stored ? Crypt::decryptString($stored) : (string) config("services.bkash.{$f}");
+        }
+        $sandbox = PlatformSetting::read('bkash_sandbox');
+        $c['sandbox'] = $sandbox === null ? (bool) config('services.bkash.sandbox') : (bool) $sandbox;
+        // a sandbox without its own address stays off - never the production address by accident
+        $c['base_url'] = (string) (PlatformSetting::read('bkash_base_url') ?: config('services.bkash.base_url') ?: ($c['sandbox'] ? '' : 'https://tokenized.pay.bka.sh/v1.2.0-beta'));
+        return $c;
+    }
+
     public function configured(): bool
     {
-        return filled(config('services.bkash.app_key')) && filled(config('services.bkash.app_secret'))
-            && filled(config('services.bkash.username')) && filled(config('services.bkash.password')) && filled(config('services.bkash.base_url'));
+        $c = $this->credentials();
+        return collect(self::SECRET_FIELDS)->every(fn ($f) => filled($c[$f])) && filled($c['base_url']);
+    }
+
+    /** Super Admin "Test connection": can we get a token with these settings? */
+    public function test(): bool
+    {
+        if (!$this->configured()) return false;
+        Cache::forget($this->tokenKey());
+        return (bool) $this->token();
     }
 
     /** POST /tokenized/checkout/create -> ['paymentID' => ..., 'bkashURL' => ...] or null */
@@ -32,15 +58,28 @@ class BkashService
 
     private function token(): ?string
     {
-        return Cache::remember('bkash_token', 3500, function () {
-            $r = Http::timeout(20)->withHeaders(['username' => config('services.bkash.username'), 'password' => config('services.bkash.password')])
-                ->post($this->url('/tokenized/checkout/token/grant'), ['app_key' => config('services.bkash.app_key'), 'app_secret' => config('services.bkash.app_secret')]);
+        $c = $this->credentials();
+        return Cache::remember($this->tokenKey(), 3500, function () use ($c) {
+            try {
+                $r = Http::timeout(20)->withHeaders(['username' => $c['username'], 'password' => $c['password']])
+                    ->post($this->url('/tokenized/checkout/token/grant'), ['app_key' => $c['app_key'], 'app_secret' => $c['app_secret']]);
+            } catch (\Throwable $e) {                     // unreachable address: "refused", never a 500 for the caller
+                Log::warning('bkash unreachable', ['step' => 'token', 'error' => class_basename($e)]);
+                return null;
+            }
             if (!$r->successful() || !$r->json('id_token')) {
                 Log::warning('bkash token refused', ['http' => $r->status()]);
                 return null;
             }
             return $r->json('id_token');
-        }) ?: tap(null, fn () => Cache::forget('bkash_token'));
+        }) ?: tap(null, fn () => Cache::forget($this->tokenKey()));
+    }
+
+    /** One cached token per merchant + address: a changed setting never reuses the old token */
+    private function tokenKey(): string
+    {
+        $c = $this->credentials();
+        return 'bkash_token:' . hash('sha256', $c['base_url'] . '|' . $c['app_key'] . '|' . $c['username']);
     }
 
     private function call(string $step, string $path, array $body): array
@@ -48,7 +87,7 @@ class BkashService
         try {
             $token = $this->token();
             if (!$token) return [];
-            $r = Http::timeout(30)->withHeaders(['Authorization' => $token, 'X-APP-Key' => config('services.bkash.app_key')])->post($this->url($path), $body);
+            $r = Http::timeout(30)->withHeaders(['Authorization' => $token, 'X-APP-Key' => $this->credentials()['app_key']])->post($this->url($path), $body);
             if (!$r->successful()) Log::warning('bkash refused', ['step' => $step, 'http' => $r->status()]);
             return (array) $r->json();
         } catch (\Throwable $e) {
@@ -59,6 +98,7 @@ class BkashService
 
     private function url(string $path): string
     {
-        return rtrim((string) config('services.bkash.base_url'), '/') . $path;
+        // accepts the base with or without its "/tokenized" end (the owner's sample keeps it in base_url)
+        return preg_replace('#/tokenized$#', '', rtrim($this->credentials()['base_url'], '/')) . $path;
     }
 }

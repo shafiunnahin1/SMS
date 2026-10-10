@@ -614,7 +614,22 @@
    "key_from_server": "Using the server's key:",
    "key_none": "No key yet - SMS are only written to the log.",
    "clear_key": "Remove key",
-   "driver": "Gateway driver"
+   "driver": "Gateway driver",
+   "bkash": {
+    "title": "bKash merchant (SMS-wallet recharge)",
+    "hint": "The platform's own bKash tokenized-checkout account. Institutions recharge their SMS wallet through it. Secrets are kept encrypted and never shown again; an empty field keeps the saved value.",
+    "sandbox": "Sandbox (test mode)",
+    "base_url": "Base URL",
+    "base_url_hint": "From your bKash merchant documents, e.g. …/v1.2.0-beta or …/v1.2.0-beta/tokenized. Sandbox mode needs its own address.",
+    "app_key": "App key",
+    "app_secret": "App secret",
+    "username": "Username",
+    "password": "Password",
+    "not_set": "Not set",
+    "test": "Test connection",
+    "test_ok": "Connected - bKash gave a token.",
+    "test_failed": "bKash refused - check the address and the credentials."
+   }
   },
   "privacy": {
    "anonymize": "Anonymize",

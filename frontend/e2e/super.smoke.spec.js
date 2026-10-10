@@ -59,5 +59,15 @@ test('5.3 super admin: institutions, wallet, modules, settings', async ({ page }
   await page.locator('input[name="rate"]').fill('0.40')
   await page.locator('[data-action="save"]').click()
   await expect(page.locator('[data-testid="platform-settings"]')).toContainText('0.4')
+
+  // the owner's bKash merchant for wallet recharge (D58): saved from the panel, secrets never shown back, connection test answers
+  const bk = page.locator('[data-testid="bkash-settings"]')
+  await bk.locator('input[name="base_url"]').fill('https://127.0.0.1:9/v1.2.0-beta/tokenized')
+  for (const k of ['app_key', 'app_secret', 'username', 'password']) await bk.locator(`input[name="bkash_${k}"]`).fill(`e2e-${k}-9876`)
+  await bk.locator('[data-action="bkash-save"]').click()
+  await expect(bk).toContainText('••••9876')
+  await expect(bk.locator('input[name="bkash_app_key"]')).toHaveValue('')
+  await bk.locator('[data-action="bkash-test"]').click()
+  await expect(bk.locator('[data-testid="bkash-test"]')).toContainText('প্রত্যাখ্যান')         // a closed local port: refused at once
   noErrors()
 })

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\{AuditLog, PlatformSetting, SmsLog};
+use App\Services\Billing\BkashService;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -11,9 +12,11 @@ use Illuminate\Support\Facades\Crypt;
 // D56/D57 (owner, 2026-10-10): the universal BulkSMSBD API every institution's wallet pays for - its key (stored encrypted,
 // write-only; only the last 4 characters come back), its sender ID and the price of one SMS part. Empty values fall back to
 // the server config (BULKSMSBD_*, SMS_RATE). The BulkSMSBD account balance itself is not read: no balance API was given (D57).
+// The owner (2026-10-10) also sets the platform's bKash merchant for wallet recharge here (D58): address, sandbox switch and the
+// four credentials - each secret stored encrypted, never returned (last 4 only); `bkash_test` asks bKash for a token.
 class UniversalSmsController extends Controller
 {
-    public function __construct(private SmsService $sms) {}
+    public function __construct(private SmsService $sms, private BkashService $bkash) {}
 
     /** GET /super/sms-settings */
     public function show()
@@ -29,6 +32,15 @@ class UniversalSmsController extends Controller
             'sender_id'     => ['sometimes', 'nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9 ._-]+$/'],
             'api_key'       => ['sometimes', 'nullable', 'string', 'min:8', 'max:200'],
             'clear_api_key' => ['sometimes', 'boolean'],
+            'bkash'                 => ['sometimes', 'array'],
+            'bkash.base_url'        => ['sometimes', 'nullable', 'url:https', 'max:200'],
+            'bkash.sandbox'         => ['sometimes', 'boolean'],
+            'bkash.app_key'         => ['sometimes', 'nullable', 'string', 'max:200'],
+            'bkash.app_secret'      => ['sometimes', 'nullable', 'string', 'max:200'],
+            'bkash.username'        => ['sometimes', 'nullable', 'string', 'max:200'],
+            'bkash.password'        => ['sometimes', 'nullable', 'string', 'max:200'],
+            'bkash.clear'           => ['sometimes', 'boolean'],
+            'bkash_test'            => ['sometimes', 'boolean'],
         ]);
         $by = $request->user()->id;
         $changed = [];
@@ -36,8 +48,20 @@ class UniversalSmsController extends Controller
         if (array_key_exists('sender_id', $f)) { PlatformSetting::write('sms_universal_sender_id', $f['sender_id'] ?: null, $by); $changed[] = 'sender_id'; }
         if (filled($f['api_key'] ?? null)) { PlatformSetting::write('sms_universal_api_key', Crypt::encryptString(trim($f['api_key'])), $by); $changed[] = 'api_key'; }
         elseif ($f['clear_api_key'] ?? false) { PlatformSetting::write('sms_universal_api_key', null, $by); $changed[] = 'api_key'; }
+        $b = $f['bkash'] ?? [];
+        if ($b['clear'] ?? false) {
+            foreach ([...BkashService::SECRET_FIELDS, 'base_url', 'sandbox'] as $k) PlatformSetting::write("bkash_{$k}", null, $by);
+            $changed[] = 'bkash';
+        }
+        if (array_key_exists('base_url', $b)) { PlatformSetting::write('bkash_base_url', $b['base_url'] ?: null, $by); $changed[] = 'bkash.base_url'; }
+        if (array_key_exists('sandbox', $b)) { PlatformSetting::write('bkash_sandbox', (bool) $b['sandbox'], $by); $changed[] = 'bkash.sandbox'; }
+        foreach (BkashService::SECRET_FIELDS as $k) {
+            if (filled($b[$k] ?? null)) { PlatformSetting::write("bkash_{$k}", Crypt::encryptString(trim($b[$k])), $by); $changed[] = "bkash.{$k}"; }
+        }
         if ($changed) AuditLog::record('platform.sms_settings', PlatformSetting::where('setting_key', 'sms_rate')->first() ?? PlatformSetting::first(), ['changed' => $changed]);
-        return response()->json(['success' => true, 'data' => $this->state(), 'message' => __('messages.saved')]);
+        $data = $this->state();
+        if ($f['bkash_test'] ?? false) $data['bkash']['test_ok'] = $this->bkash->test();
+        return response()->json(['success' => true, 'data' => $data, 'message' => __('messages.saved')]);
     }
 
     private function state(): array
@@ -54,6 +78,18 @@ class UniversalSmsController extends Controller
             'driver' => config('services.sms.driver'),
             'sent_this_month' => (clone $month)->count(),
             'charged_this_month' => \App\Support\Money::format(\App\Support\Money::toPaisa((string) ((clone $month)->sum('cost') ?: '0'))),
+            'bkash' => $this->bkashState(),
         ];
+    }
+
+    private function bkashState(): array
+    {
+        $c = $this->bkash->credentials();
+        $hint = fn (string $v) => $v === '' ? null : '••••' . substr($v, -4);
+        $out = ['base_url' => $c['base_url'] ?: null, 'sandbox' => $c['sandbox'], 'configured' => $this->bkash->configured()];
+        foreach (BkashService::SECRET_FIELDS as $k) {
+            $out[$k] = ['set' => $c[$k] !== '', 'hint' => $hint($c[$k]), 'source' => PlatformSetting::read("bkash_{$k}") ? 'panel' : ($c[$k] !== '' ? 'server' : null)];
+        }
+        return $out;
     }
 }

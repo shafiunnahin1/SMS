@@ -24,7 +24,6 @@ class SmsRechargeTest extends TestCase
         $this->central = config('tenancy.central_domains')[0];
         config(['services.bkash' => ['base_url' => 'https://bkash.sandbox.test/v1', 'app_key' => 'k', 'app_secret' => 's', 'username' => 'u', 'password' => 'p', 'sandbox' => true],
             'app.url' => 'https://' . $this->central]);
-        Cache::forget('bkash_token');
     }
 
     private function fakeBkash(): void
@@ -111,5 +110,48 @@ class SmsRechargeTest extends TestCase
         $this->api('POST', 'admin.' . config('tenancy.base_domain'), "super/institutions/{$i->id}/sms-credits", $super, ['amount' => '100', 'note' => 'bank transfer'])->assertOk();
         $row = Tenancy::as($i, fn () => SmsCreditTransaction::sole());
         $this->assertSame(['adjustment', '100.00', 'admin: bank transfer'], [$row->type, $row->amount, $row->reference]);
+    }
+
+    public function test_the_super_admin_sets_the_bkash_merchant_in_the_panel(): void
+    {
+        config(['services.bkash' => ['base_url' => null, 'app_key' => null, 'app_secret' => null, 'username' => null, 'password' => null, 'sandbox' => true]]);
+        $super = User::create(['name' => 'S', 'email' => 's@x.test', 'password' => 'x', 'role' => 'super_admin']);
+        $central = 'admin.' . config('tenancy.base_domain');
+        $this->assertFalse($this->api('GET', $central, 'super/sms-settings', $super)->json('data.bkash.configured'));
+
+        // the owner's sample keeps "/tokenized" in its base URL - both forms work
+        $res = $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['base_url' => 'https://bkash.panel.test/v1/tokenized', 'sandbox' => true,
+            'app_key' => 'panel-app-key-1111', 'app_secret' => 'panel-secret-2222', 'username' => 'panel-user-3333', 'password' => 'panel-pass-4444']])->assertOk();
+        $this->assertSame([true, '••••1111', 'panel', '••••4444'], [$res->json('data.bkash.configured'), $res->json('data.bkash.app_key.hint'),
+            $res->json('data.bkash.app_key.source'), $res->json('data.bkash.password.hint')]);
+        foreach (['panel-app-key-1111', 'panel-secret-2222', 'panel-user-3333', 'panel-pass-4444'] as $secret) {
+            $this->assertStringNotContainsString($secret, $res->getContent());
+            $this->assertStringNotContainsString($secret, (string) \App\Models\PlatformSetting::pluck('value')->toJson(), 'stored encrypted');
+        }
+
+        Http::fake([
+            'bkash.panel.test/v1/tokenized/checkout/token/grant' => Http::response(['id_token' => 'tok']),
+            'bkash.panel.test/v1/tokenized/checkout/create' => Http::response(['paymentID' => 'P', 'bkashURL' => 'https://pay.test/P']),
+        ]);
+        $this->assertTrue($this->api('PUT', $central, 'super/sms-settings', $super, ['bkash_test' => true])->json('data.bkash.test_ok'));
+        $i = $this->makeInstitution('panelbk');
+        $admin = $this->makeUser($i, 'admin');
+        $this->api('POST', $this->hostOf($i), 'subscription/sms-credits', $admin, ['amount' => 100])->assertOk();
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/token/grant') && $r->header('username')[0] === 'panel-user-3333'
+            && $r->header('password')[0] === 'panel-pass-4444' && $r['app_key'] === 'panel-app-key-1111' && $r['app_secret'] === 'panel-secret-2222');
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/checkout/create') && $r->header('X-APP-Key')[0] === 'panel-app-key-1111');
+
+        // an address that cannot be reached answers "refused", never a server error
+        $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['base_url' => 'https://bkash.down.test/v1']])->assertOk();
+        Http::fake(['bkash.down.test/*' => fn () => throw new \Illuminate\Http\Client\ConnectionException('down')]);
+        $this->assertFalse($this->api('PUT', $central, 'super/sms-settings', $super, ['bkash_test' => true])->assertOk()->json('data.bkash.test_ok'));
+
+        // an empty field keeps the stored secret; sandbox without an address is "not configured" (never production by accident)
+        $res = $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['app_key' => '', 'base_url' => null]])->assertOk();
+        $this->assertSame([true, false], [$res->json('data.bkash.app_key.set'), $res->json('data.bkash.configured')]);
+        $this->assertSame([false, null], [$this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['clear' => true]])->json('data.bkash.configured'),
+            $this->api('GET', $central, 'super/sms-settings', $super)->json('data.bkash.app_key.hint')]);
+        $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['base_url' => 'http://insecure.test']])->assertStatus(422);
+        $this->api('PUT', $central, 'super/sms-settings', $admin, ['bkash' => ['app_key' => 'x']])->assertForbidden();
     }
 }

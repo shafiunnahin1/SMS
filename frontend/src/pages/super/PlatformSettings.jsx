@@ -13,9 +13,11 @@ import { ErrorState } from '../../components/StateViews'
 import { Input } from '../../components/FormField'
 import Ltr from '../../components/bidi/Ltr'
 import StatCard from '../../ui/variants/StatCard'
+import StatusBadge from '../../components/StatusBadge'
 
 // Step 5.3 /super-admin/settings (D56/D57): the universal BulkSMSBD API - key (write-only, encrypted), sender ID and the price
 // of one SMS part; this month's universal sending. Empty fields fall back to the server's own settings.
+// The owner (2026-10-10): the platform's bKash merchant for SMS-wallet recharge (D58) is set here too - write-only secrets.
 export default function PlatformSettings() {
   const { t } = useTranslation()
   const { locale } = useLocale()
@@ -58,6 +60,57 @@ export default function PlatformSettings() {
           <Button loading={saving} data-action="save" onClick={() => send({ rate: form.rate, sender_id: form.sender_id || null, api_key: form.api_key || undefined })}>{t('common.save')}</Button>
         </div>
       </Card>
+      <BkashCard d={d.bkash} onSaved={(data) => qc.setQueryData(['super', 'sms-settings'], data)} />
     </div>
+  )
+}
+
+const BKASH_SECRETS = ['app_key', 'app_secret', 'username', 'password']
+
+function BkashCard({ d, onSaved }) {
+  const { t } = useTranslation()
+  const empty = { base_url: d.base_url ?? '', sandbox: d.sandbox, app_key: '', app_secret: '', username: '', password: '' }
+  const [f, setF] = useState(empty)
+  const [errors, setErrors] = useState({})
+  const [busy, setBusy] = useState(null)
+  const [test, setTest] = useState(null)
+  const set = (k, v) => setF(x => ({ ...x, [k]: v }))
+  const send = async (body, kind) => {
+    setBusy(kind); setErrors({}); setTest(null)
+    try {
+      const r = await api.put('/super/sms-settings', body)
+      onSaved(r.data.data)
+      if (kind === 'test') setTest(Boolean(r.data.data.bkash.test_ok))
+      else { useUiStore.getState().addToast(t('common.saved')); setF(x => ({ ...x, app_key: '', app_secret: '', username: '', password: '' })) }
+    } catch (e) {
+      const errs = e.response?.data?.errors ?? {}
+      setErrors(Object.fromEntries(Object.entries(errs).map(([k, v]) => [k.replace('bkash.', ''), v])))
+    } finally { setBusy(null) }
+  }
+  const save = () => send({ bkash: { base_url: f.base_url || null, sandbox: f.sandbox, ...Object.fromEntries(BKASH_SECRETS.filter(k => f[k]).map(k => [k, f[k]])) } }, 'save')
+  const hint = (k) => d[k].set ? <>{t(d[k].source === 'panel' ? 'sms.settings.key_set' : 'super.key_from_server')} <Ltr>{d[k].hint}</Ltr></> : t('super.bkash.not_set')
+  return (
+    <Card className="flex flex-col gap-3" data-testid="bkash-settings">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold">{t('super.bkash.title')}</h2>
+        <StatusBadge status={d.configured ? 'active' : 'inactive'} />
+      </div>
+      <p className="text-sm text-content-muted">{t('super.bkash.hint')}</p>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={f.sandbox} onChange={e => set('sandbox', e.target.checked)} name="sandbox" className="h-4 w-4 accent-[var(--color-primary)]" />
+        {t('super.bkash.sandbox')}
+      </label>
+      <Input label={t('super.bkash.base_url')} ltr value={f.base_url} onChange={e => set('base_url', e.target.value)} error={errors.base_url?.[0]} name="base_url" hint={t('super.bkash.base_url_hint')} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        {BKASH_SECRETS.map(k => (
+          <Input key={k} label={t(`super.bkash.${k}`)} ltr type="password" autoComplete="off" value={f[k]} onChange={e => set(k, e.target.value)} error={errors[k]?.[0]} name={`bkash_${k}`} hint={hint(k)} />
+        ))}
+      </div>
+      {test !== null && <p className="text-sm" data-testid="bkash-test" role="status">{t(test ? 'super.bkash.test_ok' : 'super.bkash.test_failed')}</p>}
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button variant="secondary" onClick={() => send({ bkash_test: true }, 'test')} loading={busy === 'test'} disabled={!d.configured || busy !== null} data-action="bkash-test">{t('super.bkash.test')}</Button>
+        <Button onClick={save} loading={busy === 'save'} disabled={busy !== null} data-action="bkash-save">{t('common.save')}</Button>
+      </div>
+    </Card>
   )
 }

@@ -49,10 +49,10 @@ return [
         'success_codes' => array_map('intval', explode(',', env('BULKSMSBD_SUCCESS_CODES', '202'))),
     ],
     // D58: the platform's bKash tokenized checkout for SMS-wallet recharge (docs/modules/payment-gateways.md "BkashService").
-    // Empty credentials = recharge not available (503). base_url defaults to the spec's production address; the sandbox
-    // address comes from the owner with the sandbox credentials (never guessed - AGENTS.md "What you do not decide").
+    // Empty credentials = recharge not available (503). The Super Admin can set all of it in the panel (stored encrypted, wins over
+    // .env). The sandbox address comes from the owner's merchant account (never guessed - AGENTS.md "What you do not decide").
     'bkash' => [
-        'base_url' => env('BKASH_BASE_URL') ?: (env('BKASH_SANDBOX', true) ? null : 'https://tokenized.pay.bka.sh/v1.2.0-beta'),   // sandbox without its URL = off, never production by accident
+        'base_url' => env('BKASH_BASE_URL'),            // empty: production address only when sandbox is off (BkashService); the Super Admin panel wins
         'app_key' => env('BKASH_APP_KEY'),
         'app_secret' => env('BKASH_APP_SECRET'),
         'username' => env('BKASH_USERNAME'),
