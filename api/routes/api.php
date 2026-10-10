@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Academic\{AttendanceController, BatchController, ConsentController, EnrollmentController, ProgramController, StudentController, SubjectController, TeacherController};
-use App\Http\Controllers\Admin\{SettingController, TerminologyController, ThemeController};
+use App\Http\Controllers\Admin\{ImportController, SettingController, TerminologyController, ThemeController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -60,6 +60,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/audit-logs',                     [AuditLogController::class, 'index']);
             Route::get('/audit-logs/{id}',                [AuditLogController::class, 'show'])->whereNumber('id');
 
+            // Data migration wizard (Step 4.2; R1: kind=students only - config release.import_kinds)
+            Route::middleware('module:data_migration')->group(function () {
+                Route::get('/imports',                    [ImportController::class, 'index']);
+                Route::post('/imports',                   [ImportController::class, 'store']);
+                Route::get('/imports/templates/{kind}.xlsx', [ImportController::class, 'template'])->where('kind', '[a-z_]+');
+                Route::get('/imports/{id}',               [ImportController::class, 'show'])->whereNumber('id');
+                Route::put('/imports/{id}/mapping',       [ImportController::class, 'mapping'])->whereNumber('id');
+                Route::get('/imports/{id}/errors.xlsx',   [ImportController::class, 'errors'])->whereNumber('id');
+                Route::post('/imports/{id}/{action}',     [ImportController::class, 'transition'])->whereNumber('id')->whereIn('action', ['dry-run', 'run', 'rollback']);
+            });
+
             // Academic structure and teachers (Step 4.1)
             Route::post('/programs',                      [ProgramController::class, 'store']);
             Route::get('/programs/{id}',                  [ProgramController::class, 'show'])->whereNumber('id');
@@ -86,8 +97,18 @@ Route::prefix('v1')->group(function () {
                 Route::get('/students',                   [StudentController::class, 'index']);
                 Route::post('/students',                  [StudentController::class, 'store']);
                 Route::get('/students/{id}',              [StudentController::class, 'show'])->whereNumber('id');
+                Route::put('/students/{id}',              [StudentController::class, 'update'])->whereNumber('id');
+                Route::delete('/students/{id}',           [StudentController::class, 'destroy'])->whereNumber('id');
+                Route::get('/students/{id}/consents',     [ConsentController::class, 'index'])->whereNumber('id');
+                Route::post('/students/{id}/consents',    [ConsentController::class, 'store'])->whereNumber('id');
             });
-            Route::post('/enrollments',                   [EnrollmentController::class, 'store'])->middleware('module:enrollments');
+            Route::middleware('module:enrollments')->group(function () {
+                Route::post('/enrollments',               [EnrollmentController::class, 'store']);
+                Route::get('/students/{id}/enrollments',  [EnrollmentController::class, 'forStudent'])->whereNumber('id');
+                Route::put('/enrollments/{id}',           [EnrollmentController::class, 'update'])->whereNumber('id');
+                Route::post('/enrollments/{id}/end',      [EnrollmentController::class, 'end'])->whereNumber('id');
+                Route::post('/enrollments/{id}/transfer', [EnrollmentController::class, 'transfer'])->whereNumber('id');
+            });
         });
 
         // ── Admin + Teacher: attendance (Step 4.3; Spike S5b) ──

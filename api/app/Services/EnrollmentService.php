@@ -69,6 +69,17 @@ class EnrollmentService
         });
     }
 
+    /** PUT /enrollments/{id}: roll, fee override, optional subject of an ACTIVE enrollment; the primary one refreshes the cache */
+    public function updateDetails(Enrollment $enrollment, array $data): Enrollment
+    {
+        if ($enrollment->status !== 'active') throw new \App\Exceptions\BusinessException('enrollment not active', 'enrollment_not_active', 422);
+        return DB::transaction(function () use ($enrollment, $data) {
+            $enrollment->update(array_intersect_key($data, array_flip(['roll_no', 'fee_override', 'optional_subject_id'])));
+            $this->syncCache($enrollment->student);
+            return $enrollment->fresh();
+        });
+    }
+
     /** Move within the same institution: Section A -> Section B, or batch change */
     public function transfer(Enrollment $from, Batch $to, array $data = []): Enrollment
     {

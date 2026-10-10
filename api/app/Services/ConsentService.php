@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\{AuditLog, Consent, Student};
+use App\Models\{AuditLog, Consent, Student, User};
 
 // docs/legal/privacy-and-consent.md section 3 "ConsentService" (spec code; every change is audited as consent.granted/revoked).
 // Indicative, not blocking: a missing consent never stops an admission (settings.require_consent comes in Phase 8).
@@ -14,7 +14,7 @@ class ConsentService
     {
         $consent = Consent::updateOrCreate(['student_id' => $s->id, 'type' => $type], [
             'status' => 'granted', 'method' => $method, 'recorded_by' => $by, 'granted_at' => now(), 'revoked_at' => null,
-            'guardian_name' => $guardian['name'] ?? null, 'guardian_phone' => $guardian['phone'] ?? $s->guardian_phone,
+            'guardian_name' => $guardian['name'] ?? null, 'guardian_phone' => User::normalisePhone($guardian['phone'] ?? $s->guardian_phone),
         ]);
         AuditLog::record('consent.granted', $consent, ['type' => $type, 'method' => $method]);
         return $consent;
@@ -23,7 +23,7 @@ class ConsentService
     public function revoke(Student $s, string $type, string $method = 'portal'): Consent
     {
         $consent = Consent::updateOrCreate(['student_id' => $s->id, 'type' => $type], [
-            'status' => 'revoked', 'method' => $method, 'revoked_at' => now(), 'guardian_phone' => $s->guardian_phone,
+            'status' => 'revoked', 'method' => $method, 'revoked_at' => now(), 'guardian_phone' => User::normalisePhone($s->guardian_phone),
         ]);
         AuditLog::record('consent.revoked', $consent, ['type' => $type]);
         return $consent;
@@ -32,7 +32,7 @@ class ConsentService
     /** false if ANY student linked to this guardian phone revoked sms */
     public function allowsSms(string $phone): bool
     {
-        return !Consent::where('guardian_phone', $phone)->where('type', 'sms')->where('status', 'revoked')->exists();
+        return !Consent::where('guardian_phone', User::normalisePhone($phone) ?? $phone)->where('type', 'sms')->where('status', 'revoked')->exists();
     }
 
     public function hasDataConsent(Student $s): bool

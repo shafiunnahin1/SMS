@@ -20,6 +20,11 @@ class StudentResource extends JsonResource
             'gender'         => $this->gender,
             'date_of_birth'  => $this->date_of_birth?->toDateString(),
             'studying_at'    => $this->studying_at,
+            'address'        => $this->address,
+            'blood_group'    => $this->blood_group,
+            'religion'       => $this->religion,
+            'admission_date' => $this->admission_date?->toDateString(),
+            'photo_url'      => \App\Support\StudentFiles::photoUrl($this->resource),   // 10-minute signed link, never a public url
             'status'         => $this->status,
             'roll_no'        => $this->roll_no,
             'program'        => $this->whenLoaded('program', fn () => $this->program ? ['id' => $this->program->id, 'name' => $this->program->name] : null),

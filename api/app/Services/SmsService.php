@@ -42,9 +42,12 @@ class SmsService
         return in_array($recipient?->locale, $lang['enabled'], true) ? $recipient->locale : $lang['sms_locale'];
     }
 
-    public function send(string $phone, string $message, ?int $sentBy = null): bool
+    /** $transactional: receipts, OTP, password reset - sent whatever the consent (privacy-and-consent.md section 3); every other
+     *  message (absence alert, reminder, notice) is skipped for a phone whose guardian switched SMS off. Returns false when skipped. */
+    public function send(string $phone, string $message, ?int $sentBy = null, bool $transactional = false): bool
     {
         $i = Tenancy::current() ?? throw new \App\Exceptions\TenantNotBoundException(SmsLog::class);
+        if (!$transactional && !app(ConsentService::class)->allowsSms(User::normalisePhone($phone) ?? $phone)) return false;
         $sender = $this->senderFor($i);
         $text = $this->compose($message, $sender, $i);
         if (!$this->canSend($i, SmsSegments::count($text)['segments'])) throw new BusinessException('SMS quota and credit used up', 'sms_quota_exceeded', 402);

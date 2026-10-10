@@ -11,6 +11,10 @@ import Button from '../../../components/Button'
 import Loader from '../../../components/Loader'
 import { ErrorState } from '../../../components/StateViews'
 import { Input, Select } from '../../../components/FormField'
+import FileUpload from '../../../components/FileUpload'
+import Check from '../../../features/academic/Check'
+import { toFormData, multipart } from '../../../features/students/formData'
+import { useState } from 'react'
 
 // POST /students: admission + first enrollment; the student ID is generated when left empty; the guardian phone makes the parent account
 export default function StudentAdd() {
@@ -19,12 +23,12 @@ export default function StudentAdd() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const batches = useQuery({ queryKey: ['batches'], queryFn: () => api.get('/batches').then(r => r.data.data) })
-  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm()
+  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm({ defaultValues: { consent_data: true, consent_sms: true } })
+  const [photo, setPhoto] = useState(null)
 
   const onSubmit = async (values) => {
-    const body = Object.fromEntries(Object.entries(values).filter(([, v]) => v !== ''))
     try {
-      const { data } = await api.post('/students', body)
+      const { data } = await api.post('/students', toFormData({ ...values, photo }), multipart)
       useUiStore.getState().addToast(t('students.admitted', { id: data.data.student_id }))
       qc.invalidateQueries({ queryKey: ['students'] })
       navigate('/admin/students')
@@ -49,6 +53,16 @@ export default function StudentAdd() {
           <Select label={term('batch')} placeholder={t('students.select_unit')} options={options} error={errors.batch_id?.message} {...register('batch_id')} />
           <Input label={t('students.roll')} ltr inputMode="numeric" error={errors.roll_no?.message} {...register('roll_no')} />
           <Input label={t('students.student_id')} ltr hint={t('students.auto_id')} error={errors.student_id?.message} {...register('student_id')} />
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium">{t('students.photo')}</span>
+            <FileUpload accept="image/jpeg,image/png,image/webp" maxSize={2} preview onUpload={files => setPhoto(files[0])} />
+            {errors.photo && <p className="text-xs text-red-600">{errors.photo.message}</p>}
+          </div>
+          <fieldset className="sm:col-span-2 flex flex-col gap-1">
+            <legend className="text-sm font-medium mb-1">{t('students.consent_title')}</legend>
+            <Check label={t('students.consent_data')} {...register('consent_data')} />
+            <Check label={t('students.consent_sms')} {...register('consent_sms')} />
+          </fieldset>
           <div className="sm:col-span-2 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => navigate('/admin/students')}>{t('common.cancel')}</Button>
             <Button type="submit" loading={isSubmitting}>{t('common.save')}</Button>

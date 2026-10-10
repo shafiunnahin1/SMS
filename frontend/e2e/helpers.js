@@ -25,6 +25,7 @@ export function watchConsole(page) {
 
 export async function login(page, identifier, password) {
   await page.goto('/login')
+  await page.waitForLoadState('networkidle')        // the login form re-renders once /bootstrap and the session check answer
   const fields = page.locator('form input')
   await fields.nth(0).fill(identifier)
   await fields.nth(1).fill(password)

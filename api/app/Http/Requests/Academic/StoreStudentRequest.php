@@ -6,7 +6,7 @@ use App\Support\Tenancy;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-// POST /students - the R1 admission form (photo and documents come with Step 4.2). student_id is generated when left out.
+// POST /students - the R1 admission form with the photo and the guardian's paper consent. student_id is generated when left out.
 class StoreStudentRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
@@ -29,6 +29,11 @@ class StoreStudentRequest extends FormRequest
             'batch_id'       => ['nullable', 'integer', Rule::exists('batches', 'id')->where('institution_id', $inst)],
             'roll_no'        => 'nullable|integer|min:1',
             'fee_override'   => 'nullable|numeric|min:0|max:9999999',
+            'photo'          => 'nullable|image|mimes:jpeg,png,webp|max:2048',
+            // privacy-and-consent.md section 3: the admission form's guardian consent (method `paper`, recorded by this admin)
+            'consent_data'   => 'sometimes|boolean',
+            'consent_sms'    => 'sometimes|boolean',
+            'consent_guardian_name' => 'nullable|string|max:100',
         ];
     }
 }

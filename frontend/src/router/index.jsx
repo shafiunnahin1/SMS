@@ -19,6 +19,8 @@ const FeeCollect  = lazy(() => import('../pages/admin/fees/FeeCollect'))
 const ParentFees  = lazy(() => import('../pages/parent/Fees'))
 const Attendance  = lazy(() => import('../pages/attendance/Take'))
 const ParentHome  = lazy(() => import('../pages/parent/Home'))
+const StudentProfile = lazy(() => import('../pages/admin/students/StudentProfile'))
+const Imports     = lazy(() => import('../pages/admin/settings/Imports'))
 const Programs    = lazy(() => import('../pages/admin/academic/Programs'))
 const Subjects    = lazy(() => import('../pages/admin/academic/Subjects'))
 const BatchList   = lazy(() => import('../pages/admin/batches/BatchList'))
@@ -56,6 +58,8 @@ export const tenantRoutes = [
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'students', element: S(StudentList) },
     { path: 'students/add', element: S(StudentAdd) },
+    { path: 'students/:id', element: S(StudentProfile) },
+    { path: 'settings/imports', element: S(Imports) },
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'attendance', element: S(Attendance) },
     { path: 'academic/programs', element: S(Programs) },

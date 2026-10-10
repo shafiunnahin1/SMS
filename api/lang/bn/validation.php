@@ -46,5 +46,12 @@ return [
     'string'         => ':attribute লেখা হতে হবে।',
     'unique'         => 'এই :attribute আগে থেকেই আছে।',
     'url'            => ':attribute সঠিক লিংক নয়।',
-    'attributes'     => [],
+    // field names in Bengali, so a message reads "অভিভাবকের ফোন দিতে হবে" and not "guardian phone দিতে হবে"
+    'attributes'     => [
+        'name' => 'নাম', 'guardian_phone' => 'অভিভাবকের ফোন', 'phone' => 'ফোন', 'email' => 'ইমেইল', 'password' => 'পাসওয়ার্ড',
+        'student_id' => 'ছাত্র আইডি', 'employee_id' => 'কর্মী আইডি', 'batch' => 'একক', 'batch_id' => 'একক', 'program_id' => 'শ্রেণি/কোর্স',
+        'roll_no' => 'রোল', 'gender' => 'লিঙ্গ', 'date_of_birth' => 'জন্মতারিখ', 'admission_date' => 'ভর্তির তারিখ', 'father_name' => 'পিতার নাম',
+        'mother_name' => 'মাতার নাম', 'address' => 'ঠিকানা', 'photo' => 'ছবি', 'file' => 'ফাইল', 'full_marks' => 'পূর্ণমান', 'pass_marks' => 'পাস নম্বর',
+        'monthly_fee' => 'মাসিক ফি', 'amount' => 'পরিমাণ', 'date' => 'তারিখ', 'status' => 'অবস্থা', 'login' => 'লগইন আইডি',
+    ],
 ];

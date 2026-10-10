@@ -121,7 +121,7 @@ class FeeService
             $total = Money::format($rows->sum(fn ($r) => Money::toPaisa($r->paid_amount)));
             // sender + institution suffix are added by SmsService::compose()
             $locale = app(SmsService::class)->localeFor($s->primaryParent(), Tenancy::current());
-            SendSmsJob::dispatch($s->guardian_phone, __('sms.fee_received', ['amount' => $total, 'receipt' => $receipt], $locale), Tenancy::current()->id)->afterCommit();
+            SendSmsJob::dispatch($s->guardian_phone, __('sms.fee_received', ['amount' => $total, 'receipt' => $receipt], $locale), Tenancy::current()->id, auth()->id(), transactional: true)->afterCommit();
             return $rows;
         });
     }

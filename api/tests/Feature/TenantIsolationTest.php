@@ -55,6 +55,14 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/payments/student/{id}'        => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/receipt/{id}'                 => fn (array $other) => $this->seedReceipt($other),
+            'PUT api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
+            'DELETE api/v1/students/{id}'                  => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/students/{id}/consents'            => fn (array $other) => $this->seedStudent($other),
+            'POST api/v1/students/{id}/consents'           => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/students/{id}/enrollments'         => fn (array $other) => $this->seedStudent($other),
+            'PUT api/v1/enrollments/{id}'                  => fn (array $other) => $this->rowOf($other, \App\Models\Enrollment::class),
+            'POST api/v1/enrollments/{id}/end'             => fn (array $other) => $this->rowOf($other, \App\Models\Enrollment::class),
+            'POST api/v1/enrollments/{id}/transfer'        => fn (array $other) => $this->rowOf($other, \App\Models\Enrollment::class),
             'GET api/v1/programs/{id}'                     => fn (array $other) => $this->rowOf($other, Program::class),
             'PUT api/v1/programs/{id}'                     => fn (array $other) => $this->rowOf($other, Program::class),
             'DELETE api/v1/programs/{id}'                  => fn (array $other) => $this->rowOf($other, Program::class),
@@ -68,6 +76,12 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/teachers/{id}'                     => fn (array $other) => $this->seedTeacher($other),
             'PUT api/v1/teachers/{id}'                     => fn (array $other) => $this->seedTeacher($other),
             'DELETE api/v1/teachers/{id}'                  => fn (array $other) => $this->seedTeacher($other),
+            'GET api/v1/imports/{id}'                      => fn (array $other) => $this->seedImport($other),
+            'PUT api/v1/imports/{id}/mapping'              => fn (array $other) => $this->seedImport($other),
+            'GET api/v1/imports/{id}/errors.xlsx'          => fn (array $other) => $this->seedImport($other),
+            // {action} stays literal here, so this proves only routing; ImportFlowTest calls each action on another tenant's job
+            'POST api/v1/imports/{id}/{action}'            => fn (array $other) => $this->seedImport($other),
+            'GET api/v1/imports/templates/{kind}.xlsx'     => null,
             // the parameter is not a row id: the route only touches the caller's own children (WalkingSkeletonSliceTest, consent test)
             'PUT api/v1/parent/consents/{type}'            => null,
         ];
@@ -104,6 +118,12 @@ class TenantIsolationTest extends TestCase
     private function seedTeacher(array $t): int
     {
         return Tenancy::as($t['institution'], fn () => Teacher::value('id') ?? Teacher::create(['employee_id' => 'ISO-T'])->id);
+    }
+
+    private function seedImport(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\ImportJob::value('id')
+            ?? \App\Models\ImportJob::create(['kind' => 'students', 'status' => 'uploaded', 'file_path' => 'none', 'summary' => ['headers' => ['name']]])->id);
     }
 
     /** One receipt line of the tenant's student (collected once) */

@@ -2,14 +2,16 @@
 
 namespace App\Services;
 
-use App\Models\{Batch, Institution, ParentStudent, Student, User};
+use App\Models\{Batch, Enrollment, Institution, ParentStudent, Student, User};
+use App\Support\StudentFiles;
+use Illuminate\Http\UploadedFile;
 use App\Support\Tenancy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 // docs/architecture/backend-pattern.md + academic-structure.md: create the student row (never the program/batch/roll cache),
 // its login (username = student ID, that ID as the first password with a forced change), then enroll through EnrollmentService.
-// Student ID and parent linking: docs/modules/fees-advanced.md (Revision 7). Photo, documents, import come with Step 4.2.
+// Student ID and parent linking: docs/modules/fees-advanced.md (Revision 7). Files: docs/architecture/file-storage.md (StudentFiles).
 class StudentService
 {
     public function __construct(private EnrollmentService $enrollments) {}
@@ -27,6 +29,38 @@ class StudentService
             if ($batch) $this->enrollments->enroll($student, $batch, $enrollment);
             return $student->fresh();
         });
+    }
+
+    /** PUT /students/{id}: profile fields; a new guardian phone moves the primary parent link to that phone's parent */
+    public function update(Student $student, array $data, ?UploadedFile $photo = null): Student
+    {
+        return DB::transaction(function () use ($student, $data, $photo) {
+            if (array_key_exists('name', $data)) $student->user?->forceFill(['name' => $data['name']])->save();
+            if (isset($data['student_id']) && $student->user) $student->user->forceFill(['username' => $data['student_id']])->save();
+            $oldPhone = $student->guardian_phone;
+            $student->fill(collect($data)->except(['name', 'photo'])->all());
+            if ($photo) $student->photo = StudentFiles::storePhoto($student, $photo);
+            $student->save();
+            if (isset($data['guardian_phone']) && User::normalisePhone($data['guardian_phone']) !== User::normalisePhone($oldPhone) && $this->parentPortalOn()) {
+                ParentStudent::where('student_id', $student->id)->where('is_primary', true)->delete();
+                $this->linkParent($student, $data + ['father_name' => $student->father_name, 'mother_name' => $student->mother_name]);
+            }
+            return $student->fresh();
+        });
+    }
+
+    /** DELETE /students/{id}: a soft delete. Active enrollments end as `dropped` (history stays), the login is switched off and every
+     *  file under the student's folder is removed. Full anonymisation (erasure) is Step 8.1. */
+    public function delete(Student $student): void
+    {
+        DB::transaction(function () use ($student) {
+            Enrollment::where('student_id', $student->id)->where('status', 'active')->get()
+                ->each(fn (Enrollment $e) => $this->enrollments->end($e, 'dropped', 'student deleted'));
+            $student->user?->forceFill(['is_active' => false])->save();
+            $student->forceFill(['photo' => null, 'status' => 'inactive'])->save();
+            $student->delete();
+        });
+        StudentFiles::deleteAll($student);        // after the commit: a rolled-back delete must not lose the files
     }
 
     /** DHA-2026-0001: per institution and year; the institution row lock serialises two admissions at once. Inside a transaction. */

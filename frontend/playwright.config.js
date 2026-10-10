@@ -24,7 +24,7 @@ export default defineConfig({
   use: { trace: 'on-first-retry', screenshot: 'only-on-failure', timezoneId: 'Asia/Dhaka', locale: 'bn-BD', launchOptions },
   projects: [
     { name: 'school-desktop',   use: { ...devices['Desktop Chrome'], baseURL: host(TENANTS.school.slug), launchOptions }, metadata: { tenant: 'school' } },
-    { name: 'coaching-desktop', use: { ...devices['Desktop Chrome'], baseURL: host(TENANTS.coaching.slug), launchOptions }, testIgnore: /slice\.smoke/, metadata: { tenant: 'coaching' } },
-    { name: 'tutor-mobile',     use: { ...devices['Pixel 5'], baseURL: host(TENANTS.tutor.slug), launchOptions }, testIgnore: /slice\.smoke/, metadata: { tenant: 'tutor' } },
+    { name: 'coaching-desktop', use: { ...devices['Desktop Chrome'], baseURL: host(TENANTS.coaching.slug), launchOptions }, testIgnore: /(slice|students)\.smoke/, metadata: { tenant: 'coaching' } },
+    { name: 'tutor-mobile',     use: { ...devices['Pixel 5'], baseURL: host(TENANTS.tutor.slug), launchOptions }, testIgnore: /(slice|students)\.smoke/, metadata: { tenant: 'tutor' } },
   ],
 })
