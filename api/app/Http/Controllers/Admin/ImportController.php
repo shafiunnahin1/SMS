@@ -23,7 +23,7 @@ class ImportController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate(['kind' => 'required|string|max:16', 'file' => 'required|file|max:10240|mimes:csv,txt,xlsx']);
+        $data = $request->validate(['kind' => 'required|string|max:16', 'file' => 'required|file|max:5120|mimes:csv,txt,xlsx']);
         $job = $this->imports->upload($data['kind'], $request->file('file'), $request->user()->id);
         return response()->json(['success' => true, 'data' => $this->job($job)], 201);
     }

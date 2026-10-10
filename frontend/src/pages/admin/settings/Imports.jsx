@@ -50,7 +50,7 @@ export default function Imports() {
           <Download aria-hidden="true" className="h-4 w-4" />{t('imports.template')}</a>} />
       <Card className="flex flex-col gap-3">
         <p className="text-sm text-content-muted">{t('imports.intro')}</p>
-        {uploading ? <Loader type="skeleton" rows={2} /> : <FileUpload accept=".xlsx,.csv" maxSize={10} label={t('imports.upload')} onUpload={upload} />}
+        {uploading ? <Loader type="skeleton" rows={2} /> : <FileUpload accept=".xlsx,.csv" maxSize={5} label={t('imports.upload')} onUpload={upload} />}
       </Card>
       <Card>
         <h2 className="font-semibold mb-2">{t('imports.history')}</h2>
