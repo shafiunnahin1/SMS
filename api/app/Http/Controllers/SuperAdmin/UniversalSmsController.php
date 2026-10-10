@@ -49,6 +49,13 @@ class UniversalSmsController extends Controller
         if (filled($f['api_key'] ?? null)) { PlatformSetting::write('sms_universal_api_key', Crypt::encryptString(trim($f['api_key'])), $by); $changed[] = 'api_key'; }
         elseif ($f['clear_api_key'] ?? false) { PlatformSetting::write('sms_universal_api_key', null, $by); $changed[] = 'api_key'; }
         $b = $f['bkash'] ?? [];
+        // a sandbox switch with the live address (or the other way round) is refused before anything is saved
+        $c = $this->bkash->credentials();
+        $nextUrl = array_key_exists('base_url', $b) ? (string) $b['base_url'] : (string) (PlatformSetting::read('bkash_base_url') ?? '');
+        $nextSandbox = array_key_exists('sandbox', $b) ? (bool) $b['sandbox'] : $c['sandbox'];
+        if ($nextUrl !== '' && !BkashService::modeMatches($nextUrl, $nextSandbox)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['bkash.base_url' => __('errors.bkash_mode_mismatch')]);
+        }
         if ($b['clear'] ?? false) {
             foreach ([...BkashService::SECRET_FIELDS, 'base_url', 'sandbox'] as $k) PlatformSetting::write("bkash_{$k}", null, $by);
             $changed[] = 'bkash';

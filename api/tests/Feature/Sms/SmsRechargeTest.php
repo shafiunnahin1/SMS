@@ -172,6 +172,12 @@ class SmsRechargeTest extends TestCase
         $this->assertSame([false, null], [$this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['clear' => true]])->json('data.bkash.configured'),
             $this->api('GET', $central, 'super/sms-settings', $super)->json('data.bkash.app_key.hint')]);
         $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['base_url' => 'http://insecure.test']])->assertStatus(422);
+        // sandbox and live never mix (owner: pay.bka.sh is production only)
+        $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['sandbox' => true, 'base_url' => 'https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized']])
+            ->assertStatus(422)->assertJsonValidationErrors('bkash.base_url');
+        $this->api('PUT', $central, 'super/sms-settings', $super, ['bkash' => ['sandbox' => false, 'base_url' => BkashService::SANDBOX_URL]])
+            ->assertStatus(422)->assertJsonValidationErrors('bkash.base_url');
+        $this->assertSame([true, false], [BkashService::modeMatches(BkashService::SANDBOX_URL, true), BkashService::modeMatches(BkashService::LIVE_URL, true)]);
         $this->api('PUT', $central, 'super/sms-settings', $admin, ['bkash' => ['app_key' => 'x']])->assertForbidden();
     }
 }

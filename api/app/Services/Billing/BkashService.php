@@ -40,7 +40,16 @@ class BkashService
     public function configured(): bool
     {
         $c = $this->credentials();
-        return collect(self::SECRET_FIELDS)->every(fn ($f) => filled($c[$f])) && filled($c['base_url']);
+        return collect(self::SECRET_FIELDS)->every(fn ($f) => filled($c[$f])) && filled($c['base_url']) && self::modeMatches($c['base_url'], $c['sandbox']);
+    }
+
+    /** Sandbox never talks to the live merchant and live never to the sandbox (owner, 2026-10-10: pay.bka.sh is production only) */
+    public static function modeMatches(string $baseUrl, bool $sandbox): bool
+    {
+        $host = (string) parse_url($baseUrl, PHP_URL_HOST);
+        $isSandboxHost = str_contains($host, 'sandbox');
+        $isLiveHost = str_ends_with($host, 'pay.bka.sh');
+        return $sandbox ? !$isLiveHost : !$isSandboxHost;
     }
 
     /** Super Admin "Test connection": can we get a token with these settings? */
