@@ -18,6 +18,11 @@ const StudentAdd  = lazy(() => import('../pages/admin/students/StudentAdd'))
 const FeeCollect  = lazy(() => import('../pages/admin/fees/FeeCollect'))
 const FeeCategories = lazy(() => import('../pages/admin/fees/FeeCategories'))
 const FeeLedger   = lazy(() => import('../pages/admin/fees/FeeLedger'))
+const ExamList    = lazy(() => import('../pages/admin/exams/ExamList'))
+const ExamDetail  = lazy(() => import('../pages/admin/exams/ExamDetail'))
+const MarksEntry  = lazy(() => import('../pages/exams/MarksEntry'))
+const MyMarks     = lazy(() => import('../pages/teacher/MyMarks'))
+const ParentResults = lazy(() => import('../pages/parent/Results'))
 const ParentFees  = lazy(() => import('../pages/parent/Fees'))
 const Attendance  = lazy(() => import('../pages/attendance/Take'))
 const ParentHome  = lazy(() => import('../pages/parent/Home'))
@@ -66,6 +71,9 @@ export const tenantRoutes = [
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/categories', element: S(FeeCategories) },
     { path: 'fees/dues', element: S(FeeLedger) },
+    { path: 'exams', element: S(ExamList) },
+    { path: 'exams/:id', element: S(ExamDetail) },
+    { path: 'exams/:examId/entry/:subjectId', element: S(MarksEntry) },
     { path: 'attendance', element: S(Attendance) },
     { path: 'academic/programs', element: S(Programs) },
     { path: 'academic/subjects', element: S(Subjects) },
@@ -80,11 +88,12 @@ export const tenantRoutes = [
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/dues', element: S(FeeLedger) },
   ]),
-  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }]),
+  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }]),
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },
     { path: 'fees', element: S(ParentFees) },
     { path: 'attendance', element: S(ParentAttendance) },
+    { path: 'results', element: S(ParentResults) },
   ]),
   { path: '/', element: <Navigate to="/login" replace /> },
   { path: '*', element: <Navigate to="/login" replace /> },

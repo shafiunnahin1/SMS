@@ -170,7 +170,7 @@
    "applies_to": "Applies to",
    "applies": {
     "all": "Everyone",
-    "program_specific": "Specific class/course"
+    "program_specific": "Specific {{unit}}"
    },
    "frequency_locked": "Money was collected under this head, so how often can no longer change.",
    "amount_hint": "A new amount applies to unpaid dues only; earlier receipts stay as they are.",
@@ -204,7 +204,8 @@
    "upcoming": "Upcoming",
    "running": "Running",
    "completed": "Completed",
-   "archived": "Archived"
+   "archived": "Archived",
+   "ongoing": "Ongoing"
   },
   "attendance": {
    "title": "Take attendance",
@@ -408,6 +409,53 @@
     "admission_date": "Admission date",
     "studying_at": "Studies at"
    }
+  },
+  "exams": {
+   "title": "Exams & results",
+   "add": "New exam",
+   "name": "Exam name",
+   "type": "Type",
+   "types": {
+    "term": "Term",
+    "class_test": "Class test",
+    "weekly": "Weekly",
+    "model_test": "Model test",
+    "admission": "Admission test"
+   },
+   "year": "Academic year",
+   "optional": "optional",
+   "whole_program": "All ({{unit}})",
+   "start_date": "Start date",
+   "end_date": "End date",
+   "subjects_hint": "Every subject of the {{unit}} is added; you can change full marks, schedule and parts later.",
+   "subjects": "Subjects & schedule",
+   "marks": "Marks",
+   "no_subjects": "This {{unit}} has no subjects",
+   "full_marks": "Full marks",
+   "pass_marks": "Pass marks",
+   "date": "Date",
+   "start_time": "Start",
+   "end_time": "End",
+   "room": "Room",
+   "part_label": "Part (e.g. written, MCQ)",
+   "add_part": "Add a part",
+   "publish": "Publish result",
+   "publish_confirm": "Publish the result of \"{{name}}\"?",
+   "publish_hint": "Parents will see it; bulk entry and the marks scale close.",
+   "published": "Result published",
+   "marksheet": "Marksheet",
+   "enter_marks": "{{subject}} — enter marks",
+   "no_marks": "No marks entered yet",
+   "marks_saved": "Marks saved for {{count}}",
+   "locked_hint": "The result is published - marks can no longer change here.",
+   "no_students": "Nobody sits this subject",
+   "my_marks": "Marks entry",
+   "no_entry": "No exam of your subjects",
+   "results": "Results",
+   "none_published": "No result published yet",
+   "percentage": "Percentage",
+   "passed": "Passed",
+   "failed": "Failed"
   }
  },
  "nav": {

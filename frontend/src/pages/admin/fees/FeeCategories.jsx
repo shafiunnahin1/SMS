@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { Plus, Pencil } from 'lucide-react'
 import { useLocale } from '../../../ui/I18nProvider'
+import { useTerms } from '../../../hooks/useTerms'
 import { fmtMoney } from '../../../i18n/format'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
@@ -20,6 +21,7 @@ const FREQUENCIES = ['monthly', 'yearly', 'once']
 export default function FeeCategories() {
   const { t } = useTranslation()
   const { locale } = useLocale()
+  const term = useTerms()
   const { list, save } = useCrud('fees/categories')
   const [editing, setEditing] = useState(null)
   const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting } } = useForm()
@@ -31,7 +33,7 @@ export default function FeeCategories() {
     { key: 'name', label: t('fees.category'), primary: true, render: r => <span dir="auto">{r.name}</span> },
     { key: 'amount', label: t('fees.amount'), numeric: true, render: r => <Ltr>{fmtMoney(r.amount, locale)}</Ltr> },
     { key: 'frequency', label: t('fees.frequency'), render: r => t(`fees.frequencies.${r.frequency}`) },
-    { key: 'applicable_to', label: t('fees.applies_to'), render: r => t(`fees.applies.${r.applicable_to}`) },
+    { key: 'applicable_to', label: t('fees.applies_to'), render: r => t(`fees.applies.${r.applicable_to}`, { unit: term('program') }) },
     { key: 'actions', label: t('common.actions'), action: true, render: r => (
       <Button variant="ghost" onClick={() => open(r)} aria-label={`${t('common.edit')} ${r.name}`}><Pencil aria-hidden="true" className="h-4 w-4" /></Button>
     ) },
@@ -47,7 +49,7 @@ export default function FeeCategories() {
           <Select label={t('fees.frequency')} disabled={Boolean(editing?.in_use)}
             error={errors.frequency?.message} options={FREQUENCIES.map(f => ({ value: f, label: t(`fees.frequencies.${f}`) }))} {...register('frequency')} />
           <Select label={t('fees.applies_to')} error={errors.applicable_to?.message}
-            options={['all', 'program_specific'].map(a => ({ value: a, label: t(`fees.applies.${a}`) }))} {...register('applicable_to')} />
+            options={['all', 'program_specific'].map(a => ({ value: a, label: t(`fees.applies.${a}`, { unit: term('program') }) }))} {...register('applicable_to')} />
           {editing?.in_use && <p className="sm:col-span-2 text-sm text-content-muted">{t('fees.frequency_locked')}</p>}
           <p className="sm:col-span-2 text-sm text-content-muted">{t('fees.amount_hint')}</p>
           <div className="sm:col-span-2 flex justify-end gap-2">

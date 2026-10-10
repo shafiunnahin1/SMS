@@ -55,6 +55,16 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/payments/student/{id}'        => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/receipt/{id}'                 => fn (array $other) => $this->seedReceipt($other),
+            'GET api/v1/exams/{id}'                        => fn (array $other) => $this->seedExam($other),
+            'PUT api/v1/exams/{id}'                        => fn (array $other) => $this->seedExam($other),
+            'DELETE api/v1/exams/{id}'                     => fn (array $other) => $this->seedExam($other),
+            'POST api/v1/exams/{id}/publish'               => fn (array $other) => $this->seedExam($other),
+            'GET api/v1/exams/{id}/subjects'               => fn (array $other) => $this->seedExam($other),
+            'PUT api/v1/exams/{id}/subjects'               => fn (array $other) => $this->seedExam($other),
+            'PUT api/v1/results/{id}'                      => fn (array $other) => $this->seedResult($other),
+            'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => null,   // two ids: ExamSubjectsTest checks a foreign exam is a 404
+            'GET api/v1/results/marksheet/{studentId}'     => null,       // MarksheetAccessTest: a foreign student is a 404
+            'GET api/v1/parent/children/{id}/results'      => null,       // parent-only route (the admin is 403); ParentResultAccessTest: foreign child 404
             'PUT api/v1/fees/categories/{id}'              => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeCategory::value('id')
                 ?? \App\Models\FeeCategory::create(['name' => 'Tuition', 'amount' => 500, 'frequency' => 'monthly'])->id),
             'PUT api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
@@ -94,6 +104,29 @@ class TenantIsolationTest extends TestCase
     }
 
     /** A student (named after the tenant's marker) in a batch with a monthly fee - created once per tenant */
+    private function seedExam(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], function () use ($student) {
+            if ($id = \App\Models\Exam::value('id')) return $id;
+            $program = \App\Models\Enrollment::where('student_id', $student)->value('program_id');
+            \App\Models\Subject::create(['program_id' => $program, 'name' => 'Subject']);
+            return app(\App\Services\ExamService::class)->create(['name' => 'Exam', 'program_id' => $program, 'exam_type' => 'term', 'academic_year' => 2026])->id;
+        });
+    }
+
+    private function seedResult(array $t): int
+    {
+        $exam = $this->seedExam($t);
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], function () use ($exam, $student) {
+            if ($id = \App\Models\Result::value('id')) return $id;
+            $es = \App\Models\ExamSubject::where('exam_id', $exam)->first();
+            app(\App\Services\ResultService::class)->bulkSaveMarks(\App\Models\Exam::find($exam), $es->subject_id, [['student_id' => $student, 'marks_obtained' => 50]]);
+            return \App\Models\Result::value('id');
+        });
+    }
+
     private function seedStudent(array $t): int
     {
         return Tenancy::as($t['institution'], function () use ($t) {

@@ -40,4 +40,9 @@ return [
     'import_duplicate_row' => 'The same student is already in the file (row :row).',
     'import_exists' => 'Already exists - skipped.',
     'import_has_dependents' => 'Records were added to it later (fees/attendance/results) - not rolled back.',
+    'exam_published'        => 'The result is published - only an admin can still correct single marks.',
+    'no_results'            => 'No marks have been entered yet, so it cannot be published.',
+    'not_in_program'        => 'This subject is not in the exam\'s class/course.',
+    'components_total'      => 'The parts\' full marks must add up to the subject\'s full marks (:full).',
+    'not_in_exam'           => 'This student does not sit this subject (or is not in your batch).',
 ];

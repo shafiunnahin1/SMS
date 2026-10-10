@@ -36,4 +36,6 @@ class Exam extends Model
 
     public function program() { return $this->belongsTo(Program::class); }
     public function batch() { return $this->belongsTo(Batch::class); }
+    public function subjects() { return $this->hasMany(ExamSubject::class); }
+    public function results() { return $this->hasMany(Result::class); }
 }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Academic\{AttendanceController, BatchController, ConsentController, EnrollmentController, ProgramController, StudentController, SubjectController, TeacherController};
 use App\Http\Controllers\Admin\{ImportController, SettingController, TerminologyController, ThemeController};
+use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -136,6 +137,28 @@ Route::prefix('v1')->group(function () {
                 Route::get('/fees/report',                [FeeController::class, 'report']);
             });
             Route::get('/parent/fees',                    [FeeController::class, 'dues'])->middleware('role:parent');
+        });
+
+        // ── Exams & results (Step 4.5) ──
+        Route::middleware('module:exams')->group(function () {
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/exams',                      [ExamController::class, 'index']);
+                Route::post('/exams',                     [ExamController::class, 'store']);
+                Route::get('/exams/{id}',                 [ExamController::class, 'show'])->whereNumber('id');
+                Route::put('/exams/{id}',                 [ExamController::class, 'update'])->whereNumber('id');
+                Route::delete('/exams/{id}',              [ExamController::class, 'destroy'])->whereNumber('id');
+                Route::post('/exams/{id}/publish',        [ExamController::class, 'publish'])->whereNumber('id');
+                Route::get('/exams/{id}/subjects',        [ExamController::class, 'subjects'])->whereNumber('id');
+                Route::put('/exams/{id}/subjects',        [ExamController::class, 'updateSubjects'])->whereNumber('id');
+            });
+            Route::middleware('role:admin,teacher')->group(function () {
+                Route::get('/results',                    [ResultController::class, 'index']);
+                Route::get('/exams/{id}/subjects/{subjectId}/entry', [ResultController::class, 'entrySheet'])->whereNumber(['id', 'subjectId']);
+                Route::post('/results/bulk',              [ResultController::class, 'bulkStore']);
+                Route::put('/results/{id}',               [ResultController::class, 'update'])->whereNumber('id');
+            });
+            Route::get('/results/marksheet/{studentId}',  [ResultController::class, 'marksheet'])->whereNumber('studentId')->middleware('role:admin,teacher,parent');
+            Route::get('/parent/children/{id}/results',   [ResultController::class, 'forParent'])->whereNumber('id')->middleware('role:parent');
         });
 
         // ── Parent (Step 4.7) ──
