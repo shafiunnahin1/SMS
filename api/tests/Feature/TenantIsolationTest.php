@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{AuditLog, Batch, FeeCategory, FeePayment, Institution, Program, Student, User};
+use App\Models\{AuditLog, Batch, FeeCategory, FeePayment, Institution, Program, Student, Subject, Teacher, User};
 use App\Services\{FeeService, StudentService};
 use App\Notifications\GeneralNotification;
 use App\Support\Tenancy;
@@ -55,6 +55,19 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/students/{id}'                     => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/payments/student/{id}'        => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/fees/receipt/{id}'                 => fn (array $other) => $this->seedReceipt($other),
+            'GET api/v1/programs/{id}'                     => fn (array $other) => $this->rowOf($other, Program::class),
+            'PUT api/v1/programs/{id}'                     => fn (array $other) => $this->rowOf($other, Program::class),
+            'DELETE api/v1/programs/{id}'                  => fn (array $other) => $this->rowOf($other, Program::class),
+            'GET api/v1/batches/{id}'                      => fn (array $other) => $this->rowOf($other, Batch::class),
+            'PUT api/v1/batches/{id}'                      => fn (array $other) => $this->rowOf($other, Batch::class),
+            'DELETE api/v1/batches/{id}'                   => fn (array $other) => $this->rowOf($other, Batch::class),
+            'GET api/v1/batches/{id}/students'             => fn (array $other) => $this->rowOf($other, Batch::class),
+            'GET api/v1/subjects/{id}'                     => fn (array $other) => $this->seedSubject($other),
+            'PUT api/v1/subjects/{id}'                     => fn (array $other) => $this->seedSubject($other),
+            'DELETE api/v1/subjects/{id}'                  => fn (array $other) => $this->seedSubject($other),
+            'GET api/v1/teachers/{id}'                     => fn (array $other) => $this->seedTeacher($other),
+            'PUT api/v1/teachers/{id}'                     => fn (array $other) => $this->seedTeacher($other),
+            'DELETE api/v1/teachers/{id}'                  => fn (array $other) => $this->seedTeacher($other),
             // the parameter is not a row id: the route only touches the caller's own children (WalkingSkeletonSliceTest, consent test)
             'PUT api/v1/parent/consents/{type}'            => null,
         ];
@@ -71,6 +84,26 @@ class TenantIsolationTest extends TestCase
             $batch = Batch::create(['program_id' => Program::create(['name' => "program {$slug}"])->id, 'name' => "batch {$slug}"]);
             return app(StudentService::class)->create(['name' => "student {$slug}", 'student_id' => 'ISO' . $t['institution']->id, 'guardian_phone' => '01711111111'], $batch)->id;
         });
+    }
+
+    /** The tenant's first row of a model (seedStudent made a program and a batch) */
+    private function rowOf(array $t, string $model): ?int
+    {
+        $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => $model::value('id'));
+    }
+
+    private function seedSubject(array $t): int
+    {
+        $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => Subject::value('id')
+            ?? Subject::create(['program_id' => Program::value('id'), 'name' => "subject {$t['institution']->slug}"])->id);
+    }
+
+    /** A teacher row (with no login, so no other tenant gains a session) */
+    private function seedTeacher(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => Teacher::value('id') ?? Teacher::create(['employee_id' => 'ISO-T'])->id);
     }
 
     /** One receipt line of the tenant's student (collected once) */

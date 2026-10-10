@@ -20,7 +20,17 @@
    "page": "পাতা {{page}} / {{last}}",
    "close": "বন্ধ",
    "not_built": "এই পাতা পরের ধাপে তৈরি হবে",
-   "confirm": "নিশ্চিত"
+   "confirm": "নিশ্চিত",
+   "add": "যোগ করুন",
+   "edit": "সম্পাদনা",
+   "delete": "মুছুন",
+   "saved": "সংরক্ষিত হয়েছে",
+   "deleted": "মুছে ফেলা হয়েছে",
+   "delete_confirm": "\"{{name}}\" মুছে ফেলবেন?",
+   "delete_hint": "যার রেকর্ড আছে তা মোছা যায় না — বরং বন্ধ (archive) করুন।",
+   "actions": "কাজ",
+   "all": "সব",
+   "none": "কেউ না"
   },
   "errors": {
    "network": "ইন্টারনেট সংযোগ পরীক্ষা করুন",
@@ -124,7 +134,12 @@
    "late": "দেরি",
    "leave": "ছুটি",
    "granted": "সম্মত",
-   "revoked": "প্রত্যাহার"
+   "revoked": "প্রত্যাহার",
+   "on_leave": "ছুটিতে",
+   "upcoming": "আসন্ন",
+   "running": "চলমান",
+   "completed": "সমাপ্ত",
+   "archived": "আর্কাইভ"
   },
   "attendance": {
    "title": "উপস্থিতি নেওয়া",
@@ -196,6 +211,77 @@
    "this_month": "এই মাস",
    "last_month": "গত মাস",
    "this_year": "এই বছর"
+  },
+  "academic": {
+   "name": "নাম",
+   "numeric_name": "নম্বর",
+   "code": "কোড",
+   "course_fee": "কোর্স ফি",
+   "duration_months": "মেয়াদ (মাস)",
+   "active": "চালু",
+   "units_count": "সংখ্যা",
+   "students_count": "ছাত্রছাত্রী",
+   "capacity": "আসন",
+   "class_teacher": "দায়িত্বপ্রাপ্ত শিক্ষক",
+   "shift": "শিফট",
+   "room": "কক্ষ",
+   "monthly_fee": "মাসিক ফি",
+   "start_date": "শুরুর তারিখ",
+   "end_date": "শেষের তারিখ",
+   "status": "অবস্থা",
+   "details": "বিবরণ",
+   "subject_teachers": "বিষয়-শিক্ষক",
+   "subject": "বিষয়",
+   "teacher": "শিক্ষক",
+   "all_subjects": "সব বিষয়",
+   "add_row": "সারি যোগ",
+   "remove_row": "সরান",
+   "members": "এই {{unit}}-এর ছাত্রছাত্রী",
+   "roll": "রোল",
+   "no_teacher": "নিয়োগ হয়নি",
+   "pick": "বাছাই করুন…",
+   "shifts": {
+    "morning": "প্রভাতি",
+    "day": "দিবা",
+    "evening": "সান্ধ্য"
+   },
+   "statuses": {
+    "upcoming": "আসন্ন",
+    "running": "চলমান",
+    "completed": "সমাপ্ত",
+    "archived": "আর্কাইভ"
+   },
+   "add_unit": "নতুন {{unit}}",
+   "edit_unit": "{{unit}} সম্পাদনা",
+   "subjects_title": "বিষয়",
+   "full_marks": "পূর্ণমান",
+   "pass_marks": "পাস নম্বর",
+   "optional": "ঐচ্ছিক (৪র্থ) বিষয়",
+   "my_title": "আমার {{units}}",
+   "is_class_teacher": "দায়িত্বপ্রাপ্ত শিক্ষক",
+   "subject_teacher": "বিষয়-শিক্ষক",
+   "take_attendance": "হাজিরা নিন"
+  },
+  "teachers": {
+   "title": "শিক্ষক",
+   "add": "নতুন শিক্ষক",
+   "edit": "শিক্ষকের তথ্য সম্পাদনা",
+   "name": "নাম",
+   "phone": "মোবাইল",
+   "email": "ইমেইল",
+   "employee_id": "কর্মী আইডি",
+   "auto_id": "ফাঁকা রাখলে স্বয়ংক্রিয়ভাবে তৈরি হবে",
+   "designation": "পদবি",
+   "department": "বিভাগ",
+   "joining_date": "যোগদানের তারিখ",
+   "qualification": "শিক্ষাগত যোগ্যতা",
+   "status": "অবস্থা",
+   "login_hint": "শিক্ষক এই মোবাইল বা ইমেইল দিয়ে \"পাসওয়ার্ড ভুলে গেছি\" থেকে নিজের পাসওয়ার্ড বসাবেন।",
+   "statuses": {
+    "active": "সক্রিয়",
+    "inactive": "নিষ্ক্রিয়",
+    "on_leave": "ছুটিতে"
+   }
   }
  },
  "nav": {}

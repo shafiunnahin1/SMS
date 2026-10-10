@@ -20,7 +20,17 @@
    "page": "Page {{page}} of {{last}}",
    "close": "Close",
    "not_built": "This screen comes in a later step",
-   "confirm": "Confirm"
+   "confirm": "Confirm",
+   "add": "Add",
+   "edit": "Edit",
+   "delete": "Delete",
+   "saved": "Saved",
+   "deleted": "Deleted",
+   "delete_confirm": "Delete \"{{name}}\"?",
+   "delete_hint": "Something that already has records cannot be deleted - archive it instead.",
+   "actions": "Actions",
+   "all": "All",
+   "none": "None"
   },
   "errors": {
    "network": "Check your internet connection",
@@ -124,7 +134,12 @@
    "late": "Late",
    "leave": "Leave",
    "granted": "Granted",
-   "revoked": "Withdrawn"
+   "revoked": "Withdrawn",
+   "on_leave": "On leave",
+   "upcoming": "Upcoming",
+   "running": "Running",
+   "completed": "Completed",
+   "archived": "Archived"
   },
   "attendance": {
    "title": "Take attendance",
@@ -196,6 +211,77 @@
    "this_month": "This month",
    "last_month": "Last month",
    "this_year": "This year"
+  },
+  "academic": {
+   "name": "Name",
+   "numeric_name": "Number",
+   "code": "Code",
+   "course_fee": "Course fee",
+   "duration_months": "Duration (months)",
+   "active": "In use",
+   "units_count": "Count",
+   "students_count": "Students",
+   "capacity": "Capacity",
+   "class_teacher": "Teacher in charge",
+   "shift": "Shift",
+   "room": "Room",
+   "monthly_fee": "Monthly fee",
+   "start_date": "Start date",
+   "end_date": "End date",
+   "status": "Status",
+   "details": "Details",
+   "subject_teachers": "Subject teachers",
+   "subject": "Subject",
+   "teacher": "Teacher",
+   "all_subjects": "All subjects",
+   "add_row": "Add row",
+   "remove_row": "Remove",
+   "members": "Students in this {{unit}}",
+   "roll": "Roll",
+   "no_teacher": "Not assigned",
+   "pick": "Select…",
+   "shifts": {
+    "morning": "Morning",
+    "day": "Day",
+    "evening": "Evening"
+   },
+   "statuses": {
+    "upcoming": "Upcoming",
+    "running": "Running",
+    "completed": "Completed",
+    "archived": "Archived"
+   },
+   "add_unit": "New {{unit}}",
+   "edit_unit": "Edit {{unit}}",
+   "subjects_title": "Subjects",
+   "full_marks": "Full marks",
+   "pass_marks": "Pass marks",
+   "optional": "Optional (4th) subject",
+   "my_title": "My {{units}}",
+   "is_class_teacher": "Teacher in charge",
+   "subject_teacher": "Subject teacher",
+   "take_attendance": "Take attendance"
+  },
+  "teachers": {
+   "title": "Teachers",
+   "add": "New teacher",
+   "edit": "Edit teacher",
+   "name": "Name",
+   "phone": "Mobile",
+   "email": "Email",
+   "employee_id": "Employee ID",
+   "auto_id": "Leave empty to generate one",
+   "designation": "Designation",
+   "department": "Department",
+   "joining_date": "Joining date",
+   "qualification": "Qualification",
+   "status": "Status",
+   "login_hint": "The teacher sets a password with \"Forgot password\" using this mobile or email.",
+   "statuses": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "on_leave": "On leave"
+   }
   }
  },
  "nav": {

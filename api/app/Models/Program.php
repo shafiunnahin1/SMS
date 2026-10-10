@@ -33,4 +33,6 @@ class Program extends Model
         'is_active' => 'boolean',
         'is_public' => 'boolean',
     ];
+
+    public function batches() { return $this->hasMany(Batch::class); }
 }

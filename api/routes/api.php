@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Academic\{AttendanceController, BatchController, ConsentController, EnrollmentController, StudentController};
+use App\Http\Controllers\Academic\{AttendanceController, BatchController, ConsentController, EnrollmentController, ProgramController, StudentController, SubjectController, TeacherController};
 use App\Http\Controllers\Admin\{SettingController, TerminologyController, ThemeController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
@@ -38,7 +38,9 @@ Route::prefix('v1')->group(function () {
         Route::patch('/notifications/read-all',   [NotificationController::class, 'markAllRead']);
         Route::patch('/notifications/{id}/read',  [NotificationController::class, 'markRead']);
 
-        Route::get('/batches',                    [BatchController::class, 'index']);   // Step 4.1 (slice: the admission form's list)
+        Route::get('/batches',                    [BatchController::class, 'index']);   // Step 4.1 (also the admission form's list)
+        Route::get('/programs',                   [ProgramController::class, 'index']);
+        Route::get('/teacher/batches',            [BatchController::class, 'mine'])->middleware('role:teacher');
 
         // ── Institution Admin ─────────────────────────────────
         Route::middleware('role:admin')->group(function () {
@@ -57,6 +59,27 @@ Route::prefix('v1')->group(function () {
             Route::post('/admin/theme/logo',              [ThemeController::class, 'logo']);
             Route::get('/audit-logs',                     [AuditLogController::class, 'index']);
             Route::get('/audit-logs/{id}',                [AuditLogController::class, 'show'])->whereNumber('id');
+
+            // Academic structure and teachers (Step 4.1)
+            Route::post('/programs',                      [ProgramController::class, 'store']);
+            Route::get('/programs/{id}',                  [ProgramController::class, 'show'])->whereNumber('id');
+            Route::put('/programs/{id}',                  [ProgramController::class, 'update'])->whereNumber('id');
+            Route::delete('/programs/{id}',               [ProgramController::class, 'destroy'])->whereNumber('id');
+            Route::post('/batches',                       [BatchController::class, 'store']);
+            Route::get('/batches/{id}',                   [BatchController::class, 'show'])->whereNumber('id');
+            Route::put('/batches/{id}',                   [BatchController::class, 'update'])->whereNumber('id');
+            Route::delete('/batches/{id}',                [BatchController::class, 'destroy'])->whereNumber('id');
+            Route::get('/batches/{id}/students',          [BatchController::class, 'students'])->whereNumber('id');
+            Route::get('/subjects',                       [SubjectController::class, 'index']);
+            Route::post('/subjects',                      [SubjectController::class, 'store']);
+            Route::get('/subjects/{id}',                  [SubjectController::class, 'show'])->whereNumber('id');
+            Route::put('/subjects/{id}',                  [SubjectController::class, 'update'])->whereNumber('id');
+            Route::delete('/subjects/{id}',               [SubjectController::class, 'destroy'])->whereNumber('id');
+            Route::get('/teachers',                       [TeacherController::class, 'index']);
+            Route::post('/teachers',                      [TeacherController::class, 'store']);
+            Route::get('/teachers/{id}',                  [TeacherController::class, 'show'])->whereNumber('id');
+            Route::put('/teachers/{id}',                  [TeacherController::class, 'update'])->whereNumber('id');
+            Route::delete('/teachers/{id}',               [TeacherController::class, 'destroy'])->whereNumber('id');
 
             // Students & enrollment (Step 4.2; the walking-skeleton slice builds these first)
             Route::middleware('module:students')->group(function () {

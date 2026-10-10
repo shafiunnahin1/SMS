@@ -5,6 +5,7 @@ import { EmptyState, ErrorState } from './StateViews'
 
 // docs/design/component-library.md "DataTable": loading -> skeleton rows; empty and error states built in.
 // Under 768px every pack shows cards (first 3 columns, docs/UI-PACKS.md); the spike ships the classic table >= 768px.
+// A column marked `action: true` (row buttons) is never one of the 3 and sits beside the card, so phones keep edit/delete.
 export default function DataTable({ columns, data = [], loading, error, onRetry, pagination, onRowClick, empty, rowKey = 'id' }) {
   const { t } = useTranslation()
   if (loading) return <Loader type="skeleton" rows={6} />
@@ -12,6 +13,8 @@ export default function DataTable({ columns, data = [], loading, error, onRetry,
   if (!data.length) return empty ?? <EmptyState />
 
   const cell = (c, row) => (c.render ? c.render(row) : row[c.key])
+  const info = columns.filter(c => !c.action)
+  const actions = columns.filter(c => c.action)
   return (
     <div>
       <div className="hidden md:block overflow-x-auto">
@@ -29,15 +32,17 @@ export default function DataTable({ columns, data = [], loading, error, onRetry,
       </div>
       <ul className="md:hidden flex flex-col gap-2">
         {data.map(row => (
-          <li key={row[rowKey]}>
+          <li key={row[rowKey]} className="flex items-start gap-1 bg-surface rounded-token [border:var(--card-border)] shadow-card">
             <button type="button" onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className="w-full text-start bg-surface rounded-token p-density [border:var(--card-border)] shadow-card flex flex-col gap-1">
-              {columns.slice(0, 3).map((c, i) => (
+              className="flex-1 min-w-0 text-start rounded-token p-density flex flex-col gap-1">
+              {info.slice(0, 3).map((c, i) => (
                 <span key={c.key} className={i === 0 ? 'font-medium text-content' : 'text-sm text-content-muted'}>
                   {i > 0 && <span className="me-1">{c.label}:</span>}{cell(c, row)}
                 </span>
               ))}
             </button>
+            {/* `action` columns (edit / delete buttons) sit beside the card, never inside its button */}
+            {actions.map(c => <span key={c.key} className="p-1">{cell(c, row)}</span>)}
           </li>
         ))}
       </ul>

@@ -19,6 +19,12 @@ const FeeCollect  = lazy(() => import('../pages/admin/fees/FeeCollect'))
 const ParentFees  = lazy(() => import('../pages/parent/Fees'))
 const Attendance  = lazy(() => import('../pages/attendance/Take'))
 const ParentHome  = lazy(() => import('../pages/parent/Home'))
+const Programs    = lazy(() => import('../pages/admin/academic/Programs'))
+const Subjects    = lazy(() => import('../pages/admin/academic/Subjects'))
+const BatchList   = lazy(() => import('../pages/admin/batches/BatchList'))
+const BatchDetail = lazy(() => import('../pages/admin/batches/BatchDetail'))
+const TeacherList = lazy(() => import('../pages/admin/teachers/TeacherList'))
+const MyBatches   = lazy(() => import('../pages/teacher/MyBatches'))
 const Landing     = lazy(() => import('../pages/central/Landing'))
 const Signup      = lazy(() => import('../pages/central/Signup'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
@@ -52,6 +58,11 @@ export const tenantRoutes = [
     { path: 'students/add', element: S(StudentAdd) },
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'attendance', element: S(Attendance) },
+    { path: 'academic/programs', element: S(Programs) },
+    { path: 'academic/subjects', element: S(Subjects) },
+    { path: 'batches', element: S(BatchList) },
+    { path: 'batches/:id', element: S(BatchDetail) },
+    { path: 'teachers', element: S(TeacherList) },
     // Step 3.4: the component gallery - development builds only (import.meta.env.DEV is false in `vite build`)
     ...(import.meta.env.DEV ? [{ path: 'dev/components', element: S(DevComponents) }] : []),
   ]),
@@ -59,7 +70,7 @@ export const tenantRoutes = [
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'fees/collect', element: S(FeeCollect) },
   ]),
-  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }]),
+  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }]),
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },
     { path: 'fees', element: S(ParentFees) },

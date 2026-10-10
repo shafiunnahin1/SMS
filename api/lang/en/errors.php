@@ -27,4 +27,5 @@ return [
     'locale_not_enabled'    => 'This language is not enabled for your institution.',
     'due_not_applicable'    => 'This due no longer applies.',
     'amount_positive'       => 'The amount must be more than zero.',
+    'in_use'                => 'This is in use and cannot be deleted - archive it instead.',
 ];

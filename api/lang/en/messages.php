@@ -18,4 +18,5 @@ return [
     'admitted'           => 'Admission done.',
     'fee_collected'      => 'Payment collected.',
     'locale_saved'       => 'Language saved.',
+    'deleted'            => 'Deleted.',
 ];

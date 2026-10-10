@@ -61,3 +61,16 @@ it('Can shows children to the role and the fallback to others', () => {
   render(<Can role={['admin', 'accountant']} fallback={<span>no</span>}><span>yes</span></Can>)
   expect(screen.getByText('no')).toBeInTheDocument()
 })
+
+it('DataTable keeps action columns on phone cards, outside the card button (Step 4.1)', async () => {
+  const { default: DataTable } = await import('../components/DataTable')
+  const onEdit = vi.fn()
+  const { container } = render(<DataTable columns={[
+    { key: 'a', label: 'A' }, { key: 'b', label: 'B' }, { key: 'c', label: 'C' }, { key: 'd', label: 'D' },
+    { key: 'actions', label: 'X', action: true, render: () => <button type="button" onClick={onEdit}>edit-me</button> },
+  ]} data={[{ id: 1, a: 'a1', b: 'b1', c: 'c1', d: 'd1' }]} />)
+  const card = container.querySelector('ul li')
+  expect(card.textContent).toContain('edit-me')
+  expect(card.querySelector('button button')).toBeNull()
+  expect(card.textContent).not.toContain('d1')                     // still the first 3 information columns only
+})

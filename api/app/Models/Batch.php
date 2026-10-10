@@ -38,4 +38,6 @@ class Batch extends Model
     public function program() { return $this->belongsTo(Program::class); }
     public function teacher() { return $this->belongsTo(Teacher::class); }
     public function academicYear() { return $this->belongsTo(AcademicYear::class); }
+    public function subjectTeachers() { return $this->hasMany(BatchTeacher::class); }
+    public function activeEnrollments() { return $this->hasMany(Enrollment::class)->where('status', 'active'); }
 }
