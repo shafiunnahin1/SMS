@@ -41,7 +41,7 @@
 | শুধু **খসড়া** কাজ আছে (এই নথির সাথের `AGENT-PLAN-FULL-DRAFT.md`) | **৪১** মডিউল |
 | এর মধ্যে স্পেক শুধু **গদ্যে**, route-টেমপ্লেটে কোনো ফিচার-প্রমাণ নেই | **২০** মডিউল: `admit_card`, `ai_assistant`, `alumni`, `analytics`, `behavior`, `certificates`, `cpd`, `events`, `fee_installment`, `gps`, `health`, `hostel`, `library`, `multi_branch`, `online_class`, `online_quiz`, `parent_meeting`, `scholarships`, `transport`, `visitors` |
 | ধাপ **আমি প্রস্তাব করেছি** (রোডম্যাপে ছিল না) — আপনার সিদ্ধান্ত লাগবে | **১৫** মডিউল: `academic_calendar`, `admit_card`, `alumni`, `analytics`, `behavior`, `certificates`, `cpd`, `events`, `fee_installment`, `health`, `multi_branch`, `parent_meeting`, `promotion_tc`, `scholarships`, `visitors` |
-| কোনো কাজ-পরিকল্পনায় ধরা টেবিল | ৬১ / ১৪৩ (বাকি ৮২টি টেবিলের migration-কাজ খসড়া-পর্যায়ে) |
+| কোনো কাজ-পরিকল্পনায় ধরা টেবিল | ৬২ / ১৪৩ (বাকি ৮১টি টেবিলের migration-কাজ খসড়া-পর্যায়ে) |
 | বাইরের তথ্য/সিদ্ধান্তের উপর নির্ভর (`OD-…`, স্পেকে ফাঁকা স্লট) | **৫**টি |
 
 **এর মানে:** "সম্পূর্ণ প্রকাশ" পরিকল্পনা-অনুযায়ী ঘোষণা করা যায়, কিন্তু **এখনই বানানো শুরু করার মতো পূর্ণ কাজ-পরিকল্পনা আছে শুধু M1 ও M4-এর।** বাকি ধাপের কাজ-তালিকা খসড়া; প্রতিটির "শেষ-শর্ত" সাধারণ, R3-এর মতো নির্দিষ্ট সংখ্যা-মেলানো নয়। সেগুলো বানানোর আগে ধাপ শুরুর সময় পরিশীলিত করতে হবে (নিচে §৭)। গার্ড খসড়া-টাস্কের commit আটকায় (`Task:` আইডি অজানা), তাই পরিশীলন না করে ভুলে বানানো শুরু হবে না।
