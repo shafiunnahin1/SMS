@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
             ThemePresetSeeder::class,
             SuperAdminSeeder::class,
+            QbCurriculumSeeder::class,     // D65: the platform curriculum (platform data, before any institution)
             DemoInstitutionSeeder::class,
             DemoDataSeeder::class,
             DemoCoachingSeeder::class,

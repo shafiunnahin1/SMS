@@ -13,4 +13,7 @@ class QbChapter extends Model
     public const TENANT_READ = 'all';   // read-only from an institution's host
 
     protected $fillable = ['qb_subject_id', 'name_bn', 'name_en', 'number', 'sort_order'];
+
+    public function classLevels() { return $this->belongsToMany(QbClassLevel::class, 'qb_chapter_class_level'); }
+    public function topics() { return $this->hasMany(QbTopic::class); }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
+use App\Http\Controllers\QuestionBank\QbCurriculumController;
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -52,6 +53,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/tenant-purge/candidates',                      [TenantPurgeController::class, 'candidates']);
         Route::post('/tenant-purge/{institutionId}/dry-run',        [TenantPurgeController::class, 'dryRun'])->whereNumber('institutionId');
         Route::post('/tenant-purge/{institutionId}/execute',        [TenantPurgeController::class, 'execute'])->whereNumber('institutionId');
+        // QB.1 (D65): the question-bank curriculum class → subject → chapter → topic
+        Route::get('/qb/curriculum',                  [QbCurriculumController::class, 'tree']);
+        Route::post('/qb/{kind}',                     [QbCurriculumController::class, 'store']);
+        Route::put('/qb/{kind}/{id}',                 [QbCurriculumController::class, 'update'])->whereNumber('id');
+        Route::delete('/qb/{kind}/{id}',              [QbCurriculumController::class, 'destroy'])->whereNumber('id');
     });
 
     // ─── 3. Tenant host only ───────────────────────────────────
@@ -166,6 +172,9 @@ Route::prefix('v1')->group(function () {
             });
             Route::get('/parent/fees',                    [FeeController::class, 'dues'])->middleware('role:parent');
         });
+
+        // ── Question bank (D65, QB.1): the admin links a program to a platform class ──
+        Route::get('/qb/class-levels',                    [QbCurriculumController::class, 'classLevels'])->middleware(['role:admin', 'module:question_bank']);
 
         // ── SMS (Step 4.6): log and balance; sending happens from attendance / fee collection through SendSmsJob ──
         Route::middleware('module:sms')->group(function () {

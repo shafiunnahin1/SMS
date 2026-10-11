@@ -25,6 +25,7 @@ class Program extends Model
         'public_description',
         'sort_order',
         'name_alt',
+        'qb_class_level_id',
     ];
 
     protected $casts = [

@@ -14,4 +14,7 @@ class QbSubject extends Model
 
     protected $fillable = ['name_bn', 'name_en', 'code', 'sort_order', 'is_active'];
     protected $casts = ['is_active' => 'boolean'];
+
+    public function classLevels() { return $this->belongsToMany(QbClassLevel::class, 'qb_class_level_subject'); }
+    public function chapters() { return $this->hasMany(QbChapter::class); }
 }

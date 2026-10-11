@@ -126,6 +126,11 @@ return [
     'PATCH api/v1/super/institutions/{id}/toggle' => ['super_admin'],
     'GET api/v1/super/sms-settings' => ['super_admin'],
     'PUT api/v1/super/sms-settings' => ['super_admin'],
+    'GET api/v1/super/qb/curriculum' => ['super_admin'],                       // QB.1 (D65): the platform curriculum is the Super Admin's
+    'POST api/v1/super/qb/{kind}' => ['super_admin'],
+    'PUT api/v1/super/qb/{kind}/{id}' => ['super_admin'],
+    'DELETE api/v1/super/qb/{kind}/{id}' => ['super_admin'],
+    'GET api/v1/qb/class-levels' => ['admin'],                                   // QB.1: to link a program to a platform class
     'GET api/v1/super/tenant-purge/candidates' => ['super_admin'],
     'POST api/v1/super/tenant-purge/{institutionId}/dry-run' => ['super_admin'],
     'POST api/v1/super/tenant-purge/{institutionId}/execute' => ['super_admin'],
