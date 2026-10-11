@@ -269,7 +269,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
 use App\Http\Controllers\Public\{PublicSiteController, PublicAdmissionController};
 use App\Http\Controllers\SuperAdmin\{TenantPurgeController, SettlementController, PayoutAccountController, SmsSenderApprovalController, OnlinePaymentReportController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPricingController, QbQuestionController, QbResourceController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
 use App\Http\Controllers\Academics\{ResultSheetController, DueBlockController, PeriodAttendanceController, SubstitutionController, RoutineBlockController, StudentLeaveController, MarksLockController};
 use App\Http\Controllers\Hr\{LeaveTypeController, LeaveController, StaffController, StaffAttendanceController, SalaryComponentController, SalaryStructureController, SalaryRevisionController, IncrementBatchController, BonusSchemeController, SalaryAdjustmentController, SalaryAdvanceController, PayrollRunController, PayrollItemController, PayAccountController, ProvidentFundController, PayrollReportController, FinalSettlementController};
 use App\Http\Controllers\Teacher\SalaryController as TeacherSalaryController;
@@ -703,6 +703,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/concepts/{id}',             [QbLibraryController::class, 'concept']);
             Route::get('/resources',                 [QbLibraryController::class, 'resources']);
             Route::get('/resources/{id}',            [QbLibraryController::class, 'resource']);
+            // QB.7: questions are free to read (answers locked); buying = the institution wallet, once per institution (D66)
+            Route::get('/questions',                 [QbPurchaseController::class, 'questions']);
+            Route::get('/questions/{id}',            [QbPurchaseController::class, 'question']);
+            Route::get('/quote',                     [QbPurchaseController::class, 'quote']);     // ?item_type=&item_id=: the server's price for this institution
+            Route::post('/buy',                      [QbPurchaseController::class, 'buy']);       // {item_type, item_id}: 402 wallet_balance_too_low, 422 qb_teacher_cap_reached
+            Route::get('/spending',                  [QbPurchaseController::class, 'spending'])->middleware('role:admin');   // per teacher, ?from=&to=
+            Route::put('/caps',                      [QbPurchaseController::class, 'caps'])->middleware('role:admin');       // {default_cap, teachers: [{id, cap}]}
         });
         Route::middleware(['role:admin,teacher', 'module:exams'])->group(function () {
             Route::post('/exams/{id}/subjects/{subjectId}/submit', [MarksLockController::class, 'submit']);

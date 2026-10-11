@@ -1293,14 +1293,24 @@
     "docs/modules/question-bank.md"
    ],
    "tables": [],
-   "routes": [],
+   "routes": [
+    "GET /question-bank/questions -> QbPurchaseController@questions [role:admin,teacher]",
+    "GET /question-bank/questions/{id} -> QbPurchaseController@question [role:admin,teacher]",
+    "GET /question-bank/quote -> QbPurchaseController@quote [role:admin,teacher]",
+    "POST /question-bank/buy -> QbPurchaseController@buy [role:admin,teacher]",
+    "GET /question-bank/spending -> QbPurchaseController@spending [role:admin]",
+    "PUT /question-bank/caps -> QbPurchaseController@caps [role:admin]"
+   ],
    "routes_excluded": [],
    "tests": [],
    "done_when": "Two teachers buying the same item at once are charged once; an empty wallet is 402; the cap is 422; another institution's unlock never helps; tests + e2e.",
    "scope_note": "Browse/search/filter (free to view); buying answers+paper use from the institution wallet (the SMS taka wallet, ledger type qb_purchase) in one locked transaction; qb_unlocks unique per institution; a private-batch tenant buys again; monthly cap per teacher; the head teacher's spending report per teacher.",
    "blocked": null,
    "verify": [
-    "php artisan test --filter=QbPurchase"
+    "php artisan test --filter=QbPurchase",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-buy.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

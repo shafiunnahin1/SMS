@@ -882,6 +882,10 @@
   "QbPricingController": {
    "release": "R1",
    "step": "QB.6"
+  },
+  "QbPurchaseController": {
+   "release": "R1",
+   "step": "QB.7"
   }
  },
  "route_exclude": [
@@ -1209,7 +1213,10 @@
    "scope": "Browse/search/filter (free to view); buying answers+paper use from the institution wallet (the SMS taka wallet, ledger type qb_purchase) in one locked transaction; qb_unlocks unique per institution; a private-batch tenant buys again; monthly cap per teacher; the head teacher's spending report per teacher.",
    "done": "Two teachers buying the same item at once are charged once; an empty wallet is 402; the cap is 422; another institution's unlock never helps; tests + e2e.",
    "verify": [
-    "php artisan test --filter=QbPurchase"
+    "php artisan test --filter=QbPurchase",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-buy.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

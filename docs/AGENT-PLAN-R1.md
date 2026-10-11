@@ -72,7 +72,7 @@
 | `QB.4` | Questions: the structured types | `QB.3` |  |  |  |
 | `QB.5` | Concepts and resources (slides, books, PDFs) | `QB.4` |  | 20 |  |
 | `QB.6` | Prices and the free / partly-free / discount rule engine | `QB.5` |  | 6 |  |
-| `QB.7` | Teachers: browse, buy with the institution wallet, spending | `QB.6` |  |  |  |
+| `QB.7` | Teachers: browse, buy with the institution wallet, spending | `QB.6` |  | 6 |  |
 | `QB.8` | Question papers: builder, PDF, the head teacher's view | `QB.7` |  |  |  |
 | `QB.9` | Student login and portal: practice, concepts, bKash purchases | `QB.8` |  |  |  |
 | `QB.10` | Quizzes and quiz packages | `QB.9` |  |  |  |
@@ -81,7 +81,7 @@
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 197 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 203 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -1551,7 +1551,7 @@ CREATE INDEX idx_sms_logs_campaign ON sms_logs(campaign_id);
 CREATE TABLE sms_credit_transactions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
-    type ENUM('purchase','usage','adjustment','refund') NOT NULL,
+    type ENUM('purchase','usage','adjustment','refund','qb_purchase') NOT NULL,   -- qb_purchase: D66 (1), question-bank buys from the same wallet
     quantity INT NOT NULL DEFAULT 0,             -- D56: SMS parts of a `usage` row (negative); 0 for money moves
     balance_after DECIMAL(10,2) NOT NULL,        -- D56: wallet balance in taka after this row
     reference VARCHAR(100) NULL,                 -- payment trx id / sms_logs id
@@ -2553,11 +2553,24 @@ php artisan test   # whole suite stays green
 > **R1 পরিসর (এটিই চূড়ান্ত):** Browse/search/filter (free to view); buying answers+paper use from the institution wallet (the SMS taka wallet, ledger type qb_purchase) in one locked transaction; qb_unlocks unique per institution; a private-batch tenant buys again; monthly cap per teacher; the head teacher's spending report per teacher.
 
 
+**R1-এ যে route বানাবেন:**
+```
+GET /question-bank/questions -> QbPurchaseController@questions [role:admin,teacher]
+GET /question-bank/questions/{id} -> QbPurchaseController@question [role:admin,teacher]
+GET /question-bank/quote -> QbPurchaseController@quote [role:admin,teacher]
+POST /question-bank/buy -> QbPurchaseController@buy [role:admin,teacher]
+GET /question-bank/spending -> QbPurchaseController@spending [role:admin]
+PUT /question-bank/caps -> QbPurchaseController@caps [role:admin]
+```
+
 **Done When:** Two teachers buying the same item at once are charged once; an empty wallet is 402; the cap is 422; another institution's unlock never helps; tests + e2e.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
 php artisan test --filter=QbPurchase
+npm test && npm run lint:theme
+npx playwright test e2e/qb-buy.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2874,7 +2887,7 @@ php artisan test   # whole suite stays green
 
 | Release | route |
 |---|---|
-| R1 | 197 |
+| R1 | 203 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
 | R2 | 150 |

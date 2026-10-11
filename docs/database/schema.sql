@@ -1226,7 +1226,7 @@ CREATE INDEX idx_leads_phone ON admission_leads(institution_id, phone, created_a
 CREATE TABLE sms_credit_transactions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
-    type ENUM('purchase','usage','adjustment','refund') NOT NULL,
+    type ENUM('purchase','usage','adjustment','refund','qb_purchase') NOT NULL,   -- qb_purchase: D66 (1), question-bank buys from the same wallet
     quantity INT NOT NULL DEFAULT 0,             -- D56: SMS parts of a `usage` row (negative); 0 for money moves
     balance_after DECIMAL(10,2) NOT NULL,        -- D56: wallet balance in taka after this row
     reference VARCHAR(100) NULL,                 -- payment trx id / sms_logs id
