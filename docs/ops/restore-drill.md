@@ -36,6 +36,8 @@ mysql edu_restore_one -e "SET FOREIGN_KEY_CHECKS=0; SOURCE one.sql; SET FOREIGN_
 | Date | Where | Backup | Whole restore | One institution | Time | By |
 |---|---|---|---|---|---|---|
 | 2026-10-10 | agent's local MySQL 8 (demo seed, 3 institutions) | mysqldump 85,092 bytes, 1 s | 38 tables, every row count equal, 0 s | `alokito-coaching` (id 2): 34 rows in 27 tables, equal to the live counts, 0 rows of any other institution | < 1 min | agent (Step 8.1) |
+| 2026-10-11 | Step 9.1: `infra/scripts/backup.sh` on the agent's MySQL 8 → `infra/scripts/restore.sh` into a **clean MySQL 8.0.46 container** (nothing else on it) | 264 KB gzip + files archive + sha256, < 1 s | 38 tables, 9,296 rows, every count equal; `php artisan migrate:status` against it: 39 Ran, 0 Pending; `mysql-smoke.sh` against that server: 33 passed, 0 failed; the files archive restored (a test photo byte-equal) | not repeated (procedure unchanged) | ~ 5 s | agent (Step 9.1) |
 
-Not yet drilled: the file backup (step 5) and a production-size database — both belong to Step 9.1 (backups); repeat this drill
-there and add a row.
+The file backup is drilled (2026-10-11). Still to drill: a production-size database on the real server (at deploy, D64) — add a row then.
+Scripts: `infra/scripts/backup.sh` (database + files, sha256, optional S3/R2 copy, local retention) and `infra/scripts/restore.sh` (refuses the live database
+and any non-empty target; checks the sha256).
