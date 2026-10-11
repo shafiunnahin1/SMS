@@ -1,7 +1,7 @@
 // infra/loadtest/peak-hour.k6.mjs - the PEAK HOUR, not the average hour: every teacher saves attendance in the same 15 minutes, parents check, the fee counter is busy.
 //   k6 run -e BASE_URL=http://demo.lvh.me:8000/api/v1 -e INPUT=infra/loadtest/inputs.json infra/loadtest/peak-hour.k6.mjs
-// NOT RUN anywhere yet (k6 and the application do not exist in the specification environment) - it was syntax-parsed only. Endpoint shapes come from docs/API.md and the
-// routes template; the login body field names are the least certain part (see docs/AUTHORIZATION.md) and are configurable below.
+// Run 2026-10-11 (Step 8.5, D62) with k6 v0.55.0 against the R1 API: every threshold passed (docs/ops/performance-benchmarks.md "মাপা ফল").
+// The peak-hour tenant comes from owner/loadtest/seed-perf.php, which also writes the inputs file.
 // WARNING: it WRITES (attendance, fee receipts). Point it at a disposable database, never at production.
 import http from 'k6/http'
 import { check, sleep } from 'k6'
@@ -14,6 +14,7 @@ const input = new SharedArray('input', () => [JSON.parse(open(__ENV.INPUT || './
 
 // peak profile for ONE tenant host (an arrival rate is per second). Placeholders until you know your real morning curve - derive them from analytics, do not trust these.
 export const options = {
+  setupTimeout: '5m',                             // setup logs every user in once: ~330 bcrypt logins take ~90 s
   scenarios: {
     teachers_save_attendance: { executor: 'ramping-arrival-rate', exec: 'teacherSaves', startRate: 1, timeUnit: '1s', preAllocatedVUs: 50, maxVUs: 400,
       stages: [{ target: 3 * SCALE, duration: '2m' }, { target: 12 * SCALE, duration: '5m' }, { target: 12 * SCALE, duration: '10m' }, { target: 0, duration: '1m' }] },
@@ -21,7 +22,7 @@ export const options = {
     fee_counter:              { executor: 'constant-arrival-rate', exec: 'counterCollects', rate: 2 * SCALE, timeUnit: '1s', duration: '18m', preAllocatedVUs: 10, maxVUs: 60 },
     admin_lists:              { executor: 'constant-arrival-rate', exec: 'adminLists', rate: 3 * SCALE, timeUnit: '1s', duration: '18m', preAllocatedVUs: 10, maxVUs: 60 },
   },
-  thresholds: {                                   // the targets of docs/ops/performance-benchmarks.md; they are PLACEHOLDERS until measured on target hardware
+  thresholds: {                                   // the owner's p95 limits (D62)
     'http_req_duration{scenario:teachers_save_attendance}': ['p(95)<1000'],     // bulk save is allowed to be slower than a read
     'http_req_duration{scenario:parents_browse}': ['p(95)<500'],
     'http_req_duration{scenario:fee_counter}': ['p(95)<800'],
@@ -32,8 +33,8 @@ export const options = {
 }
 
 function login(who) {
-  // Field names per docs/AUTHORIZATION.md ("identifier" = email | phone | username). Change here if the implemented API differs.
-  const r = http.post(`${BASE}/auth/login`, JSON.stringify({ identifier: who.identifier, password: who.password }), { headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, tags: { name: 'login' } })
+  // POST /auth/login {login, password}: `login` = email | phone | username (LoginController)
+  const r = http.post(`${BASE}/auth/login`, JSON.stringify({ login: who.identifier, password: who.password }), { headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, tags: { name: 'login' } })
   check(r, { 'login 200': (x) => x.status === 200 })
   return r.json('token') || r.json('data.token')
 }
@@ -61,8 +62,8 @@ export function teacherSaves(d) {                  // GET the sheet, then POST t
 
 export function parentBrowses(d) {
   const p = pick(d.parents)
-  const a = http.get(`${BASE}/student/attendance`, { ...auth(p.token), tags: { name: 'parent_attendance' } })
-  const f = http.get(`${BASE}/fees/dues?student_id=${p.student_id}`, { ...auth(p.token), tags: { name: 'parent_dues' } })
+  const a = http.get(`${BASE}/parent/children/${p.student_id}/attendance`, { ...auth(p.token), tags: { name: 'parent_attendance' } })
+  const f = http.get(`${BASE}/parent/fees?student_id=${p.student_id}`, { ...auth(p.token), tags: { name: 'parent_dues' } })
   check(a, { 'parent attendance 200': (x) => x.status === 200 }); check(f, { 'parent dues 200': (x) => x.status === 200 })
   sleep(2)
 }
