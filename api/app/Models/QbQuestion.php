@@ -24,4 +24,8 @@ class QbQuestion extends Model
     public function occurrences() { return $this->hasMany(QbQuestionOccurrence::class)->orderBy('id'); }
     /** pictures linked to the question itself (qb_media_links owner_type 'question') */
     public function media() { return $this->belongsToMany(QbMedia::class, 'qb_media_links', 'owner_id', 'qb_media_id')->wherePivot('owner_type', 'question')->withPivotValue('owner_type', 'question'); }
+
+    /** QB.4 structured types: a passage / word box / table, and the gaps, pairs, steps or sub-questions */
+    public function stimuli() { return $this->hasMany(QbQuestionStimulus::class)->orderBy('sort_order')->orderBy('id'); }
+    public function items() { return $this->hasMany(QbQuestionItem::class)->orderBy('sort_order')->orderBy('id'); }
 }

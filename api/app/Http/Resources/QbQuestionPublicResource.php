@@ -21,7 +21,23 @@ final class QbQuestionPublicResource
             'creative_parts' => $q->creativeParts()->get()->map(fn ($p) => $p->only(['part_label', 'cognitive_level', 'marks', 'question_text', 'question_json'])
                 + ($unlocked ? $p->only(['answer_text', 'answer_json']) : []))->all(),
             'media' => $q->media()->get()->map(fn ($m) => QbMediaController::view($m))->all(),
-        ];
+            'stimuli' => $q->stimuli()->get()->map(fn ($st) => ['id' => $st->id] + $st->only(['label', 'content_text', 'content_json']))->all(),
+        ] + self::items($q, $unlocked);
         return $unlocked ? $out + $q->only(['answer_text', 'answer_json', 'explanation_text', 'explanation_json']) : $out;
+    }
+
+    /** QB.4: gaps, pairs, steps, sub-questions. Locked: no answer_json, and nothing that gives the answer away by position -
+     *  a matching's right side comes as a sorted list of choices, an ordering's pieces in alphabetical (not correct) order. */
+    private static function items(QbQuestion $q, bool $unlocked): array
+    {
+        $items = $q->items()->get();
+        $row = fn ($it) => $it->only(['item_type', 'prompt_text', 'prompt_json', 'marks', 'qb_question_stimulus_id']) + ($unlocked ? ['answer_json' => $it->answer_json] : []);
+        $list = $unlocked ? $items : ($items->isNotEmpty() && $items->every(fn ($it) => $it->item_type === 'order_step')
+            ? $items->sortBy(fn ($it) => mb_strtolower((string) $it->prompt_text))->values() : $items);
+        $out = ['items' => $list->map($row)->values()->all()];
+        if ($items->contains('item_type', 'match_pair')) {
+            $out['choices'] = $items->where('item_type', 'match_pair')->map(fn ($it) => (string) ($it->answer_json['right'] ?? ''))->filter()->sort()->values()->all();
+        }
+        return $out;
     }
 }

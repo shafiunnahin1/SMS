@@ -53,6 +53,19 @@ class QbQuestionRequest extends FormRequest
             'occurrences.*.note'           => ['nullable', 'string', 'max:200'],
             'media_ids'                    => ['sometimes', 'array', 'max:10'],                      // pictures uploaded through POST /writer/media
             'media_ids.*'                  => ['integer', 'distinct', 'exists:qb_media,id'],
+            // QB.4: the structured types - a passage / word box (stimuli) and the gaps, pairs, steps or sub-questions (items).
+            // An item names its stimulus by its index in `stimuli`; answer_json is never sent without an unlock.
+            'stimuli'                      => ['sometimes', 'array', 'max:5'],
+            'stimuli.*.label'              => ['nullable', 'string', 'max:50'],
+            'stimuli.*.content_text'       => ['nullable', 'string', 'max:20000'],
+            'stimuli.*.content_json'       => ['nullable', 'array'],
+            'items'                        => ['sometimes', 'array', 'max:40'],
+            'items.*.item_type'            => ['required', 'in:gap,match_pair,order_step,sub_question,sub_mcq'],
+            'items.*.stimulus_index'       => ['nullable', 'integer', 'min:0', 'max:4'],
+            'items.*.prompt_text'          => ['nullable', 'string', 'max:5000'],
+            'items.*.prompt_json'          => ['nullable', 'array'],
+            'items.*.answer_json'          => ['nullable', 'array'],
+            'items.*.marks'                => ['nullable', 'numeric', 'min:0', 'max:100'],
             'status'              => ['prohibited'],
         ];
     }

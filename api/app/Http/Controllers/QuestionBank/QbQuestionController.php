@@ -19,7 +19,7 @@ use Illuminate\Validation\ValidationException;
 class QbQuestionController extends Controller
 {
     private const EDITABLE = ['draft', 'rejected'];
-    private const CHILDREN = ['class_level_ids', 'options', 'creative_parts', 'occurrences', 'media_ids'];
+    private const CHILDREN = ['class_level_ids', 'options', 'creative_parts', 'occurrences', 'media_ids', 'stimuli', 'items'];
 
     /** GET /writer/curriculum: the class → subject → chapter → topic tree to file a question under */
     public function curriculum()
@@ -31,7 +31,8 @@ class QbQuestionController extends Controller
     public function types()
     {
         return response()->json(['success' => true, 'data' => QbQuestionType::where('is_active', true)->orderBy('sort_order')->orderBy('id')
-            ->get(['id', 'slug', 'name_bn', 'name_en', 'family'])]);
+            ->get(['id', 'slug', 'name_bn', 'name_en', 'family', 'ui_config'])
+            ->map(fn ($t) => $t->only(['id', 'slug', 'name_bn', 'name_en', 'family']) + ['structure' => $t->ui_config['structure'] ?? null])]);   // QB.4: the editor section
     }
 
     /** GET /writer/questions?status=&qb_subject_id=&q=: a writer's own; moderators and the Super Admin see all */
@@ -180,6 +181,23 @@ class QbQuestionController extends Controller
             foreach (array_values($in['creative_parts']) as $i => $p) $q->creativeParts()->create(collect($p)->only(['part_label', 'cognitive_level', 'marks',
                 'question_text', 'question_json', 'answer_text', 'answer_json'])->all() + ['sort_order' => $i]);
         }
+        if (array_key_exists('stimuli', $in) || array_key_exists('items', $in)) {       // QB.4: one list of each, replaced together
+            $q->items()->delete();
+            $stimuli = [];
+            if (array_key_exists('stimuli', $in)) {
+                $q->stimuli()->delete();
+                foreach (array_values($in['stimuli']) as $i => $st) $stimuli[$i] = $q->stimuli()->create(['label' => $st['label'] ?? null, 'content_text' => $st['content_text'] ?? null,
+                    'content_json' => $st['content_json'] ?? null, 'sort_order' => $i])->id;
+            } else {
+                $stimuli = $q->stimuli()->pluck('id')->all();
+            }
+            foreach (array_values($in['items'] ?? []) as $i => $it) {
+                $sid = isset($it['stimulus_index']) ? ($stimuli[$it['stimulus_index']] ?? null) : null;
+                if (isset($it['stimulus_index']) && !$sid) throw ValidationException::withMessages(["items.{$i}.stimulus_index" => __('errors.qb_no_such_stimulus')]);
+                $q->items()->create(['qb_question_stimulus_id' => $sid, 'item_type' => $it['item_type'], 'prompt_text' => $it['prompt_text'] ?? null,
+                    'prompt_json' => $it['prompt_json'] ?? null, 'answer_json' => $it['answer_json'] ?? null, 'marks' => $it['marks'] ?? 0, 'sort_order' => $i]);
+            }
+        }
         if (array_key_exists('occurrences', $in)) {
             $q->occurrences()->delete();
             foreach ($in['occurrences'] as $o) $q->occurrences()->create(collect($o)->only(['board', 'institution_name', 'exam_type', 'year', 'note'])->all());
@@ -196,8 +214,10 @@ class QbQuestionController extends Controller
     private function complete(QbQuestion $q): void
     {
         $family = $q->type?->family;
+        $structure = $q->type?->ui_config['structure'] ?? null;
         $options = $q->options()->get();
-        $errors = match ($family) {
+        $items = $q->items()->get();
+        $errors = $structure && ($structure !== 'gap' || $items->isNotEmpty()) ? $this->structured($structure, $q, $items) : match ($family) {
             'mcq' => $options->count() < 2 ? ['options' => 'qb_needs_options'] : ($options->where('is_correct', true)->isEmpty() ? ['options' => 'qb_needs_correct'] : []),
             'true_false' => ($options->count() !== 2 || $options->where('is_correct', true)->count() !== 1) ? ['options' => 'qb_true_false'] : [],
             'creative' => $q->creativeParts()->count() === 0 ? ['creative_parts' => 'qb_needs_parts'] : [],
@@ -205,6 +225,25 @@ class QbQuestionController extends Controller
             default => blank($q->answer_text) ? ['answer_text' => 'qb_needs_answer'] : [],
         };
         if ($errors) throw ValidationException::withMessages(array_map(fn ($code) => __("errors.{$code}"), $errors));
+    }
+
+    /** QB.4: the structured types' own parts (a gap type without items keeps the QB.3 rule: a ___ in the text and an answer) */
+    private function structured(string $structure, QbQuestion $q, \Illuminate\Support\Collection $items): array
+    {
+        $only = fn (string $type) => $items->isNotEmpty() && $items->every(fn ($i) => $i->item_type === $type);
+        $filled = fn ($v) => is_string($v) ? trim($v) !== '' : !empty($v);
+        return match ($structure) {
+            'gap' => $only('gap') && $items->every(fn ($i) => collect($i->answer_json['answers'] ?? [])->filter($filled)->isNotEmpty()) ? [] : ['items' => 'qb_gaps_need_answers'],
+            'match' => $items->count() >= 2 && $only('match_pair') && $items->every(fn ($i) => $filled($i->prompt_text) && $filled($i->answer_json['right'] ?? null)) ? [] : ['items' => 'qb_needs_pairs'],
+            'order' => $items->count() >= 2 && $only('order_step') && $items->pluck('answer_json.position')->map(fn ($p) => (int) $p)->sort()->values()->all() === range(1, $items->count())
+                ? [] : ['items' => 'qb_needs_order'],
+            'passage' => $q->stimuli()->whereNotNull('content_text')->where('content_text', '!=', '')->exists() && $only('sub_question')
+                && $items->every(fn ($i) => $filled($i->prompt_text) && $filled($i->answer_json['answer_text'] ?? null)) ? [] : ['items' => 'qb_needs_passage'],
+            'passage_mcq' => $q->stimuli()->whereNotNull('content_text')->where('content_text', '!=', '')->exists() && $only('sub_mcq')
+                && $items->every(fn ($i) => count($i->prompt_json['options'] ?? []) >= 2 && is_int($i->answer_json['correct'] ?? null)
+                    && $i->answer_json['correct'] >= 0 && $i->answer_json['correct'] < count($i->prompt_json['options'])) ? [] : ['items' => 'qb_needs_passage_mcq'],
+            default => [],
+        };
     }
 
     private function revision(QbQuestion $q, User $user): void
@@ -234,6 +273,8 @@ class QbQuestionController extends Controller
             'creative_parts' => $q->creativeParts()->get()->map(fn ($p) => $p->only(['part_label', 'cognitive_level', 'marks', 'question_text', 'question_json', 'answer_text', 'answer_json']))->all(),
             'occurrences' => $q->occurrences()->get()->map(fn ($o) => $o->only(['board', 'institution_name', 'exam_type', 'year', 'note']))->all(),
             'media_ids' => $q->media()->pluck('qb_media.id')->all(),
+            'stimuli' => $q->stimuli()->get()->map(fn ($st) => ['id' => $st->id] + $st->only(['label', 'content_text', 'content_json']))->all(),
+            'items' => $q->items()->get()->map(fn ($it) => $it->only(['item_type', 'prompt_text', 'prompt_json', 'answer_json', 'marks', 'qb_question_stimulus_id']))->all(),
         ];
     }
 }

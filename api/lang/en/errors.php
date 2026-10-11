@@ -51,6 +51,12 @@ return [
     'qb_needs_parts'        => 'A creative question needs at least one part (ক-ঘ).',   // QB.3
     'qb_needs_blank'        => 'Write ___ where the blank goes.',   // QB.3
     'qb_needs_answer'       => 'Write the answer.',   // QB.3
+    'qb_no_such_stimulus'   => 'There is no such passage / word box.',   // QB.4
+    'qb_gaps_need_answers'  => 'Give at least one answer for every gap.',   // QB.4
+    'qb_needs_pairs'        => 'Give at least two pairs, both sides filled.',   // QB.4
+    'qb_needs_order'        => 'Give at least two pieces, in the right order from 1.',   // QB.4
+    'qb_needs_passage'      => 'Give the passage and an answer for every question.',   // QB.4
+    'qb_needs_passage_mcq'  => 'Give the stimulus and, for every question, at least two options and the right one.',   // QB.4
     'enrollment_not_active' => 'This enrollment is no longer active.',
     'kind_not_available' => 'This kind of import is not available yet.',
     'bad_encoding' => 'The file is not UTF-8. Save it from Excel as "CSV UTF-8" or upload .xlsx.',

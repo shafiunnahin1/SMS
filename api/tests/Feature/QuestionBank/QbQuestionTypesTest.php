@@ -51,7 +51,8 @@ class QbQuestionTypesTest extends TestCase
 
     public function test_the_six_core_types_are_seeded(): void
     {
-        $this->assertSame(['creative', 'fill_in_the_blank', 'mcq', 'one_word_answer', 'short', 'true_false'], collect(array_keys($this->types))->sort()->values()->all());
+        foreach (['creative', 'fill_in_the_blank', 'mcq', 'one_word_answer', 'short', 'true_false'] as $slug) $this->assertArrayHasKey($slug, $this->types);
+        $this->assertCount(74, $this->types, "qbank's 75 entries, its duplicate slug `application` kept once (QB.4)");
     }
 
     public function test_an_mcq_with_math_and_a_picture(): void
