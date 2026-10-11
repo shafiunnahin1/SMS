@@ -209,7 +209,9 @@
   "admin",
   "teacher",
   "accountant",
-  "parent"
+  "parent",
+  "content_writer",
+  "content_moderator"
  ],
  "menu_since": {
   "admin": {
@@ -272,7 +274,15 @@
    "plans",
    "billing",
    "settings",
-   "qb-curriculum"
+   "qb-curriculum",
+   "qb-writers",
+   "qb-questions"
+  ],
+  "content_writer": [
+   "questions"
+  ],
+  "content_moderator": [
+   "review"
   ]
  },
  "step_tables": {
@@ -837,6 +847,14 @@
   "QbCurriculumController": {
    "release": "R1",
    "step": "QB.1"
+  },
+  "QbWriterController": {
+   "release": "R1",
+   "step": "QB.2"
+  },
+  "QbQuestionController": {
+   "release": "R1",
+   "step": "QB.2"
   }
  },
  "route_exclude": [
@@ -1079,7 +1097,10 @@
    "scope": "Super Admin adds/removes content_writer and content_moderator users; login on the central host; draft → review → published/rejected with a reason; every save a qb_question_revisions row; audit log.",
    "done": "A writer cannot publish; a moderator can; a rejected item returns to the writer with the reason; tests.",
    "verify": [
-    "php artisan test --filter=QbReview"
+    "php artisan test --filter=QbReview",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-writer.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

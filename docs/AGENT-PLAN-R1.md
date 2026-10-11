@@ -67,7 +67,7 @@
 | `A` | Release 1 acceptance (local, D63/D64), open signup at deploy | `9.1` |  |  |  |
 | `QB.0` | Question bank foundation: schema, module keys, roles, catalogue rule | `A` | 36 |  |  |
 | `QB.1` | Curriculum: class → subject → chapter → topic | `QB.0` |  | 5 |  |
-| `QB.2` | Writers' panel: writers, moderators, revisions, review flow | `QB.1` |  |  |  |
+| `QB.2` | Writers' panel: writers, moderators, revisions, review flow | `QB.1` |  | 14 |  |
 | `QB.3` | Questions: core types and the editor | `QB.2` |  |  |  |
 | `QB.4` | Questions: the structured types | `QB.3` |  |  |  |
 | `QB.5` | Concepts and resources (slides, books, PDFs) | `QB.4` |  |  |  |
@@ -81,7 +81,7 @@
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 156 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 170 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2391,11 +2391,32 @@ php artisan test   # whole suite stays green
 > **R1 পরিসর (এটিই চূড়ান্ত):** Super Admin adds/removes content_writer and content_moderator users; login on the central host; draft → review → published/rejected with a reason; every save a qb_question_revisions row; audit log.
 
 
+**R1-এ যে route বানাবেন:**
+```
+GET /super/qb/writers -> QbWriterController@index [role:super_admin]
+POST /super/qb/writers -> QbWriterController@store [role:super_admin]
+PATCH /super/qb/writers/{id} -> QbWriterController@update [role:super_admin]
+PATCH /writer/change-password -> QbWriterController@changePassword [role:content_writer,content_moderator,super_admin]
+GET /writer/curriculum -> QbQuestionController@curriculum [role:content_writer,content_moderator,super_admin]
+GET /writer/question-types -> QbQuestionController@types [role:content_writer,content_moderator,super_admin]
+GET /writer/questions -> QbQuestionController@index [role:content_writer,content_moderator,super_admin]
+POST /writer/questions -> QbQuestionController@store [role:content_writer,super_admin]
+GET /writer/questions/{id} -> QbQuestionController@show [role:content_writer,content_moderator,super_admin]
+PUT /writer/questions/{id} -> QbQuestionController@update [role:content_writer,super_admin]
+GET /writer/questions/{id}/revisions -> QbQuestionController@revisions [role:content_writer,content_moderator,super_admin]
+POST /writer/questions/{id}/submit -> QbQuestionController@submit [role:content_writer,super_admin]
+POST /writer/questions/{id}/publish -> QbQuestionController@publish [role:content_moderator,super_admin]
+POST /writer/questions/{id}/reject -> QbQuestionController@reject [role:content_moderator,super_admin]
+```
+
 **Done When:** A writer cannot publish; a moderator can; a rejected item returns to the writer with the reason; tests.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
 php artisan test --filter=QbReview
+npm test && npm run lint:theme
+npx playwright test e2e/qb-writer.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2802,7 +2823,7 @@ php artisan test   # whole suite stays green
 
 | Release | route |
 |---|---|
-| R1 | 156 |
+| R1 | 170 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
 | R2 | 150 |

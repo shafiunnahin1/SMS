@@ -1143,14 +1143,32 @@
     "docs/modules/question-bank.md"
    ],
    "tables": [],
-   "routes": [],
+   "routes": [
+    "GET /super/qb/writers -> QbWriterController@index [role:super_admin]",
+    "POST /super/qb/writers -> QbWriterController@store [role:super_admin]",
+    "PATCH /super/qb/writers/{id} -> QbWriterController@update [role:super_admin]",
+    "PATCH /writer/change-password -> QbWriterController@changePassword [role:content_writer,content_moderator,super_admin]",
+    "GET /writer/curriculum -> QbQuestionController@curriculum [role:content_writer,content_moderator,super_admin]",
+    "GET /writer/question-types -> QbQuestionController@types [role:content_writer,content_moderator,super_admin]",
+    "GET /writer/questions -> QbQuestionController@index [role:content_writer,content_moderator,super_admin]",
+    "POST /writer/questions -> QbQuestionController@store [role:content_writer,super_admin]",
+    "GET /writer/questions/{id} -> QbQuestionController@show [role:content_writer,content_moderator,super_admin]",
+    "PUT /writer/questions/{id} -> QbQuestionController@update [role:content_writer,super_admin]",
+    "GET /writer/questions/{id}/revisions -> QbQuestionController@revisions [role:content_writer,content_moderator,super_admin]",
+    "POST /writer/questions/{id}/submit -> QbQuestionController@submit [role:content_writer,super_admin]",
+    "POST /writer/questions/{id}/publish -> QbQuestionController@publish [role:content_moderator,super_admin]",
+    "POST /writer/questions/{id}/reject -> QbQuestionController@reject [role:content_moderator,super_admin]"
+   ],
    "routes_excluded": [],
    "tests": [],
    "done_when": "A writer cannot publish; a moderator can; a rejected item returns to the writer with the reason; tests.",
    "scope_note": "Super Admin adds/removes content_writer and content_moderator users; login on the central host; draft → review → published/rejected with a reason; every save a qb_question_revisions row; audit log.",
    "blocked": null,
    "verify": [
-    "php artisan test --filter=QbReview"
+    "php artisan test --filter=QbReview",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-writer.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

@@ -269,7 +269,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
 use App\Http\Controllers\Public\{PublicSiteController, PublicAdmissionController};
 use App\Http\Controllers\SuperAdmin\{TenantPurgeController, SettlementController, PayoutAccountController, SmsSenderApprovalController, OnlinePaymentReportController};
-use App\Http\Controllers\QuestionBank\QbCurriculumController;   // D65 question bank (docs/modules/question-bank.md)
+use App\Http\Controllers\QuestionBank\{QbCurriculumController, QbQuestionController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
 use App\Http\Controllers\Academics\{ResultSheetController, DueBlockController, PeriodAttendanceController, SubstitutionController, RoutineBlockController, StudentLeaveController, MarksLockController};
 use App\Http\Controllers\Hr\{LeaveTypeController, LeaveController, StaffController, StaffAttendanceController, SalaryComponentController, SalaryStructureController, SalaryRevisionController, IncrementBatchController, BonusSchemeController, SalaryAdjustmentController, SalaryAdvanceController, PayrollRunController, PayrollItemController, PayAccountController, ProvidentFundController, PayrollReportController, FinalSettlementController};
 use App\Http\Controllers\Teacher\SalaryController as TeacherSalaryController;
@@ -355,6 +355,10 @@ Route::prefix('v1')->group(function () {
             Route::post('/institutions/{id}/sms-credits', [SmsCreditController::class, 'adjust']);
             Route::get('/sms-settings',               [UniversalSmsController::class, 'show']);      // D57: the universal BulkSMSBD API + the rate per SMS part (D56)
             Route::put('/sms-settings',               [UniversalSmsController::class, 'update']);
+            // QB.2: the platform's writers and moderators (users with institution_id NULL); "remove" = switch off (tokens revoked)
+            Route::get('/qb/writers',                 [QbWriterController::class, 'index']);
+            Route::post('/qb/writers',                [QbWriterController::class, 'store']);
+            Route::patch('/qb/writers/{id}',          [QbWriterController::class, 'update']);
             // D65 question bank, task QB.1: the platform curriculum class → subject → chapter → topic ({kind} = class-levels|subjects|chapters|topics)
             Route::get('/qb/curriculum',              [QbCurriculumController::class, 'tree']);
             Route::post('/qb/{kind}',                 [QbCurriculumController::class, 'store']);
@@ -405,6 +409,22 @@ Route::prefix('v1')->group(function () {
             Route::post('/domains/{id}/reject',   [DomainApprovalController::class, 'reject']);
             Route::post('/domains/{id}/disable',  [DomainApprovalController::class, 'disable']);
             Route::post('/domains/{id}/recheck',  [DomainApprovalController::class, 'recheck']);
+        });
+
+        // D65, QB.2: the writers' panel on the central host - content_writer / content_moderator (and the Super Admin). Platform content
+        // only (no tenant is bound, no tenancy.bypass). A writer edits only their own draft or rejected question; moderators publish or reject.
+        Route::middleware(['auth:sanctum', 'role:content_writer,content_moderator,super_admin', 'password.fresh', 'throttle:api'])->prefix('writer')->group(function () {
+            Route::patch('/change-password',          [QbWriterController::class, 'changePassword']);   // first login: the Super Admin set the password
+            Route::get('/curriculum',                 [QbQuestionController::class, 'curriculum']);
+            Route::get('/question-types',             [QbQuestionController::class, 'types']);
+            Route::get('/questions',                  [QbQuestionController::class, 'index']);         // writer: own; moderator / Super Admin: all, ?status=review
+            Route::post('/questions',                 [QbQuestionController::class, 'store'])->middleware('role:content_writer,super_admin');
+            Route::get('/questions/{id}',             [QbQuestionController::class, 'show']);
+            Route::put('/questions/{id}',             [QbQuestionController::class, 'update'])->middleware('role:content_writer,super_admin');        // every save = a qb_question_revisions row
+            Route::get('/questions/{id}/revisions',   [QbQuestionController::class, 'revisions']);
+            Route::post('/questions/{id}/submit',     [QbQuestionController::class, 'submit'])->middleware('role:content_writer,super_admin');        // draft | rejected -> review
+            Route::post('/questions/{id}/publish',    [QbQuestionController::class, 'publish'])->middleware('role:content_moderator,super_admin');
+            Route::post('/questions/{id}/reject',     [QbQuestionController::class, 'reject'])->middleware('role:content_moderator,super_admin');   // {reason}
         });
 
         // Super Admin shares these two with tenants (token-scoped to the user, no tenant data)

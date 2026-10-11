@@ -107,7 +107,8 @@ for role in ['admin','teacher','student','parent','accountant']:
     if m: ok(len(re.findall(r'primary:\s*true',m.group(1)))<=4,f'{role}: at most 4 tab-bar (primary) items')
 used=set()
 for m in re.finditer(r"role:([a-z_,]+)",rt): used|=set(m.group(1).split(','))
-ok(used<={'super_admin','admin','teacher','student','parent','accountant'},f'roles used in routes exist in users.role {used-{"super_admin","admin","teacher","student","parent","accountant"}}')
+_roles={'super_admin','admin','teacher','student','parent','accountant','content_writer','content_moderator'}   # + the D65 platform writer roles (QB.2)
+ok(used<=_roles,f'roles used in routes exist in users.role {used-_roles}')
 closures=re.findall(r"Route::(?:get|post|put|patch|delete|any|match)\([^\n]*,\s*(?:fn|function)\b",rt); ok(not closures,'no action closures in routes (route:cache must work)')
 steps=set(re.findall(r'^###? Step (\d+\.\d+[a-z]?)',rd('docs/BUILD-SEQUENCE.md'),re.M))
 ok(not [r for r in set(re.findall(r'(?:Phase \d+ · |\bStep )(\d+\.\d+[a-z]?)',idx)) if r not in steps],'steps referenced by the module index exist')
@@ -377,7 +378,7 @@ ok(set(r1['steps_in_release'])|set(r1['steps_later'])<=all_steps,f"every step na
 mm=re.search(r"config/release\.php[^`]*```php\n(.*?)```",cfg,re.S); relphp=mm.group(1) if mm else ''
 rm_=re.search(r"'modules'\s*=>\s*\[([^\]]*)\]",relphp); rr_=re.search(r"'roles'\s*=>\s*\[([^\]]*)\]",relphp)
 ok(rm_ and sorted(re.findall(r"'(\w+)'",rm_.group(1)))==sorted(r1['modules']),'config/release.php sample lists exactly the R1 modules')
-ok(rr_ and sorted(re.findall(r"'(\w+)'",rr_.group(1)))==sorted(r1['roles']) and set(r1['roles'])<={'super_admin','admin','teacher','student','parent','accountant'},'config/release.php sample lists exactly the R1 roles (all real roles; student not yet)')
+ok(rr_ and sorted(re.findall(r"'(\w+)'",rr_.group(1)))==sorted(r1['roles']) and set(r1['roles'])<={'super_admin','admin','teacher','student','parent','accountant','content_writer','content_moderator'},'config/release.php sample lists exactly the R1 roles (all real roles; student not yet; the D65 platform writer roles since QB.2)')
 _cls=cfg[cfg.index('class ModuleGate'):]; _cls=_cls[:_cls.index('\n}\n')] if '\n}\n' in _cls else _cls
 ok("config('release.modules'" in _cls and "$override" in _cls and _cls.index("config('release.modules'")<_cls.index("$override"),'ModuleGate (inside the class) checks the release gate BEFORE reading the Super Admin override')
 # menu: items that would show in R1 but have no module gate must be classified
