@@ -12,6 +12,8 @@ return [
     ],
     'max_tokens_per_user' => (int) env('TOKEN_MAX_PER_USER', 5),
 
+    'api_per_minute' => (int) env('API_RATE_LIMIT', 300),    // owner 2026-10-11 (DECISIONS; SECURITY.md said 60)
+
     'lockout' => ['attempts' => 5, 'minutes' => 30],
     'otp' => ['length' => (int) env('OTP_LENGTH', 6), 'minutes' => (int) env('OTP_EXPIRY_MINUTES', 5)],
     'reset_link_minutes' => 60,

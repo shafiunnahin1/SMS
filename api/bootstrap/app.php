@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // session's token. Requests without a matching Referer/Origin (mobile, API clients, tests) stay stateless Bearer requests.
         $middleware->statefulApi();
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);          // security-checklist.md: HSTS, nosniff, no framing
+        $middleware->throttleApi();                                                   // API 300/min per user (owner, 2026-10-11): the `api` limiter in AppServiceProvider
         $middleware->appendToGroup('api', \App\Http\Middleware\SessionBearer::class);
         // Laravel sorts middleware by priority and would run `auth:sanctum` first: the session's token must be in place before it
         $middleware->prependToPriorityList(\Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, \App\Http\Middleware\SessionBearer::class);

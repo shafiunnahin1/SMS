@@ -228,6 +228,7 @@ class TenantIsolationTest extends TestCase
 
     public function test_every_tenant_route_with_an_id_refuses_another_tenants_row(): void
     {
+        config(['auth_policy.api_per_minute' => 100000]);   // one user sweeps every route within seconds; the limit itself: ApiRateLimitTest
         $byId = [];
         foreach ($this->tenantRoutes() as $route) {
             if (!str_contains($route->uri(), '{')) continue;
