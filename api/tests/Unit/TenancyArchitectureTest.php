@@ -14,6 +14,7 @@ class TenancyArchitectureTest extends TestCase
         'withoutTenancy('                  => '/withoutTenancy\s*\(/',
         'raw DB:: query'                   => '/DB::(?:table|select|statement|affectingStatement|insert|update|delete|unprepared)\s*\(/',
         'bulk Model::insert/upsert'        => '/(?<![\w$\\\\])(?!TenantBulk::)[A-Z]\w*::(?:insert|upsert)\s*\(/',   // TenantBulk:: is the sanctioned path
+        'Catalogue::asPlatform('           => '/asPlatform\s*\(/',   // D65: a platform (question-bank catalogue) write during an institution's request
     ];
 
     private static function root(): string { return dirname(__DIR__, 2); }
@@ -63,6 +64,7 @@ class TenancyArchitectureTest extends TestCase
         $samples = [
             '$q->withoutGlobalScope("institution")', "app()->instance('currentInstitution', \$i)", 'Student::anyInstitution()->get()',   // guard:allow(tenant-scope) sample text
             'Tenancy::withoutTenancy(fn () => 1)', "DB::table('students')", 'Attendance::upsert($rows, [], [])',   // guard:allow(raw) sample text
+            'Catalogue::asPlatform(fn () => 1)',
         ];
         foreach (array_values(self::FORBIDDEN) as $i => $rx) {
             $this->assertMatchesRegularExpression($rx, $samples[$i]);

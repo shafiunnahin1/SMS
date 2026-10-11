@@ -22,7 +22,7 @@ return [
             'behavior','health','certificates','visitors','events','parent_meeting','teacher_attendance',
             'hr_payroll','library','transport','hostel','online_class','online_quiz','scholarships',
             'alumni','fee_installment','analytics','ai_assistant','gps','cpd','multi_branch',
-            'leads','online_payment','public_site'],
+            'leads','online_payment','public_site','question_bank','quiz'],
         'onboarding' => ['public_site' => true, 'programs' => 'class_1_10', 'batches' => ['A'], 'fee_categories' => ['মাসিক বেতন','পরীক্ষা ফি','সেশন চার্জ']],
     ],
 
@@ -46,7 +46,7 @@ return [
             'expenses','routine','homework','academic_calendar','promotion_tc','id_cards','admit_card',
             'certificates','visitors','events','teacher_attendance','hr_payroll','library','transport',
             'hostel','online_class','online_quiz','scholarships','alumni','fee_installment','analytics',
-            'ai_assistant','cpd','multi_branch','leads','online_payment','public_site'],
+            'ai_assistant','cpd','multi_branch','leads','online_payment','public_site','question_bank','quiz'],
         'onboarding' => ['public_site' => true, 'programs' => 'hsc_groups', 'batches' => ['A'], 'fee_categories' => ['মাসিক বেতন','সেশন ফি','পরীক্ষা ফি']],
     ],
 
@@ -68,7 +68,7 @@ return [
         'modules' => ['students','enrollments','attendance','fees','exams','cashbook','support','syllabus','data_migration','accounting','inventory','attendance_devices','risk_alerts','admission_cycle','result_sheets','student_leave','hr_payroll','sms','notices','reports',
             'expenses','routine','homework','id_cards','leads','teacher_payouts','merit_list',
             'online_class','online_quiz','fee_installment','analytics','ai_assistant','multi_branch',
-            'online_payment','public_site'],
+            'online_payment','public_site','question_bank','quiz'],
         'onboarding' => ['public_site' => true, 'programs' => 'none', 'batches' => [], 'fee_categories' => ['মাসিক ফি','ভর্তি ফি','কোর্স ফি']],
     ],
 
@@ -88,7 +88,7 @@ return [
             'tuition_fee'   => ['bn' => 'মাসিক ফি',    'en' => 'Monthly Fee', 'ar' => 'الرسوم الشهرية'],
         ],
         'modules' => ['students','enrollments','attendance','fees','exams','cashbook','support','syllabus','data_migration','student_leave','sms','notices','reports','expenses',
-            'online_payment','public_site'],   // public_site default OFF for this type; turning it on also enables 'leads' (docs/modules/public-website.md)
+            'online_payment','public_site','question_bank','quiz'],   // public_site default OFF for this type; turning it on also enables 'leads' (docs/modules/public-website.md)
         'onboarding' => ['public_site' => false, 'programs' => 'default_general', 'batches' => [], 'fee_categories' => ['মাসিক ফি']],
     ],
 
