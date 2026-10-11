@@ -269,7 +269,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
 use App\Http\Controllers\Public\{PublicSiteController, PublicAdmissionController};
 use App\Http\Controllers\SuperAdmin\{TenantPurgeController, SettlementController, PayoutAccountController, SmsSenderApprovalController, OnlinePaymentReportController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
 use App\Http\Controllers\Academics\{ResultSheetController, DueBlockController, PeriodAttendanceController, SubstitutionController, RoutineBlockController, StudentLeaveController, MarksLockController};
 use App\Http\Controllers\Hr\{LeaveTypeController, LeaveController, StaffController, StaffAttendanceController, SalaryComponentController, SalaryStructureController, SalaryRevisionController, IncrementBatchController, BonusSchemeController, SalaryAdjustmentController, SalaryAdvanceController, PayrollRunController, PayrollItemController, PayAccountController, ProvidentFundController, PayrollReportController, FinalSettlementController};
 use App\Http\Controllers\Teacher\SalaryController as TeacherSalaryController;
@@ -710,6 +710,15 @@ Route::prefix('v1')->group(function () {
             Route::post('/buy',                      [QbPurchaseController::class, 'buy']);       // {item_type, item_id}: 402 wallet_balance_too_low, 422 qb_teacher_cap_reached
             Route::get('/spending',                  [QbPurchaseController::class, 'spending'])->middleware('role:admin');   // per teacher, ?from=&to=
             Route::put('/caps',                      [QbPurchaseController::class, 'caps'])->middleware('role:admin');       // {default_cap, teachers: [{id, cap}]}
+            Route::post('/buy-many',                 [QbPurchaseController::class, 'buyMany']);   // QB.8: {question_ids} - the paper's not-yet-bought questions, after the teacher confirms the total
+            // QB.8: question papers - a teacher sees and edits their own, the head teacher every paper of the institution
+            Route::get('/papers',                    [QbPaperController::class, 'index']);
+            Route::post('/papers',                   [QbPaperController::class, 'store']);
+            Route::get('/papers/{id}',               [QbPaperController::class, 'show']);
+            Route::put('/papers/{id}',               [QbPaperController::class, 'update']);       // draft only; 422 qb_paper_unbought {ids, total} until every question is bought
+            Route::delete('/papers/{id}',            [QbPaperController::class, 'destroy']);      // draft only
+            Route::post('/papers/{id}/finalize',     [QbPaperController::class, 'finalize']);
+            Route::get('/papers/{id}/pdf',           [QbPaperController::class, 'pdf']);          // ?set=A|B&answers=0|1 (Chromium, D50)
         });
         Route::middleware(['role:admin,teacher', 'module:exams'])->group(function () {
             Route::post('/exams/{id}/subjects/{subjectId}/submit', [MarksLockController::class, 'submit']);

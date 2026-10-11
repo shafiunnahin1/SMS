@@ -1299,7 +1299,8 @@
     "GET /question-bank/quote -> QbPurchaseController@quote [role:admin,teacher]",
     "POST /question-bank/buy -> QbPurchaseController@buy [role:admin,teacher]",
     "GET /question-bank/spending -> QbPurchaseController@spending [role:admin]",
-    "PUT /question-bank/caps -> QbPurchaseController@caps [role:admin]"
+    "PUT /question-bank/caps -> QbPurchaseController@caps [role:admin]",
+    "POST /question-bank/buy-many -> QbPurchaseController@buyMany [role:admin,teacher]"
    ],
    "routes_excluded": [],
    "tests": [],
@@ -1321,14 +1322,25 @@
     "docs/modules/question-bank.md"
    ],
    "tables": [],
-   "routes": [],
+   "routes": [
+    "GET /question-bank/papers -> QbPaperController@index [role:admin,teacher]",
+    "POST /question-bank/papers -> QbPaperController@store [role:admin,teacher]",
+    "GET /question-bank/papers/{id} -> QbPaperController@show [role:admin,teacher]",
+    "PUT /question-bank/papers/{id} -> QbPaperController@update [role:admin,teacher]",
+    "DELETE /question-bank/papers/{id} -> QbPaperController@destroy [role:admin,teacher]",
+    "POST /question-bank/papers/{id}/finalize -> QbPaperController@finalize [role:admin,teacher]",
+    "GET /question-bank/papers/{id}/pdf -> QbPaperController@pdf [role:admin,teacher]"
+   ],
    "routes_excluded": [],
    "tests": [],
    "done_when": "A paper with a creative and an MCQ section prints in Bengali; the head teacher sees every teacher's papers; tests + e2e.",
    "scope_note": "qb_papers, sections, items; adding a not-yet-bought question buys it after confirmation; Chromium PDF (D50) with/without answers, sets A/B; teachers see their own papers, the head teacher all of the institution's.",
    "blocked": null,
    "verify": [
-    "php artisan test --filter=QbPaper"
+    "php artisan test --filter=QbPaper",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-paper.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

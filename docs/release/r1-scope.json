@@ -886,6 +886,10 @@
   "QbPurchaseController": {
    "release": "R1",
    "step": "QB.7"
+  },
+  "QbPaperController": {
+   "release": "R1",
+   "step": "QB.8"
   }
  },
  "route_exclude": [
@@ -1230,7 +1234,10 @@
    "scope": "qb_papers, sections, items; adding a not-yet-bought question buys it after confirmation; Chromium PDF (D50) with/without answers, sets A/B; teachers see their own papers, the head teacher all of the institution's.",
    "done": "A paper with a creative and an MCQ section prints in Bengali; the head teacher sees every teacher's papers; tests + e2e.",
    "verify": [
-    "php artisan test --filter=QbPaper"
+    "php artisan test --filter=QbPaper",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-paper.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

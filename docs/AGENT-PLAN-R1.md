@@ -72,8 +72,8 @@
 | `QB.4` | Questions: the structured types | `QB.3` |  |  |  |
 | `QB.5` | Concepts and resources (slides, books, PDFs) | `QB.4` |  | 20 |  |
 | `QB.6` | Prices and the free / partly-free / discount rule engine | `QB.5` |  | 6 |  |
-| `QB.7` | Teachers: browse, buy with the institution wallet, spending | `QB.6` |  | 6 |  |
-| `QB.8` | Question papers: builder, PDF, the head teacher's view | `QB.7` |  |  |  |
+| `QB.7` | Teachers: browse, buy with the institution wallet, spending | `QB.6` |  | 7 |  |
+| `QB.8` | Question papers: builder, PDF, the head teacher's view | `QB.7` |  | 7 |  |
 | `QB.9` | Student login and portal: practice, concepts, bKash purchases | `QB.8` |  |  |  |
 | `QB.10` | Quizzes and quiz packages | `QB.9` |  |  |  |
 | `QB.10b` | Writers' earnings, wallet and withdrawals | `QB.10` |  |  |  |
@@ -81,7 +81,7 @@
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 203 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 211 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2561,6 +2561,7 @@ GET /question-bank/quote -> QbPurchaseController@quote [role:admin,teacher]
 POST /question-bank/buy -> QbPurchaseController@buy [role:admin,teacher]
 GET /question-bank/spending -> QbPurchaseController@spending [role:admin]
 PUT /question-bank/caps -> QbPurchaseController@caps [role:admin]
+POST /question-bank/buy-many -> QbPurchaseController@buyMany [role:admin,teacher]
 ```
 
 **Done When:** Two teachers buying the same item at once are charged once; an empty wallet is 402; the cap is 422; another institution's unlock never helps; tests + e2e.
@@ -2584,11 +2585,25 @@ php artisan test   # whole suite stays green
 > **R1 পরিসর (এটিই চূড়ান্ত):** qb_papers, sections, items; adding a not-yet-bought question buys it after confirmation; Chromium PDF (D50) with/without answers, sets A/B; teachers see their own papers, the head teacher all of the institution's.
 
 
+**R1-এ যে route বানাবেন:**
+```
+GET /question-bank/papers -> QbPaperController@index [role:admin,teacher]
+POST /question-bank/papers -> QbPaperController@store [role:admin,teacher]
+GET /question-bank/papers/{id} -> QbPaperController@show [role:admin,teacher]
+PUT /question-bank/papers/{id} -> QbPaperController@update [role:admin,teacher]
+DELETE /question-bank/papers/{id} -> QbPaperController@destroy [role:admin,teacher]
+POST /question-bank/papers/{id}/finalize -> QbPaperController@finalize [role:admin,teacher]
+GET /question-bank/papers/{id}/pdf -> QbPaperController@pdf [role:admin,teacher]
+```
+
 **Done When:** A paper with a creative and an MCQ section prints in Bengali; the head teacher sees every teacher's papers; tests + e2e.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
 php artisan test --filter=QbPaper
+npm test && npm run lint:theme
+npx playwright test e2e/qb-paper.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2887,7 +2902,7 @@ php artisan test   # whole suite stays green
 
 | Release | route |
 |---|---|
-| R1 | 203 |
+| R1 | 211 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
 | R2 | 150 |
