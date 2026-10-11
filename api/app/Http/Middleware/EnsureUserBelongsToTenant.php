@@ -13,7 +13,7 @@ class EnsureUserBelongsToTenant
     {
         $user   = $request->user();
         $tenant = app('currentInstitution');          // `tenant` middleware ran first, so this is bound
-        if (!$user || $user->role === 'super_admin' || (int) $user->institution_id !== (int) $tenant->id) {
+        if (!$user || in_array($user->role, \App\Models\User::PLATFORM_ROLES, true) || (int) $user->institution_id !== (int) $tenant->id) {
             return response()->json(['success' => false, 'error' => 'institution_mismatch',
                                      'message' => __('errors.institution_mismatch')], 403);
         }

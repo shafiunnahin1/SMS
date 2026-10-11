@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 // (e.g. student ID) can only change it, read themselves and log out until they do.
 class EnsurePasswordChanged
 {
-    private const ALLOWED = ['api/v1/auth/change-password', 'api/v1/auth/me', 'api/v1/auth/logout', 'api/v1/auth/logout-all', 'api/v1/auth/sessions*', 'api/v1/auth/locale'];
+    private const ALLOWED = ['api/v1/auth/change-password', 'api/v1/auth/me', 'api/v1/auth/logout', 'api/v1/auth/logout-all', 'api/v1/auth/sessions*', 'api/v1/auth/locale', 'api/v1/writer/change-password'];
 
     public function handle(Request $request, Closure $next)
     {

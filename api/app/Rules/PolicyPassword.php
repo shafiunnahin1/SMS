@@ -18,7 +18,7 @@ class PolicyPassword implements ValidationRule
     public static function rulesFor(string $role): array
     {
         return match ($role) {
-            'super_admin' => [12, true], 'admin', 'accountant' => [10, true], 'teacher' => [8, true], default => [6, false],
+            'super_admin' => [12, true], 'admin', 'accountant', 'content_writer', 'content_moderator' => [10, true], 'teacher' => [8, true], default => [6, false],
         };
     }
 

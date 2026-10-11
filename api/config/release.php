@@ -5,5 +5,5 @@ return [
     'id'      => 'R1',                                   // R1 < R1.1 < R2 < R3 ... (menu items marked since:'R2' stay hidden until then)
     'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'sms', 'reports', 'data_migration', 'question_bank', 'quiz'],   // question_bank/quiz: D65/D66 (owner, 2026-10-11)
     'import_kinds' => ['students'],                      // data_migration ships in R1 for student import ONLY: ImportController answers 422 `kind_not_available` for any other kind (teachers, fee_history ... are R1.1)
-    'roles'   => ['super_admin', 'admin', 'teacher', 'accountant', 'parent'],     // 'student' login ships in R1.1: AuthService answers 403 `role_not_available` for any other role
+    'roles'   => ['super_admin', 'admin', 'teacher', 'accountant', 'parent', 'content_writer', 'content_moderator'],   // D65 (QB.2): platform writers / moderators, central host only     // 'student' login ships in R1.1: AuthService answers 403 `role_not_available` for any other role
 ];

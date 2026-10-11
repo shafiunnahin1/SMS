@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\QbCurriculumController;
+use App\Http\Controllers\QuestionBank\{QbCurriculumController, QbQuestionController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -53,11 +53,30 @@ Route::prefix('v1')->group(function () {
         Route::get('/tenant-purge/candidates',                      [TenantPurgeController::class, 'candidates']);
         Route::post('/tenant-purge/{institutionId}/dry-run',        [TenantPurgeController::class, 'dryRun'])->whereNumber('institutionId');
         Route::post('/tenant-purge/{institutionId}/execute',        [TenantPurgeController::class, 'execute'])->whereNumber('institutionId');
+        // QB.2 (D65): the platform's writers and moderators (switched off, never deleted)
+        Route::get('/qb/writers',                     [QbWriterController::class, 'index']);
+        Route::post('/qb/writers',                    [QbWriterController::class, 'store']);
+        Route::patch('/qb/writers/{id}',              [QbWriterController::class, 'update'])->whereNumber('id');
         // QB.1 (D65): the question-bank curriculum class → subject → chapter → topic
         Route::get('/qb/curriculum',                  [QbCurriculumController::class, 'tree']);
         Route::post('/qb/{kind}',                     [QbCurriculumController::class, 'store']);
         Route::put('/qb/{kind}/{id}',                 [QbCurriculumController::class, 'update'])->whereNumber('id');
         Route::delete('/qb/{kind}/{id}',              [QbCurriculumController::class, 'destroy'])->whereNumber('id');
+    });
+
+    // ─── 2b. Central host: the question-bank writers' panel (D65, QB.2) - platform content only, no tenant bound, no bypass ───
+    Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:content_writer,content_moderator,super_admin', 'password.fresh'])->prefix('writer')->group(function () {
+        Route::patch('/change-password',              [QbWriterController::class, 'changePassword']);
+        Route::get('/curriculum',                     [QbQuestionController::class, 'curriculum']);
+        Route::get('/question-types',                 [QbQuestionController::class, 'types']);
+        Route::get('/questions',                      [QbQuestionController::class, 'index']);
+        Route::post('/questions',                     [QbQuestionController::class, 'store'])->middleware('role:content_writer,super_admin');
+        Route::get('/questions/{id}',                 [QbQuestionController::class, 'show'])->whereNumber('id');
+        Route::put('/questions/{id}',                 [QbQuestionController::class, 'update'])->whereNumber('id')->middleware('role:content_writer,super_admin');
+        Route::get('/questions/{id}/revisions',       [QbQuestionController::class, 'revisions'])->whereNumber('id');
+        Route::post('/questions/{id}/submit',         [QbQuestionController::class, 'submit'])->whereNumber('id')->middleware('role:content_writer,super_admin');
+        Route::post('/questions/{id}/publish',        [QbQuestionController::class, 'publish'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
+        Route::post('/questions/{id}/reject',         [QbQuestionController::class, 'reject'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
     });
 
     // ─── 3. Tenant host only ───────────────────────────────────

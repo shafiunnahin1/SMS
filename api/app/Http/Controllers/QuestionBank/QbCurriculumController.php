@@ -20,19 +20,26 @@ class QbCurriculumController extends Controller
     /** GET /super/qb/curriculum: the whole tree in one answer (a few hundred rows at most) */
     public function tree()
     {
+        return response()->json(['success' => true, 'data' => self::treeData()]);
+    }
+
+    /** The tree itself - also served to the writers' panel (QbQuestionController@curriculum, QB.2) */
+    public static function treeData(): array
+    {
         $topics = QbTopic::orderBy('sort_order')->orderBy('id')->get()->groupBy('qb_chapter_id');
         $chapters = QbChapter::with('classLevels:id')->orderBy('sort_order')->orderBy('number')->orderBy('id')->get()->groupBy('qb_subject_id');
-        return response()->json(['success' => true, 'data' => [
-            'class_levels' => QbClassLevel::orderBy('sort_order')->orderBy('id')->get()->map(fn ($c) => $this->row('class-levels', $c))->values(),
-            'subjects' => QbSubject::with('classLevels:id')->orderBy('sort_order')->orderBy('id')->get()->map(fn ($s) => $this->row('subjects', $s) + [
+        $self = new self;
+        return [
+            'class_levels' => QbClassLevel::orderBy('sort_order')->orderBy('id')->get()->map(fn ($c) => $self->row('class-levels', $c))->values(),
+            'subjects' => QbSubject::with('classLevels:id')->orderBy('sort_order')->orderBy('id')->get()->map(fn ($s) => $self->row('subjects', $s) + [
                 'class_level_ids' => $s->classLevels->pluck('id')->values(),
-                'chapters' => ($chapters[$s->id] ?? collect())->map(fn ($ch) => $this->row('chapters', $ch) + [
+                'chapters' => ($chapters[$s->id] ?? collect())->map(fn ($ch) => $self->row('chapters', $ch) + [
                     'class_level_ids' => $ch->classLevels->pluck('id')->values(),
-                    'topics' => ($topics[$ch->id] ?? collect())->map(fn ($t) => $this->row('topics', $t))->values(),
+                    'topics' => ($topics[$ch->id] ?? collect())->map(fn ($t) => $self->row('topics', $t))->values(),
                 ])->values(),
             ])->values(),
             'education_levels' => self::EDUCATION_LEVELS,
-        ]]);
+        ];
     }
 
     /** POST /super/qb/{kind} */

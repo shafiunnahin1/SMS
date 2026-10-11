@@ -16,6 +16,9 @@ class User extends Authenticatable
 
     const UPDATED_AT = null;
 
+    /** Accounts with institution_id NULL that work on the central host only: the Super Admin and (D65, QB.2) the question-bank writers */
+    public const PLATFORM_ROLES = ['super_admin', 'content_writer', 'content_moderator'];
+
     protected $fillable = [
         'institution_id',
         'name',
@@ -76,9 +79,9 @@ class User extends Authenticatable
         return $q->where('users.institution_id', $t->id);
     }
 
-    /** Super Admin accounts only */
+    /** Platform accounts: the Super Admin and the question-bank writers / moderators (D65) */
     public function scopePlatform(Builder $q): Builder
     {
-        return $q->whereNull('users.institution_id')->where('users.role', 'super_admin');
+        return $q->whereNull('users.institution_id')->whereIn('users.role', self::PLATFORM_ROLES);
     }
 }

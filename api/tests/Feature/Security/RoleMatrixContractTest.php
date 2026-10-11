@@ -7,14 +7,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{Queue, Route};
 use Tests\TestCase;
 
-// docs/TESTING.md "RoleMatrixContractTest" (Step 8.2): every authenticated route x the six roles, against tests/Fixtures/role-matrix.php
+// docs/TESTING.md "RoleMatrixContractTest" (Step 8.2): every authenticated route x the six roles (+ the two D65 writer roles), against tests/Fixtures/role-matrix.php
 // (docs/SECURITY.md as data). A role the matrix does not allow gets 403; an allowed role never gets 403 (nor a 500) - with
 // placeholder ids it may well be 404 / 422, which is fine: the door opened. A route missing from the matrix fails the test.
 class RoleMatrixContractTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const ROLES = ['super_admin', 'admin', 'teacher', 'accountant', 'parent', 'student'];
+    private const ROLES = ['super_admin', 'admin', 'teacher', 'accountant', 'parent', 'student', 'content_writer', 'content_moderator'];   // + D65 platform writers
     private const PARAMS = ['{id}' => '999999', '{studentId}' => '999999', '{subjectId}' => '999999', '{institutionId}' => '999999',
         '{type}' => 'students', '{kind}' => 'students', '{action}' => 'dry-run'];
 
@@ -53,7 +53,7 @@ class RoleMatrixContractTest extends TestCase
         $i->forceFill(['enabled_modules' => array_fill_keys(config('release.modules'), true) + ['custom_branding' => true]])->save();
         $users = [];
         foreach (self::ROLES as $role) {
-            $users[$role] = $role === 'super_admin' ? $this->makeUser(null, 'super_admin') : $this->makeUser($i, $role);
+            $users[$role] = in_array($role, User::PLATFORM_ROLES, true) ? $this->makeUser(null, $role) : $this->makeUser($i, $role);
             $users[$role]->forceFill(['must_change_password' => false])->save();
         }
         $central = 'admin.' . config('tenancy.base_domain');
@@ -62,7 +62,7 @@ class RoleMatrixContractTest extends TestCase
         foreach (self::matrix() as $key => $allowed) {
             [$method, $uri] = explode(' ', $key, 2);
             $path = strtr(substr($uri, strlen('api/v1/')), self::PARAMS);
-            $host = str_starts_with($path, 'super/') ? $central : $this->hostOf($i);
+            $host = str_starts_with($path, 'super/') || str_starts_with($path, 'writer/') ? $central : $this->hostOf($i);
             foreach (self::ROLES as $role) {
                 $status = $this->api($method, $host, $path, $users[$role])->baseResponse->getStatusCode();     // a file download is a BinaryFileResponse
                 $ok = in_array($role, $allowed, true);

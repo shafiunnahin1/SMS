@@ -52,6 +52,6 @@ class LoginService
     /** 2FA is required when the user turned it on; it is mandatory for Super Admin (Password Policy table) */
     public function needsSecondFactor(User $user): bool
     {
-        return $user->role === 'super_admin' || $user->two_factor_enabled;
+        return in_array($user->role, User::PLATFORM_ROLES, true) || $user->two_factor_enabled;   // D65: writers sign in like the Super Admin
     }
 }

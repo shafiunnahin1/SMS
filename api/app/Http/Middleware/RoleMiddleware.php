@@ -20,9 +20,9 @@ class RoleMiddleware
 
         $tenant = app()->bound('currentInstitution') ? app('currentInstitution') : null;
 
-        if ($user->role === 'super_admin') {
-            // Super Admin never acts inside a tenant host
-            if ($tenant) return $this->fail('forbidden_host', 'Super Admin can only be used on the admin domain', 403);
+        if (in_array($user->role, \App\Models\User::PLATFORM_ROLES, true)) {
+            // Super Admin and the question-bank writers (D65) never act inside a tenant host, and own no institution
+            if ($tenant || $user->institution_id !== null) return $this->fail('forbidden_host', 'Super Admin can only be used on the admin domain', 403);
             return $next($request);
         }
 

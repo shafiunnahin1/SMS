@@ -41,6 +41,9 @@ return [
     'amount_positive'       => 'The amount must be more than zero.',
     'in_use'                => 'This is in use and cannot be deleted - archive it instead.',
     'qb_in_use'             => 'Questions, chapters, topics or an institution\'s class still use this, so it cannot be deleted - switch it off instead.',   // QB.1 (D65)
+    'qb_wrong_status'       => 'The question is no longer in that state - reload the page.',   // QB.2
+    'qb_topic_mismatch'     => 'This topic is not in that chapter.',   // QB.2
+    'qb_chapter_mismatch'   => 'This chapter is not in that subject.',   // QB.2
     'enrollment_not_active' => 'This enrollment is no longer active.',
     'kind_not_available' => 'This kind of import is not available yet.',
     'bad_encoding' => 'The file is not UTF-8. Save it from Excel as "CSV UTF-8" or upload .xlsx.',

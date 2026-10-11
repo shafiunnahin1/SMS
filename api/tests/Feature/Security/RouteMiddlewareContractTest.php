@@ -8,7 +8,8 @@ use Tests\TestCase;
 
 // docs/TESTING.md "RouteMiddlewareContractTest" (Step 8.2): every route, read from the router itself - every tenant route has
 // auth:sanctum + tenant.user (+ module: when it belongs to a module); no closures; tenancy.bypass only on /super/*, and every
-// /super/* route is central-host + super_admin + tenancy.bypass; nothing on tenant:optional serves tenant data. A new route that
+// /super/* route is central-host + super_admin + tenancy.bypass; every /writer/* route (D65) is central-host + the writer roles +
+// password.fresh and never bypasses; nothing on tenant:optional serves tenant data. A new route that
 // fits none of the known groups fails here until it is placed in one.
 class RouteMiddlewareContractTest extends TestCase
 {
@@ -75,6 +76,11 @@ class RouteMiddlewareContractTest extends TestCase
             }
             if (str_starts_with($path, 'super/')) {
                 foreach (['tenant:central', 'auth:sanctum', 'role:super_admin', 'tenancy.bypass'] as $mw) if (!self::has($r, $mw)) $problems[] = "{$key}: missing {$mw}";
+                continue;
+            }
+            if (str_starts_with($path, 'writer/')) {                           // D65 QB.2: the question-bank writers' panel - platform content, no tenant
+                foreach (['tenant:central', 'auth:sanctum', 'role:content_writer,content_moderator,super_admin', 'password.fresh'] as $mw) if (!self::has($r, $mw)) $problems[] = "{$key}: missing {$mw}";
+                if (self::has($r, 'tenancy.bypass')) $problems[] = "{$key}: the writers' panel never bypasses tenancy";
                 continue;
             }
             // everything else: a tenant route

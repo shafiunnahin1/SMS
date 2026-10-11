@@ -9,6 +9,8 @@ return [
         'teacher'     => [(int) env('TOKEN_ABS_TEACHER', 1440),      (int) env('TOKEN_IDLE_TEACHER', 120)],
         'student'     => [(int) env('TOKEN_ABS_STUDENT', 10080),     (int) env('TOKEN_IDLE_STUDENT', 1440)],
         'parent'      => [(int) env('TOKEN_ABS_PARENT', 43200),      (int) env('TOKEN_IDLE_PARENT', 10080)],
+        'content_writer'    => [(int) env('TOKEN_ABS_WRITER', 720),     (int) env('TOKEN_IDLE_WRITER', 60)],      // D65 platform roles: like an admin
+        'content_moderator' => [(int) env('TOKEN_ABS_WRITER', 720),     (int) env('TOKEN_IDLE_WRITER', 60)],
     ],
     'max_tokens_per_user' => (int) env('TOKEN_MAX_PER_USER', 5),
 
