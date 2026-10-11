@@ -832,6 +832,10 @@
   "SmsRechargeCallbackController": {
    "release": "R1",
    "step": "5.3"
+  },
+  "QbCurriculumController": {
+   "release": "R1",
+   "step": "QB.1"
   }
  },
  "route_exclude": [
@@ -1057,7 +1061,10 @@
    "scope": "qb_class_levels, qb_subjects, qb_chapters, qb_topics (+ pivots): Super Admin CRUD on the central host and its React pages; a seed from qbank's class/subject lists; optional programs.qb_class_level_id link.",
    "done": "Super Admin builds a class → subject → chapter → topic tree; other roles 403; tests and e2e smoke.",
    "verify": [
-    "php artisan test --filter=QbCurriculum"
+    "php artisan test --filter=QbCurriculum",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-curriculum.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

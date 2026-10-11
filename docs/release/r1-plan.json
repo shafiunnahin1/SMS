@@ -1116,14 +1116,23 @@
     "docs/modules/question-bank.md"
    ],
    "tables": [],
-   "routes": [],
+   "routes": [
+    "GET /super/qb/curriculum -> QbCurriculumController@tree [role:super_admin]",
+    "POST /super/qb/{kind} -> QbCurriculumController@store [role:super_admin]",
+    "PUT /super/qb/{kind}/{id} -> QbCurriculumController@update [role:super_admin]",
+    "DELETE /super/qb/{kind}/{id} -> QbCurriculumController@destroy [role:super_admin]",
+    "GET /qb/class-levels -> QbCurriculumController@classLevels [role:admin]"
+   ],
    "routes_excluded": [],
    "tests": [],
    "done_when": "Super Admin builds a class → subject → chapter → topic tree; other roles 403; tests and e2e smoke.",
    "scope_note": "qb_class_levels, qb_subjects, qb_chapters, qb_topics (+ pivots): Super Admin CRUD on the central host and its React pages; a seed from qbank's class/subject lists; optional programs.qb_class_level_id link.",
    "blocked": null,
    "verify": [
-    "php artisan test --filter=QbCurriculum"
+    "php artisan test --filter=QbCurriculum",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-curriculum.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

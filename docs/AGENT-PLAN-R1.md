@@ -66,7 +66,7 @@
 | `9.1` | Deployment, backup, monitoring | `8.5` |  |  |  |
 | `A` | Release 1 acceptance (local, D63/D64), open signup at deploy | `9.1` |  |  |  |
 | `QB.0` | Question bank foundation: schema, module keys, roles, catalogue rule | `A` | 36 |  |  |
-| `QB.1` | Curriculum: class → subject → chapter → topic | `QB.0` |  |  |  |
+| `QB.1` | Curriculum: class → subject → chapter → topic | `QB.0` |  | 5 |  |
 | `QB.2` | Writers' panel: writers, moderators, revisions, review flow | `QB.1` |  |  |  |
 | `QB.3` | Questions: core types and the editor | `QB.2` |  |  |  |
 | `QB.4` | Questions: the structured types | `QB.3` |  |  |  |
@@ -81,7 +81,7 @@
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 151 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 156 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2361,11 +2361,23 @@ bash infra/scripts/schema-diff.sh
 > **R1 পরিসর (এটিই চূড়ান্ত):** qb_class_levels, qb_subjects, qb_chapters, qb_topics (+ pivots): Super Admin CRUD on the central host and its React pages; a seed from qbank's class/subject lists; optional programs.qb_class_level_id link.
 
 
+**R1-এ যে route বানাবেন:**
+```
+GET /super/qb/curriculum -> QbCurriculumController@tree [role:super_admin]
+POST /super/qb/{kind} -> QbCurriculumController@store [role:super_admin]
+PUT /super/qb/{kind}/{id} -> QbCurriculumController@update [role:super_admin]
+DELETE /super/qb/{kind}/{id} -> QbCurriculumController@destroy [role:super_admin]
+GET /qb/class-levels -> QbCurriculumController@classLevels [role:admin]
+```
+
 **Done When:** Super Admin builds a class → subject → chapter → topic tree; other roles 403; tests and e2e smoke.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
 php artisan test --filter=QbCurriculum
+npm test && npm run lint:theme
+npx playwright test e2e/qb-curriculum.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2790,7 +2802,7 @@ php artisan test   # whole suite stays green
 
 | Release | route |
 |---|---|
-| R1 | 151 |
+| R1 | 156 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
 | R2 | 150 |

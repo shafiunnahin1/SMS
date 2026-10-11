@@ -269,6 +269,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
 use App\Http\Controllers\Public\{PublicSiteController, PublicAdmissionController};
 use App\Http\Controllers\SuperAdmin\{TenantPurgeController, SettlementController, PayoutAccountController, SmsSenderApprovalController, OnlinePaymentReportController};
+use App\Http\Controllers\QuestionBank\QbCurriculumController;   // D65 question bank (docs/modules/question-bank.md)
 use App\Http\Controllers\Academics\{ResultSheetController, DueBlockController, PeriodAttendanceController, SubstitutionController, RoutineBlockController, StudentLeaveController, MarksLockController};
 use App\Http\Controllers\Hr\{LeaveTypeController, LeaveController, StaffController, StaffAttendanceController, SalaryComponentController, SalaryStructureController, SalaryRevisionController, IncrementBatchController, BonusSchemeController, SalaryAdjustmentController, SalaryAdvanceController, PayrollRunController, PayrollItemController, PayAccountController, ProvidentFundController, PayrollReportController, FinalSettlementController};
 use App\Http\Controllers\Teacher\SalaryController as TeacherSalaryController;
@@ -354,6 +355,11 @@ Route::prefix('v1')->group(function () {
             Route::post('/institutions/{id}/sms-credits', [SmsCreditController::class, 'adjust']);
             Route::get('/sms-settings',               [UniversalSmsController::class, 'show']);      // D57: the universal BulkSMSBD API + the rate per SMS part (D56)
             Route::put('/sms-settings',               [UniversalSmsController::class, 'update']);
+            // D65 question bank, task QB.1: the platform curriculum class → subject → chapter → topic ({kind} = class-levels|subjects|chapters|topics)
+            Route::get('/qb/curriculum',              [QbCurriculumController::class, 'tree']);
+            Route::post('/qb/{kind}',                 [QbCurriculumController::class, 'store']);
+            Route::put('/qb/{kind}/{id}',             [QbCurriculumController::class, 'update']);
+            Route::delete('/qb/{kind}/{id}',          [QbCurriculumController::class, 'destroy']);   // 422 qb_in_use while anything hangs on it
             Route::post('/institutions/{id}/domains', [DomainApprovalController::class, 'storeFor']);
             Route::apiResource('plans',               PlanController::class);
             Route::get('/payments',                   [PaymentController::class, 'index']);
@@ -641,6 +647,9 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware(['role:admin', 'module:routine'])->group(function () {
             Route::apiResource('routine-blocks',     RoutineBlockController::class)->except(['show']);
+        });
+        Route::middleware(['role:admin', 'module:question_bank'])->group(function () {
+            Route::get('/qb/class-levels',           [QbCurriculumController::class, 'classLevels']);   // QB.1: the admin links a program to a platform class (programs.qb_class_level_id)
         });
         Route::middleware(['role:admin,teacher', 'module:exams'])->group(function () {
             Route::post('/exams/{id}/subjects/{subjectId}/submit', [MarksLockController::class, 'submit']);
