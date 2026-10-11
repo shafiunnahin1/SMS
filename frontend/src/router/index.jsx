@@ -48,6 +48,10 @@ const QbCurriculum      = lazy(() => import('../pages/super/QbCurriculum'))
 const QbWriters         = lazy(() => import('../pages/super/QbWriters'))
 const QbQuestions       = lazy(() => import('../pages/writer/QbQuestions'))
 const QbQuestionEdit    = lazy(() => import('../pages/writer/QbQuestionEdit'))
+const QbContentList     = lazy(() => import('../pages/writer/QbContentList'))
+const QbConceptEdit     = lazy(() => import('../pages/writer/QbConceptEdit'))
+const QbResourceEdit    = lazy(() => import('../pages/writer/QbResourceEdit'))
+const QbLibrary         = lazy(() => import('../pages/qb/QbLibrary'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
@@ -77,6 +81,7 @@ const area = (path, role, children) => {
 export const tenantRoutes = [
   ...authRoutes,
   area('/admin', 'admin', [
+    { path: 'question-bank', element: S(QbLibrary) },   // QB.5 (D65): concepts and resources
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'students', element: S(StudentList) },
     { path: 'students/add', element: S(StudentAdd) },
@@ -106,7 +111,7 @@ export const tenantRoutes = [
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'reports', element: S(Reports) },
   ]),
-  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }]),
+  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbLibrary) }]),
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },
     { path: 'fees', element: S(ParentFees) },
@@ -134,6 +139,10 @@ export const centralRoutes = [
   area('/writer', ['content_writer', 'content_moderator', 'super_admin'], [
     { path: 'questions', element: S(QbQuestions) },
     { path: 'questions/:id', element: S(QbQuestionEdit) },
+    { path: 'concepts', element: <Suspense fallback={<Loader type="page" />}><QbContentList kind="concepts" /></Suspense> },   // QB.5
+    { path: 'concepts/:id', element: S(QbConceptEdit) },
+    { path: 'resources', element: <Suspense fallback={<Loader type="page" />}><QbContentList kind="resources" /></Suspense> },
+    { path: 'resources/:id', element: S(QbResourceEdit) },
   ]),
   { path: '*', element: <Navigate to="/login" replace /> },
 ]

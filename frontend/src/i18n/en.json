@@ -692,7 +692,14 @@
   "প্রশ্নব্যাংক: লেখক": "Question bank: writers",
   "প্রশ্নব্যাংক: প্রশ্ন": "Question bank: questions",
   "প্রশ্ন": "Questions",
-  "প্রশ্ন যাচাই": "Review questions"
+  "প্রশ্ন যাচাই": "Review questions",
+  "প্রশ্নব্যাংক": "Question bank",
+  "কনসেপ্ট": "Concepts",
+  "স্লাইড, বই ও PDF": "Slides, books and PDFs",
+  "কনসেপ্ট যাচাই": "Review concepts",
+  "স্লাইড, বই ও PDF যাচাই": "Review slides, books and PDFs",
+  "প্রশ্নব্যাংক: কনসেপ্ট": "Question bank: concepts",
+  "প্রশ্নব্যাংক: স্লাইড, বই ও PDF": "Question bank: slides, books and PDFs"
  },
  "qb": {
   "curriculum": "Question bank: curriculum",
@@ -853,6 +860,40 @@
   "add_step": "Add a piece",
   "piece": "Piece",
   "add_sub": "Add a question",
-  "sub_question": "Question"
+  "sub_question": "Question",
+  "concepts": "Concepts",
+  "resources": "Slides, books and PDFs",
+  "new_concepts": "New concept",
+  "new_resources": "New slide / book / PDF",
+  "no_concepts": "No concepts here yet.",
+  "no_resources": "No slides, books or PDFs here yet.",
+  "concept_no": "Concept #{{id}}",
+  "resource_no": "Resource #{{id}}",
+  "title": "Title",
+  "title_bn": "Title (Bangla)",
+  "title_en": "Title (English)",
+  "body": "Concept",
+  "resource_kind": "Kind",
+  "kinds": {
+   "pdf": "PDF",
+   "book": "Book",
+   "slide": "Slides"
+  },
+  "place_hint": "It is filed under the deepest one you pick: the topic, else the chapter, else the subject.",
+  "pdf_file": "The file (PDF)",
+  "pdf_needed": "Upload the PDF.",
+  "open_pdf": "Open the PDF",
+  "page_count": "Pages",
+  "page_count_hint": "A whole number from 1. Filled in from the PDF when it can be read.",
+  "preview_pages": "Preview pages",
+  "preview_pages_hint": "Pictures of the first pages (up to 10) - every institution sees these before buying.",
+  "add_preview_page": "Add a page picture",
+  "page_n": "Page {{n}}",
+  "pages_n": "{{n}} pages",
+  "library": "Concepts and resources",
+  "pick_topic": "Pick a topic to see its concepts.",
+  "locked": "Not bought yet",
+  "locked_concepts": "Your institution has not bought this concept yet - only its title shows.",
+  "locked_resources": "Your institution has not bought this yet - the preview pages show; the file opens once bought."
  }
 }

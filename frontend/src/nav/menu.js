@@ -25,6 +25,7 @@ export const MENU = {
     it('attendance', '/admin/attendance', 'উপস্থিতি', { icon: 'CalendarCheck', module: 'attendance' }),
     it('period-att', '/admin/attendance/periods', 'Period হাজিরা', { icon: 'ListChecks', module: 'period_attendance' }),
     it('exams',      '/admin/exams',      'পরীক্ষা ও ফলাফল', { icon: 'FileText', module: 'exams' }),
+    it('question-bank','/admin/question-bank','প্রশ্নব্যাংক', { icon: 'Library', module: 'question_bank' }),
     it('admit-cards','/admin/exams/admit-cards','প্রবেশপত্র', { icon: 'IdCard', module: 'admit_card' }),
     it('merit-list','/admin/exams/merit-list','মেধা তালিকা', { icon: 'Medal', module: 'merit_list' }),
     it('result-sheets','/admin/exams/result-sheets','ফাইনাল ফলাফল ও Tabulation', { icon: 'Trophy', module: 'result_sheets' }),
@@ -122,6 +123,7 @@ export const MENU = {
     it('batches','/teacher/batches',{term:'batches'},{icon:'Layers',primary:true}),
     it('attendance','/teacher/attendance','উপস্থিতি',{icon:'CalendarCheck',module:'attendance',primary:true}),
     it('marks','/teacher/marks','নম্বর এন্ট্রি',{icon:'FileText',module:'exams',primary:true}),
+    it('question-bank','/teacher/question-bank','প্রশ্নব্যাংক',{icon:'Library',module:'question_bank'}),
     it('homework','/teacher/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework'}),
     it('routine','/teacher/routine','রুটিন',{icon:'Clock',module:'routine'}),
     it('materials','/teacher/materials','শিক্ষা-উপকরণ', {icon:'Folder', since: 'R2' }),
@@ -180,9 +182,13 @@ export const MENU = {
   ],
   content_writer: [
     it('questions','/writer/questions','প্রশ্ন',{icon:'FileText'}),
+    it('concepts','/writer/concepts','কনসেপ্ট',{icon:'Sparkles'}),
+    it('resources','/writer/resources','স্লাইড, বই ও PDF',{icon:'Folder'}),
   ],
   content_moderator: [
     it('review','/writer/questions','প্রশ্ন যাচাই',{icon:'ClipboardCheck'}),
+    it('review-concepts','/writer/concepts','কনসেপ্ট যাচাই',{icon:'Sparkles'}),
+    it('review-resources','/writer/resources','স্লাইড, বই ও PDF যাচাই',{icon:'Folder'}),
   ],
   super_admin: [
     it('dashboard','/super-admin/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard'}),
@@ -202,6 +208,8 @@ export const MENU = {
     it('qb-curriculum','/super-admin/qb/curriculum','প্রশ্নব্যাংক: পাঠ্যক্রম',{icon:'BookOpen'}),
     it('qb-writers','/super-admin/qb/writers','প্রশ্নব্যাংক: লেখক',{icon:'Users'}),
     it('qb-questions','/writer/questions','প্রশ্নব্যাংক: প্রশ্ন',{icon:'FileText'}),
+    it('qb-concepts','/writer/concepts','প্রশ্নব্যাংক: কনসেপ্ট',{icon:'Sparkles'}),
+    it('qb-resources','/writer/resources','প্রশ্নব্যাংক: স্লাইড, বই ও PDF',{icon:'Folder'}),
     it('settings','/super-admin/settings','সেটিংস',{icon:'Settings'}),
   ],
 }
