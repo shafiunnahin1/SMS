@@ -19,13 +19,14 @@ import Check from '../../features/academic/Check'
 import QbStatus from '../../features/qb/QbStatus'
 import MathText from '../../features/qb/MathText'
 import MathInsert from '../../features/qb/MathInsert'
+import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
 
 const EDITABLE = ['draft', 'rejected']
 const BN_LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
 const LEVELS = ['knowledge', 'understanding', 'application', 'higher_order']
 const CREATIVE = LEVELS.map((level, i) => ({ part_label: BN_LABELS[i], cognitive_level: level, marks: String(i + 1), question_text: '', answer_text: '' }))
 const EMPTY = { qb_question_type_id: '', qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', difficulty: '3', marks: '1', language: 'bn', question_text: '',
-  answer_text: '', explanation_text: '', options: [], creative_parts: [], occurrences: [], media: [] }
+  answer_text: '', explanation_text: '', options: [], creative_parts: [], occurrences: [], media: [], structured: STRUCTURED_EMPTY }
 
 // QB.2 + QB.3 /writer/questions/:id and /new (D65, D66): one form for the six core types. Shared fields (place in the curriculum,
 // text, answer, explanation), then the type's own part: options with the right one (mcq), the two fixed options (true / false),
@@ -55,7 +56,7 @@ export default function QbQuestionEdit() {
     reset({ ...EMPTY, ...q.data, qb_question_type_id: s(q.data.qb_question_type_id), qb_subject_id: s(q.data.qb_subject_id), qb_chapter_id: s(q.data.qb_chapter_id),
       qb_topic_id: s(q.data.qb_topic_id), difficulty: s(q.data.difficulty), marks: s(q.data.marks), answer_text: s(q.data.answer_text), explanation_text: s(q.data.explanation_text),
       creative_parts: q.data.creative_parts.map(p => ({ ...p, marks: s(p.marks), answer_text: s(p.answer_text) })),
-      occurrences: q.data.occurrences.map(o => ({ ...o, year: s(o.year) })) })
+      occurrences: q.data.occurrences.map(o => ({ ...o, year: s(o.year) })), structured: fromQuestion(q.data) })
   }, [q.data, reset])
 
   if (tree.isPending || types.isPending || (!isNew && q.isPending)) return <Loader type="page" />
@@ -68,7 +69,10 @@ export default function QbQuestionEdit() {
   const name = (n) => (locale === 'bn' ? n.name_bn : n.name_en) || n.name_en
   const subject = tree.data.subjects.find(s => String(s.id) === String(watch('qb_subject_id')))
   const chapter = subject?.chapters.find(c => String(c.id) === String(watch('qb_chapter_id')))
-  const family = types.data.find(ty => String(ty.id) === String(watch('qb_question_type_id')))?.family
+  const picked = types.data.find(ty => String(ty.id) === String(watch('qb_question_type_id')))
+  const family = picked?.family
+  const structure = picked?.structure ?? null                    // QB.4: gap / match / order / passage / passage_mcq
+  const optionsFor = ['mcq', 'true_false'].includes(family) && !structure
   const num = (v) => (v === '' || v == null ? null : Number(v))
   const append = (field) => (snippet) => setValue(field, `${getValues(field) ?? ''}${getValues(field) ? ' ' : ''}${snippet}`, { shouldDirty: true })
   const v = watch()
@@ -76,7 +80,7 @@ export default function QbQuestionEdit() {
   const pickType = (e) => {                    // a type's own part starts filled in, so the writer only types the content
     const fam = types.data.find(ty => String(ty.id) === e.target.value)?.family
     if (fam === 'true_false' && getValues('options').length === 0) setValue('options', [{ label: 'T', content_text: t('qb.true'), is_correct: true }, { label: 'F', content_text: t('qb.false'), is_correct: false }])
-    if (fam === 'mcq' && getValues('options').length === 0) setValue('options', BN_LABELS.slice(0, 4).map((l, i) => ({ label: l, content_text: '', is_correct: i === 0 })))
+    if (fam === 'mcq' && !types.data.find(ty => String(ty.id) === e.target.value)?.structure && getValues('options').length === 0) setValue('options', BN_LABELS.slice(0, 4).map((l, i) => ({ label: l, content_text: '', is_correct: i === 0 })))
     if (fam === 'creative' && getValues('creative_parts').length === 0) setValue('creative_parts', CREATIVE)
   }
 
@@ -98,10 +102,10 @@ export default function QbQuestionEdit() {
     const body = { qb_question_type_id: num(f.qb_question_type_id), qb_subject_id: num(f.qb_subject_id), qb_chapter_id: num(f.qb_chapter_id), qb_topic_id: num(f.qb_topic_id),
       difficulty: Number(f.difficulty), marks: f.marks, language: f.language, content_mode: /\$[^$]+\$/.test(f.question_text) ? 'rich_math' : 'plain_text',
       question_text: f.question_text, answer_text: f.answer_text || null, explanation_text: f.explanation_text || null,
-      options: ['mcq', 'true_false'].includes(family) ? f.options.map(o => ({ label: o.label, content_text: o.content_text, is_correct: Boolean(o.is_correct) })) : [],
+      options: optionsFor ? f.options.map(o => ({ label: o.label, content_text: o.content_text, is_correct: Boolean(o.is_correct) })) : [],
       creative_parts: family === 'creative' ? f.creative_parts.map(p => ({ ...p, answer_text: p.answer_text || null })) : [],
       occurrences: f.occurrences.map(o => ({ board: o.board || null, exam_type: o.exam_type || null, institution_name: o.institution_name || null, year: num(o.year) })),
-      media_ids: f.media.map(m => m.id) }
+      media_ids: f.media.map(m => m.id), ...toPayload(structure, f.structured) }
     try {
       const { data } = isNew ? await api.post('/writer/questions', body) : await api.put(`/writer/questions/${id}`, body)
       useUiStore.getState().addToast(t('common.saved'))
@@ -152,7 +156,7 @@ export default function QbQuestionEdit() {
                 hint={family === 'fill_gap' ? t('qb.blank_hint') : t('qb.math_inline_hint')} error={errors.question_text?.message} {...register('question_text', { required: t('super.required') })} />
               <div className="sm:col-span-2 flex flex-wrap gap-2"><MathInsert onInsert={append('question_text')} disabled={!canEdit} /></div>
 
-              {['mcq', 'true_false'].includes(family) && (
+              {optionsFor && (
                 <fieldset className="sm:col-span-2 flex flex-col gap-2" data-testid="qb-options">
                   <legend className="font-semibold mb-1">{t('qb.options')}</legend>
                   {options.fields.map((f, i) => (
@@ -188,7 +192,9 @@ export default function QbQuestionEdit() {
                 </fieldset>
               )}
 
-              {!['mcq', 'true_false', 'creative'].includes(family) && <>
+              <StructuredEditor structure={structure} register={register} control={control} error={errors.items?.message} />
+
+              {!['mcq', 'true_false', 'creative'].includes(family) && !structure && <>
                 <Textarea className="sm:col-span-2" label={t('qb.answer')} error={errors.answer_text?.message} {...register('answer_text')} />
                 <div className="sm:col-span-2"><MathInsert onInsert={append('answer_text')} disabled={!canEdit} /></div>
               </>}
@@ -235,7 +241,8 @@ export default function QbQuestionEdit() {
           <h2 className="font-semibold">{t('qb.preview')}</h2>
           <p className="text-base"><MathText text={v.question_text} /></p>
           {v.media.map(m => <img key={m.id} src={m.url} alt={t('qb.picture_n', { id: m.id })} className="max-h-48 w-auto self-start" />)}
-          {['mcq', 'true_false'].includes(family) && (
+          <StructuredPreview structure={structure} s={v.structured} />
+          {optionsFor && (
             <ol className="flex flex-col gap-1">
               {v.options.map((o, i) => <li key={i} className="flex gap-2"><span className="font-medium">{o.label}.</span><MathText text={o.content_text} />{o.is_correct && <span className="text-xs text-content-muted">({t('qb.correct')})</span>}</li>)}
             </ol>

@@ -830,6 +830,29 @@
   "exam_type": "Exam",
   "year": "Year",
   "add_occurrence": "Add",
-  "preview": "Preview"
+  "preview": "Preview",
+  "word_box": "Word box (optional)",
+  "word_box_hint": "The words to choose from, separated by commas",
+  "passage": "Passage",
+  "stimulus": "Stimulus",
+  "structure": {
+   "gap": "Gaps",
+   "match": "Matching",
+   "order": "Put in the right order",
+   "passage": "Passage and questions",
+   "passage_mcq": "Stimulus and MCQs"
+  },
+  "add_gap": "Add a gap",
+  "gap_sentence": "Sentence",
+  "gap_answers": "Right answer",
+  "gap_answers_hint": "Several accepted answers separated by commas",
+  "add_pair": "Add a pair",
+  "left": "Left",
+  "right": "Right",
+  "order_hint": "Write the pieces in the right order - students see them shuffled",
+  "add_step": "Add a piece",
+  "piece": "Piece",
+  "add_sub": "Add a question",
+  "sub_question": "Question"
  }
 }
