@@ -1,30 +1,10 @@
-import { readFileSync } from 'node:fs'
 import { test, expect } from '@playwright/test'
-import { watchConsole } from './helpers.js'
+import { loginSuper, watchConsole } from './helpers.js'
 
 // QB.1 on the central host (admin.<base>): the Super Admin builds class → subject → chapter → topic, deletes a leaf, and is
 // refused when deleting a class that is still in use. Runs once: playwright.config's testIgnore keeps it to school-desktop, like super.smoke.
 const BASE = process.env.E2E_BASE_DOMAIN ?? 'lvh.me:5173'
 test.use({ baseURL: `http://admin.${BASE}` })
-// Same one-time-code login as super.smoke.spec.js: in local/CI the code only goes to the API's log (G17)
-const API_LOG = process.env.E2E_API_LOG ?? new URL('../../api/storage/logs/laravel.log', import.meta.url).pathname
-const readLog = () => { try { return readFileSync(API_LOG, 'utf8') } catch { return '' } }
-const lastCode = () => [...readLog().matchAll(/\[dev sms\] to 017\*+00: \D*(\d{4,8})/g)].at(-1)?.[1]
-
-async function loginSuper(page) {
-  await page.goto('/login')
-  await page.waitForLoadState('networkidle')
-  if (/\/super-admin\//.test(page.url())) return
-  const before = lastCode()
-  const fields = page.locator('form input')
-  await fields.nth(0).fill('admin@schoolapp.com')
-  await fields.nth(1).fill('Admin@1234')
-  await page.locator('form button[type="submit"]').click()
-  await expect.poll(lastCode).not.toBe(before)
-  await page.locator('form input').first().fill(lastCode())
-  await page.locator('form button[type="submit"]').click()
-  await expect(page).toHaveURL(/\/super-admin\/dashboard/)
-}
 
 async function addNode(page, column, bn, en) {
   await page.locator(`[data-testid="${column}"] [data-action="add"]`).click()

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
 import { TENANTS } from '../playwright.config.js'
 
@@ -46,5 +47,39 @@ export async function login(page, identifier, password, { fresh = false } = {}) 
   await fields.nth(1).fill(password)
   await page.locator('form button[type="submit"]').click()
   await expect(page).not.toHaveURL(/\/login/)
+  sessions.set(key, await page.context().cookies())
+}
+
+// The Super Admin always signs in with a one-time code (in local/CI it only goes to the API's log, G17). /auth/verify-otp shares one
+// 5-a-minute bucket per IP, so the central-host specs (QB.1-QB.3) sign the Super Admin in once and reuse that session like login().
+const API_LOG = process.env.E2E_API_LOG ?? new URL('../../api/storage/logs/laravel.log', import.meta.url).pathname
+export const lastCode = (phone = '01700000000') => {
+  let log = ''
+  try { log = readFileSync(API_LOG, 'utf8') } catch { /* a fresh CI checkout has no log until the first line */ }
+  return [...log.matchAll(new RegExp(`\\[dev sms\\] to ${phone.slice(0, 3)}\\*+${phone.slice(-2)}: \\D*(\\d{4,8})`, 'g'))].at(-1)?.[1]
+}
+
+export async function loginSuper(page) {
+  await page.goto('/login')
+  await page.waitForLoadState('networkidle')
+  const key = `${new URL(page.url()).origin}|super`
+  if (sessions.has(key)) {
+    await page.context().addCookies(sessions.get(key))
+    await page.goto('/login')
+    await page.waitForLoadState('networkidle')
+    if (!/\/login/.test(page.url())) return
+    await page.context().clearCookies()
+    await page.goto('/login')
+    await page.waitForLoadState('networkidle')
+  }
+  const before = lastCode()
+  const fields = page.locator('form input')
+  await fields.nth(0).fill('admin@schoolapp.com')
+  await fields.nth(1).fill('Admin@1234')
+  await page.locator('form button[type="submit"]').click()
+  await expect.poll(() => lastCode()).not.toBe(before)
+  await page.locator('form input').first().fill(lastCode())
+  await page.locator('form button[type="submit"]').click()
+  await expect(page).toHaveURL(/\/super-admin\/dashboard/)
   sessions.set(key, await page.context().cookies())
 }

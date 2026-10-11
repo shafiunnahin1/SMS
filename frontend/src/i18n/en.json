@@ -799,6 +799,37 @@
    "submit": "Sent for review",
    "publish": "Published",
    "reject": "Returned"
-  }
+  },
+  "math": "Maths",
+  "math_hint": "Write the formula; Insert puts it into the text as $...$",
+  "insert": "Insert",
+  "math_inline_hint": "Write maths as $...$, or use the Maths button",
+  "blank_hint": "Write ___ where the blank goes",
+  "stem": "Stimulus",
+  "true": "True",
+  "false": "False",
+  "options": "Options",
+  "label": "Label",
+  "option_text": "Option text",
+  "correct": "Right",
+  "add_option": "Add an option",
+  "parts": "Parts (ক-ঘ)",
+  "level": "Skill level",
+  "levels_cog": {
+   "knowledge": "Knowledge",
+   "understanding": "Understanding",
+   "application": "Application",
+   "higher_order": "Higher order"
+  },
+  "part_question": "Question",
+  "pictures": "Pictures",
+  "picture_n": "Picture {{id}}",
+  "add_picture": "Add a picture (PNG/JPG/WebP/GIF, up to 2 MB)",
+  "occurrences": "Appeared before in",
+  "board": "Board",
+  "exam_type": "Exam",
+  "year": "Year",
+  "add_occurrence": "Add",
+  "preview": "Preview"
  }
 }

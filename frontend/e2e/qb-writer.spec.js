@@ -1,15 +1,11 @@
-import { readFileSync } from 'node:fs'
 import { test, expect } from '@playwright/test'
+import { lastCode, loginSuper } from './helpers.js'
 
 // QB.2 on the central host (admin.<base>): the Super Admin adds a writer and a moderator; the writer signs in with a one-time
 // code, changes the first password, writes a question and sends it for review; the moderator returns it with a reason; the writer
 // fixes it and sends it again; the moderator publishes it. Runs once: playwright.config's testIgnore keeps it to school-desktop.
 const BASE = process.env.E2E_BASE_DOMAIN ?? 'lvh.me:5173'
 test.use({ baseURL: `http://admin.${BASE}` })
-// In local/CI the login code only goes to the API's log (G17): "[dev sms] to 018******NN: ... 123456"
-const API_LOG = process.env.E2E_API_LOG ?? new URL('../../api/storage/logs/laravel.log', import.meta.url).pathname
-const readLog = () => { try { return readFileSync(API_LOG, 'utf8') } catch { return '' } }
-const lastCode = (phone) => [...readLog().matchAll(new RegExp(`\\[dev sms\\] to ${phone.slice(0, 3)}\\*+${phone.slice(-2)}: \\D*(\\d{4,8})`, 'g'))].at(-1)?.[1]
 
 async function signIn(page, login, password, phone) {
   await page.goto('/login')
@@ -51,9 +47,8 @@ test('QB.2 writer drafts and submits, moderator returns then publishes', async (
   const mPhone = `019${tag}00`.slice(0, 11)
 
   // the Super Admin adds both (a curriculum subject and a question type come from the demo seed)
-  const superPage = await (await browser.newContext()).newPage()
-  await signIn(superPage, 'admin@schoolapp.com', 'Admin@1234', '01700000000')
-  await expect(superPage).toHaveURL(/\/super-admin\/dashboard/)
+  const superPage = await (await browser.newContext({ baseURL: `http://admin.${BASE}` })).newPage()
+  await loginSuper(superPage)
   await superPage.goto('/super-admin/qb/writers')
   await addPerson(superPage, `Lekhok ${tag}`, 'content_writer', wPhone)
   await addPerson(superPage, `Moderator ${tag}`, 'content_moderator', mPhone)
@@ -64,9 +59,10 @@ test('QB.2 writer drafts and submits, moderator returns then publishes', async (
   await firstPassword(writer, 'First-pass-2026', 'Writer-pass-2027')
   await writer.locator('[data-action="new"]').click()
   const form = writer.locator('#qb-question-form')
-  await form.locator('select[name="qb_question_type_id"]').selectOption({ index: 1 })
+  await form.locator('select[name="qb_question_type_id"]').selectOption({ label: 'সংক্ষিপ্ত প্রশ্ন' })   // QB.3: a short question needs an answer before review
   await form.locator('select[name="qb_subject_id"]').selectOption({ index: 1 })
   await form.locator('textarea[name="question_text"]').fill(`গতি কাকে বলে? ${tag}`)
+  await form.locator('textarea[name="answer_text"]').fill('সময়ের সাথে অবস্থানের পরিবর্তন')
   await writer.locator('[data-action="save"]').click()
   await expect(writer).toHaveURL(/\/writer\/questions\/\d+$/)
   const url = writer.url()
