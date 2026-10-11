@@ -15,4 +15,7 @@ class QbConcept extends Model
 
     protected $fillable = ['qb_topic_id', 'title_bn', 'title_en', 'body_json', 'body_text', 'status', 'review_note', 'created_by', 'reviewed_by', 'sort_order'];
     protected $casts = ['body_json' => 'array'];
+
+    /** QB.5: the concept's pictures (qb_media_links owner_type concept) */
+    public function media() { return $this->belongsToMany(QbMedia::class, 'qb_media_links', 'owner_id', 'qb_media_id')->wherePivot('owner_type', 'concept')->withPivotValue('owner_type', 'concept'); }
 }

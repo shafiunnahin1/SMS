@@ -105,6 +105,10 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/imports/templates/{kind}.xlsx'     => null,
             // the parameter is not a row id: the route only touches the caller's own children (WalkingSkeletonSliceTest, consent test)
             'PUT api/v1/parent/consents/{type}'            => null,
+            // QB.5: {id} is a platform catalogue row (no institution_id), not a tenant row; QbLibraryTest: a draft is a 404 and
+            // another institution's unlock opens nothing here
+            'GET api/v1/question-bank/concepts/{id}'       => null,
+            'GET api/v1/question-bank/resources/{id}'      => null,
         ];
     }
 

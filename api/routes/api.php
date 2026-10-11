@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbCurriculumController, QbMediaController, QbQuestionController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbQuestionController, QbResourceController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -78,6 +78,22 @@ Route::prefix('v1')->group(function () {
         Route::post('/questions/{id}/submit',         [QbQuestionController::class, 'submit'])->whereNumber('id')->middleware('role:content_writer,super_admin');
         Route::post('/questions/{id}/publish',        [QbQuestionController::class, 'publish'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
         Route::post('/questions/{id}/reject',         [QbQuestionController::class, 'reject'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
+        // QB.5: topic concepts and resources (slide / book / pdf as a PDF) - the same review flow as a question
+        Route::get('/concepts',                       [QbConceptController::class, 'index']);
+        Route::post('/concepts',                      [QbConceptController::class, 'store'])->middleware('role:content_writer,super_admin');
+        Route::get('/concepts/{id}',                  [QbConceptController::class, 'show'])->whereNumber('id');
+        Route::put('/concepts/{id}',                  [QbConceptController::class, 'update'])->whereNumber('id')->middleware('role:content_writer,super_admin');
+        Route::post('/concepts/{id}/submit',          [QbConceptController::class, 'submit'])->whereNumber('id')->middleware('role:content_writer,super_admin');
+        Route::post('/concepts/{id}/publish',         [QbConceptController::class, 'publish'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
+        Route::post('/concepts/{id}/reject',          [QbConceptController::class, 'reject'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
+        Route::post('/resource-files',                [QbResourceController::class, 'upload'])->middleware('role:content_writer,super_admin');
+        Route::get('/resources',                      [QbResourceController::class, 'index']);
+        Route::post('/resources',                     [QbResourceController::class, 'store'])->middleware('role:content_writer,super_admin');
+        Route::get('/resources/{id}',                 [QbResourceController::class, 'show'])->whereNumber('id');
+        Route::put('/resources/{id}',                 [QbResourceController::class, 'update'])->whereNumber('id')->middleware('role:content_writer,super_admin');
+        Route::post('/resources/{id}/submit',         [QbResourceController::class, 'submit'])->whereNumber('id')->middleware('role:content_writer,super_admin');
+        Route::post('/resources/{id}/publish',        [QbResourceController::class, 'publish'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
+        Route::post('/resources/{id}/reject',         [QbResourceController::class, 'reject'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
     });
 
     // ─── 3. Tenant host only ───────────────────────────────────
@@ -195,6 +211,14 @@ Route::prefix('v1')->group(function () {
 
         // ── Question bank (D65, QB.1): the admin links a program to a platform class ──
         Route::get('/qb/class-levels',                    [QbCurriculumController::class, 'classLevels'])->middleware(['role:admin', 'module:question_bank']);
+        // ── Question bank (D65, QB.5): teachers read published concepts and resources; body / file only once unlocked ──
+        Route::middleware(['role:admin,teacher', 'module:question_bank'])->prefix('question-bank')->group(function () {
+            Route::get('/curriculum',                     [QbLibraryController::class, 'curriculum']);
+            Route::get('/concepts',                       [QbLibraryController::class, 'concepts']);
+            Route::get('/concepts/{id}',                  [QbLibraryController::class, 'concept'])->whereNumber('id');
+            Route::get('/resources',                      [QbLibraryController::class, 'resources']);
+            Route::get('/resources/{id}',                 [QbLibraryController::class, 'resource'])->whereNumber('id');
+        });
 
         // ── SMS (Step 4.6): log and balance; sending happens from attendance / fee collection through SendSmsJob ──
         Route::middleware('module:sms')->group(function () {
