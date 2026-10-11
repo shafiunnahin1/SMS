@@ -178,6 +178,12 @@ export const MENU = {
     it('donations','/accountant/donations','দান ও অনুদান',{icon:'HandHeart',module:'donations'}),
     it('reports','/accountant/reports','রিপোর্ট',{icon:'BarChart3',module:'reports',primary:true}),
   ],
+  content_writer: [
+    it('questions','/writer/questions','প্রশ্ন',{icon:'FileText'}),
+  ],
+  content_moderator: [
+    it('review','/writer/questions','প্রশ্ন যাচাই',{icon:'ClipboardCheck'}),
+  ],
   super_admin: [
     it('dashboard','/super-admin/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard'}),
     it('institutions','/super-admin/institutions','প্রতিষ্ঠান',{icon:'Building2'}),
@@ -194,6 +200,8 @@ export const MENU = {
     it('exports','/super-admin/exports','প্রতিষ্ঠান export / backup / import', {icon:'Archive', since: 'R1.1' }),
     it('reports','/super-admin/reports','রিপোর্ট', {icon:'BarChart3', since: 'R5' }),
     it('qb-curriculum','/super-admin/qb/curriculum','প্রশ্নব্যাংক: পাঠ্যক্রম',{icon:'BookOpen'}),
+    it('qb-writers','/super-admin/qb/writers','প্রশ্নব্যাংক: লেখক',{icon:'Users'}),
+    it('qb-questions','/writer/questions','প্রশ্নব্যাংক: প্রশ্ন',{icon:'FileText'}),
     it('settings','/super-admin/settings','সেটিংস',{icon:'Settings'}),
   ],
 }

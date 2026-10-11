@@ -18,7 +18,8 @@ export default function ChangePassword() {
   const { register, handleSubmit, setError, formState: { isSubmitting, errors } } = useForm()
   const onSubmit = async (values) => {
     try {
-      await api.patch('/auth/change-password', values)
+      // D65 QB.2: a question-bank writer's first password change is on the central host's writer panel
+      await api.patch(['content_writer', 'content_moderator'].includes(user?.role) ? '/writer/change-password' : '/auth/change-password', values)
       useAuthStore.getState().updateUser({ must_change_password: false })
       useUiStore.getState().addToast(t('auth.changed'))
       navigate(ROLE_HOME[user?.role] ?? '/', { replace: true })

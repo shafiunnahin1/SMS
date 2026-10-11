@@ -45,6 +45,9 @@ const Institutions      = lazy(() => import('../pages/super/Institutions'))
 const InstitutionDetail = lazy(() => import('../pages/super/InstitutionDetail'))
 const PlatformSettings  = lazy(() => import('../pages/super/PlatformSettings'))
 const QbCurriculum      = lazy(() => import('../pages/super/QbCurriculum'))
+const QbWriters         = lazy(() => import('../pages/super/QbWriters'))
+const QbQuestions       = lazy(() => import('../pages/writer/QbQuestions'))
+const QbQuestionEdit    = lazy(() => import('../pages/writer/QbQuestionEdit'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
@@ -60,7 +63,7 @@ const authRoutes = [
 ]
 // MenuReleaseTest: every menu item a role can see in this release has a route of its own - a built page or, until its step, NotBuilt.
 // The paths come from nav/menu.js so a new menu entry cannot silently 404.
-const menuPaths = (role, prefix) => (MENU[role] ?? []).flatMap(i => i.children ?? [i]).map(i => i.path).filter(p => p?.startsWith(prefix + '/'))
+const menuPaths = (role, prefix) => [].concat(role).flatMap(r => MENU[r] ?? []).flatMap(i => i.children ?? [i]).map(i => i.path).filter(p => p?.startsWith(prefix + '/'))
 const area = (path, role, children) => {
   const built = new Set(children.map(c => c.path))
   const placeholders = [...new Set(menuPaths(role, path))].map(p => p.slice(path.length + 1)).filter(p => !built.has(p))
@@ -125,6 +128,12 @@ export const centralRoutes = [
     { path: 'institutions/:id', element: S(InstitutionDetail) },
     { path: 'settings', element: S(PlatformSettings) },
     { path: 'qb/curriculum', element: S(QbCurriculum) },
+    { path: 'qb/writers', element: S(QbWriters) },
+  ]),
+  // D65 QB.2: the question-bank writers' panel (writers, moderators and the Super Admin)
+  area('/writer', ['content_writer', 'content_moderator', 'super_admin'], [
+    { path: 'questions', element: S(QbQuestions) },
+    { path: 'questions/:id', element: S(QbQuestionEdit) },
   ]),
   { path: '*', element: <Navigate to="/login" replace /> },
 ]

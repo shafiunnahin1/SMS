@@ -688,7 +688,11 @@
   "ফলাফল": "Results",
   "আদায়": "Collection",
   "বকেয়া তালিকা": "Due list",
-  "খরচ": "Expenses"
+  "খরচ": "Expenses",
+  "প্রশ্নব্যাংক: লেখক": "Question bank: writers",
+  "প্রশ্নব্যাংক: প্রশ্ন": "Question bank: questions",
+  "প্রশ্ন": "Questions",
+  "প্রশ্ন যাচাই": "Review questions"
  },
  "qb": {
   "curriculum": "Question bank: curriculum",
@@ -732,6 +736,69 @@
   "empty_topics": "No topics in this chapter",
   "platform_class": "Question-bank class",
   "platform_class_hint": "Students see this class's content first in the question bank",
-  "none": "— none —"
+  "none": "— none —",
+  "writers": "Question bank: writers and moderators",
+  "add_writer": "Add a writer or moderator",
+  "writer_name": "Name",
+  "writer_role": "Role",
+  "roles": {
+   "content_writer": "Writer",
+   "content_moderator": "Moderator"
+  },
+  "phone": "Mobile",
+  "phone_hint": "The login code goes to this number",
+  "questions_count": "Questions",
+  "state": "Status",
+  "switch_off": "Switch off",
+  "switch_on": "Switch on",
+  "writer_off_confirm": "Switch {{name}} off?",
+  "writer_on_confirm": "Switch {{name}} on again?",
+  "writer_off_hint": "Every session ends at once; their questions stay.",
+  "no_writers": "No writers yet",
+  "questions": "Questions",
+  "question": "Question",
+  "new_question": "New question",
+  "question_no": "Question #{{id}}",
+  "author": "Writer",
+  "all": "All",
+  "search": "Search",
+  "no_questions": "No questions here",
+  "status": {
+   "draft": "Draft",
+   "review": "In review",
+   "rejected": "Returned",
+   "published": "Published"
+  },
+  "type": "Question type",
+  "subject": "Subject",
+  "chapter": "Chapter",
+  "topic": "Topic",
+  "pick": "Choose",
+  "none_option": "— none —",
+  "difficulty": "Difficulty",
+  "difficulty_level": {
+   "1": "1 — very easy",
+   "2": "2 — easy",
+   "3": "3 — medium",
+   "4": "4 — hard",
+   "5": "5 — very hard"
+  },
+  "marks": "Marks",
+  "language": "Language",
+  "answer": "Answer",
+  "explanation": "Explanation",
+  "submit": "Send for review",
+  "review": "Review",
+  "reason": "Reason for returning",
+  "reason_hint": "Returning needs a reason - the writer sees it",
+  "reject": "Return",
+  "publish": "Publish",
+  "returned": "Returned by the moderator",
+  "revisions": "Save history",
+  "done": {
+   "submit": "Sent for review",
+   "publish": "Published",
+   "reject": "Returned"
+  }
  }
 }

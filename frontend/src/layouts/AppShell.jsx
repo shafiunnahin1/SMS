@@ -9,6 +9,7 @@ import { useTerms } from '../hooks/useTerms'
 import { useLocale } from '../ui/I18nProvider'
 import Loader from '../components/Loader'
 import { useMediaQuery } from '../hooks/useMediaQuery'
+import { PLATFORM_ROLES } from '../router/roleHome'
 
 // docs/THEMING.md "layouts/AppShell.jsx": ONE shell for every role; the layout comes from theme.layout_key; pages never know it
 export default function AppShell() {
@@ -18,8 +19,8 @@ export default function AppShell() {
   const { locale } = useLocale()
 
   const narrow = useMediaQuery('(max-width: 1023px)')
-  // THEMING.md edge cases: Super Admin always gets the default; students and parents below 1024px always get the app-like tab bar
-  const key = user.role === 'super_admin' ? DEFAULT_LAYOUT
+  // THEMING.md edge cases: Super Admin (and the D65 writers - no institution theme) always gets the default; students and parents below 1024px always get the app-like tab bar
+  const key = PLATFORM_ROLES.includes(user.role) ? DEFAULT_LAYOUT
     : (['student', 'parent'].includes(user.role) && narrow) ? 'mobile-compact' : theme?.layout_key
   const Layout = LAYOUTS[key] ?? LAYOUTS[DEFAULT_LAYOUT]
   const nav = useMemo(

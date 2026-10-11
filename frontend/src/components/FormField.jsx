@@ -29,3 +29,17 @@ export const Select = forwardRef(function Select({ label, error, options = [], p
     </div>
   )
 })
+
+/** A labelled multi-line field (D65 QB.2: question, answer and explanation text) - same look and error line as Input */
+export const Textarea = forwardRef(function Textarea({ label, error, hint, rows = 4, className = '', ...props }, ref) {
+  const id = useId()
+  return (
+    <div className={`flex flex-col gap-1 ${className}`}>
+      {label && <label htmlFor={id} className="text-sm font-medium text-content">{label}</label>}
+      <textarea id={id} ref={ref} rows={rows} dir="auto" aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-e` : undefined}
+        className={base.replace('h-10', 'min-h-20 py-2')} {...props} />
+      {hint && !error && <p className="text-xs text-content-muted">{hint}</p>}
+      {error && <p id={`${id}-e`} className="text-xs text-red-600">{error}</p>}
+    </div>
+  )
+})
