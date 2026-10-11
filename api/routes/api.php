@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbCurriculumController, QbQuestionController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbCurriculumController, QbMediaController, QbQuestionController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -74,6 +74,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/questions/{id}',                 [QbQuestionController::class, 'show'])->whereNumber('id');
         Route::put('/questions/{id}',                 [QbQuestionController::class, 'update'])->whereNumber('id')->middleware('role:content_writer,super_admin');
         Route::get('/questions/{id}/revisions',       [QbQuestionController::class, 'revisions'])->whereNumber('id');
+        Route::post('/media',                         [QbMediaController::class, 'store'])->middleware('role:content_writer,super_admin');
         Route::post('/questions/{id}/submit',         [QbQuestionController::class, 'submit'])->whereNumber('id')->middleware('role:content_writer,super_admin');
         Route::post('/questions/{id}/publish',        [QbQuestionController::class, 'publish'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
         Route::post('/questions/{id}/reject',         [QbQuestionController::class, 'reject'])->whereNumber('id')->middleware('role:content_moderator,super_admin');

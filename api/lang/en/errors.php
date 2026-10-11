@@ -44,6 +44,13 @@ return [
     'qb_wrong_status'       => 'The question is no longer in that state - reload the page.',   // QB.2
     'qb_topic_mismatch'     => 'This topic is not in that chapter.',   // QB.2
     'qb_chapter_mismatch'   => 'This chapter is not in that subject.',   // QB.2
+    'qb_media_not_yours'    => 'This picture was not uploaded by you.',   // QB.3
+    'qb_needs_options'      => 'Give at least two options.',   // QB.3
+    'qb_needs_correct'      => 'Mark the right option.',   // QB.3
+    'qb_true_false'         => 'A true / false question needs exactly two options, one of them right.',   // QB.3
+    'qb_needs_parts'        => 'A creative question needs at least one part (ক-ঘ).',   // QB.3
+    'qb_needs_blank'        => 'Write ___ where the blank goes.',   // QB.3
+    'qb_needs_answer'       => 'Write the answer.',   // QB.3
     'enrollment_not_active' => 'This enrollment is no longer active.',
     'kind_not_available' => 'This kind of import is not available yet.',
     'bad_encoding' => 'The file is not UTF-8. Save it from Excel as "CSV UTF-8" or upload .xlsx.',

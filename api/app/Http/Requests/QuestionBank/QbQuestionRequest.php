@@ -31,6 +31,28 @@ class QbQuestionRequest extends FormRequest
             'explanation_json'    => ['nullable', 'array'],
             'class_level_ids'     => ['sometimes', 'array', 'max:30'],
             'class_level_ids.*'   => ['integer', 'distinct', 'exists:qb_class_levels,id'],
+            // QB.3: the parts of the core types. A list present in the request REPLACES the stored one; absent = unchanged.
+            'options'                      => ['sometimes', 'array', 'max:8'],                       // mcq, true_false
+            'options.*.label'              => ['required', 'string', 'max:10'],
+            'options.*.content_text'       => ['required', 'string', 'max:2000'],
+            'options.*.content_json'       => ['nullable', 'array'],
+            'options.*.is_correct'         => ['required', 'boolean'],
+            'creative_parts'               => ['sometimes', 'array', 'max:4'],                       // creative: উদ্দীপক = question_text, then ক-ঘ
+            'creative_parts.*.part_label'  => ['required', 'string', 'max:10', 'distinct'],
+            'creative_parts.*.cognitive_level' => ['required', 'in:knowledge,understanding,application,higher_order'],
+            'creative_parts.*.marks'       => ['required', 'numeric', 'regex:/^\d{1,2}(\.\d{1,2})?$/', 'min:0.5', 'max:20'],
+            'creative_parts.*.question_text' => ['required', 'string', 'max:5000'],
+            'creative_parts.*.question_json' => ['nullable', 'array'],
+            'creative_parts.*.answer_text' => ['nullable', 'string', 'max:20000'],
+            'creative_parts.*.answer_json' => ['nullable', 'array'],
+            'occurrences'                  => ['sometimes', 'array', 'max:20'],                      // where the question appeared before
+            'occurrences.*.board'          => ['nullable', 'string', 'max:50'],
+            'occurrences.*.institution_name' => ['nullable', 'string', 'max:200'],
+            'occurrences.*.exam_type'      => ['nullable', 'string', 'max:50'],
+            'occurrences.*.year'           => ['nullable', 'integer', 'min:1950', 'max:2100'],
+            'occurrences.*.note'           => ['nullable', 'string', 'max:200'],
+            'media_ids'                    => ['sometimes', 'array', 'max:10'],                      // pictures uploaded through POST /writer/media
+            'media_ids.*'                  => ['integer', 'distinct', 'exists:qb_media,id'],
             'status'              => ['prohibited'],
         ];
     }

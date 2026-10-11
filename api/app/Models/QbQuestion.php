@@ -17,4 +17,11 @@ class QbQuestion extends Model
     protected $casts = ['marks' => 'decimal:2', 'question_json' => 'array', 'answer_json' => 'array', 'explanation_json' => 'array', 'published_at' => 'datetime'];
 
     public function classLevels() { return $this->belongsToMany(QbClassLevel::class, 'qb_question_class_level'); }
+
+    public function type() { return $this->belongsTo(QbQuestionType::class, 'qb_question_type_id'); }
+    public function options() { return $this->hasMany(QbQuestionOption::class)->orderBy('sort_order')->orderBy('id'); }
+    public function creativeParts() { return $this->hasMany(QbCreativePart::class)->orderBy('sort_order')->orderBy('id'); }
+    public function occurrences() { return $this->hasMany(QbQuestionOccurrence::class)->orderBy('id'); }
+    /** pictures linked to the question itself (qb_media_links owner_type 'question') */
+    public function media() { return $this->belongsToMany(QbMedia::class, 'qb_media_links', 'owner_id', 'qb_media_id')->wherePivot('owner_type', 'question')->withPivotValue('owner_type', 'question'); }
 }

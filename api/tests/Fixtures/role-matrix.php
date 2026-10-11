@@ -142,6 +142,7 @@ return [
     'GET api/v1/writer/questions/{id}' => ['content_writer', 'content_moderator', 'super_admin'],
     'PUT api/v1/writer/questions/{id}' => ['content_writer', 'super_admin'],
     'GET api/v1/writer/questions/{id}/revisions' => ['content_writer', 'content_moderator', 'super_admin'],
+    'POST api/v1/writer/media' => ['content_writer', 'super_admin'],                // QB.3: a question's picture
     'POST api/v1/writer/questions/{id}/submit' => ['content_writer', 'super_admin'],
     'POST api/v1/writer/questions/{id}/publish' => ['content_moderator', 'super_admin'],
     'POST api/v1/writer/questions/{id}/reject' => ['content_moderator', 'super_admin'],                                   // QB.1: to link a program to a platform class

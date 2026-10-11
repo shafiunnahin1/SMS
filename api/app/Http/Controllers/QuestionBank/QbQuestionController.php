@@ -5,7 +5,7 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QuestionBank\QbQuestionRequest;
-use App\Models\{AuditLog, QbChapter, QbQuestion, QbQuestionRevision, QbQuestionType, QbTopic, User};
+use App\Models\{AuditLog, QbChapter, QbMedia, QbQuestion, QbQuestionRevision, QbQuestionType, QbTopic, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,9 +14,12 @@ use Illuminate\Validation\ValidationException;
 // questions and sees only their own; they edit a question only while it is a draft or came back rejected, then submit it for
 // review. A moderator (content_moderator) publishes or rejects (with the reason) what is in review and edits nothing. The Super
 // Admin may do all of it. Every save stores a qb_question_revisions snapshot; every status move is in the audit log.
+// QB.3: the parts of the core types - options (mcq, true_false), creative parts (creative), occurrences and pictures. A draft may
+// be incomplete; sending it for review checks that its type is complete (options with a right one, parts, an answer).
 class QbQuestionController extends Controller
 {
     private const EDITABLE = ['draft', 'rejected'];
+    private const CHILDREN = ['class_level_ids', 'options', 'creative_parts', 'occurrences', 'media_ids'];
 
     /** GET /writer/curriculum: the class → subject → chapter → topic tree to file a question under */
     public function curriculum()
@@ -43,7 +46,8 @@ class QbQuestionController extends Controller
             ->orderByDesc('updated_at')->orderByDesc('id')->paginate($f['per_page'] ?? 25);
         $authors = User::platform()->whereIn('id', collect($page->items())->pluck('created_by')->unique())->pluck('name', 'id');
         return response()->json(['success' => true,
-            'data' => collect($page->items())->map(fn ($q) => $this->row($q) + ['author' => $authors[$q->created_by] ?? null])->values(),
+            'data' => collect($page->items())->map(fn ($q) => $q->only(['id', 'qb_question_type_id', 'qb_subject_id', 'qb_chapter_id', 'qb_topic_id', 'difficulty', 'marks',
+                'language', 'question_text', 'status', 'review_note', 'created_by']) + ['updated_at' => $q->updated_at?->toIso8601String(), 'author' => $authors[$q->created_by] ?? null])->values(),
             'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(), 'per_page' => $page->perPage()]]);
     }
 
@@ -54,8 +58,8 @@ class QbQuestionController extends Controller
         abort_if($user->role === 'content_moderator', 403);
         $in = $this->placed($request->validated());
         $q = DB::transaction(function () use ($in, $user) {
-            $q = QbQuestion::create(collect($in)->except('class_level_ids')->all() + ['status' => 'draft', 'created_by' => $user->id]);
-            if (array_key_exists('class_level_ids', $in)) $q->classLevels()->sync($in['class_level_ids']);
+            $q = QbQuestion::create(collect($in)->except(self::CHILDREN)->all() + ['status' => 'draft', 'created_by' => $user->id]);
+            $this->children($q, $in, $user);
             $this->revision($q, $user);
             return $q;
         });
@@ -80,8 +84,8 @@ class QbQuestionController extends Controller
                 throw new BusinessException('only a draft or a rejected question can be edited', 'qb_wrong_status', 422);
             }
             $in = $this->placed($in + $q->only(['qb_subject_id', 'qb_chapter_id', 'qb_topic_id']));
-            $q->update(collect($in)->except('class_level_ids')->all());
-            if (array_key_exists('class_level_ids', $in)) $q->classLevels()->sync($in['class_level_ids']);
+            $q->update(collect($in)->except(self::CHILDREN)->all());
+            $this->children($q, $in, $user);
             $this->revision($q, $user);
             return $q;
         });
@@ -103,7 +107,10 @@ class QbQuestionController extends Controller
     {
         $user = $request->user();
         abort_if($user->role === 'content_moderator', 403);
-        return $this->move($user, $id, self::EDITABLE, 'review', 'qb.question.submitted', fn ($q) => ['review_note' => null]);
+        return $this->move($user, $id, self::EDITABLE, 'review', 'qb.question.submitted', function ($q) {
+            $this->complete($q);
+            return ['review_note' => null];
+        });
     }
 
     /** POST /writer/questions/{id}/publish: review -> published (moderator, Super Admin) */
@@ -159,13 +166,54 @@ class QbQuestionController extends Controller
         return $in;
     }
 
+    /** Replace each list that came in the request (absent = unchanged); pictures must be the editor's own uploads or already on it */
+    private function children(QbQuestion $q, array $in, User $user): void
+    {
+        if (array_key_exists('class_level_ids', $in)) $q->classLevels()->sync($in['class_level_ids']);
+        if (array_key_exists('options', $in)) {
+            $q->options()->delete();
+            foreach (array_values($in['options']) as $i => $o) $q->options()->create(['label' => $o['label'], 'content_text' => $o['content_text'],
+                'content_json' => $o['content_json'] ?? null, 'is_correct' => (bool) $o['is_correct'], 'sort_order' => $i]);
+        }
+        if (array_key_exists('creative_parts', $in)) {
+            $q->creativeParts()->delete();
+            foreach (array_values($in['creative_parts']) as $i => $p) $q->creativeParts()->create(collect($p)->only(['part_label', 'cognitive_level', 'marks',
+                'question_text', 'question_json', 'answer_text', 'answer_json'])->all() + ['sort_order' => $i]);
+        }
+        if (array_key_exists('occurrences', $in)) {
+            $q->occurrences()->delete();
+            foreach ($in['occurrences'] as $o) $q->occurrences()->create(collect($o)->only(['board', 'institution_name', 'exam_type', 'year', 'note'])->all());
+        }
+        if (array_key_exists('media_ids', $in)) {
+            $linked = $q->media()->pluck('qb_media.id')->all();
+            $foreign = QbMedia::whereIn('id', $in['media_ids'])->whereNotIn('id', $linked)->where('uploaded_by', '!=', $user->id)->exists();
+            if ($foreign && $user->role !== 'super_admin') throw ValidationException::withMessages(['media_ids' => __('errors.qb_media_not_yours')]);
+            $q->media()->sync($in['media_ids']);
+        }
+    }
+
+    /** Sending for review: the type's own parts must be there (a draft may be unfinished) */
+    private function complete(QbQuestion $q): void
+    {
+        $family = $q->type?->family;
+        $options = $q->options()->get();
+        $errors = match ($family) {
+            'mcq' => $options->count() < 2 ? ['options' => 'qb_needs_options'] : ($options->where('is_correct', true)->isEmpty() ? ['options' => 'qb_needs_correct'] : []),
+            'true_false' => ($options->count() !== 2 || $options->where('is_correct', true)->count() !== 1) ? ['options' => 'qb_true_false'] : [],
+            'creative' => $q->creativeParts()->count() === 0 ? ['creative_parts' => 'qb_needs_parts'] : [],
+            'fill_gap' => !str_contains((string) $q->question_text, '___') ? ['question_text' => 'qb_needs_blank'] : (blank($q->answer_text) ? ['answer_text' => 'qb_needs_answer'] : []),
+            default => blank($q->answer_text) ? ['answer_text' => 'qb_needs_answer'] : [],
+        };
+        if ($errors) throw ValidationException::withMessages(array_map(fn ($code) => __("errors.{$code}"), $errors));
+    }
+
     private function revision(QbQuestion $q, User $user): void
     {
         $q->refresh();
         QbQuestionRevision::create(['qb_question_id' => $q->id, 'edited_by' => $user->id,
             'snapshot' => $q->only(['qb_question_type_id', 'qb_subject_id', 'qb_chapter_id', 'qb_topic_id', 'difficulty', 'marks', 'language', 'content_mode',
                 'question_json', 'question_text', 'answer_json', 'answer_text', 'explanation_json', 'explanation_text', 'status'])
-                + ['class_level_ids' => $q->classLevels()->pluck('qb_class_levels.id')->all()]]);
+                + ['class_level_ids' => $q->classLevels()->pluck('qb_class_levels.id')->all()] + $this->parts($q)]);
     }
 
     private function row(QbQuestion $q): array
@@ -173,6 +221,19 @@ class QbQuestionController extends Controller
         return $q->only(['id', 'qb_question_type_id', 'qb_subject_id', 'qb_chapter_id', 'qb_topic_id', 'difficulty', 'marks', 'language', 'content_mode',
             'question_json', 'question_text', 'answer_json', 'answer_text', 'explanation_json', 'explanation_text', 'status', 'review_note', 'created_by', 'reviewed_by'])
             + ['class_level_ids' => $q->classLevels()->pluck('qb_class_levels.id')->all(), 'published_at' => $q->published_at?->toIso8601String(),
-                'updated_at' => $q->updated_at?->toIso8601String()];
+                'updated_at' => $q->updated_at?->toIso8601String()]
+            + $this->parts($q) + ['media' => $q->media()->get()->map(fn ($m) => QbMediaController::view($m))->values()->all()];
+    }
+
+    /** The parts with their answers - the writers' panel only; an institution or a student gets QbQuestionPublicResource */
+    private function parts(QbQuestion $q): array
+    {
+        return [
+            'options' => $q->options()->get(['label', 'content_text', 'content_json', 'is_correct'])->map(fn ($o) => ['label' => $o->label, 'content_text' => $o->content_text,
+                'content_json' => $o->content_json, 'is_correct' => (bool) $o->is_correct])->all(),
+            'creative_parts' => $q->creativeParts()->get()->map(fn ($p) => $p->only(['part_label', 'cognitive_level', 'marks', 'question_text', 'question_json', 'answer_text', 'answer_json']))->all(),
+            'occurrences' => $q->occurrences()->get()->map(fn ($o) => $o->only(['board', 'institution_name', 'exam_type', 'year', 'note']))->all(),
+            'media_ids' => $q->media()->pluck('qb_media.id')->all(),
+        ];
     }
 }
