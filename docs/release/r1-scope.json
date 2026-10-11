@@ -278,7 +278,8 @@
    "qb-writers",
    "qb-questions",
    "qb-concepts",
-   "qb-resources"
+   "qb-resources",
+   "qb-pricing"
   ],
   "content_writer": [
    "questions",
