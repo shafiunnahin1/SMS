@@ -17,6 +17,7 @@ class RouteMiddlewareContractTest extends TestCase
         'GET /' => 'the SPA shell / welcome page',
         'GET up' => 'Laravel health ping (no data)',
         'GET storage/{path}' => 'local private-disk serving of signed temporaryUrl() links (signature checked by Laravel)',
+        'PUT storage/{path}' => 'Laravel 12 local-disk upload for signed temporaryUploadUrl() links - we never issue one; unsigned = refused (SecurityHeadersTest)',
         'GET api/v1/sanctum/csrf-cookie' => 'Sanctum CSRF cookie for the SPA login',
     ];
 

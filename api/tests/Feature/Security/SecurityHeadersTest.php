@@ -31,4 +31,13 @@ class SecurityHeadersTest extends TestCase
             $this->assertNull($ask($origin)->headers->get('Access-Control-Allow-Origin'), $origin);
         }
     }
+
+    public function test_the_local_disk_upload_route_refuses_an_unsigned_put(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('private');
+        $host = $this->hostOf($this->makeInstitution('put'));
+        $res = $this->call('PUT', "http://{$host}/storage/institutions/1/students/1/x.php", [], [], [], [], '<?php echo 1;');
+        $this->assertContains($res->getStatusCode(), [403, 404]);
+        \Illuminate\Support\Facades\Storage::disk('private')->assertMissing('institutions/1/students/1/x.php');
+    }
 }
