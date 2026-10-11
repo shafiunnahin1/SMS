@@ -1,5 +1,5 @@
-# Owner-only helper (2026-10-11): records decision D63 (build everything; only the server deploy later) as ONE human commit with
-# `Change-Request: D63` (docs/ops/agent-guardrails.md section 4). After it is pushed, the agent updates the plan, builds 9.1 locally, does task A and starts Release 3
+# Owner-only helper (2026-10-11): records decision D63 (local first, deploy later; R3 next) as ONE human commit with
+# `Change-Request: D63` (docs/ops/agent-guardrails.md section 4). After it is pushed, the agent updates the plan, does task A (local acceptance) and starts Release 3
 # in its own commits with the same trailer. Run from the project folder:
 #   powershell -ExecutionPolicy Bypass -File owner\approve-local-first.ps1
 # Read owner\decision-D63.md first - committing the row is your approval.
@@ -17,6 +17,6 @@ if ($at -lt 0) { throw 'row D62 not found in docs/LOCKED-DECISIONS.md' }
 $lines.InsertRange($at + 1, [IO.File]::ReadAllLines((Join-Path (Get-Location) 'owner\decision-D63.md'), $utf8))
 [IO.File]::WriteAllText($dec, (($lines -join "`n") + "`n"), $utf8)
 Invoke-Git add docs/LOCKED-DECISIONS.md
-Invoke-Git commit docs/LOCKED-DECISIONS.md -m "decision D63: build everything locally, only the server deploy later" -m "Change-Request: D63"
+Invoke-Git commit docs/LOCKED-DECISIONS.md -m "decision D63: local first, deploy later; Release 3 next" -m "Change-Request: D63"
 Invoke-Git push
 Write-Host 'Done: D63 recorded. Tell the agent to continue (Release 3).'
