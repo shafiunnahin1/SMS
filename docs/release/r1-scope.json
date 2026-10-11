@@ -271,7 +271,8 @@
    "institutions",
    "plans",
    "billing",
-   "settings"
+   "settings",
+   "qb-curriculum"
   ]
  },
  "step_tables": {
