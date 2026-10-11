@@ -367,3 +367,12 @@ support,সহায়তা-কর্মী আপনার অনুমতি
 merit_list,কোচিং সেন্টারের জন্য ব্যাচ-ভিত্তিক মেধা-ক্রম,doc:coaching-private-batch.md,R1.1
 multi_branch,"প্রতিটি শাখার তথ্য আলাদা থাকে, প্রধান কার্যালয় সব শাখা দেখে",doc:extended-features.md,L
 multi_branch,শাখা-ভিত্তিক আলাদা প্রশাসক,doc:extended-features.md,L
+question_bank,শ্রেণি→বিষয়→অধ্যায়→টপিক ভিত্তিক প্রশ্ন খোঁজা ও দেখা (বিনামূল্যে),doc:question-bank.md,L
+question_bank,প্রশ্নের ধরনভেদে দামে উত্তর দেখা ও প্রশ্নপত্রে ব্যবহার — প্রতিষ্ঠানের সব শিক্ষকের জন্য একবার কেনা,doc:question-bank.md,L
+question_bank,"প্রশ্নপত্র তৈরি ও PDF (উত্তরসহ/ছাড়া, সেট); প্রধান শিক্ষক সব প্রশ্নপত্র দেখেন",doc:question-bank.md,L
+question_bank,"টপিক-ভিত্তিক কনসেপ্ট, স্লাইড, বই ও PDF",doc:question-bank.md,L
+question_bank,শিক্ষক-ভিত্তিক খরচের হিসাব ও মাসিক খরচ-সীমা,doc:question-bank.md,L
+quiz,"শিক্ষার্থীর অনলাইন কুইজ (সময়-গণনা, সার্ভারে মূল্যায়ন)",doc:question-bank.md,L
+quiz,মেয়াদসহ কুইজ-প্যাকেজ bKash-এ কেনা,doc:question-bank.md,L
+quiz,বিনামূল্যের ও সার্বজনীন কুইজ,doc:question-bank.md,L
+quiz,নিজের ফলের ইতিহাস ও ব্যাখ্যা,doc:question-bank.md,L
