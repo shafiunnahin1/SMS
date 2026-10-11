@@ -74,4 +74,19 @@ class AlertTest extends TestCase
         $this->assertTrue(app(AlertService::class)->send('Redis down', ['x' => 1], 'k-cache'));
         Http::assertSentCount(1);
     }
+
+    public function test_telegram_and_email_get_the_alert(): void
+    {
+        config(['mail.default' => 'array']);
+        config(['monitoring.webhook_url' => null, 'monitoring.telegram_bot_token' => '123:abc', 'monitoring.telegram_chat_id' => '-100777',
+            'monitoring.emails' => ['owner@example.test']]);
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+        $this->artisan('ops:alert-test')->assertSuccessful();
+        Http::assertSent(fn ($r) => $r->url() === 'https://api.telegram.org/bot123:abc/sendMessage' && $r['chat_id'] === '-100777'
+            && str_contains($r['text'], 'Unexpected error: RuntimeException'));
+        $sent = app('mail.manager')->mailer('array')->getSymfonyTransport()->messages();
+        $this->assertCount(1, $sent);
+        $this->assertSame('owner@example.test', $sent->first()->getEnvelope()->getRecipients()[0]->getAddress());
+        $this->assertStringContainsString('RuntimeException', $sent->first()->getOriginalMessage()->getTextBody());
+    }
 }
