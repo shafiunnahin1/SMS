@@ -40,6 +40,7 @@ return [
     'due_not_applicable'    => 'This due no longer applies.',
     'amount_positive'       => 'The amount must be more than zero.',
     'in_use'                => 'This is in use and cannot be deleted - archive it instead.',
+    'qb_in_use'             => 'Questions, chapters, topics or an institution\'s class still use this, so it cannot be deleted - switch it off instead.',   // QB.1 (D65)
     'enrollment_not_active' => 'This enrollment is no longer active.',
     'kind_not_available' => 'This kind of import is not available yet.',
     'bad_encoding' => 'The file is not UTF-8. Save it from Excel as "CSV UTF-8" or upload .xlsx.',

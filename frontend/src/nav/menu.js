@@ -193,6 +193,7 @@ export const MENU = {
     it('coupons','/super-admin/coupons','কুপন', {icon:'Ticket', since: 'R5' }),
     it('exports','/super-admin/exports','প্রতিষ্ঠান export / backup / import', {icon:'Archive', since: 'R1.1' }),
     it('reports','/super-admin/reports','রিপোর্ট', {icon:'BarChart3', since: 'R5' }),
+    it('qb-curriculum','/super-admin/qb/curriculum','প্রশ্নব্যাংক: পাঠ্যক্রম',{icon:'BookOpen'}),
     it('settings','/super-admin/settings','সেটিংস',{icon:'Settings'}),
   ],
 }

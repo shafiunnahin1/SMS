@@ -44,6 +44,7 @@ const Signup      = lazy(() => import('../pages/central/Signup'))
 const Institutions      = lazy(() => import('../pages/super/Institutions'))
 const InstitutionDetail = lazy(() => import('../pages/super/InstitutionDetail'))
 const PlatformSettings  = lazy(() => import('../pages/super/PlatformSettings'))
+const QbCurriculum      = lazy(() => import('../pages/super/QbCurriculum'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
@@ -123,6 +124,7 @@ export const centralRoutes = [
     { path: 'institutions', element: S(Institutions) },
     { path: 'institutions/:id', element: S(InstitutionDetail) },
     { path: 'settings', element: S(PlatformSettings) },
+    { path: 'qb/curriculum', element: S(QbCurriculum) },
   ]),
   { path: '*', element: <Navigate to="/login" replace /> },
 ]

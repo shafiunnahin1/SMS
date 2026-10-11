@@ -678,6 +678,7 @@
   "SMS": "SMS",
   "রিপোর্ট": "Reports",
   "সেটিংস": "Settings",
+  "প্রশ্নব্যাংক: পাঠ্যক্রম": "Question bank: curriculum",
   "সাধারণ": "General",
   "শব্দ-কোষ": "Terminology",
   "ডেটা আমদানি (পুরনো সিস্টেম থেকে)": "Data import",
@@ -688,5 +689,49 @@
   "আদায়": "Collection",
   "বকেয়া তালিকা": "Due list",
   "খরচ": "Expenses"
+ },
+ "qb": {
+  "curriculum": "Question bank: curriculum",
+  "curriculum_hint": "One curriculum for every institution - class → subject → chapter → topic. Questions, concepts and resources hang on this tree; a part in use cannot be deleted, only switched off.",
+  "class_levels": "Classes",
+  "subjects": "Subjects",
+  "chapters": "Chapters",
+  "topics": "Topics",
+  "all_classes": "All classes",
+  "add": "Add",
+  "add_kind": "Add {{kind}}",
+  "edit_kind": "Edit {{kind}}",
+  "kind": {
+   "class-levels": "class",
+   "subjects": "subject",
+   "chapters": "chapter",
+   "topics": "topic"
+  },
+  "name_bn": "Name (Bangla)",
+  "name_en": "Name (English)",
+  "education_level": "Education level",
+  "levels": {
+   "primary": "Primary",
+   "secondary": "Secondary",
+   "higher_secondary": "Higher secondary",
+   "madrasa": "Madrasa",
+   "technical": "Technical",
+   "admission": "Admission test",
+   "other": "Other"
+  },
+  "code": "Code",
+  "number": "Chapter no.",
+  "sort_order": "Order",
+  "active": "Active",
+  "taught_in": "Taught in these classes",
+  "pick_subject": "Pick a subject to see its chapters",
+  "pick_chapter": "Pick a chapter to see its topics",
+  "empty_class_levels": "No classes yet",
+  "empty_subjects": "No subjects in this class",
+  "empty_chapters": "No chapters in this subject",
+  "empty_topics": "No topics in this chapter",
+  "platform_class": "Question-bank class",
+  "platform_class_hint": "Students see this class's content first in the question bank",
+  "none": "— none —"
  }
 }
