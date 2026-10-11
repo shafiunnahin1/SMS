@@ -23,6 +23,8 @@
 | `donations` | দান ও অনুদান (ফান্ড, দাতা, রসিদ) — **opt-in** | [`donations.md`](donations.md) | Phase 7 · #18 | opt-in | ✓✓–– |
 | `hifz` | হিফজ ট্র্যাকিং, হিজরি, দ্বিভাষিক নাম, গ্রেড-লেবেল — **opt-in** | [`madrasa.md`](madrasa.md) | Phase 7 · #19 | opt-in | ✓✓–– |
 | `syllabus` | সিলেবাস, পাঠ-পরিকল্পনা, কভারেজ | [`syllabus.md`](syllabus.md) | Phase 7 · #20 | core | ✓✓✓✓ |
+| `question_bank` | প্রশ্নব্যাংক (শ্রেণি→বিষয়→অধ্যায়→টপিক), কনসেপ্ট, স্লাইড/বই/PDF, কেনা (প্রতিষ্ঠানের ওয়ালেট), প্রশ্নপত্র — **খসড়া, D65** | [`question-bank.md`](question-bank.md) | QB.0–QB.8 (Task A-র পরে) | core | ✓✓✓✓ |
+| `quiz` | শিক্ষার্থীর অনলাইন কুইজ ও কুইজ-প্যাকেজ (bKash) — **খসড়া, D65** | [`question-bank.md`](question-bank.md) | QB.9–QB.10 | core | ✓✓✓✓ |
 | `risk_alerts` | সহায়তা-প্রয়োজন ছাত্র-সতর্কতা (নিয়ম-ভিত্তিক) | [`risk-alerts.md`](risk-alerts.md) | Phase 7 · #21 | core | ✓✓✓– |
 | `sms` | SMS, sender ID, credit, সম্মতি-নির্ভর | [`notifications.md`](notifications.md) | Phase 4 · 4.6 | core | ✓✓✓✓ |
 | `notices` | নোটিশ, in-app নোটিফিকেশন | [`notifications.md`](notifications.md) | Phase 4 · 4.6 | core | ✓✓✓✓ |
