@@ -64,9 +64,9 @@
 | `8.2` | Security hardening | `8.1` |  |  |  |
 | `8.5` | Load and scale test (before SIGNUP_MODE=open) | `8.2` |  |  |  |
 | `9.1` | Deployment, backup, monitoring | `8.5` |  |  |  |
-| `5.1` | Signup & Onboarding | `9.1` |  | 3 | 1 |
+| `A` | Release 1 acceptance (local, D63/D64), open signup at deploy | `9.1` |  |  |  |
+| `5.1` | Signup & Onboarding | `A` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
-| `A` | Release 1 acceptance, then open signup | `5.2` |  |  |  |
 
 **সারসংক্ষেপ:** 38 task · 32 টেবিল · 151 route · 64 নামকৃত পরীক্ষা।
 
@@ -1785,10 +1785,10 @@ k6 run -e INPUT=infra/loadtest/inputs.json infra/loadtest/peak-hour.k6.mjs
 - **লক্ষ্য:** A production environment that survives a bad day.
 - **কী পড়বেন:** `docs/ops/deployment-plan.md`, `docs/ops/docker-setup.md`, `infra/nginx.conf`, `infra/Caddyfile`, `infra/github-actions-cicd.yml`, `docs/ops/performance-benchmarks.md`
 
-> **R1 পরিসর (এটিই চূড়ান্ত):** Docker (staging), Nginx internal + Caddy edge, WILDCARD subdomain only (custom domain is R2: skip custom-domain.md Part C), CI/CD, MySQL backup + a rehearsed restore, slow-query log (long_query_time 0.5), queue-depth and error monitoring, FILES_DRIVER=s3 if more than one server.
+> **R1 পরিসর (এটিই চূড়ান্ত):** D64: everything that needs no real server is built and tested NOW - Docker (staging), Nginx internal + Caddy edge config, WILDCARD subdomain only (custom domain is R2: skip custom-domain.md Part C), the CI/CD workflow (its deploy step waits for the server address and secrets), MySQL backup + a restore rehearsed locally, slow-query log (long_query_time 0.5), queue-depth and error monitoring, FILES_DRIVER=s3 if more than one server. Buying the server, DNS, real keys, going live and the load test on the real server wait for the owner's deploy decision.
 
 
-**Done When:** push to main runs tests, builds and deploys; a backup is restored on a clean machine and mysql-smoke.sh passes against it; alerts fire on a forced error.
+**Done When:** D64: the CI workflow runs tests and builds on push (deploy step ready, switched off until the server exists); a backup is restored into a clean database locally and mysql-smoke.sh passes against it; alerts fire on a forced error (locally). On the real server, at deploy: push to main deploys, the restore and the alert are repeated.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
@@ -1797,9 +1797,27 @@ bash infra/scripts/mysql-smoke.sh
 
 ---
 
-### TASK `5.1` — Signup & Onboarding
+### TASK `A` — Release 1 acceptance (local, D63/D64), open signup at deploy
 
 - **নির্ভর করে:** `9.1`  ·  **Release:** R1
+- **লক্ষ্য:** Decide, with evidence, that strangers may sign up.
+- **কী পড়বেন:** `docs/RELEASE-1.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** D63/D64: tick, with evidence, every box of RELEASE-1.md section 7 that can be proven locally (attendance->SMS, fee->receipt, marksheet, parent view, cross-tenant, erasure, load test, mysql-smoke.sh and perf-check.py on local MySQL, Spike Gate); the signup/subscription box (5.1/5.2, after all modules - D55) and the server boxes are ticked before deploy; SIGNUP_MODE stays closed/invite.
+
+
+**Done When:** Every locally provable box of section 7 ticked with evidence and the owner's acceptance written in docs/PROGRESS.md; Release 3 may start. SIGNUP_MODE=open only at deploy (an owner decision, never the agent's).
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+python3 infra/spec-verify/verify.py . --deep
+```
+
+---
+
+### TASK `5.1` — Signup & Onboarding
+
+- **নির্ভর করে:** `A`  ·  **Release:** R1
 - **কী পড়বেন:** `docs/modules/onboarding.md`, `docs/modules/subscription.md`, `docs/architecture/system-design-patterns.md`
 
 > **R1 পরিসর (এটিই চূড়ান্ত):** Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.
@@ -1939,24 +1957,6 @@ php artisan test   # whole suite stays green
 > **Tests:** `SubscriptionLimitTest`
 > **Done When:** sandbox-এ subscription payment → মেয়াদ বাড়ে + invoice + status `active`; মেয়াদ শেষ → grace → suspended, কিন্তু suspended admin তখনও login ও পেমেন্ট করে আবার চালু করতে পারে; callback central domain-এ ফিরে tenant-এর primary URL-এ redirect।
 </details>
-
----
-
-### TASK `A` — Release 1 acceptance, then open signup
-
-- **নির্ভর করে:** `5.2`  ·  **Release:** R1
-- **লক্ষ্য:** Decide, with evidence, that strangers may sign up.
-- **কী পড়বেন:** `docs/RELEASE-1.md`
-
-> **R1 পরিসর (এটিই চূড়ান্ত):** Tick every box in RELEASE-1.md section 7 with evidence; the non-code launch checklist (section 5); closed beta first: SIGNUP_MODE=invite.
-
-
-**Done When:** All boxes ticked; the owner flips SIGNUP_MODE=open (an owner decision, never the agent's).
-
-**যাচাই (সব সবুজ হলে তবেই পরের task):**
-```bash
-python3 infra/spec-verify/verify.py . --deep
-```
 
 ---
 

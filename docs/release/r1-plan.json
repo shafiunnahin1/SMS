@@ -1027,17 +1027,35 @@
    "routes": [],
    "routes_excluded": [],
    "tests": [],
-   "done_when": "push to main runs tests, builds and deploys; a backup is restored on a clean machine and mysql-smoke.sh passes against it; alerts fire on a forced error.",
-   "scope_note": "Docker (staging), Nginx internal + Caddy edge, WILDCARD subdomain only (custom domain is R2: skip custom-domain.md Part C), CI/CD, MySQL backup + a rehearsed restore, slow-query log (long_query_time 0.5), queue-depth and error monitoring, FILES_DRIVER=s3 if more than one server.",
+   "done_when": "D64: the CI workflow runs tests and builds on push (deploy step ready, switched off until the server exists); a backup is restored into a clean database locally and mysql-smoke.sh passes against it; alerts fire on a forced error (locally). On the real server, at deploy: push to main deploys, the restore and the alert are repeated.",
+   "scope_note": "D64: everything that needs no real server is built and tested NOW - Docker (staging), Nginx internal + Caddy edge config, WILDCARD subdomain only (custom domain is R2: skip custom-domain.md Part C), the CI/CD workflow (its deploy step waits for the server address and secrets), MySQL backup + a restore rehearsed locally, slow-query log (long_query_time 0.5), queue-depth and error monitoring, FILES_DRIVER=s3 if more than one server. Buying the server, DNS, real keys, going live and the load test on the real server wait for the owner's deploy decision.",
    "blocked": null,
    "verify": [
     "bash infra/scripts/mysql-smoke.sh"
    ]
   },
   {
+   "id": "A",
+   "title": "Release 1 acceptance (local, D63/D64), open signup at deploy",
+   "depends_on": "9.1",
+   "spec_refs": [
+    "docs/RELEASE-1.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "Every locally provable box of section 7 ticked with evidence and the owner's acceptance written in docs/PROGRESS.md; Release 3 may start. SIGNUP_MODE=open only at deploy (an owner decision, never the agent's).",
+   "scope_note": "D63/D64: tick, with evidence, every box of RELEASE-1.md section 7 that can be proven locally (attendance->SMS, fee->receipt, marksheet, parent view, cross-tenant, erasure, load test, mysql-smoke.sh and perf-check.py on local MySQL, Spike Gate); the signup/subscription box (5.1/5.2, after all modules - D55) and the server boxes are ticked before deploy; SIGNUP_MODE stays closed/invite.",
+   "blocked": null,
+   "verify": [
+    "python3 infra/spec-verify/verify.py . --deep"
+   ]
+  },
+  {
    "id": "5.1",
    "title": "Signup & Onboarding",
-   "depends_on": "9.1",
+   "depends_on": "A",
    "spec_refs": [
     "docs/modules/onboarding.md",
     "docs/modules/subscription.md",
@@ -1100,24 +1118,6 @@
     "php artisan test --filter=SubscriptionLimitTest",
     "npm test && npm run lint:theme",
     "php artisan test   # whole suite stays green"
-   ]
-  },
-  {
-   "id": "A",
-   "title": "Release 1 acceptance, then open signup",
-   "depends_on": "5.2",
-   "spec_refs": [
-    "docs/RELEASE-1.md"
-   ],
-   "tables": [],
-   "routes": [],
-   "routes_excluded": [],
-   "tests": [],
-   "done_when": "All boxes ticked; the owner flips SIGNUP_MODE=open (an owner decision, never the agent's).",
-   "scope_note": "Tick every box in RELEASE-1.md section 7 with evidence; the non-code launch checklist (section 5); closed beta first: SIGNUP_MODE=invite.",
-   "blocked": null,
-   "verify": [
-    "python3 infra/spec-verify/verify.py . --deep"
    ]
   }
  ]

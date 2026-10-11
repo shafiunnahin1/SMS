@@ -935,22 +935,22 @@
     "infra/github-actions-cicd.yml",
     "docs/ops/performance-benchmarks.md"
    ],
-   "scope": "Docker (staging), Nginx internal + Caddy edge, WILDCARD subdomain only (custom domain is R2: skip custom-domain.md Part C), CI/CD, MySQL backup + a rehearsed restore, slow-query log (long_query_time 0.5), queue-depth and error monitoring, FILES_DRIVER=s3 if more than one server.",
-   "done": "push to main runs tests, builds and deploys; a backup is restored on a clean machine and mysql-smoke.sh passes against it; alerts fire on a forced error.",
+   "scope": "D64: everything that needs no real server is built and tested NOW - Docker (staging), Nginx internal + Caddy edge config, WILDCARD subdomain only (custom domain is R2: skip custom-domain.md Part C), the CI/CD workflow (its deploy step waits for the server address and secrets), MySQL backup + a restore rehearsed locally, slow-query log (long_query_time 0.5), queue-depth and error monitoring, FILES_DRIVER=s3 if more than one server. Buying the server, DNS, real keys, going live and the load test on the real server wait for the owner's deploy decision.",
+   "done": "D64: the CI workflow runs tests and builds on push (deploy step ready, switched off until the server exists); a backup is restored into a clean database locally and mysql-smoke.sh passes against it; alerts fire on a forced error (locally). On the real server, at deploy: push to main deploys, the restore and the alert are repeated.",
    "verify": [
     "bash infra/scripts/mysql-smoke.sh"
    ]
   },
   {
    "id": "A",
-   "after": "5.2",
-   "title": "Release 1 acceptance, then open signup",
+   "after": "9.1",
+   "title": "Release 1 acceptance (local, D63/D64), open signup at deploy",
    "goal": "Decide, with evidence, that strangers may sign up.",
    "spec": [
     "docs/RELEASE-1.md"
    ],
-   "scope": "Tick every box in RELEASE-1.md section 7 with evidence; the non-code launch checklist (section 5); closed beta first: SIGNUP_MODE=invite.",
-   "done": "All boxes ticked; the owner flips SIGNUP_MODE=open (an owner decision, never the agent's).",
+   "scope": "D63/D64: tick, with evidence, every box of RELEASE-1.md section 7 that can be proven locally (attendance->SMS, fee->receipt, marksheet, parent view, cross-tenant, erasure, load test, mysql-smoke.sh and perf-check.py on local MySQL, Spike Gate); the signup/subscription box (5.1/5.2, after all modules - D55) and the server boxes are ticked before deploy; SIGNUP_MODE stays closed/invite.",
+   "done": "Every locally provable box of section 7 ticked with evidence and the owner's acceptance written in docs/PROGRESS.md; Release 3 may start. SIGNUP_MODE=open only at deploy (an owner decision, never the agent's).",
    "verify": [
     "python3 infra/spec-verify/verify.py . --deep"
    ]
