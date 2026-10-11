@@ -48,6 +48,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         // A tenant model used without a bound tenant is a code bug that could have leaked data: alert loudly
         $exceptions->level(TenantNotBoundException::class, LogLevel::CRITICAL);
+        // Step 9.1 (D64): an unexpected exception also alerts a person (webhook/email, throttled, no message text - AlertService).
+        // Expected refusals are not alerts: validation, auth, 404 are in Laravel's dontReport; business rules and SMS retries are skipped here.
+        $exceptions->reportable(function (\Throwable $e) {
+            if ($e instanceof \App\Exceptions\BusinessException || $e instanceof \App\Exceptions\SmsGatewayException) return;
+            app(\App\Services\Ops\AlertService::class)->exception($e);
+        });
 
         // Standard error envelope for the API (docs/API-ERRORS.md)
         $api = fn (Request $request) => $request->is('api/*');

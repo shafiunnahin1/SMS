@@ -30,6 +30,12 @@ class AppServiceProvider extends ServiceProvider
     {
         User::observe(UserObserver::class);
 
+        // Step 9.1 (D64): queue alerts - a backlog over QUEUE_ALERT_DEPTH (queue:monitor, scheduled) and a job that failed for good
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Queue\Events\QueueBusy::class, fn ($e) => app(\App\Services\Ops\AlertService::class)
+            ->send('Queue backlog', ['queue' => $e->connection . ':' . $e->queue, 'jobs waiting' => $e->size, 'limit' => config('monitoring.queue_depth')], "queue-busy:{$e->connection}:{$e->queue}"));
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Queue\Events\JobFailed::class, fn ($e) => app(\App\Services\Ops\AlertService::class)
+            ->send('Queue job failed', ['job' => $e->job->resolveName(), 'queue' => $e->connectionName . ':' . $e->job->getQueue(), 'error' => get_class($e->exception)], 'job-failed:' . $e->job->resolveName()));
+
         // IDLE timeout + deactivated users. Must live in Sanctum's callback, NOT in a middleware: Sanctum overwrites
         // last_used_at before any middleware runs, so a middleware would always see "just now" (docs/AUTHORIZATION.md).
         Sanctum::authenticateAccessTokensUsing(function ($accessToken, bool $isValid) {
