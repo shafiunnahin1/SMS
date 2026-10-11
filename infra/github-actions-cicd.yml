@@ -1,3 +1,6 @@
+# NOTE (Step 9.1, D64): the live workflows are .github/workflows/ci.yml (tests + e2e on every push), .github/workflows/image.yml
+# (builds api/Dockerfile.prod on every push) and .github/workflows/deploy.yml (this file's deploy job, run after ci is green on main,
+# switched off until the repository variable DEPLOY_ENABLED=true). The text below is the original specification.
 # .github/workflows/deploy.yml
 name: Deploy to Production
 
