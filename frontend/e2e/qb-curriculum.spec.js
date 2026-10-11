@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import { watchConsole } from './helpers.js'
 
 // QB.1 on the central host (admin.<base>): the Super Admin builds class → subject → chapter → topic, deletes a leaf, and is
-// refused when deleting a class that is still in use. Runs once (school-desktop) - it is platform data, not a tenant theme.
+// refused when deleting a class that is still in use. Runs once: playwright.config's testIgnore keeps it to school-desktop, like super.smoke.
 const BASE = process.env.E2E_BASE_DOMAIN ?? 'lvh.me:5173'
 test.use({ baseURL: `http://admin.${BASE}` })
 // Same one-time-code login as super.smoke.spec.js: in local/CI the code only goes to the API's log (G17)
@@ -36,8 +36,7 @@ async function addNode(page, column, bn, en) {
   await expect(page.locator(`[data-testid="${column}"]`)).toContainText(bn)
 }
 
-test('QB.1 super admin builds the question-bank curriculum', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'school-desktop', 'platform data: once is enough')
+test('QB.1 super admin builds the question-bank curriculum', async ({ page }) => {
   const noErrors = watchConsole(page)
   await loginSuper(page)
   await page.goto('/super-admin/qb/curriculum')
