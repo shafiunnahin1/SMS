@@ -257,7 +257,7 @@ return [
     'id'      => 'R1',                                   // R1 < R1.1 < R2 < R3 ... (menu items marked since:'R2' stay hidden until then)
     'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'sms', 'reports', 'data_migration', 'question_bank', 'quiz'],
     'import_kinds' => ['students'],                      // data_migration ships in R1 for student import ONLY: ImportController answers 422 `kind_not_available` for any other kind (teachers, fee_history ... are R1.1)
-    'roles'   => ['super_admin', 'admin', 'teacher', 'accountant', 'parent', 'content_writer', 'content_moderator'],     // 'student' login ships in R1.1: AuthService answers 403 `role_not_available` for any other role
+    'roles'   => ['super_admin', 'admin', 'teacher', 'accountant', 'parent', 'content_writer', 'content_moderator', 'student'],     // student: D65 QB.9 (the question-bank portal; the rest of the student panel is R1.1). AuthService answers 403 `role_not_available` for any other role
 ];
 ```
 `/bootstrap` ফেরত দেয় `release: { id }`; ফ্রন্টএন্ড `release.id`-এর চেয়ে বড় `since` চিহ্নিত মেনু-আইটেম লুকায় (`docs/AUTHORIZATION.md`)। পরীক্ষা: `ReleaseGateTest`।

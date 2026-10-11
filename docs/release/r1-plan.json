@@ -1351,14 +1351,26 @@
     "docs/modules/question-bank.md"
    ],
    "tables": [],
-   "routes": [],
+   "routes": [
+    "GET /qb/student-orders/bkash/callback -> QbStudentOrderCallbackController@bkash",
+    "GET /student/qb/curriculum -> QbStudentController@curriculum [role:student]",
+    "GET /student/qb/questions -> QbStudentController@questions [role:student]",
+    "GET /student/qb/questions/{id} -> QbStudentController@question [role:student]",
+    "GET /student/qb/concepts -> QbStudentController@concepts [role:student]",
+    "GET /student/qb/concepts/{id} -> QbStudentController@concept [role:student]",
+    "POST /student/qb/orders -> QbStudentController@order [role:student]",
+    "GET /student/qb/orders/{ref} -> QbStudentController@orderStatus [role:student]"
+   ],
    "routes_excluded": [],
    "tests": [],
    "done_when": "A student sees questions free, pays to see an answer once, and another student does not get it; a failed or tampered payment unlocks nothing; tests.",
    "scope_note": "Student login on (release roles); the portal: own class's subject → chapter → topic, questions, concepts; answer/concept purchases by bKash to the platform merchant (D58 BkashService, central callback) with qb_student_orders and qb_student_unlocks; student prices.",
    "blocked": null,
    "verify": [
-    "php artisan test --filter=QbStudent"
+    "php artisan test --filter=QbStudent",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-student.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

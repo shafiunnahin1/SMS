@@ -269,7 +269,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
 use App\Http\Controllers\Public\{PublicSiteController, PublicAdmissionController};
 use App\Http\Controllers\SuperAdmin\{TenantPurgeController, SettlementController, PayoutAccountController, SmsSenderApprovalController, OnlinePaymentReportController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
 use App\Http\Controllers\Academics\{ResultSheetController, DueBlockController, PeriodAttendanceController, SubstitutionController, RoutineBlockController, StudentLeaveController, MarksLockController};
 use App\Http\Controllers\Hr\{LeaveTypeController, LeaveController, StaffController, StaffAttendanceController, SalaryComponentController, SalaryStructureController, SalaryRevisionController, IncrementBatchController, BonusSchemeController, SalaryAdjustmentController, SalaryAdvanceController, PayrollRunController, PayrollItemController, PayAccountController, ProvidentFundController, PayrollReportController, FinalSettlementController};
 use App\Http\Controllers\Teacher\SalaryController as TeacherSalaryController;
@@ -335,6 +335,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/billing/ssl/ipn',     [\App\Http\Controllers\Billing\SslCommerzController::class, 'ipn']);
         // D58: SMS wallet recharge with bKash (platform merchant) - the callback lands on the central domain, then redirects to primaryUrl()
         Route::get('/billing/bkash/callback', [\App\Http\Controllers\Billing\SmsRechargeCallbackController::class, 'bkash'])->middleware('throttle:60,1');
+        // QB.9: bKash brings a student back here after paying for question-bank items (`ref` finds our own order)
+        Route::get('/qb/student-orders/bkash/callback', [QbStudentOrderCallbackController::class, 'bkash'])->middleware('throttle:60,1');
 
         Route::middleware(['auth:sanctum', 'role:super_admin', 'tenancy.bypass', 'throttle:api'])->prefix('super')->group(function () {
             Route::get('/dashboard',                  [DashboardController::class, 'superAdmin']);
@@ -719,6 +721,17 @@ Route::prefix('v1')->group(function () {
             Route::delete('/papers/{id}',            [QbPaperController::class, 'destroy']);      // draft only
             Route::post('/papers/{id}/finalize',     [QbPaperController::class, 'finalize']);
             Route::get('/papers/{id}/pdf',           [QbPaperController::class, 'pdf']);          // ?set=A|B&answers=0|1 (Chromium, D50)
+        });
+        // QB.9 (D65/D66): the student portal - the student's own class first; questions free to read, an answer / concept bought
+        // by the STUDENT (not the institution) with bKash to the platform merchant; prices from the student price list
+        Route::middleware(['role:student', 'module:question_bank'])->prefix('student/qb')->group(function () {
+            Route::get('/curriculum',                [QbStudentController::class, 'curriculum']);
+            Route::get('/questions',                 [QbStudentController::class, 'questions']);
+            Route::get('/questions/{id}',            [QbStudentController::class, 'question']);
+            Route::get('/concepts',                  [QbStudentController::class, 'concepts']);
+            Route::get('/concepts/{id}',             [QbStudentController::class, 'concept']);
+            Route::post('/orders',                   [QbStudentController::class, 'order'])->middleware('throttle:10,1');   // {items: [{item_type, item_id}]} -> bkash_url; the server prices it
+            Route::get('/orders/{ref}',              [QbStudentController::class, 'orderStatus']);
         });
         Route::middleware(['role:admin,teacher', 'module:exams'])->group(function () {
             Route::post('/exams/{id}/subjects/{subjectId}/submit', [MarksLockController::class, 'submit']);

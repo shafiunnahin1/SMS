@@ -211,7 +211,8 @@
   "accountant",
   "parent",
   "content_writer",
-  "content_moderator"
+  "content_moderator",
+  "student"
  ],
  "menu_since": {
   "admin": {
@@ -243,6 +244,18 @@
    "coupons": "R5",
    "exports": "R1.1",
    "reports": "R5"
+  },
+  "student": {
+   "dashboard": "R1.1",
+   "routine": "R1.1",
+   "results": "R1.1",
+   "fees": "R1.1",
+   "attendance": "R1.1",
+   "homework": "R1.1",
+   "quiz": "R1.1",
+   "materials": "R1.1",
+   "library": "R1.1",
+   "notices": "R1.1"
   }
  },
  "menu_no_module_ok": {
@@ -290,7 +303,8 @@
    "review",
    "review-concepts",
    "review-resources"
-  ]
+  ],
+  "student": []
  },
  "step_tables": {
   "2.1": [
@@ -890,6 +904,14 @@
   "QbPaperController": {
    "release": "R1",
    "step": "QB.8"
+  },
+  "QbStudentController": {
+   "release": "R1",
+   "step": "QB.9"
+  },
+  "QbStudentOrderCallbackController": {
+   "release": "R1",
+   "step": "QB.9"
   }
  },
  "route_exclude": [
@@ -1251,7 +1273,10 @@
    "scope": "Student login on (release roles); the portal: own class's subject → chapter → topic, questions, concepts; answer/concept purchases by bKash to the platform merchant (D58 BkashService, central callback) with qb_student_orders and qb_student_unlocks; student prices.",
    "done": "A student sees questions free, pays to see an answer once, and another student does not get it; a failed or tampered payment unlocks nothing; tests.",
    "verify": [
-    "php artisan test --filter=QbStudent"
+    "php artisan test --filter=QbStudent",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-student.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

@@ -74,14 +74,14 @@
 | `QB.6` | Prices and the free / partly-free / discount rule engine | `QB.5` |  | 6 |  |
 | `QB.7` | Teachers: browse, buy with the institution wallet, spending | `QB.6` |  | 7 |  |
 | `QB.8` | Question papers: builder, PDF, the head teacher's view | `QB.7` |  | 7 |  |
-| `QB.9` | Student login and portal: practice, concepts, bKash purchases | `QB.8` |  |  |  |
+| `QB.9` | Student login and portal: practice, concepts, bKash purchases | `QB.8` |  | 8 |  |
 | `QB.10` | Quizzes and quiz packages | `QB.9` |  |  |  |
 | `QB.10b` | Writers' earnings, wallet and withdrawals | `QB.10` |  |  |  |
 | `QB.11` | Import from qbank | `QB.10b` |  |  |  |
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 211 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 219 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2617,11 +2617,26 @@ php artisan test   # whole suite stays green
 > **R1 পরিসর (এটিই চূড়ান্ত):** Student login on (release roles); the portal: own class's subject → chapter → topic, questions, concepts; answer/concept purchases by bKash to the platform merchant (D58 BkashService, central callback) with qb_student_orders and qb_student_unlocks; student prices.
 
 
+**R1-এ যে route বানাবেন:**
+```
+GET /qb/student-orders/bkash/callback -> QbStudentOrderCallbackController@bkash
+GET /student/qb/curriculum -> QbStudentController@curriculum [role:student]
+GET /student/qb/questions -> QbStudentController@questions [role:student]
+GET /student/qb/questions/{id} -> QbStudentController@question [role:student]
+GET /student/qb/concepts -> QbStudentController@concepts [role:student]
+GET /student/qb/concepts/{id} -> QbStudentController@concept [role:student]
+POST /student/qb/orders -> QbStudentController@order [role:student]
+GET /student/qb/orders/{ref} -> QbStudentController@orderStatus [role:student]
+```
+
 **Done When:** A student sees questions free, pays to see an answer once, and another student does not get it; a failed or tampered payment unlocks nothing; tests.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
 php artisan test --filter=QbStudent
+npm test && npm run lint:theme
+npx playwright test e2e/qb-student.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2902,7 +2917,7 @@ php artisan test   # whole suite stays green
 
 | Release | route |
 |---|---|
-| R1 | 211 |
+| R1 | 219 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
 | R2 | 150 |
