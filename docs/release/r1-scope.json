@@ -276,13 +276,19 @@
    "settings",
    "qb-curriculum",
    "qb-writers",
-   "qb-questions"
+   "qb-questions",
+   "qb-concepts",
+   "qb-resources"
   ],
   "content_writer": [
-   "questions"
+   "questions",
+   "concepts",
+   "resources"
   ],
   "content_moderator": [
-   "review"
+   "review",
+   "review-concepts",
+   "review-resources"
   ]
  },
  "step_tables": {
