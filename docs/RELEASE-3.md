@@ -76,7 +76,7 @@
 ## ৮. `config/release.php` — R3-এর জন্য
 ```php
 // R3 cumulative: R1's 8 + expenses + the 6 R3 modules. Add R1.1 / R2 modules only when their code exists.
-'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'sms', 'reports', 'data_migration', 'expenses', 'cashbook', 'hr_payroll', 'teacher_attendance', 'inventory', 'accounting', 'donations'],
+'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'sms', 'reports', 'data_migration', 'question_bank', 'quiz', 'expenses', 'cashbook', 'hr_payroll', 'teacher_attendance', 'inventory', 'accounting', 'donations'],
 ```
 
 ## ৯. গ্রহণ-শর্ত (সব সত্য হলে তবেই R3 চালু)

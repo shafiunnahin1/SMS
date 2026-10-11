@@ -35,6 +35,7 @@ OVERRIDES={
  'collected_by':'users','from_user_id':'users','to_user_id':'users','imported_by':'users','reported_by':'users','changed_by':'users','verified_by':'users',
  'staff_id':'staff_members','optional_subject_id':'subjects','campaign_id':'donation_campaigns','credit_for_id':'subscription_invoices',
  'question_id':'exam_questions','online_exam_id':'online_exams','homework_id':'homeworks','meeting_id':'parent_meetings','teacher_user_id':'users',
+ 'unlocked_by':'users','student_user_id':'users',                                                  # D65 question bank
 }
 # Polymorphic (type column -> id column) pairs. The id's target depends on the type value.
 POLY={('payee_type','payee_id'):{'teacher':'teachers','staff':'staff_members'},
@@ -43,7 +44,8 @@ POLY={('payee_type','payee_id'):{'teacher':'teachers','staff':'staff_members'},
       ('created_table','created_id'):'DYNAMIC'}
 # Context-dependent single columns
 CONTEXT={('fee_installments','payment_id'):'fee_payments',('coupon_redemptions','payment_id'):'payments',('subscription_invoices','payment_id'):'payments',('vouchers','source_id'):'by source',('lesson_plans','batch_id'):'batches',('support_ticket_messages','author_id'):'by author_type',('salary_adjustments','payroll_item_id'):'payroll_items',
-         ('expenses','payroll_run_id'):'payroll_runs',('teacher_payouts','payroll_item_id'):'payroll_items',('sms_logs','campaign_id'):'sms_campaigns',('salary_revisions','payee_id'):None}
+         ('expenses','payroll_run_id'):'payroll_runs',('teacher_payouts','payroll_item_id'):'payroll_items',('sms_logs','campaign_id'):'sms_campaigns',('salary_revisions','payee_id'):None,
+         ('qb_unlocks','item_id'):None,('qb_student_unlocks','item_id'):None}   # D65: a platform catalogue id (item_type picks qb_questions/qb_concepts/qb_resources) - global, kept as it is
 
 TYPES={}
 def INTEGER_COL(t,c): return 'INT' in TYPES[t].get(c,'')
@@ -118,7 +120,7 @@ BACKUP_EXCLUDE_TABLES=['salary_components','salary_structures','salary_structure
                        'salary_pay_accounts','payroll_runs','payroll_items','provident_fund_entries']
 BACKUP_REDACT_COLUMNS=[('teachers','salary'),('teachers','house_rent'),('teachers','medical_allowance'),('teachers','transport_allowance')]
 # Globally unique values that would collide when the same data is imported again: regenerate them on import.
-REGEN={('online_payments','gateway_ref')}
+REGEN={('online_payments','gateway_ref'),('qb_student_orders','ref')}   # globally unique gateway references (D65: the question-bank bKash ref)
 # JSON columns that carry ids -> how to remap. (any JSON column NOT listed here is asserted to carry no foreign ids)
 def _m(idmap,table,v): return idmap[table][v] if v is not None else None
 JSON_IDS={
@@ -253,6 +255,7 @@ def import_rows(con,data,order,out,new_inst_id):
             row=dict(r); old=row.pop('id'); row['institution_id']=new_inst_id
             for c,ref in out[t]['refs'].items():
                 if row.get(c) is None: continue
+                if ref.startswith('qb_') and ref not in order: continue          # D65: the platform question-bank catalogue - global ids, kept as they are
                 if (t,c) in NULL_ON_IMPORT or ref not in order and ref!=t: row[c]=None; continue
                 if ref==t: deferred.append((old,c,row[c])); row[c]=None; continue
                 row[c]=idmap[ref][row[c]]                                   # KeyError here = a reference the export map does not cover
@@ -277,7 +280,7 @@ def canonical(con,inst_id,order,out,json_ids=None):
     for t in order:
         rows=[]
         for r in data[t]:
-            x={k:v for k,v in r.items() if k not in ('id','institution_id') and not k.endswith('_at') and k not in ('gateway_ref',)}
+            x={k:v for k,v in r.items() if k not in ('id','institution_id') and not k.endswith('_at') and k not in ('gateway_ref',) and (t,k) not in REGEN}
             for c,ref in out[t]['refs'].items():
                 if x.get(c) is not None and ref in rank: x[c]=('ref',ref,rank[ref].get(x[c],'DANGLING'))
             for pp in out[t]['poly']:

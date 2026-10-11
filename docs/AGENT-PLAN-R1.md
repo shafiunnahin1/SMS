@@ -65,7 +65,7 @@
 | `8.5` | Load and scale test (before SIGNUP_MODE=open) | `8.2` |  |  |  |
 | `9.1` | Deployment, backup, monitoring | `8.5` |  |  |  |
 | `A` | Release 1 acceptance (local, D63/D64), open signup at deploy | `9.1` |  |  |  |
-| `QB.0` | Question bank foundation: schema, module keys, roles, catalogue rule | `A` |  |  |  |
+| `QB.0` | Question bank foundation: schema, module keys, roles, catalogue rule | `A` | 36 |  |  |
 | `QB.1` | Curriculum: class → subject → chapter → topic | `QB.0` |  |  |  |
 | `QB.2` | Writers' panel: writers, moderators, revisions, review flow | `QB.1` |  |  |  |
 | `QB.3` | Questions: core types and the editor | `QB.2` |  |  |  |
@@ -81,7 +81,7 @@
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 32 টেবিল · 151 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 151 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -352,7 +352,7 @@ CREATE TABLE users (
     phone VARCHAR(20) NULL,                      -- staff/parent login; NULL for student users
     username VARCHAR(50) NULL,                   -- student login = students.student_id
     password VARCHAR(255) NOT NULL,
-    role ENUM('super_admin','admin','teacher','student','parent','accountant') NOT NULL,
+    role ENUM('super_admin','admin','teacher','student','parent','accountant','content_writer','content_moderator') NOT NULL,   -- D65: content_writer/content_moderator are platform roles (institution_id NULL)
     avatar VARCHAR(255),
     is_active TINYINT(1) DEFAULT 1,
     last_login_at TIMESTAMP NULL,
@@ -546,6 +546,7 @@ CREATE TABLE programs (
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 ALTER TABLE programs ADD COLUMN name_alt VARCHAR(150) NULL;
+ALTER TABLE programs ADD COLUMN qb_class_level_id BIGINT UNSIGNED NULL;
 
 CREATE TABLE batches (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -986,6 +987,7 @@ ALTER TABLE teachers ADD COLUMN leaving_date DATE NULL;
 ALTER TABLE teachers ADD COLUMN show_public TINYINT(1) NOT NULL DEFAULT 0;
 ALTER TABLE teachers ADD COLUMN public_bio TEXT NULL;
 ALTER TABLE teachers ADD COLUMN mpo_index_no VARCHAR(30) NULL;
+ALTER TABLE teachers ADD COLUMN qb_monthly_cap DECIMAL(10,2) NULL;
 ```
 </details>
 
@@ -1837,6 +1839,509 @@ python3 infra/spec-verify/verify.py . --deep
 > **R1 পরিসর (এটিই চূড়ান্ত):** D65/D66: the qb_* tables of question-bank.md §3 into docs/database/schema.sql and as migrations (append-only); module keys `question_bank`, `quiz` (all four types); platform roles `content_writer`, `content_moderator`; the PlatformCatalogue rule (catalogue models have no institution_id, tenant hosts read only `published`, writes refused) with an architecture test; student login switched on for the question bank (release roles).
 
 
+**এই task যে টেবিলের মালিক** (migration Step 1.1-এ; মডেল, service, endpoint ও পরীক্ষা এখানে): `qb_class_levels`, `qb_subjects`, `qb_class_level_subject`, `qb_chapters`, `qb_chapter_class_level`, `qb_topics`, `qb_question_types`, `qb_questions`, `qb_question_options`, `qb_creative_parts`, `qb_question_stimuli`, `qb_question_items`, `qb_question_class_level`, `qb_question_occurrences`, `qb_question_revisions`, `qb_media`, `qb_media_links`, `qb_concepts`, `qb_resources`, `qb_prices`, `qb_price_rules`, `qb_unlocks`, `qb_student_orders`, `qb_student_unlocks`, `qb_writer_earnings`, `qb_writer_wallets`, `qb_writer_wallet_txns`, `qb_withdrawal_requests`, `qb_papers`, `qb_paper_sections`, `qb_paper_items`, `qb_quiz_packages`, `qb_quizzes`, `qb_quiz_questions`, `qb_student_package_access`, `qb_quiz_attempts`
+
+<details><summary>টেবিলের সংজ্ঞা (schema.sql থেকে, ALTER/index সহ)</summary>
+
+```sql
+CREATE TABLE qb_class_levels (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name_bn VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
+    education_level ENUM('primary','secondary','higher_secondary','madrasa','technical','admission','other') NOT NULL DEFAULT 'other',
+    sort_order INT NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+
+CREATE TABLE qb_subjects (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name_bn VARCHAR(150) NOT NULL,
+    name_en VARCHAR(150) NOT NULL,
+    code VARCHAR(30) NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+
+CREATE TABLE qb_class_level_subject (
+    qb_class_level_id BIGINT UNSIGNED NOT NULL,
+    qb_subject_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (qb_class_level_id, qb_subject_id),
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
+);
+
+CREATE TABLE qb_chapters (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_subject_id BIGINT UNSIGNED NOT NULL,
+    name_bn VARCHAR(200) NOT NULL,
+    name_en VARCHAR(200) NOT NULL,
+    number SMALLINT UNSIGNED NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
+);
+
+CREATE TABLE qb_chapter_class_level (
+    qb_chapter_id BIGINT UNSIGNED NOT NULL,
+    qb_class_level_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (qb_chapter_id, qb_class_level_id),
+    FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id),
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
+);
+
+CREATE TABLE qb_topics (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_chapter_id BIGINT UNSIGNED NOT NULL,
+    name_bn VARCHAR(200) NOT NULL,
+    name_en VARCHAR(200) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id)
+);
+
+CREATE TABLE qb_question_types (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(100) NOT NULL,
+    name_bn VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
+    family ENUM('mcq','creative','short','fill_gap','matching','true_false','ordering','writing','other') NOT NULL DEFAULT 'other',
+    ui_config JSON NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_question_type_slug (slug)
+);
+
+CREATE TABLE qb_questions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_question_type_id BIGINT UNSIGNED NOT NULL,
+    qb_subject_id BIGINT UNSIGNED NOT NULL,
+    qb_chapter_id BIGINT UNSIGNED NULL,
+    qb_topic_id BIGINT UNSIGNED NULL,
+    difficulty TINYINT UNSIGNED NOT NULL DEFAULT 3,      -- 1 (easy) .. 5 (hard)
+    marks DECIMAL(5,2) NOT NULL DEFAULT 1,
+    language ENUM('bn','en') NOT NULL DEFAULT 'bn',
+    content_mode ENUM('plain_text','rich_math','mixed') NOT NULL DEFAULT 'plain_text',
+    question_json JSON NULL,
+    question_text TEXT NOT NULL,
+    answer_json JSON NULL,
+    answer_text TEXT NULL,
+    explanation_json JSON NULL,
+    explanation_text TEXT NULL,
+    status ENUM('draft','review','published','rejected') NOT NULL DEFAULT 'draft',
+    review_note VARCHAR(500) NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    reviewed_by BIGINT UNSIGNED NULL,
+    published_at TIMESTAMP NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    deleted_at TIMESTAMP NULL,
+    INDEX idx_qb_questions_browse (status, qb_subject_id, qb_chapter_id, qb_topic_id),
+    INDEX idx_qb_questions_writer (created_by, status),
+    FOREIGN KEY (qb_question_type_id) REFERENCES qb_question_types(id),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id),
+    FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id),
+    FOREIGN KEY (qb_topic_id) REFERENCES qb_topics(id)
+);
+
+CREATE TABLE qb_question_options (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    label VARCHAR(10) NOT NULL,
+    content_json JSON NULL,
+    content_text TEXT NOT NULL,
+    is_correct TINYINT(1) NOT NULL DEFAULT 0,               -- never sent without an unlock (question-bank.md §2)
+    sort_order INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
+
+CREATE TABLE qb_creative_parts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    part_label VARCHAR(10) NOT NULL,                         -- ক / খ / গ / ঘ
+    cognitive_level ENUM('knowledge','understanding','application','higher_order') NOT NULL,
+    marks DECIMAL(5,2) NOT NULL,
+    question_json JSON NULL,
+    question_text TEXT NOT NULL,
+    answer_json JSON NULL,
+    answer_text TEXT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
+
+CREATE TABLE qb_question_stimuli (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    label VARCHAR(50) NULL,                                  -- a passage, a table, a word box (structured types, QB.4)
+    content_json JSON NULL,
+    content_text TEXT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
+
+CREATE TABLE qb_question_items (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    qb_question_stimulus_id BIGINT UNSIGNED NULL,
+    item_type VARCHAR(50) NOT NULL,                          -- gap / match_pair / order_step / ... (qbank's structured model)
+    prompt_json JSON NULL,
+    prompt_text TEXT NULL,
+    answer_json JSON NULL,                                   -- never sent without an unlock
+    marks DECIMAL(5,2) NOT NULL DEFAULT 0,
+    sort_order INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id),
+    FOREIGN KEY (qb_question_stimulus_id) REFERENCES qb_question_stimuli(id)
+);
+
+CREATE TABLE qb_question_class_level (
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    qb_class_level_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (qb_question_id, qb_class_level_id),
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id),
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
+);
+
+CREATE TABLE qb_question_occurrences (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    board VARCHAR(50) NULL,
+    institution_name VARCHAR(200) NULL,
+    exam_type VARCHAR(50) NULL,
+    year SMALLINT UNSIGNED NULL,
+    note VARCHAR(200) NULL,
+    INDEX idx_qb_occurrence_board_year (board, year),
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
+
+CREATE TABLE qb_question_revisions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    snapshot JSON NOT NULL,
+    edited_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL,
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
+
+CREATE TABLE qb_media (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    path VARCHAR(500) NOT NULL,                              -- the platform's private disk (platform/qb/...)
+    mime VARCHAR(100) NOT NULL,
+    size_bytes BIGINT UNSIGNED NOT NULL,
+    uploaded_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL
+);
+
+CREATE TABLE qb_media_links (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_media_id BIGINT UNSIGNED NOT NULL,
+    owner_type VARCHAR(50) NOT NULL,                         -- question / option / creative_part / concept / resource
+    owner_id BIGINT UNSIGNED NOT NULL,
+    INDEX idx_qb_media_owner (owner_type, owner_id),
+    FOREIGN KEY (qb_media_id) REFERENCES qb_media(id)
+);
+
+CREATE TABLE qb_concepts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_topic_id BIGINT UNSIGNED NOT NULL,
+    title_bn VARCHAR(250) NOT NULL,
+    title_en VARCHAR(250) NULL,
+    body_json JSON NULL,
+    body_text MEDIUMTEXT NOT NULL,
+    status ENUM('draft','review','published','rejected') NOT NULL DEFAULT 'draft',
+    review_note VARCHAR(500) NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    reviewed_by BIGINT UNSIGNED NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    deleted_at TIMESTAMP NULL,
+    INDEX idx_qb_concepts_topic (qb_topic_id, status),
+    FOREIGN KEY (qb_topic_id) REFERENCES qb_topics(id)
+);
+
+CREATE TABLE qb_resources (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    kind ENUM('slide','book','pdf') NOT NULL,
+    title_bn VARCHAR(250) NOT NULL,
+    title_en VARCHAR(250) NULL,
+    qb_subject_id BIGINT UNSIGNED NULL,
+    qb_chapter_id BIGINT UNSIGNED NULL,
+    qb_topic_id BIGINT UNSIGNED NULL,
+    qb_media_id BIGINT UNSIGNED NOT NULL,
+    page_count INT UNSIGNED NULL,
+    status ENUM('draft','review','published','rejected') NOT NULL DEFAULT 'draft',
+    review_note VARCHAR(500) NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    reviewed_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    deleted_at TIMESTAMP NULL,
+    INDEX idx_qb_resources_scope (status, qb_subject_id, qb_chapter_id, qb_topic_id),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id),
+    FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id),
+    FOREIGN KEY (qb_topic_id) REFERENCES qb_topics(id),
+    FOREIGN KEY (qb_media_id) REFERENCES qb_media(id)
+);
+
+CREATE TABLE qb_prices (                                     -- a change is a NEW row (effective_from); old purchases keep their price
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    audience ENUM('institution','student') NOT NULL,
+    item_kind ENUM('question_answer','concept','resource_slide','resource_book','resource_pdf','quiz_package') NOT NULL,
+    qb_question_type_id BIGINT UNSIGNED NULL,                -- question_answer: per question type
+    amount DECIMAL(10,2) NOT NULL,
+    effective_from TIMESTAMP NOT NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL,
+    INDEX idx_qb_prices_lookup (audience, item_kind, qb_question_type_id, effective_from),
+    FOREIGN KEY (qb_question_type_id) REFERENCES qb_question_types(id)
+);
+
+CREATE TABLE qb_price_rules (                                -- question-bank.md §4.3: every free / partly-free / discount method
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    target_type ENUM('item','question_type','topic','chapter','subject','class_level','resource_kind','quiz_package','all') NOT NULL,
+    target_ref VARCHAR(100) NULL,                            -- the id, or item "question:12" / resource kind "pdf"; NULL for all
+    audience ENUM('institution','student','both') NOT NULL DEFAULT 'both',
+    method ENUM('free','first_n_items_free','first_n_pages_free','percent_off','amount_off','fixed_price','free_for_class_level','free_first_n_per_buyer') NOT NULL,
+    value DECIMAL(10,2) NULL,
+    priority INT NOT NULL DEFAULT 0,
+    starts_at TIMESTAMP NULL,
+    ends_at TIMESTAMP NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,                 -- rules are switched off, never deleted
+    note VARCHAR(250) NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qb_rules_target (is_active, target_type, target_ref)
+);
+
+CREATE TABLE qb_unlocks (                                    -- one purchase per institution opens the answer AND paper use for all its teachers (D66)
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    item_type ENUM('question','concept','resource') NOT NULL,
+    item_id BIGINT UNSIGNED NOT NULL,
+    unlocked_by BIGINT UNSIGNED NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    reason ENUM('paid','free','partial_free') NOT NULL,
+    qb_price_rule_id BIGINT UNSIGNED NULL,
+    wallet_txn_ref VARCHAR(100) NULL,
+    created_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_unlock (institution_id, item_type, item_id),
+    INDEX idx_qb_unlocks_spending (institution_id, unlocked_by, created_at),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id)
+);
+
+CREATE TABLE qb_student_orders (                             -- bKash to the platform merchant (D58 BkashService); items and amount computed by the server
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    student_user_id BIGINT UNSIGNED NOT NULL,
+    ref VARCHAR(20) NOT NULL,
+    items JSON NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    payment_id VARCHAR(100) NULL,
+    trx_id VARCHAR(100) NULL,
+    status ENUM('pending','paid','failed') NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_student_order_ref (ref),
+    INDEX idx_qb_orders_student (institution_id, student_user_id, created_at),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id)
+);
+
+CREATE TABLE qb_student_unlocks (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    student_user_id BIGINT UNSIGNED NOT NULL,
+    item_type ENUM('question','concept','resource') NOT NULL,
+    item_id BIGINT UNSIGNED NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    reason ENUM('paid','free','partial_free') NOT NULL,
+    qb_student_order_id BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_student_unlock (student_user_id, item_type, item_id),
+    INDEX idx_qb_student_unlocks_inst (institution_id, student_user_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_student_order_id) REFERENCES qb_student_orders(id)
+);
+
+CREATE TABLE qb_writer_earnings (                            -- D66: a share of every sale, written in the sale's transaction; never deleted (D32)
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    writer_user_id BIGINT UNSIGNED NOT NULL,
+    source ENUM('institution_unlock','student_unlock','quiz_package') NOT NULL,
+    source_id BIGINT UNSIGNED NOT NULL,
+    item_type ENUM('question','concept','resource','quiz_package') NOT NULL,
+    item_id BIGINT UNSIGNED NOT NULL,
+    sale_amount DECIMAL(10,2) NOT NULL,
+    share_percent DECIMAL(5,2) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP NULL,
+    INDEX idx_qb_earnings_writer (writer_user_id, created_at)
+);
+
+CREATE TABLE qb_writer_wallets (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    writer_user_id BIGINT UNSIGNED NOT NULL,
+    balance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    held DECIMAL(12,2) NOT NULL DEFAULT 0,                   -- amount of pending withdrawal requests
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_writer_wallet (writer_user_id)
+);
+
+CREATE TABLE qb_writer_wallet_txns (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    writer_user_id BIGINT UNSIGNED NOT NULL,
+    type ENUM('earning','withdrawal','adjustment') NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    balance_after DECIMAL(12,2) NOT NULL,
+    reference VARCHAR(150) NULL,
+    created_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    INDEX idx_qb_writer_txns (writer_user_id, created_at)
+);
+
+CREATE TABLE qb_withdrawal_requests (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    writer_user_id BIGINT UNSIGNED NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    payout_method ENUM('bank','bkash') NOT NULL,
+    payout_account TEXT NOT NULL,                            -- stored encrypted (D33-like: the writer and the Super Admin only)
+    status ENUM('pending','paid','rejected') NOT NULL DEFAULT 'pending',
+    requested_at TIMESTAMP NULL,
+    processed_by BIGINT UNSIGNED NULL,
+    processed_at TIMESTAMP NULL,
+    bank_transaction_id VARCHAR(100) NULL,
+    note VARCHAR(250) NULL,
+    INDEX idx_qb_withdrawals_status (status, requested_at),
+    INDEX idx_qb_withdrawals_writer (writer_user_id, requested_at)
+);
+
+CREATE TABLE qb_papers (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    program_id BIGINT UNSIGNED NULL,
+    qb_subject_id BIGINT UNSIGNED NULL,
+    exam_name VARCHAR(200) NULL,
+    duration_minutes SMALLINT UNSIGNED NULL,
+    total_marks DECIMAL(6,2) NOT NULL DEFAULT 0,
+    instructions_json JSON NULL,
+    status ENUM('draft','final') NOT NULL DEFAULT 'draft',
+    sets_count TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qb_papers_owner (institution_id, created_by),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
+);
+
+CREATE TABLE qb_paper_sections (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    qb_paper_id BIGINT UNSIGNED NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    instruction VARCHAR(500) NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
+);
+
+CREATE TABLE qb_paper_items (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    qb_paper_section_id BIGINT UNSIGNED NOT NULL,
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    marks DECIMAL(5,2) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_paper_section_id) REFERENCES qb_paper_sections(id),
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
+
+CREATE TABLE qb_quiz_packages (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    qb_class_level_id BIGINT UNSIGNED NULL,
+    qb_subject_id BIGINT UNSIGNED NULL,
+    description VARCHAR(1000) NULL,
+    validity_days SMALLINT UNSIGNED NOT NULL DEFAULT 30,     -- D66: a package has a validity period
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
+);
+
+CREATE TABLE qb_quizzes (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_quiz_package_id BIGINT UNSIGNED NULL,
+    access ENUM('package','free','public') NOT NULL DEFAULT 'package',   -- D66: some quizzes free, some public (no login)
+    title VARCHAR(200) NOT NULL,
+    qb_subject_id BIGINT UNSIGNED NULL,
+    qb_chapter_id BIGINT UNSIGNED NULL,
+    qb_topic_id BIGINT UNSIGNED NULL,
+    duration_minutes SMALLINT UNSIGNED NOT NULL,
+    question_count SMALLINT UNSIGNED NOT NULL,
+    rule ENUM('fixed','random_from_scope') NOT NULL DEFAULT 'fixed',
+    pass_mark DECIMAL(5,2) NULL,
+    opens_at TIMESTAMP NULL,
+    closes_at TIMESTAMP NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qb_quizzes_access (is_active, access),
+    FOREIGN KEY (qb_quiz_package_id) REFERENCES qb_quiz_packages(id)
+);
+
+CREATE TABLE qb_quiz_questions (
+    qb_quiz_id BIGINT UNSIGNED NOT NULL,
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (qb_quiz_id, qb_question_id),
+    FOREIGN KEY (qb_quiz_id) REFERENCES qb_quizzes(id),
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
+
+CREATE TABLE qb_student_package_access (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    student_user_id BIGINT UNSIGNED NOT NULL,
+    qb_quiz_package_id BIGINT UNSIGNED NOT NULL,
+    starts_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    qb_student_order_id BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    INDEX idx_qb_package_access (student_user_id, qb_quiz_package_id, expires_at),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_quiz_package_id) REFERENCES qb_quiz_packages(id),
+    FOREIGN KEY (qb_student_order_id) REFERENCES qb_student_orders(id)
+);
+
+CREATE TABLE qb_quiz_attempts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    student_user_id BIGINT UNSIGNED NOT NULL,
+    qb_quiz_id BIGINT UNSIGNED NOT NULL,
+    started_at TIMESTAMP NOT NULL,
+    submitted_at TIMESTAMP NULL,
+    score DECIMAL(6,2) NULL,
+    total DECIMAL(6,2) NULL,
+    answers JSON NULL,
+    created_at TIMESTAMP NULL,
+    INDEX idx_qb_attempts_student (institution_id, student_user_id, qb_quiz_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_quiz_id) REFERENCES qb_quizzes(id)
+);
+```
+</details>
+
 **Done When:** schema-diff.sh and the schema parity check zero; migrations run on MySQL; TenancyArchitectureTest and a PlatformCatalogueTest green; the module gate refuses the routes when the module is off.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
@@ -2244,6 +2749,42 @@ php artisan test   # whole suite stays green
 | `payments` | `5.2` |
 | `subscription_invoices` | `5.2` |
 | `platform_settings` | `5.3` |
+| `qb_class_levels` | `QB.0` |
+| `qb_subjects` | `QB.0` |
+| `qb_class_level_subject` | `QB.0` |
+| `qb_chapters` | `QB.0` |
+| `qb_chapter_class_level` | `QB.0` |
+| `qb_topics` | `QB.0` |
+| `qb_question_types` | `QB.0` |
+| `qb_questions` | `QB.0` |
+| `qb_question_options` | `QB.0` |
+| `qb_creative_parts` | `QB.0` |
+| `qb_question_stimuli` | `QB.0` |
+| `qb_question_items` | `QB.0` |
+| `qb_question_class_level` | `QB.0` |
+| `qb_question_occurrences` | `QB.0` |
+| `qb_question_revisions` | `QB.0` |
+| `qb_media` | `QB.0` |
+| `qb_media_links` | `QB.0` |
+| `qb_concepts` | `QB.0` |
+| `qb_resources` | `QB.0` |
+| `qb_prices` | `QB.0` |
+| `qb_price_rules` | `QB.0` |
+| `qb_unlocks` | `QB.0` |
+| `qb_student_orders` | `QB.0` |
+| `qb_student_unlocks` | `QB.0` |
+| `qb_writer_earnings` | `QB.0` |
+| `qb_writer_wallets` | `QB.0` |
+| `qb_writer_wallet_txns` | `QB.0` |
+| `qb_withdrawal_requests` | `QB.0` |
+| `qb_papers` | `QB.0` |
+| `qb_paper_sections` | `QB.0` |
+| `qb_paper_items` | `QB.0` |
+| `qb_quiz_packages` | `QB.0` |
+| `qb_quizzes` | `QB.0` |
+| `qb_quiz_questions` | `QB.0` |
+| `qb_student_package_access` | `QB.0` |
+| `qb_quiz_attempts` | `QB.0` |
 
 ## Appendix B — route-সংখ্যা release অনুযায়ী (routes-টেমপ্লেটের সব route)
 

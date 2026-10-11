@@ -71,6 +71,8 @@
    "sms",
    "reports",
    "data_migration",
+   "question_bank",
+   "quiz",
    "expenses",
    "cashbook",
    "hr_payroll",

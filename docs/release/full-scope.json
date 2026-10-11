@@ -286,11 +286,11 @@
   },
   "question_bank": {
    "milestone": "M1",
-   "basis": "proposed"
+   "basis": "derived"
   },
   "quiz": {
    "milestone": "M1",
-   "basis": "proposed"
+   "basis": "derived"
   }
  },
  "depends": {

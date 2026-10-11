@@ -1,9 +1,9 @@
 {
  "modules_total": 58,
- "modules_with_task_plan": 15,
- "features_total": 368,
- "tables_total": 143,
- "tables_in_task_plans": 62,
+ "modules_with_task_plan": 17,
+ "features_total": 377,
+ "tables_total": 179,
+ "tables_in_task_plans": 98,
  "tables_without_task": 81,
  "external_decisions": 14,
  "milestones": [
@@ -13,8 +13,8 @@
    "name": "ভিত্তি ও চারটি অপরিহার্য ফিচার",
    "plan_status": "task-plan",
    "modules": 10,
-   "with_task_plan": 8,
-   "features": 90
+   "with_task_plan": 10,
+   "features": 99
   },
   {
    "id": "M2",
@@ -112,8 +112,6 @@
    "period_attendance",
    "promotion_tc",
    "public_site",
-   "question_bank",
-   "quiz",
    "result_sheets",
    "risk_alerts",
    "routine",
@@ -144,8 +142,6 @@
    "online_class",
    "online_quiz",
    "parent_meeting",
-   "question_bank",
-   "quiz",
    "scholarships",
    "transport",
    "visitors"
@@ -164,8 +160,6 @@
    "multi_branch",
    "parent_meeting",
    "promotion_tc",
-   "question_bank",
-   "quiz",
    "scholarships",
    "visitors"
   ]
@@ -486,24 +480,34 @@
   },
   "question_bank": {
    "milestone": "M1",
-   "basis": "proposed",
-   "task_plan": false,
-   "features": 0,
+   "basis": "derived",
+   "task_plan": true,
+   "features": 5,
    "route_backed_features": 0,
    "gated_routes": 0,
-   "types": [],
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
    "spec_files": [
     "question-bank.md"
    ]
   },
   "quiz": {
    "milestone": "M1",
-   "basis": "proposed",
-   "task_plan": false,
-   "features": 0,
+   "basis": "derived",
+   "task_plan": true,
+   "features": 4,
    "route_backed_features": 0,
    "gated_routes": 0,
-   "types": [],
+   "types": [
+    "স্কুল",
+    "কলেজ",
+    "কোচিং",
+    "ব্যাচ"
+   ],
    "spec_files": [
     "question-bank.md"
    ]

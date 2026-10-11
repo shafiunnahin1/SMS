@@ -59,7 +59,8 @@ INTENDED_GLOBAL={('payments','invoice_no'),('payments','trx_id'),('subscription_
                  ('student_health_records','student_id'),                                                       # one record per student
                  ('attendance_devices','key_id'),                                                               # a device identifies itself BEFORE the tenant is known
                  ('support_tickets','ticket_no'),                                                               # platform-issued ticket numbers
-                 ('admission_draws','cycle_id')}                                                                # one draw per cycle (a cycle belongs to one institution)
+                 ('admission_draws','cycle_id'),                                                                # one draw per cycle (a cycle belongs to one institution)
+                 ('qb_student_orders','ref')}                                                                   # D65: bKash returns only the ref, BEFORE the tenant is known
 glob_unique=[(tb,u) for tb in tabs if 'institution_id' in cols(tb) for u in uniq(tb) if len(u)==1 and u[0]!='id' and (tb,u[0]) not in INTENDED_GLOBAL]
 ok(not glob_unique,f'no accidental global UNIQUE on a tenant table (D12) {glob_unique[:4]}')
 for tb,c in [('students','student_id'),('teachers','employee_id'),('certificates','certificate_no'),('tc_certificates','tc_number'),('staff_members','employee_id'),('payroll_items','slip_no')]:

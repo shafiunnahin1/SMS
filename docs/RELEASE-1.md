@@ -13,8 +13,8 @@
 ## ১. আকার (গুনে পাওয়া)
 | | Release 1 | মোট স্পেক | অংশ |
 |---|---|---|---|
-| ডেটাবেস টেবিল | **32** | 143 | ২২% |
-| `school`-এর মডিউল-কী | **8** (`students`, `enrollments`, `attendance`, `fees`, `exams`, `sms`, `reports`, `data_migration` — শুধু ছাত্র-আমদানির জন্য) | 54 | ১৫% |
+| ডেটাবেস টেবিল | **68** | 179 | ৩৮% (৩২ + প্রশ্নব্যাংকের ৩৬, D65) |
+| `school`-এর মডিউল-কী | **10** (`students`, `enrollments`, `attendance`, `fees`, `exams`, `sms`, `reports`, `data_migration` — শুধু ছাত্র-আমদানির জন্য; `question_bank`, `quiz` — D65) | 56 | ১৮% |
 | Build-step | **33** | 47 | — (পাদটীকা দেখুন) |
 টেবিলের নির্ভরতা-বন্ধ (FK closure) যাচাই করা: কোনো **বাধ্যতামূলক** (NOT NULL) রেফারেন্স R1-এর বাইরের টেবিল টানে না। একটিমাত্র ঐচ্ছিক রেফারেন্স স্থগিত টেবিলে যায়: `fee_payments.online_payment_id → online_payments` (কলাম থাকে, ফিচার থাকে না)।
 **পাদটীকা — কেন ধাপ-সংখ্যা কমেনি:** Phase 0–3 (scaffold, ডেটাবেস, tenancy, auth, ফ্রন্টএন্ড-ভিত্তি) যেকোনো সংস্করণেই লাগে, আর প্রকাশ্য বিক্রি মানে SaaS-স্তরও (signup, subscription, Super Admin) লাগে। বাদ পড়েছে মূলত Phase 6–7 ও Phase 5-এর অর্ধেক। ধাপ-সংখ্যা পরিশ্রমের মাপ নয়।

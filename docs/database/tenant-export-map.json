@@ -45,7 +45,8 @@
   ]
  },
  "regenerate_on_import": [
-  "online_payments.gateway_ref"
+  "online_payments.gateway_ref",
+  "qb_student_orders.ref"
  ],
  "order": [
   "academic_years",
@@ -133,6 +134,14 @@
   "period_attendances",
   "person_credentials",
   "provident_fund_entries",
+  "qb_papers",
+  "qb_paper_sections",
+  "qb_paper_items",
+  "qb_quiz_attempts",
+  "qb_student_orders",
+  "qb_student_package_access",
+  "qb_student_unlocks",
+  "qb_unlocks",
   "report_card_summaries",
   "results",
   "risk_flags",
@@ -210,7 +219,9 @@
    "polymorphic": []
   },
   "programs": {
-   "refs": {},
+   "refs": {
+    "qb_class_level_id": "qb_class_levels"
+   },
    "polymorphic": []
   },
   "admission_cycles": {
@@ -883,6 +894,62 @@
     }
    ]
   },
+  "qb_papers": {
+   "refs": {
+    "created_by": "users",
+    "program_id": "programs",
+    "qb_subject_id": "qb_subjects"
+   },
+   "polymorphic": []
+  },
+  "qb_paper_sections": {
+   "refs": {
+    "qb_paper_id": "qb_papers"
+   },
+   "polymorphic": []
+  },
+  "qb_paper_items": {
+   "refs": {
+    "qb_paper_section_id": "qb_paper_sections",
+    "qb_question_id": "qb_questions"
+   },
+   "polymorphic": []
+  },
+  "qb_quiz_attempts": {
+   "refs": {
+    "qb_quiz_id": "qb_quizzes",
+    "student_user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "qb_student_orders": {
+   "refs": {
+    "student_user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "qb_student_package_access": {
+   "refs": {
+    "qb_quiz_package_id": "qb_quiz_packages",
+    "qb_student_order_id": "qb_student_orders",
+    "student_user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "qb_student_unlocks": {
+   "refs": {
+    "qb_student_order_id": "qb_student_orders",
+    "student_user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "qb_unlocks": {
+   "refs": {
+    "qb_price_rule_id": "qb_price_rules",
+    "unlocked_by": "users"
+   },
+   "polymorphic": []
+  },
   "report_card_summaries": {
    "refs": {
     "exam_id": "exams",
@@ -1112,8 +1179,26 @@
   }
  },
  "refs_to_excluded_or_platform": {
+  "programs": {
+   "qb_class_level_id": "qb_class_levels"
+  },
   "online_payments": {
    "settlement_id": "settlements"
+  },
+  "qb_papers": {
+   "qb_subject_id": "qb_subjects"
+  },
+  "qb_paper_items": {
+   "qb_question_id": "qb_questions"
+  },
+  "qb_quiz_attempts": {
+   "qb_quiz_id": "qb_quizzes"
+  },
+  "qb_student_package_access": {
+   "qb_quiz_package_id": "qb_quiz_packages"
+  },
+  "qb_unlocks": {
+   "qb_price_rule_id": "qb_price_rules"
   }
  }
 }

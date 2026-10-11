@@ -308,6 +308,43 @@ php artisan make:migration create_donors_table
 php artisan make:migration create_donation_funds_table
 php artisan make:migration create_donation_campaigns_table
 php artisan make:migration create_donations_table
+# Question bank & quiz (D65/D66, docs/modules/question-bank.md - task QB.0; 3 grouped migrations 2026_10_11_00000{1,2,3}_qb_*)
+php artisan make:migration create_qb_class_levels_table
+php artisan make:migration create_qb_subjects_table
+php artisan make:migration create_qb_class_level_subject_table
+php artisan make:migration create_qb_chapters_table
+php artisan make:migration create_qb_chapter_class_level_table
+php artisan make:migration create_qb_topics_table
+php artisan make:migration create_qb_question_types_table
+php artisan make:migration create_qb_questions_table
+php artisan make:migration create_qb_question_options_table
+php artisan make:migration create_qb_creative_parts_table
+php artisan make:migration create_qb_question_stimuli_table
+php artisan make:migration create_qb_question_items_table
+php artisan make:migration create_qb_question_class_level_table
+php artisan make:migration create_qb_question_occurrences_table
+php artisan make:migration create_qb_question_revisions_table
+php artisan make:migration create_qb_media_table
+php artisan make:migration create_qb_media_links_table
+php artisan make:migration create_qb_concepts_table
+php artisan make:migration create_qb_resources_table
+php artisan make:migration create_qb_prices_table
+php artisan make:migration create_qb_price_rules_table
+php artisan make:migration create_qb_unlocks_table
+php artisan make:migration create_qb_student_orders_table
+php artisan make:migration create_qb_student_unlocks_table
+php artisan make:migration create_qb_writer_earnings_table
+php artisan make:migration create_qb_writer_wallets_table
+php artisan make:migration create_qb_writer_wallet_txns_table
+php artisan make:migration create_qb_withdrawal_requests_table
+php artisan make:migration create_qb_papers_table
+php artisan make:migration create_qb_paper_sections_table
+php artisan make:migration create_qb_paper_items_table
+php artisan make:migration create_qb_quiz_packages_table
+php artisan make:migration create_qb_quizzes_table
+php artisan make:migration create_qb_quiz_questions_table
+php artisan make:migration create_qb_student_package_access_table
+php artisan make:migration create_qb_quiz_attempts_table
 # column additions folded into their create migrations: settlements, online_payments (student_id/parent_user_id now NULL), payments (method += coupon), subscription_invoices,
 # teachers, institution_events, users, subjects, programs, batches, expenses, certificates, tc_certificates, notices, sms_logs, admission_leads
 
