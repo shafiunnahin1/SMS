@@ -63,6 +63,17 @@ class QbPurchaseController extends Controller
             'balance' => Money::format(Money::toPaisa((string) Tenancy::current()->fresh()->sms_balance))], 'message' => __('messages.saved')], $r['already'] ? 200 : 201);
     }
 
+    /** POST /question-bank/buy-many {question_ids}: a paper's not-yet-bought questions, after the teacher confirmed the total. Each is
+     *  its own purchase (already owned ones cost nothing); the first refusal (402 / 422) stops the rest, the ones before it stay bought. */
+    public function buyMany(Request $request)
+    {
+        $f = $request->validate(['question_ids' => 'required|array|min:1|max:100', 'question_ids.*' => 'integer|distinct', 'price' => 'prohibited', 'amount' => 'prohibited']);
+        $charged = 0;
+        foreach ($f['question_ids'] as $id) $charged += Money::toPaisa($this->purchases->buy($request->user(), 'question', (int) $id)['charged']);
+        return response()->json(['success' => true, 'data' => ['charged' => Money::format($charged), 'count' => count($f['question_ids']),
+            'balance' => Money::format(Money::toPaisa((string) Tenancy::current()->fresh()->sms_balance))], 'message' => __('messages.saved')]);
+    }
+
     /** GET /question-bank/spending?from=&to= (admin): per person who bought - total, count, by item type; the caps */
     public function spending(Request $request)
     {

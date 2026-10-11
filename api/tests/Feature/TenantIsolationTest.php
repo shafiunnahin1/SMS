@@ -110,6 +110,12 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/question-bank/concepts/{id}'       => null,
             'GET api/v1/question-bank/resources/{id}'      => null,
             'GET api/v1/question-bank/questions/{id}'      => null,   // QB.7: a catalogue row too; QbPurchaseTest: another institution's purchase opens nothing
+            // QB.8: an institution's question papers (tenant rows; the admin sees all of its own)
+            'GET api/v1/question-bank/papers/{id}'         => fn (array $other) => $this->seedPaper($other),
+            'PUT api/v1/question-bank/papers/{id}'         => fn (array $other) => $this->seedPaper($other),
+            'DELETE api/v1/question-bank/papers/{id}'      => fn (array $other) => $this->seedPaper($other),
+            'POST api/v1/question-bank/papers/{id}/finalize' => fn (array $other) => $this->seedPaper($other),
+            'GET api/v1/question-bank/papers/{id}/pdf'     => fn (array $other) => $this->seedPaper($other),
         ];
     }
 
@@ -177,6 +183,12 @@ class TenantIsolationTest extends TestCase
             return \App\Models\Attendance::value('id') ?? \App\Models\Attendance::create(['student_id' => $student, 'batch_id' => $e->batch_id,
                 'program_id' => $e->program_id, 'date' => now()->toDateString(), 'status' => 'present'])->id;
         });
+    }
+
+    private function seedPaper(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\QbPaper::value('id')
+            ?? \App\Models\QbPaper::create(['created_by' => $t['admin']->id, 'title' => 'Paper', 'status' => 'draft'])->id);
     }
 
     private function seedImport(array $t): int

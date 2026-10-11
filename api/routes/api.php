@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -232,6 +232,15 @@ Route::prefix('v1')->group(function () {
             Route::post('/buy',                           [QbPurchaseController::class, 'buy']);
             Route::get('/spending',                       [QbPurchaseController::class, 'spending'])->middleware('role:admin');
             Route::put('/caps',                           [QbPurchaseController::class, 'caps'])->middleware('role:admin');
+            Route::post('/buy-many',                      [QbPurchaseController::class, 'buyMany']);
+            // QB.8: question papers - a teacher's own, the head teacher's view of all
+            Route::get('/papers',                         [QbPaperController::class, 'index']);
+            Route::post('/papers',                        [QbPaperController::class, 'store']);
+            Route::get('/papers/{id}',                    [QbPaperController::class, 'show'])->whereNumber('id');
+            Route::put('/papers/{id}',                    [QbPaperController::class, 'update'])->whereNumber('id');
+            Route::delete('/papers/{id}',                 [QbPaperController::class, 'destroy'])->whereNumber('id');
+            Route::post('/papers/{id}/finalize',          [QbPaperController::class, 'finalize'])->whereNumber('id');
+            Route::get('/papers/{id}/pdf',                [QbPaperController::class, 'pdf'])->whereNumber('id');
         });
 
         // ── SMS (Step 4.6): log and balance; sending happens from attendance / fee collection through SendSmsJob ──

@@ -67,6 +67,10 @@ return [
     'qb_not_for_sale'       => 'This item has no price yet, so it cannot be bought.',   // QB.7
     'qb_teacher_cap_reached' => 'Your monthly question-bank limit is reached - ask the head teacher to raise it.',   // QB.7
     'wallet_balance_too_low' => 'The institution wallet does not have enough taka - recharge it first.',   // QB.7
+    'qb_paper_unbought'     => 'Some questions are not bought yet - buy them to use them in a paper.',   // QB.8
+    'qb_paper_final'        => 'A final paper cannot be changed or deleted.',   // QB.8
+    'qb_paper_empty'        => 'Add at least one question first.',   // QB.8
+    'qb_paper_duplicate'    => 'A question appears twice in the paper.',   // QB.8
     'enrollment_not_active' => 'This enrollment is no longer active.',
     'kind_not_available' => 'This kind of import is not available yet.',
     'bad_encoding' => 'The file is not UTF-8. Save it from Excel as "CSV UTF-8" or upload .xlsx.',
