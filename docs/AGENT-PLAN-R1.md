@@ -65,10 +65,23 @@
 | `8.5` | Load and scale test (before SIGNUP_MODE=open) | `8.2` |  |  |  |
 | `9.1` | Deployment, backup, monitoring | `8.5` |  |  |  |
 | `A` | Release 1 acceptance (local, D63/D64), open signup at deploy | `9.1` |  |  |  |
-| `5.1` | Signup & Onboarding | `A` |  | 3 | 1 |
+| `QB.0` | Question bank foundation: schema, module keys, roles, catalogue rule | `A` |  |  |  |
+| `QB.1` | Curriculum: class → subject → chapter → topic | `QB.0` |  |  |  |
+| `QB.2` | Writers' panel: writers, moderators, revisions, review flow | `QB.1` |  |  |  |
+| `QB.3` | Questions: core types and the editor | `QB.2` |  |  |  |
+| `QB.4` | Questions: the structured types | `QB.3` |  |  |  |
+| `QB.5` | Concepts and resources (slides, books, PDFs) | `QB.4` |  |  |  |
+| `QB.6` | Prices and the free / partly-free / discount rule engine | `QB.5` |  |  |  |
+| `QB.7` | Teachers: browse, buy with the institution wallet, spending | `QB.6` |  |  |  |
+| `QB.8` | Question papers: builder, PDF, the head teacher's view | `QB.7` |  |  |  |
+| `QB.9` | Student login and portal: practice, concepts, bKash purchases | `QB.8` |  |  |  |
+| `QB.10` | Quizzes and quiz packages | `QB.9` |  |  |  |
+| `QB.10b` | Writers' earnings, wallet and withdrawals | `QB.10` |  |  |  |
+| `QB.11` | Import from qbank | `QB.10b` |  |  |  |
+| `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 38 task · 32 টেবিল · 151 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 32 টেবিল · 151 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -1815,9 +1828,244 @@ python3 infra/spec-verify/verify.py . --deep
 
 ---
 
-### TASK `5.1` — Signup & Onboarding
+### TASK `QB.0` — Question bank foundation: schema, module keys, roles, catalogue rule
 
 - **নির্ভর করে:** `A`  ·  **Release:** R1
+- **লক্ষ্য:** Every later QB task has its tables, its module gate and the platform-catalogue rule in place.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** D65/D66: the qb_* tables of question-bank.md §3 into docs/database/schema.sql and as migrations (append-only); module keys `question_bank`, `quiz` (all four types); platform roles `content_writer`, `content_moderator`; the PlatformCatalogue rule (catalogue models have no institution_id, tenant hosts read only `published`, writes refused) with an architecture test; student login switched on for the question bank (release roles).
+
+
+**Done When:** schema-diff.sh and the schema parity check zero; migrations run on MySQL; TenancyArchitectureTest and a PlatformCatalogueTest green; the module gate refuses the routes when the module is off.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test
+bash infra/scripts/schema-diff.sh
+```
+
+---
+
+### TASK `QB.1` — Curriculum: class → subject → chapter → topic
+
+- **নির্ভর করে:** `QB.0`  ·  **Release:** R1
+- **লক্ষ্য:** The Super Admin maintains the curriculum tree every question hangs on.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** qb_class_levels, qb_subjects, qb_chapters, qb_topics (+ pivots): Super Admin CRUD on the central host and its React pages; a seed from qbank's class/subject lists; optional programs.qb_class_level_id link.
+
+
+**Done When:** Super Admin builds a class → subject → chapter → topic tree; other roles 403; tests and e2e smoke.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbCurriculum
+```
+
+---
+
+### TASK `QB.2` — Writers' panel: writers, moderators, revisions, review flow
+
+- **নির্ভর করে:** `QB.1`  ·  **Release:** R1
+- **লক্ষ্য:** Platform writers and moderators can work on the central host.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** Super Admin adds/removes content_writer and content_moderator users; login on the central host; draft → review → published/rejected with a reason; every save a qb_question_revisions row; audit log.
+
+
+**Done When:** A writer cannot publish; a moderator can; a rejected item returns to the writer with the reason; tests.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbReview
+```
+
+---
+
+### TASK `QB.3` — Questions: core types and the editor
+
+- **নির্ভর করে:** `QB.2`  ·  **Release:** R1
+- **লক্ষ্য:** Writers create the main question types with text, math and images.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** qb_question_types (qbank's slugs), qb_questions, options, creative parts, occurrences, media: API + React editor for mcq, creative, short, true_false, fill_in_the_blank, one_word_answer; Bengali/English; LaTeX math with `mathlive` (D66); images on the private disk; preview.
+
+
+**Done When:** A writer saves each core type with math and an image and sees the preview; answers never leak in any API response without an unlock (QuestionAnswerNeverLeaksTest).
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbQuestion
+```
+
+---
+
+### TASK `QB.4` — Questions: the structured types
+
+- **নির্ভর করে:** `QB.3`  ·  **Release:** R1
+- **লক্ষ্য:** The rest of qbank's question types.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** qb_question_items / stimuli for gap/cloze/matching/rearrange/passage-based types, following qbank's structured model.
+
+
+**Done When:** Each structured type round-trips through the API and renders in the editor and the viewer; tests.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbStructured
+```
+
+---
+
+### TASK `QB.5` — Concepts and resources (slides, books, PDFs)
+
+- **নির্ভর করে:** `QB.4`  ·  **Release:** R1
+- **লক্ষ্য:** Topic-based concepts and downloadable resources.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** qb_concepts (topic-based, same review flow), qb_resources (slide/book/pdf on the private disk, page count, preview pages); viewer pages.
+
+
+**Done When:** A concept and a PDF go through review and are viewable within their access rules; tests.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbConcept
+```
+
+---
+
+### TASK `QB.6` — Prices and the free / partly-free / discount rule engine
+
+- **নির্ভর করে:** `QB.5`  ·  **Release:** R1
+- **লক্ষ্য:** The Super Admin sets every price and every rule.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** qb_prices (audience institution|student, per question type and item kind, new row per change) and qb_price_rules with every method of question-bank.md §4.3 and its precedence; QbPricingService::quote() with the winning rule; the Super Admin's rule pages with a preview.
+
+
+**Done When:** Each method and the precedence order are tested to the paisa; ROUND_HALF_UP; never below 0.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbPricing
+```
+
+---
+
+### TASK `QB.7` — Teachers: browse, buy with the institution wallet, spending
+
+- **নির্ভর করে:** `QB.6`  ·  **Release:** R1
+- **লক্ষ্য:** Teachers use the bank; the institution pays once for all its teachers.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** Browse/search/filter (free to view); buying answers+paper use from the institution wallet (the SMS taka wallet, ledger type qb_purchase) in one locked transaction; qb_unlocks unique per institution; a private-batch tenant buys again; monthly cap per teacher; the head teacher's spending report per teacher.
+
+
+**Done When:** Two teachers buying the same item at once are charged once; an empty wallet is 402; the cap is 422; another institution's unlock never helps; tests + e2e.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbPurchase
+```
+
+---
+
+### TASK `QB.8` — Question papers: builder, PDF, the head teacher's view
+
+- **নির্ভর করে:** `QB.7`  ·  **Release:** R1
+- **লক্ষ্য:** Teachers build institution question papers.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** qb_papers, sections, items; adding a not-yet-bought question buys it after confirmation; Chromium PDF (D50) with/without answers, sets A/B; teachers see their own papers, the head teacher all of the institution's.
+
+
+**Done When:** A paper with a creative and an MCQ section prints in Bengali; the head teacher sees every teacher's papers; tests + e2e.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbPaper
+```
+
+---
+
+### TASK `QB.9` — Student login and portal: practice, concepts, bKash purchases
+
+- **নির্ভর করে:** `QB.8`  ·  **Release:** R1
+- **লক্ষ্য:** Students prepare from the bank.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** Student login on (release roles); the portal: own class's subject → chapter → topic, questions, concepts; answer/concept purchases by bKash to the platform merchant (D58 BkashService, central callback) with qb_student_orders and qb_student_unlocks; student prices.
+
+
+**Done When:** A student sees questions free, pays to see an answer once, and another student does not get it; a failed or tampered payment unlocks nothing; tests.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbStudent
+```
+
+---
+
+### TASK `QB.10` — Quizzes and quiz packages
+
+- **নির্ভর করে:** `QB.9`  ·  **Release:** R1
+- **লক্ষ্য:** Online quizzes for students.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** qb_quiz_packages (validity days), qb_quizzes (access package|free|public, scope, timing), attempts scored on the server, auto-submit at time-up, public page for public quizzes.
+
+
+**Done When:** Package expiry closes its quizzes; free and public quizzes work as specified; scoring is server-side; tests + e2e.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbQuiz
+```
+
+---
+
+### TASK `QB.10b` — Writers' earnings, wallet and withdrawals
+
+- **নির্ভর করে:** `QB.10`  ·  **Release:** R1
+- **লক্ষ্য:** Writers earn a share of every sale and withdraw it.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** qb_writer_earnings in the sale's transaction, writer wallets and ledger, withdrawal requests that hold the amount, the Super Admin's paid (with the bank transaction id) / rejected flow, audit log; writer pages.
+
+
+**Done When:** Every sale credits the writer's share to the paisa; a pending request holds the money; paid reduces it once; rejected releases it; tests.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbWriter
+```
+
+---
+
+### TASK `QB.11` — Import from qbank
+
+- **নির্ভর করে:** `QB.10b`  ·  **Release:** R1
+- **লক্ষ্য:** The owner's existing questions come over.
+- **কী পড়বেন:** `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** `php artisan qb:import-from-qbank` reading qbank's database: curriculum, question types, questions with options/parts/items, occurrences, media; dry run first, idempotent, a report of what was skipped and why.
+
+
+**Done When:** A dry run lists counts; a real run imports them once; a second run changes nothing; tests on a fixture.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbImport
+```
+
+---
+
+### TASK `5.1` — Signup & Onboarding
+
+- **নির্ভর করে:** `QB.11`  ·  **Release:** R1
 - **কী পড়বেন:** `docs/modules/onboarding.md`, `docs/modules/subscription.md`, `docs/architecture/system-design-patterns.md`
 
 > **R1 পরিসর (এটিই চূড়ান্ত):** Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.

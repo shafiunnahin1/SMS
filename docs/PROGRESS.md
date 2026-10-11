@@ -123,6 +123,19 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
     11. Spike Gate signed — docs/SPIKE-LOG.md signed by the owner (a151976) ✓.
     Before deploy (not local): boxes 1 (signup) and 6 (subscription), the lawyer's privacy/terms text (D27, BLOCKED 8.1), the server repeats of 9/10. Open owner question (not blocking): 403 vs 404 for another family's child (DECISIONS 8.2).
     Accepted 2026-10-11. Next (D65): the question bank (QB.0…), then Release 3.
+- [ ] QB.0 — Question bank foundation: schema, module keys, roles, catalogue rule
+- [ ] QB.1 — Curriculum: class → subject → chapter → topic
+- [ ] QB.2 — Writers' panel: writers, moderators, revisions, review flow
+- [ ] QB.3 — Questions: core types and the editor
+- [ ] QB.4 — Questions: the structured types
+- [ ] QB.5 — Concepts and resources (slides, books, PDFs)
+- [ ] QB.6 — Prices and the free / partly-free / discount rule engine
+- [ ] QB.7 — Teachers: browse, buy with the institution wallet, spending
+- [ ] QB.8 — Question papers: builder, PDF, the head teacher's view
+- [ ] QB.9 — Student login and portal: practice, concepts, bKash purchases
+- [ ] QB.10 — Quizzes and quiz packages
+- [ ] QB.10b — Writers' earnings, wallet and withdrawals
+- [ ] QB.11 — Import from qbank
 
 ## Release R3  (`docs/AGENT-PLAN-R3.md`)  — start only after Release 1 is accepted (task `A`)
 

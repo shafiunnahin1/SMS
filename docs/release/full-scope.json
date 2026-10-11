@@ -283,6 +283,14 @@
   "gps": {
    "milestone": "M8",
    "basis": "derived"
+  },
+  "question_bank": {
+   "milestone": "M1",
+   "basis": "proposed"
+  },
+  "quiz": {
+   "milestone": "M1",
+   "basis": "proposed"
   }
  },
  "depends": {

@@ -14,7 +14,7 @@
 ## ২. সম্পূর্ণ প্রকাশের আকার
 | | |
 |---|---|
-| মডিউল | **৫৬** |
+| মডিউল | **৫৮** |
 | ফিচার (প্রমাণসহ, `docs/pricing/features.csv`) | **৩৬৮** |
 | ডেটাবেস টেবিল | **১৪৩** |
 | প্রতিষ্ঠানের ধরন | স্কুল, কলেজ, কোচিং, প্রাইভেট ব্যাচ (+ মাদ্রাসা-প্রিসেট) |
@@ -23,7 +23,7 @@
 ## ৩. নির্মাণ-ধাপ (মাইলস্টোন) ও প্রতিটির পরিকল্পনা-অবস্থা
 | ধাপ | রিলিজ | কী | মডিউল | কাজ-পরিকল্পনা আছে এমন মডিউল | ফিচার | অবস্থা |
 |---|---|---|---|---|---|---|
-| **M1** | R1 | ভিত্তি ও চারটি অপরিহার্য ফিচার | ৮ | ৮ | ৯০ | **পূর্ণ কাজ-পরিকল্পনা আছে** |
+| **M1** | R1 | ভিত্তি ও চারটি অপরিহার্য ফিচার | ১০ | ৮ | ৯০ | **পূর্ণ কাজ-পরিকল্পনা আছে** |
 | **M2** | R1.1 | প্রথম সংস্করণের পরপর: নোটিশ, খরচ, রুটিন, ID কার্ড, সহায়তা | ৬ | ১ | ২৪ | শুধু **খসড়া** কাজ-তালিকা |
 | **M3** | R2 | প্রতিষ্ঠান-গভীরতা: ফল, ভর্তি, অনলাইন-পেমেন্ট, ওয়েবসাইট, একাডেমিক-উন্নত | ১৮ | ০ | ৯৯ | শুধু **খসড়া** কাজ-তালিকা |
 | **M4** | R3 | টাকা ও মানুষ: ক্যাশবুক, বেতন, হিসাব-খাত, ইনভেন্টরি, দান | ৬ | ৬ | ৫৯ | **পূর্ণ কাজ-পরিকল্পনা আছে** |
@@ -37,12 +37,12 @@
 ## ৪. প্রস্তুতি-নিরীক্ষা — সম্পূর্ণ প্রকাশের জন্য পরিকল্পনা কতটা তৈরি (সৎ হিসাব)
 | নিরীক্ষা | ফল |
 |---|---|
-| ধাপ-ধরে এজেন্ট-কাজের **পূর্ণ** পরিকল্পনা আছে | **১৫ / ৫৬** মডিউলের (M1 = R1 এবং M4 = R3) |
-| শুধু **খসড়া** কাজ আছে (এই নথির সাথের `AGENT-PLAN-FULL-DRAFT.md`) | **৪১** মডিউল |
-| এর মধ্যে স্পেক শুধু **গদ্যে**, route-টেমপ্লেটে কোনো ফিচার-প্রমাণ নেই | **২০** মডিউল: `admit_card`, `ai_assistant`, `alumni`, `analytics`, `behavior`, `certificates`, `cpd`, `events`, `fee_installment`, `gps`, `health`, `hostel`, `library`, `multi_branch`, `online_class`, `online_quiz`, `parent_meeting`, `scholarships`, `transport`, `visitors` |
-| ধাপ **আমি প্রস্তাব করেছি** (রোডম্যাপে ছিল না) — আপনার সিদ্ধান্ত লাগবে | **১৫** মডিউল: `academic_calendar`, `admit_card`, `alumni`, `analytics`, `behavior`, `certificates`, `cpd`, `events`, `fee_installment`, `health`, `multi_branch`, `parent_meeting`, `promotion_tc`, `scholarships`, `visitors` |
+| ধাপ-ধরে এজেন্ট-কাজের **পূর্ণ** পরিকল্পনা আছে | **১৫ / ৫৮** মডিউলের (M1 = R1 এবং M4 = R3) |
+| শুধু **খসড়া** কাজ আছে (এই নথির সাথের `AGENT-PLAN-FULL-DRAFT.md`) | **৪৩** মডিউল |
+| এর মধ্যে স্পেক শুধু **গদ্যে**, route-টেমপ্লেটে কোনো ফিচার-প্রমাণ নেই | **২২** মডিউল: `admit_card`, `ai_assistant`, `alumni`, `analytics`, `behavior`, `certificates`, `cpd`, `events`, `fee_installment`, `gps`, `health`, `hostel`, `library`, `multi_branch`, `online_class`, `online_quiz`, `parent_meeting`, `question_bank`, `quiz`, `scholarships`, `transport`, `visitors` |
+| ধাপ **আমি প্রস্তাব করেছি** (রোডম্যাপে ছিল না) — আপনার সিদ্ধান্ত লাগবে | **১৭** মডিউল: `academic_calendar`, `admit_card`, `alumni`, `analytics`, `behavior`, `certificates`, `cpd`, `events`, `fee_installment`, `health`, `multi_branch`, `parent_meeting`, `promotion_tc`, `question_bank`, `quiz`, `scholarships`, `visitors` |
 | কোনো কাজ-পরিকল্পনায় ধরা টেবিল | ৬২ / ১৪৩ (বাকি ৮১টি টেবিলের migration-কাজ খসড়া-পর্যায়ে) |
-| বাইরের তথ্য/সিদ্ধান্তের উপর নির্ভর (`OD-…`, স্পেকে ফাঁকা স্লট) | **৫**টি |
+| বাইরের তথ্য/সিদ্ধান্তের উপর নির্ভর (`OD-…`, স্পেকে ফাঁকা স্লট) | **১৪**টি |
 
 **এর মানে:** "সম্পূর্ণ প্রকাশ" পরিকল্পনা-অনুযায়ী ঘোষণা করা যায়, কিন্তু **এখনই বানানো শুরু করার মতো পূর্ণ কাজ-পরিকল্পনা আছে শুধু M1 ও M4-এর।** বাকি ধাপের কাজ-তালিকা খসড়া; প্রতিটির "শেষ-শর্ত" সাধারণ, R3-এর মতো নির্দিষ্ট সংখ্যা-মেলানো নয়। সেগুলো বানানোর আগে ধাপ শুরুর সময় পরিশীলিত করতে হবে (নিচে §৭)। গার্ড খসড়া-টাস্কের commit আটকায় (`Task:` আইডি অজানা), তাই পরিশীলন না করে ভুলে বানানো শুরু হবে না।
 
@@ -54,6 +54,8 @@
 | M1 | `enrollments` | স্পেক থেকে | পূর্ণ | ১৩ | ১০ |
 | M1 | `exams` | স্পেক থেকে | পূর্ণ | ১৪ | ১২ |
 | M1 | `fees` | স্পেক থেকে | পূর্ণ | ১৯ | ১৩ |
+| M1 | `question_bank` | **প্রস্তাবিত** | খসড়া | ০ | ০ |
+| M1 | `quiz` | **প্রস্তাবিত** | খসড়া | ০ | ০ |
 | M1 | `reports` | স্পেক থেকে | পূর্ণ | ৭ | ৭ |
 | M1 | `sms` | স্পেক থেকে | পূর্ণ | ১০ | ৯ |
 | M1 | `students` | স্পেক থেকে | পূর্ণ | ১২ | ১২ |
@@ -116,6 +118,15 @@
 | `OD-sms-unicode` | `communication-plus.md` |
 | `OD-refund-api` | `finance-advanced.md` |
 | `OD-captcha` | `public-website-plus.md` |
+| `OD-qb-1` | `question-bank.md` |
+| `OD-qb` | `question-bank.md` |
+| `OD-qb-2` | `question-bank.md` |
+| `OD-qb-3` | `question-bank.md` |
+| `OD-qb-4` | `question-bank.md` |
+| `OD-qb-5` | `question-bank.md` |
+| `OD-qb-6` | `question-bank.md` |
+| `OD-qb-7` | `question-bank.md` |
+| `OD-qb-8` | `question-bank.md` |
 
 ## ৬. সম্পূর্ণ প্রকাশের গ্রহণ-শর্ত (প্রকাশ্য বিক্রি শুরুর আগে সব সত্য)
 1. M1–M8-এর প্রতিটির নিজস্ব গ্রহণ-শর্ত সত্য (`docs/RELEASE-1.md` §৭, `docs/RELEASE-3.md` §৯, বাকিগুলো ধাপ-শুরুতে লেখা)
@@ -141,7 +152,7 @@
 ## ৯. সম্পূর্ণ প্রকাশে `config/release.php`
 ```php
 'id' => 'FULL',
-'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'result_sheets', 'period_attendance', 'substitution', 'student_leave', 'support', 'cashbook', 'data_migration', 'admission_cycle', 'inventory', 'attendance_devices', 'accounting', 'donations', 'hifz', 'syllabus', 'risk_alerts', 'sms', 'notices', 'reports', 'expenses', 'id_cards', 'merit_list', 'online_payment', 'public_site', 'leads', 'teacher_payouts', 'routine', 'homework', 'academic_calendar', 'promotion_tc', 'admit_card', 'teacher_attendance', 'hr_payroll', 'fee_installment', 'online_quiz', 'online_class', 'library', 'transport', 'hostel', 'behavior', 'health', 'certificates', 'visitors', 'parent_meeting', 'scholarships', 'events', 'alumni', 'cpd', 'multi_branch', 'analytics', 'ai_assistant', 'gps'],
+'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'result_sheets', 'period_attendance', 'substitution', 'student_leave', 'support', 'cashbook', 'data_migration', 'admission_cycle', 'inventory', 'attendance_devices', 'accounting', 'donations', 'hifz', 'syllabus', 'question_bank', 'quiz', 'risk_alerts', 'sms', 'notices', 'reports', 'expenses', 'id_cards', 'merit_list', 'online_payment', 'public_site', 'leads', 'teacher_payouts', 'routine', 'homework', 'academic_calendar', 'promotion_tc', 'admit_card', 'teacher_attendance', 'hr_payroll', 'fee_installment', 'online_quiz', 'online_class', 'library', 'transport', 'hostel', 'behavior', 'health', 'certificates', 'visitors', 'parent_meeting', 'scholarships', 'events', 'alumni', 'cpd', 'multi_branch', 'analytics', 'ai_assistant', 'gps'],
 ```
 
 ## ১০. আপনার সিদ্ধান্ত বাকি

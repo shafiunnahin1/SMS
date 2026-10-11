@@ -1053,9 +1053,244 @@
    ]
   },
   {
+   "id": "QB.0",
+   "title": "Question bank foundation: schema, module keys, roles, catalogue rule",
+   "depends_on": "A",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "schema-diff.sh and the schema parity check zero; migrations run on MySQL; TenancyArchitectureTest and a PlatformCatalogueTest green; the module gate refuses the routes when the module is off.",
+   "scope_note": "D65/D66: the qb_* tables of question-bank.md §3 into docs/database/schema.sql and as migrations (append-only); module keys `question_bank`, `quiz` (all four types); platform roles `content_writer`, `content_moderator`; the PlatformCatalogue rule (catalogue models have no institution_id, tenant hosts read only `published`, writes refused) with an architecture test; student login switched on for the question bank (release roles).",
+   "blocked": null,
+   "verify": [
+    "php artisan test",
+    "bash infra/scripts/schema-diff.sh"
+   ]
+  },
+  {
+   "id": "QB.1",
+   "title": "Curriculum: class → subject → chapter → topic",
+   "depends_on": "QB.0",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "Super Admin builds a class → subject → chapter → topic tree; other roles 403; tests and e2e smoke.",
+   "scope_note": "qb_class_levels, qb_subjects, qb_chapters, qb_topics (+ pivots): Super Admin CRUD on the central host and its React pages; a seed from qbank's class/subject lists; optional programs.qb_class_level_id link.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbCurriculum"
+   ]
+  },
+  {
+   "id": "QB.2",
+   "title": "Writers' panel: writers, moderators, revisions, review flow",
+   "depends_on": "QB.1",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "A writer cannot publish; a moderator can; a rejected item returns to the writer with the reason; tests.",
+   "scope_note": "Super Admin adds/removes content_writer and content_moderator users; login on the central host; draft → review → published/rejected with a reason; every save a qb_question_revisions row; audit log.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbReview"
+   ]
+  },
+  {
+   "id": "QB.3",
+   "title": "Questions: core types and the editor",
+   "depends_on": "QB.2",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "A writer saves each core type with math and an image and sees the preview; answers never leak in any API response without an unlock (QuestionAnswerNeverLeaksTest).",
+   "scope_note": "qb_question_types (qbank's slugs), qb_questions, options, creative parts, occurrences, media: API + React editor for mcq, creative, short, true_false, fill_in_the_blank, one_word_answer; Bengali/English; LaTeX math with `mathlive` (D66); images on the private disk; preview.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbQuestion"
+   ]
+  },
+  {
+   "id": "QB.4",
+   "title": "Questions: the structured types",
+   "depends_on": "QB.3",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "Each structured type round-trips through the API and renders in the editor and the viewer; tests.",
+   "scope_note": "qb_question_items / stimuli for gap/cloze/matching/rearrange/passage-based types, following qbank's structured model.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbStructured"
+   ]
+  },
+  {
+   "id": "QB.5",
+   "title": "Concepts and resources (slides, books, PDFs)",
+   "depends_on": "QB.4",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "A concept and a PDF go through review and are viewable within their access rules; tests.",
+   "scope_note": "qb_concepts (topic-based, same review flow), qb_resources (slide/book/pdf on the private disk, page count, preview pages); viewer pages.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbConcept"
+   ]
+  },
+  {
+   "id": "QB.6",
+   "title": "Prices and the free / partly-free / discount rule engine",
+   "depends_on": "QB.5",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "Each method and the precedence order are tested to the paisa; ROUND_HALF_UP; never below 0.",
+   "scope_note": "qb_prices (audience institution|student, per question type and item kind, new row per change) and qb_price_rules with every method of question-bank.md §4.3 and its precedence; QbPricingService::quote() with the winning rule; the Super Admin's rule pages with a preview.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbPricing"
+   ]
+  },
+  {
+   "id": "QB.7",
+   "title": "Teachers: browse, buy with the institution wallet, spending",
+   "depends_on": "QB.6",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "Two teachers buying the same item at once are charged once; an empty wallet is 402; the cap is 422; another institution's unlock never helps; tests + e2e.",
+   "scope_note": "Browse/search/filter (free to view); buying answers+paper use from the institution wallet (the SMS taka wallet, ledger type qb_purchase) in one locked transaction; qb_unlocks unique per institution; a private-batch tenant buys again; monthly cap per teacher; the head teacher's spending report per teacher.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbPurchase"
+   ]
+  },
+  {
+   "id": "QB.8",
+   "title": "Question papers: builder, PDF, the head teacher's view",
+   "depends_on": "QB.7",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "A paper with a creative and an MCQ section prints in Bengali; the head teacher sees every teacher's papers; tests + e2e.",
+   "scope_note": "qb_papers, sections, items; adding a not-yet-bought question buys it after confirmation; Chromium PDF (D50) with/without answers, sets A/B; teachers see their own papers, the head teacher all of the institution's.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbPaper"
+   ]
+  },
+  {
+   "id": "QB.9",
+   "title": "Student login and portal: practice, concepts, bKash purchases",
+   "depends_on": "QB.8",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "A student sees questions free, pays to see an answer once, and another student does not get it; a failed or tampered payment unlocks nothing; tests.",
+   "scope_note": "Student login on (release roles); the portal: own class's subject → chapter → topic, questions, concepts; answer/concept purchases by bKash to the platform merchant (D58 BkashService, central callback) with qb_student_orders and qb_student_unlocks; student prices.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbStudent"
+   ]
+  },
+  {
+   "id": "QB.10",
+   "title": "Quizzes and quiz packages",
+   "depends_on": "QB.9",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "Package expiry closes its quizzes; free and public quizzes work as specified; scoring is server-side; tests + e2e.",
+   "scope_note": "qb_quiz_packages (validity days), qb_quizzes (access package|free|public, scope, timing), attempts scored on the server, auto-submit at time-up, public page for public quizzes.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbQuiz"
+   ]
+  },
+  {
+   "id": "QB.10b",
+   "title": "Writers' earnings, wallet and withdrawals",
+   "depends_on": "QB.10",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "Every sale credits the writer's share to the paisa; a pending request holds the money; paid reduces it once; rejected releases it; tests.",
+   "scope_note": "qb_writer_earnings in the sale's transaction, writer wallets and ledger, withdrawal requests that hold the amount, the Super Admin's paid (with the bank transaction id) / rejected flow, audit log; writer pages.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbWriter"
+   ]
+  },
+  {
+   "id": "QB.11",
+   "title": "Import from qbank",
+   "depends_on": "QB.10b",
+   "spec_refs": [
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "A dry run lists counts; a real run imports them once; a second run changes nothing; tests on a fixture.",
+   "scope_note": "`php artisan qb:import-from-qbank` reading qbank's database: curriculum, question types, questions with options/parts/items, occurrences, media; dry run first, idempotent, a report of what was skipped and why.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbImport"
+   ]
+  },
+  {
    "id": "5.1",
    "title": "Signup & Onboarding",
-   "depends_on": "A",
+   "depends_on": "QB.11",
    "spec_refs": [
     "docs/modules/onboarding.md",
     "docs/modules/subscription.md",
