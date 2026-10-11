@@ -1135,7 +1135,10 @@
    "scope": "qb_question_items / stimuli for gap/cloze/matching/rearrange/passage-based types, following qbank's structured model.",
    "done": "Each structured type round-trips through the API and renders in the editor and the viewer; tests.",
    "verify": [
-    "php artisan test --filter=QbStructured"
+    "php artisan test --filter=\"QbStructured|QuestionAnswerNeverLeaks\"",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-structured.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

@@ -2460,7 +2460,10 @@ php artisan test   # whole suite stays green
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
-php artisan test --filter=QbStructured
+php artisan test --filter="QbStructured|QuestionAnswerNeverLeaks"
+npm test && npm run lint:theme
+npx playwright test e2e/qb-structured.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
