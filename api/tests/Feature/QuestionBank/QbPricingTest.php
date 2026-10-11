@@ -164,7 +164,7 @@ class QbPricingTest extends TestCase
         $this->api('POST', $central, 'super/qb/prices', $this->super, ['audience' => 'institution', 'item_kind' => 'question_answer', 'amount' => '0.55'])
             ->assertStatus(422)->assertJsonValidationErrors('qb_question_type_id');
         $this->api('POST', $central, 'super/qb/prices', $this->super, ['audience' => 'institution', 'item_kind' => 'concept', 'amount' => '0.555'])->assertStatus(422);
-        $this->api('POST', $central, 'super/qb/prices', $this->super, ['audience' => 'institution', 'item_kind' => 'question_answer', 'qb_question_type_id' => $this->mcq, 'amount' => '0.55'])->assertCreated();
+        $this->api('POST', $central, 'super/qb/prices', $this->super, ['audience' => 'institution', 'item_kind' => 'question_answer', 'qb_question_type_id' => $this->mcq, 'amount' => '0.55', 'effective_from' => null])->assertCreated();   // the form's empty = now
         $prices = $this->api('GET', $central, 'super/qb/prices', $this->super)->assertOk()->json('data');
         $this->assertSame('0.55', collect($prices['current'])->firstWhere('qb_question_type_id', $this->mcq)['amount'] ?? null);
         $this->assertSame(2, collect($prices['history'])->where('audience', 'institution')->where('qb_question_type_id', $this->mcq)->count(), 'the old row stays');

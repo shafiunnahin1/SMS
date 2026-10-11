@@ -39,7 +39,7 @@ class QbPricingController extends Controller
             'amount' => ['required', 'regex:/^\d{1,8}(\.\d{1,2})?$/'],
             'effective_from' => 'nullable|date|after_or_equal:' . now()->subMinute()->toDateTimeString(),     // never back-dated
         ]);
-        $p = QbPrice::create($f + ['effective_from' => $f['effective_from'] ?? now(), 'created_by' => $request->user()->id]);
+        $p = QbPrice::create(['effective_from' => $f['effective_from'] ?? now(), 'created_by' => $request->user()->id] + $f);   // the form sends null = now
         AuditLog::record('qb.price.created', $p, $p->only(['audience', 'item_kind', 'qb_question_type_id', 'amount']));
         return response()->json(['success' => true, 'data' => $p->fresh(), 'message' => __('messages.saved')], 201);
     }

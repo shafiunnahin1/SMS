@@ -46,6 +46,7 @@ const InstitutionDetail = lazy(() => import('../pages/super/InstitutionDetail'))
 const PlatformSettings  = lazy(() => import('../pages/super/PlatformSettings'))
 const QbCurriculum      = lazy(() => import('../pages/super/QbCurriculum'))
 const QbWriters         = lazy(() => import('../pages/super/QbWriters'))
+const QbPricing         = lazy(() => import('../pages/super/QbPricing'))
 const QbQuestions       = lazy(() => import('../pages/writer/QbQuestions'))
 const QbQuestionEdit    = lazy(() => import('../pages/writer/QbQuestionEdit'))
 const QbContentList     = lazy(() => import('../pages/writer/QbContentList'))
@@ -134,6 +135,7 @@ export const centralRoutes = [
     { path: 'settings', element: S(PlatformSettings) },
     { path: 'qb/curriculum', element: S(QbCurriculum) },
     { path: 'qb/writers', element: S(QbWriters) },
+    { path: 'qb/pricing', element: S(QbPricing) },   // QB.6
   ]),
   // D65 QB.2: the question-bank writers' panel (writers, moderators and the Super Admin)
   area('/writer', ['content_writer', 'content_moderator', 'super_admin'], [

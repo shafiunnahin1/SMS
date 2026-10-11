@@ -210,6 +210,7 @@ export const MENU = {
     it('qb-questions','/writer/questions','প্রশ্নব্যাংক: প্রশ্ন',{icon:'FileText'}),
     it('qb-concepts','/writer/concepts','প্রশ্নব্যাংক: কনসেপ্ট',{icon:'Sparkles'}),
     it('qb-resources','/writer/resources','প্রশ্নব্যাংক: স্লাইড, বই ও PDF',{icon:'Folder'}),
+    it('qb-pricing','/super-admin/qb/pricing','প্রশ্নব্যাংক: দাম ও নিয়ম',{icon:'Tags'}),
     it('settings','/super-admin/settings','সেটিংস',{icon:'Settings'}),
   ],
 }
