@@ -71,7 +71,7 @@
 | `QB.3` | Questions: core types and the editor | `QB.2` |  | 1 |  |
 | `QB.4` | Questions: the structured types | `QB.3` |  |  |  |
 | `QB.5` | Concepts and resources (slides, books, PDFs) | `QB.4` |  | 20 |  |
-| `QB.6` | Prices and the free / partly-free / discount rule engine | `QB.5` |  |  |  |
+| `QB.6` | Prices and the free / partly-free / discount rule engine | `QB.5` |  | 6 |  |
 | `QB.7` | Teachers: browse, buy with the institution wallet, spending | `QB.6` |  |  |  |
 | `QB.8` | Question papers: builder, PDF, the head teacher's view | `QB.7` |  |  |  |
 | `QB.9` | Student login and portal: practice, concepts, bKash purchases | `QB.8` |  |  |  |
@@ -81,7 +81,7 @@
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 191 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 197 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2522,11 +2522,24 @@ php artisan test   # whole suite stays green
 > **R1 পরিসর (এটিই চূড়ান্ত):** qb_prices (audience institution|student, per question type and item kind, new row per change) and qb_price_rules with every method of question-bank.md §4.3 and its precedence; QbPricingService::quote() with the winning rule; the Super Admin's rule pages with a preview.
 
 
+**R1-এ যে route বানাবেন:**
+```
+GET /super/qb/prices -> QbPricingController@prices [role:super_admin]
+POST /super/qb/prices -> QbPricingController@storePrice [role:super_admin]
+GET /super/qb/price-rules -> QbPricingController@rules [role:super_admin]
+POST /super/qb/price-rules -> QbPricingController@storeRule [role:super_admin]
+PUT /super/qb/price-rules/{id} -> QbPricingController@updateRule [role:super_admin]
+POST /super/qb/price-rules/preview -> QbPricingController@preview [role:super_admin]
+```
+
 **Done When:** Each method and the precedence order are tested to the paisa; ROUND_HALF_UP; never below 0.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
 php artisan test --filter=QbPricing
+npm test && npm run lint:theme
+npx playwright test e2e/qb-pricing.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2861,7 +2874,7 @@ php artisan test   # whole suite stays green
 
 | Release | route |
 |---|---|
-| R1 | 191 |
+| R1 | 197 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
 | R2 | 150 |

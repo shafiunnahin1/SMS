@@ -1265,14 +1265,24 @@
     "docs/modules/question-bank.md"
    ],
    "tables": [],
-   "routes": [],
+   "routes": [
+    "GET /super/qb/prices -> QbPricingController@prices [role:super_admin]",
+    "POST /super/qb/prices -> QbPricingController@storePrice [role:super_admin]",
+    "GET /super/qb/price-rules -> QbPricingController@rules [role:super_admin]",
+    "POST /super/qb/price-rules -> QbPricingController@storeRule [role:super_admin]",
+    "PUT /super/qb/price-rules/{id} -> QbPricingController@updateRule [role:super_admin]",
+    "POST /super/qb/price-rules/preview -> QbPricingController@preview [role:super_admin]"
+   ],
    "routes_excluded": [],
    "tests": [],
    "done_when": "Each method and the precedence order are tested to the paisa; ROUND_HALF_UP; never below 0.",
    "scope_note": "qb_prices (audience institution|student, per question type and item kind, new row per change) and qb_price_rules with every method of question-bank.md §4.3 and its precedence; QbPricingService::quote() with the winning rule; the Super Admin's rule pages with a preview.",
    "blocked": null,
    "verify": [
-    "php artisan test --filter=QbPricing"
+    "php artisan test --filter=QbPricing",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-pricing.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

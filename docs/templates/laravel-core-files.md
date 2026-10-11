@@ -269,7 +269,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
 use App\Http\Controllers\Public\{PublicSiteController, PublicAdmissionController};
 use App\Http\Controllers\SuperAdmin\{TenantPurgeController, SettlementController, PayoutAccountController, SmsSenderApprovalController, OnlinePaymentReportController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbQuestionController, QbResourceController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPricingController, QbQuestionController, QbResourceController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
 use App\Http\Controllers\Academics\{ResultSheetController, DueBlockController, PeriodAttendanceController, SubstitutionController, RoutineBlockController, StudentLeaveController, MarksLockController};
 use App\Http\Controllers\Hr\{LeaveTypeController, LeaveController, StaffController, StaffAttendanceController, SalaryComponentController, SalaryStructureController, SalaryRevisionController, IncrementBatchController, BonusSchemeController, SalaryAdjustmentController, SalaryAdvanceController, PayrollRunController, PayrollItemController, PayAccountController, ProvidentFundController, PayrollReportController, FinalSettlementController};
 use App\Http\Controllers\Teacher\SalaryController as TeacherSalaryController;
@@ -359,6 +359,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/qb/writers',                 [QbWriterController::class, 'index']);
             Route::post('/qb/writers',                [QbWriterController::class, 'store']);
             Route::patch('/qb/writers/{id}',          [QbWriterController::class, 'update']);
+            // QB.6: prices (a change = a new row) and the free / partly-free / discount rules (switched off, never deleted); preview = quote() for sample items
+            Route::get('/qb/prices',                  [QbPricingController::class, 'prices']);
+            Route::post('/qb/prices',                 [QbPricingController::class, 'storePrice']);
+            Route::get('/qb/price-rules',             [QbPricingController::class, 'rules']);
+            Route::post('/qb/price-rules',            [QbPricingController::class, 'storeRule']);
+            Route::put('/qb/price-rules/{id}',        [QbPricingController::class, 'updateRule']);
+            Route::post('/qb/price-rules/preview',    [QbPricingController::class, 'preview']);
             // D65 question bank, task QB.1: the platform curriculum class → subject → chapter → topic ({kind} = class-levels|subjects|chapters|topics)
             Route::get('/qb/curriculum',              [QbCurriculumController::class, 'tree']);
             Route::post('/qb/{kind}',                 [QbCurriculumController::class, 'store']);
