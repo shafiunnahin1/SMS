@@ -859,6 +859,18 @@
   "QbMediaController": {
    "release": "R1",
    "step": "QB.3"
+  },
+  "QbConceptController": {
+   "release": "R1",
+   "step": "QB.5"
+  },
+  "QbResourceController": {
+   "release": "R1",
+   "step": "QB.5"
+  },
+  "QbLibraryController": {
+   "release": "R1",
+   "step": "QB.5"
   }
  },
  "route_exclude": [
@@ -1152,7 +1164,10 @@
    "scope": "qb_concepts (topic-based, same review flow), qb_resources (slide/book/pdf on the private disk, page count, preview pages); viewer pages.",
    "done": "A concept and a PDF go through review and are viewable within their access rules; tests.",
    "verify": [
-    "php artisan test --filter=QbConcept"
+    "php artisan test --filter=\"QbConcept|QbResource|QbLibrary\"",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-concepts.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

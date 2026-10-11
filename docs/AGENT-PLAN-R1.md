@@ -70,7 +70,7 @@
 | `QB.2` | Writers' panel: writers, moderators, revisions, review flow | `QB.1` |  | 14 |  |
 | `QB.3` | Questions: core types and the editor | `QB.2` |  | 1 |  |
 | `QB.4` | Questions: the structured types | `QB.3` |  |  |  |
-| `QB.5` | Concepts and resources (slides, books, PDFs) | `QB.4` |  |  |  |
+| `QB.5` | Concepts and resources (slides, books, PDFs) | `QB.4` |  | 20 |  |
 | `QB.6` | Prices and the free / partly-free / discount rule engine | `QB.5` |  |  |  |
 | `QB.7` | Teachers: browse, buy with the institution wallet, spending | `QB.6` |  |  |  |
 | `QB.8` | Question papers: builder, PDF, the head teacher's view | `QB.7` |  |  |  |
@@ -81,7 +81,7 @@
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 171 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 191 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2477,11 +2477,38 @@ php artisan test   # whole suite stays green
 > **R1 পরিসর (এটিই চূড়ান্ত):** qb_concepts (topic-based, same review flow), qb_resources (slide/book/pdf on the private disk, page count, preview pages); viewer pages.
 
 
+**R1-এ যে route বানাবেন:**
+```
+GET /writer/concepts -> QbConceptController@index [role:content_writer,content_moderator,super_admin]
+POST /writer/concepts -> QbConceptController@store [role:content_writer,super_admin]
+GET /writer/concepts/{id} -> QbConceptController@show [role:content_writer,content_moderator,super_admin]
+PUT /writer/concepts/{id} -> QbConceptController@update [role:content_writer,super_admin]
+POST /writer/concepts/{id}/submit -> QbConceptController@submit [role:content_writer,super_admin]
+POST /writer/concepts/{id}/publish -> QbConceptController@publish [role:content_moderator,super_admin]
+POST /writer/concepts/{id}/reject -> QbConceptController@reject [role:content_moderator,super_admin]
+POST /writer/resource-files -> QbResourceController@upload [role:content_writer,super_admin]
+GET /writer/resources -> QbResourceController@index [role:content_writer,content_moderator,super_admin]
+POST /writer/resources -> QbResourceController@store [role:content_writer,super_admin]
+GET /writer/resources/{id} -> QbResourceController@show [role:content_writer,content_moderator,super_admin]
+PUT /writer/resources/{id} -> QbResourceController@update [role:content_writer,super_admin]
+POST /writer/resources/{id}/submit -> QbResourceController@submit [role:content_writer,super_admin]
+POST /writer/resources/{id}/publish -> QbResourceController@publish [role:content_moderator,super_admin]
+POST /writer/resources/{id}/reject -> QbResourceController@reject [role:content_moderator,super_admin]
+GET /question-bank/curriculum -> QbLibraryController@curriculum [role:admin,teacher]
+GET /question-bank/concepts -> QbLibraryController@concepts [role:admin,teacher]
+GET /question-bank/concepts/{id} -> QbLibraryController@concept [role:admin,teacher]
+GET /question-bank/resources -> QbLibraryController@resources [role:admin,teacher]
+GET /question-bank/resources/{id} -> QbLibraryController@resource [role:admin,teacher]
+```
+
 **Done When:** A concept and a PDF go through review and are viewable within their access rules; tests.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
-php artisan test --filter=QbConcept
+php artisan test --filter="QbConcept|QbResource|QbLibrary"
+npm test && npm run lint:theme
+npx playwright test e2e/qb-concepts.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2834,7 +2861,7 @@ php artisan test   # whole suite stays green
 
 | Release | route |
 |---|---|
-| R1 | 171 |
+| R1 | 191 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
 | R2 | 150 |

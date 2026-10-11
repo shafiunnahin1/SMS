@@ -1223,14 +1223,38 @@
     "docs/modules/question-bank.md"
    ],
    "tables": [],
-   "routes": [],
+   "routes": [
+    "GET /writer/concepts -> QbConceptController@index [role:content_writer,content_moderator,super_admin]",
+    "POST /writer/concepts -> QbConceptController@store [role:content_writer,super_admin]",
+    "GET /writer/concepts/{id} -> QbConceptController@show [role:content_writer,content_moderator,super_admin]",
+    "PUT /writer/concepts/{id} -> QbConceptController@update [role:content_writer,super_admin]",
+    "POST /writer/concepts/{id}/submit -> QbConceptController@submit [role:content_writer,super_admin]",
+    "POST /writer/concepts/{id}/publish -> QbConceptController@publish [role:content_moderator,super_admin]",
+    "POST /writer/concepts/{id}/reject -> QbConceptController@reject [role:content_moderator,super_admin]",
+    "POST /writer/resource-files -> QbResourceController@upload [role:content_writer,super_admin]",
+    "GET /writer/resources -> QbResourceController@index [role:content_writer,content_moderator,super_admin]",
+    "POST /writer/resources -> QbResourceController@store [role:content_writer,super_admin]",
+    "GET /writer/resources/{id} -> QbResourceController@show [role:content_writer,content_moderator,super_admin]",
+    "PUT /writer/resources/{id} -> QbResourceController@update [role:content_writer,super_admin]",
+    "POST /writer/resources/{id}/submit -> QbResourceController@submit [role:content_writer,super_admin]",
+    "POST /writer/resources/{id}/publish -> QbResourceController@publish [role:content_moderator,super_admin]",
+    "POST /writer/resources/{id}/reject -> QbResourceController@reject [role:content_moderator,super_admin]",
+    "GET /question-bank/curriculum -> QbLibraryController@curriculum [role:admin,teacher]",
+    "GET /question-bank/concepts -> QbLibraryController@concepts [role:admin,teacher]",
+    "GET /question-bank/concepts/{id} -> QbLibraryController@concept [role:admin,teacher]",
+    "GET /question-bank/resources -> QbLibraryController@resources [role:admin,teacher]",
+    "GET /question-bank/resources/{id} -> QbLibraryController@resource [role:admin,teacher]"
+   ],
    "routes_excluded": [],
    "tests": [],
    "done_when": "A concept and a PDF go through review and are viewable within their access rules; tests.",
    "scope_note": "qb_concepts (topic-based, same review flow), qb_resources (slide/book/pdf on the private disk, page count, preview pages); viewer pages.",
    "blocked": null,
    "verify": [
-    "php artisan test --filter=QbConcept"
+    "php artisan test --filter=\"QbConcept|QbResource|QbLibrary\"",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-concepts.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

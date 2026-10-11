@@ -269,7 +269,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
 use App\Http\Controllers\Public\{PublicSiteController, PublicAdmissionController};
 use App\Http\Controllers\SuperAdmin\{TenantPurgeController, SettlementController, PayoutAccountController, SmsSenderApprovalController, OnlinePaymentReportController};
-use App\Http\Controllers\QuestionBank\{QbCurriculumController, QbMediaController, QbQuestionController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbQuestionController, QbResourceController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
 use App\Http\Controllers\Academics\{ResultSheetController, DueBlockController, PeriodAttendanceController, SubstitutionController, RoutineBlockController, StudentLeaveController, MarksLockController};
 use App\Http\Controllers\Hr\{LeaveTypeController, LeaveController, StaffController, StaffAttendanceController, SalaryComponentController, SalaryStructureController, SalaryRevisionController, IncrementBatchController, BonusSchemeController, SalaryAdjustmentController, SalaryAdvanceController, PayrollRunController, PayrollItemController, PayAccountController, ProvidentFundController, PayrollReportController, FinalSettlementController};
 use App\Http\Controllers\Teacher\SalaryController as TeacherSalaryController;
@@ -426,6 +426,22 @@ Route::prefix('v1')->group(function () {
             Route::post('/questions/{id}/submit',     [QbQuestionController::class, 'submit'])->middleware('role:content_writer,super_admin');        // draft | rejected -> review
             Route::post('/questions/{id}/publish',    [QbQuestionController::class, 'publish'])->middleware('role:content_moderator,super_admin');
             Route::post('/questions/{id}/reject',     [QbQuestionController::class, 'reject'])->middleware('role:content_moderator,super_admin');   // {reason}
+            // QB.5: topic concepts and resources (slide / book / pdf as a PDF) - the same draft → review → published / rejected flow as a question
+            Route::get('/concepts',                   [QbConceptController::class, 'index']);
+            Route::post('/concepts',                  [QbConceptController::class, 'store'])->middleware('role:content_writer,super_admin');
+            Route::get('/concepts/{id}',              [QbConceptController::class, 'show']);
+            Route::put('/concepts/{id}',              [QbConceptController::class, 'update'])->middleware('role:content_writer,super_admin');
+            Route::post('/concepts/{id}/submit',      [QbConceptController::class, 'submit'])->middleware('role:content_writer,super_admin');
+            Route::post('/concepts/{id}/publish',     [QbConceptController::class, 'publish'])->middleware('role:content_moderator,super_admin');
+            Route::post('/concepts/{id}/reject',      [QbConceptController::class, 'reject'])->middleware('role:content_moderator,super_admin');
+            Route::post('/resource-files',            [QbResourceController::class, 'upload'])->middleware('role:content_writer,super_admin');   // a PDF on the private disk (platform/qb/...)
+            Route::get('/resources',                  [QbResourceController::class, 'index']);
+            Route::post('/resources',                 [QbResourceController::class, 'store'])->middleware('role:content_writer,super_admin');
+            Route::get('/resources/{id}',             [QbResourceController::class, 'show']);
+            Route::put('/resources/{id}',             [QbResourceController::class, 'update'])->middleware('role:content_writer,super_admin');
+            Route::post('/resources/{id}/submit',     [QbResourceController::class, 'submit'])->middleware('role:content_writer,super_admin');
+            Route::post('/resources/{id}/publish',    [QbResourceController::class, 'publish'])->middleware('role:content_moderator,super_admin');
+            Route::post('/resources/{id}/reject',     [QbResourceController::class, 'reject'])->middleware('role:content_moderator,super_admin');
         });
 
         // Super Admin shares these two with tenants (token-scoped to the user, no tenant data)
@@ -671,6 +687,15 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware(['role:admin', 'module:question_bank'])->group(function () {
             Route::get('/qb/class-levels',           [QbCurriculumController::class, 'classLevels']);   // QB.1: the admin links a program to a platform class (programs.qb_class_level_id)
+        });
+        // QB.5: an institution's teachers read the published concepts and resources; a concept's body and a resource's file only once
+        // the institution has it (qb_unlocks); a resource's preview pages and page count always. Buying comes in QB.7, prices in QB.6.
+        Route::middleware(['role:admin,teacher', 'module:question_bank'])->prefix('question-bank')->group(function () {
+            Route::get('/curriculum',                [QbLibraryController::class, 'curriculum']);
+            Route::get('/concepts',                  [QbLibraryController::class, 'concepts']);
+            Route::get('/concepts/{id}',             [QbLibraryController::class, 'concept']);
+            Route::get('/resources',                 [QbLibraryController::class, 'resources']);
+            Route::get('/resources/{id}',            [QbLibraryController::class, 'resource']);
         });
         Route::middleware(['role:admin,teacher', 'module:exams'])->group(function () {
             Route::post('/exams/{id}/subjects/{subjectId}/submit', [MarksLockController::class, 'submit']);
