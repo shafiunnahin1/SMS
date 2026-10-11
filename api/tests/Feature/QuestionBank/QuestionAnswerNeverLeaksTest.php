@@ -23,6 +23,7 @@ class QuestionAnswerNeverLeaksTest extends TestCase
         'app/Http/Controllers/QuestionBank/QbCurriculumController.php' => 'only asks whether a curriculum node is in use',
         'app/Http/Controllers/QuestionBank/QbWriterController.php' => "counts a writer's questions for the Super Admin",
         'app/Http/Resources/QbQuestionPublicResource.php' => 'the public shape itself',
+        'app/Services/QbPurchaseService.php' => "QB.7: finds the item to price and unlock; returns only the unlock and amounts",
         'app/Services/QbPricingService.php' => "QB.6: reads a question's type, place and classes to price it; returns only amounts",
         'app/Http/Controllers/QuestionBank/QbPricingController.php' => "QB.6: the Super Admin's preview finds sample questions by id; returns only quotes",
     ];

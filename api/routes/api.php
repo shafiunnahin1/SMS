@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPricingController, QbQuestionController, QbResourceController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -225,6 +225,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/concepts/{id}',                  [QbLibraryController::class, 'concept'])->whereNumber('id');
             Route::get('/resources',                      [QbLibraryController::class, 'resources']);
             Route::get('/resources/{id}',                 [QbLibraryController::class, 'resource'])->whereNumber('id');
+            // QB.7: questions free to read (answers locked); buying from the institution wallet, once per institution (D66)
+            Route::get('/questions',                      [QbPurchaseController::class, 'questions']);
+            Route::get('/questions/{id}',                 [QbPurchaseController::class, 'question'])->whereNumber('id');
+            Route::get('/quote',                          [QbPurchaseController::class, 'quote']);
+            Route::post('/buy',                           [QbPurchaseController::class, 'buy']);
+            Route::get('/spending',                       [QbPurchaseController::class, 'spending'])->middleware('role:admin');
+            Route::put('/caps',                           [QbPurchaseController::class, 'caps'])->middleware('role:admin');
         });
 
         // ── SMS (Step 4.6): log and balance; sending happens from attendance / fee collection through SendSmsJob ──

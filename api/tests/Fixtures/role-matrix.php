@@ -172,6 +172,12 @@ return [
     'GET api/v1/question-bank/concepts/{id}' => ['admin', 'teacher'],
     'GET api/v1/question-bank/resources' => ['admin', 'teacher'],
     'GET api/v1/question-bank/resources/{id}' => ['admin', 'teacher'],
+    'GET api/v1/question-bank/questions' => ['admin', 'teacher'],                 // QB.7: browse and buy from the institution wallet
+    'GET api/v1/question-bank/questions/{id}' => ['admin', 'teacher'],
+    'GET api/v1/question-bank/quote' => ['admin', 'teacher'],
+    'POST api/v1/question-bank/buy' => ['admin', 'teacher'],
+    'GET api/v1/question-bank/spending' => ['admin'],
+    'PUT api/v1/question-bank/caps' => ['admin'],
     'GET api/v1/super/tenant-purge/candidates' => ['super_admin'],
     'POST api/v1/super/tenant-purge/{institutionId}/dry-run' => ['super_admin'],
     'POST api/v1/super/tenant-purge/{institutionId}/execute' => ['super_admin'],

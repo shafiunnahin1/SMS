@@ -64,6 +64,9 @@ return [
     'qb_rule_class_only'    => '"Free for a class" is a rule for a class.',   // QB.6
     'qb_rule_value'         => 'This method needs a different value (none for free, a whole number N, a percent up to 100, or taka).',   // QB.6
     'qb_no_such_item'       => 'One of the sample items does not exist.',   // QB.6
+    'qb_not_for_sale'       => 'This item has no price yet, so it cannot be bought.',   // QB.7
+    'qb_teacher_cap_reached' => 'Your monthly question-bank limit is reached - ask the head teacher to raise it.',   // QB.7
+    'wallet_balance_too_low' => 'The institution wallet does not have enough taka - recharge it first.',   // QB.7
     'enrollment_not_active' => 'This enrollment is no longer active.',
     'kind_not_available' => 'This kind of import is not available yet.',
     'bad_encoding' => 'The file is not UTF-8. Save it from Excel as "CSV UTF-8" or upload .xlsx.',

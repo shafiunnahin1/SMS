@@ -109,6 +109,7 @@ class TenantIsolationTest extends TestCase
             // another institution's unlock opens nothing here
             'GET api/v1/question-bank/concepts/{id}'       => null,
             'GET api/v1/question-bank/resources/{id}'      => null,
+            'GET api/v1/question-bank/questions/{id}'      => null,   // QB.7: a catalogue row too; QbPurchaseTest: another institution's purchase opens nothing
         ];
     }
 
