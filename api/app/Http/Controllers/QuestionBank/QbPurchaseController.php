@@ -71,13 +71,13 @@ class QbPurchaseController extends Controller
         $to = isset($f['to']) ? \Carbon\Carbon::parse($f['to'])->endOfDay() : now()->endOfDay();
         $rows = QbUnlock::whereBetween('created_at', [$from, $to])->get(['unlocked_by', 'item_type', 'price']);
         $users = User::whereIn('id', $rows->pluck('unlocked_by')->unique())->get(['id', 'name', 'role'])->keyBy('id');
-        $teachers = Teacher::whereIn('user_id', $users->keys())->pluck('qb_monthly_cap', 'user_id');
+        $teachers = Teacher::whereIn('user_id', $users->keys())->get(['id', 'user_id', 'qb_monthly_cap'])->keyBy('user_id');
         $i = Tenancy::current();
         $data = $rows->groupBy('unlocked_by')->map(fn ($g, $uid) => [
             'user_id' => (int) $uid, 'name' => $users[$uid]->name ?? null, 'role' => $users[$uid]->role ?? null,
             'total' => Money::format($g->sum(fn ($r) => Money::toPaisa((string) $r->price))), 'count' => $g->count(),
             'by_type' => $g->groupBy('item_type')->map(fn ($t) => ['count' => $t->count(), 'total' => Money::format($t->sum(fn ($r) => Money::toPaisa((string) $r->price)))]),
-            'cap' => $teachers[$uid] ?? null,
+            'teacher_id' => $teachers[$uid]->id ?? null, 'cap' => $teachers[$uid]->qb_monthly_cap ?? null,
         ])->sortByDesc(fn ($r) => Money::toPaisa($r['total']))->values();
         return response()->json(['success' => true, 'data' => $data, 'meta' => ['from' => $from->toDateString(), 'to' => $to->toDateString(),
             'default_cap' => ($i->settings ?? [])['qb_teacher_monthly_cap'] ?? null,

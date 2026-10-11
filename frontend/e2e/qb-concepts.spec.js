@@ -85,10 +85,11 @@ test('QB.5 a concept and a PDF go through review and show locked in the library'
   await school.locator('select[name="subject"]').selectOption({ label: `বিষয়-${tag}` })
   await school.locator('select[name="chapter"]').selectOption({ label: `অধ্যায়-${tag}` })
   await school.locator('select[name="topic"]').selectOption({ label: `টপিক-${tag}` })
+  await school.getByRole('tab').nth(1).click()                                    // QB.7: the library opens on questions
   await school.locator('[data-testid="qb-library-list"]').getByText(`বেগ-${tag}`).click()
   await expect(school.locator('[data-testid="qb-locked"]')).toBeVisible()
   await expect(school.locator('[data-testid="qb-library-item"]')).not.toContainText('সরণ')
-  await school.getByRole('tab').nth(1).click()
+  await school.getByRole('tab').nth(2).click()
   await school.locator('[data-testid="qb-library-list"]').getByText(`গতির বই-${tag}`).click()
   await expect(school.locator('[data-testid="qb-library-item"] img')).toHaveCount(1)
   await expect(school.locator('[data-testid="qb-locked"]')).toBeVisible()

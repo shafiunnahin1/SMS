@@ -123,7 +123,7 @@ class QbPurchaseTest extends TestCase
         $report = $this->api('GET', $host, 'question-bank/spending', $admin)->assertOk()->json();
         $this->assertSame(['1.50', '0.60'], [$report['meta']['total'], $report['meta']['default_cap']]);
         $mine = collect($report['data'])->firstWhere('user_id', $t->id);
-        $this->assertSame(['1.00', 2, '1.00'], [$mine['total'], $mine['count'], $mine['cap']]);
+        $this->assertSame(['1.00', 2, '1.00', $row->id], [$mine['total'], $mine['count'], $mine['cap'], $mine['teacher_id']]);
         $this->api('GET', $host, 'question-bank/spending', $t)->assertForbidden();
     }
 

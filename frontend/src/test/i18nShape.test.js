@@ -16,7 +16,7 @@ describe('i18n files', () => {
     const files = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap(e => (e.isDirectory() ? files(`${dir}/${e.name}`) : [`${dir}/${e.name}`]))
     const keys = new Set()
     for (const f of files('src').filter(f => /\.jsx?$/.test(f) && !f.includes('/test/'))) {
-      for (const m of readFileSync(f, 'utf8').matchAll(/\bt\(\s*'(qbp?\.[a-z_]+(?:\.[a-z_]+)*)'/g)) keys.add(m[1])
+      for (const m of readFileSync(f, 'utf8').matchAll(/\bt\(\s*'(qb[a-z]?\.[a-z_]+(?:\.[a-z_]+)*)'/g)) keys.add(m[1])
     }
     expect(keys.size).toBeGreaterThan(50)
     const missing = [...keys].filter(k => !['bn', 'en'].every(l => i18n.exists(k, { lng: l, fallbackLng: false })))

@@ -930,6 +930,35 @@
     "amount_off": "Taka",
     "fixed_price": "Taka"
    }
+  },
+  "qbb": {
+   "buy": "Buy",
+   "see_answer": "See the answer (৳{{price}})",
+   "confirm_title": "Buy for ৳{{price}} from the institution wallet?",
+   "confirm_hint": "Wallet balance: ৳{{balance}}. Every teacher of the institution can use it afterwards.",
+   "bought": "Bought for ৳{{price}}.",
+   "already": "Your institution already has it.",
+   "failed": "Could not buy.",
+   "not_for_sale": "Not for sale yet."
+  },
+  "qbs": {
+   "title": "Question bank spending",
+   "person": "Who",
+   "total": "Total",
+   "items": "Items",
+   "cap": "Monthly cap (৳)",
+   "default": "default",
+   "no_cap": "no cap",
+   "from": "From",
+   "to": "To",
+   "default_cap": "Default monthly cap per teacher (৳)",
+   "default_cap_hint": "Empty = no cap.",
+   "none": "Nothing bought in this period.",
+   "types": {
+    "question": "question",
+    "concept": "concept",
+    "resource": "resource"
+   }
   }
  },
  "nav": {
@@ -975,6 +1004,7 @@
   "স্লাইড, বই ও PDF যাচাই": "Review slides, books and PDFs",
   "প্রশ্নব্যাংক: কনসেপ্ট": "Question bank: concepts",
   "প্রশ্নব্যাংক: স্লাইড, বই ও PDF": "Question bank: slides, books and PDFs",
-  "প্রশ্নব্যাংক: দাম ও নিয়ম": "Question bank: prices and rules"
+  "প্রশ্নব্যাংক: দাম ও নিয়ম": "Question bank: prices and rules",
+  "প্রশ্নব্যাংকের খরচ": "Question bank spending"
  }
 }

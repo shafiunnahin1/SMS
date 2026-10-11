@@ -53,6 +53,7 @@ const QbContentList     = lazy(() => import('../pages/writer/QbContentList'))
 const QbConceptEdit     = lazy(() => import('../pages/writer/QbConceptEdit'))
 const QbResourceEdit    = lazy(() => import('../pages/writer/QbResourceEdit'))
 const QbLibrary         = lazy(() => import('../pages/qb/QbLibrary'))
+const QbSpending        = lazy(() => import('../pages/qb/QbSpending'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
@@ -83,6 +84,7 @@ export const tenantRoutes = [
   ...authRoutes,
   area('/admin', 'admin', [
     { path: 'question-bank', element: S(QbLibrary) },   // QB.5 (D65): concepts and resources
+    { path: 'question-bank/spending', element: S(QbSpending) },   // QB.7
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'students', element: S(StudentList) },
     { path: 'students/add', element: S(StudentAdd) },
