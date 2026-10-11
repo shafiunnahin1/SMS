@@ -68,7 +68,7 @@
 | `QB.0` | Question bank foundation: schema, module keys, roles, catalogue rule | `A` | 36 |  |  |
 | `QB.1` | Curriculum: class → subject → chapter → topic | `QB.0` |  | 5 |  |
 | `QB.2` | Writers' panel: writers, moderators, revisions, review flow | `QB.1` |  | 14 |  |
-| `QB.3` | Questions: core types and the editor | `QB.2` |  |  |  |
+| `QB.3` | Questions: core types and the editor | `QB.2` |  | 1 |  |
 | `QB.4` | Questions: the structured types | `QB.3` |  |  |  |
 | `QB.5` | Concepts and resources (slides, books, PDFs) | `QB.4` |  |  |  |
 | `QB.6` | Prices and the free / partly-free / discount rule engine | `QB.5` |  |  |  |
@@ -81,7 +81,7 @@
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 170 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 171 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2430,11 +2430,19 @@ php artisan test   # whole suite stays green
 > **R1 পরিসর (এটিই চূড়ান্ত):** qb_question_types (qbank's slugs), qb_questions, options, creative parts, occurrences, media: API + React editor for mcq, creative, short, true_false, fill_in_the_blank, one_word_answer; Bengali/English; LaTeX math with `mathlive` (D66); images on the private disk; preview.
 
 
+**R1-এ যে route বানাবেন:**
+```
+POST /writer/media -> QbMediaController@store [role:content_writer,super_admin]
+```
+
 **Done When:** A writer saves each core type with math and an image and sees the preview; answers never leak in any API response without an unlock (QuestionAnswerNeverLeaksTest).
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
-php artisan test --filter=QbQuestion
+php artisan test --filter="QbQuestion|QuestionAnswerNeverLeaks"
+npm test && npm run lint:theme
+npx playwright test e2e/qb-editor.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2823,7 +2831,7 @@ php artisan test   # whole suite stays green
 
 | Release | route |
 |---|---|
-| R1 | 170 |
+| R1 | 171 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
 | R2 | 150 |

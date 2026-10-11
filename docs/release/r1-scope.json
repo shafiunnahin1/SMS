@@ -855,6 +855,10 @@
   "QbQuestionController": {
    "release": "R1",
    "step": "QB.2"
+  },
+  "QbMediaController": {
+   "release": "R1",
+   "step": "QB.3"
   }
  },
  "route_exclude": [
@@ -1114,7 +1118,10 @@
    "scope": "qb_question_types (qbank's slugs), qb_questions, options, creative parts, occurrences, media: API + React editor for mcq, creative, short, true_false, fill_in_the_blank, one_word_answer; Bengali/English; LaTeX math with `mathlive` (D66); images on the private disk; preview.",
    "done": "A writer saves each core type with math and an image and sees the preview; answers never leak in any API response without an unlock (QuestionAnswerNeverLeaksTest).",
    "verify": [
-    "php artisan test --filter=QbQuestion"
+    "php artisan test --filter=\"QbQuestion|QuestionAnswerNeverLeaks\"",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-editor.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

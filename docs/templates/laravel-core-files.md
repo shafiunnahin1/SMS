@@ -269,7 +269,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
 use App\Http\Controllers\Public\{PublicSiteController, PublicAdmissionController};
 use App\Http\Controllers\SuperAdmin\{TenantPurgeController, SettlementController, PayoutAccountController, SmsSenderApprovalController, OnlinePaymentReportController};
-use App\Http\Controllers\QuestionBank\{QbCurriculumController, QbQuestionController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
+use App\Http\Controllers\QuestionBank\{QbCurriculumController, QbMediaController, QbQuestionController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
 use App\Http\Controllers\Academics\{ResultSheetController, DueBlockController, PeriodAttendanceController, SubstitutionController, RoutineBlockController, StudentLeaveController, MarksLockController};
 use App\Http\Controllers\Hr\{LeaveTypeController, LeaveController, StaffController, StaffAttendanceController, SalaryComponentController, SalaryStructureController, SalaryRevisionController, IncrementBatchController, BonusSchemeController, SalaryAdjustmentController, SalaryAdvanceController, PayrollRunController, PayrollItemController, PayAccountController, ProvidentFundController, PayrollReportController, FinalSettlementController};
 use App\Http\Controllers\Teacher\SalaryController as TeacherSalaryController;
@@ -422,6 +422,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/questions/{id}',             [QbQuestionController::class, 'show']);
             Route::put('/questions/{id}',             [QbQuestionController::class, 'update'])->middleware('role:content_writer,super_admin');        // every save = a qb_question_revisions row
             Route::get('/questions/{id}/revisions',   [QbQuestionController::class, 'revisions']);
+            Route::post('/media',                     [QbMediaController::class, 'store'])->middleware('role:content_writer,super_admin');   // QB.3: an image on the platform's private disk (platform/qb/...)
             Route::post('/questions/{id}/submit',     [QbQuestionController::class, 'submit'])->middleware('role:content_writer,super_admin');        // draft | rejected -> review
             Route::post('/questions/{id}/publish',    [QbQuestionController::class, 'publish'])->middleware('role:content_moderator,super_admin');
             Route::post('/questions/{id}/reject',     [QbQuestionController::class, 'reject'])->middleware('role:content_moderator,super_admin');   // {reason}
