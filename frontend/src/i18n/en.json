@@ -959,6 +959,39 @@
     "concept": "concept",
     "resource": "resource"
    }
+  },
+  "qbpp": {
+   "papers": "Question papers",
+   "new": "New question paper",
+   "none": "No question papers yet.",
+   "title": "Title",
+   "author": "Made by",
+   "total_marks": "Full marks",
+   "status": {
+    "draft": "Draft",
+    "final": "Final"
+   },
+   "exam_name": "Exam",
+   "duration": "Time (minutes)",
+   "sets": "Sets",
+   "one_set": "One set",
+   "two_sets": "Two sets (A, B)",
+   "instructions": "Instructions",
+   "section_title": "Section title",
+   "section_instruction": "Section instruction",
+   "section_n": "Section {{n}}",
+   "marks": "Marks",
+   "add_section": "Add a section",
+   "finalize": "Make final",
+   "print_set": "Print set {{set}}",
+   "print_answers": "Set {{set}} with answers",
+   "add_questions": "Add questions",
+   "into_section": "Into section",
+   "owned": "bought",
+   "not_owned": "not bought",
+   "add": "Add",
+   "unbought_title": "{{n}} questions are not bought yet - buy them for ৳{{total}}?",
+   "unbought_hint": "From the institution wallet; every teacher can use them afterwards. Then the paper is saved."
   }
  },
  "nav": {
@@ -1005,6 +1038,7 @@
   "প্রশ্নব্যাংক: কনসেপ্ট": "Question bank: concepts",
   "প্রশ্নব্যাংক: স্লাইড, বই ও PDF": "Question bank: slides, books and PDFs",
   "প্রশ্নব্যাংক: দাম ও নিয়ম": "Question bank: prices and rules",
-  "প্রশ্নব্যাংকের খরচ": "Question bank spending"
+  "প্রশ্নব্যাংকের খরচ": "Question bank spending",
+  "প্রশ্নপত্র": "Question papers"
  }
 }

@@ -54,6 +54,8 @@ const QbConceptEdit     = lazy(() => import('../pages/writer/QbConceptEdit'))
 const QbResourceEdit    = lazy(() => import('../pages/writer/QbResourceEdit'))
 const QbLibrary         = lazy(() => import('../pages/qb/QbLibrary'))
 const QbSpending        = lazy(() => import('../pages/qb/QbSpending'))
+const QbPapers          = lazy(() => import('../pages/qb/QbPapers'))
+const QbPaperEdit       = lazy(() => import('../pages/qb/QbPaperEdit'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
@@ -85,6 +87,8 @@ export const tenantRoutes = [
   area('/admin', 'admin', [
     { path: 'question-bank', element: S(QbLibrary) },   // QB.5 (D65): concepts and resources
     { path: 'question-bank/spending', element: S(QbSpending) },   // QB.7
+    { path: 'question-bank/papers', element: S(QbPapers) },   // QB.8
+    { path: 'question-bank/papers/:id', element: S(QbPaperEdit) },
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'students', element: S(StudentList) },
     { path: 'students/add', element: S(StudentAdd) },
@@ -114,7 +118,7 @@ export const tenantRoutes = [
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'reports', element: S(Reports) },
   ]),
-  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbLibrary) }]),
+  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }]),
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },
     { path: 'fees', element: S(ParentFees) },
