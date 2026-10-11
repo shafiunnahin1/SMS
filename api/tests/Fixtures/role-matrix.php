@@ -134,6 +134,12 @@ return [
     'GET api/v1/super/qb/writers' => ['super_admin'],                          // QB.2 (D65)
     'POST api/v1/super/qb/writers' => ['super_admin'],
     'PATCH api/v1/super/qb/writers/{id}' => ['super_admin'],
+    'GET api/v1/super/qb/prices' => ['super_admin'],                           // QB.6 (D66): prices and rules
+    'POST api/v1/super/qb/prices' => ['super_admin'],
+    'GET api/v1/super/qb/price-rules' => ['super_admin'],
+    'POST api/v1/super/qb/price-rules' => ['super_admin'],
+    'POST api/v1/super/qb/price-rules/preview' => ['super_admin'],
+    'PUT api/v1/super/qb/price-rules/{id}' => ['super_admin'],
     'PATCH api/v1/writer/change-password' => ['content_writer', 'content_moderator', 'super_admin'],       // QB.2: the writers' panel (central host)
     'GET api/v1/writer/curriculum' => ['content_writer', 'content_moderator', 'super_admin'],
     'GET api/v1/writer/question-types' => ['content_writer', 'content_moderator', 'super_admin'],

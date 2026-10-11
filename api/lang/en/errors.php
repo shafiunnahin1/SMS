@@ -60,6 +60,10 @@ return [
     'qb_not_a_pdf'          => 'The file must be a PDF.',   // QB.5
     'qb_one_place'          => 'File it under exactly one of subject, chapter or topic.',   // QB.5
     'qb_preview_pictures'   => 'Preview pages must be pictures.',   // QB.5
+    'qb_rule_target'        => 'Pick what the rule is for (an item as question:12, a kind as pdf, otherwise the number; nothing for "all").',   // QB.6
+    'qb_rule_class_only'    => '"Free for a class" is a rule for a class.',   // QB.6
+    'qb_rule_value'         => 'This method needs a different value (none for free, a whole number N, a percent up to 100, or taka).',   // QB.6
+    'qb_no_such_item'       => 'One of the sample items does not exist.',   // QB.6
     'enrollment_not_active' => 'This enrollment is no longer active.',
     'kind_not_available' => 'This kind of import is not available yet.',
     'bad_encoding' => 'The file is not UTF-8. Save it from Excel as "CSV UTF-8" or upload .xlsx.',

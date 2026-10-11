@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbQuestionController, QbResourceController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPricingController, QbQuestionController, QbResourceController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -57,6 +57,13 @@ Route::prefix('v1')->group(function () {
         Route::get('/qb/writers',                     [QbWriterController::class, 'index']);
         Route::post('/qb/writers',                    [QbWriterController::class, 'store']);
         Route::patch('/qb/writers/{id}',              [QbWriterController::class, 'update'])->whereNumber('id');
+        // QB.6 (D66): prices (a change = a new row) and the free / partly-free / discount rules (switched off, never deleted)
+        Route::get('/qb/prices',                      [QbPricingController::class, 'prices']);
+        Route::post('/qb/prices',                     [QbPricingController::class, 'storePrice']);
+        Route::get('/qb/price-rules',                 [QbPricingController::class, 'rules']);
+        Route::post('/qb/price-rules/preview',        [QbPricingController::class, 'preview']);
+        Route::post('/qb/price-rules',                [QbPricingController::class, 'storeRule']);
+        Route::put('/qb/price-rules/{id}',            [QbPricingController::class, 'updateRule'])->whereNumber('id');
         // QB.1 (D65): the question-bank curriculum class → subject → chapter → topic
         Route::get('/qb/curriculum',                  [QbCurriculumController::class, 'tree']);
         Route::post('/qb/{kind}',                     [QbCurriculumController::class, 'store']);
