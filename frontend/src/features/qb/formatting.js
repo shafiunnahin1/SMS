@@ -140,23 +140,29 @@ export function clearFormat(value, start, end) {
 }
 
 /** A qmx table: rows x columns, the first row as a header if asked; inserted at the cursor */
-export function insertTable(value, start, end, { rows = 2, cols = 2, header = true, style = 'grid', caption = '', cells } = {}) {
+export function insertTable(value, start, end, { rows = 2, cols = 2, header = true, headerColumn = false, striped = false, style = 'grid',
+  width = '100', align = 'center', spacing = 'normal', caption = '', cells } = {}) {
   const r = Math.min(Math.max(Number(rows) || 1, 1), 20)
   const c = Math.min(Math.max(Number(cols) || 1, 1), 10)
   const source = Array.isArray(cells) ? cells : createTableCells(r, c)
   const body = Array.from({ length: r }, (_, row) => `<tr>${Array.from({ length: c }, (_, col) => {
     const current = source[row]?.[col] ?? { text: '' }
     if (current.mergedInto) return ''
-    const tag = header && row === 0 ? 'th' : 'td'
+    const tag = (header && row === 0) || (headerColumn && col === 0) ? 'th' : 'td'
     const colspan = Number.isInteger(current.colspan) && current.colspan >= 2 && current.colspan <= 20 ? ` colspan="${current.colspan}"` : ''
     const rowspan = Number.isInteger(current.rowspan) && current.rowspan >= 2 && current.rowspan <= 20 ? ` rowspan="${current.rowspan}"` : ''
     const text = escapeText(current.text).replace(/\r?\n/g, '<br>')
     return `<${tag} dir="auto"${colspan}${rowspan}>${text}</${tag}>`
   }).join('')}</tr>`).join('')
   const kind = ['grid', 'horizontal', 'none'].includes(style) ? style : 'grid'
+  const tableWidth = ['auto', '50', '75', '100'].includes(String(width)) ? String(width) : '100'
+  const tableAlign = ['left', 'center', 'right'].includes(align) ? align : 'center'
+  const cellSpacing = ['compact', 'normal', 'comfortable'].includes(spacing) ? spacing : 'normal'
+  const classes = ['qmx-table', `qmx-table-${kind}`, `qmx-table-width-${tableWidth}`, `qmx-table-align-${tableAlign}`, `qmx-table-${cellSpacing}`,
+    striped ? 'qmx-table-striped' : null].filter(Boolean).join(' ')
   const title = String(caption).trim()
   const captionNode = title ? `<caption>${escapeText(title)}</caption>` : ''
-  return splice(value, start, end, `<table class="qmx-table qmx-table-${kind} qmx-table-width-100">${captionNode}<tbody>${body}</tbody></table>`)
+  return splice(value, start, end, `<table class="${classes}">${captionNode}<tbody>${body}</tbody></table>`)
 }
 
 /** Text at the cursor (maths from the formula dialog, for one) */

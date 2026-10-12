@@ -1165,12 +1165,19 @@
     "picture_width": "ছবির প্রস্থ",
     "picture_align": "ছবির অবস্থান",
    "table_style": "বর্ডার",
+    "table_width": "সারণির প্রস্থ",
+    "table_widths": { "auto": "লেখা অনুযায়ী", "50": "৫০%", "75": "৭৫%", "100": "১০০%" },
+    "table_align": "সারণির অবস্থান",
+    "cell_spacing": "ঘরের ফাঁক",
+    "cell_spacings": { "compact": "কম", "normal": "মাঝারি", "comfortable": "বেশি" },
    "table_styles": {
     "grid": "সব ঘরে",
     "horizontal": "শুধু আড়াআড়ি",
     "none": "বর্ডার নেই"
    },
    "header_row": "প্রথম সারি শিরোনাম",
+    "header_column": "প্রথম কলাম শিরোনাম",
+    "striped_rows": "এক পর পর সারিতে রং",
    "styles": {
     "disc": "ভরাট বিন্দু",
     "circle": "ফাঁপা বৃত্ত",

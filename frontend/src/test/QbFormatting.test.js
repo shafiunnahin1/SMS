@@ -19,7 +19,7 @@ describe('ribbon actions', () => {
     expect(applyList('a - b\nc\nd', 0, 9, 'dl').value).toBe('<dl><dt>a</dt><dd>b</dd><dt>c</dt><dd>d</dd></dl>')
     expect(applyAlign('x', 0, 1, 'center').value).toBe('<div class="qmx-align-center">x</div>')
     expect(clearFormat('<strong>x</strong>y', 0, 18).value).toBe('xy')
-    expect(insertTable('', 0, 0, { rows: 2, cols: 2 }).value).toBe('<table class="qmx-table qmx-table-grid qmx-table-width-100"><tbody><tr><th dir="auto"></th><th dir="auto"></th></tr><tr><td dir="auto"></td><td dir="auto"></td></tr></tbody></table>')
+    expect(insertTable('', 0, 0, { rows: 2, cols: 2 }).value).toBe('<table class="qmx-table qmx-table-grid qmx-table-width-100 qmx-table-align-center qmx-table-normal"><tbody><tr><th dir="auto"></th><th dir="auto"></th></tr><tr><td dir="auto"></td><td dir="auto"></td></tr></tbody></table>')
     expect(insertTable('', 0, 0, { rows: 1, cols: 1, caption: '<img src=x onerror=alert(1)>' }).value)
       .toContain('<caption>&lt;img src=x onerror=alert(1)&gt;</caption>')
   })
@@ -47,5 +47,14 @@ describe('ribbon actions', () => {
     expect(insertPicture('text', 0, 4, 0).value).toBe('text')
     expect(insertPicture('text', 0, 4, 42, { width: 1, align: 'side' }).value)
       .toBe('<img data-qmx-media="42" data-qmx-width="100" data-qmx-align="center">')
+  })
+
+  it('serializes only the approved table layout choices and header column', () => {
+    const html = insertTable('', 0, 0, { rows: 2, cols: 2, headerColumn: true, striped: true, width: '75', align: 'right', spacing: 'comfortable' }).value
+    expect(html).toContain('class="qmx-table qmx-table-grid qmx-table-width-75 qmx-table-align-right qmx-table-comfortable qmx-table-striped"')
+    expect(html).toContain('<tr><th dir="auto"></th><td dir="auto"></td></tr>')
+    expect(html).toContain('<tr><th dir="auto"></th><td dir="auto"></td></tr>')
+    expect(insertTable('', 0, 0, { rows: 1, cols: 1, width: '400', align: 'start', spacing: 'loose' }).value)
+      .toContain('qmx-table-width-100 qmx-table-align-center qmx-table-normal')
   })
 })

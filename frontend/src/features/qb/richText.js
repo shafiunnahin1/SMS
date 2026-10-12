@@ -10,6 +10,9 @@ const ALIGN = /^qmx-align-(left|center|right|justify)$/
 const LIST = /^qmx-list-([a-z-]+)$/
 const DIR = /^(?:auto|ltr|rtl)$/
 const SPAN = /^(?:[2-9]|1\d|20)$/
+const TABLE_WIDTH = /^qmx-table-width-(auto|50|75|100)$/
+const TABLE_ALIGN = /^qmx-table-align-(left|center|right)$/
+const TABLE_SPACING = /^qmx-table-(compact|normal|comfortable)$/
 
 const hasMarkup = (text) => /[<&]/.test(text)
 
@@ -29,6 +32,18 @@ function attrsOf(tag, el) {
     const m = LIST.exec(get('class') ?? '')
     if (m) a.list = m[1]
   }
+  if (tag === 'table') {
+    const classes = (get('class') ?? '').split(/\s+/)
+    for (const className of classes) {
+      const width = TABLE_WIDTH.exec(className)
+      const align = TABLE_ALIGN.exec(className)
+      const spacing = TABLE_SPACING.exec(className)
+      if (width) a.width = width[1]
+      if (align) a.align = align[1]
+      if (spacing) a.spacing = spacing[1]
+      if (className === 'qmx-table-striped') a.striped = true
+    }
+  }
   if (tag === 'th' || tag === 'td') {
     if (DIR.test(get('dir') ?? '')) a.dir = get('dir')
     for (const k of ['colspan', 'rowspan']) if (SPAN.test(get(k) ?? '')) a[k] = Number(get(k))
@@ -41,7 +56,7 @@ function attrsOf(tag, el) {
   return a
 }
 
-function walk(node) {
+function walk(node, tableSpacing = 'normal') {
   const out = []
   node.childNodes.forEach((n) => {
     if (n.nodeType === 3) { out.push({ text: n.data }); return }
@@ -53,7 +68,8 @@ function walk(node) {
     const attrs = attrsOf(tag, n)
     if (tag === 'img' && !attrs.media) return
     if (tag === 'span' && !attrs.color && !attrs.bg) { out.push(...walk(n)); return }
-    out.push({ tag, attrs, children: tag === 'br' || tag === 'img' ? [] : walk(n) })
+    if (tag === 'th' || tag === 'td') attrs.spacing = tableSpacing
+    out.push({ tag, attrs, children: tag === 'br' || tag === 'img' ? [] : walk(n, tag === 'table' ? attrs.spacing ?? tableSpacing : tableSpacing) })
   })
   return out
 }

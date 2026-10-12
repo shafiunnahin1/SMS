@@ -8,7 +8,9 @@ import { parseRich } from './richText'
 const LIST_STYLE = { disc: 'disc', circle: 'circle', square: 'square', decimal: 'decimal', 'lower-alpha': 'lower-alpha', 'upper-alpha': 'upper-alpha',
   'lower-roman': 'lower-roman', 'upper-roman': 'upper-roman', 'bengali-number': 'bengali', 'bengali-letter': 'bengali' }
 const ALIGN = { left: 'text-start', right: 'text-end', center: 'text-center', justify: 'text-justify' }
-const CELL = 'px-2 py-1 align-top [border:1px_solid_var(--line)]'
+const TABLE_WIDTH = { auto: 'auto', 50: '50%', 75: '75%', 100: '100%' }
+const CELL_SPACING = { compact: 'px-1 py-0', normal: 'px-2 py-1', comfortable: 'px-3 py-2' }
+const CELL = 'align-top [border:1px_solid_var(--line)]'
 
 function Maths({ text, ready }) {
   const parts = String(text).split(/(\$[^$]+\$|\\\([\s\S]+?\\\))/g).filter(Boolean)
@@ -43,10 +45,13 @@ function Node({ n, ready, media }) {
     }
     case 'dt': return <dt className="font-semibold">{kids}</dt>
     case 'mark': return <mark className="bg-secondary-soft text-content">{kids}</mark>
-    case 'table': return <table className="my-1 border-collapse">{kids}</table>
+    case 'table': {
+      const margin = { left: { marginInlineEnd: 'auto' }, center: { marginInline: 'auto' }, right: { marginInlineStart: 'auto' } }[a.align] ?? { marginInline: 'auto' }
+      return <table className={`my-1 border-collapse ${a.striped ? '[&_tbody_tr:nth-child(even)]:bg-surface-muted' : ''}`} style={{ width: TABLE_WIDTH[a.width] ?? '100%', ...margin }}>{kids}</table>
+    }
     case 'caption': return <caption className="caption-top p-2 text-start text-sm font-semibold">{kids}</caption>
-    case 'th': return <th dir={a.dir} colSpan={a.colspan} rowSpan={a.rowspan} className={`${CELL} font-semibold`}>{kids}</th>
-    case 'td': return <td dir={a.dir} colSpan={a.colspan} rowSpan={a.rowspan} className={CELL}>{kids}</td>
+    case 'th': return <th dir={a.dir} colSpan={a.colspan} rowSpan={a.rowspan} className={`${CELL} ${CELL_SPACING[a.spacing] ?? CELL_SPACING.normal} font-semibold`}>{kids}</th>
+    case 'td': return <td dir={a.dir} colSpan={a.colspan} rowSpan={a.rowspan} className={`${CELL} ${CELL_SPACING[a.spacing] ?? CELL_SPACING.normal}`}>{kids}</td>
     default: {
       const Tag = n.tag   // strong em u s sup sub ol ul li dl dd thead tbody tr - all from the allowlist in richText.js
       return <Tag>{kids}</Tag>

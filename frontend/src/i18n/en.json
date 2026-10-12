@@ -1165,12 +1165,19 @@
     "picture_width": "Picture width",
     "picture_align": "Picture alignment",
    "table_style": "Border",
+    "table_width": "Table width",
+    "table_widths": { "auto": "Fit content", "50": "50%", "75": "75%", "100": "100%" },
+    "table_align": "Table alignment",
+    "cell_spacing": "Cell spacing",
+    "cell_spacings": { "compact": "Compact", "normal": "Normal", "comfortable": "Comfortable" },
    "table_styles": {
     "grid": "Grid",
     "horizontal": "Horizontal",
     "none": "None"
    },
    "header_row": "Header row",
+    "header_column": "Header column",
+    "striped_rows": "Striped rows",
    "styles": {
     "disc": "Disc",
     "circle": "Circle",

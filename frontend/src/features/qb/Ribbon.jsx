@@ -90,7 +90,7 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
         </label>
         <Tool label={t('qbed.clear')} onClick={() => run(clearFormat)}><RemoveFormatting aria-hidden="true" className="h-4 w-4" /></Tool>
         <Sep />
-        <Tool label={t('qbed.table')} onClick={() => setTable({ rows: '3', cols: '2', header: true, style: 'grid', caption: '', cells: createTableCells(3, 2), selected: [] })} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
+        <Tool label={t('qbed.table')} onClick={() => setTable({ rows: '3', cols: '2', header: true, headerColumn: false, striped: false, style: 'grid', width: '100', align: 'center', spacing: 'normal', caption: '', cells: createTableCells(3, 2), selected: [] })} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
         <label className="inline-flex h-9 cursor-pointer items-center rounded-token px-2 hover:bg-primary-soft" title={t('qbed.image')}>
           <ImagePlus aria-hidden="true" className="h-4 w-4" /><span className="sr-only">{t('qbed.image')}</span>
           <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={e => onImage(e, { width: Number(pictureWidth), align: pictureAlign })} name="picture" className="sr-only" />
@@ -117,7 +117,15 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
             <Input className="sm:col-span-2" label={t('qbed.caption')} value={table.caption} onChange={e => setTable({ ...table, caption: e.target.value })} name="caption" />
             <Select label={t('qbed.table_style')} value={table.style} onChange={e => setTable({ ...table, style: e.target.value })}
               options={['grid', 'horizontal', 'none'].map(s => ({ value: s, label: t(`qbed.table_styles.${s}`) }))} />
+            <Select label={t('qbed.table_width')} value={table.width} onChange={e => setTable({ ...table, width: e.target.value })}
+              options={['auto', '50', '75', '100'].map(width => ({ value: width, label: t(`qbed.table_widths.${width}`) }))} />
+            <Select label={t('qbed.table_align')} value={table.align} onChange={e => setTable({ ...table, align: e.target.value })}
+              options={['left', 'center', 'right'].map(align => ({ value: align, label: t(`qbed.align_${align}`) }))} />
+            <Select label={t('qbed.cell_spacing')} value={table.spacing} onChange={e => setTable({ ...table, spacing: e.target.value })}
+              options={['compact', 'normal', 'comfortable'].map(spacing => ({ value: spacing, label: t(`qbed.cell_spacings.${spacing}`) }))} />
             <Check label={t('qbed.header_row')} checked={table.header} onChange={e => setTable({ ...table, header: e.target.checked })} />
+            <Check label={t('qbed.header_column')} checked={table.headerColumn} onChange={e => setTable({ ...table, headerColumn: e.target.checked })} />
+            <Check label={t('qbed.striped_rows')} checked={table.striped} onChange={e => setTable({ ...table, striped: e.target.checked })} />
             <div className="space-y-2 sm:col-span-2">
               <div className="flex gap-2">
                 <Button variant="secondary" disabled={!mergedCells} onClick={() => {

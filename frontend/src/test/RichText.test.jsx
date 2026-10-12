@@ -32,6 +32,15 @@ describe('rich question text', () => {
     expect(image).not.toHaveAttribute('onerror')
   })
 
+  it('renders only allowlisted table layout classes as semantic styles', () => {
+    const { container } = render(<MathText text={'<table class="qmx-table-width-75 qmx-table-align-right qmx-table-comfortable qmx-table-striped evil"><tbody><tr><th>শিরোনাম</th></tr></tbody></table>'} />)
+    const table = container.querySelector('table')
+    expect(table.style.width).toBe('75%')
+    expect(table.style.marginInlineStart).toBe('auto')
+    expect(table).toHaveClass('[&_tbody_tr:nth-child(even)]:bg-surface-muted')
+    expect(container.querySelector('th')).toHaveClass('px-3', 'py-2')
+  })
+
   it('drops scripts, handlers, links and bad colours', () => {
     const { container } = render(<MathText text={'a<script>alert(1)</script><img src=x onerror="alert(1)"><a href="javascript:x()">link</a><b onclick="x()">b</b><span data-qmx-color="red;x">c</span><style>*{}</style>'} />)
     expect(container.querySelector('script, img, a, style, [onclick], [onerror]')).toBeNull()
