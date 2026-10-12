@@ -293,12 +293,14 @@
    "qb-concepts",
    "qb-resources",
    "qb-pricing",
-   "qb-quizzes"
+   "qb-quizzes",
+   "qb-withdrawals"
   ],
   "content_writer": [
    "questions",
    "concepts",
-   "resources"
+   "resources",
+   "earnings"
   ],
   "content_moderator": [
    "review",
@@ -925,6 +927,14 @@
   "QbPublicQuizController": {
    "release": "R1",
    "step": "QB.10"
+  },
+  "QbEarningController": {
+   "release": "R1",
+   "step": "QB.10b"
+  },
+  "QbWithdrawalController": {
+   "release": "R1",
+   "step": "QB.10b"
   }
  },
  "route_exclude": [
@@ -1320,7 +1330,10 @@
    "scope": "qb_writer_earnings in the sale's transaction, writer wallets and ledger, withdrawal requests that hold the amount, the Super Admin's paid (with the bank transaction id) / rejected flow, audit log; writer pages.",
    "done": "Every sale credits the writer's share to the paisa; a pending request holds the money; paid reduces it once; rejected releases it; tests.",
    "verify": [
-    "php artisan test --filter=QbWriter"
+    "php artisan test --filter=QbWriter",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-earnings.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

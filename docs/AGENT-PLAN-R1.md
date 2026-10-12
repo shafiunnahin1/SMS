@@ -76,12 +76,12 @@
 | `QB.8` | Question papers: builder, PDF, the head teacher's view | `QB.7` |  | 7 |  |
 | `QB.9` | Student login and portal: practice, concepts, bKash purchases | `QB.8` |  | 8 |  |
 | `QB.10` | Quizzes and quiz packages | `QB.9` |  | 18 |  |
-| `QB.10b` | Writers' earnings, wallet and withdrawals | `QB.10` |  |  |  |
+| `QB.10b` | Writers' earnings, wallet and withdrawals | `QB.10` |  | 8 |  |
 | `QB.11` | Import from qbank | `QB.10b` |  |  |  |
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 237 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 245 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2693,11 +2693,26 @@ php artisan test   # whole suite stays green
 > **R1 পরিসর (এটিই চূড়ান্ত):** qb_writer_earnings in the sale's transaction, writer wallets and ledger, withdrawal requests that hold the amount, the Super Admin's paid (with the bank transaction id) / rejected flow, audit log; writer pages.
 
 
+**R1-এ যে route বানাবেন:**
+```
+GET /super/qb/writer-settings -> QbWithdrawalController@settings [role:super_admin]
+PUT /super/qb/writer-settings -> QbWithdrawalController@updateSettings [role:super_admin]
+GET /super/qb/withdrawals -> QbWithdrawalController@index [role:super_admin]
+POST /super/qb/withdrawals/{id}/pay -> QbWithdrawalController@pay [role:super_admin]
+POST /super/qb/withdrawals/{id}/reject -> QbWithdrawalController@reject [role:super_admin]
+GET /writer/earnings -> QbEarningController@summary [role:content_writer]
+GET /writer/withdrawals -> QbEarningController@withdrawals [role:content_writer]
+POST /writer/withdrawals -> QbEarningController@requestWithdrawal [role:content_writer]
+```
+
 **Done When:** Every sale credits the writer's share to the paisa; a pending request holds the money; paid reduces it once; rejected releases it; tests.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
 php artisan test --filter=QbWriter
+npm test && npm run lint:theme
+npx playwright test e2e/qb-earnings.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2942,7 +2957,7 @@ php artisan test   # whole suite stays green
 
 | Release | route |
 |---|---|
-| R1 | 237 |
+| R1 | 245 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
 | R2 | 150 |

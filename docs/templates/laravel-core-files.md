@@ -269,7 +269,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
 use App\Http\Controllers\Public\{PublicSiteController, PublicAdmissionController};
 use App\Http\Controllers\SuperAdmin\{TenantPurgeController, SettlementController, PayoutAccountController, SmsSenderApprovalController, OnlinePaymentReportController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbPublicQuizController, QbQuizController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbPublicQuizController, QbQuizController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
 use App\Http\Controllers\Academics\{ResultSheetController, DueBlockController, PeriodAttendanceController, SubstitutionController, RoutineBlockController, StudentLeaveController, MarksLockController};
 use App\Http\Controllers\Hr\{LeaveTypeController, LeaveController, StaffController, StaffAttendanceController, SalaryComponentController, SalaryStructureController, SalaryRevisionController, IncrementBatchController, BonusSchemeController, SalaryAdjustmentController, SalaryAdvanceController, PayrollRunController, PayrollItemController, PayAccountController, ProvidentFundController, PayrollReportController, FinalSettlementController};
 use App\Http\Controllers\Teacher\SalaryController as TeacherSalaryController;
@@ -382,6 +382,12 @@ Route::prefix('v1')->group(function () {
             Route::get('/qb/quizzes/{id}',            [QbQuizController::class, 'show']);
             Route::post('/qb/quizzes',                [QbQuizController::class, 'store']);   // only auto-marked types (mcq, true_false, fill_gap, matching)
             Route::put('/qb/quizzes/{id}',            [QbQuizController::class, 'update']);
+            // QB.10b (§৪.৫): the writers' share and minimum withdrawal; withdrawal requests paid by hand (bank transaction id) or rejected
+            Route::get('/qb/writer-settings',         [QbWithdrawalController::class, 'settings']);
+            Route::put('/qb/writer-settings',         [QbWithdrawalController::class, 'updateSettings']);
+            Route::get('/qb/withdrawals',             [QbWithdrawalController::class, 'index']);
+            Route::post('/qb/withdrawals/{id}/pay',   [QbWithdrawalController::class, 'pay']);       // {bank_transaction_id}
+            Route::post('/qb/withdrawals/{id}/reject', [QbWithdrawalController::class, 'reject']);   // {note}
             // D65 question bank, task QB.1: the platform curriculum class → subject → chapter → topic ({kind} = class-levels|subjects|chapters|topics)
             Route::get('/qb/curriculum',              [QbCurriculumController::class, 'tree']);
             Route::post('/qb/{kind}',                 [QbCurriculumController::class, 'store']);
@@ -438,6 +444,12 @@ Route::prefix('v1')->group(function () {
         // only (no tenant is bound, no tenancy.bypass). A writer edits only their own draft or rejected question; moderators publish or reject.
         Route::middleware(['auth:sanctum', 'role:content_writer,content_moderator,super_admin', 'password.fresh', 'throttle:api'])->prefix('writer')->group(function () {
             Route::patch('/change-password',          [QbWriterController::class, 'changePassword']);   // first login: the Super Admin set the password
+            // QB.10b (§৪.৫): the writer's own earnings, wallet and withdrawal requests (the amount is held until paid or rejected)
+            Route::middleware('role:content_writer')->group(function () {
+                Route::get('/earnings',               [QbEarningController::class, 'summary']);       // balance, held, sales per item, ledger
+                Route::get('/withdrawals',            [QbEarningController::class, 'withdrawals']);
+                Route::post('/withdrawals',           [QbEarningController::class, 'requestWithdrawal'])->middleware('throttle:10,1');
+            });
             Route::get('/curriculum',                 [QbQuestionController::class, 'curriculum']);
             Route::get('/question-types',             [QbQuestionController::class, 'types']);
             Route::get('/questions',                  [QbQuestionController::class, 'index']);         // writer: own; moderator / Super Admin: all, ?status=review

@@ -1421,14 +1421,26 @@
     "docs/modules/question-bank.md"
    ],
    "tables": [],
-   "routes": [],
+   "routes": [
+    "GET /super/qb/writer-settings -> QbWithdrawalController@settings [role:super_admin]",
+    "PUT /super/qb/writer-settings -> QbWithdrawalController@updateSettings [role:super_admin]",
+    "GET /super/qb/withdrawals -> QbWithdrawalController@index [role:super_admin]",
+    "POST /super/qb/withdrawals/{id}/pay -> QbWithdrawalController@pay [role:super_admin]",
+    "POST /super/qb/withdrawals/{id}/reject -> QbWithdrawalController@reject [role:super_admin]",
+    "GET /writer/earnings -> QbEarningController@summary [role:content_writer]",
+    "GET /writer/withdrawals -> QbEarningController@withdrawals [role:content_writer]",
+    "POST /writer/withdrawals -> QbEarningController@requestWithdrawal [role:content_writer]"
+   ],
    "routes_excluded": [],
    "tests": [],
    "done_when": "Every sale credits the writer's share to the paisa; a pending request holds the money; paid reduces it once; rejected releases it; tests.",
    "scope_note": "qb_writer_earnings in the sale's transaction, writer wallets and ledger, withdrawal requests that hold the amount, the Super Admin's paid (with the bank transaction id) / rejected flow, audit log; writer pages.",
    "blocked": null,
    "verify": [
-    "php artisan test --filter=QbWriter"
+    "php artisan test --filter=QbWriter",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-earnings.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {
