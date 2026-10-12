@@ -235,7 +235,8 @@
    "failed": "Failed",
    "suspended": "Suspended",
    "trial": "Trial",
-   "expired": "Expired"
+   "expired": "Expired",
+   "rejected": "Rejected"
   },
   "attendance": {
    "title": "Take attendance",
@@ -1070,6 +1071,62 @@
    "find_question": "Find a question",
    "find_hint": "Only published MCQ, true/false, gap and matching questions can be used.",
    "remove": "Remove"
+  },
+  "qbe": {
+   "title": "Earnings and withdrawals",
+   "admin_title": "Question bank: writers' withdrawals",
+   "balance": "Balance",
+   "held": "Held",
+   "available": "Available",
+   "total_earned": "Total earned",
+   "share_hint": "You get {{percent}}% of every sale. Minimum withdrawal: ৳{{min}}.",
+   "withdraw": "Request a withdrawal",
+   "requests": "Withdrawal requests",
+   "no_requests": "No requests.",
+   "sales_title": "Sales per item",
+   "no_sales": "No sales yet.",
+   "ledger": "Ledger",
+   "no_ledger": "No transactions yet.",
+   "item": "Item",
+   "items": {
+    "question": "Question",
+    "concept": "Concept",
+    "resource": "Resource",
+    "quiz_package": "Quiz package"
+   },
+   "sales": "Sales",
+   "earned": "Earned",
+   "type": "Type",
+   "types": {
+    "earning": "Earning",
+    "withdrawal": "Withdrawal",
+    "adjustment": "Adjustment"
+   },
+   "amount": "Amount",
+   "balance_after": "Balance after",
+   "when": "When",
+   "payout": "Payout",
+   "methods": {
+    "bkash": "bKash",
+    "bank": "Bank"
+   },
+   "reference": "Transaction id / reason",
+   "method": "Method",
+   "account": "Account",
+   "account_hint": "A bKash number, or bank, branch and account number. Only you and the Super Admin see it.",
+   "available_hint": "Available: ৳{{available}}",
+   "send_request": "Send request",
+   "requested": "Request sent - the amount is held.",
+   "writer": "Writer",
+   "mark_paid": "Mark paid",
+   "reject": "Reject",
+   "share_percent": "Writers' share (%)",
+   "share_percent_hint": "Applies from the next sale; past earnings do not change.",
+   "min_withdrawal": "Minimum withdrawal (৳)",
+   "pay_hint": "Send ৳{{amount}} to {{writer}} by bank / bKash and enter the transaction id. Then the amount leaves the writer's balance.",
+   "reject_hint": "The request of {{writer}} for ৳{{amount}} is rejected; the held amount is released.",
+   "bank_transaction_id": "Transaction id",
+   "note": "Note / reason"
   }
  },
  "nav": {
@@ -1119,6 +1176,8 @@
   "প্রশ্নব্যাংকের খরচ": "Question bank spending",
   "প্রশ্নপত্র": "Question papers",
   "কুইজ": "Quizzes",
-  "প্রশ্নব্যাংক: কুইজ ও প্যাকেজ": "Question bank: quizzes and packages"
+  "প্রশ্নব্যাংক: কুইজ ও প্যাকেজ": "Question bank: quizzes and packages",
+  "আয় ও টাকা তোলা": "Earnings and withdrawals",
+  "প্রশ্নব্যাংক: লেখকের টাকা তোলা": "Question bank: writers' withdrawals"
  }
 }

@@ -61,6 +61,8 @@ const QbStudentQuizzes  = lazy(() => import('../pages/student/QbQuizzes'))
 const QbQuizAttempt     = lazy(() => import('../pages/student/QbQuizAttempt'))
 const QbQuizAdmin       = lazy(() => import('../pages/super/QbQuizzes'))
 const QbPublicQuiz      = lazy(() => import('../pages/public/QbPublicQuiz'))
+const QbEarnings        = lazy(() => import('../pages/writer/QbEarnings'))
+const QbWithdrawals     = lazy(() => import('../pages/super/QbWithdrawals'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
@@ -152,6 +154,7 @@ export const centralRoutes = [
     { path: 'qb/writers', element: S(QbWriters) },
     { path: 'qb/pricing', element: S(QbPricing) },   // QB.6
     { path: 'qb/quizzes', element: S(QbQuizAdmin) },   // QB.10
+    { path: 'qb/withdrawals', element: S(QbWithdrawals) },   // QB.10b
   ]),
   // D65 QB.2: the question-bank writers' panel (writers, moderators and the Super Admin)
   area('/writer', ['content_writer', 'content_moderator', 'super_admin'], [
@@ -161,6 +164,7 @@ export const centralRoutes = [
     { path: 'concepts/:id', element: S(QbConceptEdit) },
     { path: 'resources', element: <Suspense fallback={<Loader type="page" />}><QbContentList kind="resources" /></Suspense> },
     { path: 'resources/:id', element: S(QbResourceEdit) },
+    { path: 'earnings', element: S(QbEarnings) },   // QB.10b (content_writer)
   ]),
   { path: '*', element: <Navigate to="/login" replace /> },
 ]
