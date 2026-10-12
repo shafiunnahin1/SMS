@@ -19,7 +19,7 @@ import Check from '../../features/academic/Check'
 import QbStatus from '../../features/qb/QbStatus'
 import MathText from '../../features/qb/MathText'
 import Ribbon from '../../features/qb/Ribbon'
-import { insertPicture } from '../../features/qb/formatting'
+import { insertPicture, pushValueHistory, stepValueHistory } from '../../features/qb/formatting'
 import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } from '../../features/qb/questionMeta'
 import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
 
@@ -60,6 +60,9 @@ export default function QbQuestionEdit() {
   const occurrences = useFieldArray({ control, name: 'occurrences' })
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(null)
+  const [history, setHistory] = useState({ undo: [], redo: [] })
+  const [activeField, setActiveField] = useState(null)
+  const valueSnapshots = useRef(new Map())
   const [section, setSection] = useState('meta')
   const [pane, setPane] = useState('editor')                    // below xl: the editor or the preview, as qbank's mobile switch
   const active = useRef(null)                                   // the text field the ribbon works on, and its selection
@@ -91,16 +94,42 @@ export default function QbQuestionEdit() {
   const track = (e) => {                                        // D72: remember the field and selection the ribbon acts on
     const el = e.target
     if (!el?.name || !(el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text'))) return
+    setActiveField(el.name)
+    if (!valueSnapshots.current.has(el.name)) valueSnapshots.current.set(el.name, el.value)
     active.current = { name: el.name, el, start: el.selectionStart, end: el.selectionEnd }
+  }
+  const recordInput = (e) => {
+    const el = e.target
+    if (!el?.name || !(el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text'))) return
+    const previous = valueSnapshots.current.get(el.name)
+    if (previous !== undefined && previous !== el.value) {
+      setHistory(current => pushValueHistory(current, el.name, previous, el.selectionStart, el.selectionEnd))
+      valueSnapshots.current.set(el.name, el.value)
+    }
+    track(e)
   }
   const run = (fn, ...args) => {
     const a = active.current
     if (!a) { useUiStore.getState().addToast(t('qbed.pick_field'), 'error'); return }
     const cur = String(getValues(a.name) ?? '')
     const r = fn(cur, a.start ?? cur.length, a.end ?? cur.length, ...args)
+    setHistory(current => pushValueHistory(current, a.name, cur, a.start ?? cur.length, a.end ?? cur.length))
+    valueSnapshots.current.set(a.name, r.value)
     setValue(a.name, r.value, { shouldDirty: true })
     active.current = { ...a, start: r.start, end: r.end }
     requestAnimationFrame(() => { a.el.focus(); a.el.setSelectionRange(r.start, r.end) })
+  }
+  const applyHistory = (direction) => {
+    const a = active.current
+    if (!a) { useUiStore.getState().addToast(t('qbed.pick_field'), 'error'); return }
+    const cur = String(getValues(a.name) ?? '')
+    const step = stepValueHistory(history, direction, a.name, { value: cur, start: a.el.selectionStart, end: a.el.selectionEnd })
+    if (!step.entry) return
+    setHistory(step.history)
+    valueSnapshots.current.set(a.name, step.entry.value)
+    setValue(a.name, step.entry.value, { shouldDirty: true })
+    active.current = { ...a, start: step.entry.start, end: step.entry.end }
+    requestAnimationFrame(() => { a.el.focus(); a.el.setSelectionRange(step.entry.start, step.entry.end) })
   }
   const readActive = () => {
     const a = active.current
@@ -224,10 +253,12 @@ export default function QbQuestionEdit() {
         </nav>
 
         <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane" onDragOver={allowImageDrop} onDrop={dropImage}>
-          {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} onReset={() => { reset(); active.current = null }} disabled={!canEdit} saving={isSubmitting} />}
+          {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} onUndo={() => applyHistory('undo')} onRedo={() => applyHistory('redo')}
+            canUndo={history.undo.some(entry => entry.name === activeField)} canRedo={history.redo.some(entry => entry.name === activeField)}
+            onReset={() => { reset(); setHistory({ undo: [], redo: [] }); valueSnapshots.current.clear(); active.current = null; setActiveField(null) }} disabled={!canEdit} saving={isSubmitting} />}
           <Card>
             <form id="qb-question-form" onSubmit={handleSubmit(save)} className="grid gap-3 sm:grid-cols-2" noValidate
-              onFocusCapture={track} onSelectCapture={track} onKeyUpCapture={track} onMouseUpCapture={track} onPasteCapture={pasteImage}>
+              onFocusCapture={track} onSelectCapture={track} onKeyUpCapture={track} onMouseUpCapture={track} onInputCapture={recordInput} onPasteCapture={pasteImage}>
               <fieldset disabled={!canEdit} className="contents">
                 <Section id="meta" current={section} onEnter={setSection}>
                   <Select label={t('qb.type')} placeholder={t('qb.pick')} error={errors.qb_question_type_id?.message}

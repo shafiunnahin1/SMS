@@ -26,6 +26,27 @@ const result = (value, start, end) => ({ value, start, end })
 const splice = (value, start, end, text) => result(value.slice(0, start) + text + value.slice(end), start, start + text.length)
 const escapeText = (text) => String(text ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char])
 
+export function pushValueHistory(history, name, value, start, end) {
+  return { undo: [...history.undo, { name, value, start, end }], redo: [] }
+}
+
+export function stepValueHistory(history, direction, name, current) {
+  if (!['undo', 'redo'].includes(direction)) return { history, entry: null }
+  const source = history[direction]
+  const index = source.findLastIndex((entry) => entry.name === name)
+  if (index < 0) return { history, entry: null }
+  const entry = source[index]
+  const target = direction === 'undo' ? 'redo' : 'undo'
+  return {
+    entry,
+    history: {
+      ...history,
+      [direction]: source.filter((_, i) => i !== index),
+      [target]: [...history[target], { name, ...current }],
+    },
+  }
+}
+
 export function createTableCells(rows, cols, previous = []) {
   const rowCount = Math.min(Math.max(Number.parseInt(rows, 10) || 1, 1), 20)
   const colCount = Math.min(Math.max(Number.parseInt(cols, 10) || 1, 1), 10)

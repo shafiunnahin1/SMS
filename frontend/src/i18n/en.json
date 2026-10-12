@@ -1156,6 +1156,8 @@
    "table": "Table",
    "image": "Picture",
    "reset": "Reset",
+    "undo": "Undo",
+    "redo": "Redo",
    "rows": "Rows",
    "cols": "Columns",
     "caption": "Table caption",

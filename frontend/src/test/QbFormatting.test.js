@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertPicture, insertTable, mathRegionAt, mergeTableCells, parseTableSelection, splitTableCell } from '../features/qb/formatting'
+import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertPicture, insertTable, mathRegionAt, mergeTableCells, parseTableSelection, pushValueHistory, splitTableCell, stepValueHistory } from '../features/qb/formatting'
 
 // D72 (QB.12): qbank's ribbon actions write qbank's vocabulary; inside maths they write LaTeX.
 describe('ribbon actions', () => {
@@ -83,5 +83,18 @@ describe('ribbon actions', () => {
     expect(updated.startsWith('শুরু <table')).toBe(true)
     expect(updated.endsWith('</table> শেষ')).toBe(true)
     expect(parseTableSelection('<table><tr><td>x</td></tr></table> trailing', 0, 46)).toBeNull()
+  })
+
+  it('undoes and redoes changes per field, clearing redo after a new change', () => {
+    let history = { undo: [], redo: [] }
+    history = pushValueHistory(history, 'question_text', 'first', 5, 5)
+    history = pushValueHistory(history, 'answer_text', 'answer', 6, 6)
+    expect(stepValueHistory(history, 'undo', 'question_text', { value: 'edited', start: 6, end: 6 }).entry.value).toBe('first')
+    const undone = stepValueHistory(history, 'undo', 'question_text', { value: 'edited', start: 6, end: 6 })
+    expect(undone.entry).toMatchObject({ name: 'question_text', value: 'first', start: 5, end: 5 })
+    const redone = stepValueHistory(undone.history, 'redo', 'question_text', { value: 'first', start: 5, end: 5 })
+    expect(redone.entry.value).toBe('edited')
+    expect(stepValueHistory(pushValueHistory(redone.history, 'question_text', 'edited', 6, 6), 'redo', 'question_text', { value: 'new', start: 3, end: 3 }).entry).toBeNull()
+    expect(stepValueHistory(history, 'undo', 'other_field', { value: '', start: 0, end: 0 }).entry).toBeNull()
   })
 })
