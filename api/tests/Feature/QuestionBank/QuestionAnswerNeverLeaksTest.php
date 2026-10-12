@@ -26,6 +26,7 @@ class QuestionAnswerNeverLeaksTest extends TestCase
         'app/Services/QbPurchaseService.php' => "QB.7: finds the item to price and unlock; returns only the unlock and amounts",
         'app/Services/QbPricingService.php' => "QB.6: reads a question's type, place and classes to price it; returns only amounts",
         'app/Http/Controllers/QuestionBank/QbPricingController.php' => "QB.6: the Super Admin's preview finds sample questions by id; returns only quotes",
+        'app/Console/Commands/QbImportFromQbank.php' => "QB.11 (D69): the CLI import writes questions from qbank's database; it returns only counts",
         'app/Services/QbEarningService.php' => "QB.10b: finds a sold item's author (created_by) to credit; returns nothing about the question",
         'app/Services/QbQuizMarker.php' => "QB.10: marks a quiz answer on the server; returns marks, the right answer only for a submitted attempt (QbQuizService::review)",
         'app/Http/Controllers/QuestionBank/QbQuizController.php' => "QB.10: the Super Admin's quiz editor (central host) checks question ids are published and auto-marked; returns ids and question texts",

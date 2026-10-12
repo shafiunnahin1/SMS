@@ -345,6 +345,7 @@ php artisan make:migration create_qb_quizzes_table
 php artisan make:migration create_qb_quiz_questions_table
 php artisan make:migration create_qb_student_package_access_table
 php artisan make:migration create_qb_quiz_attempts_table
+php artisan make:migration create_qb_import_map_table      # D69 (QB.11): qbank row → row here, for qb:import-from-qbank
 # column additions folded into their create migrations: settlements, online_payments (student_id/parent_user_id now NULL), payments (method += coupon), subscription_invoices,
 # teachers, institution_events, users, subjects, programs, batches, expenses, certificates, tc_certificates, notices, sms_logs, admission_leads
 

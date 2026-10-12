@@ -42,6 +42,20 @@ return [
             'synchronous' => null,
         ],
 
+        // D69 (QB.11): the owner's old qbank database, read only by qb:import-from-qbank (values in .env, never committed)
+        'qbank' => [
+            'driver' => env('QBANK_DB_DRIVER', 'mysql'),
+            'host' => env('QBANK_DB_HOST', '127.0.0.1'),
+            'port' => env('QBANK_DB_PORT', '3306'),
+            'database' => env('QBANK_DB_DATABASE', 'qbank'),
+            'username' => env('QBANK_DB_USERNAME', 'root'),
+            'password' => env('QBANK_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
