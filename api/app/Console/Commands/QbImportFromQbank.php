@@ -153,6 +153,7 @@ class QbImportFromQbank extends Command
             if (!$type || !$subject) { $this->skip('questions', 'its type or subject was not imported'); continue; }
             if (trim((string) $r->question_text) === '' && !$r->question_content_json) { $this->skip('questions', 'no question text'); continue; }
             if ($this->structured((int) $r->id)) { $this->skip('questions', 'has structured parts (items / passage) - not imported yet, so not taken half-empty'); continue; }
+            if ($why = $this->incomplete((int) $r->id, $type)) { $this->skip('questions', $why); continue; }
             $id = $this->take('questions', $r->id, 'qb_questions', fn () => QbQuestion::create([
                 'qb_question_type_id' => $type, 'qb_subject_id' => $subject,
                 'qb_chapter_id' => $r->chapter_id ? $this->target('chapters', (int) $r->chapter_id) : null,
@@ -168,6 +169,20 @@ class QbImportFromQbank extends Command
             $this->byType[$slug] = ($this->byType[$slug] ?? 0) + 1;
             $this->children((int) $r->id, $id);
         }
+    }
+
+    /** A choice question needs at least two options and one right; a creative question needs its parts - otherwise it would
+     *  arrive unusable (null = fine) */
+    private function incomplete(int $src, int $type): ?string
+    {
+        $family = QbQuestionType::whereKey($type)->value('family');
+        if (in_array($family, ['mcq', 'true_false'], true)) {
+            $opts = $this->src->table('question_options')->where('question_id', $src);
+            if ((clone $opts)->count() < 2 || !(clone $opts)->where('is_correct', true)->exists()) return 'a choice question without its options / right answer';
+        }
+        if ($family === 'creative' && (!$this->src->getSchemaBuilder()->hasTable('creative_question_parts')
+            || !$this->src->table('creative_question_parts')->where('question_id', $src)->whereNull('parent_id')->exists())) return 'a creative question without its parts';
+        return null;
     }
 
     /** Does this qbank question hang on structured content (items, interactions, a passage)? Such a question is not taken at all

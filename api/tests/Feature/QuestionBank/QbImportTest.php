@@ -63,6 +63,7 @@ class QbImportTest extends TestCase
             ['id' => 100, 'question_type_id' => 1, 'subject_id' => 20, 'chapter_id' => 30, 'topic_id' => 40, 'question_text' => 'বেগের একক?', 'difficulty' => 'hard', 'marks' => 1, 'content_mode' => 'mixed_content'],
             ['id' => 101, 'question_type_id' => 2, 'subject_id' => 20, 'chapter_id' => null, 'topic_id' => null, 'question_text' => 'সৃজনশীল প্রশ্ন', 'difficulty' => 'medium', 'marks' => 10, 'content_mode' => 'plain_text'],
             ['id' => 102, 'question_type_id' => 1, 'subject_id' => 20, 'chapter_id' => null, 'topic_id' => null, 'question_text' => '', 'difficulty' => 'easy', 'marks' => null, 'content_mode' => 'plain_text'],
+            ['id' => 104, 'question_type_id' => 1, 'subject_id' => 20, 'chapter_id' => null, 'topic_id' => null, 'question_text' => 'অপশনহীন MCQ', 'difficulty' => 'easy', 'marks' => null, 'content_mode' => 'plain_text'],
             ['id' => 103, 'question_type_id' => 1, 'subject_id' => 20, 'chapter_id' => null, 'topic_id' => null, 'question_text' => 'অনুচ্ছেদ পড়ে উত্তর দাও', 'difficulty' => 'easy', 'marks' => null, 'content_mode' => 'plain_text'],
         ]);
         $q->table('class_level_question')->insert(['class_level_id' => 10, 'question_id' => 100]);
@@ -117,8 +118,11 @@ class QbImportTest extends TestCase
     public function test_what_cannot_come_over_is_reported(): void
     {
         \Illuminate\Support\Facades\Artisan::call('qb:import-from-qbank', ['--dry-run' => true]);
-        $this->assertStringContainsString('has structured parts', \Illuminate\Support\Facades\Artisan::output(), 'a question with items / a passage is not taken half-empty');
+        $report = \Illuminate\Support\Facades\Artisan::output();                     // output() empties itself: read it once
+        $this->assertStringContainsString('has structured parts', $report, 'a question with items / a passage is not taken half-empty');
         $this->assertSame(0, QbQuestion::where('question_text', 'অনুচ্ছেদ পড়ে উত্তর দাও')->count());
+        $this->assertStringContainsString('a choice question without its options', $report);
+        $this->assertSame(0, QbQuestion::where('question_text', 'অপশনহীন MCQ')->count());
         $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])
             ->expectsOutputToContain('its subject was not imported')                  // chapter 31 hangs on a subject that is not there
             ->expectsOutputToContain('no question text')
