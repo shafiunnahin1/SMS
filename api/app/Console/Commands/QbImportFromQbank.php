@@ -191,10 +191,16 @@ class QbImportFromQbank extends Command
                 'year' => $oc->exam_year, 'note' => $note !== '' ? mb_substr($note, 0, 200) : null]);
             $this->count('question_occurrences', 'new');
         }
-        foreach (['question_items', 'question_stimuli', 'question_interactions'] as $t) {
-            if ($this->src->getSchemaBuilder()->hasTable($t) && ($n = $this->src->table($t)->where('question_id', $src)->count())) {
+        // structured content is counted, not taken: items / interactions point at the question; a stimulus is pointed at BY the
+        // question (questions.question_stimulus_id) - qbank's real shapes, checked column by column
+        $schema = $this->src->getSchemaBuilder();
+        foreach (['question_items', 'question_interactions'] as $t) {
+            if ($schema->hasTable($t) && $schema->hasColumn($t, 'question_id') && ($n = $this->src->table($t)->where('question_id', $src)->count())) {
                 for ($k = 0; $k < $n; $k++) $this->skip($t, 'structured content is not imported yet');
             }
+        }
+        if ($schema->hasColumn('questions', 'question_stimulus_id') && $this->src->table('questions')->where('id', $src)->value('question_stimulus_id')) {
+            $this->skip('question_stimuli', 'structured content is not imported yet');
         }
     }
 

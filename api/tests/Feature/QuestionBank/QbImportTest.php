@@ -38,7 +38,7 @@ class QbImportTest extends TestCase
         $s->create('questions', fn (Blueprint $t) => [$t->id(), $t->unsignedBigInteger('question_type_id'), $t->unsignedBigInteger('subject_id'), $t->unsignedBigInteger('chapter_id')->nullable(),
             $t->unsignedBigInteger('topic_id')->nullable(), $t->text('question_text')->nullable(), $t->text('answer_text')->nullable(), $t->text('explanation_text')->nullable(),
             $t->text('question_content_json')->nullable(), $t->text('answer_content_json')->nullable(), $t->text('explanation_content_json')->nullable(),
-            $t->string('content_mode')->default('plain_text'), $t->string('difficulty')->default('medium'), $t->decimal('marks', 8, 2)->nullable(), $t->string('language')->default('bn'), $t->string('status')->default('published')]);
+            $t->unsignedBigInteger('question_stimulus_id')->nullable(), $t->string('content_mode')->default('plain_text'), $t->string('difficulty')->default('medium'), $t->decimal('marks', 8, 2)->nullable(), $t->string('language')->default('bn'), $t->string('status')->default('published')]);
         $s->create('class_level_question', fn (Blueprint $t) => [$t->id(), $t->unsignedBigInteger('class_level_id'), $t->unsignedBigInteger('question_id')]);
         $s->create('question_options', fn (Blueprint $t) => [$t->id(), $t->unsignedBigInteger('question_id'), $t->string('option_label'), $t->text('option_text')->nullable(), $t->text('option_content_json')->nullable(), $t->boolean('is_correct')->default(false), $t->integer('sort_order')->default(0)]);
         $s->create('creative_question_parts', fn (Blueprint $t) => [$t->id(), $t->unsignedBigInteger('question_id'), $t->unsignedBigInteger('parent_id')->nullable(), $t->string('part_label'), $t->string('cognitive_level')->nullable(),
@@ -47,6 +47,7 @@ class QbImportTest extends TestCase
         $s->create('question_occurrences', fn (Blueprint $t) => [$t->id(), $t->unsignedBigInteger('question_id'), $t->unsignedBigInteger('board_id')->nullable(), $t->unsignedBigInteger('institution_id')->nullable(),
             $t->unsignedBigInteger('exam_type_id')->nullable(), $t->string('exam_name')->nullable(), $t->integer('exam_year')->nullable(), $t->string('paper_name')->nullable(), $t->string('question_number')->nullable(), $t->string('source_title')->nullable()]);
         $s->create('question_items', fn (Blueprint $t) => [$t->id(), $t->unsignedBigInteger('question_id')]);
+        $s->create('question_stimuli', fn (Blueprint $t) => [$t->id(), $t->text('content_text')->nullable()]);   // qbank: no question_id - the question points at it
         $s->create('media_files', fn (Blueprint $t) => [$t->id(), $t->string('stored_name'), $t->string('file_path'), $t->string('mime_type'), $t->unsignedBigInteger('file_size')]);
         $s->create('media_attachments', fn (Blueprint $t) => [$t->id(), $t->unsignedBigInteger('media_file_id'), $t->string('attachable_type'), $t->unsignedBigInteger('attachable_id')]);
 
@@ -70,6 +71,8 @@ class QbImportTest extends TestCase
         $q->table('boards')->insert(['id' => 5, 'name_bn' => 'ঢাকা বোর্ড']);
         $q->table('question_occurrences')->insert(['question_id' => 100, 'board_id' => 5, 'exam_name' => 'SSC', 'exam_year' => 2023, 'question_number' => '7']);
         $q->table('question_items')->insert(['question_id' => 101]);
+        $q->table('question_stimuli')->insert(['id' => 7, 'content_text' => 'passage']);
+        $q->table('questions')->where('id', 101)->update(['question_stimulus_id' => 7]);
         $this->media = sys_get_temp_dir() . '/qbank-media-' . uniqid();
         @mkdir("{$this->media}/questions", 0777, true);
         file_put_contents("{$this->media}/questions/fig.png", 'PNGDATA');
@@ -112,6 +115,8 @@ class QbImportTest extends TestCase
 
     public function test_what_cannot_come_over_is_reported(): void
     {
+        \Illuminate\Support\Facades\Artisan::call('qb:import-from-qbank', ['--dry-run' => true]);
+        $this->assertMatchesRegularExpression('/question_stimuli\s*\|\s*structured content/', \Illuminate\Support\Facades\Artisan::output(), 'qbank: the question points at its stimulus');
         $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])
             ->expectsOutputToContain('its subject was not imported')                  // chapter 31 hangs on a subject that is not there
             ->expectsOutputToContain('no question text')
