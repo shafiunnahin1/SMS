@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\{QbChapter, QbChapterClassLevel, QbClassLevel, QbClassLevelSubject, QbCreativePart, QbImportMap, QbMedia, QbMediaLink, QbQuestion,
-    QbQuestionClassLevel, QbQuestionOccurrence, QbQuestionOption, QbQuestionType, QbSubject, QbTopic, User};
+    QbQuestionClassLevel, QbQuestionItem, QbQuestionOccurrence, QbQuestionOption, QbQuestionStimulus, QbQuestionType, QbSubject, QbTopic, User};
 use App\Support\Money;
 use Illuminate\Console\Command;
 use Illuminate\Database\Connection;
@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\{DB, Storage};
 // questions with their class links, options, creative parts (the first level), occurrences and pictures. qb_import_map remembers
 // every qbank row taken, so a second run takes nothing twice. Questions arrive as `review` (a moderator publishes them).
 // --dry-run does the whole import inside a transaction and rolls it back (exact counts, nothing kept, no file copied).
-// Not taken (counted in the report): questions built on structured items / stimuli / interactions (the whole question waits), nested
-// creative parts, question sets, OMR. Curriculum rows already here (the seed came from qbank) are matched by their Bengali name.
+// D70: passages, items and interactions (fill gap / matching / rearranging) go into the existing stimuli / items in QB.4's shapes; a
+// question whose structured part has no such shape (a table, multi-column matching, an item without its answer) waits whole.
+// Not taken (counted in the report): nested creative parts, item groups, question sets, OMR. Curriculum rows already here (the seed came from qbank) are matched by their Bengali name.
 class QbImportFromQbank extends Command
 {
     protected $signature = 'qb:import-from-qbank {--dry-run : count only, keep nothing} {--user= : the Super Admin the imported rows are written by}
@@ -180,7 +181,8 @@ class QbImportFromQbank extends Command
             $subject = $this->target('subjects', (int) $r->subject_id);
             if (!$type || !$subject) { $this->skip('questions', 'its type or subject was not imported'); continue; }
             if (trim((string) $r->question_text) === '' && !$r->question_content_json) { $this->skip('questions', 'no question text'); continue; }
-            if ($this->structured((int) $r->id)) { $this->skip('questions', 'has structured parts (items / passage) - not imported yet, so not taken half-empty'); continue; }
+            $plan = $this->structured($r);
+            if (is_string($plan)) { $this->skip('questions', "has structured parts that do not fit ({$plan}) - not taken half-empty"); continue; }
             if ($why = $this->incomplete((int) $r->id, $type)) { $this->skip('questions', $why); continue; }
             $id = $this->take('questions', $r->id, 'qb_questions', fn () => QbQuestion::create([
                 'qb_question_type_id' => $type, 'qb_subject_id' => $subject,
@@ -196,6 +198,7 @@ class QbImportFromQbank extends Command
             $slug = QbQuestionType::whereKey($type)->value('slug');
             $this->byType[$slug] = ($this->byType[$slug] ?? 0) + 1;
             $this->children((int) $r->id, $id);
+            $this->place($plan, $id);
         }
     }
 
@@ -213,15 +216,111 @@ class QbImportFromQbank extends Command
         return null;
     }
 
-    /** Does this qbank question hang on structured content (items, interactions, a passage)? Such a question is not taken at all
-     *  until structured import exists - taking it without those parts would leave a question with no options or answer. */
-    private function structured(int $src): bool
+    // ---- structured parts (D70): into the existing stimuli / items, in QB.4's shapes ----
+
+    /** The question's passage and items as QB.4 stores them, or the reason they do not fit (then the whole question waits).
+     *  An interaction (fill gap / matching / rearranging) is the question's real answer key; qbank's question_items under it are
+     *  only its projection, so they are not taken a second time. */
+    private function structured(object $r): array|string
     {
         $schema = $this->src->getSchemaBuilder();
-        foreach (['question_items', 'question_interactions'] as $t) {
-            if ($schema->hasTable($t) && $schema->hasColumn($t, 'question_id') && $this->src->table($t)->where('question_id', $src)->exists()) return true;
+        $plan = ['stimuli' => [], 'items' => []];
+        $sid = $schema->hasColumn('questions', 'question_stimulus_id') ? ($r->question_stimulus_id ?? null) : null;
+        if ($sid) {
+            $st = $schema->hasTable('question_stimuli') ? $this->src->table('question_stimuli')->where('id', $sid)->first() : null;
+            if (!$st) return 'its passage is missing';
+            $plan['stimuli'][] = ['label' => ($l = $st->title ?? $st->stimulus_type ?? null) ? mb_substr((string) $l, 0, 50) : null,
+                'content_text' => self::plain($st->content_text ?? null), 'content_json' => $this->json($st->content_json ?? null)];
         }
-        return $schema->hasColumn('questions', 'question_stimulus_id') && (bool) $this->src->table('questions')->where('id', $src)->value('question_stimulus_id');
+        $passage = $plan['stimuli'] ? 0 : null;
+        $interaction = $schema->hasTable('question_interactions') ? $this->src->table('question_interactions')->where('question_id', $r->id)->first() : null;
+        if ($interaction) {
+            $items = $this->interaction($interaction, $passage, $plan);
+            if (is_string($items)) return $items;
+            $plan['items'] = $items;
+            return $plan;
+        }
+        $rows = $schema->hasTable('question_items') ? $this->src->table('question_items')->where('question_id', $r->id)->orderBy('sort_order')->orderBy('id')->get() : collect();
+        foreach ($rows as $it) {
+            $opts = $schema->hasTable('question_item_options') ? $this->src->table('question_item_options')->where('question_item_id', $it->id)->orderBy('sort_order')->orderBy('id')->get() : collect();
+            $prompt = self::plain($it->prompt_text ?? null);
+            $marks = isset($it->marks) && is_numeric($it->marks) ? $it->marks : 0;
+            if ($opts->count() >= 2 && $opts->where('is_correct', true)->count() === 1) {
+                $plan['items'][] = ['item_type' => 'sub_mcq', 'stimulus' => $passage, 'prompt_text' => $prompt, 'marks' => $marks,
+                    'prompt_json' => ['options' => $opts->map(fn ($o) => self::plain($o->option_text) ?? '')->values()->all()],
+                    'answer_json' => ['correct' => $opts->values()->search(fn ($o) => (bool) $o->is_correct)]];
+            } elseif (($ans = self::plain($it->answer_text ?? null)) !== null && $ans !== '' && $prompt) {
+                $plan['items'][] = ['item_type' => 'sub_question', 'stimulus' => $passage, 'prompt_text' => $prompt, 'marks' => $marks, 'prompt_json' => null, 'answer_json' => ['answer_text' => $ans]];
+            } else {
+                return 'an item without its answer';
+            }
+        }
+        return $plan;
+    }
+
+    /** qbank's interaction definition -> QB.4 items: gaps (answers = the primary + its aliases), rearranging -> order steps,
+     *  two-sided matching -> pairs. A word box of clues becomes a stimulus. Tables and multi-column matching have no shape here. */
+    private function interaction(object $in, ?int $passage, array &$plan): array|string
+    {
+        $def = $this->json($in->definition_json) ?? [];
+        $type = (string) ($def['type'] ?? $in->interaction_type);
+        $itemIds = $this->src->getSchemaBuilder()->hasTable('question_interaction_entities')
+            ? $this->src->table('question_interaction_entities')->where('question_interaction_id', $in->id)->pluck('question_item_id', 'logical_key') : collect();
+        $textOf = fn ($key) => ($id = $itemIds[$key] ?? null) ? self::plain($this->src->table('question_items')->where('id', $id)->value('prompt_text')) : null;
+        $txt = fn ($v) => self::plain(is_array($v) ? (string) ($v['text'] ?? $v['label'] ?? $v['content'] ?? '') : (string) $v);
+        $items = [];
+        switch ($type) {
+            case 'fill_gap_with_clue':
+            case 'fill_gap_without_clue':
+                $gaps = $def['answer_key']['gaps'] ?? [];
+                if (!is_array($gaps) || !$gaps) return 'a fill-gap without gaps';
+                $order = array_values(array_filter((array) ($def['presentation']['entity_order'] ?? []), fn ($k) => isset($gaps[$k])));
+                foreach ($order ?: array_keys($gaps) as $k) {
+                    $answers = array_values(array_filter(array_map(fn ($a) => trim((string) $a), [$gaps[$k]['primary'] ?? '', ...(array) ($gaps[$k]['aliases'] ?? [])]), fn ($a) => $a !== ''));
+                    if (!$answers) return 'a gap without its answer';
+                    $items[] = ['item_type' => 'gap', 'stimulus' => $passage, 'prompt_text' => $textOf($k), 'prompt_json' => null, 'answer_json' => ['answers' => $answers],
+                        'marks' => $def['scoring']['gaps'][$k]['marks'] ?? 0];
+                }
+                $clues = array_values(array_filter(array_map($txt, (array) ($def['content']['clues'] ?? []))));
+                if ($clues) $plan['stimuli'][] = ['label' => 'clues', 'content_text' => implode(' / ', $clues), 'content_json' => null];
+                return $items;
+            case 'rearranging':
+                $order = (array) ($def['answer_key']['correct_order'] ?? []);
+                if (count($order) < 2) return 'a rearranging without its order';
+                foreach ($order as $i => $k) {
+                    if (!($t = $textOf($k))) return 'a rearranging step without text';
+                    $items[] = ['item_type' => 'order_step', 'stimulus' => $passage, 'prompt_text' => $t, 'prompt_json' => null, 'answer_json' => ['position' => $i + 1], 'marks' => 0];
+                }
+                return $items;
+            case 'matching':
+                $m = $def['content']['matching'] ?? [];
+                if (!is_array($m['left'] ?? null) || !is_array($m['right'] ?? null)) return 'multi-column matching';
+                $right = collect($m['right'])->mapWithKeys(fn ($x) => [(string) ($x['key'] ?? '') => $txt($x)]);
+                foreach ($m['left'] as $l) {
+                    $to = $def['answer_key']['matches'][$l['key'] ?? ''] ?? null;
+                    $to = is_array($to) ? ($to[0] ?? null) : $to;
+                    if (!($t = $txt($l)) || !($r = $right[(string) $to] ?? null)) return 'a matching pair without both sides';
+                    $items[] = ['item_type' => 'match_pair', 'stimulus' => $passage, 'prompt_text' => $t, 'prompt_json' => null, 'answer_json' => ['right' => $r], 'marks' => 0];
+                }
+                return count($items) >= 2 ? $items : 'a matching with fewer than two pairs';
+            default:
+                return "interaction {$type}";
+        }
+    }
+
+    private function place(array $plan, int $q): void
+    {
+        $ids = [];
+        foreach ($plan['stimuli'] as $i => $st) {
+            $ids[$i] = QbQuestionStimulus::create(['qb_question_id' => $q, 'sort_order' => $i] + $st)->id;
+            $this->count('question_stimuli', 'new');
+        }
+        foreach ($plan['items'] as $i => $it) {
+            QbQuestionItem::create(['qb_question_id' => $q, 'qb_question_stimulus_id' => $it['stimulus'] !== null ? $ids[$it['stimulus']] : null, 'item_type' => $it['item_type'],
+                'prompt_text' => $it['prompt_text'], 'prompt_json' => $it['prompt_json'], 'answer_json' => $it['answer_json'],
+                'marks' => is_numeric($it['marks']) ? $it['marks'] : 0, 'sort_order' => $i]);
+            $this->count('question_items', 'new');
+        }
     }
 
     /** Only for a question taken in this run - its rows come with it, once */

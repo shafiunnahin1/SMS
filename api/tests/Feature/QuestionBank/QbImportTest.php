@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{QbChapter, QbClassLevel, QbCreativePart, QbImportMap, QbMedia, QbMediaLink, QbQuestion, QbQuestionClassLevel, QbQuestionOccurrence, QbQuestionOption,
+use App\Models\{QbQuestionItem, QbQuestionStimulus, QbChapter, QbClassLevel, QbCreativePart, QbImportMap, QbMedia, QbMediaLink, QbQuestion, QbQuestionClassLevel, QbQuestionOccurrence, QbQuestionOption,
     QbQuestionType, QbSubject, QbTopic, User};
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -153,5 +153,68 @@ class QbImportTest extends TestCase
         $q->forceFill(['question_text' => '<div dir="auto">পুরনো&#160;HTML</div>\n'])->save();   // as the first, uncleaned run left it
         $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media, '--refresh-text' => true])->assertSuccessful();
         $this->assertSame('পুরনো HTML', $q->fresh()->question_text);
+    }
+
+    public function test_structured_questions_arrive_in_the_existing_stimuli_and_items_d70(): void
+    {
+        $s = Schema::connection('qbank');
+        $s->table('question_items', fn (Blueprint $t) => [$t->text('prompt_text')->nullable(), $t->text('answer_text')->nullable(), $t->decimal('marks', 8, 2)->nullable(), $t->integer('sort_order')->default(0)]);
+        $s->table('question_stimuli', fn (Blueprint $t) => [$t->string('title')->nullable(), $t->string('stimulus_type')->nullable(), $t->text('content_json')->nullable()]);
+        $s->create('question_item_options', fn (Blueprint $t) => [$t->id(), $t->unsignedBigInteger('question_item_id'), $t->text('option_text')->nullable(), $t->boolean('is_correct')->default(false), $t->integer('sort_order')->default(0)]);
+        $s->create('question_interactions', fn (Blueprint $t) => [$t->id(), $t->unsignedBigInteger('question_id'), $t->string('interaction_type'), $t->text('definition_json')]);
+        $s->create('question_interaction_entities', fn (Blueprint $t) => [$t->id(), $t->unsignedBigInteger('question_interaction_id'), $t->string('entity_type'), $t->string('logical_key'), $t->unsignedBigInteger('question_item_id')->nullable()]);
+        $q = DB::connection('qbank');
+        $q->table('question_types')->insert(['id' => 3, 'slug' => 'structured', 'name_bn' => 'স', 'name_en' => 's']);
+        $add = fn (int $id, string $text, ?int $stim = null) => $q->table('questions')->insert(['id' => $id, 'question_type_id' => 3, 'subject_id' => 20, 'question_text' => $text, 'question_stimulus_id' => $stim]);
+        // a passage with one MCQ item and one written item (question 103 already points at stimulus 7; its empty item gets content)
+        $q->table('question_stimuli')->where('id', 7)->update(['title' => 'অনুচ্ছেদ', 'content_text' => '<p>Rana went&#160;home.</p>']);
+        $q->table('question_items')->where('question_id', 103)->update(['prompt_text' => 'Who went?', 'sort_order' => 1]);
+        $item = $q->table('question_items')->where('question_id', 103)->value('id');
+        $q->table('question_item_options')->insert([['question_item_id' => $item, 'option_text' => 'Rana', 'is_correct' => true, 'sort_order' => 1], ['question_item_id' => $item, 'option_text' => 'Rina', 'is_correct' => false, 'sort_order' => 2]]);
+        $q->table('question_items')->insert(['question_id' => 103, 'prompt_text' => 'Where?', 'answer_text' => 'home', 'sort_order' => 2]);
+        $q->table('question_options')->insert([['question_id' => 103, 'option_label' => 'ক', 'option_text' => 'a', 'is_correct' => true, 'sort_order' => 1], ['question_id' => 103, 'option_label' => 'খ', 'option_text' => 'b', 'is_correct' => false, 'sort_order' => 2]]);
+        // fill gap with clues: two gaps, the second with an alias; the projection items carry the text around each gap
+        $add(110, 'Fill in');
+        $g1 = $q->table('question_items')->insertGetId(['question_id' => 110, 'prompt_text' => 'He (a) ___ to']);
+        $g2 = $q->table('question_items')->insertGetId(['question_id' => 110, 'prompt_text' => '(b) ___ at nine']);
+        $i1 = $q->table('question_interactions')->insertGetId(['question_id' => 110, 'interaction_type' => 'fill_gap_with_clue', 'definition_json' => json_encode(['type' => 'fill_gap_with_clue',
+            'content' => ['clues' => ['c1' => 'went', 'c2' => ['text' => 'school']]], 'presentation' => ['entity_order' => ['g1', 'g2', 'c1', 'c2']],
+            'answer_key' => ['gaps' => ['g2' => ['primary' => 'school', 'aliases' => ['School']], 'g1' => ['primary' => 'went']]], 'scoring' => ['gaps' => ['g1' => ['marks' => 1], 'g2' => ['marks' => 1]]]])]);
+        $q->table('question_interaction_entities')->insert([['question_interaction_id' => $i1, 'entity_type' => 'GAP', 'logical_key' => 'g1', 'question_item_id' => $g1], ['question_interaction_id' => $i1, 'entity_type' => 'GAP', 'logical_key' => 'g2', 'question_item_id' => $g2]]);
+        // rearranging: the right order differs from the items' order
+        $add(111, 'Arrange');
+        $sa = $q->table('question_items')->insertGetId(['question_id' => 111, 'prompt_text' => 'go to school']);
+        $sb = $q->table('question_items')->insertGetId(['question_id' => 111, 'prompt_text' => 'wake up']);
+        $i2 = $q->table('question_interactions')->insertGetId(['question_id' => 111, 'interaction_type' => 'rearranging', 'definition_json' => json_encode(['type' => 'rearranging', 'answer_key' => ['correct_order' => ['s2', 's1']]])]);
+        $q->table('question_interaction_entities')->insert([['question_interaction_id' => $i2, 'entity_type' => 'SEGMENT', 'logical_key' => 's1', 'question_item_id' => $sa], ['question_interaction_id' => $i2, 'entity_type' => 'SEGMENT', 'logical_key' => 's2', 'question_item_id' => $sb]]);
+        // matching (two sides) and a table (no shape here - the whole question waits)
+        $add(112, 'Match');
+        $q->table('question_interactions')->insert(['question_id' => 112, 'interaction_type' => 'matching', 'definition_json' => json_encode(['type' => 'matching',
+            'content' => ['matching' => ['left' => [['key' => 'l1', 'text' => 'Dhaka'], ['key' => 'l2', 'text' => 'Delhi']], 'right' => [['key' => 'r1', 'text' => 'India'], ['key' => 'r2', 'text' => 'Bangladesh']]]],
+            'answer_key' => ['matches' => ['l1' => 'r2', 'l2' => ['r1']]]])]);
+        $add(113, 'Table');
+        $q->table('question_interactions')->insert(['question_id' => 113, 'interaction_type' => 'table_completion', 'definition_json' => json_encode(['type' => 'table_completion'])]);
+
+        \Illuminate\Support\Facades\Artisan::call('qb:import-from-qbank', ['--media-path' => $this->media]);
+        $report = \Illuminate\Support\Facades\Artisan::output();
+        $this->assertStringContainsString('has structured parts that do not fit (interaction table_completion)', $report);
+        $this->assertSame(0, QbQuestion::where('question_text', 'Table')->count());
+
+        $items = fn (string $text) => QbQuestionItem::where('qb_question_id', QbQuestion::where('question_text', $text)->value('id'))->orderBy('sort_order')->get();
+        $passage = QbQuestion::where('question_text', 'অনুচ্ছেদ পড়ে উত্তর দাও')->firstOrFail();
+        $st = QbQuestionStimulus::where('qb_question_id', $passage->id)->firstOrFail();
+        $this->assertSame(['অনুচ্ছেদ', 'Rana went home.'], [$st->label, $st->content_text]);
+        $this->assertSame([['sub_mcq', 'Who went?', ['options' => ['Rana', 'Rina']], ['correct' => 0], $st->id], ['sub_question', 'Where?', null, ['answer_text' => 'home'], $st->id]],
+            $items('অনুচ্ছেদ পড়ে উত্তর দাও')->map(fn ($i) => [$i->item_type, $i->prompt_text, $i->prompt_json, $i->answer_json, $i->qb_question_stimulus_id])->all());
+
+        $this->assertSame([['He (a) ___ to', ['went']], ['(b) ___ at nine', ['school', 'School']]], $items('Fill in')->map(fn ($i) => [$i->prompt_text, $i->answer_json['answers']])->all());
+        $this->assertSame(['gap', 'gap'], $items('Fill in')->pluck('item_type')->all());
+        $this->assertSame('went / school', QbQuestionStimulus::where('qb_question_id', QbQuestion::where('question_text', 'Fill in')->value('id'))->value('content_text'));
+        $this->assertSame([['wake up', 1], ['go to school', 2]], $items('Arrange')->map(fn ($i) => [$i->prompt_text, $i->answer_json['position']])->all());
+        $this->assertSame([['match_pair', 'Dhaka', 'Bangladesh'], ['match_pair', 'Delhi', 'India']], $items('Match')->map(fn ($i) => [$i->item_type, $i->prompt_text, $i->answer_json['right']])->all());
+
+        $before = [QbQuestionItem::count(), QbQuestionStimulus::count()];
+        $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])->assertSuccessful();
+        $this->assertSame($before, [QbQuestionItem::count(), QbQuestionStimulus::count()], 'a second run adds no parts twice');
     }
 }
