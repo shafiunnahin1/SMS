@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\{QbChapter, QbChapterClassLevel, QbClassLevel, QbClassLevelSubject, QbCreativePart, QbImportMap, QbMedia, QbMediaLink, QbQuestion,
-    QbQuestionClassLevel, QbQuestionItem, QbQuestionOccurrence, QbQuestionOption, QbQuestionStimulus, QbQuestionType, QbSubject, QbTopic, User};
-use App\Support\Money;
+    QbQuestionClassLevel, QbQuestionItem, QbQuestionRevision, QbQuestionOccurrence, QbQuestionOption, QbQuestionStimulus, QbQuestionType, QbSubject, QbTopic, User};
+use App\Support\{Money, QbRichText};
 use Illuminate\Console\Command;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\{DB, Storage};
@@ -79,30 +79,47 @@ class QbImportFromQbank extends Command
     private function count(string $table, string $kind): void { $this->report[$table][$kind] = ($this->report[$table][$kind] ?? 0) + 1; }
     private function skip(string $what, string $why): void { $this->skipped["{$what}|{$why}"] = ($this->skipped["{$what}|{$why}"] ?? 0) + 1; }
     private function rows(string $table) { return $this->src->getSchemaBuilder()->hasTable($table) ? $this->src->table($table)->orderBy('id')->get() : collect(); }
-    /** qbank stores its editor's HTML (and literal "\\n") in the *_text columns; here text is plain text - tags become line
-     *  breaks / nothing, entities are decoded, never kept as markup (the pages render text, not HTML) */
+    /** D72: qbank's *_text keeps its formatting vocabulary (QbRichText decides what stays); its literal "\n" become line breaks and
+     *  its inline picture marker goes (the picture comes as the row's media link). */
     public static function plain(?string $v): ?string
     {
         if ($v === null) return null;
         $v = str_replace(['\\r\\n', '\\n', '\\r'], "\n", $v);
-        $v = preg_replace('~\[\[qmx-image:\d+\]\]~u', '', $v);   // qbank's inline picture marker: the picture comes as the row's media link
-        $v = preg_replace('~<\s*br\s*/?>|</\s*(div|p|li|h[1-6]|tr)\s*>~i', "\n", $v);
-        $v = html_entity_decode(strip_tags($v), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $v = preg_replace("~[ \t\x{00A0}]+~u", ' ', $v);
-        return trim(preg_replace("~ *\n[ \n]*~", "\n", $v));
+        $v = preg_replace('~\[\[qmx-image:\d+\]\]~u', '', $v);
+        return trim(QbRichText::clean($v));
     }
 
-    /** --refresh-text: the rows taken by an earlier run get the same cleaning (only rows this import made, via qb_import_map) */
+    /** --refresh-text: rows an earlier run took get their text again from qbank (the formatting comes back) and their passage /
+     *  items are rebuilt - unless someone has edited the question here since (it has a revision): then it is left as it is. */
     private function refreshText(): void
     {
-        $maps = ['questions' => [QbQuestion::class, ['question_text', 'answer_text', 'explanation_text']],
-            'question_options' => [QbQuestionOption::class, ['content_text']], 'creative_question_parts' => [QbCreativePart::class, ['question_text', 'answer_text']]];
-        foreach ($maps as $table => [$model, $cols]) {
-            $ids = QbImportMap::where('source', 'qbank')->where('source_table', $table)->pluck('target_id');
-            foreach ($model::whereIn('id', $ids)->get() as $row) {
-                foreach ($cols as $c) if ($row->{$c} !== null) $row->{$c} = self::plain($row->{$c}) ?? '';
-                if ($row->isDirty()) { $row->save(); $this->count("{$table} (text cleaned)", 'kept'); }
-                if ($row instanceof QbQuestion) $this->passageInText($row);
+        $edited = fn (int $q) => QbQuestionRevision::where('qb_question_id', $q)->exists();
+        foreach (QbImportMap::where('source', 'qbank')->where('source_table', 'questions')->get() as $map) {
+            $q = QbQuestion::find($map->target_id);
+            $src = $this->src->table('questions')->where('id', $map->source_id)->first();
+            if (!$q || !$src) continue;
+            if ($edited($q->id)) { $this->skip('questions (refresh)', 'edited here since the import - left as it is'); continue; }
+            $q->fill(['question_text' => (string) self::plain($src->question_text), 'answer_text' => self::plain($src->answer_text), 'explanation_text' => self::plain($src->explanation_text)]);
+            $plan = $this->structured($src);
+            if (is_array($plan)) {
+                QbQuestionItem::where('qb_question_id', $q->id)->delete();
+                QbQuestionStimulus::where('qb_question_id', $q->id)->delete();
+                $q->save();
+                $this->place($plan, $q->id);
+                $this->passageInText($q->fresh());
+            } else {
+                $q->save();
+            }
+            $this->count('questions (text refreshed from qbank)', 'kept');
+        }
+        $rows = ['question_options' => [QbQuestionOption::class, ['content_text' => 'option_text']], 'creative_question_parts' => [QbCreativePart::class, ['question_text' => 'question_text', 'answer_text' => 'answer_text']]];
+        foreach ($rows as $table => [$model, $cols]) {
+            foreach (QbImportMap::where('source', 'qbank')->where('source_table', $table)->get() as $map) {
+                $row = $model::find($map->target_id);
+                $src = $this->src->table($table)->where('id', $map->source_id)->first();
+                if (!$row || !$src || $edited((int) $row->qb_question_id)) continue;
+                foreach ($cols as $to => $from) $row->{$to} = $to === 'answer_text' ? self::plain($src->{$from}) : (string) self::plain($src->{$from});
+                $row->save();
             }
         }
     }

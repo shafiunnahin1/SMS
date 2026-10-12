@@ -143,17 +143,24 @@ class QbImportTest extends TestCase
         $this->assertSame($subject->id, QbQuestion::where('question_text', 'বেগের একক?')->value('qb_subject_id'));
     }
 
-    public function test_qbank_editor_html_arrives_as_plain_text_and_refresh_text_cleans_earlier_rows(): void
+    public function test_qbank_formatting_arrives_allowlisted_and_refresh_text_brings_it_back(): void
     {
         $html = '<div data-qae-layout="qa"><div data-qae-slot="task"><div dir="auto">বল&#160;কাকে বলে?</div></div><ol><li>এক</li><li>দুই</li></ol></div>\n<script>x</script>শেষ';
-        $this->assertSame("বল কাকে বলে?\nএক\nদুই\nxশেষ", \App\Console\Commands\QbImportFromQbank::plain($html));
+        // D72: qbank's layout divs and lists stay (QbRichText's vocabulary); the script tag goes, its text stays escaped-safe
+        $this->assertSame("<div data-qae-layout=\"qa\"><div data-qae-slot=\"task\"><div dir=\"auto\">বল\u{00A0}কাকে বলে?</div></div><ol><li>এক</li><li>দুই</li></ol></div>\nশেষ",
+            \App\Console\Commands\QbImportFromQbank::plain($html));
         $this->assertSame('----nt -> (a)___', \App\Console\Commands\QbImportFromQbank::plain('[[qmx-image:7]] ----nt -> (a)___'));
-        DB::connection('qbank')->table('questions')->where('id', 100)->update(['question_text' => '<div>বেগের&#160;একক?</div>']);
+        DB::connection('qbank')->table('questions')->where('id', 100)->update(['question_text' => '<div><strong>বেগের</strong> একক?</div><script>x()</script>']);
         $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])->assertSuccessful();
-        $q = QbQuestion::where('question_text', 'বেগের একক?')->firstOrFail();
-        $q->forceFill(['question_text' => '<div dir="auto">পুরনো&#160;HTML</div>\n'])->save();   // as the first, uncleaned run left it
+        $q = QbQuestion::where('question_text', '<div><strong>বেগের</strong> একক?</div>')->firstOrFail();
+        $q->forceFill(['question_text' => 'বেগের একক?'])->saveQuietly();   // as a run before D72 left it: the formatting stripped
         $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media, '--refresh-text' => true])->assertSuccessful();
-        $this->assertSame('পুরনো HTML', $q->fresh()->question_text);
+        $this->assertSame('<div><strong>বেগের</strong> একক?</div>', $q->fresh()->question_text, 'the formatting comes back from qbank');
+
+        \App\Models\QbQuestionRevision::create(['qb_question_id' => $q->id, 'snapshot' => [], 'edited_by' => \App\Models\User::value('id')]);
+        $q->forceFill(['question_text' => 'edited here'])->saveQuietly();
+        $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media, '--refresh-text' => true])->expectsOutputToContain('edited here since the import')->assertSuccessful();
+        $this->assertSame('edited here', $q->fresh()->question_text, 'a question edited here is left as it is');
     }
 
     public function test_structured_questions_arrive_in_the_existing_stimuli_and_items_d70_d71(): void
@@ -224,7 +231,7 @@ class QbImportTest extends TestCase
 
         $passage = QbQuestion::where('question_text', 'অনুচ্ছেদ পড়ে উত্তর দাও')->firstOrFail();
         $st = QbQuestionStimulus::where('qb_question_id', $passage->id)->firstOrFail();
-        $this->assertSame(['অনুচ্ছেদ', 'Rana went home.'], [$st->label, $st->content_text]);
+        $this->assertSame(['অনুচ্ছেদ', "<div>Rana went\u{00A0}home.</div>"], [$st->label, $st->content_text]);   // D72: the formatting stays
         $this->assertSame([['sub_mcq', 'Who went?', ['options' => ['Rana', 'Rina']], ['correct' => 0], $st->id], ['sub_question', 'Where?', null, ['answer_text' => 'home'], $st->id]],
             $items('অনুচ্ছেদ পড়ে উত্তর দাও')->map(fn ($i) => [$i->item_type, $i->prompt_text, $i->prompt_json, $i->answer_json, $i->qb_question_stimulus_id])->all());
 

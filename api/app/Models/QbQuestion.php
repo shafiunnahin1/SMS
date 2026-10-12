@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\CleansRichText;
 use App\Traits\PlatformCatalogue;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 // D65/D66 question bank (platform catalogue) - docs/modules/question-bank.md §3
 class QbQuestion extends Model
 {
-    use PlatformCatalogue, SoftDeletes;
+    use PlatformCatalogue, SoftDeletes, CleansRichText;
+    public const RICH_TEXT = ['question_text', 'answer_text', 'explanation_text'];   // D72: qbank's formatting vocabulary only
 
     public const TENANT_READ = 'published';   // an institution sees only published content
 
