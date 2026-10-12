@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\{DB, Storage};
 // questions with their class links, options, creative parts (the first level), occurrences and pictures. qb_import_map remembers
 // every qbank row taken, so a second run takes nothing twice. Questions arrive as `review` (a moderator publishes them).
 // --dry-run does the whole import inside a transaction and rolls it back (exact counts, nothing kept, no file copied).
-// D70: passages, items and interactions (fill gap / matching / rearranging) go into the existing stimuli / items in QB.4's shapes; a
-// question whose structured part has no such shape (a table, multi-column matching, an item without its answer) waits whole.
+// D70/D71: passages, items and interactions (fill gap / matching / rearranging / table) go into the existing stimuli / items in
+// QB.4's shapes; an item without an answer comes without one (the publish check waits). A part with no usable data waits whole.
 // Not taken (counted in the report): nested creative parts, item groups, question sets, OMR. Curriculum rows already here (the seed came from qbank) are matched by their Bengali name.
 class QbImportFromQbank extends Command
 {
@@ -251,15 +251,18 @@ class QbImportFromQbank extends Command
                     'answer_json' => ['correct' => $opts->values()->search(fn ($o) => (bool) $o->is_correct)]];
             } elseif (($ans = self::plain($it->answer_text ?? null)) !== null && $ans !== '' && $prompt) {
                 $plan['items'][] = ['item_type' => 'sub_question', 'stimulus' => $passage, 'prompt_text' => $prompt, 'marks' => $marks, 'prompt_json' => null, 'answer_json' => ['answer_text' => $ans]];
+            } elseif ($prompt) {                                    // D71: comes without an answer; the publish check waits for one
+                $plan['items'][] = ['item_type' => 'sub_question', 'stimulus' => $passage, 'prompt_text' => $prompt, 'marks' => $marks, 'prompt_json' => null, 'answer_json' => ['answer_text' => null]];
+                $this->skip('question_items', 'imported without an answer - a moderator adds it before publishing');
             } else {
-                return 'an item without its answer';
+                return 'an item with neither text nor answer';
             }
         }
         return $plan;
     }
 
     /** qbank's interaction definition -> QB.4 items: gaps (answers = the primary + its aliases), rearranging -> order steps,
-     *  two-sided matching -> pairs. A word box of clues becomes a stimulus. Tables and multi-column matching have no shape here. */
+     *  two-sided matching -> pairs. A word box of clues becomes a stimulus. A table becomes a stimulus with a gap per answer cell; column matching joins each row's matches (D71). */
     private function interaction(object $in, ?int $passage, array &$plan): array|string
     {
         $def = $this->json($in->definition_json) ?? [];
@@ -294,7 +297,17 @@ class QbImportFromQbank extends Command
                 return $items;
             case 'matching':
                 $m = $def['content']['matching'] ?? [];
-                if (!is_array($m['left'] ?? null) || !is_array($m['right'] ?? null)) return 'multi-column matching';
+                if (is_array($m['columns'] ?? null)) {                 // D71: the first column's rows; the right side = the other columns' matches together
+                    $cols = array_values($m['columns']);
+                    $opt = collect(array_slice($cols, 1))->flatMap(fn ($c) => $c['options'] ?? [])->mapWithKeys(fn ($o) => [(string) ($o['key'] ?? '') => $txt($o)]);
+                    foreach ($cols[0]['options'] ?? [] as $l) {
+                        $right = collect((array) ($def['answer_key']['matches'][$l['key'] ?? ''] ?? []))->map(fn ($k) => $opt[(string) $k] ?? null);
+                        if (!($t = $txt($l)) || $right->isEmpty() || $right->contains(null)) return 'a matching row without its matches';
+                        $items[] = ['item_type' => 'match_pair', 'stimulus' => $passage, 'prompt_text' => $t, 'prompt_json' => null, 'answer_json' => ['right' => $right->implode(' — ')], 'marks' => 0];
+                    }
+                    return count($items) >= 2 ? $items : 'a matching with fewer than two rows';
+                }
+                if (!is_array($m['left'] ?? null) || !is_array($m['right'] ?? null)) return 'a matching without sides';
                 $right = collect($m['right'])->mapWithKeys(fn ($x) => [(string) ($x['key'] ?? '') => $txt($x)]);
                 foreach ($m['left'] as $l) {
                     $to = $def['answer_key']['matches'][$l['key'] ?? ''] ?? null;
@@ -303,6 +316,29 @@ class QbImportFromQbank extends Command
                     $items[] = ['item_type' => 'match_pair', 'stimulus' => $passage, 'prompt_text' => $t, 'prompt_json' => null, 'answer_json' => ['right' => $r], 'marks' => 0];
                 }
                 return count($items) >= 2 ? $items : 'a matching with fewer than two pairs';
+            case 'table_completion':                                 // D71: the table (no answers) is a stimulus; each answer cell a gap
+                $tbl = $def['content']['table'] ?? [];
+                $heads = array_map(fn ($c) => trim((string) ($c['header'] ?? '')), (array) ($tbl['columns'] ?? []));
+                $cells = (array) ($def['answer_key']['cells'] ?? []);
+                $lines = $heads && array_filter($heads) ? [implode(' | ', $heads)] : [];
+                $n = 0;
+                foreach ((array) ($tbl['rows'] ?? []) as $row) {
+                    $out = [];
+                    $rowName = collect($row['cells'] ?? [])->first(fn ($c) => ($c['kind'] ?? '') === 'fixed')['text'] ?? '';
+                    foreach (array_values((array) ($row['cells'] ?? [])) as $ci => $c) {
+                        if (($c['kind'] ?? '') !== 'answerable') { $out[] = self::plain((string) ($c['text'] ?? '')); continue; }
+                        $ans = trim((string) ($cells[$c['cell_key'] ?? '']['primary'] ?? ''));
+                        if ($ans === '') return 'a table cell without its answer';
+                        $label = '(' . (++$n) . ')';
+                        $out[] = "{$label} ___";
+                        $items[] = ['item_type' => 'gap', 'stimulus' => count($plan['stimuli']), 'prompt_text' => trim("{$label} " . self::plain((string) $rowName) . (($heads[$ci] ?? '') !== '' ? " — {$heads[$ci]}" : '')),
+                            'prompt_json' => null, 'answer_json' => ['answers' => [$ans]], 'marks' => $def['scoring']['cells'][$c['cell_key']]['marks'] ?? 0];
+                    }
+                    $lines[] = implode(' | ', $out);
+                }
+                if (!$items) return 'a table without answer cells';
+                $plan['stimuli'][] = ['label' => 'table', 'content_text' => implode("\n", $lines), 'content_json' => ['table' => $tbl]];   // cells carry keys, never answers
+                return $items;
             default:
                 return "interaction {$type}";
         }

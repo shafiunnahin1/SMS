@@ -155,7 +155,7 @@ class QbImportTest extends TestCase
         $this->assertSame('পুরনো HTML', $q->fresh()->question_text);
     }
 
-    public function test_structured_questions_arrive_in_the_existing_stimuli_and_items_d70(): void
+    public function test_structured_questions_arrive_in_the_existing_stimuli_and_items_d70_d71(): void
     {
         $s = Schema::connection('qbank');
         $s->table('question_items', fn (Blueprint $t) => [$t->text('prompt_text')->nullable(), $t->text('answer_text')->nullable(), $t->decimal('marks', 8, 2)->nullable(), $t->integer('sort_order')->default(0)]);
@@ -192,15 +192,35 @@ class QbImportTest extends TestCase
         $q->table('question_interactions')->insert(['question_id' => 112, 'interaction_type' => 'matching', 'definition_json' => json_encode(['type' => 'matching',
             'content' => ['matching' => ['left' => [['key' => 'l1', 'text' => 'Dhaka'], ['key' => 'l2', 'text' => 'Delhi']], 'right' => [['key' => 'r1', 'text' => 'India'], ['key' => 'r2', 'text' => 'Bangladesh']]]],
             'answer_key' => ['matches' => ['l1' => 'r2', 'l2' => ['r1']]]])]);
+        // D71: a table (one answer cell), column matching (3 columns), an item without an answer; and an unknown interaction still waits
         $add(113, 'Table');
-        $q->table('question_interactions')->insert(['question_id' => 113, 'interaction_type' => 'table_completion', 'definition_json' => json_encode(['type' => 'table_completion'])]);
-
-        \Illuminate\Support\Facades\Artisan::call('qb:import-from-qbank', ['--media-path' => $this->media]);
-        $report = \Illuminate\Support\Facades\Artisan::output();
-        $this->assertStringContainsString('has structured parts that do not fit (interaction table_completion)', $report);
-        $this->assertSame(0, QbQuestion::where('question_text', 'Table')->count());
+        $q->table('question_interactions')->insert(['question_id' => 113, 'interaction_type' => 'table_completion', 'definition_json' => json_encode(['type' => 'table_completion',
+            'content' => ['table' => ['columns' => [['header' => 'Verb'], ['header' => 'Past']], 'rows' => [['cells' => [['kind' => 'fixed', 'text' => 'go'], ['kind' => 'answerable', 'cell_key' => 'k1']]]]]],
+            'answer_key' => ['cells' => ['k1' => ['answer_kind' => 'text', 'primary' => 'went']]]])]);
+        $add(114, 'Columns');
+        $q->table('question_interactions')->insert(['question_id' => 114, 'interaction_type' => 'matching', 'definition_json' => json_encode(['type' => 'matching',
+            'content' => ['matching' => ['columns' => [['options' => [['key' => 'a', 'text' => 'Dhaka'], ['key' => 'b', 'text' => 'Delhi']]],
+                ['options' => [['key' => 'x', 'text' => 'India'], ['key' => 'y', 'text' => 'Bangladesh']]], ['options' => [['key' => 'm', 'text' => 'Rupee'], ['key' => 'n', 'text' => 'Taka']]]]]],
+            'answer_key' => ['matches' => ['a' => ['y', 'n'], 'b' => ['x', 'm']]]])]);
+        $add(115, 'No answer', null);
+        $q->table('question_items')->insert(['question_id' => 115, 'prompt_text' => 'Why?']);
+        $add(116, 'Odd');
+        $q->table('question_interactions')->insert(['question_id' => 116, 'interaction_type' => 'hotspot', 'definition_json' => json_encode(['type' => 'hotspot'])]);
 
         $items = fn (string $text) => QbQuestionItem::where('qb_question_id', QbQuestion::where('question_text', $text)->value('id'))->orderBy('sort_order')->get();
+        \Illuminate\Support\Facades\Artisan::call('qb:import-from-qbank', ['--media-path' => $this->media]);
+        $report = \Illuminate\Support\Facades\Artisan::output();
+        $this->assertStringContainsString('has structured parts that do not fit (interaction hotspot)', $report);
+        $this->assertStringContainsString('imported without an answer', $report);
+        $this->assertSame(0, QbQuestion::where('question_text', 'Odd')->count());
+        $table = QbQuestionStimulus::where('qb_question_id', QbQuestion::where('question_text', 'Table')->value('id'))->firstOrFail();
+        $this->assertSame(['table', "Verb | Past\ngo | (1) ___"], [$table->label, $table->content_text]);
+        $this->assertStringNotContainsString('went', json_encode($table->content_json), 'the stimulus never carries the answers');
+        $this->assertSame([['gap', '(1) go — Past', ['went'], $table->id]], $items('Table')->map(fn ($i) => [$i->item_type, $i->prompt_text, $i->answer_json['answers'], $i->qb_question_stimulus_id])->all());
+        $this->assertSame([['Dhaka', 'Bangladesh — Taka'], ['Delhi', 'India — Rupee']], $items('Columns')->map(fn ($i) => [$i->prompt_text, $i->answer_json['right']])->all());
+        $this->assertSame([['sub_question', 'Why?', null]], $items('No answer')->map(fn ($i) => [$i->item_type, $i->prompt_text, $i->answer_json['answer_text']])->all());
+        $this->assertSame('review', QbQuestion::where('question_text', 'No answer')->value('status'));
+
         $passage = QbQuestion::where('question_text', 'অনুচ্ছেদ পড়ে উত্তর দাও')->firstOrFail();
         $st = QbQuestionStimulus::where('qb_question_id', $passage->id)->firstOrFail();
         $this->assertSame(['অনুচ্ছেদ', 'Rana went home.'], [$st->label, $st->content_text]);
