@@ -24,6 +24,7 @@ class QbImportFromQbank extends Command
     private Connection $src;
     private array $report = [];
     private array $skipped = [];
+    private array $byType = [];
     private int $by;
 
     private const DIFFICULTY = ['very_easy' => 1, 'easy' => 2, 'medium' => 3, 'hard' => 4, 'very_hard' => 5];
@@ -49,7 +50,8 @@ class QbImportFromQbank extends Command
             throw $e;
         }
         $this->line($dry ? 'DRY RUN - nothing was kept.' : 'Imported.');
-        $this->table(['what', 'new', 'already here'], collect($this->report)->map(fn ($r, $k) => [$k, $r['new'] ?? 0, $r['kept'] ?? 0])->values()->all());
+        $this->table(['what', 'new', 'matched to an existing row', 'imported before'], collect($this->report)->map(fn ($r, $k) => [$k, $r['new'] ?? 0, $r['matched'] ?? 0, $r['kept'] ?? 0])->values()->all());
+        if ($this->byType) { arsort($this->byType); $this->table(['questions by type', 'new'], collect($this->byType)->map(fn ($n, $k) => [$k, $n])->values()->all()); }
         if ($this->skipped) $this->table(['skipped', 'why', 'rows'], collect($this->skipped)->map(fn ($n, $k) => [...explode('|', $k, 2), $n])->values()->all());
         return self::SUCCESS;
     }
@@ -67,7 +69,7 @@ class QbImportFromQbank extends Command
         $model = $make();
         if (!$model) return null;
         QbImportMap::create(['source' => 'qbank', 'source_table' => $table, 'source_id' => $id, 'target_table' => $target, 'target_id' => $model->id]);
-        $this->count($table, 'new');
+        $this->count($table, $model->wasRecentlyCreated ? 'new' : 'matched');   // matched: a row already here (seed / type slug) took it
         return $model->id;
     }
 
@@ -162,6 +164,8 @@ class QbImportFromQbank extends Command
                 'answer_text' => $r->answer_text, 'answer_json' => $this->json($r->answer_content_json),
                 'explanation_text' => $r->explanation_text, 'explanation_json' => $this->json($r->explanation_content_json),
                 'status' => 'review', 'created_by' => $this->by]));
+            $slug = QbQuestionType::whereKey($type)->value('slug');
+            $this->byType[$slug] = ($this->byType[$slug] ?? 0) + 1;
             $this->children((int) $r->id, $id);
         }
     }

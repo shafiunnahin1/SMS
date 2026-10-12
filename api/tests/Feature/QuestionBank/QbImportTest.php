@@ -132,7 +132,8 @@ class QbImportTest extends TestCase
     {
         $level = QbClassLevel::create(['name_bn' => 'নবম', 'name_en' => 'Class 9', 'education_level' => 'secondary']);   // the seed came from qbank
         $subject = QbSubject::create(['name_bn' => 'পদার্থ', 'name_en' => 'Physics']);
-        $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])->assertSuccessful();
+        \Illuminate\Support\Facades\Artisan::call('qb:import-from-qbank', ['--media-path' => $this->media]);
+        $this->assertMatchesRegularExpression('/class_levels\s*\|\s*0\s*\|\s*1\s*\|/', \Illuminate\Support\Facades\Artisan::output(), 'reported as matched, not new');
         $this->assertSame([1, 1], [QbClassLevel::count(), QbSubject::count()]);
         $this->assertSame([$level->id, $subject->id], [QbImportMap::where('source_table', 'class_levels')->value('target_id'), QbImportMap::where('source_table', 'subjects')->value('target_id')]);
         $this->assertSame($subject->id, QbQuestion::where('question_text', 'বেগের একক?')->value('qb_subject_id'));
