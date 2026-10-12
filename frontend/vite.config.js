@@ -12,6 +12,8 @@ export default defineConfig({
     proxy: {
       // changeOrigin: false keeps the browser's Host header (<slug>.lvh.me) - Laravel resolves the tenant from it
       '/api': { target: 'http://127.0.0.1:8000', changeOrigin: false },
+      // signed file links (temporaryUrl on the private disk) when APP_URL points at this dev server
+      '/storage': { target: 'http://127.0.0.1:8000', changeOrigin: false },
     },
   },
   test: {
