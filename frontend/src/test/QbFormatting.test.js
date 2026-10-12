@@ -24,20 +24,20 @@ describe('ribbon actions', () => {
       .toContain('<caption>&lt;img src=x onerror=alert(1)&gt;</caption>')
   })
 
-  it('merges only rectangular blank cells, splits them, and serializes escaped cell text', () => {
+  it('merges rectangular cells without losing text and splits them back safely', () => {
     const cells = createTableCells(2, 3)
     cells[0][0].text = '<img src=x onerror=alert(1)>'
     expect(mergeTableCells(cells, [[0, 0], [0, 1]])[0][0]).toMatchObject({ rowspan: 1, colspan: 2 })
     expect(mergeTableCells(cells, [[0, 0], [1, 1]])).toBeNull()
     cells[0][1].text = 'kept'
-    expect(mergeTableCells(cells, [[0, 0], [0, 1]])).toBeNull()
-    cells[0][1].text = ''
     const merged = mergeTableCells(cells, [[0, 0], [0, 1]])
+    expect(merged[0][0].text).toBe('<img src=x onerror=alert(1)>\nkept')
     expect(merged[0][1].mergedInto).toBe('0:0')
     const html = insertTable('', 0, 0, { rows: 2, cols: 3, cells: merged }).value
-    expect(html).toContain('<th dir="auto" colspan="2">&lt;img src=x onerror=alert(1)&gt;</th>')
+    expect(html).toContain('<th dir="auto" colspan="2">&lt;img src=x onerror=alert(1)&gt;<br>kept</th>')
     expect(html).not.toContain('<img')
-    expect(splitTableCell(merged, 0, 0)[0][1]).toMatchObject({ mergedInto: null, colspan: 1, rowspan: 1 })
+    expect(splitTableCell(merged, 0, 0)[0][0]).toMatchObject({ text: '<img src=x onerror=alert(1)>', colspan: 1, rowspan: 1 })
+    expect(splitTableCell(merged, 0, 0)[0][1]).toMatchObject({ text: 'kept', mergedInto: null, colspan: 1, rowspan: 1 })
     expect(splitTableCell(merged, 0, 1)).toBeNull()
   })
 

@@ -52,10 +52,11 @@ export function mergeTableCells(cells, selection) {
   for (let row = top; row <= bottom; row++) for (let col = left; col <= right; col++) {
     const cell = cells[row][col]
     if (cell.mergedInto || cell.rowspan !== 1 || cell.colspan !== 1) return null
-    if ((row !== top || col !== left) && String(cell.text).trim()) return null
   }
+  const mergedContent = Object.fromEntries(points.map(([row, col]) => [`${row}:${col}`, String(cells[row][col].text ?? '')]))
+  const mergedText = points.map(([row, col]) => mergedContent[`${row}:${col}`]).filter((text) => text !== '').join('\n')
   return cells.map((line, row) => line.map((cell, col) => {
-    if (row === top && col === left) return { ...cell, rowspan: bottom - top + 1, colspan: right - left + 1 }
+    if (row === top && col === left) return { ...cell, text: mergedText, mergedContent, rowspan: bottom - top + 1, colspan: right - left + 1 }
     if (row >= top && row <= bottom && col >= left && col <= right) return { ...cell, mergedInto: `${top}:${left}` }
     return { ...cell }
   }))
@@ -66,10 +67,16 @@ export function splitTableCell(cells, row, col) {
   if (!cell || cell.mergedInto || (cell.rowspan === 1 && cell.colspan === 1)) return null
   const bottom = row + cell.rowspan
   const right = col + cell.colspan
+  const mergedContent = cell.mergedContent ?? {}
   return cells.map((line, currentRow) => line.map((currentCell, currentCol) => {
-    if (currentRow === row && currentCol === col) return { ...currentCell, rowspan: 1, colspan: 1 }
+    const key = `${currentRow}:${currentCol}`
+    if (currentRow === row && currentCol === col) {
+      const restored = { ...currentCell, text: mergedContent[key] ?? currentCell.text, rowspan: 1, colspan: 1 }
+      delete restored.mergedContent
+      return restored
+    }
     if (currentRow >= row && currentRow < bottom && currentCol >= col && currentCol < right && currentCell.mergedInto === `${row}:${col}`) {
-      return { ...currentCell, mergedInto: null }
+      return { ...currentCell, text: mergedContent[key] ?? currentCell.text, mergedInto: null }
     }
     return { ...currentCell }
   }))
