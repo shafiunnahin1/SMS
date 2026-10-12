@@ -1158,6 +1158,7 @@
    "reset": "Reset",
    "rows": "Rows",
    "cols": "Columns",
+    "caption": "Table caption",
    "table_style": "Border",
    "table_styles": {
     "grid": "Grid",

@@ -20,5 +20,7 @@ describe('ribbon actions', () => {
     expect(applyAlign('x', 0, 1, 'center').value).toBe('<div class="qmx-align-center">x</div>')
     expect(clearFormat('<strong>x</strong>y', 0, 18).value).toBe('xy')
     expect(insertTable('', 0, 0, { rows: 2, cols: 2 }).value).toBe('<table class="qmx-table qmx-table-grid qmx-table-width-100"><tbody><tr><th dir="auto"></th><th dir="auto"></th></tr><tr><td dir="auto"></td><td dir="auto"></td></tr></tbody></table>')
+    expect(insertTable('', 0, 0, { rows: 1, cols: 1, caption: '<img src=x onerror=alert(1)>' }).value)
+      .toContain('<caption>&lt;img src=x onerror=alert(1)&gt;</caption>')
   })
 })

@@ -73,7 +73,7 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
         </label>
         <Tool label={t('qbed.clear')} onClick={() => run(clearFormat)}><RemoveFormatting aria-hidden="true" className="h-4 w-4" /></Tool>
         <Sep />
-        <Tool label={t('qbed.table')} onClick={() => setTable({ rows: '3', cols: '2', header: true, style: 'grid' })} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
+        <Tool label={t('qbed.table')} onClick={() => setTable({ rows: '3', cols: '2', header: true, style: 'grid', caption: '' })} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
         <label className="inline-flex h-9 cursor-pointer items-center rounded-token px-2 hover:bg-primary-soft" title={t('qbed.image')}>
           <ImagePlus aria-hidden="true" className="h-4 w-4" /><span className="sr-only">{t('qbed.image')}</span>
           <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={onImage} name="picture" className="sr-only" />
@@ -86,6 +86,7 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
           <div className="grid gap-3 sm:grid-cols-2" data-testid="table-dialog">
             <Input label={t('qbed.rows')} ltr inputMode="numeric" value={table.rows} onChange={e => setTable({ ...table, rows: e.target.value })} name="rows" />
             <Input label={t('qbed.cols')} ltr inputMode="numeric" value={table.cols} onChange={e => setTable({ ...table, cols: e.target.value })} name="cols" />
+            <Input className="sm:col-span-2" label={t('qbed.caption')} value={table.caption} onChange={e => setTable({ ...table, caption: e.target.value })} name="caption" />
             <Select label={t('qbed.table_style')} value={table.style} onChange={e => setTable({ ...table, style: e.target.value })}
               options={['grid', 'horizontal', 'none'].map(s => ({ value: s, label: t(`qbed.table_styles.${s}`) }))} />
             <Check label={t('qbed.header_row')} checked={table.header} onChange={e => setTable({ ...table, header: e.target.checked })} />

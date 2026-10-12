@@ -24,6 +24,7 @@ const LATEX = {
 
 const result = (value, start, end) => ({ value, start, end })
 const splice = (value, start, end, text) => result(value.slice(0, start) + text + value.slice(end), start, start + text.length)
+const escapeText = (text) => String(text ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char])
 
 /** The maths region holding [start, end) entirely, if any: { bodyStart, bodyEnd } */
 export function mathRegionAt(value, start, end) {
@@ -90,13 +91,15 @@ export function clearFormat(value, start, end) {
 }
 
 /** A qmx table: rows x columns, the first row as a header if asked; inserted at the cursor */
-export function insertTable(value, start, end, { rows = 2, cols = 2, header = true, style = 'grid' } = {}) {
+export function insertTable(value, start, end, { rows = 2, cols = 2, header = true, style = 'grid', caption = '' } = {}) {
   const r = Math.min(Math.max(Number(rows) || 1, 1), 20)
   const c = Math.min(Math.max(Number(cols) || 1, 1), 10)
   const cell = (tag) => `<${tag} dir="auto"></${tag}>`
   const body = Array.from({ length: r }, (_, i) => `<tr>${Array.from({ length: c }, () => cell(header && i === 0 ? 'th' : 'td')).join('')}</tr>`).join('')
   const kind = ['grid', 'horizontal', 'none'].includes(style) ? style : 'grid'
-  return splice(value, start, end, `<table class="qmx-table qmx-table-${kind} qmx-table-width-100"><tbody>${body}</tbody></table>`)
+  const title = String(caption).trim()
+  const captionNode = title ? `<caption>${escapeText(title)}</caption>` : ''
+  return splice(value, start, end, `<table class="qmx-table qmx-table-${kind} qmx-table-width-100">${captionNode}<tbody>${body}</tbody></table>`)
 }
 
 /** Text at the cursor (maths from the formula dialog, for one) */
