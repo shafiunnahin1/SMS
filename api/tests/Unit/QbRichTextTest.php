@@ -37,6 +37,24 @@ class QbRichTextTest extends TestCase
             QbRichText::html('<span data-qmx-color="#2563EB">a</span><span data-qmx-bg="#fff59d" style="x">b</span><script>c</script>'));
     }
 
+    public function test_a_picture_only_by_media_id_and_a_table_caption_qb14(): void
+    {
+        $this->assertSame('<img data-qmx-media="12" data-qmx-width="50" data-qmx-align="center">', QbRichText::clean('<img data-qmx-media="12" data-qmx-width="50" data-qmx-align="center" src="http://evil/x.png" onerror="x()">'));
+        $this->assertSame('', QbRichText::clean('<img src="http://evil/x.png">'), 'a picture without our media id goes');
+        $this->assertSame('<img data-qmx-media="3">', QbRichText::clean('<img data-qmx-media="3" data-qmx-width="500" data-qmx-align="top">'), 'bad width / align dropped');
+        $this->assertSame('<table class="qmx-table"><caption>শিরোনাম</caption><tbody><tr><td rowspan="2">a</td></tr></tbody></table>',
+            QbRichText::clean('<table class="qmx-table"><caption onclick="x()">শিরোনাম</caption><tbody><tr><td rowspan="2">a</td></tr></tbody></table>'));
+    }
+
+    public function test_printed_pages_draw_only_known_pictures_qb14(): void
+    {
+        $png = 'data:image/png;base64,AAAA';
+        $this->assertSame('<img src="data:image/png;base64,AAAA" style="display:block;width:50%;margin:0 auto" alt="">',
+            QbRichText::html('<img data-qmx-media="7" data-qmx-width="50" data-qmx-align="center">', [7 => $png]));
+        $this->assertSame('', QbRichText::html('<img data-qmx-media="8">', [7 => $png]), 'a picture not of this question is left out');
+        $this->assertSame('', QbRichText::html('<img data-qmx-media="7">', [7 => 'javascript:x()']), 'only image data');
+    }
+
     public function test_plain_drops_the_tags(): void
     {
         $this->assertSame("বল কাকে\nএক\nদুই", QbRichText::plain('<strong>বল</strong> কাকে<ol><li>এক</li><li>দুই</li></ol>'));

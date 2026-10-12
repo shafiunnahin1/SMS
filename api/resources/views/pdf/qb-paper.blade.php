@@ -34,7 +34,7 @@
     @foreach ($s['items'] as $it)
       @php($q = $it['question'])
       <div class="q">
-        <div class="row"><strong>{{ $it['no'] }}.</strong><span class="text">{!! \App\Support\QbRichText::html($q['question_text']) !!}</span><span class="mk">[{{ $n($it['marks']) }}]</span></div>
+        <div class="row"><strong>{{ $it['no'] }}.</strong><span class="text">{!! \App\Support\QbRichText::html($q['question_text'], $paper['media'] ?? []) !!}</span><span class="mk">[{{ $n($it['marks']) }}]</span></div>
         @if (count($q['options']))
           <div class="opts">@foreach ($q['options'] as $o)<div>{{ $o['label'] }}) {!! \App\Support\QbRichText::html($o['content_text']) !!}@if ($paper['answers'] && !empty($o['is_correct'])) ✓@endif</div>@endforeach</div>
         @endif
@@ -42,7 +42,7 @@
           <div class="parts">@foreach ($q['creative_parts'] as $p)<div>{{ $p['part_label'] }}. {!! \App\Support\QbRichText::html($p['question_text']) !!} [{{ $n($p['marks']) }}]
             @if ($paper['answers'] && !empty($p['answer_text']))<div class="ans text">{!! \App\Support\QbRichText::html($p['answer_text']) !!}</div>@endif</div>@endforeach</div>
         @endif
-        @if ($paper['answers'] && !empty($q['answer_text']))<div class="ans text">{{ __('pdf.qb_paper.answer') }}: {!! \App\Support\QbRichText::html($q['answer_text']) !!}</div>@endif
+        @if ($paper['answers'] && !empty($q['answer_text']))<div class="ans text">{{ __('pdf.qb_paper.answer') }}: {!! \App\Support\QbRichText::html($q['answer_text'], $paper['media'] ?? []) !!}</div>@endif
       </div>
     @endforeach
   </div>

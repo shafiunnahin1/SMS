@@ -188,6 +188,18 @@ class QbPaperController extends Controller
             })->all()];
         })->all();
         return $paper->only(['id', 'title', 'exam_name', 'duration_minutes', 'total_marks']) + ['instructions' => $paper->instructions_json['text'] ?? null,
-            'set' => $set, 'answers' => $answers, 'institution' => Tenancy::current()->name, 'sections' => $sections];
+            'set' => $set, 'answers' => $answers, 'institution' => Tenancy::current()->name, 'sections' => $sections, 'media' => self::pictures($questions->keys()->all())];
+    }
+
+    /** QB.14: the questions' own pictures as data: URIs for the PDF (only media linked to these questions; a large file is left out) */
+    private static function pictures(array $questionIds): array
+    {
+        $ids = \App\Models\QbMediaLink::where('owner_type', 'question')->whereIn('owner_id', $questionIds)->pluck('qb_media_id')->unique();
+        $out = [];
+        foreach (\App\Models\QbMedia::whereIn('id', $ids)->get() as $m) {
+            if (!str_starts_with((string) $m->mime, 'image/') || $m->size_bytes > 2_000_000 || !\Illuminate\Support\Facades\Storage::disk('private')->exists($m->path)) continue;
+            $out[$m->id] = 'data:' . $m->mime . ';base64,' . base64_encode(\Illuminate\Support\Facades\Storage::disk('private')->get($m->path));
+        }
+        return $out;
     }
 }

@@ -10,8 +10,8 @@ final class QbRichText
 {
     private const DROP = ['script', 'style', 'iframe', 'object', 'embed', 'template', 'noscript', 'svg', 'math', 'head', 'title', 'link', 'meta', 'textarea', 'select', 'button', 'input', 'form'];
     private const RENAME = ['b' => 'strong', 'i' => 'em', 'strike' => 's', 'del' => 's', 'p' => 'div'];
-    private const VOID = ['br'];
-    private const TAGS = ['strong', 'em', 'u', 's', 'sup', 'sub', 'mark', 'br', 'span', 'div', 'ol', 'ul', 'li', 'dl', 'dt', 'dd', 'table', 'thead', 'tbody', 'tr', 'th', 'td'];
+    private const VOID = ['br', 'img'];
+    private const TAGS = ['strong', 'em', 'u', 's', 'sup', 'sub', 'mark', 'br', 'span', 'div', 'ol', 'ul', 'li', 'dl', 'dt', 'dd', 'table', 'caption', 'thead', 'tbody', 'tr', 'th', 'td', 'img'];
     private const COLOR = '/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i';
     private const DIV = [
         'dir' => '/^(?:auto|ltr|rtl)$/',
@@ -37,11 +37,19 @@ final class QbRichText
     }
 
     /** For server-printed pages (the paper PDF): clean(), and the colour attributes become inline colours (values already checked) */
-    public static function html(?string $text): string
+    public static function html(?string $text, array $media = []): string
     {
         $v = (string) self::clean($text);
         $v = preg_replace('/ data-qmx-color="(#[0-9a-f]{3,6})"/', ' style="color:$1"', $v);
-        return preg_replace('/ data-qmx-bg="(#[0-9a-f]{3,6})"/', ' style="background:$1"', $v);
+        $v = preg_replace('/ data-qmx-bg="(#[0-9a-f]{3,6})"/', ' style="background:$1"', $v);
+        // QB.14: a picture by its media id becomes the picture itself (a data: URI the caller built from the question's own media)
+        return preg_replace_callback('/<img data-qmx-media="(\d+)"(?: data-qmx-width="(\d+)")?(?: data-qmx-align="(\w+)")?>/', function ($m) use ($media) {
+            $src = $media[(int) $m[1]] ?? null;
+            if (!is_string($src) || !str_starts_with($src, 'data:image/')) return '';
+            $width = ($m[2] ?? '') !== '' ? (int) $m[2] : 100;
+            $align = ['left' => 'margin-right:auto', 'center' => 'margin:0 auto', 'right' => 'margin-left:auto'][$m[3] ?? ''] ?? 'margin:0 auto';
+            return '<img src="' . htmlspecialchars($src, ENT_QUOTES) . '" style="display:block;width:' . $width . '%;' . $align . '" alt="">';
+        }, $v);
     }
 
     /** Text without the vocabulary - lists, search snippets, places that cannot show formatting */
@@ -71,7 +79,8 @@ final class QbRichText
         if (!in_array($tag, self::TAGS, true)) return self::children($n);   // unknown tag: keep its text
         $attrs = self::attrs($tag, $n);
         if ($tag === 'span' && $attrs === '') return self::children($n);  // a span says nothing without its colour
-        if (in_array($tag, self::VOID, true)) return "<{$tag}>";
+        if ($tag === 'img' && !str_contains($attrs, 'data-qmx-media=')) return '';   // QB.14: a picture only by the question's own media id
+        if (in_array($tag, self::VOID, true)) return "<{$tag}{$attrs}>";
         return "<{$tag}{$attrs}>" . self::children($n) . "</{$tag}>";
     }
 
@@ -98,6 +107,11 @@ final class QbRichText
             case 'table':
                 $classes = array_values(array_filter(preg_split('/\s+/', (string) $get('class')), fn ($c) => preg_match(self::TABLE_CLASS, $c)));
                 if ($classes) $ok['class'] = implode(' ', $classes);
+                break;
+            case 'img':                     // QB.14: never a src / URL - the page finds the picture in the question's media list
+                if (($v = $get('data-qmx-media')) !== null && preg_match('/^[1-9]\d{0,9}$/', $v)) $ok['data-qmx-media'] = $v;
+                if (($v = $get('data-qmx-width')) !== null && preg_match('/^(?:[1-9]\d|100)$/', $v)) $ok['data-qmx-width'] = $v;
+                if (($v = $get('data-qmx-align')) !== null && preg_match('/^(?:left|center|right)$/', $v)) $ok['data-qmx-align'] = $v;
                 break;
             case 'th':
             case 'td':
