@@ -26,10 +26,10 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 ## Next Safe Action
 
 1. Re-fetch the School Management branch; preserve the untracked `text.txt`.
-2. Continue QB.14's remaining table requirements and validate preview/library/paper-PDF round trips. Run browser E2E only against a confirmed disposable test database; current Playwright config targets the shared demo DB.
-3. QB.14 image-transform work remains blocked: generated Done When asks for a rotated/positioned picture, but locked D72 allows only media ID, width, and alignment. See `docs/BLOCKED.md`; do not extend the stored image contract without owner decision.
-4. QB.13 metadata changes remain blocked by D73/API/schema conflict; see `docs/BLOCKED.md` and wait for the owner-authored D74. Do not reorder the generated plan or rewrite history.
-5. Keep the legacy qbank checkout read-only. Do not mark QB.14 complete until every generated-plan check passes.
+2. QB.14 remains incomplete. Before image rotation/transparency work, the owner must resolve the D72 vs generated Done When conflict in `docs/BLOCKED.md` through a new locked decision or revised acceptance scope. Do not extend the persisted image contract without that decision.
+3. Before browser save/reopen E2E, provide/confirm a disposable test database; current Playwright config writes to the shared demo DB. Then run the plan's E2E plus preview/library/paper-PDF round trips and remaining task checks. Do not mark QB.14 `[x]` until all Done When checks pass.
+4. QB.13 metadata changes remain blocked by D73/API/schema conflict; see `docs/BLOCKED.md` and wait for owner-authored D74. Do not reorder the generated plan or rewrite history.
+5. Keep the legacy qbank checkout read-only. Preserve `text.txt` and the current branch.
 
 ## Event Log
 
