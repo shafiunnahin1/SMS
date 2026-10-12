@@ -57,6 +57,10 @@ const QbSpending        = lazy(() => import('../pages/qb/QbSpending'))
 const QbPapers          = lazy(() => import('../pages/qb/QbPapers'))
 const QbPaperEdit       = lazy(() => import('../pages/qb/QbPaperEdit'))
 const QbStudy           = lazy(() => import('../pages/student/QbStudy'))
+const QbStudentQuizzes  = lazy(() => import('../pages/student/QbQuizzes'))
+const QbQuizAttempt     = lazy(() => import('../pages/student/QbQuizAttempt'))
+const QbQuizAdmin       = lazy(() => import('../pages/super/QbQuizzes'))
+const QbPublicQuiz      = lazy(() => import('../pages/public/QbPublicQuiz'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
 const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
@@ -120,7 +124,7 @@ export const tenantRoutes = [
     { path: 'reports', element: S(Reports) },
   ]),
   area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }]),
-  area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }]),   // QB.9: the student portal (other student screens: R1.1)
+  area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }]),   // QB.9 / QB.10: the student portal (other student screens: R1.1)
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },
     { path: 'fees', element: S(ParentFees) },
@@ -135,6 +139,9 @@ export const tenantRoutes = [
 export const centralRoutes = [
   { path: '/', element: S(Landing) },
   { path: '/signup', element: S(Signup) },
+  // QB.10: the platform's public quizzes, no login
+  { path: '/quizzes', element: S(QbPublicQuiz) },
+  { path: '/quizzes/:id', element: S(QbPublicQuiz) },
   ...authRoutes,
   area('/super-admin', 'super_admin', [
     { path: 'dashboard', element: S(Dashboard) },
@@ -144,6 +151,7 @@ export const centralRoutes = [
     { path: 'qb/curriculum', element: S(QbCurriculum) },
     { path: 'qb/writers', element: S(QbWriters) },
     { path: 'qb/pricing', element: S(QbPricing) },   // QB.6
+    { path: 'qb/quizzes', element: S(QbQuizAdmin) },   // QB.10
   ]),
   // D65 QB.2: the question-bank writers' panel (writers, moderators and the Super Admin)
   area('/writer', ['content_writer', 'content_moderator', 'super_admin'], [

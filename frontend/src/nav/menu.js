@@ -142,6 +142,7 @@ export const MENU = {
   ],
   student: [
     it('question-bank','/student/question-bank','প্রশ্নব্যাংক',{icon:'Library',module:'question_bank'}),
+    it('qb-quizzes','/student/quizzes','কুইজ',{icon:'ClipboardCheck',module:'quiz'}),
     it('dashboard','/student/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard',primary:true, since: 'R1.1' }),
     it('routine','/student/routine','রুটিন',{icon:'Clock',module:'routine',primary:true, since: 'R1.1' }),
     it('results','/student/results','ফলাফল',{icon:'FileText',module:'exams',primary:true, since: 'R1.1' }),
@@ -215,6 +216,7 @@ export const MENU = {
     it('qb-concepts','/writer/concepts','প্রশ্নব্যাংক: কনসেপ্ট',{icon:'Sparkles'}),
     it('qb-resources','/writer/resources','প্রশ্নব্যাংক: স্লাইড, বই ও PDF',{icon:'Folder'}),
     it('qb-pricing','/super-admin/qb/pricing','প্রশ্নব্যাংক: দাম ও নিয়ম',{icon:'Tags'}),
+    it('qb-quizzes','/super-admin/qb/quizzes','প্রশ্নব্যাংক: কুইজ ও প্যাকেজ',{icon:'ClipboardCheck'}),
     it('settings','/super-admin/settings','সেটিংস',{icon:'Settings'}),
   ],
 }
