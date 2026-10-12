@@ -21,6 +21,17 @@ describe('rich question text', () => {
     expect(caption).not.toHaveAttribute('onclick')
   })
 
+  it('renders only a matching question media id with bounded placement', () => {
+    const { container } = render(<MathText media={[{ id: 42, url: '/storage/question.png' }]} text={'<img data-qmx-media="42" data-qmx-width="50" data-qmx-align="right" src="https://evil.test/x.png" onerror="alert(1)"><img data-qmx-media="43">'} />)
+    const image = container.querySelector('img')
+    expect(image).toHaveAttribute('src', '/storage/question.png')
+    expect(image).toHaveAttribute('alt', '')
+    expect(image.style.width).toBe('50%')
+    expect(image.style.margin).toBe('0px 0px 0px auto')
+    expect(container.querySelectorAll('img')).toHaveLength(1)
+    expect(image).not.toHaveAttribute('onerror')
+  })
+
   it('drops scripts, handlers, links and bad colours', () => {
     const { container } = render(<MathText text={'a<script>alert(1)</script><img src=x onerror="alert(1)"><a href="javascript:x()">link</a><b onclick="x()">b</b><span data-qmx-color="red;x">c</span><style>*{}</style>'} />)
     expect(container.querySelector('script, img, a, style, [onclick], [onerror]')).toBeNull()

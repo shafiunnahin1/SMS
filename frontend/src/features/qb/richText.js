@@ -2,7 +2,7 @@
 // (QbRichText); here it is read again from an allowlist into plain node objects - the page builds React elements from them and
 // never inserts an HTML string. DOMParser does not run scripts; anything outside the list is unwrapped (its text stays).
 
-const TAGS = new Set(['strong', 'em', 'u', 's', 'sup', 'sub', 'mark', 'br', 'span', 'div', 'ol', 'ul', 'li', 'dl', 'dt', 'dd', 'table', 'caption', 'thead', 'tbody', 'tr', 'th', 'td'])
+const TAGS = new Set(['strong', 'em', 'u', 's', 'sup', 'sub', 'mark', 'br', 'span', 'div', 'ol', 'ul', 'li', 'dl', 'dt', 'dd', 'table', 'caption', 'thead', 'tbody', 'tr', 'th', 'td', 'img'])
 const RENAME = { b: 'strong', i: 'em', strike: 's', del: 's', p: 'div' }
 const DROP = new Set(['script', 'style', 'iframe', 'object', 'embed', 'template', 'noscript', 'svg', 'math', 'textarea', 'select', 'button', 'input', 'form'])
 const COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
@@ -33,6 +33,11 @@ function attrsOf(tag, el) {
     if (DIR.test(get('dir') ?? '')) a.dir = get('dir')
     for (const k of ['colspan', 'rowspan']) if (SPAN.test(get(k) ?? '')) a[k] = Number(get(k))
   }
+  if (tag === 'img') {
+    if (/^[1-9]\d{0,9}$/.test(get('data-qmx-media') ?? '')) a.media = get('data-qmx-media')
+    if (/^(?:[1-9]\d|100)$/.test(get('data-qmx-width') ?? '')) a.width = Number(get('data-qmx-width'))
+    if (/^(?:left|center|right)$/.test(get('data-qmx-align') ?? '')) a.align = get('data-qmx-align')
+  }
   return a
 }
 
@@ -46,8 +51,9 @@ function walk(node) {
     tag = RENAME[tag] ?? tag
     if (!TAGS.has(tag)) { out.push(...walk(n)); return }
     const attrs = attrsOf(tag, n)
+    if (tag === 'img' && !attrs.media) return
     if (tag === 'span' && !attrs.color && !attrs.bg) { out.push(...walk(n)); return }
-    out.push({ tag, attrs, children: tag === 'br' ? [] : walk(n) })
+    out.push({ tag, attrs, children: tag === 'br' || tag === 'img' ? [] : walk(n) })
   })
   return out
 }

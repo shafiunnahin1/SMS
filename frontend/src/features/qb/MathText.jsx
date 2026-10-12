@@ -22,11 +22,17 @@ function Maths({ text, ready }) {
   })
 }
 
-function Node({ n, ready }) {
+function Node({ n, ready, media }) {
   if (n.text !== undefined) return <Maths text={n.text} ready={ready} />
-  const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} />)
+  const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} media={media} />)
   const a = n.attrs
   switch (n.tag) {
+    case 'img': {
+      const src = media.get(a.media)
+      if (!src) return null
+      const margin = { left: '0 auto 0 0', center: '0 auto', right: '0 0 0 auto' }[a.align] ?? '0 auto'
+      return <img src={src} alt="" className="my-1 max-w-full" style={{ display: 'block', width: `${a.width ?? 100}%`, margin }} />
+    }
     case 'br': return <br />
     case 'span': return <span style={{ color: a.color, backgroundColor: a.bg }}>{kids}</span>
     case 'div': return <div dir={a.dir} className={ALIGN[a.align] ?? ''}>{kids}</div>
@@ -48,12 +54,13 @@ function Node({ n, ready }) {
   }
 }
 
-export default function MathText({ text, className = '' }) {
+export default function MathText({ text, className = '', media = [] }) {
   const [ready, setReady] = useState(false)
+  const mediaById = new Map(media.filter((item) => item?.id != null && typeof item.url === 'string').map((item) => [String(item.id), item.url]))
   useEffect(() => { let on = true; loadMathlive().then(() => on && setReady(true)).catch(() => {}); return () => { on = false } }, [])
   return (
     <span dir="auto" className={`whitespace-pre-wrap ${className}`}>
-      {parseRich(text).map((n, i) => <Node key={i} n={n} ready={ready} />)}
+      {parseRich(text).map((n, i) => <Node key={i} n={n} ready={ready} media={mediaById} />)}
     </span>
   )
 }

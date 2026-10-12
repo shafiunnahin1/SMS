@@ -29,13 +29,18 @@ test('QB.3 editor: an MCQ with maths and a picture, a creative question, live pr
 
   // the four options come pre-labelled ক-ঘ, the first marked right
   for (const [i, text] of ['$2$', '$-2$', '$4$', '$0$'].entries()) await form.locator(`input[name="options.${i}.content_text"]`).fill(text)
-  await form.locator('input[name="picture"]').setInputFiles({ name: 'graph.png', mimeType: 'image/png', buffer: PNG })
+  const questionText = form.locator('textarea[name="question_text"]')
+  await questionText.evaluate(el => el.setSelectionRange(el.value.length, el.value.length))
+  await questionText.dispatchEvent('select')
+  await page.locator('[data-testid="qb-ribbon"] input[name="picture"]').setInputFiles({ name: 'graph.png', mimeType: 'image/png', buffer: PNG })
+  await expect(questionText).toHaveValue(/<img data-qmx-media="\d+" data-qmx-width="100" data-qmx-align="center">$/)
   await expect(form.locator('img')).toHaveCount(1)
 
   await expect(preview.locator('math-span').first()).toBeVisible()
-  await expect(preview.locator('img')).toHaveCount(1)
+  await expect(preview.locator('.text-base img')).toHaveCount(1)
   await page.locator('[data-action="save"]').click()
   await expect(page).toHaveURL(/\/writer\/questions\/\d+$/)
+  await expect(preview.locator('.text-base img')).toHaveCount(1)
   await expect(preview.locator('math-span')).toHaveCount(6)                     // x^2 = 4, a+b, and the four options
   await page.locator('[data-action="submit"]').click()
   await expect(page.locator('[data-status]').first()).toHaveAttribute('data-status', 'review')

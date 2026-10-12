@@ -163,3 +163,11 @@ export function insertTable(value, start, end, { rows = 2, cols = 2, header = tr
 export function insertAt(value, start, end, text) {
   return splice(value, start, end, text)
 }
+
+export function insertPicture(value, start, end, mediaId, { width = 100, align = 'center' } = {}) {
+  const id = String(mediaId ?? '')
+  if (!/^[1-9]\d{0,9}$/.test(id)) return result(value, start, end)
+  const size = Number.isInteger(width) && width >= 10 && width <= 100 ? width : 100
+  const side = ['left', 'center', 'right'].includes(align) ? align : 'center'
+  return splice(value, start, end, `<img data-qmx-media="${id}" data-qmx-width="${size}" data-qmx-align="${side}">`)
+}

@@ -19,6 +19,7 @@ import Check from '../../features/academic/Check'
 import QbStatus from '../../features/qb/QbStatus'
 import MathText from '../../features/qb/MathText'
 import Ribbon from '../../features/qb/Ribbon'
+import { insertPicture } from '../../features/qb/formatting'
 import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } from '../../features/qb/questionMeta'
 import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
 
@@ -120,6 +121,7 @@ export default function QbQuestionEdit() {
     try {
       const { data } = await api.post('/writer/media', form, multipart)
       setValue('media', [...getValues('media'), data.data], { shouldDirty: true })
+      if (active.current) run(insertPicture, data.data.id)
     } catch (err) {
       useUiStore.getState().addToast(err.response?.data?.errors?.file?.[0] ?? err.response?.data?.message, 'error')
     }
@@ -327,17 +329,17 @@ export default function QbQuestionEdit() {
             <h2 className="font-semibold">{t('qb.preview')}</h2>
             <span className="inline-flex items-center gap-1 text-xs text-content-muted"><span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary" />{t('qbed.live')}</span>
           </div>
-          <div className="text-base"><MathText text={v.question_text} /></div>
+          <div className="text-base"><MathText text={v.question_text} media={v.media} /></div>
           {v.media.map(m => <img key={m.id} src={m.url} alt={t('qb.picture_n', { id: m.id })} className="max-h-48 w-auto self-start" />)}
           <StructuredPreview structure={structure} s={v.structured} />
           {optionsFor && (
             <ol className="flex flex-col gap-1">
-              {v.options.map((o, i) => <li key={i} className="flex gap-2"><span className="font-medium">{o.label}.</span><MathText text={o.content_text} />{o.is_correct && <span className="text-xs text-content-muted">({t('qb.correct')})</span>}</li>)}
+              {v.options.map((o, i) => <li key={i} className="flex gap-2"><span className="font-medium">{o.label}.</span><MathText text={o.content_text} media={v.media} />{o.is_correct && <span className="text-xs text-content-muted">({t('qb.correct')})</span>}</li>)}
             </ol>
           )}
           {family === 'creative' && (
             <ol className="flex flex-col gap-2">
-              {v.creative_parts.map((p, i) => <li key={i}><span className="font-medium">{p.part_label}.</span> <MathText text={p.question_text} /> <span className="text-xs text-content-muted">[{p.marks}]</span></li>)}
+              {v.creative_parts.map((p, i) => <li key={i}><span className="font-medium">{p.part_label}.</span> <MathText text={p.question_text} media={v.media} /> <span className="text-xs text-content-muted">[{p.marks}]</span></li>)}
             </ol>
           )}
           {v.answer_text && <div className="text-sm"><span className="font-medium">{t('qb.answer')}: </span><MathText text={v.answer_text} /></div>}

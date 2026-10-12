@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertTable, mathRegionAt, mergeTableCells, splitTableCell } from '../features/qb/formatting'
+import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertPicture, insertTable, mathRegionAt, mergeTableCells, splitTableCell } from '../features/qb/formatting'
 
 // D72 (QB.12): qbank's ribbon actions write qbank's vocabulary; inside maths they write LaTeX.
 describe('ribbon actions', () => {
@@ -39,5 +39,13 @@ describe('ribbon actions', () => {
     expect(html).not.toContain('<img')
     expect(splitTableCell(merged, 0, 0)[0][1]).toMatchObject({ mergedInto: null, colspan: 1, rowspan: 1 })
     expect(splitTableCell(merged, 0, 1)).toBeNull()
+  })
+
+  it('inserts only bounded picture references, never a source URL', () => {
+    expect(insertPicture('ab', 1, 1, 42, { width: 50, align: 'right' }).value)
+      .toBe('a<img data-qmx-media="42" data-qmx-width="50" data-qmx-align="right">b')
+    expect(insertPicture('text', 0, 4, 0).value).toBe('text')
+    expect(insertPicture('text', 0, 4, 42, { width: 1, align: 'side' }).value)
+      .toBe('<img data-qmx-media="42" data-qmx-width="100" data-qmx-align="center">')
   })
 })
