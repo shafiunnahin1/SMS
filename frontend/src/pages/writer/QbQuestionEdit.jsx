@@ -181,9 +181,9 @@ export default function QbQuestionEdit() {
             className={`flex-1 rounded-token px-3 py-2 text-sm font-medium ${pane === k ? 'bg-primary text-on-primary' : 'bg-surface [border:1px_solid_var(--line)]'}`}>{t(`qbed.${k}`)}</button>
         ))}
       </div>
-      <div className="grid gap-4 xl:grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)]">
-        <nav aria-label={t('qbed.parts_nav')} className={`${pane === 'editor' ? 'flex' : 'hidden'} flex-col gap-1 xl:flex`} data-testid="qb-sections">
-          <Card className="flex flex-row flex-wrap gap-1 p-2 xl:sticky xl:top-2 xl:flex-col">
+      <div className="grid gap-4 xl:h-[calc(100vh-9rem)] xl:grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)]">
+        <nav aria-label={t('qbed.parts_nav')} className={`${pane === 'editor' ? 'flex' : 'hidden'} flex-col gap-1 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-sections">
+          <Card className="flex flex-row flex-wrap gap-1 p-2 xl:flex-col">
             {sections.map(([key, label]) => (
               <button key={key} type="button" onClick={() => go(key)} aria-current={section === key ? 'true' : undefined}
                 className={`rounded-token px-3 py-2 text-start text-sm ${section === key ? 'bg-primary-soft font-semibold text-primary-fg' : 'hover:bg-surface-muted'}`}>{label}</button>
@@ -191,7 +191,7 @@ export default function QbQuestionEdit() {
           </Card>
         </nav>
 
-        <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex`}>
+        <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane">
           {canEdit && <Ribbon run={run} onImage={upload} onReset={() => { reset(); active.current = null }} disabled={!canEdit} saving={isSubmitting} />}
           <Card>
             <form id="qb-question-form" onSubmit={handleSubmit(save)} className="grid gap-3 sm:grid-cols-2" noValidate
@@ -311,7 +311,7 @@ export default function QbQuestionEdit() {
           </Card>
         </div>
 
-        <Card className={`${pane === 'preview' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:sticky xl:top-2 xl:self-start`} data-testid="qb-preview" aria-live="polite">
+        <Card className={`${pane === 'preview' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-preview" aria-live="polite">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-semibold">{t('qb.preview')}</h2>
             <span className="inline-flex items-center gap-1 text-xs text-content-muted"><span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary" />{t('qbed.live')}</span>
