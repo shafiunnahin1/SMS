@@ -1,3 +1,4 @@
+import { plainText } from './richText'
 import { useTranslation } from 'react-i18next'
 import MathText from './MathText'
 
@@ -28,7 +29,7 @@ export default function QuizQuestion({ q, n, value, onChange, disabled = false }
           {items.map((it, i) => (
             <label key={i} className="grid grid-cols-2 items-center gap-2">
               <MathText text={it.prompt_text} />
-              <select className={field} value={list[i] ?? ''} onChange={e => setAt(i, e.target.value)} aria-label={it.prompt_text}>
+              <select className={field} value={list[i] ?? ''} onChange={e => setAt(i, e.target.value)} aria-label={plainText(it.prompt_text)}>
                 <option value="">{t('qb.pick')}</option>
                 {(q.choices ?? []).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -39,7 +40,7 @@ export default function QuizQuestion({ q, n, value, onChange, disabled = false }
         <div className="flex flex-col gap-2">
           {items.map((it, i) => (
             <label key={i} className="flex flex-col gap-1 text-sm">
-              <span>{t('qbz.gap', { n: i + 1 })}{it.prompt_text ? ` — ${it.prompt_text}` : ''}</span>
+              <span>{t('qbz.gap', { n: i + 1 })}{it.prompt_text ? ` — ${plainText(it.prompt_text)}` : ''}</span>
               <input className={field} dir="auto" value={list[i] ?? ''} onChange={e => setAt(i, e.target.value)} />
             </label>
           ))}

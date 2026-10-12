@@ -1,3 +1,4 @@
+import { plainText } from '../../features/qb/richText'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
@@ -31,7 +32,7 @@ export default function QbQuestions() {
     queryFn: () => api.get('/writer/questions', { params: { status: status === 'all' ? undefined : status, q: search || undefined, page } }).then(r => r.data),
   })
   const columns = [
-    { key: 'question_text', label: t('qb.question'), primary: true, render: r => <span dir="auto" className="line-clamp-2 whitespace-normal [overflow-wrap:anywhere]">{r.question_text}</span> },
+    { key: 'question_text', label: t('qb.question'), primary: true, render: r => <span dir="auto" className="line-clamp-2 whitespace-normal [overflow-wrap:anywhere]">{plainText(r.question_text)}</span> },
     ...(role === 'content_writer' ? [] : [{ key: 'author', label: t('qb.author'), render: r => <span dir="auto">{r.author ?? '—'}</span> }]),
     { key: 'status', label: t('qb.state'), render: r => <QbStatus status={r.status} /> },
   ]
