@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\{DB, Storage};
 // questions with their class links, options, creative parts (the first level), occurrences and pictures. qb_import_map remembers
 // every qbank row taken, so a second run takes nothing twice. Questions arrive as `review` (a moderator publishes them).
 // --dry-run does the whole import inside a transaction and rolls it back (exact counts, nothing kept, no file copied).
-// Not taken (counted in the report): structured items / stimuli / interactions, nested creative parts, question sets, OMR.
+// Not taken (counted in the report): questions built on structured items / stimuli / interactions (the whole question waits), nested
+// creative parts, question sets, OMR. Curriculum rows already here (the seed came from qbank) are matched by their Bengali name.
 class QbImportFromQbank extends Command
 {
     protected $signature = 'qb:import-from-qbank {--dry-run : count only, keep nothing} {--user= : the Super Admin the imported rows are written by}
@@ -83,7 +84,7 @@ class QbImportFromQbank extends Command
         foreach ($this->rows('class_levels') as $r) {
             $slug = (string) ($levels[$r->education_level_id ?? 0] ?? '');
             $level = collect(self::LEVELS)->first(fn ($l) => str_contains(str_replace('-', '_', $slug), $l)) ?? 'other';
-            $this->take('class_levels', $r->id, 'qb_class_levels', fn () => QbClassLevel::create(['name_bn' => $r->name_bn, 'name_en' => $r->name_en ?: $r->name_bn,
+            $this->take('class_levels', $r->id, 'qb_class_levels', fn () => QbClassLevel::where('name_bn', $r->name_bn)->first() ?? QbClassLevel::create(['name_bn' => $r->name_bn, 'name_en' => $r->name_en ?: $r->name_bn,
                 'education_level' => $level, 'sort_order' => (int) ($r->sort_order ?? 0), 'is_active' => (bool) ($r->is_active ?? true)]));
         }
     }
@@ -91,7 +92,7 @@ class QbImportFromQbank extends Command
     private function subjects(): void
     {
         foreach ($this->rows('subjects') as $r) {
-            $this->take('subjects', $r->id, 'qb_subjects', fn () => QbSubject::create(['name_bn' => $r->name_bn, 'name_en' => $r->name_en ?: $r->name_bn,
+            $this->take('subjects', $r->id, 'qb_subjects', fn () => QbSubject::where('name_bn', $r->name_bn)->first() ?? QbSubject::create(['name_bn' => $r->name_bn, 'name_en' => $r->name_en ?: $r->name_bn,
                 'code' => $r->code ? mb_substr($r->code, 0, 30) : null, 'sort_order' => (int) ($r->sort_order ?? 0), 'is_active' => (bool) ($r->is_active ?? true)]));
         }
         $this->pivot('class_level_subject', 'class_level_id', 'class_levels', 'subject_id', 'subjects',
@@ -149,6 +150,7 @@ class QbImportFromQbank extends Command
             $subject = $this->target('subjects', (int) $r->subject_id);
             if (!$type || !$subject) { $this->skip('questions', 'its type or subject was not imported'); continue; }
             if (trim((string) $r->question_text) === '' && !$r->question_content_json) { $this->skip('questions', 'no question text'); continue; }
+            if ($this->structured((int) $r->id)) { $this->skip('questions', 'has structured parts (items / passage) - not imported yet, so not taken half-empty'); continue; }
             $id = $this->take('questions', $r->id, 'qb_questions', fn () => QbQuestion::create([
                 'qb_question_type_id' => $type, 'qb_subject_id' => $subject,
                 'qb_chapter_id' => $r->chapter_id ? $this->target('chapters', (int) $r->chapter_id) : null,
@@ -162,6 +164,17 @@ class QbImportFromQbank extends Command
                 'status' => 'review', 'created_by' => $this->by]));
             $this->children((int) $r->id, $id);
         }
+    }
+
+    /** Does this qbank question hang on structured content (items, interactions, a passage)? Such a question is not taken at all
+     *  until structured import exists - taking it without those parts would leave a question with no options or answer. */
+    private function structured(int $src): bool
+    {
+        $schema = $this->src->getSchemaBuilder();
+        foreach (['question_items', 'question_interactions'] as $t) {
+            if ($schema->hasTable($t) && $schema->hasColumn($t, 'question_id') && $this->src->table($t)->where('question_id', $src)->exists()) return true;
+        }
+        return $schema->hasColumn('questions', 'question_stimulus_id') && (bool) $this->src->table('questions')->where('id', $src)->value('question_stimulus_id');
     }
 
     /** Only for a question taken in this run - its rows come with it, once */
@@ -190,17 +203,6 @@ class QbImportFromQbank extends Command
                 'exam_type' => ($e = $name('exam_types', $oc->exam_type_id)) ? mb_substr($e, 0, 50) : null,
                 'year' => $oc->exam_year, 'note' => $note !== '' ? mb_substr($note, 0, 200) : null]);
             $this->count('question_occurrences', 'new');
-        }
-        // structured content is counted, not taken: items / interactions point at the question; a stimulus is pointed at BY the
-        // question (questions.question_stimulus_id) - qbank's real shapes, checked column by column
-        $schema = $this->src->getSchemaBuilder();
-        foreach (['question_items', 'question_interactions'] as $t) {
-            if ($schema->hasTable($t) && $schema->hasColumn($t, 'question_id') && ($n = $this->src->table($t)->where('question_id', $src)->count())) {
-                for ($k = 0; $k < $n; $k++) $this->skip($t, 'structured content is not imported yet');
-            }
-        }
-        if ($schema->hasColumn('questions', 'question_stimulus_id') && $this->src->table('questions')->where('id', $src)->value('question_stimulus_id')) {
-            $this->skip('question_stimuli', 'structured content is not imported yet');
         }
     }
 

@@ -63,6 +63,7 @@ class QbImportTest extends TestCase
             ['id' => 100, 'question_type_id' => 1, 'subject_id' => 20, 'chapter_id' => 30, 'topic_id' => 40, 'question_text' => 'বেগের একক?', 'difficulty' => 'hard', 'marks' => 1, 'content_mode' => 'mixed_content'],
             ['id' => 101, 'question_type_id' => 2, 'subject_id' => 20, 'chapter_id' => null, 'topic_id' => null, 'question_text' => 'সৃজনশীল প্রশ্ন', 'difficulty' => 'medium', 'marks' => 10, 'content_mode' => 'plain_text'],
             ['id' => 102, 'question_type_id' => 1, 'subject_id' => 20, 'chapter_id' => null, 'topic_id' => null, 'question_text' => '', 'difficulty' => 'easy', 'marks' => null, 'content_mode' => 'plain_text'],
+            ['id' => 103, 'question_type_id' => 1, 'subject_id' => 20, 'chapter_id' => null, 'topic_id' => null, 'question_text' => 'অনুচ্ছেদ পড়ে উত্তর দাও', 'difficulty' => 'easy', 'marks' => null, 'content_mode' => 'plain_text'],
         ]);
         $q->table('class_level_question')->insert(['class_level_id' => 10, 'question_id' => 100]);
         $q->table('question_options')->insert([['question_id' => 100, 'option_label' => 'ক', 'option_text' => 'মি/সে', 'is_correct' => true, 'sort_order' => 1], ['question_id' => 100, 'option_label' => 'খ', 'option_text' => 'কেজি', 'is_correct' => false, 'sort_order' => 2]]);
@@ -70,9 +71,9 @@ class QbImportTest extends TestCase
             ['id' => 2, 'question_id' => 101, 'parent_id' => 1, 'part_label' => 'i', 'cognitive_level' => 'knowledge', 'question_text' => 'nested', 'marks' => 1]]);
         $q->table('boards')->insert(['id' => 5, 'name_bn' => 'ঢাকা বোর্ড']);
         $q->table('question_occurrences')->insert(['question_id' => 100, 'board_id' => 5, 'exam_name' => 'SSC', 'exam_year' => 2023, 'question_number' => '7']);
-        $q->table('question_items')->insert(['question_id' => 101]);
+        $q->table('question_items')->insert(['question_id' => 103]);
         $q->table('question_stimuli')->insert(['id' => 7, 'content_text' => 'passage']);
-        $q->table('questions')->where('id', 101)->update(['question_stimulus_id' => 7]);
+        $q->table('questions')->where('id', 103)->update(['question_stimulus_id' => 7]);
         $this->media = sys_get_temp_dir() . '/qbank-media-' . uniqid();
         @mkdir("{$this->media}/questions", 0777, true);
         file_put_contents("{$this->media}/questions/fig.png", 'PNGDATA');
@@ -116,13 +117,24 @@ class QbImportTest extends TestCase
     public function test_what_cannot_come_over_is_reported(): void
     {
         \Illuminate\Support\Facades\Artisan::call('qb:import-from-qbank', ['--dry-run' => true]);
-        $this->assertMatchesRegularExpression('/question_stimuli\s*\|\s*structured content/', \Illuminate\Support\Facades\Artisan::output(), 'qbank: the question points at its stimulus');
+        $this->assertStringContainsString('has structured parts', \Illuminate\Support\Facades\Artisan::output(), 'a question with items / a passage is not taken half-empty');
+        $this->assertSame(0, QbQuestion::where('question_text', 'অনুচ্ছেদ পড়ে উত্তর দাও')->count());
         $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])
             ->expectsOutputToContain('its subject was not imported')                  // chapter 31 hangs on a subject that is not there
             ->expectsOutputToContain('no question text')
             ->expectsOutputToContain('a nested part')
-            ->expectsOutputToContain('structured content is not imported yet')
+            ->expectsOutputToContain('has structured parts')
             ->expectsOutputToContain('the file is not in --media-path')
             ->assertSuccessful();
+    }
+
+    public function test_curriculum_already_here_is_matched_by_name_not_copied(): void
+    {
+        $level = QbClassLevel::create(['name_bn' => 'নবম', 'name_en' => 'Class 9', 'education_level' => 'secondary']);   // the seed came from qbank
+        $subject = QbSubject::create(['name_bn' => 'পদার্থ', 'name_en' => 'Physics']);
+        $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])->assertSuccessful();
+        $this->assertSame([1, 1], [QbClassLevel::count(), QbSubject::count()]);
+        $this->assertSame([$level->id, $subject->id], [QbImportMap::where('source_table', 'class_levels')->value('target_id'), QbImportMap::where('source_table', 'subjects')->value('target_id')]);
+        $this->assertSame($subject->id, QbQuestion::where('question_text', 'বেগের একক?')->value('qb_subject_id'));
     }
 }
