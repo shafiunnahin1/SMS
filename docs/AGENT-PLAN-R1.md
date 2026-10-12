@@ -78,10 +78,11 @@
 | `QB.10` | Quizzes and quiz packages | `QB.9` |  | 18 |  |
 | `QB.10b` | Writers' earnings, wallet and withdrawals | `QB.10` |  | 8 |  |
 | `QB.11` | Import from qbank | `QB.10b` | 1 |  |  |
-| `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
+| `QB.12` | qbank-style question editor (D72) | `QB.11` |  |  |  |
+| `5.1` | Signup & Onboarding | `QB.12` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 69 টেবিল · 245 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 52 task · 69 টেবিল · 245 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2754,9 +2755,30 @@ php artisan test   # whole suite stays green
 
 ---
 
-### TASK `5.1` — Signup & Onboarding
+### TASK `QB.12` — qbank-style question editor (D72)
 
 - **নির্ভর করে:** `QB.11`  ·  **Release:** R1
+- **লক্ষ্য:** Writers get qbank's editor: the same layout and toolbar, formatting kept.
+- **কী পড়বেন:** `docs/LOCKED-DECISIONS.md`, `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** D72: /writer/questions/{id} in qbank's layout (parts list, editor with toolbar, live preview); the toolbar wraps the selection in D72's small HTML vocabulary (math regions get LaTeX); the server keeps only that vocabulary in every *_text field (QbRichText); the browser renders it from an allowlist into elements, never raw HTML; lists and search show the text without tags; the qbank import keeps the vocabulary and --refresh-text brings the formatting back. No new table, column, route or package. Diagram tools, charts and video are a later step.
+
+
+**Done When:** Formatting written with the toolbar is saved, shown in the preview and the library the same way; anything outside the vocabulary (script, on*, style, links) never reaches the page; tests.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbRichText
+npm test && npm run lint:theme
+npx playwright test e2e/qb-editor.spec.js
+php artisan test   # whole suite stays green
+```
+
+---
+
+### TASK `5.1` — Signup & Onboarding
+
+- **নির্ভর করে:** `QB.12`  ·  **Release:** R1
 - **কী পড়বেন:** `docs/modules/onboarding.md`, `docs/modules/subscription.md`, `docs/architecture/system-design-patterns.md`
 
 > **R1 পরিসর (এটিই চূড়ান্ত):** Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.

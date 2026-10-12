@@ -191,6 +191,8 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
   - fix 6 (this commit): the owner's seen-passage question #579 opened with an empty passage box: qbank kept the passage in the question text (no stimulus). A passage-structure question without a stimulus now gets one from its text (its items hang on it, the question text becomes the type's name); `--refresh-text` repairs rows imported before. QbImportTest (6): 6 passed (60 assertions); a mutation (no repair on refresh) failed the new test.
   - fix 7 (this commit): the owner's list showed qbank's inline picture marker `[[qmx-image:7]]` as text; the marker names a media attachment, which the import already links to its question, so plain() drops it (`--refresh-text` cleans earlier rows). QbImportTest (6): 6 passed (61 assertions).
   - fix 8 (this commit): pictures did not load on the owner's machine: APP_URL there is the Vite dev host (admin.lvh.me:5173), so the private disk's signed links pointed at Vite, which only proxied /api. vite.config.js now proxies /storage to the API as well (Host kept, so the signature still matches). Checked: a signed link made with root http://admin.lvh.me:5173 returns 200 through Vite; with :8000 unchanged.
+- [ ] QB.12 — qbank-style question editor (D72)
+  - part 1 (this commit): QB.12 in the plan (r1-scope.json → AGENT-PLAN-R1.md / r1-plan.json regenerated; no new route or table).
 
 ## Release R3  (`docs/AGENT-PLAN-R3.md`)  — start only after Release 1 is accepted (task `A`)
 

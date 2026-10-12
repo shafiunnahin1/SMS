@@ -1465,9 +1465,31 @@
    ]
   },
   {
+   "id": "QB.12",
+   "title": "qbank-style question editor (D72)",
+   "depends_on": "QB.11",
+   "spec_refs": [
+    "docs/LOCKED-DECISIONS.md",
+    "docs/modules/question-bank.md"
+   ],
+   "tables": [],
+   "routes": [],
+   "routes_excluded": [],
+   "tests": [],
+   "done_when": "Formatting written with the toolbar is saved, shown in the preview and the library the same way; anything outside the vocabulary (script, on*, style, links) never reaches the page; tests.",
+   "scope_note": "D72: /writer/questions/{id} in qbank's layout (parts list, editor with toolbar, live preview); the toolbar wraps the selection in D72's small HTML vocabulary (math regions get LaTeX); the server keeps only that vocabulary in every *_text field (QbRichText); the browser renders it from an allowlist into elements, never raw HTML; lists and search show the text without tags; the qbank import keeps the vocabulary and --refresh-text brings the formatting back. No new table, column, route or package. Diagram tools, charts and video are a later step.",
+   "blocked": null,
+   "verify": [
+    "php artisan test --filter=QbRichText",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-editor.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
    "id": "5.1",
    "title": "Signup & Onboarding",
-   "depends_on": "QB.11",
+   "depends_on": "QB.12",
    "spec_refs": [
     "docs/modules/onboarding.md",
     "docs/modules/subscription.md",
