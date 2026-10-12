@@ -292,7 +292,8 @@
    "qb-questions",
    "qb-concepts",
    "qb-resources",
-   "qb-pricing"
+   "qb-pricing",
+   "qb-quizzes"
   ],
   "content_writer": [
    "questions",
@@ -912,6 +913,18 @@
   "QbStudentOrderCallbackController": {
    "release": "R1",
    "step": "QB.9"
+  },
+  "QbQuizController": {
+   "release": "R1",
+   "step": "QB.10"
+  },
+  "QbStudentQuizController": {
+   "release": "R1",
+   "step": "QB.10"
+  },
+  "QbPublicQuizController": {
+   "release": "R1",
+   "step": "QB.10"
   }
  },
  "route_exclude": [
@@ -1290,7 +1303,10 @@
    "scope": "qb_quiz_packages (validity days), qb_quizzes (access package|free|public, scope, timing), attempts scored on the server, auto-submit at time-up, public page for public quizzes.",
    "done": "Package expiry closes its quizzes; free and public quizzes work as specified; scoring is server-side; tests + e2e.",
    "verify": [
-    "php artisan test --filter=QbQuiz"
+    "php artisan test --filter=QbQuiz",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-quiz.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

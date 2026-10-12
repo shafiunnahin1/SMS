@@ -269,7 +269,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
 use App\Http\Controllers\Public\{PublicSiteController, PublicAdmissionController};
 use App\Http\Controllers\SuperAdmin\{TenantPurgeController, SettlementController, PayoutAccountController, SmsSenderApprovalController, OnlinePaymentReportController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbPublicQuizController, QbQuizController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWriterController};   // D65 question bank (docs/modules/question-bank.md)
 use App\Http\Controllers\Academics\{ResultSheetController, DueBlockController, PeriodAttendanceController, SubstitutionController, RoutineBlockController, StudentLeaveController, MarksLockController};
 use App\Http\Controllers\Hr\{LeaveTypeController, LeaveController, StaffController, StaffAttendanceController, SalaryComponentController, SalaryStructureController, SalaryRevisionController, IncrementBatchController, BonusSchemeController, SalaryAdjustmentController, SalaryAdvanceController, PayrollRunController, PayrollItemController, PayAccountController, ProvidentFundController, PayrollReportController, FinalSettlementController};
 use App\Http\Controllers\Teacher\SalaryController as TeacherSalaryController;
@@ -337,6 +337,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/billing/bkash/callback', [\App\Http\Controllers\Billing\SmsRechargeCallbackController::class, 'bkash'])->middleware('throttle:60,1');
         // QB.9: bKash brings a student back here after paying for question-bank items (`ref` finds our own order)
         Route::get('/qb/student-orders/bkash/callback', [QbStudentOrderCallbackController::class, 'bkash'])->middleware('throttle:60,1');
+        // QB.10 (D66): the platform's public quizzes - no login; the questions without answers, the score checked on the server and NOT saved
+        Route::middleware('throttle:30,1')->prefix('public/qb')->group(function () {
+            Route::get('/quizzes',                   [QbPublicQuizController::class, 'index']);
+            Route::get('/quizzes/{id}',              [QbPublicQuizController::class, 'show']);
+            Route::post('/quizzes/{id}/check',       [QbPublicQuizController::class, 'check']);   // {answers} -> score, total, the right answers
+        });
 
         Route::middleware(['auth:sanctum', 'role:super_admin', 'tenancy.bypass', 'throttle:api'])->prefix('super')->group(function () {
             Route::get('/dashboard',                  [DashboardController::class, 'superAdmin']);
@@ -368,6 +374,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/qb/price-rules',            [QbPricingController::class, 'storeRule']);
             Route::put('/qb/price-rules/{id}',        [QbPricingController::class, 'updateRule']);
             Route::post('/qb/price-rules/preview',    [QbPricingController::class, 'preview']);
+            // QB.10 (D66): quiz packages (validity_days; the price is qb_prices item_kind quiz_package) and quizzes (access package|free|public)
+            Route::get('/qb/quiz-packages',           [QbQuizController::class, 'packages']);
+            Route::post('/qb/quiz-packages',          [QbQuizController::class, 'storePackage']);
+            Route::put('/qb/quiz-packages/{id}',      [QbQuizController::class, 'updatePackage']);
+            Route::get('/qb/quizzes',                 [QbQuizController::class, 'index']);
+            Route::get('/qb/quizzes/{id}',            [QbQuizController::class, 'show']);
+            Route::post('/qb/quizzes',                [QbQuizController::class, 'store']);   // only auto-marked types (mcq, true_false, fill_gap, matching)
+            Route::put('/qb/quizzes/{id}',            [QbQuizController::class, 'update']);
             // D65 question bank, task QB.1: the platform curriculum class → subject → chapter → topic ({kind} = class-levels|subjects|chapters|topics)
             Route::get('/qb/curriculum',              [QbCurriculumController::class, 'tree']);
             Route::post('/qb/{kind}',                 [QbCurriculumController::class, 'store']);
@@ -732,6 +746,18 @@ Route::prefix('v1')->group(function () {
             Route::get('/concepts/{id}',             [QbStudentController::class, 'concept']);
             Route::post('/orders',                   [QbStudentController::class, 'order'])->middleware('throttle:10,1');   // {items: [{item_type, item_id}]} -> bkash_url; the server prices it
             Route::get('/orders/{ref}',              [QbStudentController::class, 'orderStatus']);
+        });
+        // QB.10 (D66): the student's quizzes - free ones for every student, a package's quizzes while its access lasts, public ones too;
+        // the attempt is timed and marked on the server; past the time the server submits it itself (qb:close-quiz-attempts)
+        Route::middleware(['role:student', 'module:quiz'])->prefix('student/qb')->group(function () {
+            Route::get('/quizzes',                   [QbStudentQuizController::class, 'index']);
+            Route::get('/quiz-packages',             [QbStudentQuizController::class, 'packages']);
+            Route::post('/quiz-packages/{id}/buy',   [QbStudentQuizController::class, 'buy'])->middleware('throttle:10,1');   // bKash, the server prices it
+            Route::post('/quizzes/{id}/attempts',    [QbStudentQuizController::class, 'start']);
+            Route::get('/attempts',                  [QbStudentQuizController::class, 'attempts']);
+            Route::get('/attempts/{id}',             [QbStudentQuizController::class, 'attempt']);
+            Route::put('/attempts/{id}',             [QbStudentQuizController::class, 'save']);     // answers so far (kept for the auto-submit)
+            Route::post('/attempts/{id}/submit',     [QbStudentQuizController::class, 'submit']);
         });
         Route::middleware(['role:admin,teacher', 'module:exams'])->group(function () {
             Route::post('/exams/{id}/subjects/{subjectId}/submit', [MarksLockController::class, 'submit']);

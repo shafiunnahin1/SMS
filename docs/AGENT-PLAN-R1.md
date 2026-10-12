@@ -75,13 +75,13 @@
 | `QB.7` | Teachers: browse, buy with the institution wallet, spending | `QB.6` |  | 7 |  |
 | `QB.8` | Question papers: builder, PDF, the head teacher's view | `QB.7` |  | 7 |  |
 | `QB.9` | Student login and portal: practice, concepts, bKash purchases | `QB.8` |  | 8 |  |
-| `QB.10` | Quizzes and quiz packages | `QB.9` |  |  |  |
+| `QB.10` | Quizzes and quiz packages | `QB.9` |  | 18 |  |
 | `QB.10b` | Writers' earnings, wallet and withdrawals | `QB.10` |  |  |  |
 | `QB.11` | Import from qbank | `QB.10b` |  |  |  |
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 219 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 68 টেবিল · 237 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2650,11 +2650,36 @@ php artisan test   # whole suite stays green
 > **R1 পরিসর (এটিই চূড়ান্ত):** qb_quiz_packages (validity days), qb_quizzes (access package|free|public, scope, timing), attempts scored on the server, auto-submit at time-up, public page for public quizzes.
 
 
+**R1-এ যে route বানাবেন:**
+```
+GET /public/qb/quizzes -> QbPublicQuizController@index
+GET /public/qb/quizzes/{id} -> QbPublicQuizController@show
+POST /public/qb/quizzes/{id}/check -> QbPublicQuizController@check
+GET /super/qb/quiz-packages -> QbQuizController@packages [role:super_admin]
+POST /super/qb/quiz-packages -> QbQuizController@storePackage [role:super_admin]
+PUT /super/qb/quiz-packages/{id} -> QbQuizController@updatePackage [role:super_admin]
+GET /super/qb/quizzes -> QbQuizController@index [role:super_admin]
+GET /super/qb/quizzes/{id} -> QbQuizController@show [role:super_admin]
+POST /super/qb/quizzes -> QbQuizController@store [role:super_admin]
+PUT /super/qb/quizzes/{id} -> QbQuizController@update [role:super_admin]
+GET /student/qb/quizzes -> QbStudentQuizController@index [role:student]
+GET /student/qb/quiz-packages -> QbStudentQuizController@packages [role:student]
+POST /student/qb/quiz-packages/{id}/buy -> QbStudentQuizController@buy [role:student]
+POST /student/qb/quizzes/{id}/attempts -> QbStudentQuizController@start [role:student]
+GET /student/qb/attempts -> QbStudentQuizController@attempts [role:student]
+GET /student/qb/attempts/{id} -> QbStudentQuizController@attempt [role:student]
+PUT /student/qb/attempts/{id} -> QbStudentQuizController@save [role:student]
+POST /student/qb/attempts/{id}/submit -> QbStudentQuizController@submit [role:student]
+```
+
 **Done When:** Package expiry closes its quizzes; free and public quizzes work as specified; scoring is server-side; tests + e2e.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
 php artisan test --filter=QbQuiz
+npm test && npm run lint:theme
+npx playwright test e2e/qb-quiz.spec.js
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2917,7 +2942,7 @@ php artisan test   # whole suite stays green
 
 | Release | route |
 |---|---|
-| R1 | 219 |
+| R1 | 237 |
 | R1(excluded) | 21 |
 | R1.1 | 35 |
 | R2 | 150 |

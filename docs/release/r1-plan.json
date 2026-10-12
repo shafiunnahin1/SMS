@@ -1381,14 +1381,36 @@
     "docs/modules/question-bank.md"
    ],
    "tables": [],
-   "routes": [],
+   "routes": [
+    "GET /public/qb/quizzes -> QbPublicQuizController@index",
+    "GET /public/qb/quizzes/{id} -> QbPublicQuizController@show",
+    "POST /public/qb/quizzes/{id}/check -> QbPublicQuizController@check",
+    "GET /super/qb/quiz-packages -> QbQuizController@packages [role:super_admin]",
+    "POST /super/qb/quiz-packages -> QbQuizController@storePackage [role:super_admin]",
+    "PUT /super/qb/quiz-packages/{id} -> QbQuizController@updatePackage [role:super_admin]",
+    "GET /super/qb/quizzes -> QbQuizController@index [role:super_admin]",
+    "GET /super/qb/quizzes/{id} -> QbQuizController@show [role:super_admin]",
+    "POST /super/qb/quizzes -> QbQuizController@store [role:super_admin]",
+    "PUT /super/qb/quizzes/{id} -> QbQuizController@update [role:super_admin]",
+    "GET /student/qb/quizzes -> QbStudentQuizController@index [role:student]",
+    "GET /student/qb/quiz-packages -> QbStudentQuizController@packages [role:student]",
+    "POST /student/qb/quiz-packages/{id}/buy -> QbStudentQuizController@buy [role:student]",
+    "POST /student/qb/quizzes/{id}/attempts -> QbStudentQuizController@start [role:student]",
+    "GET /student/qb/attempts -> QbStudentQuizController@attempts [role:student]",
+    "GET /student/qb/attempts/{id} -> QbStudentQuizController@attempt [role:student]",
+    "PUT /student/qb/attempts/{id} -> QbStudentQuizController@save [role:student]",
+    "POST /student/qb/attempts/{id}/submit -> QbStudentQuizController@submit [role:student]"
+   ],
    "routes_excluded": [],
    "tests": [],
    "done_when": "Package expiry closes its quizzes; free and public quizzes work as specified; scoring is server-side; tests + e2e.",
    "scope_note": "qb_quiz_packages (validity days), qb_quizzes (access package|free|public, scope, timing), attempts scored on the server, auto-submit at time-up, public page for public quizzes.",
    "blocked": null,
    "verify": [
-    "php artisan test --filter=QbQuiz"
+    "php artisan test --filter=QbQuiz",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-quiz.spec.js",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {
