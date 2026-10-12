@@ -117,9 +117,7 @@ export default function QbQuestionEdit() {
     if (fam === 'creative' && getValues('creative_parts').length === 0) setValue('creative_parts', CREATIVE)
   }
 
-  const upload = async (e, placement) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
+  const uploadFile = async (file, placement) => {
     if (!file) return
     const form = new FormData()
     form.append('file', file)
@@ -130,6 +128,29 @@ export default function QbQuestionEdit() {
     } catch (err) {
       useUiStore.getState().addToast(err.response?.data?.errors?.file?.[0] ?? err.response?.data?.message, 'error')
     }
+  }
+  const upload = (e, placement) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    uploadFile(file, placement)
+  }
+  const pasteImage = (e) => {
+    const item = Array.from(e.clipboardData?.items ?? []).find(x => x.kind === 'file' && x.type.startsWith('image/'))
+    const file = item?.getAsFile()
+    if (!file) return
+    e.preventDefault()
+    track(e)
+    uploadFile(file)
+  }
+  const allowImageDrop = (e) => {
+    if (Array.from(e.dataTransfer?.items ?? []).some(x => x.kind === 'file' && x.type.startsWith('image/'))) e.preventDefault()
+  }
+  const dropImage = (e) => {
+    const file = Array.from(e.dataTransfer?.files ?? []).find(x => x.type.startsWith('image/'))
+    if (!file) return
+    e.preventDefault()
+    track(e)
+    uploadFile(file)
   }
 
   const save = async (f) => {
@@ -202,11 +223,11 @@ export default function QbQuestionEdit() {
           </Card>
         </nav>
 
-        <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane">
+        <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane" onDragOver={allowImageDrop} onDrop={dropImage}>
           {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} onReset={() => { reset(); active.current = null }} disabled={!canEdit} saving={isSubmitting} />}
           <Card>
             <form id="qb-question-form" onSubmit={handleSubmit(save)} className="grid gap-3 sm:grid-cols-2" noValidate
-              onFocusCapture={track} onSelectCapture={track} onKeyUpCapture={track} onMouseUpCapture={track}>
+              onFocusCapture={track} onSelectCapture={track} onKeyUpCapture={track} onMouseUpCapture={track} onPasteCapture={pasteImage}>
               <fieldset disabled={!canEdit} className="contents">
                 <Section id="meta" current={section} onEnter={setSection}>
                   <Select label={t('qb.type')} placeholder={t('qb.pick')} error={errors.qb_question_type_id?.message}
