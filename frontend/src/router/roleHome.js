@@ -2,6 +2,7 @@
 export const ROLE_HOME = {
   super_admin: '/super-admin/dashboard', admin: '/admin/dashboard', teacher: '/teacher/dashboard',
   parent: '/parent/dashboard', accountant: '/accountant/dashboard',
+  student: '/student/question-bank',   // QB.9 (D65): the question-bank portal is the student panel in R1
   content_writer: '/writer/questions', content_moderator: '/writer/questions',   // D65 QB.2: the question-bank writers' panel (central host)
 }
 

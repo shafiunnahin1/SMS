@@ -992,6 +992,16 @@
    "add": "Add",
    "unbought_title": "{{n}} questions are not bought yet - buy them for ৳{{total}}?",
    "unbought_hint": "From the institution wallet; every teacher can use them afterwards. Then the paper is saved."
+  },
+  "qbst": {
+   "title": "Question bank",
+   "opened": "Opened.",
+   "buy_concept": "Read the concept (৳{{price}})",
+   "payment": {
+    "success": "Payment received - it is open now.",
+    "failed": "The payment did not go through; nothing was charged for it here.",
+    "cancelled": "The payment was cancelled."
+   }
   }
  },
  "nav": {
