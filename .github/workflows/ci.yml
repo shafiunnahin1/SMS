@@ -113,7 +113,7 @@ jobs:
           composer install --no-interaction --prefer-dist
           cp .env.example .env && php artisan key:generate
           php artisan migrate:fresh --seed --force
-          PHP_CLI_SERVER_WORKERS=4 nohup php artisan serve --host=127.0.0.1 --port=8000 > /tmp/api.log 2>&1 &   # D68 (3): several workers - one slow request (the fee Excel) no longer stalls the rest
+          PHP_CLI_SERVER_WORKERS=4 nohup php artisan serve --host=127.0.0.1 --port=8000 --no-reload > /tmp/api.log 2>&1 &   # D68 (3): several workers - one slow request (the fee Excel) no longer stalls the rest; artisan serve honours the workers only with --no-reload
       - name: Frontend dev server and Chromium
         working-directory: frontend
         run: |
