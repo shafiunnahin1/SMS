@@ -39,7 +39,10 @@ export default function QbQuestions() {
   return (
     <div className="flex flex-col gap-4" data-testid="qb-questions">
       <PageHeader title={t('qb.questions')} actions={role !== 'content_moderator' &&
-        <Button onClick={() => navigate('/writer/questions/new')} data-action="new"><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.new_question')}</Button>} />
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => navigate('/writer/questions/start')} data-action="start"><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.new_question')}</Button>
+          <Button variant="secondary" onClick={() => navigate('/writer/questions/new')} data-action="new">{t('qbn.straight_to_editor')}</Button>
+        </div>} />
       <Tabs label={t('qb.state')} value={status} onChange={(s) => { setPage(1); setParams({ status: s }) }}
         items={STATUSES.map(s => ({ key: s, label: s === 'all' ? t('qb.all') : t(`qb.status.${s}`) }))} />
       <Input label={t('qb.search')} value={search} onChange={e => { setPage(1); setSearch(e.target.value) }} name="q" />

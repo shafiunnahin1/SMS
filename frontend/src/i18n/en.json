@@ -1230,6 +1230,47 @@
    "fields": "Field names",
    "values": "Answers",
    "comma_hint": "Comma-separated, in the same order"
+  },
+  "qbn": {
+   "intro": "Make the question's draft with the details below; write the question, answer and the rest in the editor.",
+   "academic": "Academic information",
+   "academic_hint": "Pick the class, subject, chapter and topic for the draft.",
+   "classes": "Applicable classes",
+   "search": "Search…",
+   "add": "Add",
+   "name_bn": "Bangla name",
+   "name_en": "English name",
+   "metadata": "Question metadata",
+   "metadata_hint": "Pick the question type and details; the full question is written in the editor.",
+   "content_mode": "Content mode",
+   "modes": {
+    "plain_text": "Plain text",
+    "rich_math": "With maths",
+    "mixed": "Mixed"
+   },
+   "exam_type": "Exam type",
+   "exam_type_hint": "Optional - e.g. SSC, HSC, JSC, admission",
+   "sources": "Source history",
+   "sources_hint": "Where the question appeared before",
+   "source_type": "Source type",
+   "source_types": {
+    "board": "Board",
+    "school": "School",
+    "college": "College",
+    "madrasa": "Madrasa",
+    "admission": "Admission test",
+    "model_test": "Model test",
+    "book": "Book",
+    "other": "Other"
+   },
+   "source_full": "Full source name",
+   "source_short": "Short name",
+   "add_source": "Add a source",
+   "draft_hint": "This only makes the question's draft; write the full content in the editor next.",
+   "make_draft": "Make the draft",
+   "draft_made": "Draft made - now write the question",
+   "straight_to_editor": "Straight to the editor",
+   "code": "Question code"
   }
  },
  "nav": {

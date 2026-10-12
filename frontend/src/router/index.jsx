@@ -49,6 +49,7 @@ const QbWriters         = lazy(() => import('../pages/super/QbWriters'))
 const QbPricing         = lazy(() => import('../pages/super/QbPricing'))
 const QbQuestions       = lazy(() => import('../pages/writer/QbQuestions'))
 const QbQuestionEdit    = lazy(() => import('../pages/writer/QbQuestionEdit'))
+const QbQuestionStart   = lazy(() => import('../pages/writer/QbQuestionStart'))   // D73
 const QbContentList     = lazy(() => import('../pages/writer/QbContentList'))
 const QbConceptEdit     = lazy(() => import('../pages/writer/QbConceptEdit'))
 const QbResourceEdit    = lazy(() => import('../pages/writer/QbResourceEdit'))
@@ -159,6 +160,7 @@ export const centralRoutes = [
   // D65 QB.2: the question-bank writers' panel (writers, moderators and the Super Admin)
   area('/writer', ['content_writer', 'content_moderator', 'super_admin'], [
     { path: 'questions', element: S(QbQuestions) },
+    { path: 'questions/start', element: S(QbQuestionStart) },   // D73: qbank's new-question form, a draft first
     { path: 'questions/:id', element: S(QbQuestionEdit) },
     { path: 'concepts', element: <Suspense fallback={<Loader type="page" />}><QbContentList kind="concepts" /></Suspense> },   // QB.5
     { path: 'concepts/:id', element: S(QbConceptEdit) },

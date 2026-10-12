@@ -19,6 +19,7 @@ import Check from '../../features/academic/Check'
 import QbStatus from '../../features/qb/QbStatus'
 import MathText from '../../features/qb/MathText'
 import Ribbon from '../../features/qb/Ribbon'
+import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } from '../../features/qb/questionMeta'
 import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
 
 const EDITABLE = ['draft', 'rejected']
@@ -33,7 +34,7 @@ function Section({ id: key, current, onEnter, children }) {
 const BN_LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
 const LEVELS = ['knowledge', 'understanding', 'application', 'higher_order']
 const CREATIVE = LEVELS.map((level, i) => ({ part_label: BN_LABELS[i], cognitive_level: level, marks: String(i + 1), question_text: '', answer_text: '' }))
-const EMPTY = { qb_question_type_id: '', qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', difficulty: '3', marks: '1', language: 'bn', question_text: '',
+const EMPTY = { qb_question_type_id: '', qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', difficulty: '3', marks: '1', language: 'bn', content_mode: '', class_level_ids: [], question_text: '',
   answer_text: '', explanation_text: '', options: [], creative_parts: [], occurrences: [], media: [], structured: STRUCTURED_EMPTY }
 
 // QB.2 + QB.3 /writer/questions/:id and /new (D65, D66): one form for the six core types. Shared fields (place in the curriculum,
@@ -67,7 +68,8 @@ export default function QbQuestionEdit() {
     reset({ ...EMPTY, ...q.data, qb_question_type_id: s(q.data.qb_question_type_id), qb_subject_id: s(q.data.qb_subject_id), qb_chapter_id: s(q.data.qb_chapter_id),
       qb_topic_id: s(q.data.qb_topic_id), difficulty: s(q.data.difficulty), marks: s(q.data.marks), answer_text: s(q.data.answer_text), explanation_text: s(q.data.explanation_text),
       creative_parts: q.data.creative_parts.map(p => ({ ...p, marks: s(p.marks), answer_text: s(p.answer_text) })),
-      occurrences: q.data.occurrences.map(o => ({ ...o, year: s(o.year) })), structured: fromQuestion(q.data) })
+      content_mode: s(q.data.content_mode), class_level_ids: (q.data.class_level_ids ?? []).map(String),
+      occurrences: q.data.occurrences.map(occurrenceToSource), structured: fromQuestion(q.data) })
   }, [q.data, reset])
 
   if (tree.isPending || types.isPending || (!isNew && q.isPending)) return <Loader type="page" />
@@ -125,11 +127,11 @@ export default function QbQuestionEdit() {
 
   const save = async (f) => {
     const body = { qb_question_type_id: num(f.qb_question_type_id), qb_subject_id: num(f.qb_subject_id), qb_chapter_id: num(f.qb_chapter_id), qb_topic_id: num(f.qb_topic_id),
-      difficulty: Number(f.difficulty), marks: f.marks, language: f.language, content_mode: /\$[^$]+\$/.test(f.question_text) ? 'rich_math' : 'plain_text',
+      difficulty: Number(f.difficulty), marks: f.marks, language: f.language, content_mode: f.content_mode || (/\$[^$]+\$/.test(f.question_text) ? 'rich_math' : 'plain_text'), class_level_ids: f.class_level_ids.map(Number),
       question_text: f.question_text, answer_text: f.answer_text || null, explanation_text: f.explanation_text || null,
       options: optionsFor ? f.options.map(o => ({ label: o.label, content_text: o.content_text, is_correct: Boolean(o.is_correct) })) : [],
       creative_parts: family === 'creative' ? f.creative_parts.map(p => ({ ...p, answer_text: p.answer_text || null })) : [],
-      occurrences: f.occurrences.map(o => ({ board: o.board || null, exam_type: o.exam_type || null, institution_name: o.institution_name || null, year: num(o.year) })),
+      occurrences: f.occurrences.map(sourceToOccurrence),
       media_ids: f.media.map(m => m.id), ...toPayload(structure, f.structured) }
     try {
       const { data } = isNew ? await api.post('/writer/questions', body) : await api.put(`/writer/questions/${id}`, body)
@@ -168,7 +170,9 @@ export default function QbQuestionEdit() {
   // beside them (the active part or the whole question). Below xl a switch shows the editor or the preview, as qbank's mobile view.
   return (
     <div className="flex flex-col gap-4" data-testid="qb-question-edit">
-      <PageHeader title={isNew ? t('qb.new_question') : t('qb.question_no', { id })} actions={!isNew && <QbStatus status={status} />} />
+      <PageHeader title={isNew ? t('qb.new_question') : t('qb.question_no', { id })} actions={!isNew && <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-token bg-primary-soft px-2 py-1 font-mono text-xs text-primary-fg" dir="ltr" data-testid="qb-code" title={t('qbn.code')}>{questionCode(picked?.slug, id)}</span>
+        <QbStatus status={status} /></div>} />
       {status === 'rejected' && q.data?.review_note && (
         <Card className="flex flex-col gap-1" data-testid="review-note" role="status">
           <h2 className="font-semibold">{t('qb.returned')}</h2>
@@ -210,6 +214,11 @@ export default function QbQuestionEdit() {
                   <Select label={t('qb.difficulty')} options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: t(`qb.difficulty_level.${d}`) }))} {...register('difficulty')} />
                   <Input label={t('qb.marks')} ltr inputMode="decimal" error={errors.marks?.message} {...register('marks')} />
                   <Select label={t('qb.language')} options={[{ value: 'bn', label: 'বাংলা' }, { value: 'en', label: 'English' }]} {...register('language')} />
+                  <Select label={t('qbn.content_mode')} placeholder={t('qbn.modes.plain_text')} options={['plain_text', 'rich_math', 'mixed'].map(m => ({ value: m, label: t(`qbn.modes.${m}`) }))} {...register('content_mode')} />
+                  <fieldset className="sm:col-span-2 flex flex-col gap-1">
+                    <legend className="text-sm font-medium mb-1">{t('qbn.classes')}</legend>
+                    <div className="flex flex-wrap gap-3">{tree.data.class_levels.map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids')} />)}</div>
+                  </fieldset>
                 </Section>
 
                 <Section id="question" current={section} onEnter={setSection}>
@@ -289,16 +298,18 @@ export default function QbQuestionEdit() {
 
                 <Section id="occurrences" current={section} onEnter={setSection}>
                   <fieldset className="sm:col-span-2 flex flex-col gap-2">
-                    <legend className="font-semibold mb-1">{t('qb.occurrences')}</legend>
+                    <legend className="font-semibold mb-1">{t('qbn.sources')}</legend>
                     {occurrences.fields.map((f, i) => (
                       <div key={f.id} className="flex flex-wrap items-end gap-2">
-                        <Input className="w-32" label={t('qb.board')} {...register(`occurrences.${i}.board`)} />
-                        <Input className="w-28" label={t('qb.exam_type')} {...register(`occurrences.${i}.exam_type`)} />
+                        <Select className="w-36" label={t('qbn.source_type')} placeholder={t('qb.pick')} options={SOURCE_TYPES.map(x => ({ value: x, label: t(`qbn.source_types.${x}`) }))} {...register(`occurrences.${i}.type`)} />
+                        <Input className="flex-1 min-w-40" label={t('qbn.source_full')} {...register(`occurrences.${i}.full`)} />
+                        <Input className="w-28" label={t('qbn.source_short')} {...register(`occurrences.${i}.short`)} />
+                        <Input className="w-28" label={t('qbn.exam_type')} {...register(`occurrences.${i}.exam_type`)} />
                         <Input className="w-24" label={t('qb.year')} ltr inputMode="numeric" {...register(`occurrences.${i}.year`)} />
                         <Button variant="secondary" onClick={() => occurrences.remove(i)} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
                       </div>
                     ))}
-                    <div><Button variant="secondary" onClick={() => occurrences.append({ board: '', exam_type: '', year: '' })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add_occurrence')}</Button></div>
+                    <div><Button variant="secondary" onClick={() => occurrences.append({ type: '', full: '', short: '', exam_type: '', year: '' })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add_occurrence')}</Button></div>
                   </fieldset>
                 </Section>
               </fieldset>
