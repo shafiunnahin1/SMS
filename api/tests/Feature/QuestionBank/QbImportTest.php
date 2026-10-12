@@ -142,4 +142,16 @@ class QbImportTest extends TestCase
         $this->assertSame([$level->id, $subject->id], [QbImportMap::where('source_table', 'class_levels')->value('target_id'), QbImportMap::where('source_table', 'subjects')->value('target_id')]);
         $this->assertSame($subject->id, QbQuestion::where('question_text', 'বেগের একক?')->value('qb_subject_id'));
     }
+
+    public function test_qbank_editor_html_arrives_as_plain_text_and_refresh_text_cleans_earlier_rows(): void
+    {
+        $html = '<div data-qae-layout="qa"><div data-qae-slot="task"><div dir="auto">বল&#160;কাকে বলে?</div></div><ol><li>এক</li><li>দুই</li></ol></div>\n<script>x</script>শেষ';
+        $this->assertSame("বল কাকে বলে?\nএক\nদুই\nxশেষ", \App\Console\Commands\QbImportFromQbank::plain($html));
+        DB::connection('qbank')->table('questions')->where('id', 100)->update(['question_text' => '<div>বেগের&#160;একক?</div>']);
+        $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])->assertSuccessful();
+        $q = QbQuestion::where('question_text', 'বেগের একক?')->firstOrFail();
+        $q->forceFill(['question_text' => '<div dir="auto">পুরনো&#160;HTML</div>\n'])->save();   // as the first, uncleaned run left it
+        $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media, '--refresh-text' => true])->assertSuccessful();
+        $this->assertSame('পুরনো HTML', $q->fresh()->question_text);
+    }
 }

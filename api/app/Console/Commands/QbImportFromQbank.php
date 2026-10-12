@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\{DB, Storage};
 class QbImportFromQbank extends Command
 {
     protected $signature = 'qb:import-from-qbank {--dry-run : count only, keep nothing} {--user= : the Super Admin the imported rows are written by}
-        {--media-path= : the folder that holds qbank\'s stored files (its storage/app/public)} {--connection=qbank}';
+        {--media-path= : the folder that holds qbank\'s stored files (its storage/app/public)} {--connection=qbank}
+        {--refresh-text : re-clean the text of questions imported before (qbank editor HTML -> plain text)}';
     protected $description = 'Import curriculum, questions and pictures from the qbank database (D69)';
 
     private Connection $src;
@@ -43,6 +44,7 @@ class QbImportFromQbank extends Command
 
         DB::beginTransaction();
         try {
+            if ($this->option('refresh-text')) $this->refreshText();
             $this->classLevels(); $this->subjects(); $this->chapters(); $this->topics(); $this->types(); $this->questions(); $this->media($dry);
             $dry ? DB::rollBack() : DB::commit();
         } catch (\Throwable $e) {
@@ -76,6 +78,32 @@ class QbImportFromQbank extends Command
     private function count(string $table, string $kind): void { $this->report[$table][$kind] = ($this->report[$table][$kind] ?? 0) + 1; }
     private function skip(string $what, string $why): void { $this->skipped["{$what}|{$why}"] = ($this->skipped["{$what}|{$why}"] ?? 0) + 1; }
     private function rows(string $table) { return $this->src->getSchemaBuilder()->hasTable($table) ? $this->src->table($table)->orderBy('id')->get() : collect(); }
+    /** qbank stores its editor's HTML (and literal "\\n") in the *_text columns; here text is plain text - tags become line
+     *  breaks / nothing, entities are decoded, never kept as markup (the pages render text, not HTML) */
+    public static function plain(?string $v): ?string
+    {
+        if ($v === null) return null;
+        $v = str_replace(['\\r\\n', '\\n', '\\r'], "\n", $v);
+        $v = preg_replace('~<\s*br\s*/?>|</\s*(div|p|li|h[1-6]|tr)\s*>~i', "\n", $v);
+        $v = html_entity_decode(strip_tags($v), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $v = preg_replace("~[ \t\x{00A0}]+~u", ' ', $v);
+        return trim(preg_replace("~ *\n[ \n]*~", "\n", $v));
+    }
+
+    /** --refresh-text: the rows taken by an earlier run get the same cleaning (only rows this import made, via qb_import_map) */
+    private function refreshText(): void
+    {
+        $maps = ['questions' => [QbQuestion::class, ['question_text', 'answer_text', 'explanation_text']],
+            'question_options' => [QbQuestionOption::class, ['content_text']], 'creative_question_parts' => [QbCreativePart::class, ['question_text', 'answer_text']]];
+        foreach ($maps as $table => [$model, $cols]) {
+            $ids = QbImportMap::where('source', 'qbank')->where('source_table', $table)->pluck('target_id');
+            foreach ($model::whereIn('id', $ids)->get() as $row) {
+                foreach ($cols as $c) if ($row->{$c} !== null) $row->{$c} = self::plain($row->{$c}) ?? '';
+                if ($row->isDirty()) { $row->save(); $this->count("{$table} (text cleaned)", 'kept'); }
+            }
+        }
+    }
+
     private function json($v) { return is_string($v) && $v !== '' ? json_decode($v, true) : (is_array($v) ? $v : null); }
 
     // ---- curriculum ----
@@ -161,9 +189,9 @@ class QbImportFromQbank extends Command
                 'difficulty' => self::DIFFICULTY[$r->difficulty] ?? 3, 'marks' => is_numeric($r->marks) && Money::toPaisa((string) $r->marks) > 0 && Money::toPaisa((string) $r->marks) < 100000 ? Money::format(Money::toPaisa((string) $r->marks)) : '1.00',
                 'language' => in_array($r->language, ['bn', 'en'], true) ? $r->language : 'bn',
                 'content_mode' => ['plain_text' => 'plain_text', 'rich_math' => 'rich_math', 'mixed_content' => 'mixed', 'mixed' => 'mixed'][$r->content_mode] ?? 'plain_text',
-                'question_text' => (string) $r->question_text, 'question_json' => $this->json($r->question_content_json),
-                'answer_text' => $r->answer_text, 'answer_json' => $this->json($r->answer_content_json),
-                'explanation_text' => $r->explanation_text, 'explanation_json' => $this->json($r->explanation_content_json),
+                'question_text' => (string) self::plain($r->question_text), 'question_json' => $this->json($r->question_content_json),
+                'answer_text' => self::plain($r->answer_text), 'answer_json' => $this->json($r->answer_content_json),
+                'explanation_text' => self::plain($r->explanation_text), 'explanation_json' => $this->json($r->explanation_content_json),
                 'status' => 'review', 'created_by' => $this->by]));
             $slug = QbQuestionType::whereKey($type)->value('slug');
             $this->byType[$slug] = ($this->byType[$slug] ?? 0) + 1;
@@ -204,15 +232,15 @@ class QbImportFromQbank extends Command
         }
         foreach ($this->src->table('question_options')->where('question_id', $src)->orderBy('sort_order')->orderBy('id')->get() as $o) {
             $this->take('question_options', $o->id, 'qb_question_options', fn () => QbQuestionOption::create(['qb_question_id' => $q, 'label' => mb_substr((string) $o->option_label, 0, 10),
-                'content_text' => (string) $o->option_text, 'content_json' => $this->json($o->option_content_json), 'is_correct' => (bool) $o->is_correct, 'sort_order' => (int) $o->sort_order]));
+                'content_text' => (string) self::plain($o->option_text), 'content_json' => $this->json($o->option_content_json), 'is_correct' => (bool) $o->is_correct, 'sort_order' => (int) $o->sort_order]));
         }
         $parts = $this->src->getSchemaBuilder()->hasTable('creative_question_parts') ? $this->src->table('creative_question_parts')->where('question_id', $src)->orderBy('sort_order')->get() : collect();
         foreach ($parts as $p) {
             if (!empty($p->parent_id)) { $this->skip('creative_question_parts', 'a nested part (only the first level comes over)'); continue; }
             $this->take('creative_question_parts', $p->id, 'qb_creative_parts', fn () => QbCreativePart::create(['qb_question_id' => $q, 'part_label' => mb_substr((string) $p->part_label, 0, 10),
                 'cognitive_level' => self::COGNITIVE[$p->cognitive_level] ?? 'knowledge', 'marks' => $p->marks !== null ? $p->marks : '1.00',
-                'question_text' => (string) $p->question_text, 'question_json' => $this->json($p->question_content_json),
-                'answer_text' => $p->answer_text, 'answer_json' => $this->json($p->answer_content_json), 'sort_order' => (int) $p->sort_order]));
+                'question_text' => (string) self::plain($p->question_text), 'question_json' => $this->json($p->question_content_json),
+                'answer_text' => self::plain($p->answer_text), 'answer_json' => $this->json($p->answer_content_json), 'sort_order' => (int) $p->sort_order]));
         }
         $name = fn (string $table, $id) => $id && $this->src->getSchemaBuilder()->hasTable($table) ? $this->src->table($table)->where('id', $id)->value('name_bn') : null;
         foreach ($this->src->table('question_occurrences')->where('question_id', $src)->get() as $oc) {
