@@ -112,7 +112,7 @@ export default function QbQuestionEdit() {
     if (fam === 'creative' && getValues('creative_parts').length === 0) setValue('creative_parts', CREATIVE)
   }
 
-  const upload = async (e) => {
+  const upload = async (e, placement) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
@@ -121,7 +121,7 @@ export default function QbQuestionEdit() {
     try {
       const { data } = await api.post('/writer/media', form, multipart)
       setValue('media', [...getValues('media'), data.data], { shouldDirty: true })
-      if (active.current) run(insertPicture, data.data.id)
+      if (active.current) run(insertPicture, data.data.id, placement)
     } catch (err) {
       useUiStore.getState().addToast(err.response?.data?.errors?.file?.[0] ?? err.response?.data?.message, 'error')
     }

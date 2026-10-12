@@ -28,6 +28,8 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
   const [ul, setUl] = useState(LIST_STYLES.ul[0])
   const [ol, setOl] = useState(LIST_STYLES.ol[0])
   const [table, setTable] = useState(null)
+  const [pictureWidth, setPictureWidth] = useState('100')
+  const [pictureAlign, setPictureAlign] = useState('center')
   const fmt = (f, c) => () => run(applyFormat, f, c)
   const selectedCells = table?.selected.map((point) => point.split(':').map(Number)) ?? []
   const mergedCells = table ? mergeTableCells(table.cells, selectedCells) : null
@@ -91,7 +93,18 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
         <Tool label={t('qbed.table')} onClick={() => setTable({ rows: '3', cols: '2', header: true, style: 'grid', caption: '', cells: createTableCells(3, 2), selected: [] })} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
         <label className="inline-flex h-9 cursor-pointer items-center rounded-token px-2 hover:bg-primary-soft" title={t('qbed.image')}>
           <ImagePlus aria-hidden="true" className="h-4 w-4" /><span className="sr-only">{t('qbed.image')}</span>
-          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={onImage} name="picture" className="sr-only" />
+          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={e => onImage(e, { width: Number(pictureWidth), align: pictureAlign })} name="picture" className="sr-only" />
+        </label>
+        <label className="inline-flex h-9 items-center gap-1 px-1" title={t('qbed.picture_width')}>
+          <span className="sr-only">{t('qbed.picture_width')}</span>
+          <input type="range" min="10" max="100" step="5" value={pictureWidth} onChange={e => setPictureWidth(e.target.value)} aria-label={t('qbed.picture_width')} className="w-16" />
+          <span className="min-w-9 text-xs tabular-nums">{pictureWidth}%</span>
+        </label>
+        <label className="inline-flex h-9 items-center" title={t('qbed.picture_align')}>
+          <span className="sr-only">{t('qbed.picture_align')}</span>
+          <select value={pictureAlign} onChange={e => setPictureAlign(e.target.value)} aria-label={t('qbed.picture_align')} className="h-8 max-w-24 rounded-token bg-surface px-1 text-xs [border:1px_solid_var(--line)]">
+            {['left', 'center', 'right'].map(align => <option key={align} value={align}>{t(`qbed.align_${align}`)}</option>)}
+          </select>
         </label>
         <MathInsert onInsert={(snippet) => run(insertAt, snippet)} disabled={disabled} compact />
         <Tool label={t('qbed.reset')} onClick={onReset} data-action="reset"><RotateCcw aria-hidden="true" className="h-4 w-4" /></Tool>

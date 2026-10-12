@@ -1162,6 +1162,8 @@
     "merge_cells": "Merge cells",
     "split_cell": "Split cell",
     "table_cell": "Row {{row}}, column {{col}}",
+    "picture_width": "Picture width",
+    "picture_align": "Picture alignment",
    "table_style": "Border",
    "table_styles": {
     "grid": "Grid",

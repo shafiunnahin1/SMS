@@ -1162,6 +1162,8 @@
     "merge_cells": "ঘরগুলো একত্র করুন",
     "split_cell": "ঘর আলাদা করুন",
     "table_cell": "সারি {{row}}, কলাম {{col}}",
+    "picture_width": "ছবির প্রস্থ",
+    "picture_align": "ছবির অবস্থান",
    "table_style": "বর্ডার",
    "table_styles": {
     "grid": "সব ঘরে",
