@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertPicture, insertTable, mathRegionAt, mergeTableCells, splitTableCell } from '../features/qb/formatting'
+import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertPicture, insertTable, mathRegionAt, mergeTableCells, parseTableSelection, splitTableCell } from '../features/qb/formatting'
 
 // D72 (QB.12): qbank's ribbon actions write qbank's vocabulary; inside maths they write LaTeX.
 describe('ribbon actions', () => {
@@ -63,5 +63,25 @@ describe('ribbon actions', () => {
     expect(html).toContain('<tr><th dir="auto"></th><td dir="auto"></td></tr>')
     expect(insertTable('', 0, 0, { rows: 1, cols: 1, width: '400', align: 'start', spacing: 'loose' }).value)
       .toContain('qmx-table-width-100 qmx-table-align-center qmx-table-normal')
+  })
+
+  it('parses a selected table for editing and replaces only that selection', () => {
+    const source = '<table class="qmx-table qmx-table-width-75 qmx-table-align-right qmx-table-comfortable qmx-table-striped"><caption>আগের শিরোনাম</caption><tbody><tr><th dir="auto">A</th><th colspan="2"><strong>B</strong></th></tr><tr><td dir="auto">C</td><td dir="auto">D</td><td dir="auto">E</td></tr></tbody></table>'
+    const editor = `শুরু ${source} শেষ`
+    const start = editor.indexOf(source)
+    const table = parseTableSelection(editor, start, start + source.length)
+    expect(table).toMatchObject({ rows: '2', cols: '3', caption: 'আগের শিরোনাম', width: '75', align: 'right', spacing: 'comfortable', striped: true })
+    expect(table.cells[0][1]).toMatchObject({ colspan: 2, text: 'B', markup: '<strong>B</strong>' })
+    expect(table.cells[0][2].mergedInto).toBe('0:1')
+    table.caption = 'নতুন শিরোনাম'
+    table.cells[1][2].text = 'পানি'
+    table.cells[1][2].markup = undefined
+    const updated = insertTable(editor, start, start + source.length, table).value
+    expect(updated).toContain('<caption>নতুন শিরোনাম</caption>')
+    expect(updated).toContain('<th dir="auto" colspan="2"><strong>B</strong></th>')
+    expect(updated).toContain('<td dir="auto">পানি</td>')
+    expect(updated.startsWith('শুরু <table')).toBe(true)
+    expect(updated.endsWith('</table> শেষ')).toBe(true)
+    expect(parseTableSelection('<table><tr><td>x</td></tr></table> trailing', 0, 46)).toBeNull()
   })
 })

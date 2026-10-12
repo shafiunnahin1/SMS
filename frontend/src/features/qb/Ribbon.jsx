@@ -7,7 +7,7 @@ import Modal from '../../ui/variants/Modal'
 import { Input, Select } from '../../components/FormField'
 import Check from '../academic/Check'
 import MathInsert from './MathInsert'
-import { DEFAULT_BG_COLOR, DEFAULT_TEXT_COLOR, LIST_STYLES, applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertAt, insertTab, insertTable, mergeTableCells, splitTableCell } from './formatting'
+import { DEFAULT_BG_COLOR, DEFAULT_TEXT_COLOR, LIST_STYLES, applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertAt, insertTab, insertTable, mergeTableCells, parseTableSelection, splitTableCell } from './formatting'
 
 const keep = (e) => e.preventDefault()   // a ribbon click must not take the focus (and the selection) away from the text field
 
@@ -23,7 +23,7 @@ const Sep = () => <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
 
 // D72 (QB.12): qbank's editor ribbon. Every action works on the text field the writer was last in (run(fn, ...args) on the page
 // applies it to that field's value and selection); maths, pictures, save and reset are the page's own actions.
-export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
+export default function Ribbon({ run, readActive, onImage, onReset, disabled, saving }) {
   const { t } = useTranslation()
   const [ul, setUl] = useState(LIST_STYLES.ul[0])
   const [ol, setOl] = useState(LIST_STYLES.ol[0])
@@ -48,6 +48,11 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
     const point = `${row}:${col}`
     return { ...current, selected: checked ? [...new Set([...current.selected, point])] : current.selected.filter((item) => item !== point) }
   })
+  const openTable = () => {
+    const active = readActive?.()
+    const existing = active ? parseTableSelection(active.value, active.start, active.end) : null
+    setTable(existing ?? { rows: '3', cols: '2', header: true, headerColumn: false, striped: false, style: 'grid', width: '100', align: 'center', spacing: 'normal', caption: '', cells: createTableCells(3, 2), selected: [] })
+  }
   return (
     <div role="toolbar" aria-label={t('qbed.ribbon')} data-testid="qb-ribbon"
       className="sticky top-0 z-10 flex flex-wrap items-center gap-1 rounded-token bg-surface p-2 shadow-card [border:1px_solid_var(--line)]">
@@ -92,7 +97,7 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
         </label>
         <Tool label={t('qbed.clear')} onClick={() => run(clearFormat)}><RemoveFormatting aria-hidden="true" className="h-4 w-4" /></Tool>
         <Sep />
-        <Tool label={t('qbed.table')} onClick={() => setTable({ rows: '3', cols: '2', header: true, headerColumn: false, striped: false, style: 'grid', width: '100', align: 'center', spacing: 'normal', caption: '', cells: createTableCells(3, 2), selected: [] })} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
+        <Tool label={t('qbed.table')} onClick={openTable} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
         <label className="inline-flex h-9 cursor-pointer items-center rounded-token px-2 hover:bg-primary-soft" title={t('qbed.image')}>
           <ImagePlus aria-hidden="true" className="h-4 w-4" /><span className="sr-only">{t('qbed.image')}</span>
           <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={e => onImage(e, { width: Number(pictureWidth), align: pictureAlign, position: picturePosition, paragraph: Number(pictureParagraph) })} name="picture" className="sr-only" />
@@ -158,7 +163,7 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
                           <input type="checkbox" checked={table.selected.includes(point)} onChange={e => toggleTableCell(row, col, e.target.checked)} data-testid={`table-cell-select-${row}-${col}`} />
                           {label}
                         </label>
-                        <textarea aria-label={label} rows={2} value={cell.text} onChange={e => setTable(current => ({ ...current, cells: current.cells.map((cellsRow, currentRow) => cellsRow.map((item, currentCol) => currentRow === row && currentCol === col ? { ...item, text: e.target.value } : item)) }))}
+                        <textarea aria-label={label} rows={2} value={cell.text} onChange={e => setTable(current => ({ ...current, cells: current.cells.map((cellsRow, currentRow) => cellsRow.map((item, currentCol) => currentRow === row && currentCol === col ? { ...item, text: e.target.value, markup: undefined } : item)) }))}
                           className="w-full rounded-token bg-surface p-2 text-sm [border:1px_solid_var(--line)]" data-testid={`table-cell-${row}-${col}`} />
                       </div>
                     )

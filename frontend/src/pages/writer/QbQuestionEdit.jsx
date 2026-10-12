@@ -102,6 +102,11 @@ export default function QbQuestionEdit() {
     active.current = { ...a, start: r.start, end: r.end }
     requestAnimationFrame(() => { a.el.focus(); a.el.setSelectionRange(r.start, r.end) })
   }
+  const readActive = () => {
+    const a = active.current
+    if (!a) return null
+    return { value: String(getValues(a.name) ?? ''), start: a.start ?? 0, end: a.end ?? 0 }
+  }
   const go = (key) => { setSection(key); setPane('editor'); document.getElementById(`qbs-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
   const v = watch()
 
@@ -198,7 +203,7 @@ export default function QbQuestionEdit() {
         </nav>
 
         <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane">
-          {canEdit && <Ribbon run={run} onImage={upload} onReset={() => { reset(); active.current = null }} disabled={!canEdit} saving={isSubmitting} />}
+          {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} onReset={() => { reset(); active.current = null }} disabled={!canEdit} saving={isSubmitting} />}
           <Card>
             <form id="qb-question-form" onSubmit={handleSubmit(save)} className="grid gap-3 sm:grid-cols-2" noValidate
               onFocusCapture={track} onSelectCapture={track} onKeyUpCapture={track} onMouseUpCapture={track}>
