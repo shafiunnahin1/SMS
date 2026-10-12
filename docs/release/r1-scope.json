@@ -1390,6 +1390,24 @@
     "npx playwright test e2e/qb-structured.spec.js e2e/qb-editor.spec.js",
     "php artisan test   # whole suite stays green"
    ]
+  },
+  {
+   "id": "QB.14",
+   "after": "QB.12",
+   "title": "qbank's table builder and picture tool (D72, later step)",
+   "goal": "Writers build tables and place pictures inside the text as in qbank.",
+   "spec": [
+    "docs/LOCKED-DECISIONS.md",
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "D72's later step: a table builder (rows, columns, caption, border, width, alignment, cell spacing, header row / column, striped rows, a cell grid to type in, merge selected cells and split a cell, editing a table already in the text) and a picture tool (drop, paste or choose; place at the cursor, at the start, at the end or after paragraph N; alignment; size in %; rotation; a light background made transparent; undo / redo; the picture is uploaded as the question's media). The vocabulary gains `caption` and an `img` that names only the question's own media by id with its width and alignment - never a URL; the server keeps nothing else. No new table, column, route or package.",
+   "done": "A table with a merged cell and a caption, and a rotated picture placed after paragraph 2 at 50% width, are saved, shown in the preview, the library and the paper PDF; an img naming a URL or an unknown attribute never survives; tests.",
+   "verify": [
+    "php artisan test --filter=QbRichText",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-editor.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
   }
  ],
  "interview_cards": [

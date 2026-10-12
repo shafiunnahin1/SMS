@@ -79,11 +79,12 @@
 | `QB.10b` | Writers' earnings, wallet and withdrawals | `QB.10` |  | 8 |  |
 | `QB.11` | Import from qbank | `QB.10b` | 1 |  |  |
 | `QB.12` | qbank-style question editor (D72) | `QB.11` |  |  |  |
-| `QB.13` | Smart editor: mixed parts, new item kinds, the new-question form (D73) | `QB.12` |  |  |  |
+| `QB.14` | qbank's table builder and picture tool (D72, later step) | `QB.12` |  |  |  |
+| `QB.13` | Smart editor: mixed parts, new item kinds, the new-question form (D73) | `QB.14` |  |  |  |
 | `5.1` | Signup & Onboarding | `QB.13` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 53 task · 69 টেবিল · 245 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 54 task · 69 টেবিল · 245 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2777,9 +2778,30 @@ php artisan test   # whole suite stays green
 
 ---
 
-### TASK `QB.13` — Smart editor: mixed parts, new item kinds, the new-question form (D73)
+### TASK `QB.14` — qbank's table builder and picture tool (D72, later step)
 
 - **নির্ভর করে:** `QB.12`  ·  **Release:** R1
+- **লক্ষ্য:** Writers build tables and place pictures inside the text as in qbank.
+- **কী পড়বেন:** `docs/LOCKED-DECISIONS.md`, `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** D72's later step: a table builder (rows, columns, caption, border, width, alignment, cell spacing, header row / column, striped rows, a cell grid to type in, merge selected cells and split a cell, editing a table already in the text) and a picture tool (drop, paste or choose; place at the cursor, at the start, at the end or after paragraph N; alignment; size in %; rotation; a light background made transparent; undo / redo; the picture is uploaded as the question's media). The vocabulary gains `caption` and an `img` that names only the question's own media by id with its width and alignment - never a URL; the server keeps nothing else. No new table, column, route or package.
+
+
+**Done When:** A table with a merged cell and a caption, and a rotated picture placed after paragraph 2 at 50% width, are saved, shown in the preview, the library and the paper PDF; an img naming a URL or an unknown attribute never survives; tests.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbRichText
+npm test && npm run lint:theme
+npx playwright test e2e/qb-editor.spec.js
+php artisan test   # whole suite stays green
+```
+
+---
+
+### TASK `QB.13` — Smart editor: mixed parts, new item kinds, the new-question form (D73)
+
+- **নির্ভর করে:** `QB.14`  ·  **Release:** R1
 - **লক্ষ্য:** Writers can build every board / NCTB question format in one editor.
 - **কী পড়বেন:** `docs/LOCKED-DECISIONS.md`, `docs/modules/question-bank.md`
 
