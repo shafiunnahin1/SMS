@@ -30,12 +30,15 @@ test('QB.3 editor: an MCQ with maths and a picture, a creative question, live pr
   // the four options come pre-labelled ক-ঘ, the first marked right
   for (const [i, text] of ['$2$', '$-2$', '$4$', '$0$'].entries()) await form.locator(`input[name="options.${i}.content_text"]`).fill(text)
   const questionText = form.locator('textarea[name="question_text"]')
+  await questionText.fill(`<div>${await questionText.inputValue()}</div><div>দ্বিতীয় অনুচ্ছেদ</div>`)
   await questionText.evaluate(el => el.setSelectionRange(el.value.length, el.value.length))
   await questionText.dispatchEvent('select')
   await page.locator('[aria-label="ছবির প্রস্থ"]').fill('50')
   await page.locator('[aria-label="ছবির অবস্থান"]').selectOption('right')
+  await page.locator('[aria-label="ছবি বসানোর স্থান"]').selectOption('after')
+  await page.locator('[aria-label="অনুচ্ছেদ নম্বর"]').fill('1')
   await page.locator('[data-testid="qb-ribbon"] input[name="picture"]').setInputFiles({ name: 'graph.png', mimeType: 'image/png', buffer: PNG })
-  await expect(questionText).toHaveValue(/<img data-qmx-media="\d+" data-qmx-width="50" data-qmx-align="right">$/)
+  await expect(questionText).toHaveValue(/<\/div><img data-qmx-media="\d+" data-qmx-width="50" data-qmx-align="right"><div>দ্বিতীয় অনুচ্ছেদ/)
   await expect(form.locator('img')).toHaveCount(1)
 
   await expect(preview.locator('math-span').first()).toBeVisible()

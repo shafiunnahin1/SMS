@@ -177,10 +177,34 @@ export function insertAt(value, start, end, text) {
   return splice(value, start, end, text)
 }
 
-export function insertPicture(value, start, end, mediaId, { width = 100, align = 'center' } = {}) {
+function paragraphEnds(value) {
+  const ends = []
+  const pattern = /<\/?div\b[^>]*>|<br\s*\/?>|\r?\n/gi
+  let depth = 0
+  let match
+  while ((match = pattern.exec(value)) !== null) {
+    const tag = match[0].toLowerCase()
+    if (tag.startsWith('</div')) {
+      depth = Math.max(0, depth - 1)
+      if (depth === 0) ends.push(pattern.lastIndex)
+    } else if (tag.startsWith('<div')) depth++
+    else if (depth === 0) ends.push(pattern.lastIndex)
+  }
+  return ends
+}
+
+export function insertPicture(value, start, end, mediaId, { width = 100, align = 'center', position = 'cursor', paragraph = 1 } = {}) {
   const id = String(mediaId ?? '')
   if (!/^[1-9]\d{0,9}$/.test(id)) return result(value, start, end)
   const size = Number.isInteger(width) && width >= 10 && width <= 100 ? width : 100
   const side = ['left', 'center', 'right'].includes(align) ? align : 'center'
-  return splice(value, start, end, `<img data-qmx-media="${id}" data-qmx-width="${size}" data-qmx-align="${side}">`)
+  let from = start
+  let to = end
+  if (position === 'start') from = to = 0
+  else if (position === 'end') from = to = value.length
+  else if (position === 'after') {
+    const ends = paragraphEnds(value)
+    from = to = ends[Math.min(Math.max(Number(paragraph) || 1, 1), 100) - 1] ?? value.length
+  }
+  return splice(value, from, to, `<img data-qmx-media="${id}" data-qmx-width="${size}" data-qmx-align="${side}">`)
 }

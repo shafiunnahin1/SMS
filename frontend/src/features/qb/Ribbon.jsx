@@ -30,6 +30,8 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
   const [table, setTable] = useState(null)
   const [pictureWidth, setPictureWidth] = useState('100')
   const [pictureAlign, setPictureAlign] = useState('center')
+  const [picturePosition, setPicturePosition] = useState('cursor')
+  const [pictureParagraph, setPictureParagraph] = useState('1')
   const fmt = (f, c) => () => run(applyFormat, f, c)
   const selectedCells = table?.selected.map((point) => point.split(':').map(Number)) ?? []
   const mergedCells = table ? mergeTableCells(table.cells, selectedCells) : null
@@ -93,7 +95,7 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
         <Tool label={t('qbed.table')} onClick={() => setTable({ rows: '3', cols: '2', header: true, headerColumn: false, striped: false, style: 'grid', width: '100', align: 'center', spacing: 'normal', caption: '', cells: createTableCells(3, 2), selected: [] })} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
         <label className="inline-flex h-9 cursor-pointer items-center rounded-token px-2 hover:bg-primary-soft" title={t('qbed.image')}>
           <ImagePlus aria-hidden="true" className="h-4 w-4" /><span className="sr-only">{t('qbed.image')}</span>
-          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={e => onImage(e, { width: Number(pictureWidth), align: pictureAlign })} name="picture" className="sr-only" />
+          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={e => onImage(e, { width: Number(pictureWidth), align: pictureAlign, position: picturePosition, paragraph: Number(pictureParagraph) })} name="picture" className="sr-only" />
         </label>
         <label className="inline-flex h-9 items-center gap-1 px-1" title={t('qbed.picture_width')}>
           <span className="sr-only">{t('qbed.picture_width')}</span>
@@ -106,6 +108,13 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
             {['left', 'center', 'right'].map(align => <option key={align} value={align}>{t(`qbed.align_${align}`)}</option>)}
           </select>
         </label>
+        <label className="inline-flex h-9 items-center" title={t('qbed.picture_position')}>
+          <span className="sr-only">{t('qbed.picture_position')}</span>
+          <select value={picturePosition} onChange={e => setPicturePosition(e.target.value)} aria-label={t('qbed.picture_position')} className="h-8 max-w-32 rounded-token bg-surface px-1 text-xs [border:1px_solid_var(--line)]">
+            {['cursor', 'start', 'end', 'after'].map(position => <option key={position} value={position}>{t(`qbed.picture_positions.${position}`)}</option>)}
+          </select>
+        </label>
+        {picturePosition === 'after' && <Input className="w-24" label={t('qbed.picture_paragraph')} ltr inputMode="numeric" value={pictureParagraph} onChange={e => setPictureParagraph(e.target.value)} />}
         <MathInsert onInsert={(snippet) => run(insertAt, snippet)} disabled={disabled} compact />
         <Tool label={t('qbed.reset')} onClick={onReset} data-action="reset"><RotateCcw aria-hidden="true" className="h-4 w-4" /></Tool>
       </fieldset>

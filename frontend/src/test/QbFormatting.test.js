@@ -47,6 +47,13 @@ describe('ribbon actions', () => {
     expect(insertPicture('text', 0, 4, 0).value).toBe('text')
     expect(insertPicture('text', 0, 4, 42, { width: 1, align: 'side' }).value)
       .toBe('<img data-qmx-media="42" data-qmx-width="100" data-qmx-align="center">')
+    const picture = '<img data-qmx-media="9" data-qmx-width="100" data-qmx-align="center">'
+    expect(insertPicture('<div>one</div><div>two</div>', 0, 0, 9, { position: 'after', paragraph: 1 }).value)
+      .toBe(`<div>one</div>${picture}<div>two</div>`)
+    expect(insertPicture('one\ntwo', 0, 0, 9, { position: 'after', paragraph: 2 }).value).toBe(`one\ntwo${picture}`)
+    expect(insertPicture('one\ntwo', 0, 0, 9, { position: 'start' }).value).toBe(`${picture}one\ntwo`)
+    expect(insertPicture('one\ntwo', 0, 0, 9, { position: 'end' }).value).toBe(`one\ntwo${picture}`)
+    expect(insertPicture('one', 0, 0, 9, { position: 'after', paragraph: 4 }).value).toBe(`one${picture}`)
   })
 
   it('serializes only the approved table layout choices and header column', () => {
