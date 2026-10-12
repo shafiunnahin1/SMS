@@ -34,7 +34,7 @@ class BootstrapTest extends TestCase
 
         $this->assertCount(8, $res->json('data.theme.tokens'));
         $this->assertEqualsCanonicalizing(config('release.modules'), $res->json('data.modules'), 'coaching gets every R1 module, nothing unshipped');
-        $this->assertNotContains('student', $res->json('data.roles'), 'R1 does not ship student login');
+        $this->assertContains('student', $res->json('data.roles'), 'D68: R1 ships student login for the question-bank portal');
         $this->assertSame(['bn', 'en'], $res->json('data.locales.enabled'));
     }
 

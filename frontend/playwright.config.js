@@ -24,7 +24,7 @@ export default defineConfig({
   use: { trace: 'on-first-retry', screenshot: 'only-on-failure', timezoneId: 'Asia/Dhaka', locale: 'bn-BD', launchOptions },
   projects: [
     { name: 'school-desktop',   use: { ...devices['Desktop Chrome'], baseURL: host(TENANTS.school.slug), launchOptions }, metadata: { tenant: 'school' } },
-    { name: 'coaching-desktop', use: { ...devices['Desktop Chrome'], baseURL: host(TENANTS.coaching.slug), launchOptions }, testIgnore: /(slice|students|attendance-school|exams-school|panels-school|super)\.smoke|qb-curriculum\.spec|qb-writer\.spec|qb-editor\.spec|qb-structured\.spec|qb-concepts\.spec|qb-pricing\.spec|qb-buy\.spec|qb-paper\.spec/, metadata: { tenant: 'coaching' } },
-    { name: 'tutor-mobile',     use: { ...devices['Pixel 5'], baseURL: host(TENANTS.tutor.slug), launchOptions }, testIgnore: /(slice|students|attendance-school|exams-school|panels-school|super)\.smoke|qb-curriculum\.spec|qb-writer\.spec|qb-editor\.spec|qb-structured\.spec|qb-concepts\.spec|qb-pricing\.spec|qb-buy\.spec|qb-paper\.spec/, metadata: { tenant: 'tutor' } },
+    { name: 'coaching-desktop', use: { ...devices['Desktop Chrome'], baseURL: host(TENANTS.coaching.slug), launchOptions }, testIgnore: /(slice|students|attendance-school|exams-school|panels-school|super)\.smoke|qb-curriculum\.spec|qb-writer\.spec|qb-editor\.spec|qb-structured\.spec|qb-concepts\.spec|qb-pricing\.spec|qb-buy\.spec|qb-paper\.spec|qb-student\.spec/, metadata: { tenant: 'coaching' } },
+    { name: 'tutor-mobile',     use: { ...devices['Pixel 5'], baseURL: host(TENANTS.tutor.slug), launchOptions }, testIgnore: /(slice|students|attendance-school|exams-school|panels-school|super)\.smoke|qb-curriculum\.spec|qb-writer\.spec|qb-editor\.spec|qb-structured\.spec|qb-concepts\.spec|qb-pricing\.spec|qb-buy\.spec|qb-paper\.spec|qb-student\.spec/, metadata: { tenant: 'tutor' } },
   ],
 })
