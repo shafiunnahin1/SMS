@@ -6,15 +6,18 @@ Paste this into Claude Code when starting or resuming work in the local checkout
 এই repository-তে আগের agent যেখানে থেমেছে, ঠিক সেখান থেকে একই নিয়মে কাজ চালাও। তোমার authoritative continuity source:
 - AGENT-CONTINUITY.md — agent বদলালেও অপরিবর্তিত workflow
 - AGENT-HANDOFF.md — সর্বশেষ resumable state, ছোট update, test evidence, blocker ও next action
+- QUESTION-BANK-PARITY-PLAN.md — source qbank audit, integrated gap matrix, proposed remaining phases ও approval gates
 - docs/AGENT-PLAN-R1.md + generated JSON — task order/dependencies/Done When
 - docs/LOCKED-DECISIONS.md — owner decisions
 - docs/PROGRESS.md — সম্পন্ন task ও evidence
 
 শুরু করার আগে উপরোক্ত সবগুলো, AGENTS.md, এই CLAUDE.md এবং docs/ops/agent-guardrails.md পড়ো। AGENTS.md-এর precedence মেনে চলবে; prompt বা handoff কোনো locked decision/guardrail বদলায় না।
 
-শুধু E:\Projects\School Management local checkout এবং branch claude/elegant-cori-gw2mw5 ব্যবহার করো। git status, git fetch, git log এবং origin-এর সঙ্গে তুলনা না করে edit কোরো না। একই সময়ে অন্য agent কাজ করলে অপেক্ষা করো। Local changes থাকলে সেগুলো কখনো overwrite/discard কোরো না; branch diverge করলে reset/rebase/force-push না করে owner-কে জানাও। text.txt untracked—owner রাখতে বলেছেন; একে edit/stage/delete/commit করা নিষেধ।
+শুধু E:\Projects\School Management local checkout এবং branch claude/elegant-cori-gw2mw5-এ edit করো। git status, git fetch, git log এবং origin-এর সঙ্গে তুলনা না করে edit কোরো না। একই সময়ে অন্য agent কাজ করলে অপেক্ষা করো। Local changes থাকলে সেগুলো কখনো overwrite/discard কোরো না; branch diverge করলে reset/rebase/force-push না করে owner-কে জানাও। text.txt untracked—owner রাখতে বলেছেন; একে edit/stage/delete/commit করা নিষেধ। প্রশ্নব্যাংকের legacy reference E:\Projects\exam-management কেবল read-only: Git revision যাচাই করো, কিন্তু `.env`/secret পড়বে না, database-এ connect করবে না, সেখানে edit/stage/commit/push বা write-capable command চালাবে না। Owner mapping: legacy QuestionSet = question paper; QuestionSetSubset = paper-এর set/variant; QuestionSetFolder = paper folder। আলাদা reusable-question-set module বানিও না।
 
 AGENT-HANDOFF.md-এর Current Handoff ও Next Safe Action থেকে শুরু করো। plan dependency-তে অনুমতি আছে এমন এক task-ই করো। task order, implementation history, plan, progress বা blocked log-এ বিরোধ পেলে নিজে সিদ্ধান্ত নিও না; exact evidence handoff-এ লিখে owner-এর সিদ্ধান্ত চাও।
+
+D65-D73-এ অনুমোদিত scope-এর বাইরের legacy parity feature শুরু কোরো না যতক্ষণ না QUESTION-BANK-PARITY-PLAN.md-এর owner approval gate মিটে এবং guarded spec/generated-plan update remote branch-এ থাকে। Source application wholesale copy নয়; verified domain behavior-ই target architecture-এ port হবে.
 
 Edit-এর আগে task, falsifiable hypothesis, smallest change, focused check সংক্ষেপে জানাও। Test-first/local conventions মানো. প্রতিটি meaningful substep শেষে AGENT-HANDOFF.md-এ date, change/inspection, files, exact command/result, unresolved risks, next action লিখে রাখো; Bengali progress update দাও। docs/PROGRESS.md task [x] কেবল generated plan-এর সব Done When/check সত্যি pass হলেই।
 

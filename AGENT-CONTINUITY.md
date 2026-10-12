@@ -11,12 +11,13 @@ This file supplements `AGENTS.md`, `CLAUDE.md`, and `docs/ops/agent-guardrails.m
 
 ## Start Every Session
 
-1. Read `AGENT-CONTINUITY.md`, `AGENT-HANDOFF.md`, `AGENTS.md`, `CLAUDE.md` when using Claude, and `docs/ops/agent-guardrails.md`.
+1. Read `AGENT-CONTINUITY.md`, `AGENT-HANDOFF.md`, `AGENTS.md`, `CLAUDE.md` when using Claude, and `docs/ops/agent-guardrails.md`. For any question-bank work, also read `QUESTION-BANK-PARITY-PLAN.md`.
 2. Read `docs/LOCKED-DECISIONS.md`, the current task in `docs/AGENT-PLAN-R1.md`, `docs/PROGRESS.md`, and relevant entries in `docs/BLOCKED.md`.
 3. In `E:\Projects\School Management`, run `git status --short --branch`, `git fetch origin`, `git status --short --branch`, `git log -5 --oneline --decorate`, and compare `HEAD` with `origin/claude/elegant-cori-gw2mw5`.
 4. Preserve every pre-existing user change. In particular, `text.txt` is intentionally untracked: do not edit, stage, delete, or commit it.
 5. If the branch is behind, pull only after confirming there are no conflicting local changes. If it has diverged, stop and report the exact commits; do not reset, rebase, force-push, or discard work.
 6. Identify one next task that is allowed by the plan and its dependencies. If plan order, progress, history, or code disagree, do not guess: record the evidence in `AGENT-HANDOFF.md` and ask the owner.
+7. The legacy reference is `E:\Projects\exam-management`, currently inspected at `feat/occurrence-sources` / `40f769c9`. For question-bank tasks, inspect it read-only and recheck its revision first. Never edit/stage/commit/push there, inspect `.env`/credentials, connect to its database, or run write-capable commands. Port verified domain behavior into School Management's architecture; do not copy the old application wholesale.
 
 ## Work And Checkpoint Rules
 
