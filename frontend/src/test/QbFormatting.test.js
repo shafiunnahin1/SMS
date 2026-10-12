@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyAlign, applyCase, applyFormat, applyList, clearFormat, insertTable, mathRegionAt } from '../features/qb/formatting'
+import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertTable, mathRegionAt, mergeTableCells, splitTableCell } from '../features/qb/formatting'
 
 // D72 (QB.12): qbank's ribbon actions write qbank's vocabulary; inside maths they write LaTeX.
 describe('ribbon actions', () => {
@@ -22,5 +22,22 @@ describe('ribbon actions', () => {
     expect(insertTable('', 0, 0, { rows: 2, cols: 2 }).value).toBe('<table class="qmx-table qmx-table-grid qmx-table-width-100"><tbody><tr><th dir="auto"></th><th dir="auto"></th></tr><tr><td dir="auto"></td><td dir="auto"></td></tr></tbody></table>')
     expect(insertTable('', 0, 0, { rows: 1, cols: 1, caption: '<img src=x onerror=alert(1)>' }).value)
       .toContain('<caption>&lt;img src=x onerror=alert(1)&gt;</caption>')
+  })
+
+  it('merges only rectangular blank cells, splits them, and serializes escaped cell text', () => {
+    const cells = createTableCells(2, 3)
+    cells[0][0].text = '<img src=x onerror=alert(1)>'
+    expect(mergeTableCells(cells, [[0, 0], [0, 1]])[0][0]).toMatchObject({ rowspan: 1, colspan: 2 })
+    expect(mergeTableCells(cells, [[0, 0], [1, 1]])).toBeNull()
+    cells[0][1].text = 'kept'
+    expect(mergeTableCells(cells, [[0, 0], [0, 1]])).toBeNull()
+    cells[0][1].text = ''
+    const merged = mergeTableCells(cells, [[0, 0], [0, 1]])
+    expect(merged[0][1].mergedInto).toBe('0:0')
+    const html = insertTable('', 0, 0, { rows: 2, cols: 3, cells: merged }).value
+    expect(html).toContain('<th dir="auto" colspan="2">&lt;img src=x onerror=alert(1)&gt;</th>')
+    expect(html).not.toContain('<img')
+    expect(splitTableCell(merged, 0, 0)[0][1]).toMatchObject({ mergedInto: null, colspan: 1, rowspan: 1 })
+    expect(splitTableCell(merged, 0, 1)).toBeNull()
   })
 })

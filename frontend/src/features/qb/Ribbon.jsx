@@ -7,7 +7,7 @@ import Modal from '../../ui/variants/Modal'
 import { Input, Select } from '../../components/FormField'
 import Check from '../academic/Check'
 import MathInsert from './MathInsert'
-import { DEFAULT_BG_COLOR, DEFAULT_TEXT_COLOR, LIST_STYLES, applyAlign, applyCase, applyFormat, applyList, clearFormat, insertAt, insertTab, insertTable } from './formatting'
+import { DEFAULT_BG_COLOR, DEFAULT_TEXT_COLOR, LIST_STYLES, applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertAt, insertTab, insertTable, mergeTableCells, splitTableCell } from './formatting'
 
 const keep = (e) => e.preventDefault()   // a ribbon click must not take the focus (and the selection) away from the text field
 
@@ -29,6 +29,21 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
   const [ol, setOl] = useState(LIST_STYLES.ol[0])
   const [table, setTable] = useState(null)
   const fmt = (f, c) => () => run(applyFormat, f, c)
+  const selectedCells = table?.selected.map((point) => point.split(':').map(Number)) ?? []
+  const mergedCells = table ? mergeTableCells(table.cells, selectedCells) : null
+  const splitPoint = selectedCells.length === 1 ? selectedCells[0] : null
+  const splitCandidate = splitPoint ? table.cells[splitPoint[0]]?.[splitPoint[1]] : null
+  const canSplit = Boolean(splitCandidate && !splitCandidate.mergedInto && (splitCandidate.rowspan > 1 || splitCandidate.colspan > 1))
+  const resizeTable = (key, value) => setTable((current) => {
+    const next = { ...current, [key]: value }
+    next.cells = createTableCells(next.rows, next.cols, current.cells)
+    next.selected = []
+    return next
+  })
+  const toggleTableCell = (row, col, checked) => setTable((current) => {
+    const point = `${row}:${col}`
+    return { ...current, selected: checked ? [...new Set([...current.selected, point])] : current.selected.filter((item) => item !== point) }
+  })
   return (
     <div role="toolbar" aria-label={t('qbed.ribbon')} data-testid="qb-ribbon"
       className="sticky top-0 z-10 flex flex-wrap items-center gap-1 rounded-token bg-surface p-2 shadow-card [border:1px_solid_var(--line)]">
@@ -73,7 +88,7 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
         </label>
         <Tool label={t('qbed.clear')} onClick={() => run(clearFormat)}><RemoveFormatting aria-hidden="true" className="h-4 w-4" /></Tool>
         <Sep />
-        <Tool label={t('qbed.table')} onClick={() => setTable({ rows: '3', cols: '2', header: true, style: 'grid', caption: '' })} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
+        <Tool label={t('qbed.table')} onClick={() => setTable({ rows: '3', cols: '2', header: true, style: 'grid', caption: '', cells: createTableCells(3, 2), selected: [] })} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
         <label className="inline-flex h-9 cursor-pointer items-center rounded-token px-2 hover:bg-primary-soft" title={t('qbed.image')}>
           <ImagePlus aria-hidden="true" className="h-4 w-4" /><span className="sr-only">{t('qbed.image')}</span>
           <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={onImage} name="picture" className="sr-only" />
@@ -84,12 +99,43 @@ export default function Ribbon({ run, onImage, onReset, disabled, saving }) {
       {table && (
         <Modal open onClose={() => setTable(null)} title={t('qbed.table')}>
           <div className="grid gap-3 sm:grid-cols-2" data-testid="table-dialog">
-            <Input label={t('qbed.rows')} ltr inputMode="numeric" value={table.rows} onChange={e => setTable({ ...table, rows: e.target.value })} name="rows" />
-            <Input label={t('qbed.cols')} ltr inputMode="numeric" value={table.cols} onChange={e => setTable({ ...table, cols: e.target.value })} name="cols" />
+            <Input label={t('qbed.rows')} ltr inputMode="numeric" value={table.rows} onChange={e => resizeTable('rows', e.target.value)} name="rows" />
+            <Input label={t('qbed.cols')} ltr inputMode="numeric" value={table.cols} onChange={e => resizeTable('cols', e.target.value)} name="cols" />
             <Input className="sm:col-span-2" label={t('qbed.caption')} value={table.caption} onChange={e => setTable({ ...table, caption: e.target.value })} name="caption" />
             <Select label={t('qbed.table_style')} value={table.style} onChange={e => setTable({ ...table, style: e.target.value })}
               options={['grid', 'horizontal', 'none'].map(s => ({ value: s, label: t(`qbed.table_styles.${s}`) }))} />
             <Check label={t('qbed.header_row')} checked={table.header} onChange={e => setTable({ ...table, header: e.target.checked })} />
+            <div className="space-y-2 sm:col-span-2">
+              <div className="flex gap-2">
+                <Button variant="secondary" disabled={!mergedCells} onClick={() => {
+                  const cells = mergeTableCells(table.cells, selectedCells)
+                  if (cells) setTable({ ...table, cells, selected: [] })
+                }} data-action="table-merge">{t('qbed.merge_cells')}</Button>
+                <Button variant="secondary" disabled={!canSplit} onClick={() => {
+                  const cells = splitTableCell(table.cells, splitPoint[0], splitPoint[1])
+                  if (cells) setTable({ ...table, cells, selected: [] })
+                }} data-action="table-split">{t('qbed.split_cell')}</Button>
+              </div>
+              <div className="overflow-auto" data-testid="table-cell-grid">
+                <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${table.cells[0].length}, minmax(9rem, 1fr))` }}>
+                  {table.cells.flatMap((line, row) => line.map((cell, col) => {
+                    if (cell.mergedInto) return null
+                    const point = `${row}:${col}`
+                    const label = t('qbed.table_cell', { row: row + 1, col: col + 1 })
+                    return (
+                      <div key={point} className="min-w-0 space-y-1" style={{ gridColumn: `${col + 1} / span ${cell.colspan}`, gridRow: `${row + 1} / span ${cell.rowspan}` }}>
+                        <label className="flex items-center gap-2 text-xs text-muted">
+                          <input type="checkbox" checked={table.selected.includes(point)} onChange={e => toggleTableCell(row, col, e.target.checked)} data-testid={`table-cell-select-${row}-${col}`} />
+                          {label}
+                        </label>
+                        <textarea aria-label={label} rows={2} value={cell.text} onChange={e => setTable(current => ({ ...current, cells: current.cells.map((cellsRow, currentRow) => cellsRow.map((item, currentCol) => currentRow === row && currentCol === col ? { ...item, text: e.target.value } : item)) }))}
+                          className="w-full rounded-token bg-surface p-2 text-sm [border:1px_solid_var(--line)]" data-testid={`table-cell-${row}-${col}`} />
+                      </div>
+                    )
+                  }))}
+                </div>
+              </div>
+            </div>
             <div className="flex justify-end gap-2 sm:col-span-2">
               <Button variant="secondary" onClick={() => setTable(null)}>{t('common.cancel')}</Button>
               <Button onClick={() => { run(insertTable, table); setTable(null) }} data-action="table-insert">{t('qb.insert')}</Button>

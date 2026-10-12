@@ -1159,6 +1159,9 @@
    "rows": "Rows",
    "cols": "Columns",
     "caption": "Table caption",
+    "merge_cells": "Merge cells",
+    "split_cell": "Split cell",
+    "table_cell": "Row {{row}}, column {{col}}",
    "table_style": "Border",
    "table_styles": {
     "grid": "Grid",

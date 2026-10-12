@@ -26,6 +26,55 @@ const result = (value, start, end) => ({ value, start, end })
 const splice = (value, start, end, text) => result(value.slice(0, start) + text + value.slice(end), start, start + text.length)
 const escapeText = (text) => String(text ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char])
 
+export function createTableCells(rows, cols, previous = []) {
+  const rowCount = Math.min(Math.max(Number.parseInt(rows, 10) || 1, 1), 20)
+  const colCount = Math.min(Math.max(Number.parseInt(cols, 10) || 1, 1), 10)
+  return Array.from({ length: rowCount }, (_, row) => Array.from({ length: colCount }, (_, col) => ({
+    text: String(previous[row]?.[col]?.text ?? ''), rowspan: 1, colspan: 1, mergedInto: null,
+  })))
+}
+
+export function mergeTableCells(cells, selection) {
+  if (!Array.isArray(cells) || !Array.isArray(selection) || selection.length < 2) return null
+  const selected = new Set()
+  for (const point of selection) {
+    const [row, col] = Array.isArray(point) ? point : [point?.row, point?.col]
+    if (!Number.isInteger(row) || !Number.isInteger(col) || !cells[row]?.[col]) return null
+    selected.add(`${row}:${col}`)
+  }
+  if (selected.size < 2) return null
+  const points = [...selected].map((point) => point.split(':').map(Number))
+  const top = Math.min(...points.map(([row]) => row))
+  const left = Math.min(...points.map(([, col]) => col))
+  const bottom = Math.max(...points.map(([row]) => row))
+  const right = Math.max(...points.map(([, col]) => col))
+  if ((bottom - top + 1) * (right - left + 1) !== selected.size) return null
+  for (let row = top; row <= bottom; row++) for (let col = left; col <= right; col++) {
+    const cell = cells[row][col]
+    if (cell.mergedInto || cell.rowspan !== 1 || cell.colspan !== 1) return null
+    if ((row !== top || col !== left) && String(cell.text).trim()) return null
+  }
+  return cells.map((line, row) => line.map((cell, col) => {
+    if (row === top && col === left) return { ...cell, rowspan: bottom - top + 1, colspan: right - left + 1 }
+    if (row >= top && row <= bottom && col >= left && col <= right) return { ...cell, mergedInto: `${top}:${left}` }
+    return { ...cell }
+  }))
+}
+
+export function splitTableCell(cells, row, col) {
+  const cell = cells?.[row]?.[col]
+  if (!cell || cell.mergedInto || (cell.rowspan === 1 && cell.colspan === 1)) return null
+  const bottom = row + cell.rowspan
+  const right = col + cell.colspan
+  return cells.map((line, currentRow) => line.map((currentCell, currentCol) => {
+    if (currentRow === row && currentCol === col) return { ...currentCell, rowspan: 1, colspan: 1 }
+    if (currentRow >= row && currentRow < bottom && currentCol >= col && currentCol < right && currentCell.mergedInto === `${row}:${col}`) {
+      return { ...currentCell, mergedInto: null }
+    }
+    return { ...currentCell }
+  }))
+}
+
 /** The maths region holding [start, end) entirely, if any: { bodyStart, bodyEnd } */
 export function mathRegionAt(value, start, end) {
   const re = /\$([^$]+)\$|\\\(([\s\S]*?)\\\)/g
@@ -91,11 +140,19 @@ export function clearFormat(value, start, end) {
 }
 
 /** A qmx table: rows x columns, the first row as a header if asked; inserted at the cursor */
-export function insertTable(value, start, end, { rows = 2, cols = 2, header = true, style = 'grid', caption = '' } = {}) {
+export function insertTable(value, start, end, { rows = 2, cols = 2, header = true, style = 'grid', caption = '', cells } = {}) {
   const r = Math.min(Math.max(Number(rows) || 1, 1), 20)
   const c = Math.min(Math.max(Number(cols) || 1, 1), 10)
-  const cell = (tag) => `<${tag} dir="auto"></${tag}>`
-  const body = Array.from({ length: r }, (_, i) => `<tr>${Array.from({ length: c }, () => cell(header && i === 0 ? 'th' : 'td')).join('')}</tr>`).join('')
+  const source = Array.isArray(cells) ? cells : createTableCells(r, c)
+  const body = Array.from({ length: r }, (_, row) => `<tr>${Array.from({ length: c }, (_, col) => {
+    const current = source[row]?.[col] ?? { text: '' }
+    if (current.mergedInto) return ''
+    const tag = header && row === 0 ? 'th' : 'td'
+    const colspan = Number.isInteger(current.colspan) && current.colspan >= 2 && current.colspan <= 20 ? ` colspan="${current.colspan}"` : ''
+    const rowspan = Number.isInteger(current.rowspan) && current.rowspan >= 2 && current.rowspan <= 20 ? ` rowspan="${current.rowspan}"` : ''
+    const text = escapeText(current.text).replace(/\r?\n/g, '<br>')
+    return `<${tag} dir="auto"${colspan}${rowspan}>${text}</${tag}>`
+  }).join('')}</tr>`).join('')
   const kind = ['grid', 'horizontal', 'none'].includes(style) ? style : 'grid'
   const title = String(caption).trim()
   const captionNode = title ? `<caption>${escapeText(title)}</caption>` : ''

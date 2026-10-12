@@ -1159,6 +1159,9 @@
    "rows": "সারি",
    "cols": "কলাম",
     "caption": "সারণির শিরোনাম",
+    "merge_cells": "ঘরগুলো একত্র করুন",
+    "split_cell": "ঘর আলাদা করুন",
+    "table_cell": "সারি {{row}}, কলাম {{col}}",
    "table_style": "বর্ডার",
    "table_styles": {
     "grid": "সব ঘরে",
