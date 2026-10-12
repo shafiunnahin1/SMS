@@ -52,3 +52,34 @@ test('QB.4 structured types: matching, ordering, passage', async ({ page }) => {
   await expect(preview).toContainText('Rahim lives in a village')
   await saveAndSubmit(page)
 })
+
+// QB.13 (D73): one seen passage mixes its parts - questions to answer, an MCQ, a true/false with its correction and an
+// information-transfer table - each with its marks; the preview shows each kind, the server takes it for review.
+test('QB.13 a seen passage mixes its parts', async ({ page }) => {
+  await loginSuper(page)
+  const preview = page.locator('[data-testid="qb-structured-preview"]')
+  const form = await start(page, 'সিন প্যাসেজ', 'Read the passage and answer the questions.')
+  await form.locator('textarea[name="structured.box"]').fill('Behula is a legendary heroine. She married Lakhindar.')
+  await page.locator('[data-action="add-subs"]').click()
+  await form.locator('input[name="structured.subs.0.prompt"]').fill('Who was Behula?')
+  await form.locator('input[name="structured.subs.0.answer"]').fill('A legendary heroine.')
+  await form.locator('input[name="structured.subs.0.marks"]').fill('2')
+  for (const kind of ['mcqs', 'tfs', 'tables']) {
+    await form.locator('select[data-action="add-part"]').selectOption(kind)
+    await page.locator(`[data-action="add-${kind}"]`).click()
+  }
+  await form.locator('input[name="structured.mcqs.0.prompt"]').fill('Behula married -')
+  for (const [k, o] of ['Lakhindar', 'Chand', 'Manasa', 'Sayven'].entries()) await form.locator(`input[name="structured.mcqs.0.options.${k}"]`).fill(o)
+  await form.locator('input[name="structured.tfs.0.prompt"]').fill('Behula married Chand.')
+  await form.locator('select[name="structured.tfs.0.value"]').selectOption('false')
+  await form.locator('input[name="structured.tfs.0.correction"]').fill('Behula married Lakhindar.')
+  await form.locator('input[name="structured.tables.0.columns"]').fill('Who, What')
+  await form.locator('textarea[name="structured.tables.0.rows"]').fill('Behula | [a heroine]\nLakhindar | [her husband, husband]')
+  await expect(preview).toContainText('Behula married Lakhindar.')
+  await expect(preview.locator('table td')).toHaveCount(4)
+  await expect(preview).toContainText('a heroine')
+  await saveAndSubmit(page)
+  await page.reload()
+  await expect(form.locator('textarea[name="structured.tables.0.rows"]')).toHaveValue('Behula | [a heroine]\nLakhindar | [her husband, husband]')
+  await expect(form.locator('input[name="structured.subs.0.marks"]')).toHaveValue('2.00')
+})

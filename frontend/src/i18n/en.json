@@ -1190,6 +1190,46 @@
    "preview": "Preview",
    "parts_nav": "Question parts",
    "live": "Live"
+  },
+  "qbx": {
+   "kinds": {
+    "mcqs": "Multiple choice (MCQ)",
+    "subs": "Answer the questions",
+    "gaps": "Fill in the gaps",
+    "tfs": "True / false",
+    "tables": "Information transfer / table",
+    "triples": "Matching (three columns)",
+    "multis": "Answer in several fields",
+    "pairs": "Matching (two columns)",
+    "steps": "Rearranging"
+   },
+   "add": {
+    "mcqs": "Add an MCQ",
+    "subs": "Add a question",
+    "gaps": "Add a gap",
+    "tfs": "Add a statement",
+    "tables": "Add a table",
+    "triples": "Add a row",
+    "multis": "Add an item",
+    "pairs": "Add a pair",
+    "steps": "Add a step"
+   },
+   "add_part": "Add another kind of part",
+   "hint": "Base word (optional)",
+   "statement": "Statement",
+   "is": "Answer",
+   "correction": "Correction (if false)",
+   "columns": "Column headings",
+   "columns_hint": "Separate with commas",
+   "rows": "Rows",
+   "rows_hint": "One row per line, cells split by |; a cell to fill is [answer] - e.g. Behula | [a heroine]",
+   "col_a": "Column A",
+   "col_b": "Column B",
+   "col_c": "Column C",
+   "item": "Word / question",
+   "fields": "Field names",
+   "values": "Answers",
+   "comma_hint": "Comma-separated, in the same order"
   }
  },
  "nav": {
