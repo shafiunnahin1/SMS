@@ -20,7 +20,7 @@ class QbStudentOrderCallbackController extends Controller
         $ref = (string) $request->query('ref');
         $pending = preg_match('/^[A-Z0-9]{1,20}$/', $ref) ? Cache::get("qb_student_order:{$ref}") : null;
         if (!$pending) return response()->json(['success' => false, 'error' => 'not_found', 'message' => __('errors.not_found')], 404);
-        $back = fn (string $result) => redirect()->away($pending['return'] . '/student/question-bank?payment=' . $result . '&ref=' . $ref);
+        $back = fn (string $result) => redirect()->away($pending['return'] . ($pending['page'] ?? '/student/question-bank') . '?payment=' . $result . '&ref=' . $ref);
         $institution = Institution::findOrFail($pending['institution_id']);
 
         return Tenancy::as($institution, function () use ($request, $bkash, $ref, $pending, $back) {

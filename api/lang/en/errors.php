@@ -71,6 +71,13 @@ return [
     'qb_paper_final'        => 'A final paper cannot be changed or deleted.',   // QB.8
     'qb_paper_empty'        => 'Add at least one question first.',   // QB.8
     'qb_paper_duplicate'    => 'A question appears twice in the paper.',   // QB.8
+    'qb_quiz_questions'     => 'A quiz takes only published, auto-marked questions (MCQ, true/false, fill in the gap, matching). :ids',   // QB.10
+    'qb_quiz_scope'         => 'Pick a subject, chapter or topic for a random quiz.',   // QB.10
+    'qb_quiz_closed'        => 'This quiz is not open now.',   // QB.10
+    'qb_package_needed'     => 'Buy the package to take this quiz.',   // QB.10
+    'qb_package_expired'    => 'The package has expired - buy it again to open its quizzes (past results stay).',   // QB.10
+    'qb_quiz_empty'         => 'This quiz has no questions yet.',   // QB.10
+    'qb_quiz_time_over'     => 'Time is over - the answers you gave were submitted.',   // QB.10
     'enrollment_not_active' => 'This enrollment is no longer active.',
     'kind_not_available' => 'This kind of import is not available yet.',
     'bad_encoding' => 'The file is not UTF-8. Save it from Excel as "CSV UTF-8" or upload .xlsx.',

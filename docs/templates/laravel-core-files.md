@@ -337,11 +337,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/billing/bkash/callback', [\App\Http\Controllers\Billing\SmsRechargeCallbackController::class, 'bkash'])->middleware('throttle:60,1');
         // QB.9: bKash brings a student back here after paying for question-bank items (`ref` finds our own order)
         Route::get('/qb/student-orders/bkash/callback', [QbStudentOrderCallbackController::class, 'bkash'])->middleware('throttle:60,1');
-        // QB.10 (D66): the platform's public quizzes - no login; the questions without answers, the score checked on the server and NOT saved
+        // QB.10 (D66): the platform's public quizzes - no login; the questions without answers, the score checked on the server and NOT saved, never the right answers
         Route::middleware('throttle:30,1')->prefix('public/qb')->group(function () {
             Route::get('/quizzes',                   [QbPublicQuizController::class, 'index']);
             Route::get('/quizzes/{id}',              [QbPublicQuizController::class, 'show']);
-            Route::post('/quizzes/{id}/check',       [QbPublicQuizController::class, 'check']);   // {answers} -> score, total, the right answers
+            Route::post('/quizzes/{id}/check',       [QbPublicQuizController::class, 'check']);   // {question_ids, answers} -> score, total, right / wrong per question
         });
 
         Route::middleware(['auth:sanctum', 'role:super_admin', 'tenancy.bypass', 'throttle:api'])->prefix('super')->group(function () {

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\{QbContentPublicResource, QbQuestionPublicResource};
-use App\Models\{PlatformSetting, Program, QbConcept, QbQuestion, QbStudentOrder, QbStudentUnlock, Student, User};
+use App\Models\{PlatformSetting, Program, QbConcept, QbQuestion, QbQuizPackage, QbStudentOrder, QbStudentPackageAccess, QbStudentUnlock, Student, User};
 use App\Services\Billing\BkashService;
 use App\Services\QbPricingService;
 use App\Support\{Money, Tenancy};
@@ -89,8 +89,15 @@ class QbStudentController extends Controller
         }
         $free = array_filter($priced, fn ($p) => $p['reason'] === 'free');
         $paid = array_values(array_filter($priced, fn ($p) => $p['reason'] !== 'free'));
-        foreach ($free as $p) $this->unlock($user, $p, null);
-        if (!$paid) return response()->json(['success' => true, 'data' => ['paid' => true, 'opened' => count($free)]]);
+        foreach ($free as $p) self::unlock($user, $p, null);
+        return $this->pay($request, $bkash, $paid, count($free));
+    }
+
+    /** One bKash payment for the paid items (prices set by the server); nothing paid = done. Shared with QB.10's package purchase. */
+    public function pay(Request $request, BkashService $bkash, array $paid, int $opened, string $page = '/student/question-bank')
+    {
+        $user = $request->user();
+        if (!$paid) return response()->json(['success' => true, 'data' => ['paid' => true, 'opened' => $opened]]);
 
         if (!$bkash->configured()) throw new BusinessException('bKash is not configured', 'payment_unavailable', 503);
         $amount = Money::format(array_sum(array_map(fn ($p) => Money::toPaisa($p['price']), $paid)));
@@ -102,9 +109,9 @@ class QbStudentController extends Controller
             . (config('app.debug') && $bkash->lastError() ? ' (' . $bkash->lastError() . ')' : '')], 502);
         $order = QbStudentOrder::create(['student_user_id' => $user->id, 'ref' => $ref, 'items' => $paid, 'amount' => $amount, 'payment_id' => $payment['paymentID'], 'status' => 'pending']);
         $back = $request->headers->get('origin');
-        Cache::put("qb_student_order:{$ref}", ['institution_id' => $institution->id, 'order_id' => $order->id,
+        Cache::put("qb_student_order:{$ref}", ['institution_id' => $institution->id, 'order_id' => $order->id, 'page' => $page,
             'return' => ($back && parse_url($back, PHP_URL_HOST) === $request->getHost()) ? $back : $request->getSchemeAndHttpHost()], now()->addDay());
-        return response()->json(['success' => true, 'data' => ['paid' => false, 'opened' => count($free), 'bkash_url' => $payment['bkashURL'], 'ref' => $ref, 'amount' => $amount]]);
+        return response()->json(['success' => true, 'data' => ['paid' => false, 'opened' => $opened, 'bkash_url' => $payment['bkashURL'], 'ref' => $ref, 'amount' => $amount]]);
     }
 
     /** GET /student/qb/orders/{ref}: the student's own order */
@@ -114,9 +121,21 @@ class QbStudentController extends Controller
         return response()->json(['success' => true, 'data' => $o->only(['ref', 'amount', 'status', 'items'])]);
     }
 
-    /** One student unlock (UNIQUE per student and item: a second one is ignored) */
+    /** One student unlock (UNIQUE per student and item: a second one is ignored). A quiz package (QB.10) grants access for its
+     *  validity_days from now - or from the end of an access still running, so a renewal never loses days. */
     public static function unlock(User $user, array $p, ?int $orderId): void
     {
+        if ($p['item_type'] === 'quiz_package') {
+            DB::transaction(function () use ($user, $p, $orderId) {
+                if ($orderId && QbStudentPackageAccess::where('qb_student_order_id', $orderId)->where('qb_quiz_package_id', $p['item_id'])->lockForUpdate()->exists()) return;
+                $package = QbQuizPackage::findOrFail($p['item_id']);
+                $running = QbStudentPackageAccess::where('student_user_id', $user->id)->where('qb_quiz_package_id', $package->id)->where('expires_at', '>', now())->max('expires_at');
+                $from = $running ? \Illuminate\Support\Carbon::parse($running) : now();
+                QbStudentPackageAccess::create(['student_user_id' => $user->id, 'qb_quiz_package_id' => $package->id, 'starts_at' => now(),
+                    'expires_at' => $from->copy()->addDays($package->validity_days), 'qb_student_order_id' => $orderId]);
+            });
+            return;
+        }
         DB::transaction(function () use ($user, $p, $orderId) {
             if (QbStudentUnlock::where('student_user_id', $user->id)->where('item_type', $p['item_type'])->where('item_id', $p['item_id'])->lockForUpdate()->exists()) return;
             QbStudentUnlock::create(['student_user_id' => $user->id, 'item_type' => $p['item_type'], 'item_id' => $p['item_id'], 'price' => $p['price'],
@@ -129,7 +148,7 @@ class QbStudentController extends Controller
         return $ids ? QbStudentUnlock::where('student_user_id', $user->id)->where('item_type', $type)->whereIn('item_id', $ids)->pluck('item_id')->map(fn ($v) => (int) $v)->all() : [];
     }
 
-    private function quote(User $user, string $type, $item): array
+    public function quote(User $user, string $type, $item): array
     {
         $class = $this->myClass($user);
         return $this->pricing->quote('student', $type, $item, ['class_level_ids' => $class ? [$class] : []]);

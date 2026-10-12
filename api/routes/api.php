@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -37,6 +37,12 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['tenant:central', 'throttle:60,1'])->get('/billing/bkash/callback', [\App\Http\Controllers\Billing\SmsRechargeCallbackController::class, 'bkash']);
     // QB.9: bKash brings a student back here after paying for question-bank items (`ref` finds our own order; central host, no login)
     Route::middleware(['tenant:central', 'throttle:60,1'])->get('/qb/student-orders/bkash/callback', [QbStudentOrderCallbackController::class, 'bkash']);
+    // QB.10: the platform's public quizzes (central host, no login; checked on the server, nothing saved, never the right answers)
+    Route::middleware(['tenant:central', 'locale', 'throttle:30,1'])->prefix('public/qb')->group(function () {
+        Route::get('/quizzes',                            [QbPublicQuizController::class, 'index']);
+        Route::get('/quizzes/{id}',                       [QbPublicQuizController::class, 'show'])->whereNumber('id');
+        Route::post('/quizzes/{id}/check',                [QbPublicQuizController::class, 'check'])->whereNumber('id');
+    });
 
     // ─── 2. Central host only: Super Admin (Step 4.7 dashboard, Step 5.3 panel) ───
     Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:super_admin', 'tenancy.bypass'])->prefix('super')->group(function () {
@@ -64,6 +70,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/qb/prices',                     [QbPricingController::class, 'storePrice']);
         Route::get('/qb/price-rules',                 [QbPricingController::class, 'rules']);
         Route::post('/qb/price-rules/preview',        [QbPricingController::class, 'preview']);
+        // QB.10: quiz packages and quizzes
+        Route::get('/qb/quiz-packages',               [QbQuizController::class, 'packages']);
+        Route::post('/qb/quiz-packages',              [QbQuizController::class, 'storePackage']);
+        Route::put('/qb/quiz-packages/{id}',          [QbQuizController::class, 'updatePackage'])->whereNumber('id');
+        Route::get('/qb/quizzes',                     [QbQuizController::class, 'index']);
+        Route::get('/qb/quizzes/{id}',                [QbQuizController::class, 'show'])->whereNumber('id');
+        Route::post('/qb/quizzes',                    [QbQuizController::class, 'store']);
+        Route::put('/qb/quizzes/{id}',                [QbQuizController::class, 'update'])->whereNumber('id');
         Route::post('/qb/price-rules',                [QbPricingController::class, 'storeRule']);
         Route::put('/qb/price-rules/{id}',            [QbPricingController::class, 'updateRule'])->whereNumber('id');
         // QB.1 (D65): the question-bank curriculum class → subject → chapter → topic
@@ -253,6 +267,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/concepts/{id}',                  [QbStudentController::class, 'concept'])->whereNumber('id');
             Route::post('/orders',                        [QbStudentController::class, 'order'])->middleware('throttle:10,1');
             Route::get('/orders/{ref}',                   [QbStudentController::class, 'orderStatus']);
+        });
+        // ── Question bank (D66, QB.10): the student's quizzes - free / public / package (while access lasts); marked on the server ──
+        Route::middleware(['role:student', 'module:quiz'])->prefix('student/qb')->group(function () {
+            Route::get('/quizzes',                        [QbStudentQuizController::class, 'index']);
+            Route::get('/quiz-packages',                  [QbStudentQuizController::class, 'packages']);
+            Route::post('/quiz-packages/{id}/buy',        [QbStudentQuizController::class, 'buy'])->whereNumber('id')->middleware('throttle:10,1');
+            Route::post('/quizzes/{id}/attempts',         [QbStudentQuizController::class, 'start'])->whereNumber('id');
+            Route::get('/attempts',                       [QbStudentQuizController::class, 'attempts']);
+            Route::get('/attempts/{id}',                  [QbStudentQuizController::class, 'attempt'])->whereNumber('id');
+            Route::put('/attempts/{id}',                  [QbStudentQuizController::class, 'save'])->whereNumber('id');
+            Route::post('/attempts/{id}/submit',          [QbStudentQuizController::class, 'submit'])->whereNumber('id');
         });
 
         // ── SMS (Step 4.6): log and balance; sending happens from attendance / fee collection through SendSmsJob ──

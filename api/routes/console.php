@@ -11,6 +11,9 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::command('sms:trim')->dailyAt('02:10');
 \Illuminate\Support\Facades\Schedule::command('audit:trim')->weeklyOn(0, '02:30');
 
+// QB.10: quiz attempts whose time is over are submitted by the server
+\Illuminate\Support\Facades\Schedule::command('qb:close-quiz-attempts')->everyMinute()->withoutOverlapping();
+
 // Step 9.1 (D64): queue backlog alert - Laravel's queue:monitor fires QueueBusy above the limit (listener: AppServiceProvider)
 \Illuminate\Support\Facades\Schedule::command('queue:monitor ' . collect(config('monitoring.queues'))->map(fn ($q) => 'redis:' . $q)->implode(',')
     . ' --max=' . config('monitoring.queue_depth'))->everyFiveMinutes();
