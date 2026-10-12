@@ -60,7 +60,7 @@ class QbQuestionRequest extends FormRequest
             'stimuli.*.content_text'       => ['nullable', 'string', 'max:20000'],
             'stimuli.*.content_json'       => ['nullable', 'array'],
             'items'                        => ['sometimes', 'array', 'max:40'],
-            'items.*.item_type'            => ['required', 'in:gap,match_pair,order_step,sub_question,sub_mcq'],
+            'items.*.item_type'            => ['required', 'in:gap,match_pair,order_step,sub_question,sub_mcq,true_false,table_fill,match_triple,multi_field'],   // D73: mixed, four new kinds
             'items.*.stimulus_index'       => ['nullable', 'integer', 'min:0', 'max:4'],
             'items.*.prompt_text'          => ['nullable', 'string', 'max:5000'],
             'items.*.prompt_json'          => ['nullable', 'array'],

@@ -32,12 +32,18 @@ final class QbQuestionPublicResource
     {
         $items = $q->items()->get();
         $row = fn ($it) => $it->only(['item_type', 'prompt_text', 'prompt_json', 'marks', 'qb_question_stimulus_id']) + ($unlocked ? ['answer_json' => $it->answer_json] : []);
-        $list = $unlocked ? $items : ($items->isNotEmpty() && $items->every(fn ($it) => $it->item_type === 'order_step')
-            ? $items->sortBy(fn ($it) => mb_strtolower((string) $it->prompt_text))->values() : $items);
-        $out = ['items' => $list->map($row)->values()->all()];
-        if ($items->contains('item_type', 'match_pair')) {
-            $out['choices'] = $items->where('item_type', 'match_pair')->map(fn ($it) => (string) ($it->answer_json['right'] ?? ''))->filter()->sort()->values()->all();
+        $list = $items->values();
+        if (!$unlocked) {                       // D73: steps may sit among other parts - they trade places only among themselves
+            $slots = $list->keys()->filter(fn ($k) => $list[$k]->item_type === 'order_step')->values();
+            $sorted = $list->where('item_type', 'order_step')->sortBy(fn ($it) => mb_strtolower((string) $it->prompt_text))->values();
+            $list = $list->all();
+            foreach ($slots as $n => $k) $list[$k] = $sorted[$n];
+            $list = collect($list);
         }
+        $out = ['items' => $list->map($row)->values()->all()];
+        $choices = fn (string $type, string $key) => $items->where('item_type', $type)->map(fn ($it) => (string) ($it->answer_json[$key] ?? ''))->filter()->unique()->sort()->values()->all();
+        if ($items->contains('item_type', 'match_pair')) $out['choices'] = $choices('match_pair', 'right');
+        if ($items->contains('item_type', 'match_triple')) $out['triple_choices'] = ['middle' => $choices('match_triple', 'middle'), 'right' => $choices('match_triple', 'right')];
         return $out;
     }
 }

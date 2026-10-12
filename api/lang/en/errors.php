@@ -55,6 +55,7 @@ return [
     'qb_gaps_need_answers'  => 'Give at least one answer for every gap.',   // QB.4
     'qb_needs_pairs'        => 'Give at least two pairs, both sides filled.',   // QB.4
     'qb_needs_order'        => 'Give at least two pieces, in the right order from 1.',   // QB.4
+    'qb_item_incomplete'    => 'Fill in every part - the question and its answer.',   // D73
     'qb_needs_passage'      => 'Give the passage and an answer for every question.',   // QB.4
     'qb_needs_passage_mcq'  => 'Give the stimulus and, for every question, at least two options and the right one.',   // QB.4
     'qb_not_a_pdf'          => 'The file must be a PDF.',   // QB.5

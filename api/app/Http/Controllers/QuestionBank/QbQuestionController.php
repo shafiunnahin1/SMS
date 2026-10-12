@@ -227,23 +227,54 @@ class QbQuestionController extends Controller
         if ($errors) throw ValidationException::withMessages(array_map(fn ($code) => __("errors.{$code}"), $errors));
     }
 
-    /** QB.4: the structured types' own parts (a gap type without items keeps the QB.3 rule: a ___ in the text and an answer) */
+    /** QB.4 + D73 (QB.13): a structured question's parts may be mixed - each part must be complete for its own kind; pairs and
+     *  steps need at least two, the steps a full 1..n order; a passage structure needs its passage. The error names the first
+     *  thing missing (the QB.4 codes, so a single-kind question reads as before). */
     private function structured(string $structure, QbQuestion $q, \Illuminate\Support\Collection $items): array
     {
-        $only = fn (string $type) => $items->isNotEmpty() && $items->every(fn ($i) => $i->item_type === $type);
         $filled = fn ($v) => is_string($v) ? trim($v) !== '' : !empty($v);
-        return match ($structure) {
-            'gap' => $only('gap') && $items->every(fn ($i) => collect($i->answer_json['answers'] ?? [])->filter($filled)->isNotEmpty()) ? [] : ['items' => 'qb_gaps_need_answers'],
-            'match' => $items->count() >= 2 && $only('match_pair') && $items->every(fn ($i) => $filled($i->prompt_text) && $filled($i->answer_json['right'] ?? null)) ? [] : ['items' => 'qb_needs_pairs'],
-            'order' => $items->count() >= 2 && $only('order_step') && $items->pluck('answer_json.position')->map(fn ($p) => (int) $p)->sort()->values()->all() === range(1, $items->count())
-                ? [] : ['items' => 'qb_needs_order'],
-            'passage' => $q->stimuli()->whereNotNull('content_text')->where('content_text', '!=', '')->exists() && $only('sub_question')
-                && $items->every(fn ($i) => $filled($i->prompt_text) && $filled($i->answer_json['answer_text'] ?? null)) ? [] : ['items' => 'qb_needs_passage'],
-            'passage_mcq' => $q->stimuli()->whereNotNull('content_text')->where('content_text', '!=', '')->exists() && $only('sub_mcq')
-                && $items->every(fn ($i) => count($i->prompt_json['options'] ?? []) >= 2 && is_int($i->answer_json['correct'] ?? null)
-                    && $i->answer_json['correct'] >= 0 && $i->answer_json['correct'] < count($i->prompt_json['options'])) ? [] : ['items' => 'qb_needs_passage_mcq'],
-            default => [],
-        };
+        $code = ['gap' => 'qb_gaps_need_answers', 'match_pair' => 'qb_needs_pairs', 'order_step' => 'qb_needs_order', 'sub_question' => 'qb_needs_passage',
+            'sub_mcq' => 'qb_needs_passage_mcq', 'true_false' => 'qb_item_incomplete', 'table_fill' => 'qb_item_incomplete', 'match_triple' => 'qb_item_incomplete', 'multi_field' => 'qb_item_incomplete'];
+        $empty = ['gap' => 'qb_gaps_need_answers', 'match' => 'qb_needs_pairs', 'order' => 'qb_needs_order', 'passage' => 'qb_needs_passage', 'passage_mcq' => 'qb_needs_passage_mcq'];
+        if (in_array($structure, ['passage', 'passage_mcq'], true) && !$q->stimuli()->whereNotNull('content_text')->where('content_text', '!=', '')->exists()) return ['items' => $empty[$structure]];
+        if ($items->isEmpty()) return isset($empty[$structure]) ? ['items' => $empty[$structure]] : [];
+        foreach ($items as $it) {
+            $a = $it->answer_json ?? [];
+            $p = $it->prompt_json ?? [];
+            $ok = match ($it->item_type) {
+                'gap' => collect($a['answers'] ?? [])->filter($filled)->isNotEmpty(),
+                'match_pair' => $filled($it->prompt_text) && $filled($a['right'] ?? null),
+                'order_step' => $filled($it->prompt_text),
+                'sub_question' => $filled($it->prompt_text) && $filled($a['answer_text'] ?? null),
+                'sub_mcq' => count($p['options'] ?? []) >= 2 && is_int($a['correct'] ?? null) && $a['correct'] >= 0 && $a['correct'] < count($p['options']),
+                'true_false' => $filled($it->prompt_text) && is_bool($a['value'] ?? null),
+                'match_triple' => $filled($it->prompt_text) && $filled($a['middle'] ?? null) && $filled($a['right'] ?? null),
+                'multi_field' => $filled($it->prompt_text) && count($p['fields'] ?? []) >= 1 && count(array_filter((array) ($a['values'] ?? []), $filled)) === count($p['fields']),
+                'table_fill' => self::tableComplete($p, $a, $filled),
+                default => false,
+            };
+            if (!$ok) return ['items' => $code[$it->item_type] ?? 'qb_item_incomplete'];
+        }
+        if ($items->contains('item_type', 'match_pair') && $items->where('item_type', 'match_pair')->count() < 2) return ['items' => 'qb_needs_pairs'];
+        $steps = $items->where('item_type', 'order_step');
+        if ($steps->isNotEmpty() && ($steps->count() < 2 || $steps->pluck('answer_json.position')->map(fn ($v) => (int) $v)->sort()->values()->all() !== range(1, $steps->count()))) return ['items' => 'qb_needs_order'];
+        return [];
+    }
+
+    /** table_fill: prompt_json.table = {columns: [header], rows: [[text|null]]} (null = a cell to fill); answer_json.cells = {"r-c": [answers]} */
+    private static function tableComplete(array $p, array $a, \Closure $filled): bool
+    {
+        $rows = $p['table']['rows'] ?? null;
+        if (!is_array($rows) || !$rows) return false;
+        $blanks = 0;
+        foreach ($rows as $r => $row) {
+            foreach ((array) $row as $c => $cell) {
+                if ($cell !== null) continue;
+                $blanks++;
+                if (!collect($a['cells']["{$r}-{$c}"] ?? [])->filter($filled)->isNotEmpty()) return false;
+            }
+        }
+        return $blanks > 0;
     }
 
     private function revision(QbQuestion $q, User $user): void
