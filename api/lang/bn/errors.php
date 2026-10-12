@@ -78,6 +78,9 @@ return [
     'qb_package_expired'    => 'প্যাকেজের মেয়াদ শেষ — আবার কিনলে কুইজ খুলবে (আগের ফল দেখা যাবে)।',   // QB.10
     'qb_quiz_empty'         => 'এই কুইজে এখনো কোনো প্রশ্ন নেই।',   // QB.10
     'qb_quiz_time_over'     => 'সময় শেষ — যা উত্তর দেওয়া ছিল তা জমা হয়েছে।',   // QB.10
+    'qb_withdrawal_below_minimum' => 'ন্যূনতম :min টাকা তোলা যায়।',   // QB.10b
+    'qb_withdrawal_too_much' => 'তোলার মতো আছে :available টাকা।',   // QB.10b
+    'qb_withdrawal_processed' => 'এই আবেদনের নিষ্পত্তি আগেই হয়েছে।',   // QB.10b
     'enrollment_not_active' => 'এই ভর্তি আর সক্রিয় নয়।',
     'kind_not_available' => 'এই ধরনের আমদানি এখনো চালু নেই।',
     'bad_encoding' => 'ফাইলটি UTF-8 নয়। Excel-এ "CSV UTF-8" হিসেবে সংরক্ষণ করুন অথবা .xlsx দিন।',

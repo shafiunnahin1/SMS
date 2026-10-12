@@ -78,6 +78,9 @@ return [
     'qb_package_expired'    => 'The package has expired - buy it again to open its quizzes (past results stay).',   // QB.10
     'qb_quiz_empty'         => 'This quiz has no questions yet.',   // QB.10
     'qb_quiz_time_over'     => 'Time is over - the answers you gave were submitted.',   // QB.10
+    'qb_withdrawal_below_minimum' => 'The minimum withdrawal is :min.',   // QB.10b
+    'qb_withdrawal_too_much' => 'Only :available is available to withdraw.',   // QB.10b
+    'qb_withdrawal_processed' => 'This request was already processed.',   // QB.10b
     'enrollment_not_active' => 'This enrollment is no longer active.',
     'kind_not_available' => 'This kind of import is not available yet.',
     'bad_encoding' => 'The file is not UTF-8. Save it from Excel as "CSV UTF-8" or upload .xlsx.',

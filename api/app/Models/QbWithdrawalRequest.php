@@ -15,5 +15,5 @@ class QbWithdrawalRequest extends Model
     public $timestamps = false;
 
     protected $fillable = ['writer_user_id', 'amount', 'payout_method', 'payout_account', 'status', 'requested_at', 'processed_by', 'processed_at', 'bank_transaction_id', 'note'];
-    protected $casts = ['amount' => 'decimal:2', 'requested_at' => 'datetime', 'processed_at' => 'datetime'];
+    protected $casts = ['amount' => 'decimal:2', 'requested_at' => 'datetime', 'processed_at' => 'datetime', 'payout_account' => 'encrypted'];   // QB.10b: the account stored encrypted (schema note)
 }

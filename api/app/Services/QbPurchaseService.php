@@ -64,6 +64,7 @@ final class QbPurchaseService
             $unlock = QbUnlock::create(['item_type' => $type, 'item_id' => $item->id, 'unlocked_by' => $user->id, 'price' => Money::format($price),
                 'reason' => $reason, 'qb_price_rule_id' => $q['rule_id'], 'wallet_txn_ref' => $txn ? (string) $txn->id : null]);
             AuditLog::record('qb.bought', $unlock, ['item' => "{$type}:{$item->id}", 'price' => Money::format($price)]);
+            app(QbEarningService::class)->credit('institution_unlock', $unlock->id, $type, $item->id, Money::format($price));   // QB.10b: same transaction
             return ['unlock' => $unlock, 'charged' => Money::format($price), 'already' => false];
         });
     }

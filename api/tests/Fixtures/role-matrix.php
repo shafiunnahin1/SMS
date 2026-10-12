@@ -146,6 +146,14 @@ return [
     'GET api/v1/super/qb/quizzes/{id}' => ['super_admin'],
     'POST api/v1/super/qb/quizzes' => ['super_admin'],
     'PUT api/v1/super/qb/quizzes/{id}' => ['super_admin'],
+    'GET api/v1/super/qb/writer-settings' => ['super_admin'],   // QB.10b
+    'PUT api/v1/super/qb/writer-settings' => ['super_admin'],
+    'GET api/v1/super/qb/withdrawals' => ['super_admin'],
+    'POST api/v1/super/qb/withdrawals/{id}/pay' => ['super_admin'],
+    'POST api/v1/super/qb/withdrawals/{id}/reject' => ['super_admin'],
+    'GET api/v1/writer/earnings' => ['content_writer'],   // QB.10b: the writer's own money
+    'GET api/v1/writer/withdrawals' => ['content_writer'],
+    'POST api/v1/writer/withdrawals' => ['content_writer'],
     'PUT api/v1/super/qb/price-rules/{id}' => ['super_admin'],
     'PATCH api/v1/writer/change-password' => ['content_writer', 'content_moderator', 'super_admin'],       // QB.2: the writers' panel (central host)
     'GET api/v1/writer/curriculum' => ['content_writer', 'content_moderator', 'super_admin'],

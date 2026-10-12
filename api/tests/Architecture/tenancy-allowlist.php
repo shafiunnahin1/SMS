@@ -15,4 +15,5 @@ return [
     'app/Support/TenantBulk.php' => 'the only bulk insert/upsert; checks every row belongs to the bound tenant',
     'app/Support/Catalogue.php' => 'defines Catalogue::asPlatform() - the named exit for a question-bank platform write during an institution\'s request (D65)',
     'app/Exceptions/CatalogueAccessException.php' => 'only its message text names Catalogue::asPlatform() as advice; no call',
+    'app/Services/QbEarningService.php' => 'QB.10b: books the writer\'s share (platform rows) inside the institution\'s or student\'s sale transaction - Catalogue::asPlatform() (§৪.৫)',
 ];

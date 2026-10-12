@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\{QbContentPublicResource, QbQuestionPublicResource};
 use App\Models\{PlatformSetting, Program, QbConcept, QbQuestion, QbQuizPackage, QbStudentOrder, QbStudentPackageAccess, QbStudentUnlock, Student, User};
 use App\Services\Billing\BkashService;
-use App\Services\QbPricingService;
+use App\Services\{QbEarningService, QbPricingService};
 use App\Support\{Money, Tenancy};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Cache, DB};
@@ -131,15 +131,17 @@ class QbStudentController extends Controller
                 $package = QbQuizPackage::findOrFail($p['item_id']);
                 $running = QbStudentPackageAccess::where('student_user_id', $user->id)->where('qb_quiz_package_id', $package->id)->where('expires_at', '>', now())->max('expires_at');
                 $from = $running ? \Illuminate\Support\Carbon::parse($running) : now();
-                QbStudentPackageAccess::create(['student_user_id' => $user->id, 'qb_quiz_package_id' => $package->id, 'starts_at' => now(),
+                $access = QbStudentPackageAccess::create(['student_user_id' => $user->id, 'qb_quiz_package_id' => $package->id, 'starts_at' => now(),
                     'expires_at' => $from->copy()->addDays($package->validity_days), 'qb_student_order_id' => $orderId]);
+                app(QbEarningService::class)->credit('quiz_package', $access->id, 'quiz_package', $package->id, (string) $p['price']);   // QB.10b
             });
             return;
         }
         DB::transaction(function () use ($user, $p, $orderId) {
             if (QbStudentUnlock::where('student_user_id', $user->id)->where('item_type', $p['item_type'])->where('item_id', $p['item_id'])->lockForUpdate()->exists()) return;
-            QbStudentUnlock::create(['student_user_id' => $user->id, 'item_type' => $p['item_type'], 'item_id' => $p['item_id'], 'price' => $p['price'],
+            $unlock = QbStudentUnlock::create(['student_user_id' => $user->id, 'item_type' => $p['item_type'], 'item_id' => $p['item_id'], 'price' => $p['price'],
                 'reason' => $p['reason'], 'qb_student_order_id' => $orderId]);
+            app(QbEarningService::class)->credit('student_unlock', $unlock->id, $p['item_type'], (int) $p['item_id'], (string) $p['price']);   // QB.10b
         });
     }
 

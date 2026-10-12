@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -78,6 +78,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/qb/quizzes/{id}',                [QbQuizController::class, 'show'])->whereNumber('id');
         Route::post('/qb/quizzes',                    [QbQuizController::class, 'store']);
         Route::put('/qb/quizzes/{id}',                [QbQuizController::class, 'update'])->whereNumber('id');
+        // QB.10b: writers' share, minimum withdrawal, withdrawal requests paid by hand or rejected
+        Route::get('/qb/writer-settings',             [QbWithdrawalController::class, 'settings']);
+        Route::put('/qb/writer-settings',             [QbWithdrawalController::class, 'updateSettings']);
+        Route::get('/qb/withdrawals',                 [QbWithdrawalController::class, 'index']);
+        Route::post('/qb/withdrawals/{id}/pay',       [QbWithdrawalController::class, 'pay'])->whereNumber('id');
+        Route::post('/qb/withdrawals/{id}/reject',    [QbWithdrawalController::class, 'reject'])->whereNumber('id');
         Route::post('/qb/price-rules',                [QbPricingController::class, 'storeRule']);
         Route::put('/qb/price-rules/{id}',            [QbPricingController::class, 'updateRule'])->whereNumber('id');
         // QB.1 (D65): the question-bank curriculum class → subject → chapter → topic
@@ -90,6 +96,12 @@ Route::prefix('v1')->group(function () {
     // ─── 2b. Central host: the question-bank writers' panel (D65, QB.2) - platform content only, no tenant bound, no bypass ───
     Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:content_writer,content_moderator,super_admin', 'password.fresh'])->prefix('writer')->group(function () {
         Route::patch('/change-password',              [QbWriterController::class, 'changePassword']);
+        // QB.10b: the writer's own earnings and withdrawal requests
+        Route::middleware('role:content_writer')->group(function () {
+            Route::get('/earnings',                   [QbEarningController::class, 'summary']);
+            Route::get('/withdrawals',                [QbEarningController::class, 'withdrawals']);
+            Route::post('/withdrawals',               [QbEarningController::class, 'requestWithdrawal'])->middleware('throttle:10,1');
+        });
         Route::get('/curriculum',                     [QbQuestionController::class, 'curriculum']);
         Route::get('/question-types',                 [QbQuestionController::class, 'types']);
         Route::get('/questions',                      [QbQuestionController::class, 'index']);
