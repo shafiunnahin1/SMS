@@ -85,6 +85,7 @@ class QbImportFromQbank extends Command
     {
         if ($v === null) return null;
         $v = str_replace(['\\r\\n', '\\n', '\\r'], "\n", $v);
+        $v = preg_replace('~\[\[qmx-image:\d+\]\]~u', '', $v);   // qbank's inline picture marker: the picture comes as the row's media link
         $v = preg_replace('~<\s*br\s*/?>|</\s*(div|p|li|h[1-6]|tr)\s*>~i', "\n", $v);
         $v = html_entity_decode(strip_tags($v), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $v = preg_replace("~[ \t\x{00A0}]+~u", ' ', $v);

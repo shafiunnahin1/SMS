@@ -147,6 +147,7 @@ class QbImportTest extends TestCase
     {
         $html = '<div data-qae-layout="qa"><div data-qae-slot="task"><div dir="auto">বল&#160;কাকে বলে?</div></div><ol><li>এক</li><li>দুই</li></ol></div>\n<script>x</script>শেষ';
         $this->assertSame("বল কাকে বলে?\nএক\nদুই\nxশেষ", \App\Console\Commands\QbImportFromQbank::plain($html));
+        $this->assertSame('----nt -> (a)___', \App\Console\Commands\QbImportFromQbank::plain('[[qmx-image:7]] ----nt -> (a)___'));
         DB::connection('qbank')->table('questions')->where('id', 100)->update(['question_text' => '<div>বেগের&#160;একক?</div>']);
         $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])->assertSuccessful();
         $q = QbQuestion::where('question_text', 'বেগের একক?')->firstOrFail();
