@@ -74,8 +74,11 @@ test('QB.5 a concept and a PDF go through review and show locked in the library'
   await form.locator('input[name="pdf"]').setInputFiles({ name: 'book.pdf', mimeType: 'application/pdf', buffer: pdf(3) })
   await expect(form.locator('input[name="page_count"]')).toHaveValue('3')
   await expect(page.locator('[data-testid="qb-pdf-link"]')).toBeVisible()
+  // D68: with poppler on the server the first pages are drawn as previews by themselves (none without it); one is added by hand
+  await expect(form.locator('input[name="page_count"]')).toHaveValue('3')
+  const auto = await page.locator('[data-testid="qb-previews"] img').count()
   await form.locator('input[name="preview"]').setInputFiles({ name: 'page1.png', mimeType: 'image/png', buffer: PNG })
-  await expect(page.locator('[data-testid="qb-previews"] img')).toHaveCount(1)
+  await expect(page.locator('[data-testid="qb-previews"] img')).toHaveCount(auto + 1)
   await submitAndPublish(page, 'resources')
 
   // the school's head teacher: both are there, locked
@@ -91,7 +94,7 @@ test('QB.5 a concept and a PDF go through review and show locked in the library'
   await expect(school.locator('[data-testid="qb-library-item"]')).not.toContainText('সরণ')
   await school.getByRole('tab').nth(2).click()
   await school.locator('[data-testid="qb-library-list"]').getByText(`গতির বই-${tag}`).click()
-  await expect(school.locator('[data-testid="qb-library-item"] img')).toHaveCount(1)
+  await expect(school.locator('[data-testid="qb-library-item"] img')).toHaveCount(auto + 1)   // every preview page, the PDF itself locked
   await expect(school.locator('[data-testid="qb-locked"]')).toBeVisible()
   await expect(school.locator('[data-testid="qb-open-file"]')).toHaveCount(0)
 })
