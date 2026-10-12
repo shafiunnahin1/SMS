@@ -60,6 +60,7 @@ export default function QbResourceEdit() {
     if (!m) return
     setValue('file', m, { shouldDirty: true })
     if (m.page_count) setValue('page_count', String(m.page_count))
+    if (m.previews?.length && !getValues('previews').length) setValue('previews', m.previews)   // D68: the server's own pictures of the first pages
   }
   const addPreview = async (e) => {
     const file = e.target.files?.[0]

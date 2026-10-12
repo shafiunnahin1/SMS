@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 // QB.5 (D65, docs/modules/question-bank.md §3গ, §5): slides, books and PDFs in the writers' panel. The file is always a PDF on the
 // platform's PRIVATE disk (platform/qb/...), shown to the panel through 10-minute signed links; it is filed under exactly one of
-// subject / chapter / topic; the preview pages are pictures the writer uploads (the first pages), which any institution may see.
+// subject / chapter / topic; the preview pages are pictures (the first pages) - made by the server from the PDF (D68, poppler) or uploaded by the writer - which any institution may see.
 // Reviewed like a question (ReviewsQbContent). Institutions read published resources through QbLibraryController.
 class QbResourceController extends Controller
 {
@@ -29,7 +29,31 @@ class QbResourceController extends Controller
         if (file_get_contents($f['file']->getRealPath(), false, null, 0, 5) !== '%PDF-') throw ValidationException::withMessages(['file' => __('errors.qb_not_a_pdf')]);
         $path = Storage::disk('private')->putFile('platform/qb/' . now()->format('Y/m'), $f['file']);
         $media = QbMedia::create(['path' => $path, 'mime' => 'application/pdf', 'size_bytes' => $f['file']->getSize(), 'uploaded_by' => $request->user()->id]);
-        return response()->json(['success' => true, 'data' => QbMediaController::view($media) + ['page_count' => self::pages($f['file']->getRealPath())]], 201);
+        $previews = array_map(fn ($m) => QbMediaController::view($m), self::renderPreviews($f['file']->getRealPath(), $request->user()->id));
+        return response()->json(['success' => true, 'data' => QbMediaController::view($media) + ['page_count' => self::pages($f['file']->getRealPath()), 'previews' => $previews]], 201);
+    }
+
+    public const PREVIEW_PAGES = 3;
+
+    /** D68 (2): the first pages as PNG pictures, made by poppler's pdftoppm on the server - at most PREVIEW_PAGES pages, 1000 px on the
+     *  long side, 30 s; none when pdftoppm is missing or fails (the writer can still upload pictures by hand). */
+    public static function renderPreviews(string $pdf, int $by): array
+    {
+        $tmp = sys_get_temp_dir() . '/qbprev-' . bin2hex(random_bytes(6));
+        try {
+            $run = \Illuminate\Support\Facades\Process::timeout(30)->run(['pdftoppm', '-png', '-f', '1', '-l', (string) self::PREVIEW_PAGES, '-scale-to', '1000', $pdf, $tmp]);
+            if (!$run->successful()) return [];
+            $files = glob($tmp . '-*.png') ?: [];
+            sort($files, SORT_NATURAL);
+            return array_map(function ($file) use ($by) {
+                $path = Storage::disk('private')->putFile('platform/qb/' . now()->format('Y/m'), new \Illuminate\Http\File($file));
+                return QbMedia::create(['path' => $path, 'mime' => 'image/png', 'size_bytes' => filesize($file), 'uploaded_by' => $by]);
+            }, array_slice($files, 0, self::PREVIEW_PAGES));
+        } catch (\Throwable) {
+            return [];
+        } finally {
+            foreach (glob($tmp . '-*.png') ?: [] as $file) @unlink($file);
+        }
     }
 
     /** The page objects of a PDF (`/Type /Page`, not `/Pages`); null when they are packed in compressed object streams - the writer then types it */
