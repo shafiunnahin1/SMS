@@ -92,7 +92,8 @@
   "qb_quizzes",
   "qb_quiz_questions",
   "qb_student_package_access",
-  "qb_quiz_attempts"
+  "qb_quiz_attempts",
+  "qb_import_map"
  ],
  "steps_in_release": [
   "0.1",
@@ -405,6 +406,9 @@
    "qb_quiz_questions",
    "qb_student_package_access",
    "qb_quiz_attempts"
+  ],
+  "QB.11": [
+   "qb_import_map"
   ]
  },
  "controllers": {
@@ -1347,7 +1351,8 @@
    "scope": "`php artisan qb:import-from-qbank` reading qbank's database: curriculum, question types, questions with options/parts/items, occurrences, media; dry run first, idempotent, a report of what was skipped and why.",
    "done": "A dry run lists counts; a real run imports them once; a second run changes nothing; tests on a fixture.",
    "verify": [
-    "php artisan test --filter=QbImport"
+    "php artisan test --filter=QbImport",
+    "php artisan test   # whole suite stays green"
    ]
   }
  ],

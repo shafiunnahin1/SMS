@@ -1450,7 +1450,9 @@
    "spec_refs": [
     "docs/modules/question-bank.md"
    ],
-   "tables": [],
+   "tables": [
+    "qb_import_map"
+   ],
    "routes": [],
    "routes_excluded": [],
    "tests": [],
@@ -1458,7 +1460,8 @@
    "scope_note": "`php artisan qb:import-from-qbank` reading qbank's database: curriculum, question types, questions with options/parts/items, occurrences, media; dry run first, idempotent, a report of what was skipped and why.",
    "blocked": null,
    "verify": [
-    "php artisan test --filter=QbImport"
+    "php artisan test --filter=QbImport",
+    "php artisan test   # whole suite stays green"
    ]
   },
   {

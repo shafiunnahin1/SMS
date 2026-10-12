@@ -77,11 +77,11 @@
 | `QB.9` | Student login and portal: practice, concepts, bKash purchases | `QB.8` |  | 8 |  |
 | `QB.10` | Quizzes and quiz packages | `QB.9` |  | 18 |  |
 | `QB.10b` | Writers' earnings, wallet and withdrawals | `QB.10` |  | 8 |  |
-| `QB.11` | Import from qbank | `QB.10b` |  |  |  |
+| `QB.11` | Import from qbank | `QB.10b` | 1 |  |  |
 | `5.1` | Signup & Onboarding | `QB.11` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 51 task · 68 টেবিল · 245 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 51 task · 69 টেবিল · 245 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2726,11 +2726,30 @@ php artisan test   # whole suite stays green
 > **R1 পরিসর (এটিই চূড়ান্ত):** `php artisan qb:import-from-qbank` reading qbank's database: curriculum, question types, questions with options/parts/items, occurrences, media; dry run first, idempotent, a report of what was skipped and why.
 
 
+**এই task যে টেবিলের মালিক** (migration Step 1.1-এ; মডেল, service, endpoint ও পরীক্ষা এখানে): `qb_import_map`
+
+<details><summary>টেবিলের সংজ্ঞা (schema.sql থেকে, ALTER/index সহ)</summary>
+
+```sql
+CREATE TABLE qb_import_map (                                -- D69 (QB.11): which qbank row became which row here, so qb:import-from-qbank runs once per row
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    source VARCHAR(30) NOT NULL,                             -- 'qbank'
+    source_table VARCHAR(60) NOT NULL,
+    source_id BIGINT UNSIGNED NOT NULL,
+    target_table VARCHAR(60) NOT NULL,
+    target_id BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_import_map (source, source_table, source_id)
+);
+```
+</details>
+
 **Done When:** A dry run lists counts; a real run imports them once; a second run changes nothing; tests on a fixture.
 
 **যাচাই (সব সবুজ হলে তবেই পরের task):**
 ```bash
 php artisan test --filter=QbImport
+php artisan test   # whole suite stays green
 ```
 
 ---
@@ -2952,6 +2971,7 @@ php artisan test   # whole suite stays green
 | `qb_quiz_questions` | `QB.0` |
 | `qb_student_package_access` | `QB.0` |
 | `qb_quiz_attempts` | `QB.0` |
+| `qb_import_map` | `QB.11` |
 
 ## Appendix B — route-সংখ্যা release অনুযায়ী (routes-টেমপ্লেটের সব route)
 

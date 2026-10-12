@@ -3098,3 +3098,13 @@ CREATE TABLE qb_quiz_attempts (
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_quiz_id) REFERENCES qb_quizzes(id)
 );
+CREATE TABLE qb_import_map (                                -- D69 (QB.11): which qbank row became which row here, so qb:import-from-qbank runs once per row
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    source VARCHAR(30) NOT NULL,                             -- 'qbank'
+    source_table VARCHAR(60) NOT NULL,
+    source_id BIGINT UNSIGNED NOT NULL,
+    target_table VARCHAR(60) NOT NULL,
+    target_id BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_import_map (source, source_table, source_id)
+);

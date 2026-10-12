@@ -25,6 +25,7 @@ qb_class_level_subject
 qb_class_levels
 qb_concepts
 qb_creative_parts
+qb_import_map
 qb_media
 qb_media_links
 qb_paper_items
