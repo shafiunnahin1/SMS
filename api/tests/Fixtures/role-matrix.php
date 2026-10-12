@@ -186,6 +186,13 @@ return [
     'DELETE api/v1/question-bank/papers/{id}' => ['admin', 'teacher'],
     'POST api/v1/question-bank/papers/{id}/finalize' => ['admin', 'teacher'],
     'GET api/v1/question-bank/papers/{id}/pdf' => ['admin', 'teacher'],
+    'GET api/v1/student/qb/curriculum' => ['student'],   // QB.9: the student portal
+    'GET api/v1/student/qb/questions' => ['student'],
+    'GET api/v1/student/qb/questions/{id}' => ['student'],
+    'GET api/v1/student/qb/concepts' => ['student'],
+    'GET api/v1/student/qb/concepts/{id}' => ['student'],
+    'POST api/v1/student/qb/orders' => ['student'],
+    'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/super/tenant-purge/candidates' => ['super_admin'],
     'POST api/v1/super/tenant-purge/{institutionId}/dry-run' => ['super_admin'],
     'POST api/v1/super/tenant-purge/{institutionId}/execute' => ['super_admin'],

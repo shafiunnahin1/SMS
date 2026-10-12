@@ -36,7 +36,8 @@ class CrossTenantRouteTest extends TestCase
         'GET api/v1/admin/reports/{type}', 'GET api/v1/accountant/reports/{type}',     // report name; ReportTest: a foreign program_id is 422
         'GET api/v1/imports/templates/{kind}.xlsx',                                    // template name, no data
         'PUT api/v1/parent/consents/{type}',                                           // consent type of the caller's own children
-        'GET api/v1/question-bank/concepts/{id}', 'GET api/v1/question-bank/resources/{id}', 'GET api/v1/question-bank/questions/{id}',   // QB.5: platform catalogue rows; QbLibraryTest: another institution's unlock opens nothing
+        'GET api/v1/question-bank/concepts/{id}', 'GET api/v1/question-bank/resources/{id}', 'GET api/v1/question-bank/questions/{id}',
+        'GET api/v1/student/qb/questions/{id}', 'GET api/v1/student/qb/concepts/{id}', 'GET api/v1/student/qb/orders/{ref}',   // QB.9: catalogue rows / own order by ref (QbStudentTest)   // QB.5: platform catalogue rows; QbLibraryTest: another institution's unlock opens nothing
     ];
 
     private function tenant(string $slug): array

@@ -162,6 +162,9 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
   - part 3 (af61cc2): the menu items in the spec.
   - part 4 (this commit): /admin|teacher/question-bank/papers (own / all) and /papers/:id (title, exam, time, sets, instructions; sections with questions searched from the bank and their marks; saving with not-yet-bought questions asks once with the server's total, buys them, saves; make final; print set A / B with or without answers); menu items; bn/en texts; e2e qb-paper.spec.js.
 - [ ] QB.9 — Student login and portal: practice, concepts, bKash purchases
+  - part 1 (ca841c3): student login and the portal in the plan (roles, routes, student menu with the other items since R1.1).
+  - BLOCKED (8c5933a, fc3144b): turning `student` on in release.php contradicts ReleaseRolesTest / BootstrapTest - owner decision D68 drafted.
+  - part 2 (this commit, release.php untouched): QbStudentController (curriculum with the student's class, questions free to read, concepts, the student's own unlocks, orders: free items open at once, the rest one bKash payment to the platform merchant with server prices) and QbStudentOrderCallbackController (central host; Completed with exactly our amount and invoice opens the items once; failed / cancelled / tampered opens nothing); role matrix, route-contract and tenant-route entries. `php artisan test --filter=QbStudent`: 3 passed (37 assertions); mutations (amount not checked / any student's unlock counts / another student's order visible) each turn it red; the inner "already paid" re-check under the row lock survives a mutation (it guards two callbacks at the same instant; the first check and the idempotent unlock already stop sequential repeats); `php artisan test`: 528 passed.
 - [ ] QB.10 — Quizzes and quiz packages
 - [ ] QB.10b — Writers' earnings, wallet and withdrawals
 - [ ] QB.11 — Import from qbank

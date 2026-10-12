@@ -111,6 +111,10 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/question-bank/resources/{id}'      => null,
             'GET api/v1/question-bank/questions/{id}'      => null,   // QB.7: a catalogue row too; QbPurchaseTest: another institution's purchase opens nothing
             // QB.8: an institution's question papers (tenant rows; the admin sees all of its own)
+            // QB.9: catalogue rows and the student's own order ref; QbStudentTest: another student's / institution's ones never open
+            'GET api/v1/student/qb/questions/{id}'         => null,
+            'GET api/v1/student/qb/concepts/{id}'          => null,
+            'GET api/v1/student/qb/orders/{ref}'           => null,
             'GET api/v1/question-bank/papers/{id}'         => fn (array $other) => $this->seedPaper($other),
             'PUT api/v1/question-bank/papers/{id}'         => fn (array $other) => $this->seedPaper($other),
             'DELETE api/v1/question-bank/papers/{id}'      => fn (array $other) => $this->seedPaper($other),

@@ -29,6 +29,7 @@ class RouteMiddlewareContractTest extends TestCase
         'POST api/v1/auth/login' => 'throttle:login', 'POST api/v1/auth/verify-otp' => 'throttle:login',
         'POST api/v1/auth/forgot-password' => 'throttle:login', 'POST api/v1/auth/reset-password' => 'throttle:login',
         'GET api/v1/billing/bkash/callback' => 'central host; finds its own record by ref (D58), throttle 60/min',
+        'GET api/v1/qb/student-orders/bkash/callback' => 'QB.9: central host; finds its own order by ref, throttle 60/min',
     ];
 
     /** Routes for a signed-in user on EITHER host (Super Admin on central, everyone else on their own host) */

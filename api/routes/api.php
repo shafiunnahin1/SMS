@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\FeeController;
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -35,6 +35,8 @@ Route::prefix('v1')->group(function () {
 
     // D58: bKash brings the payer back here after an SMS-wallet recharge (central host, no login - `ref` finds our own record)
     Route::middleware(['tenant:central', 'throttle:60,1'])->get('/billing/bkash/callback', [\App\Http\Controllers\Billing\SmsRechargeCallbackController::class, 'bkash']);
+    // QB.9: bKash brings a student back here after paying for question-bank items (`ref` finds our own order; central host, no login)
+    Route::middleware(['tenant:central', 'throttle:60,1'])->get('/qb/student-orders/bkash/callback', [QbStudentOrderCallbackController::class, 'bkash']);
 
     // ─── 2. Central host only: Super Admin (Step 4.7 dashboard, Step 5.3 panel) ───
     Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:super_admin', 'tenancy.bypass'])->prefix('super')->group(function () {
@@ -241,6 +243,16 @@ Route::prefix('v1')->group(function () {
             Route::delete('/papers/{id}',                 [QbPaperController::class, 'destroy'])->whereNumber('id');
             Route::post('/papers/{id}/finalize',          [QbPaperController::class, 'finalize'])->whereNumber('id');
             Route::get('/papers/{id}/pdf',                [QbPaperController::class, 'pdf'])->whereNumber('id');
+        });
+        // ── Question bank (D65, QB.9): the student portal - own unlocks, bKash orders to the platform merchant ──
+        Route::middleware(['role:student', 'module:question_bank'])->prefix('student/qb')->group(function () {
+            Route::get('/curriculum',                     [QbStudentController::class, 'curriculum']);
+            Route::get('/questions',                      [QbStudentController::class, 'questions']);
+            Route::get('/questions/{id}',                 [QbStudentController::class, 'question'])->whereNumber('id');
+            Route::get('/concepts',                       [QbStudentController::class, 'concepts']);
+            Route::get('/concepts/{id}',                  [QbStudentController::class, 'concept'])->whereNumber('id');
+            Route::post('/orders',                        [QbStudentController::class, 'order'])->middleware('throttle:10,1');
+            Route::get('/orders/{ref}',                   [QbStudentController::class, 'orderStatus']);
         });
 
         // ── SMS (Step 4.6): log and balance; sending happens from attendance / fee collection through SendSmsJob ──
