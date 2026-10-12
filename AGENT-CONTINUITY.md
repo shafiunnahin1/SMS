@@ -5,7 +5,7 @@ This file supplements `AGENTS.md`, `CLAUDE.md`, and `docs/ops/agent-guardrails.m
 ## One Shared Source Of Truth
 
 - Work from the local checkout on the existing branch `claude/elegant-cori-gw2mw5`. Do not create another branch unless the owner asks.
-- Only one agent works on this branch at a time. Before handing work to another agent, finish or checkpoint the current task, then push and confirm the remote commit. The next agent pulls that exact branch before editing.
+- Only one agent works on this branch at a time. Before handing work to another agent, checkpoint the current state and confirm the remote commit. The next agent pulls that exact branch before editing.
 - `docs/AGENT-PLAN-R1.md` and its generated JSON define task scope/order; `docs/LOCKED-DECISIONS.md` defines owner decisions; `docs/PROGRESS.md` records completed tasks and test evidence; `docs/BLOCKED.md` records stop conditions; this file defines handoff notes.
 - Never infer completion from a commit title. Check the code, tests, task Done When, and progress evidence.
 
@@ -23,9 +23,10 @@ This file supplements `AGENTS.md`, `CLAUDE.md`, and `docs/ops/agent-guardrails.m
 - Do one planned task at a time, in plan order. Keep each change focused on that task; do not bundle unrelated cleanup.
 - Before editing, state the task, hypothesis, smallest intended change, and check that can disconfirm it.
 - After each meaningful unit of work, update the Current Handoff and append one dated entry to the Event Log in `AGENT-HANDOFF.md`: what changed or was inspected, paths touched, exact command and result, unresolved items, and next action. Do not claim a check ran unless it did.
+- Every local update that forms a coherent, focused checkpoint must be synchronized immediately: run its focused check, update the current task's own `docs/PROGRESS.md` entry without marking an unfinished task `[x]`, update `AGENT-HANDOFF.md`, run the staged guard, commit that checkpoint, and push it to `origin/claude/elegant-cori-gw2mw5` before starting the next change. Do not accumulate multiple completed local updates for a later push. If an edit is not yet a coherent/testable checkpoint, keep working locally only until it is; do not publish broken intermediate states.
 - Before ending or switching agents, make the handoff sufficient for another agent to resume without reconstructing chat history. Include uncommitted paths and whether a checkpoint is safe. Never claim an unfinished task is complete.
-- Follow `AGENTS.md` for tests, task trailers, `docs/PROGRESS.md`, and the staged guard. Before a commit run `python3 infra/guard/agent_guard.py --staged`; commit only the current task and its required progress/handoff evidence.
-- Push only to `origin/claude/elegant-cori-gw2mw5`, and only after the commit is verified and the remote has not advanced. If GitHub authentication fails, report it; never paste credentials into chat or files.
+- Follow `AGENTS.md` for tests, task trailers, `docs/PROGRESS.md`, and the staged guard. Before every checkpoint commit run `python3 infra/guard/agent_guard.py --staged`; include only the current task's change and its required progress/handoff evidence.
+- Immediately before each push, fetch and confirm the remote has not advanced. Push only to `origin/claude/elegant-cori-gw2mw5`. If it advanced or diverged, stop and integrate only by a safe, non-destructive path; never force-push, reset, rebase, or discard work. If GitHub authentication fails, report it; never paste credentials into chat or files.
 - After push, verify `git status --short --branch` and that local `HEAD` equals `origin/claude/elegant-cori-gw2mw5`. Tell the owner the commit, tests, and whether the next agent can pull.
 
 ## User-Facing Updates

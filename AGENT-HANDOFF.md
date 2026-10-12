@@ -7,7 +7,7 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 - Last checked: 2026-10-13
 - Repository: `E:\Projects\School Management`
 - Branch: `claude/elegant-cori-gw2mw5`
-- Last confirmed commit: `0c923ed` (`origin/claude/elegant-cori-gw2mw5` matched at the time of inspection)
+- Last confirmed commit before this policy update: `70ef727` (`origin/claude/elegant-cori-gw2mw5` matched at the time of inspection)
 - Working tree: only `?? text.txt`; owner says it is not important but wants it kept. Do not stage, edit, or delete it.
 - Active task: `QB.14`, incomplete. The latest commit implements the server-side rich-text caption/media-id picture handling and PDF rendering. It does not complete the planned table/picture editor workflow.
 - Verified during this review: `php artisan test --filter='QbRichText|QbPaper'` passed (10 tests, 70 assertions); `npm test` passed (93 tests); `npm run lint:theme` passed (141 files, 0 violations); `npm run build` succeeded with a large MathLive chunk warning.
@@ -16,6 +16,7 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 - Documentation drift to review separately: README/PRODUCT/AGENTS contain statements that no code exists; `docs/BLOCKED.md` retains old QB.11 blocks although progress records QB.11 and later work complete. Do not edit protected docs or rules without the repository's approved Change-Request path.
 - Spec verifier from this Windows environment did not complete: it reported reference/vendor-scan noise, 12 violations in extracted documentation examples, and stopped because PyYAML is unavailable. Its successful individual checks are not a full verifier pass.
 - No source or plan files were changed during the review. Generated Python bytecode from the verifier was removed; existing Python 3.13 cache files were preserved.
+- Sync rule: every coherent, verified local checkpoint is to be committed and immediately pushed to `origin/claude/elegant-cori-gw2mw5` before the next change. Keep the active task `[ ]` until its full Done When is satisfied. Do not push broken intermediate edits or overwrite a remote advance.
 
 ## Next Safe Action
 
@@ -27,3 +28,4 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 ## Event Log
 
 - 2026-10-13 — Repository review: confirmed branch `claude/elegant-cori-gw2mw5` at `0c923ed`, matching the remote at inspection; only pre-existing `text.txt` was untracked. Ran the focused QB.14 backend tests (10 passed), frontend tests (93 passed), theme lint (0 violations), and production build (success; MathLive chunk warning). Full E2E and full API suite were not run. Identified plan/history and stale-documentation discrepancies above.
+- 2026-10-13 — Owner set immediate sync cadence: each coherent, verified local update must be checkpoint-committed and pushed to the shared Claude branch before the next update; incomplete task stays unchecked. Updated this protocol and both prompts to match.
