@@ -58,7 +58,10 @@ class LoginController extends Controller
 
         $user = (Tenancy::current() ? User::inTenant() : User::platform())->find($c['u'] ?? 0);
         if (!$user || !$user->is_active || ($user->locked_until && now()->lt($user->locked_until))) return $fail;
-        if (!$this->otp->consume($user, OtpService::LOGIN, $request->input('otp'), $c['o'] ?? 0)) return $fail;
+        if (!$this->otp->consume($user, OtpService::LOGIN, $request->input('otp'), $c['o'] ?? 0)) {
+            $this->otp->wrongAttempt($user, (int) ($c['o'] ?? 0));                    // D68 (4): 5 wrong tries void this code
+            return $fail;
+        }
 
         return $this->tokenResponse($user, $request);
     }

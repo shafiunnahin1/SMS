@@ -50,6 +50,9 @@ class AppServiceProvider extends ServiceProvider
 
         // IP + identifier: slows guessing before the account lockout kicks in
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by($request->ip() . '|' . mb_strtolower((string) $request->input('login'))));
+        // D68 (4): the code check counts per IP and per login attempt (its challenge), not per IP alone - a school's shared IP no longer
+        // blocks everyone; each code is also voided after OtpService::MAX_WRONG wrong tries
+        RateLimiter::for('otp', fn (Request $request) => Limit::perMinute(5)->by($request->ip() . '|' . hash('sha256', (string) $request->input('challenge'))));
         // owner 2026-10-11 (DECISIONS): 300/min - SECURITY.md's 60/min stopped a normal admin: per user once logged in, per IP before
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(config('auth_policy.api_per_minute'))
             ->by($request->user() ? 'u' . $request->user()->id : 'ip' . $request->ip()));

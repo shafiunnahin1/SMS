@@ -26,7 +26,7 @@ class RouteMiddlewareContractTest extends TestCase
     private const PUBLIC = [
         'GET api/v1/bootstrap' => 'theme, terms, enabled modules - allow-listed settings only',
         'GET api/v1/health' => 'status only',
-        'POST api/v1/auth/login' => 'throttle:login', 'POST api/v1/auth/verify-otp' => 'throttle:login',
+        'POST api/v1/auth/login' => 'throttle:login', 'POST api/v1/auth/verify-otp' => 'throttle:otp',   // D68 (4)
         'POST api/v1/auth/forgot-password' => 'throttle:login', 'POST api/v1/auth/reset-password' => 'throttle:login',
         'GET api/v1/billing/bkash/callback' => 'central host; finds its own record by ref (D58), throttle 60/min',
         'GET api/v1/qb/student-orders/bkash/callback' => 'QB.9: central host; finds its own order by ref, throttle 60/min',
@@ -71,7 +71,7 @@ class RouteMiddlewareContractTest extends TestCase
 
             if (isset(self::PUBLIC[$key])) {
                 if (self::hasPrefix($r, 'auth:') || self::has($r, 'tenant')) $problems[] = "{$key}: listed public but has auth/tenant";
-                if (str_starts_with($path, 'auth/') && !self::has($r, 'throttle:login')) $problems[] = "{$key}: login-type route without throttle:login";
+                if (str_starts_with($path, 'auth/') && !self::has($r, $path === 'auth/verify-otp' ? 'throttle:otp' : 'throttle:login')) $problems[] = "{$key}: login-type route without its throttle";   // D68 (4): the code check has its own limiter
                 continue;
             }
             if (in_array($key, self::ANY_HOST_AUTH, true)) {

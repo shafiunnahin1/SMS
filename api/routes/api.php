@@ -22,7 +22,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/health',                 HealthController::class);   // invokable: a closure would break route:cache
         Route::get('/bootstrap',              [BootstrapController::class, 'show']);
         Route::post('/auth/login',            [LoginController::class, 'login'])->middleware('throttle:login');
-        Route::post('/auth/verify-otp',       [LoginController::class, 'verifyOtp'])->middleware('throttle:login');
+        Route::post('/auth/verify-otp',       [LoginController::class, 'verifyOtp'])->middleware('throttle:otp');   // D68 (4)
         Route::post('/auth/forgot-password',  [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:login');
         Route::post('/auth/reset-password',   [PasswordResetController::class, 'reset'])->middleware('throttle:login');
 

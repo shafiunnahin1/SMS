@@ -303,7 +303,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/theme/public',           [PublicThemeController::class, 'show']);
         Route::get('/manifest.webmanifest',   [ManifestController::class,    'show']);   // linked from index.html as /api/v1/manifest.webmanifest
         Route::post('/auth/login',            [LoginController::class,       'login'])->middleware('throttle:login');
-        Route::post('/auth/verify-otp',       [LoginController::class,       'verifyOtp'])->middleware('throttle:login');
+        Route::post('/auth/verify-otp',       [LoginController::class,       'verifyOtp'])->middleware('throttle:otp');   // D68 (4): per IP + login attempt; 5 wrong tries void the code
         Route::post('/auth/forgot-password',  [PasswordResetController::class, 'sendResetLink']);
         Route::post('/auth/reset-password',   [PasswordResetController::class, 'reset']);
     });

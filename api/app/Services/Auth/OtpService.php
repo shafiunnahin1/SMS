@@ -36,6 +36,17 @@ class OtpService
             ->where('otp', $this->hash($purpose, $secret))->first();
     }
 
+    public const MAX_WRONG = 5;
+
+    /** D68 (4): a wrong code counts against that one code; at MAX_WRONG it is voided (a new login sends a new code) */
+    public function wrongAttempt(User $user, int $rowId): void
+    {
+        if ($rowId <= 0) return;
+        $n = \Illuminate\Support\Facades\Cache::increment("otp_wrong:{$rowId}");
+        \Illuminate\Support\Facades\Cache::put("otp_wrong:{$rowId}", $n, now()->addMinutes(config('auth_policy.otp.minutes') + 1));
+        if ($n >= self::MAX_WRONG) OtpToken::where('user_id', $user->id)->whereKey($rowId)->whereNull('used_at')->update(['used_at' => now()]);
+    }
+
     /** find() and mark it used, so it works exactly once */
     public function consume(User $user, string $purpose, string $secret, ?int $rowId = null): ?OtpToken
     {
