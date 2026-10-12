@@ -7,7 +7,7 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 - Last checked: 2026-10-13
 - Repository: `E:\Projects\School Management`
 - Branch: `claude/elegant-cori-gw2mw5`
-- Last confirmed commit: `5f7eade` (`origin/claude/elegant-cori-gw2mw5` matched at the time of inspection)
+- Audit base commit: `5f7eade` (`origin/claude/elegant-cori-gw2mw5` matched at audit start)
 - At audit start the only worktree item was `?? text.txt`; owner wants it kept. The current checkpoint adds `QUESTION-BANK-PARITY-PLAN.md` and updates the continuity, handoff, and two agent prompts. Do not stage, edit, or delete `text.txt`.
 - Active work: source-vs-integration audit and remaining-feature plan. In the generated plan QB.13/QB.14 are both `[ ]`; QB.14 is listed first and QB.13 depends on it. The current plan/history discrepancy is recorded in `QUESTION-BANK-PARITY-PLAN.md`; do not change task order without the owner/guarded process.
 - Verified during this review: `php artisan test --filter='QbRichText|QbPaper'` passed (10 tests, 70 assertions); `npm test` passed (93 tests); `npm run lint:theme` passed (141 files, 0 violations); `npm run build` succeeded with a large MathLive chunk warning.
@@ -35,3 +35,4 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 - 2026-10-13 — Owner set immediate sync cadence: each coherent, verified local update must be checkpoint-committed and pushed to the shared Claude branch before the next update; incomplete task stays unchecked. Updated this protocol and both prompts to match.
 - 2026-10-13 — Audited School Management `5f7eade` against read-only legacy qbank `40f769c9`. Static source/route/model inventory confirms saved sets/subsets, OMR, PDF extractor, AI JSON import, and 29 diagram registry families in source; integration's importer explicitly skips sets/OMR. Both question-type seed catalogs have 74 matching slugs (semantic parity not checked). No source tests or app commands were run. Added the evidence matrix/proposed phased parity plan; owner approval is required before protected spec/schema/task-plan changes.
 - 2026-10-13 — Owner clarified nomenclature: legacy `QuestionSet` → question paper; `QuestionSetSubset` → paper set/variant. Revised Gate 3/4 and removed the separate reusable-set proposal; legacy paper author/institution import mapping remains open.
+- 2026-10-13 — Question-bank parity plan and revised prompts pushed as `986f71c`; post-push fetch confirmed local `HEAD` matched `origin/claude/elegant-cori-gw2mw5`. Only `text.txt` remains untracked and untouched.
