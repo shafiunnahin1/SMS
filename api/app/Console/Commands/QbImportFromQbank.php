@@ -20,7 +20,7 @@ class QbImportFromQbank extends Command
 {
     protected $signature = 'qb:import-from-qbank {--dry-run : count only, keep nothing} {--user= : the Super Admin the imported rows are written by}
         {--media-path= : the folder that holds qbank\'s stored files (its storage/app/public)} {--connection=qbank}
-        {--refresh-text : re-clean the text of questions imported before (qbank editor HTML -> plain text)}';
+        {--refresh-text : re-clean the text of questions imported before (qbank editor HTML -> plain text) and move a passage kept in the question text into its passage}';
     protected $description = 'Import curriculum, questions and pictures from the qbank database (D69)';
 
     private Connection $src;
@@ -101,6 +101,7 @@ class QbImportFromQbank extends Command
             foreach ($model::whereIn('id', $ids)->get() as $row) {
                 foreach ($cols as $c) if ($row->{$c} !== null) $row->{$c} = self::plain($row->{$c}) ?? '';
                 if ($row->isDirty()) { $row->save(); $this->count("{$table} (text cleaned)", 'kept'); }
+                if ($row instanceof QbQuestion) $this->passageInText($row);
             }
         }
     }
@@ -199,6 +200,7 @@ class QbImportFromQbank extends Command
             $this->byType[$slug] = ($this->byType[$slug] ?? 0) + 1;
             $this->children((int) $r->id, $id);
             $this->place($plan, $id);
+            $this->passageInText(QbQuestion::find($id));
         }
     }
 
@@ -342,6 +344,20 @@ class QbImportFromQbank extends Command
             default:
                 return "interaction {$type}";
         }
+    }
+
+    /** A passage type whose passage qbank kept in the question text (no stimulus): the text becomes the passage, the question
+     *  text the type's name, and its items hang on the passage - as the QB.4 editor and its review check expect. */
+    private function passageInText(QbQuestion $q): bool
+    {
+        $type = QbQuestionType::find($q->qb_question_type_id);
+        if (!in_array($type?->ui_config['structure'] ?? null, ['passage', 'passage_mcq'], true) || QbQuestionStimulus::where('qb_question_id', $q->id)->exists()) return false;
+        if (trim((string) $q->question_text) === '') return false;
+        $st = QbQuestionStimulus::create(['qb_question_id' => $q->id, 'label' => 'passage', 'content_text' => $q->question_text, 'content_json' => null, 'sort_order' => 0]);
+        QbQuestionItem::where('qb_question_id', $q->id)->whereNull('qb_question_stimulus_id')->update(['qb_question_stimulus_id' => $st->id]);
+        $q->forceFill(['question_text' => $q->language === 'en' ? ($type->name_en ?: $type->name_bn) : $type->name_bn, 'question_json' => null])->save();
+        $this->count('question_stimuli (passage moved out of the question text)', 'new');
+        return true;
     }
 
     private function place(array $plan, int $q): void

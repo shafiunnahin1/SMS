@@ -237,4 +237,29 @@ class QbImportTest extends TestCase
         $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])->assertSuccessful();
         $this->assertSame($before, [QbQuestionItem::count(), QbQuestionStimulus::count()], 'a second run adds no parts twice');
     }
+
+    public function test_a_passage_kept_in_the_question_text_becomes_the_passage(): void
+    {
+        QbQuestionType::create(['slug' => 'seen_passage', 'name_bn' => 'সিন প্যাসেজ', 'name_en' => 'Seen passage', 'family' => 'other', 'ui_config' => ['structure' => 'passage']]);
+        Schema::connection('qbank')->table('question_items', fn (Blueprint $t) => [$t->text('prompt_text')->nullable(), $t->text('answer_text')->nullable(), $t->integer('sort_order')->default(0)]);
+        $q = DB::connection('qbank');
+        $q->table('question_types')->insert(['id' => 4, 'slug' => 'seen_passage', 'name_bn' => 'x', 'name_en' => 'x']);
+        $q->table('questions')->insert(['id' => 120, 'question_type_id' => 4, 'subject_id' => 20, 'question_text' => 'Behula is a legendary heroine.', 'language' => 'en']);
+        $q->table('question_items')->insert([['question_id' => 120, 'prompt_text' => 'Who is Behula?', 'answer_text' => 'A heroine', 'sort_order' => 1]]);
+        $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media])->assertSuccessful();
+
+        $question = QbQuestion::where('qb_question_type_id', QbQuestionType::where('slug', 'seen_passage')->value('id'))->firstOrFail();
+        $st = QbQuestionStimulus::where('qb_question_id', $question->id)->firstOrFail();
+        $this->assertSame(['Seen passage', 'Behula is a legendary heroine.'], [$question->question_text, $st->content_text]);
+        $this->assertSame([$st->id], QbQuestionItem::where('qb_question_id', $question->id)->pluck('qb_question_stimulus_id')->all());
+
+        // a row imported before this repair (passage still in the text): --refresh-text moves it, once
+        QbQuestionItem::where('qb_question_id', $question->id)->update(['qb_question_stimulus_id' => null]);
+        $st->delete();
+        $question->forceFill(['question_text' => 'Behula is a legendary heroine.'])->save();
+        $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media, '--refresh-text' => true])->assertSuccessful();
+        $this->artisan('qb:import-from-qbank', ['--media-path' => $this->media, '--refresh-text' => true])->assertSuccessful();
+        $this->assertSame(['Seen passage', 1], [$question->fresh()->question_text, QbQuestionStimulus::where('qb_question_id', $question->id)->count()]);
+        $this->assertSame('Behula is a legendary heroine.', QbQuestionStimulus::where('qb_question_id', $question->id)->value('content_text'));
+    }
 }
