@@ -24,6 +24,10 @@ test('QB.3 editor: an MCQ with maths and a picture, a creative question, live pr
   await expect(mf).toBeVisible()
   await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('MATH-FIELD')   // the dialog focuses the formula field
   await page.keyboard.type('a+b')
+  await mf.evaluate(el => el.select())
+  await page.getByRole('combobox', { name: 'গণিতের ফন্ট' }).selectOption('doubleStruck')
+  await page.locator('[data-action="math-font-apply"]').click()
+  await expect.poll(() => mf.evaluate(el => el.queryStyle({ fontFamily: 'none', variant: 'double-struck', variantStyle: 'up' }))).toBe('all')
   await page.locator('[data-action="math-insert"]').click()
   await expect(form.locator('textarea[name="question_text"]')).toHaveValue(/\$a\+b\$$/)
 
