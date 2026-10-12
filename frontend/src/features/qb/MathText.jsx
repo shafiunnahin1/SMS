@@ -38,6 +38,7 @@ function Node({ n, ready }) {
     case 'dt': return <dt className="font-semibold">{kids}</dt>
     case 'mark': return <mark className="bg-secondary-soft text-content">{kids}</mark>
     case 'table': return <table className="my-1 border-collapse">{kids}</table>
+    case 'caption': return <caption className="caption-top p-2 text-start text-sm font-semibold">{kids}</caption>
     case 'th': return <th dir={a.dir} colSpan={a.colspan} rowSpan={a.rowspan} className={`${CELL} font-semibold`}>{kids}</th>
     case 'td': return <td dir={a.dir} colSpan={a.colspan} rowSpan={a.rowspan} className={CELL}>{kids}</td>
     default: {

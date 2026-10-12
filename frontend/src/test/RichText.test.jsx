@@ -14,6 +14,13 @@ describe('rich question text', () => {
     expect(container.querySelector('div.text-center').textContent).toBe('মাঝ')
   })
 
+  it('renders a sanitized table caption', () => {
+    const { container } = render(<MathText text={'<table><caption onclick="alert(1)">তথ্য সারণি</caption><tbody><tr><td>১</td></tr></tbody></table>'} />)
+    const caption = container.querySelector('table caption')
+    expect(caption.textContent).toBe('তথ্য সারণি')
+    expect(caption).not.toHaveAttribute('onclick')
+  })
+
   it('drops scripts, handlers, links and bad colours', () => {
     const { container } = render(<MathText text={'a<script>alert(1)</script><img src=x onerror="alert(1)"><a href="javascript:x()">link</a><b onclick="x()">b</b><span data-qmx-color="red;x">c</span><style>*{}</style>'} />)
     expect(container.querySelector('script, img, a, style, [onclick], [onerror]')).toBeNull()

@@ -205,6 +205,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 - [ ] QB.14 — qbank's table builder and picture tool (D72, later step)
   - part 1 (df3261b): QB.14 in the plan (after QB.12; r1-scope.json → AGENT-PLAN-R1.md / r1-plan.json regenerated).
   - part 2 (this commit): server side. QbRichText keeps `caption` and an `img` that names only the question's media id (data-qmx-media, data-qmx-width 10-100, data-qmx-align) - a src / URL / handler never survives, an img without our id goes; the paper PDF draws such a picture from that question's own media as a data: URI (other media ids are left out). QbRichTextTest (6). `php artisan test --filter="QbRichText|QbPaper"`: 10 passed; `php artisan test`: full suite passed.
+  - follow-up (this commit): the React rich-text allowlist now preserves `caption` as a semantic table caption; event-handler attributes are discarded. `npm test -- src/test/RichText.test.jsx`: 4 passed; `npm run lint:theme`: 0 violations; `npm run build`: succeeded (existing MathLive chunk-size warning). QB.14 remains incomplete: no caption-entry UI, merged-cell editing, or advanced picture-placement workflow is included in this checkpoint.
 
 ## Release R3  (`docs/AGENT-PLAN-R3.md`)  — start only after Release 1 is accepted (task `A`)
 

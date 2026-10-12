@@ -2,7 +2,7 @@
 // (QbRichText); here it is read again from an allowlist into plain node objects - the page builds React elements from them and
 // never inserts an HTML string. DOMParser does not run scripts; anything outside the list is unwrapped (its text stays).
 
-const TAGS = new Set(['strong', 'em', 'u', 's', 'sup', 'sub', 'mark', 'br', 'span', 'div', 'ol', 'ul', 'li', 'dl', 'dt', 'dd', 'table', 'thead', 'tbody', 'tr', 'th', 'td'])
+const TAGS = new Set(['strong', 'em', 'u', 's', 'sup', 'sub', 'mark', 'br', 'span', 'div', 'ol', 'ul', 'li', 'dl', 'dt', 'dd', 'table', 'caption', 'thead', 'tbody', 'tr', 'th', 'td'])
 const RENAME = { b: 'strong', i: 'em', strike: 's', del: 's', p: 'div' }
 const DROP = new Set(['script', 'style', 'iframe', 'object', 'embed', 'template', 'noscript', 'svg', 'math', 'textarea', 'select', 'button', 'input', 'form'])
 const COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
