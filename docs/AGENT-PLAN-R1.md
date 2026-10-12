@@ -79,10 +79,11 @@
 | `QB.10b` | Writers' earnings, wallet and withdrawals | `QB.10` |  | 8 |  |
 | `QB.11` | Import from qbank | `QB.10b` | 1 |  |  |
 | `QB.12` | qbank-style question editor (D72) | `QB.11` |  |  |  |
-| `5.1` | Signup & Onboarding | `QB.12` |  | 3 | 1 |
+| `QB.13` | Smart editor: mixed parts, new item kinds, the new-question form (D73) | `QB.12` |  |  |  |
+| `5.1` | Signup & Onboarding | `QB.13` |  | 3 | 1 |
 | `5.2` | Subscription & Billing (প্রতিষ্ঠান → প্ল্যাটফর্ম) | `5.1` | 3 | 12 | 1 |
 
-**সারসংক্ষেপ:** 52 task · 69 টেবিল · 245 route · 64 নামকৃত পরীক্ষা।
+**সারসংক্ষেপ:** 53 task · 69 টেবিল · 245 route · 64 নামকৃত পরীক্ষা।
 
 ## ২. Task-এর তালিকা
 
@@ -2776,9 +2777,30 @@ php artisan test   # whole suite stays green
 
 ---
 
-### TASK `5.1` — Signup & Onboarding
+### TASK `QB.13` — Smart editor: mixed parts, new item kinds, the new-question form (D73)
 
 - **নির্ভর করে:** `QB.12`  ·  **Release:** R1
+- **লক্ষ্য:** Writers can build every board / NCTB question format in one editor.
+- **কী পড়বেন:** `docs/LOCKED-DECISIONS.md`, `docs/modules/question-bank.md`
+
+> **R1 পরিসর (এটিই চূড়ান্ত):** D73: any structured question mixes its parts (sub_mcq, sub_question, gap, match_pair, order_step and the new true_false, table_fill, match_triple, multi_field) with marks per part; gaps may carry a base-word hint; the review check and the quiz marker understand the new kinds; answers never leave without an unlock. The new-question page as qbank's: class levels, content mode, exam type, source history (type, full name, short name, year in the existing occurrence fields), a question code shown from type + id, searchable subject / chapter / topic, a draft first and then the editor; the Super Admin may add a subject / chapter / topic from the form (the existing curriculum routes; adding a question type waits for a route of its own). No new table or column.
+
+
+**Done When:** A seen passage with MCQ + answer questions + a gap fill + true/false is written, saved, previewed, submitted and published; each new kind round-trips and is marked; tests.
+
+**যাচাই (সব সবুজ হলে তবেই পরের task):**
+```bash
+php artisan test --filter=QbStructured
+npm test && npm run lint:theme
+npx playwright test e2e/qb-structured.spec.js e2e/qb-editor.spec.js
+php artisan test   # whole suite stays green
+```
+
+---
+
+### TASK `5.1` — Signup & Onboarding
+
+- **নির্ভর করে:** `QB.13`  ·  **Release:** R1
 - **কী পড়বেন:** `docs/modules/onboarding.md`, `docs/modules/subscription.md`, `docs/architecture/system-design-patterns.md`
 
 > **R1 পরিসর (এটিই চূড়ান্ত):** Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.

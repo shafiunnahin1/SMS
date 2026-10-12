@@ -1372,6 +1372,24 @@
     "npx playwright test e2e/qb-editor.spec.js",
     "php artisan test   # whole suite stays green"
    ]
+  },
+  {
+   "id": "QB.13",
+   "after": "QB.12",
+   "title": "Smart editor: mixed parts, new item kinds, the new-question form (D73)",
+   "goal": "Writers can build every board / NCTB question format in one editor.",
+   "spec": [
+    "docs/LOCKED-DECISIONS.md",
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "D73: any structured question mixes its parts (sub_mcq, sub_question, gap, match_pair, order_step and the new true_false, table_fill, match_triple, multi_field) with marks per part; gaps may carry a base-word hint; the review check and the quiz marker understand the new kinds; answers never leave without an unlock. The new-question page as qbank's: class levels, content mode, exam type, source history (type, full name, short name, year in the existing occurrence fields), a question code shown from type + id, searchable subject / chapter / topic, a draft first and then the editor; the Super Admin may add a subject / chapter / topic from the form (the existing curriculum routes; adding a question type waits for a route of its own). No new table or column.",
+   "done": "A seen passage with MCQ + answer questions + a gap fill + true/false is written, saved, previewed, submitted and published; each new kind round-trips and is marked; tests.",
+   "verify": [
+    "php artisan test --filter=QbStructured",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-structured.spec.js e2e/qb-editor.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
   }
  ],
  "interview_cards": [
