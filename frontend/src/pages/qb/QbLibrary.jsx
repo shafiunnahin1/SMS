@@ -103,7 +103,7 @@ function QuestionView({ q }) {
   const { t } = useTranslation()
   return (
     <div className="flex flex-col gap-2" data-testid="qb-question-view">
-      <MathText text={q.question_text} className="text-base" />
+      <MathText text={q.question_text} className="text-base" media={q.media ?? []} />
       {q.options.length > 0 && <ol className="flex flex-col gap-1">{q.options.map(o => (
         <li key={o.label} className="flex gap-2"><span className="font-medium">{o.label}.</span><MathText text={o.content_text} />{o.is_correct && <span className="text-xs text-content-muted">({t('qb.correct')})</span>}</li>
       ))}</ol>}

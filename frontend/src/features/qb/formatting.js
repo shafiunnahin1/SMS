@@ -276,3 +276,31 @@ export function insertPicture(value, start, end, mediaId, { width = 100, align =
   }
   return splice(value, from, to, `<img data-qmx-media="${id}" data-qmx-width="${size}" data-qmx-align="${side}">`)
 }
+
+export function transformImagePixels(data, width, height, { rotation = 0, transparentBackground = false, threshold = 245 } = {}) {
+  if (!Number.isInteger(width) || width < 1 || !Number.isInteger(height) || height < 1 || data.length !== width * height * 4) {
+    throw new RangeError('Image pixel dimensions do not match the data')
+  }
+  if (![0, 90, 180, 270].includes(rotation)) throw new RangeError('Rotation must be a right angle')
+  if (!Number.isInteger(threshold) || threshold < 0 || threshold > 255) throw new RangeError('Transparency threshold must be between 0 and 255')
+
+  const swapsDimensions = rotation === 90 || rotation === 270
+  const outputWidth = swapsDimensions ? height : width
+  const outputHeight = swapsDimensions ? width : height
+  const transformed = new Uint8ClampedArray(data.length)
+  for (let sourceY = 0; sourceY < height; sourceY++) for (let sourceX = 0; sourceX < width; sourceX++) {
+    let targetX = sourceX
+    let targetY = sourceY
+    if (rotation === 90) [targetX, targetY] = [height - 1 - sourceY, sourceX]
+    else if (rotation === 180) [targetX, targetY] = [width - 1 - sourceX, height - 1 - sourceY]
+    else if (rotation === 270) [targetX, targetY] = [sourceY, width - 1 - sourceX]
+    const sourceOffset = (sourceY * width + sourceX) * 4
+    const targetOffset = (targetY * outputWidth + targetX) * 4
+    transformed.set(data.subarray(sourceOffset, sourceOffset + 4), targetOffset)
+  }
+
+  if (transparentBackground) for (let offset = 0; offset < transformed.length; offset += 4) {
+    if (transformed[offset] >= threshold && transformed[offset + 1] >= threshold && transformed[offset + 2] >= threshold) transformed[offset + 3] = 0
+  }
+  return { data: transformed, width: outputWidth, height: outputHeight }
+}

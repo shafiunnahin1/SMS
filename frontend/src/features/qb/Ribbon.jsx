@@ -24,7 +24,7 @@ const Sep = () => <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
 
 // D72 (QB.12): qbank's editor ribbon. Every action works on the text field the writer was last in (run(fn, ...args) on the page
 // applies it to that field's value and selection); maths, pictures, save and reset are the page's own actions.
-export default function Ribbon({ run, readActive, onImage, onReset, onUndo, onRedo, canUndo, canRedo, disabled, saving }) {
+export default function Ribbon({ run, readActive, onImage, imageTransform, onImageTransformChange, onReset, onUndo, onRedo, canUndo, canRedo, disabled, saving }) {
   const { t } = useTranslation()
   const [ul, setUl] = useState(LIST_STYLES.ul[0])
   const [ol, setOl] = useState(LIST_STYLES.ol[0])
@@ -123,6 +123,13 @@ export default function Ribbon({ run, readActive, onImage, onReset, onUndo, onRe
           </select>
         </label>
         {picturePosition === 'after' && <Input className="w-24" label={t('qbed.picture_paragraph')} ltr inputMode="numeric" value={pictureParagraph} onChange={e => setPictureParagraph(e.target.value)} />}
+        <select aria-label={t('qbed.picture_rotation')} title={t('qbed.picture_rotation')} value={String(imageTransform.rotation)}
+          onChange={e => onImageTransformChange({ ...imageTransform, rotation: Number(e.target.value) })}
+          className="h-8 max-w-24 rounded-token bg-surface px-1 text-xs [border:1px_solid_var(--line)]">
+          {[0, 90, 180, 270].map(rotation => <option key={rotation} value={rotation}>{rotation}°</option>)}
+        </select>
+        <Check label={t('qbed.picture_transparent_background')} checked={imageTransform.transparentBackground}
+          onChange={e => onImageTransformChange({ ...imageTransform, transparentBackground: e.target.checked })} />
         <MathInsert onInsert={(snippet) => run(insertAt, snippet)} disabled={disabled} compact />
         <Tool label={t('qbed.reset')} onClick={onReset} data-action="reset"><RotateCcw aria-hidden="true" className="h-4 w-4" /></Tool>
       </fieldset>

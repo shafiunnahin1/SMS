@@ -18,11 +18,15 @@ export const MATH_FONT_STYLES = {
   fraktur: { fontFamily: 'none', variant: 'fraktur', variantStyle: 'up' },
 }
 
-export function applyMathFont(field, font) {
+export function applyMathFont(field, font, selection = null) {
   const style = MATH_FONT_STYLES[font]
   if (!field || !style) return false
-  field.applyStyle(style)
   field.focus()
+  const ranges = selection?.ranges?.filter(([start, end]) => start !== end) ?? []
+  if (ranges.length) {
+    ranges.forEach(range => field.applyStyle(style, { range, operation: 'set' }))
+    field.selection = selection
+  } else field.applyStyle(style)
   return true
 }
 
@@ -33,8 +37,26 @@ export default function MathInsert({ onInsert, disabled, compact = false }) {
   const [ready, setReady] = useState(false)
   const [font, setFont] = useState('roman')
   const field = useRef(null)
+  const savedSelection = useRef(null)
   useEffect(() => { if (open) loadMathlive().then(() => setReady(true)) }, [open])
   useEffect(() => { if (ready) setTimeout(() => field.current?.focus(), 0) }, [ready])   // the writer types the formula at once
+  useEffect(() => {
+    const mathField = field.current
+    if (!mathField) return
+    const rememberSelection = () => {
+      const current = mathField.selection
+      savedSelection.current = current?.ranges?.some(([start, end]) => start !== end)
+        ? { ranges: current.ranges.map(([start, end]) => [start, end]), direction: current.direction }
+        : null
+    }
+    const clearSelection = () => { savedSelection.current = null }
+    mathField.addEventListener('blur', rememberSelection)
+    mathField.addEventListener('focus', clearSelection)
+    return () => {
+      mathField.removeEventListener('blur', rememberSelection)
+      mathField.removeEventListener('focus', clearSelection)
+    }
+  }, [ready])
   const insert = () => {
     const latex = field.current?.value?.trim()
     if (latex) onInsert(`$${latex}$`)
@@ -49,12 +71,14 @@ export default function MathInsert({ onInsert, disabled, compact = false }) {
       {open && (
         <Modal open onClose={() => setOpen(false)} title={t('qb.math')}>
           <div className="flex flex-col gap-3">
-            <div className="grid items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-              <Select label={t('qbed.math_font')} value={font} onChange={e => setFont(e.target.value)}
+            <div className="grid gap-2">
+              <Select label={t('qbed.math_font')} value={font} onChange={e => {
+                setFont(e.target.value)
+                applyMathFont(field.current, e.target.value, savedSelection.current)
+              }}
                 options={Object.keys(MATH_FONT_STYLES).map(style => ({ value: style, label: t(`qbed.math_fonts.${style}`) }))} />
-              <Button variant="secondary" onClick={() => applyMathFont(field.current, font)} data-action="math-font-apply">{t('qbed.apply_math_font')}</Button>
             </div>
-            {ready ? <math-field ref={field} dir="ltr" class="w-full rounded-token [border:1px_solid_var(--line)] p-2" data-testid="math-field" /> : <p className="text-sm text-content-muted">{t('common.loading')}</p>}
+            {ready ? <math-field ref={field} dir="ltr" class="w-full rounded-token [border:1px_solid_var(--line)] p-2" style={{ '--ui-font-family': 'var(--font-body)' }} data-testid="math-field" /> : <p className="text-sm text-content-muted">{t('common.loading')}</p>}
             <p className="text-xs text-content-muted">{t('qb.math_hint')}</p>
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setOpen(false)}>{t('common.cancel')}</Button>

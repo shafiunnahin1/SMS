@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertPicture, insertTable, mathRegionAt, mergeTableCells, parseTableSelection, pushValueHistory, splitTableCell, stepValueHistory } from '../features/qb/formatting'
+import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertPicture, insertTable, mathRegionAt, mergeTableCells, parseTableSelection, pushValueHistory, splitTableCell, stepValueHistory, transformImagePixels } from '../features/qb/formatting'
+import { transformImageFile } from '../features/qb/imageTransforms'
 
 // D72 (QB.12): qbank's ribbon actions write qbank's vocabulary; inside maths they write LaTeX.
 describe('ribbon actions', () => {
@@ -54,6 +55,61 @@ describe('ribbon actions', () => {
     expect(insertPicture('one\ntwo', 0, 0, 9, { position: 'start' }).value).toBe(`${picture}one\ntwo`)
     expect(insertPicture('one\ntwo', 0, 0, 9, { position: 'end' }).value).toBe(`one\ntwo${picture}`)
     expect(insertPicture('one', 0, 0, 9, { position: 'after', paragraph: 4 }).value).toBe(`one${picture}`)
+  })
+
+  it('bakes right-angle rotation and light-background transparency into pixels', () => {
+    const pixels = new Uint8ClampedArray([255, 0, 0, 255, 0, 0, 255, 255])
+    const rotated = transformImagePixels(pixels, 2, 1, { rotation: 90 })
+    expect(rotated).toMatchObject({ width: 1, height: 2 })
+    expect(Array.from(rotated.data)).toEqual([255, 0, 0, 255, 0, 0, 255, 255])
+
+    const withBackground = new Uint8ClampedArray([250, 250, 250, 255, 20, 30, 40, 255])
+    const transparent = transformImagePixels(withBackground, 2, 1, { transparentBackground: true })
+    expect(Array.from(transparent.data)).toEqual([250, 250, 250, 0, 20, 30, 40, 255])
+    expect(() => transformImagePixels(pixels, 2, 1, { rotation: 45 })).toThrow(RangeError)
+  })
+
+  it('re-encodes transformed media and preserves the upload-size limit', async () => {
+    const file = new File(['source'], 'diagram.jpg', { type: 'image/jpeg' })
+    const mockContext = {
+      drawImage: vi.fn(),
+      getImageData: vi.fn(() => ({ data: new Uint8ClampedArray([255, 0, 0, 255, 0, 0, 255, 255]) })),
+      createImageData: vi.fn((width, height) => ({ data: new Uint8ClampedArray(width * height * 4), width, height })),
+      putImageData: vi.fn(),
+    }
+    const createObjectUrl = vi.fn(() => 'blob:source')
+    const revokeObjectUrl = vi.fn()
+    const canvasContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(mockContext)
+    const toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(callback => callback(new Blob(['encoded'], { type: 'image/png' })))
+    const originalCreateObjectUrl = URL.createObjectURL
+    const originalRevokeObjectUrl = URL.revokeObjectURL
+    const originalImage = globalThis.Image
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: createObjectUrl })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectUrl })
+    globalThis.Image = class {
+      naturalWidth = 2
+      naturalHeight = 1
+      decode = vi.fn().mockResolvedValue(undefined)
+    }
+
+    try {
+      const transformed = await transformImageFile(file, { rotation: 90 })
+      expect(transformed).toMatchObject({ name: 'diagram.png', type: 'image/png' })
+      expect(mockContext.createImageData).toHaveBeenCalledWith(1, 2)
+      expect(mockContext.putImageData).toHaveBeenCalledOnce()
+      expect(createObjectUrl).toHaveBeenCalledWith(file)
+      expect(revokeObjectUrl).toHaveBeenCalledWith('blob:source')
+      expect(canvasContext).toHaveBeenCalled()
+      expect(toBlob).toHaveBeenCalled()
+      toBlob.mockImplementation(callback => callback(new Blob([new Uint8Array(2 * 1024 * 1024 + 1)], { type: 'image/png' })))
+      await expect(transformImageFile(file, { transparentBackground: true })).rejects.toThrow('qbed.picture_transform_too_large')
+    } finally {
+      canvasContext.mockRestore()
+      toBlob.mockRestore()
+      Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: originalCreateObjectUrl })
+      Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: originalRevokeObjectUrl })
+      globalThis.Image = originalImage
+    }
   })
 
   it('serializes only the approved table layout choices and header column', () => {

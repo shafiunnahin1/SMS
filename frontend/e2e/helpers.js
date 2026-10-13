@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { expect } from '@playwright/test'
 import { TENANTS } from '../playwright.config.js'
 
@@ -52,7 +53,7 @@ export async function login(page, identifier, password, { fresh = false } = {}) 
 
 // The Super Admin always signs in with a one-time code (in local/CI it only goes to the API's log, G17). /auth/verify-otp shares one
 // 5-a-minute bucket per IP, so the central-host specs (QB.1-QB.3) sign the Super Admin in once and reuse that session like login().
-const API_LOG = process.env.E2E_API_LOG ?? new URL('../../api/storage/logs/laravel.log', import.meta.url).pathname
+const API_LOG = process.env.E2E_API_LOG ?? fileURLToPath(new URL('../../api/storage/logs/laravel.log', import.meta.url))
 export const lastCode = (phone = '01700000000') => {
   let log = ''
   try { log = readFileSync(API_LOG, 'utf8') } catch { /* a fresh CI checkout has no log until the first line */ }

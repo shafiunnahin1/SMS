@@ -97,7 +97,9 @@ class QbPaperController extends Controller
         $paper = $this->find($request->user(), $id);
         $data = $this->printable($paper, $f['set'] ?? 'A', (bool) ($f['answers'] ?? false));
         if (($f['format'] ?? null) === 'json') return response()->json(['success' => true, 'data' => $data]);
-        return response($pdf->render('pdf.qb-paper', ['paper' => $data]), 200, ['Content-Type' => 'application/pdf',
+        $bytes = $pdf->render('pdf.qb-paper', ['paper' => $data]);
+        return response($bytes, 200, ['Content-Type' => 'application/pdf',
+            'Content-Length' => (string) strlen($bytes),
             'Content-Disposition' => 'inline; filename="paper-' . $paper->id . '-' . $data['set'] . '.pdf"']);
     }
 

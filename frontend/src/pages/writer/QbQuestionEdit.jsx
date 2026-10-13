@@ -20,6 +20,7 @@ import QbStatus from '../../features/qb/QbStatus'
 import MathText from '../../features/qb/MathText'
 import Ribbon from '../../features/qb/Ribbon'
 import { insertPicture, pushValueHistory, stepValueHistory } from '../../features/qb/formatting'
+import { transformImageFile } from '../../features/qb/imageTransforms'
 import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } from '../../features/qb/questionMeta'
 import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
 
@@ -61,6 +62,7 @@ export default function QbQuestionEdit() {
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(null)
   const [history, setHistory] = useState({ undo: [], redo: [] })
+  const [pictureTransform, setPictureTransform] = useState({ rotation: 0, transparentBackground: false })
   const [activeField, setActiveField] = useState(null)
   const valueSnapshots = useRef(new Map())
   const [section, setSection] = useState('meta')
@@ -132,6 +134,12 @@ export default function QbQuestionEdit() {
     requestAnimationFrame(() => { a.el.focus(); a.el.setSelectionRange(step.entry.start, step.entry.end) })
   }
   const readActive = () => {
+    const field = document.activeElement
+    if (field?.name && (field.tagName === 'TEXTAREA' || (field.tagName === 'INPUT' && field.type === 'text'))) {
+      const current = { name: field.name, el: field, start: field.selectionStart, end: field.selectionEnd }
+      active.current = current
+      return { value: String(getValues(field.name) ?? ''), start: current.start, end: current.end }
+    }
     const a = active.current
     if (!a) return null
     return { value: String(getValues(a.name) ?? ''), start: a.start ?? 0, end: a.end ?? 0 }
@@ -148,14 +156,15 @@ export default function QbQuestionEdit() {
 
   const uploadFile = async (file, placement) => {
     if (!file) return
-    const form = new FormData()
-    form.append('file', file)
     try {
+      const form = new FormData()
+      form.append('file', await transformImageFile(file, pictureTransform))
       const { data } = await api.post('/writer/media', form, multipart)
       setValue('media', [...getValues('media'), data.data], { shouldDirty: true })
       if (active.current) run(insertPicture, data.data.id, placement)
     } catch (err) {
-      useUiStore.getState().addToast(err.response?.data?.errors?.file?.[0] ?? err.response?.data?.message, 'error')
+      const message = err.message?.startsWith('qbed.') ? t(err.message) : err.response?.data?.errors?.file?.[0] ?? err.response?.data?.message ?? t('common.error')
+      useUiStore.getState().addToast(message, 'error')
     }
   }
   const upload = (e, placement) => {
@@ -253,7 +262,8 @@ export default function QbQuestionEdit() {
         </nav>
 
         <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane" onDragOver={allowImageDrop} onDrop={dropImage}>
-          {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} onUndo={() => applyHistory('undo')} onRedo={() => applyHistory('redo')}
+          {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} imageTransform={pictureTransform} onImageTransformChange={setPictureTransform}
+            onUndo={() => applyHistory('undo')} onRedo={() => applyHistory('redo')}
             canUndo={history.undo.some(entry => entry.name === activeField)} canRedo={history.redo.some(entry => entry.name === activeField)}
             onReset={() => { reset(); setHistory({ undo: [], redo: [] }); valueSnapshots.current.clear(); active.current = null; setActiveField(null) }} disabled={!canEdit} saving={isSubmitting} />}
           <Card>

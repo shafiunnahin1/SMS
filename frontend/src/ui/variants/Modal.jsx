@@ -11,12 +11,14 @@ function DialogModal({ open, onClose, title, children, actions }) {
   const { t } = useTranslation()
   const box = useRef(null)
   const titleId = useId()
+  const close = useRef(onClose)
+  useEffect(() => { close.current = onClose }, [onClose])
   useEffect(() => {
     if (!open) return undefined
     const prev = document.activeElement
     box.current?.querySelector(FOCUSABLE)?.focus()
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') close.current()
       if (e.key === 'Tab') {
         const f = [...box.current.querySelectorAll(FOCUSABLE)]
         if (!f.length) return
@@ -26,7 +28,7 @@ function DialogModal({ open, onClose, title, children, actions }) {
     }
     document.addEventListener('keydown', onKey)
     return () => { document.removeEventListener('keydown', onKey); prev?.focus?.() }
-  }, [open, onClose])
+  }, [open])
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 md:p-4" onClick={onClose}>

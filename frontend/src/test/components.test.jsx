@@ -2,6 +2,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 import '../i18n'
 import StatusBadge from '../components/StatusBadge'
 import ConfirmModal from '../components/ConfirmModal'
+import Modal from '../ui/variants/Modal'
 import FileUpload from '../components/FileUpload'
 import DateRangePicker, { rangePreset } from '../components/DateRangePicker'
 import Can from '../components/Can'
@@ -32,6 +33,18 @@ it('ConfirmModal opens from the store, focuses Cancel, closes on Esc and runs on
   await act(async () => { fireEvent.click(screen.getByText('নিশ্চিত')) })
   expect(onConfirm).toHaveBeenCalledTimes(1)
   expect(screen.queryByRole('alertdialog')).toBeNull()
+})
+
+it('Modal keeps a focused field active when the parent callback changes', () => {
+  const { rerender } = render(<Modal open onClose={() => {}} title="Table"><textarea aria-label="Cell" /></Modal>)
+  const cell = screen.getByRole('textbox', { name: 'Cell' })
+  cell.focus()
+
+  rerender(<Modal open onClose={() => {}} title="Table"><textarea aria-label="Cell" /></Modal>)
+  fireEvent.change(cell, { target: { value: 'cell text' } })
+
+  expect(cell).toHaveValue('cell text')
+  expect(document.activeElement).toBe(cell)
 })
 
 it('FileUpload refuses a file over the size limit or of another type', () => {

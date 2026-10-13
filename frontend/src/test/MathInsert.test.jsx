@@ -9,13 +9,21 @@ describe('MathInsert font support', () => {
     render(<MathInsert onInsert={vi.fn()} />)
     fireEvent.click(document.querySelector('[data-action="math"]'))
     const field = await screen.findByTestId('math-field')
-    field.applyStyle = vi.fn()
-    field.focus = vi.fn()
+    expect(field.style.getPropertyValue('--ui-font-family')).toBe('var(--font-body)')
+    const callOrder = []
+    field.selection = { ranges: [[0, 3]], direction: 'forward' }
+    field.applyStyle = vi.fn((_, options) => callOrder.push(['style', options]))
+    field.focus = vi.fn(() => callOrder.push(['focus']))
+    fireEvent.blur(field)
 
     fireEvent.change(screen.getByRole('combobox', { name: 'গণিতের ফন্ট' }), { target: { value: 'doubleStruck' } })
-    fireEvent.click(document.querySelector('[data-action="math-font-apply"]'))
 
-    await waitFor(() => expect(field.applyStyle).toHaveBeenCalledWith({ fontFamily: 'none', variant: 'double-struck', variantStyle: 'up' }))
+    await waitFor(() => expect(field.applyStyle).toHaveBeenCalledWith(
+      { fontFamily: 'none', variant: 'double-struck', variantStyle: 'up' },
+      { range: [0, 3], operation: 'set' },
+    ))
     expect(field.focus).toHaveBeenCalledOnce()
+    expect(callOrder).toEqual([['focus'], ['style', { range: [0, 3], operation: 'set' }]])
+    expect(field.selection).toEqual({ ranges: [[0, 3]], direction: 'forward' })
   })
 })
