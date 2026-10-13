@@ -36,7 +36,7 @@ function Section({ id: key, current, onEnter, children }) {
 const BN_LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
 const LEVELS = ['knowledge', 'understanding', 'application', 'higher_order']
 const CREATIVE = LEVELS.map((level, i) => ({ part_label: BN_LABELS[i], cognitive_level: level, marks: String(i + 1), question_text: '', answer_text: '' }))
-const EMPTY = { qb_question_type_id: '', qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', difficulty: '3', marks: '1', language: 'bn', content_mode: '', class_level_ids: [], question_text: '',
+const EMPTY = { qb_question_type_id: '', qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', difficulty: '3', marks: '1', class_level_ids: [], question_text: '',
   answer_text: '', explanation_text: '', options: [], creative_parts: [], occurrences: [], media: [], structured: STRUCTURED_EMPTY }
 
 // QB.2 + QB.3 /writer/questions/:id and /new (D65, D66): one form for the six core types. Shared fields (place in the curriculum,
@@ -74,7 +74,7 @@ export default function QbQuestionEdit() {
     reset({ ...EMPTY, ...q.data, qb_question_type_id: s(q.data.qb_question_type_id), qb_subject_id: s(q.data.qb_subject_id), qb_chapter_id: s(q.data.qb_chapter_id),
       qb_topic_id: s(q.data.qb_topic_id), difficulty: s(q.data.difficulty), marks: s(q.data.marks), answer_text: s(q.data.answer_text), explanation_text: s(q.data.explanation_text),
       creative_parts: q.data.creative_parts.map(p => ({ ...p, marks: s(p.marks), answer_text: s(p.answer_text) })),
-      content_mode: s(q.data.content_mode), class_level_ids: (q.data.class_level_ids ?? []).map(String),
+      class_level_ids: (q.data.class_level_ids ?? []).map(String),
       occurrences: q.data.occurrences.map(occurrenceToSource), structured: fromQuestion(q.data) })
   }, [q.data, reset])
 
@@ -193,7 +193,7 @@ export default function QbQuestionEdit() {
 
   const save = async (f) => {
     const body = { qb_question_type_id: num(f.qb_question_type_id), qb_subject_id: num(f.qb_subject_id), qb_chapter_id: num(f.qb_chapter_id), qb_topic_id: num(f.qb_topic_id),
-      difficulty: Number(f.difficulty), marks: f.marks, language: f.language, content_mode: f.content_mode || (/\$[^$]+\$/.test(f.question_text) ? 'rich_math' : 'plain_text'), class_level_ids: f.class_level_ids.map(Number),
+      difficulty: Number(f.difficulty), marks: f.marks, class_level_ids: f.class_level_ids.map(Number),
       question_text: f.question_text, answer_text: f.answer_text || null, explanation_text: f.explanation_text || null,
       options: optionsFor ? f.options.map(o => ({ label: o.label, content_text: o.content_text, is_correct: Boolean(o.is_correct) })) : [],
       creative_parts: family === 'creative' ? f.creative_parts.map(p => ({ ...p, answer_text: p.answer_text || null })) : [],
@@ -282,8 +282,6 @@ export default function QbQuestionEdit() {
                     options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} {...register('qb_topic_id')} />
                   <Select label={t('qb.difficulty')} options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: t(`qb.difficulty_level.${d}`) }))} {...register('difficulty')} />
                   <Input label={t('qb.marks')} ltr inputMode="decimal" error={errors.marks?.message} {...register('marks')} />
-                  <Select label={t('qb.language')} options={[{ value: 'bn', label: 'বাংলা' }, { value: 'en', label: 'English' }]} {...register('language')} />
-                  <Select label={t('qbn.content_mode')} placeholder={t('qbn.modes.plain_text')} options={['plain_text', 'rich_math', 'mixed'].map(m => ({ value: m, label: t(`qbn.modes.${m}`) }))} {...register('content_mode')} />
                   <fieldset className="sm:col-span-2 flex flex-col gap-1">
                     <legend className="text-sm font-medium mb-1">{t('qbn.classes')}</legend>
                     <div className="flex flex-wrap gap-3">{tree.data.class_levels.map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids')} />)}</div>

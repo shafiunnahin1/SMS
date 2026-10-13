@@ -35,7 +35,7 @@ class QbQuestionTypesTest extends TestCase
     private function save(string $slug, array $body, ?User $as = null): \Illuminate\Testing\TestResponse
     {
         return $this->api('POST', $this->central, 'writer/questions', $as ?? $this->writer,
-            ['qb_question_type_id' => $this->types[$slug], 'qb_subject_id' => $this->subject, 'question_text' => 'Solve $x^2 = 4$', 'content_mode' => 'rich_math'] + $body);
+            ['qb_question_type_id' => $this->types[$slug], 'qb_subject_id' => $this->subject, 'question_text' => 'Solve $x^2 = 4$'] + $body);
     }
 
     private function submit(int $id): \Illuminate\Testing\TestResponse
@@ -53,6 +53,23 @@ class QbQuestionTypesTest extends TestCase
     {
         foreach (['creative', 'fill_in_the_blank', 'mcq', 'one_word_answer', 'short', 'true_false'] as $slug) $this->assertArrayHasKey($slug, $this->types);
         $this->assertCount(74, $this->types, "qbank's 75 entries, its duplicate slug `application` kept once (QB.4)");
+    }
+
+    public function test_language_and_content_mode_are_server_managed_for_writer_questions(): void
+    {
+        $this->save('short', ['language' => 'en'])->assertStatus(422)->assertJsonValidationErrors('language');
+        $this->save('short', ['content_mode' => 'plain_text'])->assertStatus(422)->assertJsonValidationErrors('content_mode');
+
+        $question = $this->save('short', [])->assertCreated()
+            ->assertJsonPath('data.language', 'und')
+            ->assertJsonPath('data.content_mode', 'mixed')->json('data');
+
+        QbQuestion::whereKey($question['id'])->update(['language' => 'bn']);
+        $updated = $this->api('PUT', $this->central, "writer/questions/{$question['id']}", $this->writer, [
+            'question_text' => 'This update keeps the catalog language.',
+        ])->assertOk()->assertJsonPath('data.language', 'bn')->assertJsonPath('data.content_mode', 'mixed')->json('data');
+
+        $this->assertSame('bn', $updated['language']);
     }
 
     public function test_an_mcq_with_math_and_a_picture(): void

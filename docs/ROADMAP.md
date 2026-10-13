@@ -72,6 +72,7 @@
 | 36 | আরবি UI অনুবাদ (কয়েকশ' key) | 🧑‍⚖️ | `I18N.md` §১৩ | R2 | মাতৃভাষী যাচাইকারী |
 | 37 | `saas-metrics.md` নতুন করে (৫ প্ল্যান, SMS-খরচ, ইউনিট-অর্থনীতি) | 🧑‍⚖️ | — | R5 | মালিকের ইনপুট (আসল SMS/gateway ফি) |
 | 38 | মোবাইল অ্যাপ · PWA · AI সহকারী · বাস GPS | ✅ (পুরনো spec) | `mobile-app.md`, `advanced-features.md` | R7 | মূল প্ল্যাটফর্ম স্থির |
+| 39 | প্রতিষ্ঠানের ডোমেইন-ইমেইল (mailcow + webmail; D67) | 🔌 | `docs/modules/email.md` | R2 | custom-domain (Release 2); official mailcow API/IMAP/SMTP docs required per D67 |
 
 ### গ. এই খতিয়ানের বাইরে থাকা কিছু চিহ্নিত হলে
 আপনি নতুন ফিচার বললে প্রথমে এখানে সারি হবে (নির্ভরতা সহ), তারপর স্পেক। "নেই" বলে কিছু চুপচাপ বাদ পড়বে না।

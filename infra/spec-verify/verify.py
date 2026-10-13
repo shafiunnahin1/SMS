@@ -16,10 +16,16 @@ def ok(cond,msg,warn=False):
     if cond: print('PASS ',msg)
     elif warn: WARNS+=1; print('WARN ',msg)
     else: FAILS+=1; print('FAIL ',msg)
-mds=[os.path.relpath(p,R) for p in glob.glob(R+'/**/*.md',recursive=True)]+[os.path.relpath(p,R) for p in glob.glob(R+'/.cursor/rules/*.mdc')]
+def rel(p): return os.path.relpath(p,R).replace(os.sep,'/')
+mds=[]
 allfiles=set()
-for d,_,fs in os.walk(R):
-    for f in fs: allfiles.add(os.path.relpath(os.path.join(d,f),R))
+for d,dirs,fs in os.walk(R):
+    dirs[:]=[name for name in dirs if name not in {'.git','node_modules','vendor'}]
+    for f in fs:
+        path=rel(os.path.join(d,f))
+        allfiles.add(path)
+        if path.endswith('.md') or (path.startswith('.cursor/rules/') and path.endswith('.mdc')): mds.append(path)
+mds.sort()
 base={os.path.basename(x) for x in allfiles}
 
 # ---- 1. references -------------------------------------------------------------------------------------------------
@@ -32,7 +38,7 @@ for f in mds:
         if '*' in ref or 'NN' in ref or ref.endswith('INCIDENT-RUNBOOK.md'): continue
         if ref not in allfiles and os.path.basename(ref) not in roadmap: missing.append((f,ref))
     for m in re.finditer(r'\]\(([^)#\s]+\.(?:md|sql|mjs))\)',t):
-        if os.path.normpath(os.path.join(os.path.dirname(f),m.group(1))) not in allfiles: missing.append((f,'LINK '+m.group(1)))
+        if rel(os.path.join(R,os.path.dirname(f),m.group(1))) not in allfiles: missing.append((f,'LINK '+m.group(1)))
 ok(not missing,f'{len(allfiles)} files: every file reference resolves (a missing file is allowed only if docs/ROADMAP.md names it as pending) {missing[:4]}')
 dev=[f for f in mds if re.search(r'[\u0966-\u096F]',rd(f))]
 ok(not dev,f'no stray Devanagari digits {dev[:3]}')
@@ -274,8 +280,8 @@ if bsh:
     ok(subprocess.run([bsh,'-n',os.path.join(R,'infra/scripts/mysql-smoke.sh')]).returncode==0,'infra/scripts/mysql-smoke.sh: bash syntax')
     g=subprocess.run([sys.executable,os.path.join(R,'infra/scripts/gen_invariants.py'),R,'--check'],capture_output=True,text=True)
     ok(g.returncode==0,f'infra/scripts/invariants.tsv is generated from the current schema: {g.stdout.strip()}')
-    shimdir=tempfile.mkdtemp(); env=dict(os.environ,SMOKE_ENGINE='sqlite',MYSQL_CMD_STR=f'{sys.executable} {os.path.join(R,"infra/scripts/sqlite_shim.py")}',SHIM_DIR=shimdir)
-    sm=subprocess.run([bsh,os.path.join(R,'infra/scripts/mysql-smoke.sh')],capture_output=True,text=True,env=env)
+    shimdir=tempfile.mkdtemp(); env=dict(os.environ,SMOKE_ENGINE='sqlite',MYSQL_CMD_STR='py -3.14 -m infra.scripts.sqlite_shim',SHIM_DIR=shimdir)
+    sm=subprocess.run([bsh,os.path.join(R,'infra/scripts/mysql-smoke.sh')],capture_output=True,text=True,encoding='utf-8',errors='replace',env=env,cwd=R)
     mres=re.search(r'(\d+) passed, (\d+) failed, (\d+) skipped',sm.stdout)
     ok(sm.returncode==0 and mres and mres.group(2)=='0' and int(mres.group(1))>=20,f'smoke script DRY RUN (SQLite shim - proves the script\'s mechanics, NOT MySQL): {mres.group(0) if mres else sm.stdout[-120:]}')
     if '--deep' in sys.argv:
@@ -296,8 +302,8 @@ for name_,tb_,cols_ in re.findall(r"^CREATE INDEX (idx_\w+) ON (\w+)\(([^)]*)\);
     if tb_ not in "\n".join(open(os.path.join(R,'infra/scripts/hot-queries.tsv'),encoding='utf-8')): unjust.append(name_)
 ok(not unjust,f'every R14 index belongs to a table that appears in the hot-query catalogue (no speculative indexes) {unjust}')
 if '--deep' in sys.argv:
-    pe=dict(os.environ,SMOKE_ENGINE='sqlite',MYSQL_CMD_STR=f'{sys.executable} {os.path.join(R,"infra/scripts/sqlite_shim.py")}',SHIM_DIR=tempfile.mkdtemp())
-    pc=subprocess.run([sys.executable,os.path.join(R,'infra/scripts/perf-check.py'),'--scale','0.04','--big-rows','10000'],capture_output=True,text=True,env=pe)
+    pe=dict(os.environ,SMOKE_ENGINE='sqlite',MYSQL_CMD_STR='py -3.14 -m infra.scripts.sqlite_shim',SHIM_DIR=tempfile.mkdtemp())
+    pc=subprocess.run([sys.executable,os.path.join(R,'infra/scripts/perf-check.py'),'--scale','0.04','--big-rows','10000'],capture_output=True,text=True,encoding='utf-8',errors='replace',env=pe,cwd=R)
     ok(pc.returncode==0 and 'returned 0 rows' not in pc.stdout and 'NOTE:' not in pc.stdout,f'perf-check DRY RUN (SQLite, scale 0.04 - proves the tool\'s logic, NOT MySQL timing): {pc.stdout.strip().splitlines()[-1] if pc.stdout.strip() else pc.stderr[-120:]}')
 
 

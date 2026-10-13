@@ -30,8 +30,8 @@ class QbStructuredMixedTest extends TestCase
                 'answer_json' => ['cells' => ['0-1' => ['his wife'], '1-0' => ['Saudagar']]], 'marks' => 2],
             ['item_type' => 'match_triple', 'prompt_text' => 'Education means', 'answer_json' => ['middle' => 'conscious of', 'right' => 'our rights'], 'marks' => 1],
             ['item_type' => 'multi_field', 'prompt_text' => 'বিদ্যালয়', 'prompt_json' => ['fields' => ['ব্যাসবাক্য', 'সমাস']], 'answer_json' => ['values' => ['বিদ্যার আলয়', 'ষষ্ঠী তৎপুরুষ']], 'marks' => 2],
-            ['item_type' => 'order_step', 'prompt_text' => 'wake up', 'answer_json' => ['position' => 1]],
-            ['item_type' => 'order_step', 'prompt_text' => 'brush teeth', 'answer_json' => ['position' => 2]],
+            ['item_type' => 'order_step', 'prompt_text' => 'wake up', 'answer_json' => ['position' => 1], 'marks' => 1],
+            ['item_type' => 'order_step', 'prompt_text' => 'brush teeth', 'answer_json' => ['position' => 2], 'marks' => 1],
         ];
         $body = ['qb_question_type_id' => QbQuestionType::where('slug', 'seen_passage')->value('id'), 'qb_subject_id' => $subject, 'question_text' => 'Read the passage.',
             'stimuli' => [['label' => 'passage', 'content_text' => 'Behula is a legendary heroine.']]];
@@ -52,6 +52,7 @@ class QbStructuredMixedTest extends TestCase
         $this->assertSame(['middle' => ['conscious of'], 'right' => ['our rights']], $locked['triple_choices']);
         $kinds = array_column($locked['items'], 'item_type');
         $this->assertSame(['sub_mcq', 'sub_question', 'gap', 'true_false', 'table_fill', 'match_triple', 'multi_field', 'order_step', 'order_step'], $kinds, 'the parts keep their places');
+        $this->assertSame(['1.00', '2.00', '1.00', '1.00', '2.00', '1.00', '2.00', '1.00', '1.00'], array_column($locked['items'], 'marks'), 'every structured part keeps its marks');
         $this->assertSame(['brush teeth', 'wake up'], array_column(array_slice($locked['items'], 7), 'prompt_text'), 'the steps trade places only among themselves');
         $this->assertSame('go', $locked['items'][2]['prompt_json']['hint'], 'the base word is part of the question');
         $open = QbQuestionPublicResource::make(QbQuestion::find($q['id']), unlocked: true);

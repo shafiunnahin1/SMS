@@ -34,7 +34,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 EMPTY_TREE = None   # resolved lazily with `git hash-object -t tree /dev/null`
 
 def git(root, *args, check=True):
-    r = subprocess.run(['git', '-C', root] + list(args), capture_output=True, text=True)
+    r = subprocess.run(['git', '-C', root] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
     if check and r.returncode != 0: raise RuntimeError(f"git {' '.join(args)} failed: {r.stderr.strip()}")
     return r.stdout
 
@@ -44,7 +44,7 @@ def empty_tree(root):
     return EMPTY_TREE
 
 def show(root, rev, path):
-    r = subprocess.run(['git', '-C', root, 'show', f'{rev}:{path}'], capture_output=True, text=True)
+    r = subprocess.run(['git', '-C', root, 'show', f'{rev}:{path}'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.stdout if r.returncode == 0 else None
 
 def glob_to_re(g):
@@ -310,6 +310,8 @@ def run(root, base, head, staged=False, msg_file=None):
     return rep
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'): stream.reconfigure(encoding='utf-8', errors='replace')
     ap = argparse.ArgumentParser(); ap.add_argument('--root', default=ROOT); ap.add_argument('--base'); ap.add_argument('--head', default='HEAD'); ap.add_argument('--staged', action='store_true'); ap.add_argument('--msg-file'); ap.add_argument('--list-checks', action='store_true')
     a = ap.parse_args()
     if a.list_checks: print(' '.join(CHECKS)); return 0

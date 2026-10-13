@@ -57,7 +57,7 @@ export default function QbQuestionStart() {
   const tree = useQuery({ queryKey: ['writer', 'curriculum'], queryFn: () => api.get('/writer/curriculum').then(r => r.data.data) })
   const types = useQuery({ queryKey: ['writer', 'types'], queryFn: () => api.get('/writer/question-types').then(r => r.data.data) })
   const { register, control, handleSubmit, watch, setValue, setError, formState: { errors, isSubmitting } } = useForm({
-    defaultValues: { class_level_ids: [], qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', qb_question_type_id: '', difficulty: '3', marks: '1', language: 'bn', content_mode: 'plain_text', exam_type: '', sources: [] },
+    defaultValues: { class_level_ids: [], qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', qb_question_type_id: '', difficulty: '3', marks: '1', exam_type: '', sources: [] },
   })
   const sources = useFieldArray({ control, name: 'sources' })
   if (tree.isPending || types.isPending) return <Loader type="page" />
@@ -87,7 +87,7 @@ export default function QbQuestionStart() {
     try {
       const { data } = await api.post('/writer/questions', {
         qb_question_type_id: num(f.qb_question_type_id), qb_subject_id: num(f.qb_subject_id), qb_chapter_id: num(f.qb_chapter_id), qb_topic_id: num(f.qb_topic_id),
-        difficulty: Number(f.difficulty), marks: f.marks, language: f.language, content_mode: f.content_mode, class_level_ids: f.class_level_ids.map(Number),
+        difficulty: Number(f.difficulty), marks: f.marks, class_level_ids: f.class_level_ids.map(Number),
         question_text: type ? name(type) : t('qb.question'),                // the draft's placeholder - the editor replaces it
         occurrences: f.sources.map(s => sourceToOccurrence({ ...s, exam_type: s.exam_type || f.exam_type })),
       })
@@ -133,8 +133,6 @@ export default function QbQuestionStart() {
           <div className="grid gap-3 sm:grid-cols-2">
             <Select label={t('qb.difficulty')} options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: t(`qb.difficulty_level.${d}`) }))} {...register('difficulty')} />
             <Input label={t('qb.marks')} ltr inputMode="decimal" error={errors.marks?.message} {...register('marks')} />
-            <Select label={t('qb.language')} options={[{ value: 'bn', label: 'বাংলা' }, { value: 'en', label: 'English' }]} {...register('language')} />
-            <Select label={t('qbn.content_mode')} options={['plain_text', 'rich_math', 'mixed'].map(m => ({ value: m, label: t(`qbn.modes.${m}`) }))} {...register('content_mode')} />
           </div>
           <Input label={t('qbn.exam_type')} hint={t('qbn.exam_type_hint')} {...register('exam_type')} />
         </Card>

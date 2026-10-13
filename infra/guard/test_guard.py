@@ -5,6 +5,7 @@ infra/guard/test_guard.py - proves agent_guard.py fires. Builds a throw-away git
     python3 infra/guard/test_guard.py            exit 0 = every scenario behaved as expected (needs `git`)
 """
 import os, re, sys, json, shutil, subprocess, tempfile
+if hasattr(sys.stdout, 'reconfigure'): sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 GUARD = os.path.join(HERE, 'agent_guard.py')
 rd = lambda p: open(os.path.join(ROOT, p), encoding='utf-8').read()
@@ -16,7 +17,7 @@ def deps(t): return re.findall(r'[\w.]+', t['depends_on']) if isinstance(t['depe
 TASK0 = next(t['id'] for t in r1p['tasks'] if not deps(t))
 TASK_DEP = next(t['id'] for t in r1p['tasks'] if deps(t) and t['id'] not in ('0.1', '0.2', '0.3'))      # a NON-scaffold task whose dependencies are not done
 SCAFFOLD = TASK0 if TASK0 in ('0.1', '0.2', '0.3') else '0.1'      # a scaffold task WITHOUT unfinished dependencies
-PROGRESS = rd('docs/PROGRESS.md')
+PROGRESS = re.sub(r'(?m)^([ \t]*- \[)[xX](\])', r'\1 \2', rd('docs/PROGRESS.md'))
 DECISIONS = "# Decisions\n\n| # | Decision | Detail |\n|---|---|---|\n| D1 | Stack | Laravel |\n| D2 | Tenancy | institution_id |\n| D3 | Money | Decimal |\n"
 MIG = "<?php\nuse Illuminate\\Support\\Facades\\Schema;\nreturn new class { public function up() { Schema::create('%s', function ($t) { $t->id(); }); } };\n"
 RELEASE_PHP = "<?php\nreturn [\n    'id' => 'R1',\n    'modules' => [%s],\n];\n" % ', '.join(f"'{m}'" for m in r1s['modules'])
@@ -111,7 +112,7 @@ add('C14 the same change inside a scaffold task passes', {'frontend/package.json
 add('C14 a lockfile changes without a manifest change', {'api/composer.lock': '{"changed": true}\n', 'api/app/Foo.php': "<?php\nclass Foo {}\n", 'docs/PROGRESS.md': check_off(TASK_DEP)}, f'feat: x\n\nTask: {TASK_DEP}', {'C14'})
 
 def run_guard(d, base, head):
-    r = subprocess.run([sys.executable, GUARD, '--root', d, '--base', base, '--head', head], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, GUARD, '--root', d, '--base', base, '--head', head], capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, r.stdout + r.stderr
 
 def main():

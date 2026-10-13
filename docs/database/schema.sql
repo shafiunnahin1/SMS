@@ -2706,8 +2706,8 @@ CREATE TABLE qb_questions (
     qb_topic_id BIGINT UNSIGNED NULL,
     difficulty TINYINT UNSIGNED NOT NULL DEFAULT 3,      -- 1 (easy) .. 5 (hard)
     marks DECIMAL(5,2) NOT NULL DEFAULT 1,
-    language ENUM('bn','en') NOT NULL DEFAULT 'bn',
-    content_mode ENUM('plain_text','rich_math','mixed') NOT NULL DEFAULT 'plain_text',
+    language ENUM('bn','en','und') NOT NULL DEFAULT 'und',
+    content_mode ENUM('plain_text','rich_math','mixed') NOT NULL DEFAULT 'mixed',
     question_json JSON NULL,
     question_text TEXT NOT NULL,
     answer_json JSON NULL,

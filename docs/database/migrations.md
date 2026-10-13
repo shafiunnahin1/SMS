@@ -309,6 +309,7 @@ php artisan make:migration create_donation_funds_table
 php artisan make:migration create_donation_campaigns_table
 php artisan make:migration create_donations_table
 # Question bank & quiz (D65/D66, docs/modules/question-bank.md - task QB.0; 3 grouped migrations 2026_10_11_00000{1,2,3}_qb_*)
+2026_10_13_000001_qb_d74_metadata_defaults — add `und` and `mixed` defaults to `qb_questions`; existing rows are preserved (D74)
 php artisan make:migration create_qb_class_levels_table
 php artisan make:migration create_qb_subjects_table
 php artisan make:migration create_qb_class_level_subject_table

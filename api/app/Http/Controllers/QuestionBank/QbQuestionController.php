@@ -58,6 +58,8 @@ class QbQuestionController extends Controller
         $user = $request->user();
         abort_if($user->role === 'content_moderator', 403);
         $in = $this->placed($request->validated());
+        $in['language'] = 'und';
+        $in['content_mode'] = 'mixed';
         $q = DB::transaction(function () use ($in, $user) {
             $q = QbQuestion::create(collect($in)->except(self::CHILDREN)->all() + ['status' => 'draft', 'created_by' => $user->id]);
             $this->children($q, $in, $user);
@@ -79,6 +81,7 @@ class QbQuestionController extends Controller
         $user = $request->user();
         abort_if($user->role === 'content_moderator', 403);
         $in = $request->validated();
+        $in['content_mode'] = 'mixed';
         $q = DB::transaction(function () use ($user, $id, $in) {
             $q = $this->find($user, $id, lock: true);
             if ($user->role !== 'super_admin' && !in_array($q->status, self::EDITABLE, true)) {

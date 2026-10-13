@@ -46,7 +46,7 @@
 
 **খ. প্রশ্ন (প্ল্যাটফর্ম)** — qbank-এর মডেল থেকে
 - `qb_question_types` (slug, name_bn, name_en, family — `mcq|creative|short|fill_gap|matching|true_false|ordering|writing|other`, ui_config JSON, is_active, sort_order) — qbank-এর ~৭৭টি slug সিড হিসেবে আসে।
-- `qb_questions` (qb_question_type_id, qb_topic_id, qb_chapter_id, qb_subject_id, difficulty 1–5, marks DECIMAL(5,2), language `bn|en`, content_mode `plain_text|rich_math|mixed`, question_json, question_text, answer_json, answer_text, explanation_json, explanation_text, status `draft|review|published|rejected`, review_note, created_by, reviewed_by, published_at, timestamps, soft delete)
+- `qb_questions` (qb_question_type_id, qb_topic_id, qb_chapter_id, qb_subject_id, difficulty 1–5, marks DECIMAL(5,2), language `bn|en|und` default `und`, content_mode `plain_text|rich_math|mixed` default `mixed`, question_json, question_text, answer_json, answer_text, explanation_json, explanation_text, status `draft|review|published|rejected`, review_note, created_by, reviewed_by, published_at, timestamps, soft delete). D74: `language` is optional catalog metadata and is never inferred from text; new writer questions use `und`, imports preserve source `bn|en`, and writers cannot submit or change it. New and writer-edited content uses `mixed`; imports preserve their source mode.
 - `qb_question_options` (qb_question_id, label, content_json, content_text, is_correct, sort_order)
 - `qb_creative_parts` (qb_question_id, part_label ক/খ/গ/ঘ, cognitive_level `knowledge|understanding|application|higher_order`, marks, question_json/text, answer_json/text)
 - `qb_question_items` / `qb_question_stimuli` — ফাঁকা-পূরণ, ম্যাচিং, অনুচ্ছেদ-ভিত্তিক প্রশ্নের কাঠামো (qbank-এর structured model; task QB.4)
@@ -133,7 +133,7 @@
 
 **central — লেখক-প্যানেল** (`content_writer`, `content_moderator`, `super_admin`):
 - পাঠ্যক্রম-গাছ (শ্রেণি → বিষয় → অধ্যায় → টপিক) — Super Admin সম্পাদনা করে
-- প্রশ্ন-এডিটর: ধরন বেছে → প্রশ্ন, বিকল্প/অংশ, উত্তর, ব্যাখ্যা; বাংলা/ইংরেজি; গণিত (LaTeX); ছবি; প্রিভিউ; সংরক্ষণে revision; `review`-এ পাঠানো
+- প্রশ্ন-এডিটর: ধরন বেছে → প্রশ্ন, বিকল্প/অংশ, উত্তর, ব্যাখ্যা; যেকোনো Unicode ভাষায় D72-এর mixed rich-content allowlist; ভাষা ও Content Mode-এর selector নেই; গণিত (LaTeX); ছবি; প্রিভিউ; সংরক্ষণে revision; `review`-এ পাঠানো
 - কনসেপ্ট-এডিটর (টপিক-ভিত্তিক), রিসোর্স-আপলোড (স্লাইড/বই/PDF)
 - মডারেটরের রিভিউ-সারি: published / ফেরত (কারণ)
 - Super Admin: দাম (`qb_prices`), বিনামূল্য-নিয়ম, কুইজ-প্যাকেজ, লেখক/মডারেটর যোগ, লেখক-ভিত্তিক কাজের হিসাব

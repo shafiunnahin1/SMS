@@ -286,7 +286,8 @@ test('QB.13 a draft first, then the editor', async ({ page }) => {
   await page.locator('[data-action="save-qb_topic_id"]').click()
   await expect(form.locator('select[name="qb_topic_id"] option:checked')).toContainText(`টপিক-${tag}`)
   await form.locator('select[name="qb_question_type_id"]').selectOption({ label: 'সৃজনশীল প্রশ্ন' })
-  await form.locator('select[name="content_mode"]').selectOption('mixed')
+  await expect(form.locator('select[name="language"]')).toHaveCount(0)
+  await expect(form.locator('select[name="content_mode"]')).toHaveCount(0)
   await page.locator('[data-action="add-source"]').click()
   await form.locator('select[name="sources.0.type"]').selectOption('board')
   await form.locator('input[name="sources.0.full"]').fill('ঢাকা বোর্ড')
@@ -297,7 +298,12 @@ test('QB.13 a draft first, then the editor', async ({ page }) => {
   const id = page.url().split('/').pop()
   await expect(page.locator('[data-testid="qb-code"]')).toHaveText(`QAE-CQ-${id.padStart(6, '0')}`)
   const editor = page.locator('#qb-question-form')
-  await expect(editor.locator('select[name="content_mode"]')).toHaveValue('mixed')
+  await expect(editor.locator('select[name="language"]')).toHaveCount(0)
+  await expect(editor.locator('select[name="content_mode"]')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(async questionId => {
+    const response = await fetch(`/api/v1/writer/questions/${questionId}`)
+    return (await response.json()).data
+  }, id)).toMatchObject({ language: 'und', content_mode: 'mixed' })
   await expect(editor.locator('input[name="occurrences.0.full"]')).toHaveValue('ঢাকা বোর্ড')
   await expect(editor.locator('select[name="occurrences.0.type"]')).toHaveValue('board')
   await expect(editor.locator('input[name="class_level_ids"]:checked')).toHaveCount(1)

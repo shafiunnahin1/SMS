@@ -1930,8 +1930,8 @@ CREATE TABLE qb_questions (
     qb_topic_id BIGINT UNSIGNED NULL,
     difficulty TINYINT UNSIGNED NOT NULL DEFAULT 3,      -- 1 (easy) .. 5 (hard)
     marks DECIMAL(5,2) NOT NULL DEFAULT 1,
-    language ENUM('bn','en') NOT NULL DEFAULT 'bn',
-    content_mode ENUM('plain_text','rich_math','mixed') NOT NULL DEFAULT 'plain_text',
+    language ENUM('bn','en','und') NOT NULL DEFAULT 'und',
+    content_mode ENUM('plain_text','rich_math','mixed') NOT NULL DEFAULT 'mixed',
     question_json JSON NULL,
     question_text TEXT NOT NULL,
     answer_json JSON NULL,
@@ -2805,7 +2805,7 @@ php artisan test   # whole suite stays green
 - **লক্ষ্য:** Writers can build every board / NCTB question format in one editor.
 - **কী পড়বেন:** `docs/LOCKED-DECISIONS.md`, `docs/modules/question-bank.md`
 
-> **R1 পরিসর (এটিই চূড়ান্ত):** D73: any structured question mixes its parts (sub_mcq, sub_question, gap, match_pair, order_step and the new true_false, table_fill, match_triple, multi_field) with marks per part; gaps may carry a base-word hint; the review check and the quiz marker understand the new kinds; answers never leave without an unlock. The new-question page as qbank's: class levels, content mode, exam type, source history (type, full name, short name, year in the existing occurrence fields), a question code shown from type + id, searchable subject / chapter / topic, a draft first and then the editor; the Super Admin may add a subject / chapter / topic from the form (the existing curriculum routes; adding a question type waits for a route of its own). No new table or column.
+> **R1 পরিসর (এটিই চূড়ান্ত):** D73 plus D74: any structured question mixes its parts (sub_mcq, sub_question, gap, match_pair, order_step and the new true_false, table_fill, match_triple, multi_field) with marks per part; gaps may carry a base-word hint; the review check and the quiz marker understand the new kinds; answers never leave without an unlock. The new-question page as qbank's: class levels, exam type, source history (type, full name, short name, year in the existing occurrence fields), a question code shown from type + id, searchable subject / chapter / topic, a draft first and then the editor; the Super Admin may add a subject / chapter / topic from the form (the existing curriculum routes; adding a question type waits for a route of its own). No language or content-mode selector: new writer questions use hidden language=und and content_mode=mixed; imports preserve source metadata. The metadata rail contains type, subject, chapter, topic, difficulty, marks, applicable classes and source history. No new table or column.
 
 
 **Done When:** A seen passage with MCQ + answer questions + a gap fill + true/false is written, saved, previewed, submitted and published; each new kind round-trips and is marked; tests.

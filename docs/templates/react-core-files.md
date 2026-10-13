@@ -255,7 +255,7 @@ import ProtectedRoute from './ProtectedRoute'
 
 // Layouts
 import AuthLayout         from '../layouts/AuthLayout'
-import AppShell           from '../layouts/AppShell'      // Revision 6: ONE shell for every role; layout chosen from theme.layout_key
+import AppShell           from '../layouts/AppShell'      // Revision 6: ONE shell for every role; layout is resolved inside AppShell
 
 // Auth Pages
 import Login           from '../pages/auth/Login'
