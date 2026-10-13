@@ -32,6 +32,7 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 5. Keep the legacy qbank checkout read-only. Preserve `text.txt` and the current branch.
 
 ## Event Log
+- 2026-10-13 — QB.14 focused frontend recheck: `npm test -- src/test/QbFormatting.test.js src/test/MathInsert.test.jsx` (run from `E:\Projects\School Management\frontend`) passed, 2 files / 10 tests. The first invocation from `C:\Users\User` failed with ENOENT for `package.json`; rerunning from `frontend` passed. No browser/API/database write occurred. QB.14 remains incomplete; next: obtain an owner-approved test-only OTP mechanism and confirmed disposable DB, then run the persisted editor and downstream render round-trips.
 
 - 2026-10-13 — QB.14 undo/redo: tracked text and ribbon changes per field; undo/redo restore value and selection and new edits clear redo. Semantic icons are registered through `DirIcon` for RTL. Full Vitest 101 passed on rerun (one unrelated attendance contract timed out once; isolated 9/9); lint exit 0; theme lint 141/0; build success with MathLive warning; PHP 10 passed/70 assertions; E2E discovery 3; diagnostics clean. Persisted E2E not run against shared demo DB. QB.14 remains `[ ]`; next: save/reopen E2E in isolated DB and resolve D72 transform acceptance conflict.
 
