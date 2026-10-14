@@ -227,6 +227,15 @@ Route::prefix('v1')->group(function () {
         });
 
         // ── Fees (Step 4.4; slice: dues -> collect -> receipt) ──
+        Route::middleware(['module:expenses', 'role:admin,accountant'])->group(function () {
+            Route::get('/expenses/report', [\App\Http\Controllers\Expenses\ExpenseController::class, 'report']);
+            Route::get('/expenses', [\App\Http\Controllers\Expenses\ExpenseController::class, 'index']);
+            Route::post('/expenses', [\App\Http\Controllers\Expenses\ExpenseController::class, 'store']);
+            Route::get('/expenses/{id}', [\App\Http\Controllers\Expenses\ExpenseController::class, 'show'])->whereNumber('id');
+            Route::put('/expenses/{id}', [\App\Http\Controllers\Expenses\ExpenseController::class, 'update'])->whereNumber('id');
+            Route::delete('/expenses/{id}', [\App\Http\Controllers\Expenses\ExpenseController::class, 'destroy'])->whereNumber('id');
+        });
+
         Route::middleware('module:fees')->group(function () {
             Route::get('/fees/payments/student/{id}',     [FeeController::class, 'studentPayments'])->whereNumber('id')->middleware('role:admin,accountant,parent');   // parent: own child only (404)
             Route::middleware('role:admin,accountant')->group(function () {

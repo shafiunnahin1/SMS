@@ -678,3 +678,7 @@ GET  /hr/leave-types                     POST /hr/leave-types      PUT /hr/leave
 GET  /hr/leaves?status=&type=&id=        POST /hr/leaves           GET /hr/leaves/balance?type=&id=
 PATCH /hr/leaves/{id}/approve | reject | cancel
 GET  /teacher/leave                      POST /teacher/leave
+
+### R3.1 expense request/report details (D81)
+
+POST requires category, title, positive decimal amount (string or integer) and expense_date (Y-m-d). PUT accepts correction fields; protected actor/tenant/source/link fields are rejected. Receipt documents follow SECURITY.md: PDF/JPEG/PNG up to 5 MB, stored privately at the documented UUID path. GET /expenses supports category/from/to and per_page (1–100); GET /expenses/report accepts month (Y-m, default current month), format=json (default), pdf or xlsx. JSON returns the signed monthly expense total; PDF/Excel show immutable ledger rows and that total. This task does not implement a combined income/cashbook report or expense UI.

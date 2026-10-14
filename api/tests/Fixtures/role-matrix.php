@@ -11,6 +11,12 @@
 // own sessions / password / language / notifications (Revision 7), and the program + batch names (GET /programs, /batches -
 // names only, used by every panel's filters).
 return [
+    'GET api/v1/expenses' => ['admin', 'accountant'],
+    'POST api/v1/expenses' => ['admin', 'accountant'],
+    'GET api/v1/expenses/report' => ['admin', 'accountant'],
+    'GET api/v1/expenses/{id}' => ['admin', 'accountant'],
+    'PUT api/v1/expenses/{id}' => ['admin', 'accountant'],
+    'DELETE api/v1/expenses/{id}' => ['admin', 'accountant'],
     'GET api/v1/accountant/dashboard' => ['accountant'],
     'GET api/v1/accountant/reports/{type}' => ['accountant'],
     'GET api/v1/admin/dashboard' => ['admin'],

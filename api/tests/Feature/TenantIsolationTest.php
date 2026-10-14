@@ -47,6 +47,9 @@ class TenantIsolationTest extends TestCase
     private function foreignIds(): array
     {
         return [
+            'GET api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
+            'PUT api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
+            'DELETE api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
             'PATCH api/v1/notifications/{id}/read'         => fn (array $other) => $other['admin']->notifications()->value('id'),
             'DELETE api/v1/auth/sessions/{id}'             => fn (array $other) => $other['admin']->tokens()->value('id'),
             'POST api/v1/admin/users/{id}/force-logout'    => fn (array $other) => $other['admin']->id,

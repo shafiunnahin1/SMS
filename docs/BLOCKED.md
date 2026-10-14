@@ -60,3 +60,7 @@ The R3.1 Done When requires expense edit and soft deletion; D32 and G9 forbid fi
 ## 2026-10-14 — R3.1 policy/schema blocker RESOLVED under D81
 
 Owner commit 1099f2c is pushed. D81 governs expense correction/cancellation; schema defines reversal_of_id/replaces_expense_id, named nullable unique keys and composite tenant-bound FKs; API/task wording and generated plans/export map match. Schema probe 6/6, roundtrip 250/0 problems, parity 133/0 divergence, plan check 71/0 and full deep verifier pass (3 warnings). Application/migration/runtime tests remain pending, so R3.1 remains incomplete.
+
+## 2026-10-15 — R3.1 complete; no active task blocker
+
+D81 implementation and final sequential checks pass: Expense 13/107, full API 572/10,254, actual MySQL monthly index plan, query plan 71/0, frontend rerun 105/105, theme lint 142/0, full deep verifier PASS/3 existing warnings. Historical policy/schema blockers are resolved. Discarded overlapping DB test runs were repeated serially; frontend timing failure passed isolated/full retries without weakening tests. No app/demo DB migration or expense UI was performed. Next planned task is R3.2.

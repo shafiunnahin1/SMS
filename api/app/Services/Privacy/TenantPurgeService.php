@@ -19,7 +19,7 @@ class TenantPurgeService
     public const ORDER = [
         'qb_paper_items', 'qb_paper_sections', 'qb_papers', 'qb_quiz_attempts', 'qb_student_package_access', 'qb_student_unlocks',   // D65 question bank
         'qb_student_orders', 'qb_unlocks',
-        'results', 'exam_subjects', 'attendances', 'fee_payments', 'fee_structures', 'consents', 'parent_student', 'enrollments',
+        'expenses', 'results', 'exam_subjects', 'attendances', 'fee_payments', 'fee_structures', 'consents', 'parent_student', 'enrollments',
         'import_rows', 'import_jobs', 'sms_logs', 'sms_credit_transactions', 'batch_teachers', 'teacher_subjects', 'exams',
         'students', 'batches', 'subjects', 'teachers', 'programs', 'fee_categories', 'holidays', 'academic_years',
         'subscription_invoices', 'payments', 'audit_logs', 'users',
@@ -64,7 +64,15 @@ class TenantPurgeService
             $counts = [];
             DB::table('personal_access_tokens')->where('tokenable_type', \App\Models\User::class)->whereIn('tokenable_id', $userIds)->delete();
             DB::table('otp_tokens')->whereIn('user_id', $userIds)->delete();
-            foreach (self::ORDER as $t) $counts[$t] = DB::table($t)->where('institution_id', $i->id)->delete();
+            foreach (self::ORDER as $t) {
+                if ($t === 'expenses') {
+                    // D27 approved full-tenant purge: immutable expense ledger children precede their parents.
+                    $counts[$t] = 0;
+                    DB::table($t)->where('institution_id', $i->id)->orderByDesc('id')->chunkByIdDesc(500, function ($rows) use ($t, $i, &$counts) {
+                        foreach ($rows as $row) $counts[$t] += DB::table($t)->where('institution_id', $i->id)->where('id', $row->id)->delete();
+                    });
+                } else $counts[$t] = DB::table($t)->where('institution_id', $i->id)->delete();
+            }
             DB::table('institutions')->where('id', $i->id)->delete();
             return $counts;
         });

@@ -32,4 +32,5 @@ return [
         'guardian_sign' => "Guardian's name and signature", 'date' => 'Date', 'draft' => 'This text is a draft; a lawyer reviews it before release.',
     ],
     'qb_paper' => ['set' => 'Set', 'time' => 'Time', 'minutes' => 'minutes', 'full_marks' => 'Full marks', 'with_answers' => 'With answers', 'answer' => 'Answer'],   // QB.8
+    'expenses' => ['title' => 'Expense ledger', 'date' => 'Date', 'category' => 'Category', 'item' => 'Description', 'method' => 'Method', 'amount' => 'Amount (BDT)', 'total' => 'Net expenses'],
 ];

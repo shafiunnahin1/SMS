@@ -99,4 +99,8 @@ return [
     'not_in_program'        => 'This subject is not in the exam\'s class/course.',
     'components_total'      => 'The parts\' full marks must add up to the subject\'s full marks (:full).',
     'not_in_exam'           => 'This student does not sit this subject (or is not in your batch).',
+    'expense_immutable' => 'Expense history is immutable. Use correction or cancellation.',
+    'expense_not_active' => 'Only an active manual expense can be corrected or cancelled.',
+    'expense_amount' => 'Enter a positive amount with at most two decimal places.',
+    'expense_receipt_failed' => 'The receipt could not be saved.',
 ];
