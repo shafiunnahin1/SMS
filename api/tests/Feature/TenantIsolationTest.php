@@ -48,6 +48,10 @@ class TenantIsolationTest extends TestCase
     {
         return [
             'GET api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
+            // Date routes are independently covered by CashBookTenancyTest (no foreign row ID in the URL).
+            'GET api/v1/cashbook/{date}/report.{ext}' => null,
+            'POST api/v1/cashbook/{date}/close' => null,
+            'POST api/v1/cashbook/{date}/reopen' => null,
             'PUT api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
             'DELETE api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
             'PATCH api/v1/notifications/{id}/read'         => fn (array $other) => $other['admin']->notifications()->value('id'),

@@ -33,4 +33,5 @@ return [
     ],
     'qb_paper' => ['set' => 'Set', 'time' => 'Time', 'minutes' => 'minutes', 'full_marks' => 'Full marks', 'with_answers' => 'With answers', 'answer' => 'Answer'],   // QB.8
     'expenses' => ['title' => 'Expense ledger', 'date' => 'Date', 'category' => 'Category', 'item' => 'Description', 'method' => 'Method', 'amount' => 'Amount (BDT)', 'total' => 'Net expenses'],
+    'cashbook' => ['title' => 'Daily cashbook', 'section' => 'Section', 'item' => 'Item', 'income' => 'Income', 'outflow' => 'Outflow', 'method' => 'Method', 'category' => 'Category', 'collector' => 'Collector', 'summary' => 'Summary', 'opening_cash' => 'Opening cash', 'expected_closing' => 'Expected closing', 'status' => 'Status', 'history' => 'Revision / counted cash / difference', 'cash' => 'Cash totals'],
 ];

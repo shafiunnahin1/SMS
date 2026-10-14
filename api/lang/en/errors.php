@@ -103,4 +103,12 @@ return [
     'expense_not_active' => 'Only an active manual expense can be corrected or cancelled.',
     'expense_amount' => 'Enter a positive amount with at most two decimal places.',
     'expense_receipt_failed' => 'The receipt could not be saved.',
+    'day_closed' => 'This cash day is closed. An admin must reopen it before changing cash entries.',
+    'cashbook_immutable' => 'Cashbook history cannot be changed or deleted.',
+    'cashbook_not_closed' => 'Only a closed cash day can be reopened.',
+    'cashbook_amount' => 'Enter a nonnegative amount with at most two decimal places within the cashbook limit.',
+    'cashbook_future' => 'Future transaction dates are not allowed.',
+    'cashbook_sequence' => 'Close the preceding day first, without gaps.',
+    'cashbook_opening' => 'Enter opening cash for the first day; closing dates must follow their existing history.',
+    'cashbook_note' => 'A note is required when counted cash differs from expected cash.',
 ];

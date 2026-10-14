@@ -369,3 +369,7 @@ Cache ও session Redis-এ, তাই table লাগে না। `notificatio
 ## D81 — R3.1 expense ledger
 
 The new expenses create migration includes the existing schema ALTER fields and D81 nullable reversal/replacement references, unique_expenses_inst_id, unique_expenses_reversal, unique_expenses_replacement, fk_expenses_reversal and fk_expenses_replacement. Composite self-FKs enforce tenant-bound references. Nullable reference keys allow many ordinary entries (D81); no deleted_at. Approved tenant purge deletes ledger children before parents.
+
+## D82 — R3.2 cashbook revision ledger
+
+`2026_10_15_000001_create_cash_book_closings_table.php` implements the authoritative cashbook schema, including unsigned revision and unique_cash_day_revision (institution_id,date,revision). Close/reopen/reclose append snapshots under the institution row lock shared with cash fee/expense writes. Old snapshots remain immutable; approved tenant purge removes all target-tenant revisions. First opening is manual, later opening derives from preceding counted cash (expected fallback); no future dates or gaps. This documents implementation only; application/demo database migration requires separate owner authorization.

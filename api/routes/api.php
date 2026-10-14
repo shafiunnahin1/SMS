@@ -226,6 +226,16 @@ Route::prefix('v1')->group(function () {
             Route::get('/attendance/summary/{id}',        [AttendanceController::class, 'summary'])->whereNumber('id');
         });
 
+        Route::middleware(['module:cashbook'])->group(function () {
+            Route::middleware('role:admin,accountant')->group(function () {
+                Route::get('/cashbook', [\App\Http\Controllers\CashBook\CashBookController::class, 'show']);
+                Route::get('/cashbook/range', [\App\Http\Controllers\CashBook\CashBookController::class, 'range']);
+                Route::get('/cashbook/{date}/report.{ext}', [\App\Http\Controllers\CashBook\CashBookController::class, 'report']);
+                Route::post('/cashbook/{date}/close', [\App\Http\Controllers\CashBook\CashBookController::class, 'close']);
+            });
+            Route::post('/cashbook/{date}/reopen', [\App\Http\Controllers\CashBook\CashBookController::class, 'reopen'])->middleware('role:admin');
+        });
+
         // ── Fees (Step 4.4; slice: dues -> collect -> receipt) ──
         Route::middleware(['module:expenses', 'role:admin,accountant'])->group(function () {
             Route::get('/expenses/report', [\App\Http\Controllers\Expenses\ExpenseController::class, 'report']);

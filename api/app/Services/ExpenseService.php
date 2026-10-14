@@ -56,6 +56,9 @@ class ExpenseService
     {
         $data = array_intersect_key($data, array_flip(self::INPUT_FIELDS));
         return $this->transaction(function () use ($data, $by) {
+            $cashbook = app(CashBookService::class);
+            $cashbook->lockInstitution();
+            $cashbook->assertCashWrite($data['expense_date'], $data['payment_method'] ?? 'cash');
             $expense = $this->append($data + ['source' => 'manual', 'payment_method' => 'cash'], $by);
             AuditLog::record('expense.created', $expense);
             return $this->find($expense->id);
@@ -66,12 +69,16 @@ class ExpenseService
     {
         if ($replacement !== null) $replacement = array_intersect_key($replacement, array_flip(self::INPUT_FIELDS));
         return $this->transaction(function () use ($id, $replacement, $by) {
+            $cashbook = app(CashBookService::class);
+            $cashbook->lockInstitution();
             $original = Expense::lockForUpdate()->findOrFail($id);
             if ($original->source !== 'manual' || $original->reversal_of_id !== null || $original->reversals()->exists()) {
                 throw new BusinessException(__('errors.expense_not_active'), 'expense_not_active', 409);
             }
             $values = $original->only(self::FIELDS);
             $values['expense_date'] = $original->expense_date->format('Y-m-d');
+            $cashbook->assertCashWrite($values['expense_date'], $values['payment_method']);
+            if ($replacement !== null) $cashbook->assertCashWrite($replacement['expense_date'] ?? $values['expense_date'], $replacement['payment_method'] ?? $values['payment_method']);
             $reversal = $this->append(array_replace($values, ['amount' => Money::format(-Money::toPaisa($original->amount)), 'reversal_of_id' => $original->id]), $by);
             $result = $replacement === null ? $reversal : $this->append(array_replace($values, $replacement, ['replaces_expense_id' => $original->id]), $by);
             AuditLog::record($replacement === null ? 'expense.cancelled' : 'expense.corrected', $original,

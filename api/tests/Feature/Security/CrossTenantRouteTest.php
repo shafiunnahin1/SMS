@@ -33,6 +33,7 @@ class CrossTenantRouteTest extends TestCase
 
     /** Parameters that are not row ids: the route only reads the caller's own rows (each named test proves it) */
     private const NOT_ROW_IDS = [
+        'GET api/v1/cashbook/{date}/report.{ext}', 'POST api/v1/cashbook/{date}/close', 'POST api/v1/cashbook/{date}/reopen', // CashBookTenancyTest: dates/format read only the caller's cashbook
         'GET api/v1/admin/reports/{type}', 'GET api/v1/accountant/reports/{type}',     // report name; ReportTest: a foreign program_id is 422
         'GET api/v1/imports/templates/{kind}.xlsx',                                    // template name, no data
         'PUT api/v1/parent/consents/{type}',                                           // consent type of the caller's own children

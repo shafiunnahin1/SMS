@@ -19,7 +19,7 @@ class TenantPurgeService
     public const ORDER = [
         'qb_paper_items', 'qb_paper_sections', 'qb_papers', 'qb_quiz_attempts', 'qb_student_package_access', 'qb_student_unlocks',   // D65 question bank
         'qb_student_orders', 'qb_unlocks',
-        'expenses', 'results', 'exam_subjects', 'attendances', 'fee_payments', 'fee_structures', 'consents', 'parent_student', 'enrollments',
+        'cash_book_closings', 'expenses', 'results', 'exam_subjects', 'attendances', 'fee_payments', 'fee_structures', 'consents', 'parent_student', 'enrollments',
         'import_rows', 'import_jobs', 'sms_logs', 'sms_credit_transactions', 'batch_teachers', 'teacher_subjects', 'exams',
         'students', 'batches', 'subjects', 'teachers', 'programs', 'fee_categories', 'holidays', 'academic_years',
         'subscription_invoices', 'payments', 'audit_logs', 'users',

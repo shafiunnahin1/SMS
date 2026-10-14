@@ -102,10 +102,14 @@ class FeeService
     public function collect(Student $s, array $lines, string $method = 'cash'): Collection
     {
         return DB::transaction(function () use ($s, $lines, $method) {
+            $cashbook = app(CashBookService::class);
+            $cashbook->lockInstitution();
+            $paidAt = now();
+            $cashbook->assertCashWrite($paidAt->toDateString(), $method);
             $dues = $this->dueLines($s)->keyBy('key');
             $receipt = $this->nextReceiptNo();
             $n = 0;
-            $rows = collect($lines)->map(function ($l) use ($s, $dues, $method, $receipt, &$n) {
+            $rows = collect($lines)->map(function ($l) use ($s, $dues, $method, $receipt, $paidAt, &$n) {
                 if (!$dues->has($l['key'] ?? '')) throw ValidationException::withMessages(['lines' => __('errors.due_not_applicable')]);
                 $d = $dues[$l['key']];
                 $due = Money::toPaisa($d['amount']);
@@ -115,7 +119,7 @@ class FeeService
                     'student_id' => $s->id, 'enrollment_id' => $d['enrollment_id'], 'batch_id' => $d['batch_id'],
                     'fee_category_id' => $d['fee_category_id'], 'amount' => $d['gross'], 'discount' => $d['discount'],
                     'paid_amount' => Money::format($paid), 'month' => $d['period'], 'payment_method' => $method,
-                    'receipt_no' => $receipt, 'line_no' => ++$n, 'paid_at' => now(), 'collected_by' => auth()->id(),
+                    'receipt_no' => $receipt, 'line_no' => ++$n, 'paid_at' => $paidAt, 'collected_by' => auth()->id(),
                     'status' => $paid >= $due ? 'paid' : 'partial',
                 ]);
             });

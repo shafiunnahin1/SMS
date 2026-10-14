@@ -11,6 +11,11 @@
 // own sessions / password / language / notifications (Revision 7), and the program + batch names (GET /programs, /batches -
 // names only, used by every panel's filters).
 return [
+    'GET api/v1/cashbook' => ['admin', 'accountant'],
+    'GET api/v1/cashbook/range' => ['admin', 'accountant'],
+    'GET api/v1/cashbook/{date}/report.{ext}' => ['admin', 'accountant'],
+    'POST api/v1/cashbook/{date}/close' => ['admin', 'accountant'],
+    'POST api/v1/cashbook/{date}/reopen' => ['admin'],
     'GET api/v1/expenses' => ['admin', 'accountant'],
     'POST api/v1/expenses' => ['admin', 'accountant'],
     'GET api/v1/expenses/report' => ['admin', 'accountant'],
