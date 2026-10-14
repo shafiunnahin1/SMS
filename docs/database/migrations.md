@@ -365,3 +365,7 @@ php artisan make:notifications-table   # notifications — in-app notification (
 php artisan make:queue-table && php artisan make:queue-failed-table   # jobs, job_batches, failed_jobs
 ```
 Cache ও session Redis-এ, তাই table লাগে না। `notifications` table-এ `institution_id` নেই — notifiable (`users`) দিয়ে scoped; query সবসময় `auth()->user()->notifications()` দিয়ে, `DatabaseNotification::all()` কখনো নয়।
+
+## D81 — R3.1 expense ledger
+
+The new expenses create migration includes the existing schema ALTER fields and D81 nullable reversal/replacement references, unique_expenses_inst_id, unique_expenses_reversal, unique_expenses_replacement, fk_expenses_reversal and fk_expenses_replacement. Composite self-FKs enforce tenant-bound references. Nullable reference keys allow many ordinary entries (D81); no deleted_at. Approved tenant purge deletes ledger children before parents.

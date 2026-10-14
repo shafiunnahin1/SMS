@@ -143,7 +143,7 @@
     "expenses"
    ],
    "tests": [],
-   "done": "খরচ তৈরি/সম্পাদনা/মোছা (নরম) ও মাসিক রিপোর্ট; অঙ্ক Decimal (দুই দশমিক); এক প্রতিষ্ঠানের খরচ অন্যে দেখে না; স্কিমার `idx_expenses_inst_date` সূচক ব্যবহারে মাসিক যোগফল (`hot-queries.tsv`: `expenses_month`)। স্পেকে এই মডিউলের নামধারী পরীক্ষা নেই — tenant-বিচ্ছিন্নতা ও যোগফলের পরীক্ষা লিখুন।",
+   "done": "D81: খরচ append-only; create positive manual expense, correction atomically appends a negative reversal and positive replacement, cancellation appends a reversal only. Original rows and receipts remain unchanged. Reject repeat correction/cancellation and system-generated entries. Exact two-decimal signed monthly totals use idx_expenses_inst_date (expenses_month); tenant isolation, role/module gates and correction history must pass Expense tests. Nullable reversal/replacement references and tenant-bound uniqueness/FKs follow schema.sql; no soft deletion.",
    "verify": [
     "php artisan test --filter=Expense",
     "python3 infra/spec-verify/plan_check.py ."

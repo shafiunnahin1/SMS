@@ -56,3 +56,7 @@ D79/D80 owner commits and the D63 release-transition correction resolve the gate
 ## 2026-10-14 — R3.1 G12: expense mutation/deletion contract
 
 The R3.1 Done When requires expense edit and soft deletion; D32 and G9 forbid financial history changes/deletion, and the database rule explicitly restricts soft deletion to a list excluding expenses. schema.sql expenses has no deleted_at or reversal reference. No Expense implementation exists. Inspected task/spec/schema and current code; plan_check.py passes 71 queries/0 problems. No code, migration, database command or protected spec edit attempted. Prepared owner/expense-correction-decision.md proposing append-only correction/cancellation with owner-approved schema links and corresponding acceptance wording. Need: owner selects/approves the expense policy and commits its locked decision before protected schema/spec/plan changes. Do not implement CRUD or proceed to R3.2 while unresolved.
+
+## 2026-10-14 — R3.1 policy/schema blocker RESOLVED under D81
+
+Owner commit 1099f2c is pushed. D81 governs expense correction/cancellation; schema defines reversal_of_id/replaces_expense_id, named nullable unique keys and composite tenant-bound FKs; API/task wording and generated plans/export map match. Schema probe 6/6, roundtrip 250/0 problems, parity 133/0 divergence, plan check 71/0 and full deep verifier pass (3 warnings). Application/migration/runtime tests remain pending, so R3.1 remains incomplete.

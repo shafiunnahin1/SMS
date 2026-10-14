@@ -515,7 +515,9 @@
    "refs": {
     "added_by": "users",
     "fund_id": "donation_funds",
-    "payroll_run_id": "payroll_runs"
+    "payroll_run_id": "payroll_runs",
+    "replaces_expense_id": "expenses",
+    "reversal_of_id": "expenses"
    },
    "polymorphic": []
   },

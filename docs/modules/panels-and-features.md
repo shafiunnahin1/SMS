@@ -55,6 +55,8 @@
 - Fee Collection: ছাত্রভিত্তিক কালেকশন, রসিদ প্রিন্ট
 - Due Management: বকেয়া লিস্ট, SMS রিমাইন্ডার
 - Expense: খরচের এন্ট্রি, রসিদ আপলোড
+
+D81 / R3.1: expense entries are immutable. Manual creation records a positive decimal amount; correction appends a negative reversal plus positive replacement in one transaction, cancellation appends only a reversal. Original entries and receipts remain intact. Only admin/accountant within the same tenant may act; repeated correction/cancellation and direct mutation of system-generated expenses are rejected. Monthly totals sum signed amounts. Schema links and nullable uniqueness are defined in `docs/database/schema.sql`; no soft deletion is used.
 - Staff Salary: বেতন প্রসেস, স্লিপ প্রিন্ট
 - Financial Reports: আয়-ব্যয়, ব্যালেন্স শিট
 

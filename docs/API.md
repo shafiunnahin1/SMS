@@ -83,9 +83,12 @@ Tenant: resolved from the request Host (no tenant header). Base path is relative
 |--------|----------|-------------|
 | GET | /expenses | Expense list (category, date range filter) |
 | POST | /expenses | Add new expense entry |
-| PUT | /expenses/{id} | Update expense |
-| DELETE | /expenses/{id} | Delete expense |
+| GET | /expenses/{id} | Immutable expense entry and correction references |
+| PUT | /expenses/{id} | D81: append reversal and replacement; original remains unchanged |
+| DELETE | /expenses/{id} | D81: cancel by appending a reversal; no row/file deletion |
 | GET | /expenses/report | Income-expense summary report (PDF/Excel) |
+
+D81: manual expenses require a positive decimal amount. Correction/cancellation is tenant-bound, row-locked and atomic; an already reversed entry or a payroll/advance/store/refund entry is rejected. `reversal_of_id` identifies the original negated entry; `replaces_expense_id` identifies the corrected entry. Reports sum signed ledger amounts over the institution/date index. Historical receipts remain private and retained. The nullable reversal/replacement unique keys deliberately allow multiple ordinary entries without references (D81 exception to the generic zero-default rule).
 
 ## Exam Seat Plan (role: admin)
 | Method | Endpoint | Description |

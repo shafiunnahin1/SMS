@@ -39,8 +39,8 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 
 ## Next Safe Action
 
-1. R3.1 is blocked: owner reviews `owner/expense-correction-decision.md` and authors the selected policy/schema authorization as a separate locked-decision commit.
-2. After that owner commit is synchronized, update only the approved expense specs/schema/plan and implement R3.1 with focused expense tests. Do not start R3.2 first.
+1. D81 owner decision 1099f2c is committed/pushed; the schema/spec checkpoint below resolves the expense policy blocker. Confirm its checkpoint is synchronized before implementation.
+2. Implement only R3.1 against the approved append-only expense schema/contract; add focused Expense tests, migration/model/factory/controller/request/service/resource, route/tenant/purge integrations. Do not start R3.2 first.
 3. Preserve D78 wallet draft, other owner drafts, text.txt and existing caches; keep exam-management read-only. Re-fetch and verify branch ownership before each checkpoint.
 
 ## Event Log
@@ -110,3 +110,13 @@ Owner committed D79 as 9873e84; git fetch origin succeeded (ahead/behind 1/0 bef
 - Added only owner/expense-correction-decision.md and current task's handoff/progress/blocker evidence. Proposal is not an approved decision: append-only reversal/replacement, retained attachments/history, explicit owner schema/nullable-unique exception and contract approval required. Task remains [ ]; no later task started. Next: owner policy decision, then approved spec/schema and Expense implementation.
 
 - R3.1 audit checkpoint checks: git diff --check passed; py -3.14 infra/guard/gen_progress.py . --check passed; py -3.14 infra/guard/agent_guard.py --staged --msg-file (temporary message with Task: R3.1) passed 0 failures/0 warnings. Only four draft/log files staged; prior untracked files excluded. Remote fetch/compare required immediately before commit and push.
+
+- 2026-10-14 — Owner approved owner/expense-correction-decision.md in chat. Prepared D81 as the next available locked-decision row; staged only its one-line addition for the required owner commit. git fetch origin succeeded; ahead/behind 0/0 at 67fde38. git diff --check passed; py -3.14 infra/guard/agent_guard.py --staged --msg-file (temporary D81 approval message) passed 0 failures/0 warnings. No schema/spec/application/database edit or commit/push. R3.1 remains incomplete. Next: owner commits the D81 row separately with Change-Request: D81; then fetch/verify/push that decision checkpoint and implement the approved append-only expense contract.
+
+## 2026-10-14 — R3.1 D81 schema/spec checkpoint
+
+- Owner commit 1099f2c verified and pushed; initial local/remote ahead/behind 1/0, then tips matched. No other agent branch advance observed.
+- Updated docs/database/schema.sql: reversal_of_id, replaces_expense_id; unique_expenses_inst_id, unique_expenses_reversal, unique_expenses_replacement; fk_expenses_reversal and fk_expenses_replacement composite self-FKs bind both references to the same tenant. Added institution FK. Nullable reference uniqueness is the D81 exception; no deleted_at. API/panels/task/migration instructions now define append-only correction and cancellation. Regenerated docs/AGENT-PLAN-R3.md, docs/release/r3-plan.json and docs/database/tenant-export-map.json.
+- Exact focused commands: inline SQLite integrity probe via `py -3.14 -` 6/6 (ordinary nullable originals, valid links, duplicate and foreign-tenant links rejected); `py -3.14 infra/spec-verify/tenant_export_ref.py . --roundtrip` 250 imported rows/0 problems; `node infra/check-schema-parity.mjs` 133 copies/0 divergence; `py -3.14 infra/spec-verify/plan_check.py .` 71 queries/0 problems; `py -3.14 infra/scripts/gen_invariants.py . --check` up to date.
+- `py -3.14 infra/spec-verify/gen_release_plan.py .` and `py -3.14 infra/spec-verify/tenant_export_ref.py . --write` regenerated approved derived artifacts. Required full `uv run --offline --with PyYAML --no-project --python 3.14 infra/spec-verify/verify.py . --deep` completed exit 0, ALL CHECKS PASSED/3 existing warnings. Initial streaming tool session could not be resumed; rerun evidence is retained in %TEMP%/school-r31-schema-deep.log and .exit (0), executed by a hidden temporary PowerShell runner with UTF8/unbuffered/no-bytecode and Git Bash usr/bin on PATH.
+- R3.1 stays [ ]; no application/migration/runtime test implementation or app/reference DB command yet. Checkpoint must be guard-checked, committed and pushed before implementation. Next: Expense API and ledger tests against the test DB, preserving original rows/files and all owner drafts/text.txt/caches.

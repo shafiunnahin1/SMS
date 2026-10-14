@@ -74,7 +74,15 @@ CREATE TABLE expenses (
     note TEXT,
     receipt_path VARCHAR(255),
     added_by BIGINT UNSIGNED,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reversal_of_id BIGINT UNSIGNED NULL,
+    replaces_expense_id BIGINT UNSIGNED NULL,
+    UNIQUE KEY unique_expenses_inst_id (institution_id, id),
+    UNIQUE KEY unique_expenses_reversal (institution_id, reversal_of_id),
+    UNIQUE KEY unique_expenses_replacement (institution_id, replaces_expense_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    CONSTRAINT fk_expenses_reversal FOREIGN KEY (institution_id, reversal_of_id) REFERENCES expenses(institution_id, id),
+    CONSTRAINT fk_expenses_replacement FOREIGN KEY (institution_id, replaces_expense_id) REFERENCES expenses(institution_id, id)
 );
 ALTER TABLE expenses ADD COLUMN payment_method VARCHAR(30) NOT NULL DEFAULT 'cash';
 ALTER TABLE expenses ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'manual';
@@ -92,7 +100,7 @@ PUT /expenses/{id} -> ExpenseController@update [role:admin,accountant]
 DELETE /expenses/{id} -> ExpenseController@destroy [role:admin,accountant]
 GET /expenses/report -> ExpenseController@report [role:admin,accountant]
 ```
-- **শেষ-শর্ত (Done When):** খরচ তৈরি/সম্পাদনা/মোছা (নরম) ও মাসিক রিপোর্ট; অঙ্ক Decimal (দুই দশমিক); এক প্রতিষ্ঠানের খরচ অন্যে দেখে না; স্কিমার `idx_expenses_inst_date` সূচক ব্যবহারে মাসিক যোগফল (`hot-queries.tsv`: `expenses_month`)। স্পেকে এই মডিউলের নামধারী পরীক্ষা নেই — tenant-বিচ্ছিন্নতা ও যোগফলের পরীক্ষা লিখুন।
+- **শেষ-শর্ত (Done When):** D81: খরচ append-only; create positive manual expense, correction atomically appends a negative reversal and positive replacement, cancellation appends a reversal only. Original rows and receipts remain unchanged. Reject repeat correction/cancellation and system-generated entries. Exact two-decimal signed monthly totals use idx_expenses_inst_date (expenses_month); tenant isolation, role/module gates and correction history must pass Expense tests. Nullable reversal/replacement references and tenant-bound uniqueness/FKs follow schema.sql; no soft deletion.
 - **যাচাই:** `php artisan test --filter=Expense` · `python3 infra/spec-verify/plan_check.py .`
 
 ### TASK `R3.2` — দৈনিক ক্যাশবুক ও day-end close

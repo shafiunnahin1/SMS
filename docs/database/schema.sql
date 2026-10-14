@@ -313,7 +313,15 @@ CREATE TABLE expenses (
     note TEXT,
     receipt_path VARCHAR(255),
     added_by BIGINT UNSIGNED,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reversal_of_id BIGINT UNSIGNED NULL,
+    replaces_expense_id BIGINT UNSIGNED NULL,
+    UNIQUE KEY unique_expenses_inst_id (institution_id, id),
+    UNIQUE KEY unique_expenses_reversal (institution_id, reversal_of_id),
+    UNIQUE KEY unique_expenses_replacement (institution_id, replaces_expense_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    CONSTRAINT fk_expenses_reversal FOREIGN KEY (institution_id, reversal_of_id) REFERENCES expenses(institution_id, id),
+    CONSTRAINT fk_expenses_replacement FOREIGN KEY (institution_id, replaces_expense_id) REFERENCES expenses(institution_id, id)
 );
 
 -- (R10) salary_payments was replaced by payroll_runs + payroll_items - docs/modules/staff-payroll.md
