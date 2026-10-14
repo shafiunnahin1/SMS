@@ -235,7 +235,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 ## Release R3  (`docs/AGENT-PLAN-R3.md`)  — start only after Release 1 is accepted (task `A`)
 
 - [x] R3.0 — this checkpoint (D63/D79/D80) — R1 local acceptance A already owner-accepted under D63/D64; release config now R3 with exactly 17 scope modules, preserving QB roles/import behavior. D79 gate precedence and D80 type availability/opt-in verified. Commands: `php artisan test --filter=ReleaseGateTest` 6 passed/41 assertions; combined ReleaseGateTest/BootstrapTest 14/80; full `php artisan test` 559 passed/9,933 assertions; `npm test -- --run` 105 passed; `npm run lint:theme` 142 files/0 violations; `uv run --offline --with PyYAML --no-project --python 3.14 infra/spec-verify/verify.py . --deep` ALL CHECKS PASSED (3 existing warnings); `py -3.14 infra/guard/test_guard.py` 58/58; decision verifier inline mutation probe 4/4; generated R3/full plans fresh; progress check and staged guard pass. No R3.1 implementation, migration or UI changes; see final handoff event.
-- [ ] R3.1 — খরচ (expenses) — ক্যাশবুকের পূর্বশর্ত
+- [ ] R3.1 — BLOCKED (G12): task requests edit/soft deletion, conflicting with D32/G9 and the soft-delete allowlist; authoritative expenses schema has no deletion/reversal tracking fields. Read-only audit found no existing expense implementation. `py -3.14 infra/spec-verify/plan_check.py .` passes 71 queries/0 problems. Owner-review proposal: `owner/expense-correction-decision.md`; no application/schema/test change.
 - [ ] R3.2 — দৈনিক ক্যাশবুক ও day-end close
 - [ ] R3.3 — ফি রিফান্ড ও reversal
 - [ ] R3.4 — কর্মচারী, উপস্থিতি ও ছুটি

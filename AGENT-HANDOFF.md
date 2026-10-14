@@ -7,7 +7,7 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 - Last checked: 2026-10-14
 - Repository: `E:\Projects\School Management`
 - Branch: `claude/elegant-cori-gw2mw5`
-- R3.0 is complete in this checkpoint under D63/D79/D80; config/release.php now selects R3 with exactly 17 cumulative scope modules. QB.13/QB.14 remain complete. Preserve untracked text.txt, existing verifier caches and owner decision drafts; wallet D78 remains unapproved.
+- R3.0 is complete and pushed as 560f1eb under D63/D79/D80; config/release.php now selects R3 with exactly 17 cumulative scope modules. QB.13/QB.14 remain complete. Preserve untracked text.txt, existing verifier caches and owner decision drafts; wallet D78 remains unapproved.
 - D76/D77 verifier and roadmap blockers are resolved in the current committed state. The wallet-payment proposal remains an owner-review draft, not an authoritative locked decision. No payment implementation or generated-plan edit is authorized until the owner adds/commits the decision to `docs/LOCKED-DECISIONS.md` and the affected specs/tasks are updated under that approved Change-Request.
 - Read-only payment-path audit: institutional SMS and QB purchases use `institutions.sms_balance` / `sms_credit_transactions`; student QB/quiz purchases currently go through a direct bKash order/callback; fee collection has cash and payment-method paths; writer earnings/withdrawals have a separate ledger. Wallet changes require explicit owner-approved task/schema treatment across these flows.
 - Owner confirmed sole-agent branch ownership. D79 owner commit 9873e84 and D80 owner commit 1153f8c are pushed; local/remote matched 1153f8c before this implementation checkpoint. Re-fetch before commit/push and stop on remote advance. Initial D80 push connection reset resolved on retry.
@@ -39,9 +39,9 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 
 ## Next Safe Action
 
-1. Verify this R3.0 checkpoint is pushed and local/remote match before continuing.
-2. Next planned task is R3.1 (expenses); read its specs and Done When first. R3.1 and later R3 tasks remain incomplete; R3.A acceptance has not occurred.
-3. Keep the D78 wallet proposal unapproved and exam-management read-only. Preserve all owner drafts, text.txt and existing bytecode caches.
+1. R3.1 is blocked: owner reviews `owner/expense-correction-decision.md` and authors the selected policy/schema authorization as a separate locked-decision commit.
+2. After that owner commit is synchronized, update only the approved expense specs/schema/plan and implement R3.1 with focused expense tests. Do not start R3.2 first.
+3. Preserve D78 wallet draft, other owner drafts, text.txt and existing caches; keep exam-management read-only. Re-fetch and verify branch ownership before each checkpoint.
 
 ## Event Log
 - 2026-10-14 — Owner selected the D6/D47 behavior for R3.0: release gate → explicit Super Admin override → institution type → opt-in; no plan gate. Drafted an owner-review locked-decision proposal. R3.0 remains `[ ]`; no protected acceptance text, generated plan, release config, or application code changed. Next: owner authors/commits the decision row, then the protected R3.0 acceptance contract can be updated under that Change-Request.
@@ -101,3 +101,12 @@ Owner committed D79 as 9873e84; git fetch origin succeeded (ahead/behind 1/0 bef
 - `uv run --offline --with PyYAML --no-project --python 3.14 infra/spec-verify/verify.py . --deep`: final run ALL CHECKS PASSED, 3 existing warnings (grading claim scan, optional tsc unavailable, modules lacking Done When). First D80 run failed only at stale generated full-audit; regeneration changed only coaching availability for the two D80 modules, then the complete run passed. No verification checks waived.
 - First combined test run exposed reuse of a cached pre-opt-in tenant fixture; a separate opted-in coaching fixture now proves the same module-set assertion on its first request. Initial staged guard exposed C9 refusing R3.0 against its R1 parent; narrowly fixed under D63, with clean-transition, later-task rejection and incorrect-module-list rejection self-tests. Staged guard with Task R3.0, Release R3 and Change-Request D63/D79/D80 passed 0 failures/0 warnings.
 - R3.0 is [x]; all later R3 tasks remain [ ]. This checkpoint will be committed and pushed before any next update. The final response/Git log supplies the resulting SHA. Untracked owner drafts, text.txt and pre-existing caches excluded. Next safe action: R3.1 planning/focused-check preparation after sync verification.
+
+## 2026-10-14 — R3.1 read-only task audit and blocker checkpoint
+
+- Started from pushed R3.0 commit 560f1eb. Exact commands: `git status --short --branch`; `git -c credential.interactive=never fetch origin`; `git rev-list --left-right --count HEAD...origin/claude/elegant-cori-gw2mw5` returned 0/0; both tips 560f1eb35714f03896b6deaef19772ec6b7a44f2. Existing untracked owner drafts, text.txt and bytecode preserved.
+- Read R3.1 generated task, panels/roadmap, D32/G9, expense schema, finance/cashbook integration and backend/database rules. Searches found no Expense model/controller/migration/test. Conflict: edit/soft deletion versus immutable financial history and the explicit soft-delete table allowlist; schema has no deleted_at or reversal links.
+- First focused check: `py -3.14 infra/spec-verify/plan_check.py .` returned 71 hot queries checked/0 problems (exit 0). No Expense runtime tests exist to run; no runtime PASS or DB persistence claim. No application, test, migration, schema, generated plan or reference-repository edit.
+- Added only owner/expense-correction-decision.md and current task's handoff/progress/blocker evidence. Proposal is not an approved decision: append-only reversal/replacement, retained attachments/history, explicit owner schema/nullable-unique exception and contract approval required. Task remains [ ]; no later task started. Next: owner policy decision, then approved spec/schema and Expense implementation.
+
+- R3.1 audit checkpoint checks: git diff --check passed; py -3.14 infra/guard/gen_progress.py . --check passed; py -3.14 infra/guard/agent_guard.py --staged --msg-file (temporary message with Task: R3.1) passed 0 failures/0 warnings. Only four draft/log files staged; prior untracked files excluded. Remote fetch/compare required immediately before commit and push.
