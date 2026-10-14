@@ -234,7 +234,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 
 ## Release R3  (`docs/AGENT-PLAN-R3.md`)  — start only after Release 1 is accepted (task `A`)
 
-- [ ] R3.0 — পূর্বশর্ত ও রিলিজ-গেট (R3-এর জন্য)
+- [ ] R3.0 — BLOCKED (G12): protected Done When conflicts with D6/D47 on plan gating and Super Admin override precedence. Evidence: `php artisan test --filter=ReleaseGateTest` 4 passed/11 assertions on R1 baseline; `uv run --offline --with PyYAML --no-project --python 3.14 infra/spec-verify/verify.py . --deep` ALL CHECKS PASSED (3 warnings). R3 config probe reverted; awaiting owner clarification in `docs/BLOCKED.md`.
 - [ ] R3.1 — খরচ (expenses) — ক্যাশবুকের পূর্বশর্ত
 - [ ] R3.2 — দৈনিক ক্যাশবুক ও day-end close
 - [ ] R3.3 — ফি রিফান্ড ও reversal
