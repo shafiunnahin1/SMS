@@ -1968,6 +1968,7 @@ CREATE TABLE cash_book_closings (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     date DATE NOT NULL,
+    revision INT UNSIGNED NOT NULL,
     opening_cash DECIMAL(12,2) NOT NULL DEFAULT 0,
     cash_in DECIMAL(12,2) NOT NULL DEFAULT 0,
     cash_out DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -1981,7 +1982,7 @@ CREATE TABLE cash_book_closings (
     reopened_by BIGINT UNSIGNED NULL,
     reopened_at TIMESTAMP NULL,
     reopen_reason VARCHAR(255) NULL,
-    UNIQUE KEY unique_cash_day (institution_id, date),
+    UNIQUE KEY unique_cash_day_revision (institution_id, date, revision),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 CREATE TABLE fee_refunds (

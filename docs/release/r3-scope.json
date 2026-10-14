@@ -176,7 +176,7 @@
     "CashBookLockTest",
     "CashBookTenancyTest"
    ],
-   "done": "`CashBookMathTest`: স্পেকের উদাহরণে প্রত্যাশিত সমাপনী = **19,400.00** (স্বাধীন গণনা `infra/spec-verify/refs_r11.py`-এর সাথে পয়সা-পর্যন্ত মেলে)। উৎস = ফি-রসিদ ও খরচ (`CashBookSourcesTest`); bKash/অনলাইন রসিদ নগদ-সারিতে নয়। বন্ধ দিনে রসিদ/খরচের পরিবর্তন 422 (`CashBookLockTest`); পুনরায় খোলা নতুন সারি, পুরনোটি মোছা নয় (D32)। এক স্কুল অন্যের ক্যাশবুক দেখে না।",
+   "done": "`CashBookMathTest`: স্পেকের উদাহরণে প্রত্যাশিত সমাপনী = **7,000.00**, difference **-20.00** (স্বাধীন গণনা `infra/spec-verify/refs_r11.py`-এর সাথে পয়সা-পর্যন্ত মেলে)। উৎস = ফি-রসিদ ও খরচ (`CashBookSourcesTest`); bKash/অনলাইন রসিদ নগদ-সারিতে নয়। বন্ধ দিনে cash রসিদ/খরচের পরিবর্তন 409 `day_closed` (`CashBookLockTest`); invalid input 422। Close/reopen/reclose নতুন consecutive revision সারি, latest revision status; পুরনোটি update/delete নয় (D32/D82)। Tenant institution lock cash writes ও close/reopen serialize করে; correction original/replacement cash date যাচাই করে। Positive cash fee receipts ও signed expenses একবার; আলাদা exact aggregation fixture, future source implementation নয় (D82)। এক স্কুল অন্যের ক্যাশবুক দেখে না।",
    "verify": [
     "php artisan test --filter=CashBook",
     "python3 infra/spec-verify/refs_r11.py"

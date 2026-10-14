@@ -117,6 +117,7 @@ CREATE TABLE cash_book_closings (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     date DATE NOT NULL,
+    revision INT UNSIGNED NOT NULL,
     opening_cash DECIMAL(12,2) NOT NULL DEFAULT 0,
     cash_in DECIMAL(12,2) NOT NULL DEFAULT 0,
     cash_out DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -130,7 +131,7 @@ CREATE TABLE cash_book_closings (
     reopened_by BIGINT UNSIGNED NULL,
     reopened_at TIMESTAMP NULL,
     reopen_reason VARCHAR(255) NULL,
-    UNIQUE KEY unique_cash_day (institution_id, date),
+    UNIQUE KEY unique_cash_day_revision (institution_id, date, revision),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 ```
@@ -144,7 +145,7 @@ POST /cashbook/{date}/close -> CashBookController@close [role:admin,accountant] 
 POST /cashbook/{date}/reopen -> CashBookController@reopen [role:admin] (module cashbook)
 ```
 - **লিখবেন ও সবুজ করবেন:** `CashBookMathTest` (docs/modules/finance-advanced.md), `CashBookSourcesTest` (docs/modules/finance-advanced.md), `CashBookLockTest` (docs/modules/finance-advanced.md), `CashBookTenancyTest` (docs/modules/finance-advanced.md)
-- **শেষ-শর্ত (Done When):** `CashBookMathTest`: স্পেকের উদাহরণে প্রত্যাশিত সমাপনী = **19,400.00** (স্বাধীন গণনা `infra/spec-verify/refs_r11.py`-এর সাথে পয়সা-পর্যন্ত মেলে)। উৎস = ফি-রসিদ ও খরচ (`CashBookSourcesTest`); bKash/অনলাইন রসিদ নগদ-সারিতে নয়। বন্ধ দিনে রসিদ/খরচের পরিবর্তন 422 (`CashBookLockTest`); পুনরায় খোলা নতুন সারি, পুরনোটি মোছা নয় (D32)। এক স্কুল অন্যের ক্যাশবুক দেখে না।
+- **শেষ-শর্ত (Done When):** `CashBookMathTest`: স্পেকের উদাহরণে প্রত্যাশিত সমাপনী = **7,000.00**, difference **-20.00** (স্বাধীন গণনা `infra/spec-verify/refs_r11.py`-এর সাথে পয়সা-পর্যন্ত মেলে)। উৎস = ফি-রসিদ ও খরচ (`CashBookSourcesTest`); bKash/অনলাইন রসিদ নগদ-সারিতে নয়। বন্ধ দিনে cash রসিদ/খরচের পরিবর্তন 409 `day_closed` (`CashBookLockTest`); invalid input 422। Close/reopen/reclose নতুন consecutive revision সারি, latest revision status; পুরনোটি update/delete নয় (D32/D82)। Tenant institution lock cash writes ও close/reopen serialize করে; correction original/replacement cash date যাচাই করে। Positive cash fee receipts ও signed expenses একবার; আলাদা exact aggregation fixture, future source implementation নয় (D82)। এক স্কুল অন্যের ক্যাশবুক দেখে না।
 - **যাচাই:** `php artisan test --filter=CashBook` · `python3 infra/spec-verify/refs_r11.py`
 
 ### TASK `R3.3` — ফি রিফান্ড ও reversal

@@ -620,6 +620,7 @@ POST /super/domains/{id}/reject | recheck        GET /super/reports/growth      
 ### Revision 12 — Full scope, part 2 (specs: `docs/modules/{finance-advanced,inventory,attendance-devices,accounting,donations,madrasa,syllabus,risk-alerts,admission-cycle,data-migration,communication-plus,quick-wins,platform-ops,public-website-plus}.md`)
 ```
 # finance-advanced  (module cashbook / fees)
+# Cashbook D82: close/reopen/reclose append consecutive immutable tenant/date revisions; latest revision defines status. Reopen is admin-only with required reason. Closed-day cash writes return 409 day_closed; invalid input returns 422. R3.2 aggregates positive cash fee receipts and signed cash expenses once, without future source implementations or duplicate refund/payroll outflows. Close/reopen and fee/expense cash writes share the tenant institution transaction lock; correction checks both original and replacement cash dates.
 GET  /cashbook?date=   /cashbook/range?from=&to=   /cashbook/{date}/report.pdf|xlsx      POST /cashbook/{date}/close { counted_cash, note? }   POST /cashbook/{date}/reopen { reason }  [admin]
 GET  /fee-refunds/refundable?receipt_no=     GET|POST /fee-refunds   GET /fee-refunds/{id}   POST /fee-refunds/{id}/approve | reject | process { gateway_refund_ref? }
 # inventory  (plan-gated)

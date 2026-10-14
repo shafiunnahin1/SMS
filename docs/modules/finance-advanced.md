@@ -53,7 +53,9 @@
 - **বন্ধ দিনে নতুন বা সংশোধিত নগদ-লেনদেন নিষিদ্ধ:** ওই `date`-এর `fee_payments`, `expenses`, স্টোর-বিক্রি, দান লিখতে গেলে 409 `day_closed`। ভুল ধরা পড়লে (ক) আজকের তারিখে সংশোধনী লাইন, অথবা (খ) Admin দিনটি **পুনরায় খুলে** (`status=reopened`, `reopen_reason` বাধ্যতামূলক, audit) সংশোধন করে আবার বন্ধ করে।
 - পরের দিনের `opening` = আগের **বন্ধ** দিনের `counted_cash` (না থাকলে `expected_closing`)। মাঝের কোনো দিন বন্ধ না হলে পরের দিন বন্ধ করা যায় না (ক্রম বজায়)। প্রথম দিনের opening হাতে।
 - ভবিষ্যৎ-তারিখের লেনদেন নিষিদ্ধ।
-- একই `(institution_id, date)` একটি সারি (`UNIQUE`)।
+- **D82:** close/reopen/reclose immutable snapshot/event সারি যোগ করে; আগের সারি update/delete নয় (অনুমোদিত tenant purge ব্যতিক্রম)। Positive unsigned `revision` প্রতি tenant/date-এ 1 থেকে ক্রমান্বয়ে বাড়ে; `UNIQUE(institution_id,date,revision)`। সর্বশেষ revision বর্তমান status নির্ধারণ করে। Reopen আগের close-এর amounts/actor fields কপি করে admin/reason/timestamp যোগ করে; reclose নতুন হিসাবের snapshot রাখে। Tenant institution row lock একই transaction-এ close/reopen ও cash write serialize করে।
+- **R3.2 / D82 source boundary:** positive cash fee receipts এবং signed cash expenses (expense reversal সহ) একবার করে গণনা। Payroll/refund expense আলাদাভাবে পুনরায় outflow নয়; একই refund-এর expense থাকলে negative fee reversal নগদ-total থেকে বাদ। Future store/donation/payroll/refund integration তাদের নিজস্ব task-এ; R3.2 সেগুলোর implementation করে না। উপরের broad reference fixture 7,000/-20 অক্ষত; R3.2 fee/expense aggregation-এর পৃথক exact fixture থাকবে, accounting-এর 19,400 fixture অক্ষত।
+- **D82 write lock:** closed cash day-এ fee collection এবং expense creation/correction/cancellation 409 `day_closed`; correction-এ original ও replacement date/method উভয় cash impact যাচাই। Invalid input 422।
 
 ### ৩.৩ প্রতিবেদন
 দৈনিক ক্যাশবুক (PDF/Excel): খাত-ভিত্তিক ইন/আউট, পদ্ধতি-ভিত্তিক (নগদ/bKash/ব্যাংক) সারাংশ, সংগ্রাহক-ভিত্তিক সংগ্রহ (কে কত তুলেছে), বন্ধ-অবস্থা, পার্থক্য-ইতিহাস। মাসিক সারাংশ। হিসাব-খাতা চালু থাকলে (`docs/modules/accounting.md`) ক্যাশবুক সেই নগদ-হিসাবের সাথে মেলানো হয়।
