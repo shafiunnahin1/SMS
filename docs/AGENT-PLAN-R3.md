@@ -51,7 +51,7 @@
 - **সীমা / নোট:** এই ধাপে কোনো নতুন টেবিল বা route নেই; শুধু কনফিগ ও গেট।
 - **পড়ুন:** `docs/RELEASE-3.md`, `docs/RELEASE-1.md`, `docs/modules/institution-types.md`
 - **লিখবেন ও সবুজ করবেন:** `ReleaseGateTest` (docs/modules/institution-types.md)
-- **শেষ-শর্ত (Done When):** Release 1-এর গ্রহণ-শর্ত (`docs/RELEASE-1.md` §৭) সব সত্য। `config("release.modules")` হুবহু `r3-scope.json`-এর `release_php.modules`। R3-মডিউলে `ModuleGate::allows()` শুধু ধরন, plan ও ঐচ্ছিক সুইচ ঠিক থাকলে true; অন্যথায় false (Super Admin override দিয়েও নয়)। `ReleaseGateTest` সবুজ।
+- **শেষ-শর্ত (Done When):** Release 1-এর গ্রহণ-শর্ত (`docs/RELEASE-1.md` §৭) সব সত্য। `config("release.modules")` হুবহু `r3-scope.json`-এর `release_php.modules`। D79 (D6/D47): R3-মডিউলে `ModuleGate::allows()` প্রথমে release gate যাচাই করে; release-এ না থাকলে explicit Super Admin override-সহ false। Release-এ থাকলে explicit override জেতে; override না থাকলে institution type এবং প্রয়োজনীয় opt-in সুইচ যাচাই হয়। Subscription plan module enablement নির্ধারণ করে না। `ReleaseGateTest` সবুজ।
 - **যাচাই:** `python3 infra/spec-verify/verify.py . --deep` · `php artisan test --filter=ReleaseGateTest`
 
 ### TASK `R3.1` — খরচ (expenses) — ক্যাশবুকের পূর্বশর্ত

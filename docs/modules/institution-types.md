@@ -84,7 +84,7 @@ return [
             'enrollment'    => ['bn' => 'ভর্তি',       'en' => 'Enrollment', 'ar' => 'التسجيل'],
             'tuition_fee'   => ['bn' => 'মাসিক ফি',    'en' => 'Monthly Fee', 'ar' => 'الرسوم الشهرية'],
         ],
-        'modules' => ['students','enrollments','attendance','fees','exams','cashbook','support','syllabus','data_migration','accounting','inventory','attendance_devices','risk_alerts','admission_cycle','result_sheets','student_leave','hr_payroll','sms','notices','reports',
+        'modules' => ['students','enrollments','attendance','fees','exams','cashbook','support','syllabus','data_migration','accounting','inventory','attendance_devices','risk_alerts','admission_cycle','result_sheets','student_leave','hr_payroll','teacher_attendance','donations','sms','notices','reports',
             'expenses','routine','homework','id_cards','leads','teacher_payouts','merit_list',
             'online_class','online_quiz','fee_installment','analytics','ai_assistant','multi_branch',
             'online_payment','public_site','question_bank','quiz'],

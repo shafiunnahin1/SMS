@@ -20,7 +20,7 @@
 | `inventory` | স্টোর/ইনভেন্টরি (moving-average, বিক্রি-রসিদ) | [`inventory.md`](inventory.md) | Phase 7 · #15 | plan | ✓✓✓– |
 | `attendance_devices` | RFID/QR/device-ID উপস্থিতি (স্বাক্ষরিত punch, টেমপ্লেট নয়) | [`attendance-devices.md`](attendance-devices.md) | Phase 7 · #16 | plan | ✓✓✓– |
 | `accounting` | হিসাব-খাতা: ভাউচার, বাজেট, ব্যাংক মিলান | [`accounting.md`](accounting.md) | Phase 7 · #17 | plan | ✓✓✓– |
-| `donations` | দান ও অনুদান (ফান্ড, দাতা, রসিদ) — **opt-in** | [`donations.md`](donations.md) | Phase 7 · #18 | opt-in | ✓✓–– |
+| `donations` | দান ও অনুদান (ফান্ড, দাতা, রসিদ) — **opt-in** | [`donations.md`](donations.md) | Phase 7 · #18 | opt-in | ✓✓✓– |
 | `hifz` | হিফজ ট্র্যাকিং, হিজরি, দ্বিভাষিক নাম, গ্রেড-লেবেল — **opt-in** | [`madrasa.md`](madrasa.md) | Phase 7 · #19 | opt-in | ✓✓–– |
 | `syllabus` | সিলেবাস, পাঠ-পরিকল্পনা, কভারেজ | [`syllabus.md`](syllabus.md) | Phase 7 · #20 | core | ✓✓✓✓ |
 | `question_bank` | প্রশ্নব্যাংক (শ্রেণি→বিষয়→অধ্যায়→টপিক), কনসেপ্ট, স্লাইড/বই/PDF, কেনা (প্রতিষ্ঠানের ওয়ালেট), প্রশ্নপত্র, লেখকের আয় — **অনুমোদিত, D65/D66** | [`question-bank.md`](question-bank.md) | QB.0–QB.8 (Task A-র পরে) | core | ✓✓✓✓ |
@@ -41,7 +41,7 @@
 | `academic_calendar` | একাডেমিক ক্যালেন্ডার, ছুটি, seat plan | [`academic-calendar.md`](academic-calendar.md) | Phase 7 · #1 | core | ✓✓–– |
 | `promotion_tc` | প্রমোশন, TC, সেশন | [`promotion-tc.md`](promotion-tc.md), [`academic-sessions.md`](academic-sessions.md) | Phase 7 · #4 | core | ✓✓–– |
 | `admit_card` | প্রবেশপত্র (exam_subjects-এর সময়সূচি থেকে) | [`advanced-features.md`](advanced-features.md) | Phase 7 · #5 | core | ✓✓–– |
-| `teacher_attendance` | শিক্ষকের উপস্থিতি | [`hr-payroll.md`](hr-payroll.md) | Phase 7 · #6 | core | ✓✓–– |
+| `teacher_attendance` | শিক্ষকের উপস্থিতি | [`hr-payroll.md`](hr-payroll.md) | Phase 7 · #6 | core | ✓✓✓– |
 | `hr_payroll` | স্টাফ, বেতন-কাঠামো, ইনক্রিমেন্ট/ডিক্রিমেন্ট, বোনাস, অগ্রিম, payroll, payslip, PF | [`staff-payroll.md`](staff-payroll.md), [`hr-payroll.md`](hr-payroll.md) (শুধু ছুটি) | Phase 7 · #6 | plan | ✓✓✓– |
 | `fee_installment` | ফি কিস্তি | [`extended-features.md`](extended-features.md) | Phase 7 · #7 | plan | ✓✓✓– |
 | `online_quiz` | অনলাইন পরীক্ষা/কুইজ | [`extended-features.md`](extended-features.md) | Phase 7 · #8 | plan | ✓✓✓– |

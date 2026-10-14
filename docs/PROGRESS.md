@@ -234,7 +234,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 
 ## Release R3  (`docs/AGENT-PLAN-R3.md`)  — start only after Release 1 is accepted (task `A`)
 
-- [ ] R3.0 — BLOCKED (G12): protected Done When conflicts with D6/D47 on plan gating and Super Admin override precedence. Evidence: `php artisan test --filter=ReleaseGateTest` 4 passed/11 assertions on R1 baseline; `uv run --offline --with PyYAML --no-project --python 3.14 infra/spec-verify/verify.py . --deep` ALL CHECKS PASSED (3 warnings). R3 config probe reverted; awaiting owner clarification in `docs/BLOCKED.md`.
+- [x] R3.0 — this checkpoint (D63/D79/D80) — R1 local acceptance A already owner-accepted under D63/D64; release config now R3 with exactly 17 scope modules, preserving QB roles/import behavior. D79 gate precedence and D80 type availability/opt-in verified. Commands: `php artisan test --filter=ReleaseGateTest` 6 passed/41 assertions; combined ReleaseGateTest/BootstrapTest 14/80; full `php artisan test` 559 passed/9,933 assertions; `npm test -- --run` 105 passed; `npm run lint:theme` 142 files/0 violations; `uv run --offline --with PyYAML --no-project --python 3.14 infra/spec-verify/verify.py . --deep` ALL CHECKS PASSED (3 existing warnings); `py -3.14 infra/guard/test_guard.py` 58/58; decision verifier inline mutation probe 4/4; generated R3/full plans fresh; progress check and staged guard pass. No R3.1 implementation, migration or UI changes; see final handoff event.
 - [ ] R3.1 — খরচ (expenses) — ক্যাশবুকের পূর্বশর্ত
 - [ ] R3.2 — দৈনিক ক্যাশবুক ও day-end close
 - [ ] R3.3 — ফি রিফান্ড ও reversal
@@ -250,3 +250,6 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 - [ ] R3.13 — টাকা ও বেতন-তথ্যের নিরাপত্তা — সামগ্রিক যাচাই
 - [ ] R3.14 — R3-এর কর্মক্ষমতা (ডেটা বাড়লে)
 - [ ] R3.A — R3 গ্রহণ-পরীক্ষা, তারপর চালু
+
+### R3.0 follow-up evidence — 2026-10-14
+D79 approved in owner commit 9873e84 and pushed. D79 acceptance source and generated R3 plans updated locally; generation freshness passes. ReleaseGateTest baseline remains 4 passed/11 assertions on R1; progress check passes. Required deep verifier exited 1 with 1 failure (D78 missing from contiguous D1..D79 sequence) and 3 warnings; all other checks passed. Owner clarified teacher_attendance/donations type availability: school, college, coaching; not private_batch. See owner/decision-D80.md and the latest blocker below. R3.0 is incomplete; no release switch, application config/test update or implementation checkpoint commit/push.

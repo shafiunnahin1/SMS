@@ -229,14 +229,23 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
     touches_code = any(p.startswith(CODE_DIRS) for s, p in files)
     task = (tr.get('task') or [None])[0]
     prog_before = show(root, parent, 'docs/PROGRESS.md') or ''; done_before = progress_done(prog_before)
+    # D63: the release-switch task belongs to R3, although its parent still ships R1.
+    # Admit only R3.0 after acceptance; C12 still checks the exact release module list.
+    task_specs = st['tasks']
+    if (task == 'R3.0' and st['current'] == 'R1' and 'A' in done_before
+            and (tr.get('release') or [None])[0] == 'R3'
+            and any(p == 'api/config/release.php' for s, p in files)):
+        target = release_state(root, commit)
+        if target['current'] == 'R3' and task in target['tasks']:
+            task_specs = {**task_specs, task: target['tasks'][task]}
     if touches_code:
         if not task: rep.fail('C9', commit, 'a commit that changes api/ or frontend/ needs a `Task: <id>` trailer (task ids: docs/AGENT-PLAN-R*.md)')
-        elif task not in st['tasks']:
+        elif task not in task_specs:
             why = f'task {task} belongs to a later release (current: {st["current"]})' if task in st['later_tasks'] else f'unknown task id {task}'
             rep.fail('C9', commit, why)
         else:
-            if st['tasks'][task].get('blocked'): rep.fail('C9', commit, f"task {task} is BLOCKED by a decision: {re.sub(r'[*`]', '', st['tasks'][task]['blocked'])[:140]}")
-            missing = [d for d in norm_deps(st['tasks'][task].get('depends_on')) if d not in done_before]
+            if task_specs[task].get('blocked'): rep.fail('C9', commit, f"task {task} is BLOCKED by a decision: {re.sub(r'[*`]', '', task_specs[task]['blocked'])[:140]}")
+            missing = [d for d in norm_deps(task_specs[task].get('depends_on')) if d not in done_before]
             if missing: rep.fail('C9', commit, f'task {task} depends on {missing}, which are not [x] in docs/PROGRESS.md yet - do the tasks in order')
         if not any(p == 'docs/PROGRESS.md' for s, p in files): rep.fail('C10', commit, 'a code commit must update docs/PROGRESS.md in the same commit')
     for s, p in files:

@@ -30,12 +30,27 @@ class BootstrapTest extends TestCase
             ->assertJsonPath('data.institution.slug', 'alokito-coaching')
             ->assertJsonPath('data.terms.batch.bn', 'ব্যাচ')
             ->assertJsonPath('data.theme.layout_key', 'sidebar-mini')
-            ->assertJsonPath('data.release.id', 'R1');
+            ->assertJsonPath('data.release.id', 'R3');
 
         $this->assertCount(8, $res->json('data.theme.tokens'));
-        $this->assertEqualsCanonicalizing(config('release.modules'), $res->json('data.modules'), 'coaching gets every R1 module, nothing unshipped');
+        $this->assertEqualsCanonicalizing(array_values(array_diff(config('release.modules'), ['donations'])), $res->json('data.modules'), 'D80: coaching gets every R3 module except opt-in donations');
         $this->assertContains('student', $res->json('data.roles'), 'D68: R1 ships student login for the question-bank portal');
         $this->assertSame(['bn', 'en'], $res->json('data.locales.enabled'));
+
+        $optedCoaching = $this->makeInstitution('opted-coaching', 'coaching');
+        $optedCoaching->update(['settings' => ['opt_in_modules' => ['donations']]]);
+        $optedIn = $this->api('GET', $this->hostOf($optedCoaching), 'bootstrap')->assertOk();
+        $this->assertEqualsCanonicalizing(config('release.modules'), $optedIn->json('data.modules'));
+    }
+
+    public function test_private_batch_type_excludes_d80_modules(): void
+    {
+        $this->makeInstitution('private-r3', 'private_batch');
+        $res = $this->api('GET', 'private-r3.schoolapp.com', 'bootstrap')->assertOk();
+        $this->assertNotContains('teacher_attendance', config('institution_types.private_batch.modules'));
+        $this->assertNotContains('donations', config('institution_types.private_batch.modules'));
+        $this->assertNotContains('teacher_attendance', $res->json('data.modules'));
+        $this->assertNotContains('donations', $res->json('data.modules'));
     }
 
     public function test_the_central_host_says_is_central_with_the_platform_theme(): void

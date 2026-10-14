@@ -24,7 +24,7 @@
    "tests": [
     "ReleaseGateTest"
    ],
-   "done_when": "Release 1-এর গ্রহণ-শর্ত (`docs/RELEASE-1.md` §৭) সব সত্য। `config(\"release.modules\")` হুবহু `r3-scope.json`-এর `release_php.modules`। R3-মডিউলে `ModuleGate::allows()` শুধু ধরন, plan ও ঐচ্ছিক সুইচ ঠিক থাকলে true; অন্যথায় false (Super Admin override দিয়েও নয়)। `ReleaseGateTest` সবুজ।",
+   "done_when": "Release 1-এর গ্রহণ-শর্ত (`docs/RELEASE-1.md` §৭) সব সত্য। `config(\"release.modules\")` হুবহু `r3-scope.json`-এর `release_php.modules`। D79 (D6/D47): R3-মডিউলে `ModuleGate::allows()` প্রথমে release gate যাচাই করে; release-এ না থাকলে explicit Super Admin override-সহ false। Release-এ থাকলে explicit override জেতে; override না থাকলে institution type এবং প্রয়োজনীয় opt-in সুইচ যাচাই হয়। Subscription plan module enablement নির্ধারণ করে না। `ReleaseGateTest` সবুজ।",
    "verify": [
     "python3 infra/spec-verify/verify.py . --deep",
     "php artisan test --filter=ReleaseGateTest"

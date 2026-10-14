@@ -164,6 +164,24 @@ def main():
     write(base_dir, 'api/config/release.php', FULL_PHP(sorted(FULLS['modules']))); write(base_dir, 'docs/PROGRESS.md', acc.replace(f'- [ ] {TASK0} ', f'- [x] {TASK0} ', 1)); git(base_dir, 'add', '-A'); git(base_dir, 'commit', '-q', '-m', f'chore: launch\n\nTask: {TASK0}\nRelease: FULL')
     code, out = run_guard(base_dir, 'base4', 'stage4'); good = code == 0
     print(('ok    ' if good else 'WRONG ') + 'clean: the COMPLETE release flip after every milestone is accepted' + ('' if good else '\n' + out[-400:])); bad += 0 if good else 1
+    # D63 R1 -> R3 transition admits only R3.0, preserving C9/C12 scope gates.
+    git(base_dir, 'checkout', '-q', '-B', 'r3-accepted', 'base')
+    accepted = PROGRESS.replace('- [ ] A ', '- [x] A ', 1)
+    write(base_dir, 'docs/PROGRESS.md', accepted)
+    git(base_dir, 'add', '-A'); git(base_dir, 'commit', '-q', '-m', 'owner: accept R1'); git(base_dir, 'tag', 'r3-parent')
+    for label, task_id, mods, expected in [
+        ('clean: R3.0 release switch after R1 acceptance', 'R3.0', r3s['release_php']['modules'], None),
+        ('C9 later R3 task cannot piggyback on the release switch', 'R3.1', r3s['release_php']['modules'], 'C9'),
+        ('C12 R3.0 still rejects an incorrect module list', 'R3.0', r3s['release_php']['modules'][:-1], 'C12'),
+    ]:
+        git(base_dir, 'checkout', '-q', '-B', 'r3-probe', 'r3-parent')
+        write(base_dir, 'api/config/release.php', "<?php\nreturn ['id' => 'R3', 'modules' => [%s]];\n" % ', '.join(f"'{m}'" for m in mods))
+        write(base_dir, 'docs/PROGRESS.md', accepted.replace(f'- [ ] {task_id} ', f'- [x] {task_id} ', 1))
+        git(base_dir, 'add', '-A'); git(base_dir, 'commit', '-q', '-m', f'feat: release switch\n\nTask: {task_id}\nRelease: R3')
+        code, out = run_guard(base_dir, 'r3-parent', 'r3-probe')
+        good = code == 0 if expected is None else code == 1 and expected in out
+        n += 1; bad += 0 if good else 1
+        print(('ok    ' if good else 'WRONG ') + label + ('' if good else '\n' + out[-400:]))
     git(base_dir, 'checkout', '-q', 'main'); write(base_dir, 'api/app/Services/A.php', "<?php\ndd($x);\n"); git(base_dir, 'add', '-A')
     r = subprocess.run([sys.executable, GUARD, '--root', base_dir, '--staged'], capture_output=True, text=True); good = r.returncode == 1 and 'C7' in r.stdout
     print(('ok    ' if good else 'WRONG ') + '--staged mode catches a violation in the index' + ('' if good else '\n' + r.stdout[-300:])); bad += 0 if good else 1

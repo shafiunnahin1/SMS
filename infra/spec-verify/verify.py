@@ -119,7 +119,14 @@ closures=re.findall(r"Route::(?:get|post|put|patch|delete|any|match)\([^\n]*,\s*
 steps=set(re.findall(r'^###? Step (\d+\.\d+[a-z]?)',rd('docs/BUILD-SEQUENCE.md'),re.M))
 ok(not [r for r in set(re.findall(r'(?:Phase \d+ · |\bStep )(\d+\.\d+[a-z]?)',idx)) if r not in steps],'steps referenced by the module index exist')
 ld=rd('docs/LOCKED-DECISIONS.md'); top=max(int(n) for n in re.findall(r'^\| D(\d+) \|',ld,re.M))
-ok(all(f'| D{n} |' in ld for n in range(1,top+1)),f'decisions D1..D{top} all present')
+# D80 reserves D78 for an unapproved proposal; it cannot authorize a spec reference.
+_reserved_d78 = bool(re.search(r'^\| D80 \|[^\n]*D78 is reserved for the unapproved wallet proposal', ld, re.M))
+_d78_metadata = {'AGENT-HANDOFF.md', 'docs/PROGRESS.md', 'docs/BLOCKED.md', 'owner/decision-D78.md', 'owner/decision-D80.md'}
+_d78_undefined = [f for f in mds if f not in _d78_metadata and not f.startswith('docs/reports/')
+                  and re.search(r'\bD78\b', '\n'.join(line for line in rd(f).splitlines() if not (f == 'docs/LOCKED-DECISIONS.md' and line.startswith('| D80 |'))))]
+ok(all(f'| D{n} |' in ld or (n == 78 and _reserved_d78) for n in range(1,top+1))
+   and ('| D78 |' in ld or not _d78_undefined),
+   f'decisions D1..D{top} all present (D80 reserved D78 gap only); no undefined D78 spec references {_d78_undefined}')
 ok(all(int(n)<=top for f in mds if not f.startswith('docs/reports/') for n in re.findall(r'\bD(\d{1,2})\b',rd(f))),'no reference to an undefined decision number')
 
 # ---- 5. claims that later decisions superseded -------------------------------------------------------------------------------

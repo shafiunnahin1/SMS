@@ -440,7 +440,8 @@
    "gated_routes": 21,
    "types": [
     "স্কুল",
-    "কলেজ"
+    "কলেজ",
+    "কোচিং"
    ],
    "spec_files": [
     "donations.md"
@@ -782,7 +783,8 @@
    "gated_routes": 2,
    "types": [
     "স্কুল",
-    "কলেজ"
+    "কলেজ",
+    "কোচিং"
    ],
    "spec_files": [
     "hr-payroll.md"
