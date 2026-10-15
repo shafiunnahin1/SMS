@@ -12,6 +12,7 @@ use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
 use App\Http\Controllers\SuperAdmin\{InstitutionController, TenantPurgeController, UniversalSmsController};
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
+use App\Http\Controllers\Hr\{StaffController,StaffAttendanceController,TeacherAttendanceController,LeaveTypeController,LeaveController};
 use Illuminate\Support\Facades\Route;
 
 // Structure: docs/templates/laravel-core-files.md "routes/api.php". Every group runs on exactly one kind of host.
@@ -218,6 +219,36 @@ Route::prefix('v1')->group(function () {
         });
 
         // ── Admin + Teacher: attendance (Step 4.3; Spike S5b) ──
+        // D85 / R3.4: ordinary staff and leave records; no payroll execution.
+        Route::middleware(['role:admin','module:teacher_attendance'])->group(function () {
+            Route::get('/teacher-attendance',[TeacherAttendanceController::class,'index']);
+            Route::post('/teacher-attendance',[TeacherAttendanceController::class,'store']);
+        });
+        Route::middleware(['role:admin,accountant','module:hr_payroll'])->prefix('hr')->group(function () {
+            Route::get('/staff',[StaffController::class,'index']);
+            Route::post('/staff',[StaffController::class,'store']);
+            Route::get('/staff/{id}',[StaffController::class,'show']);
+            Route::put('/staff/{id}',[StaffController::class,'update']);
+            Route::delete('/staff/{id}',[StaffController::class,'destroy']);
+            Route::get('/staff-attendance',[StaffAttendanceController::class,'index']);
+            Route::post('/staff-attendance',[StaffAttendanceController::class,'store']);
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/leave-types',[LeaveTypeController::class,'index']);
+                Route::post('/leave-types',[LeaveTypeController::class,'store']);
+                Route::put('/leave-types/{id}',[LeaveTypeController::class,'update']);
+                Route::get('/leaves',[LeaveController::class,'index']);
+                Route::post('/leaves',[LeaveController::class,'store']);
+                Route::get('/leaves/balance',[LeaveController::class,'balance']);
+            });
+        });
+        Route::middleware(['role:admin,teacher','module:hr_payroll'])->group(function () {
+            Route::patch('/hr/leaves/{id}/{action}',[LeaveController::class,'transition'])->where('action','approve|reject|cancel');
+        });
+        Route::middleware(['role:teacher','module:hr_payroll'])->group(function () {
+            Route::get('/teacher/leave',[LeaveController::class,'mine']);
+            Route::post('/teacher/leave',[LeaveController::class,'apply']);
+        });
+
         Route::middleware(['role:admin,teacher', 'module:attendance'])->group(function () {
             Route::get('/attendance',                     [AttendanceController::class, 'index']);    // ?batch_id=&date=
             Route::post('/attendance',                    [AttendanceController::class, 'store']);    // { batch_id, date, records[] }

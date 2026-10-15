@@ -47,6 +47,11 @@ class TenantIsolationTest extends TestCase
     private function foreignIds(): array
     {
         return [
+            'GET api/v1/hr/staff/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
+            'PUT api/v1/hr/staff/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
+            'DELETE api/v1/hr/staff/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
+            'PUT api/v1/hr/leave-types/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\LeaveType::factory()->create()->id),
+            'PATCH api/v1/hr/leaves/{id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\LeaveApplication::factory()->create()->id),
             'GET api/v1/fee-refunds/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeRefund::factory()->create()->id),
             // Literal {action} checks routing here; RefundCapTest exercises all three actual actions with foreign root IDs.
             'POST api/v1/fee-refunds/{id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeRefund::factory()->create()->id),

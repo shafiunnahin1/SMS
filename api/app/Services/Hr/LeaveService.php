@@ -156,8 +156,10 @@ class LeaveService
         $people = $state === 'requested' ? User::where('institution_id', Tenancy::current()->id)->where('role', 'admin')->where('is_active', true)->get() :
             ($row->user_id ? User::where('institution_id', Tenancy::current()->id)->whereKey($row->user_id)->get() : collect([StaffMember::find($row->staff_id)]));
         foreach ($people->filter() as $person) {
-            if (!$person->phone || !(($person->notification_preferences ?? [])['sms'] ?? true)) continue;
-            SendSmsJob::dispatch($person->phone, __('hr.sms_'.$state, [], $person->locale ?? Tenancy::current()->default_language ?? 'bn'),
+            $recipient = $person instanceof StaffMember && $person->user_id
+                ? User::where('institution_id', Tenancy::current()->id)->whereKey($person->user_id)->first() : $person;
+            if (!$person->phone || !(($recipient?->notification_preferences ?? [])['sms'] ?? true)) continue;
+            SendSmsJob::dispatch($person->phone, __('hr.sms_'.$state, [], $recipient?->locale ?? Tenancy::current()->default_language ?? 'bn'),
                 Tenancy::current()->id, null, true)->afterCommit();
         }
     }
