@@ -182,8 +182,8 @@
       ],
       "evidence_level": "read_only_file_inspection",
       "accepted": false,
-      "observation": "QB.13/QB.14 are complete per accepted historical progress; current curriculum/editor/rich-content surfaces exist. Older backlog incompletion is historical.",
-      "gap": "Per-format source metadata-driven authoring and response/editor contracts still need semantic comparison; no runtime parity result in this slice.",
+      "observation": "QB.13/QB.14 are complete per accepted historical progress; current curriculum/editor/rich-content surfaces exist. Older backlog incompletion is historical. Additional static roster: 75 literal seed declarations / 74 unique slugs; application occurs twice with cognitive and formal-writing meanings. Persisted active types/contracts remain unknown.",
+      "gap": "Per-format source metadata-driven authoring and response/editor contracts still need semantic comparison; no runtime parity result in this slice. Duplicate source slug/default/interaction precedence must be resolved in owner-reviewed canonical mappings; do not classify by slug alone.",
       "blocked_by": [
         "format_visual_mapping",
         "refined_scope"
@@ -232,8 +232,8 @@
       ],
       "evidence_level": "read_only_file_inspection",
       "accepted": false,
-      "observation": "Read-only constant extraction: DIAGRAM_VERSIONS=32 and GRAPH_TYPES=27. Dataset CRUD/capabilities routes present. No matching target GraphDataset surface found in inspected paths.",
-      "gap": "Counts are import-registry counts; each editor/import/render classification, version contract and user/tenant/guest dataset ownership remains unresolved.",
+      "observation": "Read-only constant extraction: DIAGRAM_VERSIONS=32 and GRAPH_TYPES=27. Dataset CRUD/capabilities routes present. No matching target GraphDataset surface found in inspected paths. Static roster separates 37 initially planned base launcher entries, 41 lazy modules / 43 mode declarations and importer membership; 11 lazy modes lie outside the 32 import diagram modes.",
+      "gap": "Counts are import-registry counts; each editor/import/render classification, version contract and user/tenant/guest dataset ownership remains unresolved. Loader/launcher/importer coverage differences need per-mode path/fixture classification; static asset existence does not establish editability.",
       "blocked_by": [
         "format_visual_mapping",
         "dataset_ownership",
@@ -446,5 +446,7 @@
       ],
       "required_acceptance": "All planned tasks plus portal/tenant/security/persistence/E2E, import-scale, OMR regression and approved runtime acceptance prerequisites pass."
     }
-  ]
+  ],
+  "static_inventory": "docs/release/r21-static-inventory.json",
+  "static_inventory_note": "D83 file-only extension at target planning checkpoint 172fb20; no capability acceptance or source execution."
 }

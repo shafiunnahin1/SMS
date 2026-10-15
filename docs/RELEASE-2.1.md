@@ -21,6 +21,8 @@ Read-only file inspection on 2026-10-15:
 
 [Machine-readable gap map](release/r21-gap-map.json) records anchors, observed overlap, gaps, blockers and required future evidence. It is an incomplete planning inventory, not the executable scope/plan. Its `accepted` flags remain false. Negative findings mean no matching declaration was found in the inspected surfaces, not an exhaustive proof that no implementation could exist anywhere.
 
+Static roster follow-up: `docs/release/r21-static-inventory.json` and `docs/release/r21-static-audit.md` distinguish seed declarations, duplicate slugs, launcher/loader/importer layers and source hashes. The 75 seed rows / 74 unique slugs are not active DB counts; 41 lazy modules / 43 mode declarations are not proven editor counts. All capability and fixture gates remain open.
+
 Confirmed observations:
 
 - School QB curriculum, structured content, paper, pricing/purchase/student order and writer earnings surfaces already exist. Historical QB.13/QB.14 completion supersedes the older parity backlog's incomplete snapshot; reuse those baselines and their existing contracts.
