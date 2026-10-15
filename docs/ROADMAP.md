@@ -19,11 +19,14 @@
 | **R1.1** | নোটিশ, খরচ, support ticket, tenant export/backup, ছাত্র-লগইন, admit card + ID কার্ড, রুটিন, ডেটা-মাইগ্রেশন উইজার্ড (ক্রম গ্রাহকের প্রতিক্রিয়ায়) | Step 5.6, 6.8, 8.4 + Phase 7 অংশ |
 | **R2 Institution depth** (+ R1 থেকে সরানো: অনলাইন ফি-পেমেন্ট, UI-Pack B/C, থিম-এডিটর, custom domain, পাবলিক সাইট) | কোচিং/প্রাইভেট ব্যাচ/কলেজ ধরন, পাবলিক সাইট (+ প্লাস), **একাডেমিক-অ্যাডভান্সড**, UI-Pack পাতার সাজ (C), আরবি ও মাদ্রাসা | Phase 6 + 6.5–6.6 |
 | **R3 Money & People** | ক্যাশবুক, refund/reversal, **কর্মচারী ও বেতন/payroll**, স্টোর/ইনভেন্টরি — **পূর্ণ স্কোপ ও ১৬-ধাপ পরিকল্পনা: `docs/RELEASE-3.md`, `docs/AGENT-PLAN-R3.md`** | Phase 7 (#6 ইত্যাদি) |
+| **R2.1 Exam Management Parity, Import/OMR (D83)** | `docs/RELEASE-2.1.md`; planning/intake reconciliation only before R3.A acceptance; runtime remains R3 | After R3.A, before R4/later; preserve existing R1.1/R2 prerequisites |
 | **R4 Campus & devices** | লাইব্রেরি, পরিবহন, হোস্টেল, অনলাইন ক্লাস/কুইজ ইত্যাদি + উপস্থিতি-device | Phase 7 |
 | **R5 Platform business** | Support Ticket, কুপন, কর/VAT, impersonation, tenant export/backup/restore, `saas-metrics` | নতুন Phase |
 | **R6 Integrations** | বাংলা QR, সরাসরি Nagad, gateway refund API, ব্যাংক disbursement | তৃতীয়-পক্ষের ডকুমেন্ট এলে |
 | **R7 Later** | মোবাইল অ্যাপ, PWA, AI সহকারী, বাস GPS | Phase 10 |
 আপনি যে ফিচার আগে চান জানান — আমি তার নির্ভরতা (§১) দেখিয়ে কী পিছাবে তা বলব। নিজে থেকে কিছু বাদ দেব না।
+
+D83 planning artifacts pending creation: `docs/release/r21-scope.json`, `docs/release/r21-plan.json`, `docs/AGENT-PLAN-R2.1.md`. Current evidence: `docs/release/r21-gap-map.json`. These pending artifacts do not activate executable tasks; R2.1.0 requires R3.A acceptance and refined approved scope. D83 planning remains incomplete.
 
 ## ৩. খতিয়ান — প্রতিটি ফিচার
 **স্পেক:** ✅ লেখা · ⏳ লেখা বাকি · 🔌 তৃতীয়-পক্ষের তথ্যের অপেক্ষায় (কাঠামো আছে) · 🧑‍⚖️ মালিক/আইনি সিদ্ধান্তের অপেক্ষায়।
