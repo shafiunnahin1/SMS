@@ -1,6 +1,6 @@
 # R3.3 fee refund contract — owner review draft
 
-Status: PROPOSED. No new locked decision, schema change or implementation authorization is established by this draft. Prepared 2026-10-15 after the owner's instruction to proceed to the next task.
+Status: OWNER APPROVED in chat on 2026-10-15. All seven proposed resolutions below were approved without alteration. Separate owner locked-decision commit (next unused number D84) is pending before protected specification/schema/implementation changes. Original proposal prepared 2026-10-15.
 
 ## Evidence and blockers
 
