@@ -239,6 +239,8 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
         if target['current'] == 'R3' and task in target['tasks']:
             task_specs = {**task_specs, task: target['tasks'][task]}
     if touches_code:
+        if task and re.fullmatch(r'R2\.1\.\d+', task):
+            rep.fail('C9', commit, 'D83 permits R2.1 planning only; executable scope needs owner approval and R3.A acceptance')
         if not task: rep.fail('C9', commit, 'a commit that changes api/ or frontend/ needs a `Task: <id>` trailer (task ids: docs/AGENT-PLAN-R*.md)')
         elif task not in task_specs:
             why = f'task {task} belongs to a later release (current: {st["current"]})' if task in st['later_tasks'] else f'unknown task id {task}'
@@ -255,6 +257,8 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
             if un: rep.fail('C10', commit, f'PROGRESS: a done line was removed or un-checked: {un[0].strip()[:60]}')
             newly = [re.search(r'\]\s*([\w.]+)', x).group(1) for x in a if re.match(r'\s*[-*]\s*\[[xX]\]\s*[\w.]+', x)]
             newly = [x for x in newly if x not in done_before]
+            if any(re.fullmatch(r'R2\.1\.\d+', x) for x in newly):
+                rep.fail('C10', commit, 'D83 planning cannot check off R2.1 feature tasks, even in a documentation-only commit')
             if task and any(x != task for x in newly): rep.fail('C10', commit, f'PROGRESS: this commit is `Task: {task}` but also checks off {[x for x in newly if x != task]}')
             if newly and not task: rep.fail('C10', commit, 'PROGRESS: a task was checked off in a commit without a `Task:` trailer')
     # ---- C11 size
@@ -269,6 +273,9 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
             rel = (tr.get('release') or [None])[0]; body = show(root, commit, p) or ''
             mods = re.findall(r"'(\w+)'", (re.search(r"'modules'\s*=>\s*\[([^\]]*)\]", body) or [None, ''])[1])
             want = None
+            declared = re.search(r"'id'\s*=>\s*'(R[\d.]+)'", body)
+            if rel == 'R2.1' or (declared and declared.group(1) == 'R2.1'):
+                rep.fail('C12', commit, 'D83 does not authorize an R2.1 runtime switch; explicit owner-approved task/module scope and acceptance are required')
             if rel == 'R1' and st['scope1']: want = st['scope1']['modules']
             elif rel == 'R3' and st['scope3']: want = st['scope3']['release_php']['modules']
             elif rel == 'FULL' and st['full']: want = sorted(st['full']['modules'])

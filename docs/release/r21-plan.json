@@ -1,0 +1,526 @@
+{
+  "release": "R2.1",
+  "decision": "D83",
+  "phase": "planning_only",
+  "implementation_authorized": false,
+  "placement": {
+    "after": "R3.A",
+    "before": "R4",
+    "first_executable_task": "R2.1.0",
+    "runtime_switch_authorized": false
+  },
+  "source_policy": "read_only_files_no_db_no_execution",
+  "prerequisite_note": "Existing auth/QB/exam/enrollment/purchase and R1.1/R2 prerequisites remain; task order is imported sequence, not permission for parallel execution.",
+  "runtime_switch": {
+    "authorized": false,
+    "task_id": null,
+    "required_acceptance": [
+      "R3.A",
+      "R2.1.9"
+    ],
+    "requires_owner_refinement": true
+  },
+  "authorized_new_objects": {
+    "tables": [],
+    "routes": [],
+    "modules": [],
+    "packages": []
+  },
+  "regression_commands": [
+    {
+      "cwd": "api",
+      "command": "php artisan test",
+      "purpose": "future canonical backend regression; not parity proof"
+    },
+    {
+      "cwd": "frontend",
+      "command": "npm test -- --run",
+      "purpose": "future frontend regression; not persistence proof"
+    },
+    {
+      "cwd": "frontend",
+      "command": "npm run lint:theme",
+      "purpose": "future theme/RTL regression; not E2E proof"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "R2.1.0",
+      "title": "Source/target inventory, fixtures and measured baseline",
+      "depends_on": [
+        "R3.A"
+      ],
+      "capabilities": [
+        "baseline"
+      ],
+      "executable": false,
+      "accepted": false,
+      "blocked_by": [
+        "r3_acceptance",
+        "refined_scope",
+        "source_execution"
+      ],
+      "existing_entities": [],
+      "existing_route_anchors": [],
+      "roles": [
+        "super_admin"
+      ],
+      "unresolved_contracts": [
+        "Approved source execution environment and fixture IDs",
+        "Complete source route/action inventory and measured OMR/performance baseline"
+      ],
+      "acceptance_ids": [
+        "AC01"
+      ],
+      "future_fixture_command": null,
+      "done_when": "Approved baseline environment; observed performance/OMR results and source fixture IDs, not registry or UI presence."
+    },
+    {
+      "id": "R2.1.1",
+      "title": "Identity, canonical membership and separate role portals",
+      "depends_on": [
+        "R2.1.0"
+      ],
+      "capabilities": [
+        "identity_and_membership",
+        "writer_moderator_portals"
+      ],
+      "executable": false,
+      "accepted": false,
+      "blocked_by": [
+        "external_services",
+        "identity_mapping",
+        "refined_scope"
+      ],
+      "existing_entities": [
+        "api/app/Models/User.php",
+        "api/app/Models/Institution.php",
+        "api/app/Models/Student.php",
+        "api/app/Models/Enrollment.php"
+      ],
+      "existing_route_anchors": [
+        "api/routes/api.php::LoginController::login",
+        "api/routes/api.php::QbWriterController::store"
+      ],
+      "roles": [
+        "super_admin",
+        "content_writer",
+        "content_moderator",
+        "admin",
+        "teacher",
+        "student",
+        "parent"
+      ],
+      "unresolved_contracts": [
+        "Source-to-canonical account/role/member mapping and Google/OTP conflict policy",
+        "Distinct post-login portal/action permissions without parallel auth"
+      ],
+      "acceptance_ids": [
+        "AC02",
+        "AC03",
+        "AC04",
+        "AC05"
+      ],
+      "future_fixture_command": null,
+      "done_when": "Reviewed source-to-target identity/role/member table; session/OTP/link-conflict, assignment and linked-child isolation fixtures.; Distinct portal route/navigation E2E plus writer cannot publish, moderator cannot author/earn/withdraw and tenant cannot enter central tools."
+    },
+    {
+      "id": "R2.1.2",
+      "title": "Curriculum, authoring formats, visuals, datasets and finder",
+      "depends_on": [
+        "R2.1.1"
+      ],
+      "capabilities": [
+        "curriculum_and_authoring",
+        "media_and_structured_content",
+        "visual_modes_and_datasets",
+        "finder"
+      ],
+      "executable": false,
+      "accepted": false,
+      "blocked_by": [
+        "dataset_ownership",
+        "format_visual_mapping",
+        "refined_scope"
+      ],
+      "existing_entities": [
+        "api/app/Models/QbQuestion.php",
+        "api/app/Models/QbQuestionType.php",
+        "api/app/Models/QbQuestionItem.php",
+        "api/app/Models/QbQuestionRevision.php",
+        "api/app/Models/QbMedia.php"
+      ],
+      "existing_route_anchors": [
+        "api/routes/api.php::QbQuestionController::store",
+        "api/routes/api.php::QbQuestionController::update",
+        "api/routes/api.php::QbQuestionController::publish"
+      ],
+      "roles": [
+        "super_admin",
+        "content_writer",
+        "content_moderator"
+      ],
+      "unresolved_contracts": [
+        "Per-format response/editor and per-mode visual capability/version mapping",
+        "Dataset ownership, limits, stale-write and in-use delete contract; calibrated finder fixtures"
+      ],
+      "acceptance_ids": [
+        "AC06",
+        "AC07",
+        "AC08",
+        "AC09",
+        "AC14",
+        "AC15"
+      ],
+      "future_fixture_command": null,
+      "done_when": "Every supported format: create/save/reopen/edit/preview/export; D72-D74 layout, metadata, mixed items and safe renderer regressions.; Upload/attach/replace/remove, private-media authorization, mixed-child/stimulus/source metadata persistence and image transform fidelity.; Per-mode source editor/importer/renderer anchors and fixtures; editable CRUD/reopen/export, import/read-only preservation, stale-version/in-use deletion and ownership denial checks.; Labeled ordering/ambiguity fixtures, reviewed thresholds and locked-answer leakage checks; uncertain matches require manual selection."
+    },
+    {
+      "id": "R2.1.3",
+      "title": "Versioned JSON/TOON staging and lossless bulk import",
+      "depends_on": [
+        "R2.1.2"
+      ],
+      "capabilities": [
+        "json_and_toon"
+      ],
+      "executable": false,
+      "accepted": false,
+      "blocked_by": [
+        "canonical_import_scope",
+        "format_visual_mapping",
+        "refined_scope"
+      ],
+      "existing_entities": [
+        "api/app/Models/QbQuestion.php",
+        "api/app/Models/QbImportMap.php"
+      ],
+      "existing_route_anchors": [],
+      "roles": [
+        "super_admin",
+        "content_writer"
+      ],
+      "unresolved_contracts": [
+        "Canonical staged schema, version adapters, parser/dependencies, role/action permissions and selected draft persistence",
+        "Chunk size/retry/idempotency and exact decoded LaTeX/TOON validation fixtures"
+      ],
+      "acceptance_ids": [
+        "AC06",
+        "AC10",
+        "AC11"
+      ],
+      "future_fixture_command": null,
+      "done_when": "Versioned JSON v1/v2 and TOON examples; field-path errors; exact accepted/failed counts; valid decoded LaTeX unchanged; resumable/idempotent 10k fixture and selected draft persistence."
+    },
+    {
+      "id": "R2.1.4",
+      "title": "PDF extraction, staged review/edit and explicit finalization",
+      "depends_on": [
+        "R2.1.2"
+      ],
+      "capabilities": [
+        "pdf_staging"
+      ],
+      "executable": false,
+      "accepted": false,
+      "blocked_by": [
+        "canonical_import_scope",
+        "external_services",
+        "refined_scope"
+      ],
+      "existing_entities": [
+        "api/app/Models/QbQuestion.php",
+        "api/app/Models/QbMedia.php"
+      ],
+      "existing_route_anchors": [],
+      "roles": [
+        "super_admin",
+        "content_writer"
+      ],
+      "unresolved_contracts": [
+        "Extractor/OCR inputs, limits/dependencies and unreadable-page policy",
+        "Page provenance, staged schema/API, edits/reopen/duplicates/finalization permissions"
+      ],
+      "acceptance_ids": [
+        "AC10",
+        "AC12"
+      ],
+      "future_fixture_command": null,
+      "done_when": "Page-range, hybrid/scanned unresolved states, source-page provenance, staged edit/reopen/finalize, duplicates, LaTeX and explicit publication boundaries."
+    },
+    {
+      "id": "R2.1.5",
+      "title": "Canonical papers, folders, variants, blueprints and print",
+      "depends_on": [
+        "R2.1.2"
+      ],
+      "capabilities": [
+        "paper_variants_and_blueprints"
+      ],
+      "executable": false,
+      "accepted": false,
+      "blocked_by": [
+        "paper_mapping",
+        "refined_scope"
+      ],
+      "existing_entities": [
+        "api/app/Models/QbPaper.php",
+        "api/app/Models/QbPaperItem.php",
+        "api/app/Models/QbPaperSection.php"
+      ],
+      "existing_route_anchors": [
+        "api/routes/api.php::QbPaperController::store"
+      ],
+      "roles": [
+        "admin",
+        "teacher"
+      ],
+      "unresolved_contracts": [
+        "QuestionSet to qb_papers; subset to variant; folder organization and blueprint mapping",
+        "Snapshot/variant/permutation/entitlement/print contracts; no duplicate question-set entity"
+      ],
+      "acceptance_ids": [
+        "AC13"
+      ],
+      "future_fixture_command": null,
+      "done_when": "Folder cycles/moves, deterministic snapshots/variants/permutations, blueprint ambiguity/eligibility, marks/media/PDF/answer key and entitlement/tenant checks."
+    },
+    {
+      "id": "R2.1.6",
+      "title": "OMR forms, scan review/comparison and canonical handoff",
+      "depends_on": [
+        "R2.1.5"
+      ],
+      "capabilities": [
+        "omr"
+      ],
+      "executable": false,
+      "accepted": false,
+      "blocked_by": [
+        "omr_result_mapping",
+        "paper_mapping",
+        "refined_scope",
+        "source_execution"
+      ],
+      "existing_entities": [
+        "api/app/Models/QbPaper.php",
+        "api/app/Models/Student.php",
+        "api/app/Models/Enrollment.php",
+        "api/app/Models/Exam.php",
+        "api/app/Models/Result.php"
+      ],
+      "existing_route_anchors": [],
+      "roles": [
+        "admin",
+        "teacher"
+      ],
+      "unresolved_contracts": [
+        "Form/scan schema and immutable layout version; student/exam/set/identity mapping",
+        "Golden/noisy scans, manual review, duplicates, partial failure and measured capacity; no uncertain publish"
+      ],
+      "acceptance_ids": [
+        "AC16",
+        "AC17",
+        "AC18",
+        "AC19"
+      ],
+      "future_fixture_command": null,
+      "done_when": "Golden identity/set/answer/marks plus noise/rotation/blank/multiple/duplicate ambiguity, per-record recovery, capacity, review and publication/assignment isolation."
+    },
+    {
+      "id": "R2.1.7",
+      "title": "Canonical exams, routines, marks and released results",
+      "depends_on": [
+        "R2.1.0"
+      ],
+      "capabilities": [
+        "exams_and_results"
+      ],
+      "executable": false,
+      "accepted": false,
+      "blocked_by": [
+        "identity_mapping",
+        "omr_result_mapping",
+        "refined_scope"
+      ],
+      "existing_entities": [
+        "api/app/Models/Exam.php",
+        "api/app/Models/Result.php",
+        "api/app/Models/Enrollment.php"
+      ],
+      "existing_route_anchors": [
+        "api/routes/api.php::ExamController::publish"
+      ],
+      "roles": [
+        "admin",
+        "teacher",
+        "student",
+        "parent"
+      ],
+      "unresolved_contracts": [
+        "Source academic/routine/type/merit export mapping to canonical records",
+        "OMR handoff and existing grade/pass/publication/linked-child limits"
+      ],
+      "acceptance_ids": [
+        "AC05",
+        "AC20"
+      ],
+      "future_fixture_command": null,
+      "done_when": "Mapped canonical IDs, grade/pass/merit/export fixtures and released student/parent visibility with assignment/tenant denial tests."
+    },
+    {
+      "id": "R2.1.8",
+      "title": "Verified legacy rights and separate financial reconciliation",
+      "depends_on": [
+        "R2.1.3",
+        "R2.1.4",
+        "R2.1.5",
+        "R2.1.6",
+        "R2.1.7"
+      ],
+      "capabilities": [
+        "financial_entitlements"
+      ],
+      "executable": false,
+      "accepted": false,
+      "blocked_by": [
+        "financial_settlement",
+        "identity_mapping",
+        "refined_scope"
+      ],
+      "existing_entities": [
+        "api/app/Models/QbStudentOrder.php",
+        "api/app/Models/QbUnlock.php",
+        "api/app/Models/QbStudentUnlock.php",
+        "api/app/Models/QbPriceRule.php",
+        "api/app/Models/QbWriterEarning.php"
+      ],
+      "existing_route_anchors": [
+        "api/routes/api.php::QbStudentOrderCallbackController::bkash"
+      ],
+      "roles": [
+        "super_admin",
+        "admin",
+        "student",
+        "content_writer"
+      ],
+      "unresolved_contracts": [
+        "Owner settlement for unresolved paid rights/balances and verified grants",
+        "Exact-decimal append-only order/ledger reconciliation; no personal/student wallet or payment manager port"
+      ],
+      "acceptance_ids": [
+        "AC21",
+        "AC22",
+        "AC23",
+        "AC24"
+      ],
+      "future_fixture_command": null,
+      "done_when": "Exact-decimal append-only reconciliation, verified rights grants/idempotency, exact order reference/amount callbacks and unresolved-right/balance cutover block."
+    },
+    {
+      "id": "R2.1.9",
+      "title": "Portal/tenancy/import/OMR acceptance and activation refinement",
+      "depends_on": [
+        "R2.1.0",
+        "R2.1.1",
+        "R2.1.2",
+        "R2.1.3",
+        "R2.1.4",
+        "R2.1.5",
+        "R2.1.6",
+        "R2.1.7",
+        "R2.1.8"
+      ],
+      "capabilities": [
+        "acceptance"
+      ],
+      "executable": false,
+      "accepted": false,
+      "blocked_by": [
+        "r3_acceptance",
+        "refined_scope",
+        "source_execution"
+      ],
+      "existing_entities": [],
+      "existing_route_anchors": [],
+      "roles": [
+        "super_admin",
+        "content_writer",
+        "content_moderator",
+        "admin",
+        "teacher",
+        "accountant",
+        "student",
+        "parent"
+      ],
+      "unresolved_contracts": [
+        "Approved feature fixture/E2E/import-scale/OMR command registry and complete observed results",
+        "Explicit owner-approved runtime-switch task, module list and acceptance prerequisites; never infer activation from label"
+      ],
+      "acceptance_ids": [
+        "AC01",
+        "AC02",
+        "AC03",
+        "AC04",
+        "AC05",
+        "AC06",
+        "AC07",
+        "AC08",
+        "AC09",
+        "AC10",
+        "AC11",
+        "AC12",
+        "AC13",
+        "AC14",
+        "AC15",
+        "AC16",
+        "AC17",
+        "AC18",
+        "AC19",
+        "AC20",
+        "AC21",
+        "AC22",
+        "AC23",
+        "AC24",
+        "AC25",
+        "AC26"
+      ],
+      "future_fixture_command": null,
+      "done_when": "All planned tasks plus portal/tenant/security/persistence/E2E, import-scale, OMR regression and approved runtime acceptance prerequisites pass."
+    }
+  ],
+  "generated_from": [
+    "docs/release/r21-scope.json",
+    "docs/release/r21-gap-map.json",
+    "RELEASE-2.1.md"
+  ],
+  "acceptance_catalogue": {
+    "AC01": "Parity matrix covers every user-visible source feature, source role, route/workflow, data entity and import format; each is marked implemented, intentionally unsupported by source, or explicitly blocked with an owner decision.",
+    "AC02": "Writer and Moderator have separate post-login destinations, dashboard/navigation, route guards and API permissions. A Writer cannot publish; a Moderator cannot create/alter Writer content or access earnings; tenant users cannot access central writer tools.",
+    "AC03": "Registration/email OTP, login/logout, password-reset OTP, Google sign-in/link conflict handling (when configured), account activation and session behavior pass auth E2E tests using School Management's policy; no fixed/default password path is exposed.",
+    "AC04": "Super Admin can search/edit users, update profile/avatar/role, activate/deactivate and reset passwords; role mapping is explicit, audited and tenant/platform boundaries are enforced.",
+    "AC05": "Institution profile/logo, sessions, classes/sections/branches, student rosters, member invites, join requests, role changes and approve/reject/remove flows are mapped to canonical School Management records and tenant-tested.",
+    "AC06": "Every active source question type has a valid JSON example, schema validation, round-trip persistence/render test and import test, including options, structured children, creative parts, stimuli and supported visuals.",
+    "AC07": "Writer editor parity matrix covers every source metadata-driven authoring family (passage, choice, creative, short-answer, writing, primary-writing, transformation, identification, matching, information-transfer, substitution, problem-solving, visual-response, oral, practical and generic) with type-appropriate labels, builders, controls, marks/rubrics and preview. Known formats cannot silently fall back to a generic question/answer form.",
+    "AC08": "The source audit classifies all 32 registered diagram modes and 27 graph types against their actual editor, importer and renderer paths. Every source-editable mode can be created, edited, linked to a question/dataset where supported, previewed, saved, reopened and round-tripped without losing versioned data; import-only and read-only/render-only modes pass their corresponding fidelity and safe-render checks and are not counted as authoring parity. Every classification has a source anchor and fixture; an unclassified mode blocks visual acceptance.",
+    "AC09": "D72/D73/D74 editor contracts remain intact: qbank's left parts navigation + central ribbon/editor + right live preview (mobile editor/preview switch), safe HTML allowlist/React renderer, mixed child items and metadata rules. Existing ribbon, math, media, undo/redo, preview and responsive behavior must not regress while advanced builders are added.",
+    "AC10": "LaTeX in valid JSON is preserved byte-for-byte after JSON decoding through staging, edit, save, render and export. Invalid JSON/LaTeX is reported with a field path; valid backslashes are never corrupted by repair logic.",
+    "AC11": "A mixed batch of at least 10,000 valid JSON questions imports through chunked processing with correct totals and no silent record loss. Invalid records are isolated and reported; retrying a chunk does not create duplicates.",
+    "AC12": "PDF page-range extraction, hybrid/scanned-document handling, batch review, edit, LaTeX check, duplicate handling and explicit finalization pass end-to-end tests. Unreadable pages are visibly marked, not reported as successfully extracted.",
+    "AC13": "Every source paper workflow passes parity fixtures: question filters, sets/subsets, ordering, marks, totals, instructions, variants, preview, PDF/print, answer keys and rich content.",
+    "AC14": "The all-questions catalogue and OCR text finder return ranked, filtered results with calibrated confidence; low-confidence results require manual selection and never reveal locked answers.",
+    "AC15": "Graph datasets pass ownership, limit, CRUD, question attachment, stale-version conflict and delete-while-in-use tests; no cross-user or cross-tenant dataset access is possible.",
+    "AC16": "OMR golden fixtures produce the same expected identity, set, answer comparison, counts and marks as the source baseline. No existing valid fixture regresses.",
+    "AC17": "OMR robustness tests cover rotation/skew, lighting/contrast, scan resolution, blank/multiple marks, missing/invalid set code, duplicate roll and batch partial failure. Accuracy is measured against the baseline; release must demonstrate no regression and a documented improvement on the agreed noisy-scan set.",
+    "AC18": "Uncertain identity, set or answer detection requires manual review; no uncertain scan can silently attach to a different student or be published as a final result.",
+    "AC19": "OMR supports the source baseline batch capacity (up to 200 records) with per-record status and recoverable failures; any larger capacity claim is backed by a load test.",
+    "AC20": "Marks, grades, merit exports, Bangla/English content and parent/student visibility pass role and end-to-end tests. Students and parents cannot see unreleased results or answer keys.",
+    "AC21": "Tenant-isolation tests cover question-paper ownership, scans, results, wallet entries, purchases, imports and media. Cross-tenant access fails closed.",
+    "AC22": "Migration dry-run and execution reconcile entity counts, media references, OMR scans, verified purchase grants and monetary history separately. No source balance is merged into a School wallet; unresolved balances/paid rights block cutover pending owner decision. Reruns are idempotent and source data remains unchanged.",
+    "AC23": "Institution purchases use the existing QbPurchaseService, shared SMS taka balance and `qb_purchase` ledger; student orders use the existing QbStudentOrder/BkashService callback and target unlocks. No duplicate payment service or student wallet is created.",
+    "AC24": "Question-bank pricing uses the D66 price rules and does not add source question-type subscription discounts; SaaS subscription behavior remains governed by D47/D55. Legacy payments and balances reconcile separately, and unresolved money/access blocks cutover.",
+    "AC25": "Responsive UI tests cover 360px mobile and desktop, keyboard access, loading/empty/error/progress states, both applicable UI packs, English/Bangla and RTL-safe behavior.",
+    "AC26": "Required backend/frontend suites, module/route authorization tests, import-scale tests, OMR fixture suite and E2E tests pass before release activation."
+  },
+  "evidence_note": "Existing entities/routes are reuse anchors, not accepted parity. No new schema/API is approved."
+}

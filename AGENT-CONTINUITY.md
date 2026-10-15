@@ -4,6 +4,7 @@ This file supplements `AGENTS.md`, `CLAUDE.md`, and `docs/ops/agent-guardrails.m
 
 ## One Shared Source Of Truth
 
+- Current execution pointer (D79/D80/D83): runtime R3 and its generated plan/progress govern application work. R2.1 planning uses `docs/RELEASE-2.1.md` and generated `docs/AGENT-PLAN-R2.1.md`, after R3.A before R4/later, preserving existing dependencies. D83 permits planning only; all R2.1 feature tasks and runtime switch remain blocked pending refined owner approval. Historical R1 references below remain scaffold context.
 - Work from the local checkout on the existing branch `claude/elegant-cori-gw2mw5`. Do not create another branch unless the owner asks.
 - Only one agent works on this branch at a time. Before handing work to another agent, checkpoint the current state and confirm the remote commit. The next agent pulls that exact branch before editing.
 - `docs/AGENT-PLAN-R1.md` and its generated JSON define task scope/order; `docs/LOCKED-DECISIONS.md` defines owner decisions; `docs/PROGRESS.md` records completed tasks and test evidence; `docs/BLOCKED.md` records stop conditions; this file defines handoff notes.

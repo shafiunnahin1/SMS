@@ -47,7 +47,7 @@ The imported IDs are retained; this checkpoint introduces no new executable task
 | R2.1.8 | Source paid-right/order/financial reconciliation and owner-approved target grants | R2.1.3–R2.1.7; unresolved identity/payment/balance settlement blocks cutover |
 | R2.1.9 | Portal E2E, tenancy/security, import-scale/OMR regression and acceptance | All preceding tasks; exact runtime-switch task and prerequisite gates still require refined plan |
 
-No task above is accepted or executable under this planning checkpoint. The next scope/generation slice must define exact existing/new entities, routes, roles, command/fixture IDs and blocked dependencies without inventing unresolved schema or converting proposal numbers to observed results.
+No task above is accepted or executable under this planning checkpoint. The planning scope (`docs/release/r21-scope.json`) and generated `docs/AGENT-PLAN-R2.1.md` / `docs/release/r21-plan.json` map these ten imported IDs, canonical entity/route reuse anchors, roles, blockers and all 26 imported release acceptance requirements. New objects and feature-specific fixture commands remain explicitly unapproved/null, rather than invented. R2.1.0 and R2.1.7 both depend on the approved baseline chain; original branching prerequisites are retained. Task list order remains the imported sequence; parallel execution is not authorized.
 
 ## Canonical integration boundaries
 

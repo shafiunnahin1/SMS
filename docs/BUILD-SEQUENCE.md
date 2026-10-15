@@ -1,5 +1,7 @@
 # Agent Build Sequence — Education Management SaaS (Revision 6)
 
+> **Current execution pointer (D79/D80/D83):** runtime R3; `docs/AGENT-PLAN-R3.md` and `docs/PROGRESS.md` govern its accepted/current tasks. The R1 banner below is historical scaffold context. R2.1 (`docs/RELEASE-2.1.md`, generated `docs/AGENT-PLAN-R2.1.md`) follows R3.A before R4/later, preserving existing R1.1/R2 prerequisites and milestone dependencies. Only D83 planning/intake/tooling is permitted before R3.A; all R2.1 tasks remain blocked pending refined executable scope approval. No sequence or runtime switch is inferred from numbering.
+
 > **এখন কী বানানো হচ্ছে: Release 1 (`docs/RELEASE-1.md`, `docs/release/r1-scope.json`).** নিচের প্রতিটি Step-এ `Release:` চিহ্ন আছে — `R1` নয় এমন Step এখন **বানাবেন না** (স্পেক থাকে, কোড নয়)। `config/release.php` ও `ModuleGate` ধাপ 0 এটি কোডে বাধ্য করে। Phase 8 (নিরাপত্তা/গোপনীয়তা) ও Phase 9 (deployment) R1-এর অংশ।
 
 এটি execution playbook। আগে `AGENTS.md` পড়ুন (নিয়ম ও Locked Decisions), তারপর এই ফাইল উপর থেকে নিচে অনুসরণ করুন। প্রতিটি Step-এ আছে: কী বানাতে হবে, **Spec Reference** (বিস্তারিত কোন ফাইলে), এবং **Done When** (যাচাইযোগ্য শর্ত)।

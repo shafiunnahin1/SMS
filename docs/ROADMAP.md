@@ -26,7 +26,7 @@
 | **R7 Later** | মোবাইল অ্যাপ, PWA, AI সহকারী, বাস GPS | Phase 10 |
 আপনি যে ফিচার আগে চান জানান — আমি তার নির্ভরতা (§১) দেখিয়ে কী পিছাবে তা বলব। নিজে থেকে কিছু বাদ দেব না।
 
-D83 planning artifacts pending creation: `docs/release/r21-scope.json`, `docs/release/r21-plan.json`, `docs/AGENT-PLAN-R2.1.md`. Current evidence: `docs/release/r21-gap-map.json`. These pending artifacts do not activate executable tasks; R2.1.0 requires R3.A acceptance and refined approved scope. D83 planning remains incomplete.
+D83 generated planning artifacts (all tasks blocked/non-executable): `docs/release/r21-scope.json`, `docs/release/r21-plan.json`, `docs/AGENT-PLAN-R2.1.md`. Current evidence: `docs/release/r21-gap-map.json`. These planning artifacts do not activate executable tasks; R2.1.0 requires R3.A acceptance and refined approved scope. D83 planning remains incomplete.
 
 ## ৩. খতিয়ান — প্রতিটি ফিচার
 **স্পেক:** ✅ লেখা · ⏳ লেখা বাকি · 🔌 তৃতীয়-পক্ষের তথ্যের অপেক্ষায় (কাঠামো আছে) · 🧑‍⚖️ মালিক/আইনি সিদ্ধান্তের অপেক্ষায়।

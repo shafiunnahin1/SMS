@@ -111,6 +111,22 @@ add('C14 a new composer package outside the scaffold tasks', {'api/composer.json
 add('C14 the same change inside a scaffold task passes', {'frontend/package.json': json.dumps({'dependencies': {'react': '^18.0.0', 'axios': '^1.0.0'}}), 'docs/PROGRESS.md': check_off(SCAFFOLD)}, f'chore: scaffold\n\nTask: {SCAFFOLD}', expect_pass=True)
 add('C14 a lockfile changes without a manifest change', {'api/composer.lock': '{"changed": true}\n', 'api/app/Foo.php': "<?php\nclass Foo {}\n", 'docs/PROGRESS.md': check_off(TASK_DEP)}, f'feat: x\n\nTask: {TASK_DEP}', {'C14'})
 
+add('D83 R2.1 code remains blocked with a Task trailer',
+    {'api/app/Services/Parity.php': '<?php\nclass Parity {}\n',
+     'docs/PROGRESS.md': PROGRESS + '\n- [ ] R2.1.0 — blocked planning\n'},
+    'feat: parity\n\nTask: R2.1.0', {'C9'})
+add('D83 documentation-only feature checkoff remains blocked',
+    {'docs/PROGRESS.md': PROGRESS + '\n- [x] R2.1.0 — unsupported acceptance\n'},
+    'docs: false acceptance\n\nTask: R2.1.0', {'C10'})
+add('D83 R2.1 runtime label remains blocked',
+    {'api/config/release.php': RELEASE_PHP.replace("'R1'", "'R2.1'"),
+     'docs/PROGRESS.md': check_off(TASK0)},
+    f'feat: parity switch\n\nTask: {TASK0}\nRelease: R2.1', {'C12'})
+add('D83 R2.1 runtime body cannot hide behind an R1 trailer',
+    {'api/config/release.php': RELEASE_PHP.replace("'R1'", "'R2.1'"),
+     'docs/PROGRESS.md': check_off(TASK0)},
+    f'feat: spoofed parity switch\n\nTask: {TASK0}\nRelease: R1', {'C12'})
+
 def run_guard(d, base, head):
     r = subprocess.run([sys.executable, GUARD, '--root', d, '--base', base, '--head', head], capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, r.stdout + r.stderr

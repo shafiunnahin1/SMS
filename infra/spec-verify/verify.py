@@ -537,6 +537,10 @@ ok(all(re.search(r'^\| %s \|'%d_,rd('docs/LOCKED-DECISIONS.md'),re.M) for d_ in 
 _hq=open(os.path.join(R,'infra/scripts/hot-queries.tsv'),encoding='utf-8').read()
 ok(all(re.search(r'\b(FROM|JOIN)\s+%s\b'%tb_,_hq) for tb_ in ('staff_attendances','teacher_attendances','leave_applications','salary_structures','payroll_runs','payroll_items','salary_adjustments','cash_book_closings','fee_refunds','inventory_movements','inventory_items','vouchers','donations','budget_lines','provident_fund_entries')),'the hot-query catalogue covers the dense R3 tables')
 _pc=subprocess.run([sys.executable,os.path.join(R,'infra/spec-verify/gen_release_plan.py'),R,'--check'],capture_output=True,text=True)
+_r21=subprocess.run([sys.executable,os.path.join(R,'infra/spec-verify/gen_r21_plan.py'),R,'--check'],capture_output=True,text=True)
+ok(_r21.returncode==0,f'D83 R2.1 planning is blocked, mapped and fresh: {_r21.stdout.strip()} {_r21.stderr.strip()[:120]}')
+_r21tests=subprocess.run([sys.executable,os.path.join(R,'infra/spec-verify/test_r21_plan.py')],capture_output=True,text=True)
+ok(_r21tests.returncode==0,f'D83 planning mutation/freshness tests: {_r21tests.stderr.strip()[-180:]}')
 ok(_pc.returncode==0,f'docs/AGENT-PLAN-R3.md and r3-plan.json are generated from the current specs: {_pc.stdout.strip()[-80:]}')
 ok('RELEASE-3.md' in rd('docs/ROADMAP.md') and 'AGENT-PLAN-R3.md' in rd('AGENTS.md') and 'AGENT-PLAN-R3.md' in rd('README.md'),'ROADMAP, AGENTS and README point at the R3 documents')
 
