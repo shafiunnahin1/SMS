@@ -1,6 +1,6 @@
 # R3.4 staff and leave contract — owner review draft
 
-Status: PROPOSED, NOT APPROVED. Prepared 2026-10-15 after pushed R3.3 eefbc74 / completion c3594c3.
+Status: OWNER APPROVED in chat on 2026-10-15, all seven proposed clauses without alteration. Approved text is preserved in commit 3ab01cc. Separate owner locked-decision commit is pending before protected edits. Prepared after pushed R3.3 eefbc74 / completion c3594c3.
 
 ## Evidence requiring owner resolution
 
