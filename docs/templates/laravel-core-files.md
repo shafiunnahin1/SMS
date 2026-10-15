@@ -285,7 +285,7 @@ use App\Http\Controllers\Admission\{AdmissionCycleController, AdmissionLeadActio
 use App\Http\Controllers\Imports\ImportController;
 use App\Http\Controllers\Sms\{SmsTemplateController, SmsCampaignController, EmergencyController, SmsWebhookController, SmsLogController};
 use App\Http\Controllers\Notices\NoticeAckController;
-use App\Http\Controllers\Platform\{SupportTicketController, CouponController, ExportController, ImpersonationController, SuperSupportController, SuperCouponController, SuperImportController, SuperBackupController, PlatformSettingController, SuperRefundController};
+use App\Http\Controllers\Platform\{SupportTicketController, CouponController, ExportController, ImpersonationController, SuperSupportController, SuperCouponController, SuperImportController, SuperBackupController, PlatformSettingController};
 use App\Http\Controllers\PublicSite\{GalleryController, NewsController, SitePageController, PublicTeacherController, PublicEventController, VerifyController};
 use App\Http\Controllers\Teacher\{MarkController, HomeworkController, MaterialController};
 use App\Http\Controllers\Shared\{NotificationController, MessageController, AuditLogController, TransportController};
@@ -357,7 +357,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/institutions/{id}/impersonate', [ImpersonationController::class, 'start']);
             Route::post('/institutions/{id}/backup',  [SuperBackupController::class, 'store']);
             Route::post('/institutions/import',       [SuperImportController::class, 'store']);
-            Route::post('/payments/{id}/refund',      [SuperRefundController::class, 'subscription']);
+            // D55/D84: subscription refund route deferred until module-based billing is specified.
             Route::apiResource('institutions',        InstitutionController::class);      // incl. institution_type, enabled_modules
             Route::patch('/institutions/{id}/toggle', [InstitutionController::class, 'toggleStatus']);
             Route::post('/institutions/{id}/sms-credits', [SmsCreditController::class, 'adjust']);

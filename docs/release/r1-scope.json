@@ -794,7 +794,8 @@
    "release": "R1.1"
   },
   "SuperRefundController": {
-   "release": "R3"
+   "release": "deferred-D55",
+   "blocked_by": "D55/D84: future module-based subscription billing refinement"
   },
   "SuperSupportController": {
    "release": "R1.1"
@@ -1382,7 +1383,7 @@
     "docs/LOCKED-DECISIONS.md",
     "docs/modules/question-bank.md"
    ],
-    "scope": "D73 plus D74: any structured question mixes its parts (sub_mcq, sub_question, gap, match_pair, order_step and the new true_false, table_fill, match_triple, multi_field) with marks per part; gaps may carry a base-word hint; the review check and the quiz marker understand the new kinds; answers never leave without an unlock. The new-question page as qbank's: class levels, exam type, source history (type, full name, short name, year in the existing occurrence fields), a question code shown from type + id, searchable subject / chapter / topic, a draft first and then the editor; the Super Admin may add a subject / chapter / topic from the form (the existing curriculum routes; adding a question type waits for a route of its own). No language or content-mode selector: new writer questions use hidden language=und and content_mode=mixed; imports preserve source metadata. The metadata rail contains type, subject, chapter, topic, difficulty, marks, applicable classes and source history. No new table or column.",
+   "scope": "D73 plus D74: any structured question mixes its parts (sub_mcq, sub_question, gap, match_pair, order_step and the new true_false, table_fill, match_triple, multi_field) with marks per part; gaps may carry a base-word hint; the review check and the quiz marker understand the new kinds; answers never leave without an unlock. The new-question page as qbank's: class levels, exam type, source history (type, full name, short name, year in the existing occurrence fields), a question code shown from type + id, searchable subject / chapter / topic, a draft first and then the editor; the Super Admin may add a subject / chapter / topic from the form (the existing curriculum routes; adding a question type waits for a route of its own). No language or content-mode selector: new writer questions use hidden language=und and content_mode=mixed; imports preserve source metadata. The metadata rail contains type, subject, chapter, topic, difficulty, marks, applicable classes and source history. No new table or column.",
    "done": "A seen passage with MCQ + answer questions + a gap fill + true/false is written, saved, previewed, submitted and published; each new kind round-trips and is marked; tests.",
    "verify": [
     "php artisan test --filter=QbStructured",

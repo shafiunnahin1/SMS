@@ -1985,10 +1985,14 @@ CREATE TABLE cash_book_closings (
     UNIQUE KEY unique_cash_day_revision (institution_id, date, revision),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
+-- D84: tenant-bound refund snapshots; original request row is revision 1.
+CREATE UNIQUE INDEX unique_students_inst_id ON students(institution_id, id);
 CREATE TABLE fee_refunds (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     student_id BIGINT UNSIGNED NOT NULL,
+    request_key CHAR(36) NOT NULL,
+    revision INT UNSIGNED NOT NULL,                         -- starts at 1; transitions append the next revision
     original_receipt_no VARCHAR(50) NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     refund_lines JSON NOT NULL,                          -- [{fee_payment_id, amount}] - which receipt lines are reversed
@@ -2004,7 +2008,8 @@ CREATE TABLE fee_refunds (
     processed_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
-    FOREIGN KEY (student_id) REFERENCES students(id)
+    UNIQUE KEY unique_fee_refund_revision (institution_id, request_key, revision),
+    CONSTRAINT fk_fee_refunds_student FOREIGN KEY (institution_id, student_id) REFERENCES students(institution_id, id)
 );
 
 -- ---------- store / inventory ----------
@@ -3117,3 +3122,8 @@ CREATE TABLE qb_import_map (                                -- D69 (QB.11): whic
     created_at TIMESTAMP NULL,
     UNIQUE KEY unique_qb_import_map (source, source_table, source_id)
 );
+
+-- D84: tenant-bound refund history/status and original-line cap checks.
+CREATE INDEX idx_fee_refunds_inst_status_created ON fee_refunds(institution_id, status, created_at, id);
+CREATE INDEX idx_fee_refunds_inst_student_created ON fee_refunds(institution_id, student_id, created_at, id);
+CREATE INDEX idx_fee_payments_inst_reverses ON fee_payments(institution_id, reverses_id);

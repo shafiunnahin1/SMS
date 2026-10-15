@@ -1083,6 +1083,7 @@ CREATE TABLE students (
 );
 CREATE INDEX idx_students_institution ON students(institution_id);
 CREATE INDEX idx_students_program ON students(program_id);
+CREATE UNIQUE INDEX unique_students_inst_id ON students(institution_id, id);
 
 CREATE TABLE parent_student (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1345,6 +1346,7 @@ CREATE INDEX idx_fee_payments_enrollment ON fee_payments(enrollment_id, month);
 ALTER TABLE fee_payments ADD COLUMN reverses_id BIGINT UNSIGNED NULL;
 CREATE INDEX idx_fee_payments_inst_paid ON fee_payments(institution_id, paid_at);
 CREATE INDEX idx_fee_payments_student_paid ON fee_payments(student_id, paid_at);
+CREATE INDEX idx_fee_payments_inst_reverses ON fee_payments(institution_id, reverses_id);
 ```
 </details>
 
@@ -3048,7 +3050,7 @@ php artisan test   # whole suite stays green
 | R1.1 | 35 |
 | R2 | 150 |
 | R2+ | 34 |
-| R3 | 129 |
+| R3 | 128 |
 | R4 | 11 |
 | R5 | 11 |
 
@@ -3061,7 +3063,7 @@ php artisan test   # whole suite stays green
 - **R1.1:** `ExpenseController`, `ExportController`, `NoticeAckController`, `NoticeController`, `RoutineController`, `SuperBackupController`, `SuperImportController`, `SuperSupportController`, `SupportTicketController`
 - **R2:** `AdminOnlinePaymentController`, `AdmissionCycleController`, `AdmissionLeadActionController`, `DomainApprovalController`, `DomainController`, `DueBlockController`, `EmergencyController`, `FeePaymentCallbackController`, `FeePaymentController`, `GalleryController`, `InstitutionThemeController`, `LeadController`, `ManifestController`, `MarksLockController`, `MaterialController`, `MessageController`, `NewsController`, `OnlinePaymentReportController`, `PaymentSettingsController`, `PayoutAccountController`, `PeriodAttendanceController`, `PublicAdmissionController`, `PublicAdmissionPayController`, `PublicAdmissionStatusController`, `PublicEventController`, `PublicSiteController`, `PublicTeacherController`, `PublicThemeController`, `ResultSheetController`, `RoutineBlockController`, `SettlementController`, `SitePageController`, `SmsCampaignController`, `SmsSenderApprovalController`, `SmsTemplateController`, `SmsWebhookController`, `StudentLeaveController`, `SubstitutionController`, `TeacherPayoutController`, `ThemePresetController`, `TlsCheckController`, `WebsiteSettingsController`
 - **R2+:** `HifzController`, `HomeworkController`, `LessonPlanController`, `RiskController`, `SyllabusCoverageController`, `SyllabusUnitController`, `VerifyController`
-- **R3:** `AccountController`, `AccountingReportController`, `AccountingSettingController`, `BankReconciliationController`, `BonusSchemeController`, `BudgetController`, `CashBookController`, `DonationCampaignController`, `DonationController`, `DonationFundController`, `DonorController`, `FeeRefundController`, `FinalSettlementController`, `IncrementBatchController`, `InventoryItemController`, `InventoryMovementController`, `InventoryReportController`, `LeaveController`, `LeaveTypeController`, `PayAccountController`, `PayrollItemController`, `PayrollReportController`, `PayrollRunController`, `ProvidentFundController`, `SalaryAdjustmentController`, `SalaryAdvanceController`, `SalaryComponentController`, `SalaryRevisionController`, `SalaryStructureController`, `StaffAttendanceController`, `StaffController`, `SuperRefundController`, `TeacherAttendanceController`, `TeacherSalaryController`, `VoucherController`
+- **R3:** `AccountController`, `AccountingReportController`, `AccountingSettingController`, `BankReconciliationController`, `BonusSchemeController`, `BudgetController`, `CashBookController`, `DonationCampaignController`, `DonationController`, `DonationFundController`, `DonorController`, `FeeRefundController`, `FinalSettlementController`, `IncrementBatchController`, `InventoryItemController`, `InventoryMovementController`, `InventoryReportController`, `LeaveController`, `LeaveTypeController`, `PayAccountController`, `PayrollItemController`, `PayrollReportController`, `PayrollRunController`, `ProvidentFundController`, `SalaryAdjustmentController`, `SalaryAdvanceController`, `SalaryComponentController`, `SalaryRevisionController`, `SalaryStructureController`, `StaffAttendanceController`, `StaffController`, `TeacherAttendanceController`, `TeacherSalaryController`, `VoucherController`
 - **R4:** `AttendanceDeviceController`, `DevicePunchController`, `DevicePunchReviewController`, `PersonCredentialController`, `TransportController`
 - **R5:** `CouponController`, `ImpersonationController`, `PlatformSettingController`, `SAReportController`, `SuperCouponController`
 

@@ -8,6 +8,9 @@
 - `expenses.payment_method`, `source` (`manual|payroll|advance|store|refund`) — ক্যাশবুক এগুলো পড়ে।
 
 ## ২. ফি-রিফান্ড (`fee_refunds`)
+
+**D84 current contract:** request_key UUID + positive revision, UNIQUE (institution_id,request_key,revision), tenant-bound student FK; revision 1 is the stable root API identity. Requested/approved/rejected/processed are immutable snapshots, latest revision is current state. Amount/lines/method immutable; identical create key/payload and applied transition retries return existing results, changed payload/stale transition 409. Pending requests do not reserve funds; cap checked on request and again during processing under the institution lock. Admin/accountant request/process; only admin approves/rejects, no self-approval except audited exactly-one-active-admin. D32/D84 prohibit snapshot edits/deletes except approved tenant purge.
+
 ### ২.১ প্রবাহ
 ```
 অনুরোধ (Accountant/Admin)  →  অনুমোদন (Admin; নিজের অনুরোধ নিজে নয়, একজন-Admin ব্যতিক্রম audit-সহ)  →  নিষ্পন্ন (processed)
@@ -16,26 +19,31 @@
 - **কী ফেরত:** মূল রসিদের এক বা একাধিক লাইন, প্রতিটির জন্য পরিমাণ। `refund_lines` = `[{fee_payment_id, amount}]` (কলামের নাম `lines` নয় — `LINES` MySQL-এ সংরক্ষিত শব্দ)।
 - **সীমা:** লাইন-প্রতি ফেরত ≤ **ওই লাইনে এখনো ধরে-রাখা নেট** (`positive payments − আগের reversal`)। বেশি → 422। ছাড় (waived) লাইন ফেরত হয় না।
 - **নিষ্পন্নে (transaction, institution-row lock):** প্রতিটি লাইনে একটি ঋণাত্মক `fee_payments` সারি (`paid_amount = −x`, `status = reversed`, `reverses_id = মূল`, একই `enrollment/category/month`, নতুন রসিদ `RFD-…` + `line_no`)। মূল সারি **অপরিবর্তিত**। ফলে `dueLines()` বকেয়া ফেরত দেখায়।
+- **D84 processing:** one timestamp after shared institution lock; processing date for fee reversals and expense. One positive source=refund expense is the sole payout outflow; negative fee reversal rows restore dues but are excluded from cash inflow/outflow aggregation. Closed cash processing day returns 409 day_closed; no implicit reopen/backdating. Audit + consent-aware SMS after commit, once.
 - **ক্যাশবুক:** নগদ ফেরত = নগদ-আউট (`expenses` সারি `source=refund`, `payment_method=cash`); মোবাইল/ব্যাংক হলে সংশ্লিষ্ট কলামে।
 - **SMS:** অভিভাবককে "৳X ফেরত দেওয়া হয়েছে" (সম্মতি-নিয়মে)।
 - **প্রিন্ট:** রসিদে "ফেরত রসিদ", মূল রসিদ নম্বর উল্লেখ। মূল রসিদে "আংশিক/পূর্ণ ফেরত হয়েছে" চিহ্ন (প্রদর্শনে, ডেটা অপরিবর্তিত)।
 
 ### ২.২ অনলাইন ফির রিফান্ড
+**D84:** নিচের বর্ণনা future reference; online_payment unavailable হলে online_payment_id/online_gateway reject করতে হবে, gateway/settlement effects নয়.
+
 - অনুরোধে `online_payment_id` যুক্ত; `method = online_gateway`।
 - **Gateway-র refund API আমি যাচাই করিনি** (bKash/SSLCommerz কী দেয়, কত সময়ে, কী ফি) → `GatewayInterface::refund()` **ঐচ্ছিক method**; adapter এটি না দিলে **ম্যানুয়াল প্রবাহ**: Admin gateway-র নিজের পোর্টালে ফেরত দেয়, তারপর `gateway_refund_ref` সহ "নিষ্পন্ন" চিহ্ন দেয়। API-সক্ষম হলে সিস্টেম নিজে ডাকে (R6, `TODO(OD-refund-api)`)।
 - `online_payments.refunded_amount` বাড়ে; পুরো ফেরতে `status = refunded`।
 - **প্ল্যাটফর্ম-সংগৃহীত (D14 ২য় মোড)** পেমেন্ট হলে settlement-এ প্রভাব: settlement তখনো `draft/approved` হলে নেট-পাওনা কমে; **ইতিমধ্যে `paid` হলে** `settlements.refund_adjustment` পরের settlement-এ ঋণ হিসেবে যায় (ঋণাত্মক carry-forward), প্রতিষ্ঠানকে জানানো হয়।
 
 ### ২.৩ Subscription (প্ল্যাটফর্ম ← প্রতিষ্ঠান) রিফান্ড
+**D55/D84:** নিচের বর্ণনা deferred requirement, বর্তমান R3.3 implementation নয়। SubscriptionRefundTest এখন route unavailable ও payments/invoices unchanged যাচাই করে; subscription credit/expiry policy future module-based billing refinement-এ থাকবে।
+
 `payments.status = refunded` আগে থেকেই ছিল, প্রবাহ ছিল না। এখন: Super Admin কারণসহ পূর্ণ/আংশিক রিফান্ড; `payments.refunded_amount`, `refund_note`; একটি **credit-note** ইনভয়েস (`subscription_invoices.credit_for_id` = মূল, ঋণাত্মক `total`); ম্যানুয়াল gateway-পোর্টালে ফেরত; subscription-মেয়াদ সমন্বয় (`docs/modules/platform-ops.md`)।
 
 ### ২.৪ অ্যাক্সেস
 | | Admin | Accountant | Teacher/Student/Parent | Super |
 |---|---|---|---|---|
 | অনুরোধ | ✅ | ✅ | — | — |
-| অনুমোদন | ✅ | নিজেরটা নয় | — | — |
+| অনুমোদন/প্রত্যাখ্যান | ✅ (নিজেরটা নয়; sole-active-admin audited exception) | — | — | — |
 | নিষ্পন্ন | ✅ | ✅ | — | — |
-| Subscription রিফান্ড | — | — | — | ✅ |
+| Subscription রিফান্ড | — | — | — | deferred D55/D84 |
 প্রতিটি ধাপ `audit_logs`-এ।
 
 ## ৩. ক্যাশবুক (`cash_book_closings`)
@@ -77,8 +85,8 @@ POST /super/payments/{id}/refund { amount, reason }    (subscription)
 | `RefundDueRecalcTest` | পূর্ণ ফেরতে বকেয়া ফেরে; আংশিক (৪০০) → বকেয়া ৪০০; ৬০০ পরিশোধ + ১০০ ফেরত → ৫০০; ছাড়-লাইন কখনো বকেয়া হয় না (reference-এর ৬টি কেস) |
 | `RefundCapTest` | লাইন-নেটের বেশি ফেরত 422; দ্বিতীয় ফেরত বাকিটুকু পর্যন্ত; একই অনুরোধ দুবার প্রক্রিয়া idempotent |
 | `RefundImmutabilityTest` | মূল `fee_payments` সারি অপরিবর্তিত; reversal সারিতে ঋণাত্মক `paid_amount`, `reverses_id`, `RFD-` রসিদ |
-| `RefundSettlementTest` | settlement `draft` হলে নেট কমে; `paid` হলে পরের settlement-এ `refund_adjustment` |
-| `SubscriptionRefundTest` | credit-note ঋণাত্মক; `refunded_amount ≤ amount`; পূর্ণ ফেরতে মেয়াদ সমন্বয় |
+| `RefundSettlementTest` | D84: one refund expense, negative fee reversals, single cash outflow, processing date/closed-day lock/idempotency; online branch unavailable without module |
+| `SubscriptionRefundTest` | D55/D84: subscription refund route unavailable, payment/invoice rows unchanged; future credit-note/term policy deferred |
 | `CashBookMathTest` | উপরের উদাহরণ (৭,০০০ / −২০) |
 | `CashBookLockTest` | বন্ধ দিনে লিখলে 409; reopen কারণ ছাড়া 422; ক্রম বজায়; ভবিষ্যৎ-তারিখ নিষিদ্ধ |
 | `CashBookSourcesTest` | payroll-নগদ, স্টোর-নগদ, দান-নগদ, ফেরত-নগদ সবাই সঠিক কলামে; mobile/bank নগদ-অবশিষ্টে নয় |
@@ -86,7 +94,7 @@ POST /super/payments/{id}/refund { amount, reason }    (subscription)
 
 ## ৬. Done When
 - [ ] ৳১,০০০ ফি আদায় → ৳৪০০ আংশিক ফেরত → বকেয়া ৳৪০০ ও `RFD-` রসিদ; মূল রসিদ অপরিবর্তিত
-- [ ] অনলাইন ফি ফেরত (ম্যানুয়াল gateway) → `refunded_amount`, settlement সমন্বয়
+- [ ] D84: online refund fails closed without online_payment; future online settlement acceptance remains deferred
 - [ ] একটি দিনের ক্যাশবুক বন্ধ (পার্থক্যসহ), বন্ধ দিনে লেনদেন 409, reopen কারণসহ audit-এ
 - [ ] দিনের ক্যাশবুক-রিপোর্টের নগদ-ইন/আউট ফি, স্টোর, বেতন ও ফেরতের আলাদা রিপোর্টের যোগফলের সাথে হাতে মেলে
 

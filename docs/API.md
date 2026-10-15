@@ -623,7 +623,7 @@ POST /super/domains/{id}/reject | recheck        GET /super/reports/growth      
 # Cashbook D82: close/reopen/reclose append consecutive immutable tenant/date revisions; latest revision defines status. Reopen is admin-only with required reason. Closed-day cash writes return 409 day_closed; invalid input returns 422. R3.2 aggregates positive cash fee receipts and signed cash expenses once, without future source implementations or duplicate refund/payroll outflows. Close/reopen and fee/expense cash writes share the tenant institution transaction lock; correction checks both original and replacement cash dates.
 # R3.2 request details: GET date defaults to today; range requires from/to (Y-m-d, ordered, no future dates). First close requires opening_cash; later close derives opening from preceding closed counted_cash (expected fallback), without day gaps or earlier reopened days. Close requires counted_cash, and note on mismatch. Amount input is a nonnegative decimal string/integer, max two decimal places, max 9,999,999,999.99. Server owns revision/status/actors/totals. JSON daily/range includes method/category/collector totals and immutable revision history; report ext is pdf or xlsx. Cash writes reject future dates; noncash entries do not alter cash balance or trigger day_closed.
 GET  /cashbook?date=   /cashbook/range?from=&to=   /cashbook/{date}/report.pdf|xlsx      POST /cashbook/{date}/close { counted_cash, note? }   POST /cashbook/{date}/reopen { reason }  [admin]
-GET  /fee-refunds/refundable?receipt_no=     GET|POST /fee-refunds   GET /fee-refunds/{id}   POST /fee-refunds/{id}/approve | reject | process { gateway_refund_ref? }
+GET  /fee-refunds/refundable?receipt_no=     GET|POST /fee-refunds   GET /fee-refunds/{id}   POST /fee-refunds/{id}/approve | reject | process  [D84: root request ID, append-only snapshots; approve/reject admin-only]
 # inventory  (plan-gated)
 GET|POST|PUT /inventory/items   DELETE /inventory/items/{id}   GET /inventory/items/{id}/ledger   POST /inventory/receive|issue|sale|damage|adjust|return
 GET  /inventory/stock?low=1   /inventory/reports/stock|movements|sales|valuation   /inventory/sales/{receipt_no}/receipt.pdf
@@ -661,7 +661,7 @@ GET|POST /support/tickets   GET /support/tickets/{id}   POST /support/tickets/{i
 GET|POST /admin/exports   GET /admin/exports/{id}   GET /admin/exports/{id}/download   POST /subscription/coupon/validate { code, plan_id, cycle }   POST /auth/impersonate/exchange { code }   POST /auth/impersonate/end
 # platform-ops  Super Admin (central)
 GET /super/support/tickets   /{id}   POST /super/support/tickets/{id}/messages|assign|status      GET|POST|PUT /super/coupons   GET /super/coupons/{id}/redemptions
-GET|PUT /super/platform-settings   POST /super/institutions/{id}/impersonate   POST /super/institutions/{id}/backup { reason }   POST /super/institutions/import { export_id|upload, new_slug, type }   POST /super/payments/{id}/refund
+GET|PUT /super/platform-settings   POST /super/institutions/{id}/impersonate   POST /super/institutions/{id}/backup { reason }   POST /super/institutions/import { export_id|upload, new_slug, type }   # subscription refund endpoint deferred (D55/D84)
 # public-website-plus
 GET /public/gallery   /public/gallery/{album_id}   /public/news   /public/news/{slug}   /public/pages/{slug}   /public/teachers   /public/events
 Admin: GET|POST|PUT|DELETE /admin/site/albums   /admin/site/albums/{id}/items   /admin/site/posts   PATCH /admin/site/teachers/{id}/public
@@ -684,3 +684,7 @@ GET  /teacher/leave                      POST /teacher/leave
 ### R3.1 expense request/report details (D81)
 
 POST requires category, title, positive decimal amount (string or integer) and expense_date (Y-m-d). PUT accepts correction fields; protected actor/tenant/source/link fields are rejected. Receipt documents follow SECURITY.md: PDF/JPEG/PNG up to 5 MB, stored privately at the documented UUID path. GET /expenses supports category/from/to and per_page (1–100); GET /expenses/report accepts month (Y-m, default current month), format=json (default), pdf or xlsx. JSON returns the signed monthly expense total; PDF/Excel show immutable ledger rows and that total. This task does not implement a combined income/cashbook report or expense UI.
+
+## D84 institutional refund request contract
+
+POST /fee-refunds accepts request_key (UUID), student_id, original_receipt_no, refund_lines [{fee_payment_id, amount}], reason and method (cash/bank/bkash/nagad). Amount is computed from exact line amounts. The same key/payload returns the original root request; changed payload 409. GET/list returns latest status with immutable history; revision IDs cannot be used as root request IDs. Admin/accountant request/process, admin approve/reject; audited sole-active-admin exception only. Processing uses one captured timestamp, negative fee reversal rows plus one positive refund expense, cash-day 409 day_closed and consent-aware after-commit notification. Online fields/online_gateway fail closed while online_payment is unavailable; no subscription refund route is registered. See D84 and docs/modules/finance-advanced.md.

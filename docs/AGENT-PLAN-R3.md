@@ -19,7 +19,7 @@
 | `R3.0` | পূর্বশর্ত ও রিলিজ-গেট (R3-এর জন্য) | — | 0 | 0 | 1 |
 | `R3.1` | খরচ (expenses) — ক্যাশবুকের পূর্বশর্ত | R3.0 | 1 | 6 | 0 |
 | `R3.2` | দৈনিক ক্যাশবুক ও day-end close | R3.1 | 1 | 5 | 4 |
-| `R3.3` | ফি রিফান্ড ও reversal | R3.2 | 1 | 6 | 5 |
+| `R3.3` | ফি রিফান্ড ও reversal | R3.2 | 1 | 5 | 5 |
 | `R3.4` | কর্মচারী, উপস্থিতি ও ছুটি | R3.3 | 5 | 18 | 5 |
 | `R3.5` | বেতন-কাঠামো, ইনক্রিমেন্ট ও বোনাস | R3.4 | 6 | 24 | 5 |
 | `R3.6` | সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ | R3.5 | 2 | 9 | 1 |
@@ -33,7 +33,7 @@
 | `R3.14` | R3-এর কর্মক্ষমতা (ডেটা বাড়লে) | R3.13 | 0 | 0 | 1 |
 | `R3.A` | R3 গ্রহণ-পরীক্ষা, তারপর চালু | R3.14 | 0 | 0 | 0 |
 
-মোট: **16 task · 30 টেবিল · 135 route · 59টি আলাদা পরীক্ষা**। (ক্রম রৈখিক; `R3.9` শুধু `R3.2`-এর পর, তাই `R3.3`–`R3.8` ও `R3.9` সমান্তরালে চলতে পারে।)
+মোট: **16 task · 30 টেবিল · 134 route · 59টি আলাদা পরীক্ষা**। (ক্রম রৈখিক; `R3.9` শুধু `R3.2`-এর পর, তাই `R3.3`–`R3.8` ও `R3.9` সমান্তরালে চলতে পারে।)
 
 ## গ. `config/release.php` — R3-এর জন্য (R1-এর তালিকার উপর)
 
@@ -152,7 +152,7 @@ POST /cashbook/{date}/reopen -> CashBookController@reopen [role:admin] (module c
 
 - **নির্ভর করে:** `R3.2`
 - **লক্ষ্য:** ছাত্রের ফি ফেরত: আবেদন → অনুমোদন → পরিশোধ। রসিদ কখনো মোছা বা বদলানো যায় না — রিফান্ড নতুন সারি (D32)।
-- **সীমা / নোট:** `fee_payments.online_payment_id` ঐচ্ছিক রেফারেন্স — R2 না থাকলে খালি।
+- **সীমা / নোট:** D84: institutional fee refunds only; subscription execution deferred under D55, online branch fails closed without online_payment; immutable request/revision snapshots.
 - **পড়ুন:** `docs/modules/finance-advanced.md`, `docs/modules/fees-advanced.md`, `docs/LOCKED-DECISIONS.md`
 - **টেবিল (migration, model, factory এই ধাপেই):**
 
@@ -161,6 +161,8 @@ CREATE TABLE fee_refunds (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     student_id BIGINT UNSIGNED NOT NULL,
+    request_key CHAR(36) NOT NULL,
+    revision INT UNSIGNED NOT NULL,                         -- starts at 1; transitions append the next revision
     original_receipt_no VARCHAR(50) NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     refund_lines JSON NOT NULL,                          -- [{fee_payment_id, amount}] - which receipt lines are reversed
@@ -176,13 +178,15 @@ CREATE TABLE fee_refunds (
     processed_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
-    FOREIGN KEY (student_id) REFERENCES students(id)
+    UNIQUE KEY unique_fee_refund_revision (institution_id, request_key, revision),
+    CONSTRAINT fk_fee_refunds_student FOREIGN KEY (institution_id, student_id) REFERENCES students(institution_id, id)
 );
+CREATE INDEX idx_fee_refunds_inst_status_created ON fee_refunds(institution_id, status, created_at, id);
+CREATE INDEX idx_fee_refunds_inst_student_created ON fee_refunds(institution_id, student_id, created_at, id);
 ```
-- **Route (6):**
+- **Route (5):**
 
 ```
-POST /super/payments/{id}/refund -> SuperRefundController@subscription [role:super_admin]
 GET /fee-refunds/refundable -> FeeRefundController@refundable [role:admin,accountant] (module fees)
 GET /fee-refunds -> FeeRefundController@index [role:admin,accountant] (module fees)
 POST /fee-refunds -> FeeRefundController@store [role:admin,accountant] (module fees)
@@ -190,7 +194,7 @@ GET /fee-refunds/{id} -> FeeRefundController@show [role:admin,accountant] (modul
 POST /fee-refunds/{id}/{action} -> FeeRefundController@transition [role:admin,accountant] (module fees)
 ```
 - **লিখবেন ও সবুজ করবেন:** `RefundCapTest` (docs/modules/finance-advanced.md), `RefundDueRecalcTest` (docs/modules/finance-advanced.md), `RefundImmutabilityTest` (docs/modules/finance-advanced.md), `RefundSettlementTest` (docs/modules/finance-advanced.md), `SubscriptionRefundTest` (docs/modules/finance-advanced.md)
-- **শেষ-শর্ত (Done When):** ফেরতযোগ্য সীমা = প্রদত্ত − আগের ফেরত; তা পেরোলে 422 (`RefundCapTest`)। রিফান্ডের পর বকেয়া নতুন করে ঠিক বাড়ে (`RefundDueRecalcTest`)। রিফান্ড-সারি অপরিবর্তনীয় (`RefundImmutabilityTest`)। নগদ-ফেরত ক্যাশবুকে ঋণাত্মক সারি হয় (`RefundSettlementTest`)। Super Admin স্কুলের subscription-পেমেন্ট ফেরত দেয় (`SubscriptionRefundTest`)। অনলাইন-পেমেন্টের রিফান্ড **শুধু** online payment মডিউল (R2) থাকলে; না থাকলে সেই শাখা নিষ্ক্রিয়।
+- **শেষ-শর্ত (Done When):** D84: ফেরতযোগ্য সীমা = মূল positive payment − processed reversals; অতিরিক্ত/waived/duplicate/foreign lines 422/404 (RefundCapTest), caps rechecked under institution lock. Negative reversal restores dues, original receipt unchanged (RefundDueRecalcTest). request_key/revision snapshots append only, root request ID stable, identical retries idempotent and changed/stale input 409 (RefundImmutabilityTest). Admin/accountant request/process; admin-only approve/reject, self-approval denied except audited exactly-one-active-admin exception. Processing captures time once, writes negative fee reversals plus one positive source=refund expense; cash counted once, closed cash day 409 day_closed, after-commit notification once (RefundSettlementTest). SubscriptionRefundTest proves deferred subscription refund route unavailable and payments/invoices unchanged under D55. Online/gateway/settlement processing fails closed without online_payment. No live gateway, UI, app/demo migration or later task.
 - **যাচাই:** `php artisan test --filter=Refund` · `python3 infra/spec-verify/refs_r11.py`
 
 ### TASK `R3.4` — কর্মচারী, উপস্থিতি ও ছুটি

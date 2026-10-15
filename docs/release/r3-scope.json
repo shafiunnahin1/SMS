@@ -96,7 +96,8 @@
   "D38",
   "D39",
   "D43",
-  "D44"
+  "D44",
+  "D84"
  ],
  "tasks": [
   {
@@ -197,8 +198,7 @@
    ],
    "modules": [],
    "controllers": [
-    "FeeRefundController",
-    "SuperRefundController"
+    "FeeRefundController"
    ],
    "tables": [
     "fee_refunds"
@@ -210,12 +210,12 @@
     "RefundSettlementTest",
     "SubscriptionRefundTest"
    ],
-   "done": "ফেরতযোগ্য সীমা = প্রদত্ত − আগের ফেরত; তা পেরোলে 422 (`RefundCapTest`)। রিফান্ডের পর বকেয়া নতুন করে ঠিক বাড়ে (`RefundDueRecalcTest`)। রিফান্ড-সারি অপরিবর্তনীয় (`RefundImmutabilityTest`)। নগদ-ফেরত ক্যাশবুকে ঋণাত্মক সারি হয় (`RefundSettlementTest`)। Super Admin স্কুলের subscription-পেমেন্ট ফেরত দেয় (`SubscriptionRefundTest`)। অনলাইন-পেমেন্টের রিফান্ড **শুধু** online payment মডিউল (R2) থাকলে; না থাকলে সেই শাখা নিষ্ক্রিয়।",
+   "done": "D84: ফেরতযোগ্য সীমা = মূল positive payment − processed reversals; অতিরিক্ত/waived/duplicate/foreign lines 422/404 (RefundCapTest), caps rechecked under institution lock. Negative reversal restores dues, original receipt unchanged (RefundDueRecalcTest). request_key/revision snapshots append only, root request ID stable, identical retries idempotent and changed/stale input 409 (RefundImmutabilityTest). Admin/accountant request/process; admin-only approve/reject, self-approval denied except audited exactly-one-active-admin exception. Processing captures time once, writes negative fee reversals plus one positive source=refund expense; cash counted once, closed cash day 409 day_closed, after-commit notification once (RefundSettlementTest). SubscriptionRefundTest proves deferred subscription refund route unavailable and payments/invoices unchanged under D55. Online/gateway/settlement processing fails closed without online_payment. No live gateway, UI, app/demo migration or later task.",
    "verify": [
     "php artisan test --filter=Refund",
     "python3 infra/spec-verify/refs_r11.py"
    ],
-   "scope": "`fee_payments.online_payment_id` ঐচ্ছিক রেফারেন্স — R2 না থাকলে খালি।"
+   "scope": "D84: institutional fee refunds only; subscription execution deferred under D55, online branch fails closed without online_payment; immutable request/revision snapshots."
   },
   {
    "id": "R3.4",
@@ -663,7 +663,6 @@
   "POST /cashbook/{date}/reopen",
   "POST /fee-refunds",
   "POST /fee-refunds/{id}/{action}",
-  "POST /super/payments/{id}/refund",
   "POST /hr/staff",
   "POST /hr/leaves",
   "PATCH /hr/leaves/{id}/{action}",
