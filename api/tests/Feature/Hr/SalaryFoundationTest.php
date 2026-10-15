@@ -114,7 +114,8 @@ class SalaryFoundationTest extends TestCase
             $this->assertNotContains($field,(new Teacher())->getFillable());
             $this->assertFalse(Schema::hasColumn('staff_members',$field));
         }
-        foreach(['salary_adjustments','payroll_runs','payroll_items'] as $table) $this->assertFalse(Schema::hasTable($table));
+        $this->assertTrue(Schema::hasTable('salary_adjustments')); // D87: positive R3.6 schema coverage
+        foreach(['payroll_runs','payroll_items'] as $table) $this->assertFalse(Schema::hasTable($table));
         $a=$this->makeInstitution('salary-write-a');$b=$this->makeInstitution('salary-write-b');
         Tenancy::as($a,function()use($b){
             $this->expectException(\LogicException::class);
