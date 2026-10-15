@@ -15,10 +15,10 @@ class SalaryRevisionService
 {
     public function __construct(private SalaryAccess $access,private SalarySnapshotService $snapshots,private SalaryStructureService $structures) {}
 
-    public function propose(User $actor,array $input): SalaryRevision
+    public function propose(User $actor,array $input,?array $batch=null): SalaryRevision
     {
         $this->access->actor($actor);
-        return DB::transaction(function()use($actor,$input){
+        return DB::transaction(function()use($actor,$input,$batch){
             Tenancy::current()->newQuery()->whereKey(Tenancy::current()->id)->lockForUpdate()->firstOrFail();
             $this->access->actor($actor);
             $allowed=['payee_type','payee_id','kind','basic','lines','change_mode','change_value','target','effective_from','reason',
@@ -45,7 +45,7 @@ class SalaryRevisionService
                 'change_mode'=>$data['change_mode'],'change_value'=>$data['change_value']??null,'target'=>$data['target'],
                 'old_basic'=>$snapshot['source']['basic']??null,'old_gross'=>$snapshot['source']['gross']??null,
                 'new_basic'=>$snapshot['result']['basic'],'new_gross'=>$snapshot['result']['gross'],'calculation_snapshot'=>$snapshot,
-                'effective_from'=>$data['effective_from'],'reason'=>$data['reason']??null,'arrears_policy'=>$data['arrears_policy'],'proposed_by'=>$actor->id,'status'=>'proposed']);
+                'effective_from'=>$data['effective_from'],'reason'=>$data['reason']??null,'arrears_policy'=>$data['arrears_policy'],'proposed_by'=>$actor->id,'status'=>'proposed','batch_id'=>$batch['id']??null,'batch_label'=>$batch['label']??null]);
             if($file){$row->acknowledged_path=$file->storeAs('institutions/'.Tenancy::current()->id.'/hr/payroll',Str::uuid().'.'.$file->extension(),'private');$row->save();}
             $notice=false;
             if($snapshot['decrement']){
