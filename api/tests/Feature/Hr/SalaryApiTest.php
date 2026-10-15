@@ -91,6 +91,21 @@ class SalaryApiTest extends RevisionTestCase
         $this->assertNotSame($ids[0],$ids[1]);
     }
 
+    public function test_advance_http_lifecycle_uses_approval_and_idempotent_disbursement(): void
+    {
+        [$i,$admin,$staff]=$this->setupHr();$accountant=$this->makeUser($i,'accountant');
+        $revision=$this->initial($admin,'staff',$staff->id);$this->revisionService()->transition($admin,$revision->id,'approve');$host=$this->hostOf($i);
+        $input=['payee_type'=>'staff','payee_id'=>$staff->id,'amount'=>'12000.00','installments'=>3,'recover_from_month'=>'2026-10'];
+        $id=$this->api('POST',$host,'hr/advances',$accountant,$input)->assertCreated()->assertJsonMissingPath('data.terms_snapshot')->json('data.id');
+        $this->api('GET',$host,'hr/advances',$accountant)->assertOk()->assertJsonCount(1,'data')->assertJsonPath('data.0.id',$id);
+        $this->api('GET',$host,"hr/advances/{$id}",$admin)->assertOk()->assertJsonPath('data.status','requested');
+        $this->api('POST',$host,"hr/advances/{$id}/approve",$admin)->assertOk()->assertJsonPath('data.status','approved');
+        $disbursement=['date'=>now()->toDateString(),'payment_method'=>'cash'];
+        $this->api('POST',$host,"hr/advances/{$id}/disburse",$accountant,$disbursement)->assertOk()->assertJsonPath('data.status','active');
+        $this->api('POST',$host,"hr/advances/{$id}/disburse",$accountant,$disbursement)->assertOk()->assertJsonPath('data.status','active');
+        Tenancy::as($i,fn()=>$this->assertSame(1,\App\Models\Expense::where('source','advance')->count()));
+    }
+
     public function test_salary_route_uses_existing_web_session_cookie_flow(): void
     {
         [$i,$admin]=$this->setupHr();$host=$this->hostOf($i);

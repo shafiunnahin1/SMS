@@ -247,6 +247,10 @@ Route::prefix('v1')->group(function () {
             Route::post('/bonus-schemes/{id}/preview',[BonusSchemeController::class,'preview'])->whereNumber('id');
             Route::post('/bonus-schemes/{id}/apply',[BonusSchemeController::class,'apply'])->whereNumber('id');
             Route::post('/bonus-schemes/{id}/cancel',[BonusSchemeController::class,'cancel'])->whereNumber('id');
+            Route::get('/advances',[SalaryAdvanceController::class,'index']);
+            Route::post('/advances',[SalaryAdvanceController::class,'store']);
+            Route::get('/advances/{id}',[SalaryAdvanceController::class,'show'])->whereNumber('id');
+            Route::post('/advances/{id}/{action}',[SalaryAdvanceController::class,'transition'])->whereNumber('id')->where('action','approve|reject|disburse|skip-installment|write-off');
         });
 
 
