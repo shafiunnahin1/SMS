@@ -65,6 +65,21 @@ class ExpenseService
         });
     }
 
+    /** D87 internal operation; approved terms and amount come only from the persisted tenant advance. */
+    public function disburseAdvance(\App\Models\SalaryAdvance $advance, string $date, string $method, \App\Models\User $actor): Expense
+    {
+        app(\App\Services\Hr\SalaryAccess::class)->actor($actor);
+        return $this->transaction(function()use($advance,$date,$method,$actor){
+            $cashbook=app(CashBookService::class);$cashbook->lockInstitution();
+            $row=\App\Models\SalaryAdvance::lockForUpdate()->findOrFail($advance->id);
+            if($row->status!=='approved' || $row->expense_id!==null) throw new BusinessException(__('salary.conflict'),'advance_conflict',409);
+            \Illuminate\Support\Facades\Validator::make(['date'=>$date,'method'=>$method],['date'=>'required|date_format:Y-m-d|before_or_equal:today','method'=>'required|in:cash,bank,bkash,nagad,rocket,other'])->validate();
+            $cashbook->assertCashWrite($date,$method);
+            $expense=$this->append(['category'=>'advance','title'=>'Advance #'.$row->id,'amount'=>$row->amount,'expense_date'=>$date,'payment_method'=>$method,'source'=>'advance'],$actor->id);
+            $row->expense_id=$expense->id;$row->payment_method=$method;$row->disbursed_at=now();$row->status='active';$row->save();return $expense;
+        });
+    }
+
     public function correct(int $id, ?array $replacement, int $by): Expense
     {
         if ($replacement !== null) $replacement = array_intersect_key($replacement, array_flip(self::INPUT_FIELDS));
