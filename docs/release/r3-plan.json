@@ -326,10 +326,107 @@
    "scope_note": "D87 approved seven-clause contract owner/advance-adjustment-contract-decision.md governs R3.6. Two task tables and ten routes; teacher advances route assigned SalaryAdvanceController@mine. Add immutable terms_snapshot, unique expense_id FK and append-only skipped_months to advances; application_snapshot to existing bonus_schemes via new migration only. No payroll tables or early applied/recovered claims. Manual extra-class entries allowed; unavailable substitutions return dependency_pending. Admin approvals/skip/write-off with maker-checker/configured sole-active-admin exception; accountant prepares/disburses approved advance. Retain exact tests/references; only explicitly approved SalaryFoundationTest/BonusSchemeTest expectation adaptations. No UI/app-demo DB migration/live payments/new dependencies/task reorder."
   },
   {
+   "id": "R3.6a",
+   "title": "প্রতিষ্ঠান অনবোর্ডিং ও বিভাগভিত্তিক staff foundation",
+   "depends_on": [
+    "R3.6"
+   ],
+   "spec_refs": [
+    "DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md",
+    "docs/LOCKED-DECISIONS.md",
+    "docs/AUTHORIZATION.md",
+    "docs/modules/staff-payroll.md",
+    "docs/TESTING.md"
+   ],
+   "goal": "D88/D89 অনুযায়ী Super Admin-provisioned এবং principal self-registration পথ, principal-created staff account, tenant-bound department/duty model ও verified activation তৈরি করা; subscription/billing D55-এর বাইরে থাকবে।",
+   "modules": [],
+   "tables": [
+    "institution_departments",
+    "department_memberships",
+    "department_duties",
+    "department_duty_assignments"
+   ],
+   "controllers": [
+    "PublicInstitutionSignupController",
+    "InstitutionApprovalController",
+    "StaffAccountController",
+    "DepartmentController",
+    "DepartmentDutyController",
+    "DepartmentMembershipController"
+   ],
+   "routes": [
+    "POST /public/institutions -> PublicInstitutionSignupController@store",
+    "POST /public/institutions/{id}/verify -> PublicInstitutionSignupController@verify",
+    "POST /super/institutions/{id}/approve-registration -> InstitutionApprovalController@approve [role:super_admin]",
+    "PATCH /staff/profile -> StaffAccountController@updateOwnProfile [role:institution_staff]",
+    "GET /admin/staff -> StaffAccountController@index [role:admin]",
+    "POST /admin/staff -> StaffAccountController@store [role:admin]",
+    "PUT /admin/staff/{id} -> StaffAccountController@update [role:admin]",
+    "GET /admin/departments -> DepartmentController@index [role:admin]",
+    "POST /admin/departments -> DepartmentController@store [role:admin]",
+    "PUT /admin/departments/{id} -> DepartmentController@update [role:admin]",
+    "POST /admin/departments/{id}/archive -> DepartmentController@archive [role:admin]",
+    "GET /admin/departments/{department}/duties -> DepartmentDutyController@index [role:admin]",
+    "POST /admin/departments/{department}/duties -> DepartmentDutyController@store [role:admin]",
+    "PUT /admin/departments/{department}/duties/{duty} -> DepartmentDutyController@update [role:admin]",
+    "POST /admin/departments/{department}/members -> DepartmentMembershipController@store [role:admin]",
+    "PATCH /admin/department-memberships/{id} -> DepartmentMembershipController@update [role:admin]",
+    "PUT /admin/department-memberships/{id}/duties -> DepartmentMembershipController@assignDuties [role:admin]"
+   ],
+   "tests": [
+    "InstitutionSignupTest",
+    "StaffAccountTest",
+    "DepartmentManagementTest",
+    "DepartmentTenantTest"
+   ],
+   "done_when": "D89: Super Admin provisioning এবং principal self-registration একই tenant-safe onboarding service ব্যবহার করে; principal account verified contact এবং Super Admin approval ছাড়া active নয়; subscription/trial/billing তৈরি হয় না। D88: staff account principal/admin creates, department free-text name, duty label groups only code-owned permission keys, এক User-এর multiple memberships, self-elevation blocked। চারটি নতুন table tenant composite keys/constraints ও audit আছে; কোনও permission designation থেকে inferred নয়।",
+   "verify": [
+    "php artisan test --filter='InstitutionSignupTest|StaffAccountTest|DepartmentManagementTest|DepartmentTenantTest'",
+    "python3 infra/spec-verify/gen_release_plan.py . --check"
+   ],
+   "scope_note": "R3.6 অবশ্যই আগে accepted হবে। New login identity is institution_staff; existing User remains canonical auth. Department memberships point to users; Teacher/StaffMember/payroll identity migration is R3.6b. Public signup stores a pending tenant/first-admin, requires contact verification and Super Admin approval; keep route disabled until owner accepts the activation policy. No subscription/trial/plan change or demo-DB migration."
+  },
+  {
+   "id": "R3.6b",
+   "title": "Staff department permission enforcement ও legacy profile migration",
+   "depends_on": [
+    "R3.6a"
+   ],
+   "spec_refs": [
+    "DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md",
+    "docs/LOCKED-DECISIONS.md",
+    "docs/AUTHORIZATION.md",
+    "docs/modules/staff-payroll.md",
+    "docs/TESTING.md"
+   ],
+   "goal": "Institution staff/teachers-এর সব tenant API action-এ active department membership ও allowlisted duty permission enforce করা এবং legacy Teacher/StaffMember/payroll profiles নিরাপদে map করা।",
+   "modules": [],
+   "tables": [],
+   "controllers": [
+    "DepartmentContextController"
+   ],
+   "routes": [
+    "GET /staff/departments -> DepartmentContextController@index [role:institution_staff]",
+    "GET /staff/departments/{id}/portal -> DepartmentContextController@show [role:institution_staff]"
+   ],
+   "tests": [
+    "DepartmentAuthorizationTest",
+    "StaffMigrationTest",
+    "PayrollDesignationCompatibilityTest",
+    "DepartmentRouteInventoryTest"
+   ],
+   "done_when": "প্রতিটি tenant staff route tenant + active membership + allowlisted permission যাচাই করে; `module:`/`feature:` gates অতিরিক্ত থাকে; direct URL/API, stale/revoked/cross-tenant access fail closed। Existing teacher/accountant role labels no longer grant staff permissions; student/parent/platform roles unchanged. Teacher.user_id, StaffMember.user_id, employee IDs, attendance/leave, payee types, payroll designation and historical snapshots are preserved; legacy department text requires principal review and grants no duties. Migration dry-run proves no duplicate users or privilege expansion.",
+   "verify": [
+    "php artisan test --filter='DepartmentAuthorizationTest|StaffMigrationTest|PayrollDesignationCompatibilityTest|DepartmentRouteInventoryTest'",
+    "python3 infra/spec-verify/verify.py . --deep"
+   ],
+   "scope_note": "Depends on R3.6a and accepted R3.6. Map all existing role middleware routes; keep student, parent, Super Admin, content writer and moderator authorization separate. No destructive migration; don't alter historical salary/bonus snapshots."
+  },
+  {
    "id": "R3.7",
    "title": "Payroll run, payslip ও পরিশোধ",
    "depends_on": [
-    "R3.6"
+    "R3.6b"
    ],
    "spec_refs": [
     "docs/modules/staff-payroll.md",
@@ -623,24 +720,27 @@
     "docs/DESIGN-SYSTEM.md",
     "docs/I18N.md"
    ],
-   "goal": "প্রতিটি R3 মডিউলের পাতা মেনুতে: ক্যাশবুক, রিফান্ড, কর্মচারী/ছুটি/বেতন, payslip, ইনভেন্টরি, হিসাব-খাত, দান। মডিউল বন্ধ থাকলে মেনু-আইটেম লুকানো।",
+   "goal": "প্রতিটি R3 মডিউলের পাতা মেনুতে: ক্যাশবুক, রিফান্ড, কর্মচারী/ছুটি/বেতন, payslip, ইনভেন্টরি, হিসাব-খাত, দান; D88/D89 department setup, staff account/duties, এবং staff department portal। মডিউল বন্ধ থাকলে মেনু-আইটেম লুকানো।",
    "modules": [],
    "tables": [],
    "controllers": [],
    "routes": [],
    "tests": [
-    "MenuReleaseTest"
+    "MenuReleaseTest",
+    "DepartmentPortalTest"
    ],
    "done_when": "নিচের তালিকার প্রতিটি পাতা আছে ও তার পিছনে route আছে; মডিউল বা plan বন্ধ হলে মেনু-আইটেম ও route দুটোই বন্ধ (`MenuReleaseTest`)। সব পাতা বাংলা ও ইংরেজিতে, মোবাইলে (৩৬০px) ব্যবহারযোগ্য। বেতন/payslip-পাতা শুধু অনুমতিপ্রাপ্ত ভূমিকার মেনুতে।",
    "verify": [
     "npm test -- --run MenuReleaseTest",
     "node infra/check-theme-rules.mjs"
    ],
-   "scope_note": "পাতার তালিকা স্বয়ংক্রিয় — `AUTHORIZATION.md`-এর মেনু থেকে R3-মডিউল-সংযুক্ত আইটেম।",
+   "scope_note": "পাতার তালিকা স্বয়ংক্রিয় — `AUTHORIZATION.md`-এর মেনু থেকে R3-মডিউল-সংযুক্ত আইটেম। Department staff menus are permission-filtered; frontend visibility never replaces API authorization.",
    "pages": [
     "admin: cashbook (/admin/fees/cashbook)",
     "admin: expenses (/admin/expenses)",
     "admin: inventory (/admin/inventory)",
+    "admin: staff-accounts (/admin/staff)",
+    "admin: departments (/admin/departments)",
     "admin: hr-staff (/admin/hr/staff)",
     "admin: hr-components (/admin/hr/salary-components)",
     "admin: hr-revisions (/admin/hr/revisions)",
@@ -661,7 +761,9 @@
     "admin: don-donors (/admin/donations/donors)",
     "admin: don-funds (/admin/donations/funds)",
     "admin: don-campaigns (/admin/donations/campaigns)",
-    "admin: don-list (/admin/donations)"
+    "admin: don-list (/admin/donations)",
+    "institution_staff: departments (/staff/departments)",
+    "institution_staff: profile (/staff/profile)"
    ]
   },
   {

@@ -23,17 +23,19 @@
 | `R3.4` | কর্মচারী, উপস্থিতি ও ছুটি | R3.3 | 5 | 18 | 5 |
 | `R3.5` | বেতন-কাঠামো, ইনক্রিমেন্ট ও বোনাস | R3.4 | 6 | 24 | 5 |
 | `R3.6` | সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ | R3.5 | 2 | 10 | 1 |
-| `R3.7` | Payroll run, payslip ও পরিশোধ | R3.6 | 2 | 12 | 7 |
+| `R3.6a` | প্রতিষ্ঠান অনবোর্ডিং ও বিভাগভিত্তিক staff foundation | R3.6 | 4 | 17 | 4 |
+| `R3.6b` | Staff department permission enforcement ও legacy profile migration | R3.6a | 0 | 2 | 4 |
+| `R3.7` | Payroll run, payslip ও পরিশোধ | R3.6b | 2 | 12 | 7 |
 | `R3.8` | ভবিষ্য তহবিল (PF), কর ও চূড়ান্ত নিষ্পত্তি | R3.7 | 1 | 4 | 3 |
 | `R3.9` | স্টোর / ইনভেন্টরি | R3.2 | 2 | 9 | 6 |
 | `R3.10` | হিসাব-খাত (Accounting) — double-entry | R3.3, R3.7, R3.9 | 5 | 20 | 13 |
 | `R3.11` | দান ও তহবিল (ঐচ্ছিক মডিউল) | R3.10 | 4 | 21 | 6 |
-| `R3.12` | R3-এর পাতা (ফ্রন্টএন্ড), ভূমিকাভেদে | R3.11 | 0 | 0 | 1 |
+| `R3.12` | R3-এর পাতা (ফ্রন্টএন্ড), ভূমিকাভেদে | R3.11 | 0 | 0 | 2 |
 | `R3.13` | টাকা ও বেতন-তথ্যের নিরাপত্তা — সামগ্রিক যাচাই | R3.12 | 0 | 0 | 1 |
 | `R3.14` | R3-এর কর্মক্ষমতা (ডেটা বাড়লে) | R3.13 | 0 | 0 | 1 |
 | `R3.A` | R3 গ্রহণ-পরীক্ষা, তারপর চালু | R3.14 | 0 | 0 | 0 |
 
-মোট: **16 task · 30 টেবিল · 134 route · 59টি আলাদা পরীক্ষা**। (ক্রম রৈখিক; `R3.9` শুধু `R3.2`-এর পর, তাই `R3.3`–`R3.8` ও `R3.9` সমান্তরালে চলতে পারে।)
+মোট: **18 task · 34 টেবিল · 153 route · 68টি আলাদা পরীক্ষা**। (ক্রম রৈখিক; `R3.9` শুধু `R3.2`-এর পর, তাই `R3.3`–`R3.8` ও `R3.9` সমান্তরালে চলতে পারে।)
 
 ## গ. `config/release.php` — R3-এর জন্য (R1-এর তালিকার উপর)
 
@@ -554,9 +556,144 @@ GET /teacher/salary/advances -> SalaryAdvanceController@mine [role:teacher] (mod
 - **শেষ-শর্ত (Done When):** D87: AdvanceRecoveryTest proves approved advance disbursement, exact pure recovery calculation (balance/min-net/reduced installment/final remainder/approved skips), no recovered mutation during preview, and retained admin skip/write-off evidence. One atomic source=advance expense per disbursement, identical retry idempotent/conflicting retry 409, cashbook derives cash outflow exactly once and rejects closed-day writes. Reviewed terms/source/policy rechecked at approval/disbursement. Approved adjustment values immutable; audited unapplied cancellation only. Bonus apply creates complete unique scheme/payee approved adjustment effects and immutable application snapshot atomically; retry returns original rows. Teacher /teacher/salary/advances is own-profile only; D33/tenant/role/module/privacy checks pass. Actual payroll-linked recovery/update/closure/retry, bonus runs and paid-month arrears are mandatory R3.7 integration proof, not claimed in R3.6.
 - **যাচাই:** `php artisan test --filter=Advance`
 
-### TASK `R3.7` — Payroll run, payslip ও পরিশোধ
+### TASK `R3.6a` — প্রতিষ্ঠান অনবোর্ডিং ও বিভাগভিত্তিক staff foundation
 
 - **নির্ভর করে:** `R3.6`
+- **লক্ষ্য:** D88/D89 অনুযায়ী Super Admin-provisioned এবং principal self-registration পথ, principal-created staff account, tenant-bound department/duty model ও verified activation তৈরি করা; subscription/billing D55-এর বাইরে থাকবে।
+- **সীমা / নোট:** R3.6 অবশ্যই আগে accepted হবে। New login identity is institution_staff; existing User remains canonical auth. Department memberships point to users; Teacher/StaffMember/payroll identity migration is R3.6b. Public signup stores a pending tenant/first-admin, requires contact verification and Super Admin approval; keep route disabled until owner accepts the activation policy. No subscription/trial/plan change or demo-DB migration.
+- **পড়ুন:** `DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, `docs/LOCKED-DECISIONS.md`, `docs/AUTHORIZATION.md`, `docs/modules/staff-payroll.md`, `docs/TESTING.md`
+- **টেবিল (migration, model, factory এই ধাপেই):**
+
+```sql
+CREATE TABLE institution_departments (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    code VARCHAR(40) NULL,
+    name VARCHAR(120) NOT NULL,
+    description VARCHAR(500) NULL,
+    status ENUM('active','archived') NOT NULL DEFAULT 'active',
+    created_by BIGINT UNSIGNED NOT NULL,
+    updated_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    archived_at TIMESTAMP NULL,
+    UNIQUE KEY unique_department_name (institution_id, name),
+    UNIQUE KEY unique_department_code (institution_id, code),
+    UNIQUE KEY unique_department_tenant_identity (id, institution_id),
+    INDEX idx_departments_institution_status (institution_id, status, id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (created_by, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (updated_by, institution_id) REFERENCES users(id, institution_id)
+);
+```
+```sql
+CREATE TABLE department_memberships (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    department_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    status ENUM('active','inactive','ended') NOT NULL DEFAULT 'active',
+    starts_at DATE NULL,
+    ends_at DATE NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_department_membership (institution_id, department_id, user_id),
+    UNIQUE KEY unique_membership_tenant_identity (id, institution_id),
+    INDEX idx_department_memberships_user_status (institution_id, user_id, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (department_id, institution_id) REFERENCES institution_departments(id, institution_id),
+    FOREIGN KEY (user_id, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (created_by, institution_id) REFERENCES users(id, institution_id)
+);
+```
+```sql
+CREATE TABLE department_duties (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    department_id BIGINT UNSIGNED NOT NULL,
+    code VARCHAR(40) NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    description VARCHAR(500) NULL,
+    permission_keys JSON NOT NULL,
+    status ENUM('active','archived') NOT NULL DEFAULT 'active',
+    created_by BIGINT UNSIGNED NOT NULL,
+    updated_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_department_duty_code (institution_id, department_id, code),
+    UNIQUE KEY unique_duty_tenant_identity (id, institution_id),
+    INDEX idx_department_duties_status (institution_id, department_id, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (department_id, institution_id) REFERENCES institution_departments(id, institution_id),
+    FOREIGN KEY (created_by, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (updated_by, institution_id) REFERENCES users(id, institution_id)
+);
+```
+```sql
+CREATE TABLE department_duty_assignments (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    membership_id BIGINT UNSIGNED NOT NULL,
+    duty_id BIGINT UNSIGNED NOT NULL,
+    status ENUM('active','revoked') NOT NULL DEFAULT 'active',
+    assigned_by BIGINT UNSIGNED NOT NULL,
+    revoked_by BIGINT UNSIGNED NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    revoked_at TIMESTAMP NULL,
+    UNIQUE KEY unique_membership_duty (institution_id, membership_id, duty_id),
+    INDEX idx_duty_assignments_membership_status (institution_id, membership_id, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (membership_id, institution_id) REFERENCES department_memberships(id, institution_id),
+    FOREIGN KEY (duty_id, institution_id) REFERENCES department_duties(id, institution_id),
+    FOREIGN KEY (assigned_by, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (revoked_by, institution_id) REFERENCES users(id, institution_id)
+);
+```
+- **Route (17):**
+
+```
+POST /public/institutions -> PublicInstitutionSignupController@store
+POST /public/institutions/{id}/verify -> PublicInstitutionSignupController@verify
+POST /super/institutions/{id}/approve-registration -> InstitutionApprovalController@approve [role:super_admin]
+PATCH /staff/profile -> StaffAccountController@updateOwnProfile [role:institution_staff]
+GET /admin/staff -> StaffAccountController@index [role:admin]
+POST /admin/staff -> StaffAccountController@store [role:admin]
+PUT /admin/staff/{id} -> StaffAccountController@update [role:admin]
+GET /admin/departments -> DepartmentController@index [role:admin]
+POST /admin/departments -> DepartmentController@store [role:admin]
+PUT /admin/departments/{id} -> DepartmentController@update [role:admin]
+POST /admin/departments/{id}/archive -> DepartmentController@archive [role:admin]
+GET /admin/departments/{department}/duties -> DepartmentDutyController@index [role:admin]
+POST /admin/departments/{department}/duties -> DepartmentDutyController@store [role:admin]
+PUT /admin/departments/{department}/duties/{duty} -> DepartmentDutyController@update [role:admin]
+POST /admin/departments/{department}/members -> DepartmentMembershipController@store [role:admin]
+PATCH /admin/department-memberships/{id} -> DepartmentMembershipController@update [role:admin]
+PUT /admin/department-memberships/{id}/duties -> DepartmentMembershipController@assignDuties [role:admin]
+```
+- **লিখবেন ও সবুজ করবেন:** `InstitutionSignupTest` (docs/TESTING.md), `StaffAccountTest` (docs/TESTING.md), `DepartmentManagementTest` (docs/TESTING.md), `DepartmentTenantTest` (docs/TESTING.md)
+- **শেষ-শর্ত (Done When):** D89: Super Admin provisioning এবং principal self-registration একই tenant-safe onboarding service ব্যবহার করে; principal account verified contact এবং Super Admin approval ছাড়া active নয়; subscription/trial/billing তৈরি হয় না। D88: staff account principal/admin creates, department free-text name, duty label groups only code-owned permission keys, এক User-এর multiple memberships, self-elevation blocked। চারটি নতুন table tenant composite keys/constraints ও audit আছে; কোনও permission designation থেকে inferred নয়।
+- **যাচাই:** `php artisan test --filter='InstitutionSignupTest|StaffAccountTest|DepartmentManagementTest|DepartmentTenantTest'` · `python3 infra/spec-verify/gen_release_plan.py . --check`
+
+### TASK `R3.6b` — Staff department permission enforcement ও legacy profile migration
+
+- **নির্ভর করে:** `R3.6a`
+- **লক্ষ্য:** Institution staff/teachers-এর সব tenant API action-এ active department membership ও allowlisted duty permission enforce করা এবং legacy Teacher/StaffMember/payroll profiles নিরাপদে map করা।
+- **সীমা / নোট:** Depends on R3.6a and accepted R3.6. Map all existing role middleware routes; keep student, parent, Super Admin, content writer and moderator authorization separate. No destructive migration; don't alter historical salary/bonus snapshots.
+- **পড়ুন:** `DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, `docs/LOCKED-DECISIONS.md`, `docs/AUTHORIZATION.md`, `docs/modules/staff-payroll.md`, `docs/TESTING.md`
+- **Route (2):**
+
+```
+GET /staff/departments -> DepartmentContextController@index [role:institution_staff]
+GET /staff/departments/{id}/portal -> DepartmentContextController@show [role:institution_staff]
+```
+- **লিখবেন ও সবুজ করবেন:** `DepartmentAuthorizationTest` (docs/TESTING.md), `StaffMigrationTest` (docs/TESTING.md), `PayrollDesignationCompatibilityTest` (docs/TESTING.md), `DepartmentRouteInventoryTest` (docs/TESTING.md)
+- **শেষ-শর্ত (Done When):** প্রতিটি tenant staff route tenant + active membership + allowlisted permission যাচাই করে; `module:`/`feature:` gates অতিরিক্ত থাকে; direct URL/API, stale/revoked/cross-tenant access fail closed। Existing teacher/accountant role labels no longer grant staff permissions; student/parent/platform roles unchanged. Teacher.user_id, StaffMember.user_id, employee IDs, attendance/leave, payee types, payroll designation and historical snapshots are preserved; legacy department text requires principal review and grants no duties. Migration dry-run proves no duplicate users or privilege expansion.
+- **যাচাই:** `php artisan test --filter='DepartmentAuthorizationTest|StaffMigrationTest|PayrollDesignationCompatibilityTest|DepartmentRouteInventoryTest'` · `python3 infra/spec-verify/verify.py . --deep`
+
+### TASK `R3.7` — Payroll run, payslip ও পরিশোধ
+
+- **নির্ভর করে:** `R3.6b`
 - **লক্ষ্য:** মাসিক বেতন-হিসাব (run): গণনা → পর্যালোচনা → maker-checker অনুমোদন → পরিশোধ-নথি → payslip PDF। অনুমোদিত run অপরিবর্তনীয়।
 - **সীমা / নোট:** ব্যাংক-ফাইল ও কর-হার আপনার হিসাবরক্ষক/ব্যাংক থেকে আসল ফরম্যাট পেলে। D86 preserves separate bonus-run acceptance and paid-history-dependent revision arrears integration (including no duplicate effects); R3.5 preview/fail-closed tests are not settlement/run proof. D87: actual regular-payroll advance deduction and atomic recovered update/closure must consume approved skips and prove retry/no duplicate recovery; pure R3.6 calculation is not payroll settlement proof.
 - **পড়ুন:** `docs/modules/staff-payroll.md`, `docs/LOCKED-DECISIONS.md`, `infra/spec-verify/payroll_ref.py`
@@ -973,8 +1110,8 @@ GET /donations/{id}/receipt.pdf -> DonationController@receipt [role:admin,accoun
 ### TASK `R3.12` — R3-এর পাতা (ফ্রন্টএন্ড), ভূমিকাভেদে
 
 - **নির্ভর করে:** `R3.11`
-- **লক্ষ্য:** প্রতিটি R3 মডিউলের পাতা মেনুতে: ক্যাশবুক, রিফান্ড, কর্মচারী/ছুটি/বেতন, payslip, ইনভেন্টরি, হিসাব-খাত, দান। মডিউল বন্ধ থাকলে মেনু-আইটেম লুকানো।
-- **সীমা / নোট:** পাতার তালিকা স্বয়ংক্রিয় — `AUTHORIZATION.md`-এর মেনু থেকে R3-মডিউল-সংযুক্ত আইটেম।
+- **লক্ষ্য:** প্রতিটি R3 মডিউলের পাতা মেনুতে: ক্যাশবুক, রিফান্ড, কর্মচারী/ছুটি/বেতন, payslip, ইনভেন্টরি, হিসাব-খাত, দান; D88/D89 department setup, staff account/duties, এবং staff department portal। মডিউল বন্ধ থাকলে মেনু-আইটেম লুকানো।
+- **সীমা / নোট:** পাতার তালিকা স্বয়ংক্রিয় — `AUTHORIZATION.md`-এর মেনু থেকে R3-মডিউল-সংযুক্ত আইটেম। Department staff menus are permission-filtered; frontend visibility never replaces API authorization.
 - **পড়ুন:** `docs/AUTHORIZATION.md`, `docs/UI-PACKS.md`, `docs/DESIGN-SYSTEM.md`, `docs/I18N.md`
 - **পাতা (মেনু থেকে):**
 
@@ -982,6 +1119,8 @@ GET /donations/{id}/receipt.pdf -> DonationController@receipt [role:admin,accoun
 admin: cashbook (/admin/fees/cashbook)
 admin: expenses (/admin/expenses)
 admin: inventory (/admin/inventory)
+admin: staff-accounts (/admin/staff)
+admin: departments (/admin/departments)
 admin: hr-staff (/admin/hr/staff)
 admin: hr-components (/admin/hr/salary-components)
 admin: hr-revisions (/admin/hr/revisions)
@@ -1003,8 +1142,10 @@ admin: don-donors (/admin/donations/donors)
 admin: don-funds (/admin/donations/funds)
 admin: don-campaigns (/admin/donations/campaigns)
 admin: don-list (/admin/donations)
+institution_staff: departments (/staff/departments)
+institution_staff: profile (/staff/profile)
 ```
-- **লিখবেন ও সবুজ করবেন:** `MenuReleaseTest` (docs/TESTING.md)
+- **লিখবেন ও সবুজ করবেন:** `MenuReleaseTest` (docs/TESTING.md), `DepartmentPortalTest` (docs/TESTING.md)
 - **শেষ-শর্ত (Done When):** নিচের তালিকার প্রতিটি পাতা আছে ও তার পিছনে route আছে; মডিউল বা plan বন্ধ হলে মেনু-আইটেম ও route দুটোই বন্ধ (`MenuReleaseTest`)। সব পাতা বাংলা ও ইংরেজিতে, মোবাইলে (৩৬০px) ব্যবহারযোগ্য। বেতন/payslip-পাতা শুধু অনুমতিপ্রাপ্ত ভূমিকার মেনুতে।
 - **যাচাই:** `npm test -- --run MenuReleaseTest` · `node infra/check-theme-rules.mjs`
 
@@ -1050,6 +1191,9 @@ admin: don-list (/admin/donations)
 11. Super Admin কোনো বেতন-তথ্য দেখতে পায় না; এক স্কুল অন্যের R3-তথ্য দেখে না (tenancy-পরীক্ষা সবুজ)
 12. আসল MySQL-এ স্কিমা ও আচরণ-পরীক্ষা সবুজ; R3 hot-query পরীক্ষা সবুজ
 13. payroll-এর আইনি/হিসাব যাচাই (PF, কর, গ্র্যাচুইটি, কর্তনের নিয়ম) একজন হিসাবরক্ষক ও আইনজীবী করেছেন
+14. Super Admin provisioning and principal self-registration create one verified first admin for the tenant; pending public registration is not active before Super Admin approval and no subscription/trial/billing is introduced
+15. Institution staff and teachers access tenant actions only through active department membership and code-owned allowlisted duties; designations and legacy department labels never grant permissions
+16. Teacher/StaffMember/payroll history, employee identifiers, attendance/leave links, and salary/bonus designation snapshots survive migration without duplicate login identities or privilege expansion
 
 ## চ. বাইরের তথ্য ছাড়া যা এগোয় না (আপনার/বিশেষজ্ঞের কাজ)
 

@@ -55,8 +55,11 @@ def routes():
         ind = len(ln) - len(ln.lstrip())
         while stack and ind <= stack[-1][0] and re.match(r'\s*\}\);', ln): stack.pop()
         if '->group(' in ln:
-            pm = re.search(r"->prefix\('([\w\-/]+)'\)", ln); rl = re.search(r"'role:([\w,]+)'", ln); md = re.search(r"'module:(\w+)'", ln)
-            stack.append((ind, '/' + pm.group(1) if pm else '', rl.group(1) if rl else None, md.group(1) if md else None))
+            pm = re.search(r"(?:::|->)prefix\('([\w\-/]+)'\)", ln); rl = re.search(r"'role:([\w,]+)'", ln); md = re.search(r"'module:(\w+)'", ln)
+            # Plans use paths relative to the outer API version, preserving every nested prefix.
+            prefix = '/' + pm.group(1) if pm else ''
+            if not stack and prefix == '/v1': prefix = ''
+            stack.append((ind, prefix, rl.group(1) if rl else None, md.group(1) if md else None))
         pre = ''.join(s[1] for s in stack); role = next((s[2] for s in reversed(stack) if s[2]), None); mod = next((s[3] for s in reversed(stack) if s[3]), None)
         r2 = re.search(r"role:([\w,]+)'\)", ln.split('Route::', 1)[-1]) if 'Route::' in ln else None
         if r2: role = r2.group(1)

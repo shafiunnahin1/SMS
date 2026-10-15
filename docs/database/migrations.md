@@ -11,6 +11,10 @@ php artisan make:migration create_payments_table
 
 # Step 2: Core (depends on institutions)
 php artisan make:migration create_users_table
+php artisan make:migration create_institution_departments_table
+php artisan make:migration create_department_memberships_table
+php artisan make:migration create_department_duties_table
+php artisan make:migration create_department_duty_assignments_table
 php artisan make:migration create_programs_table
 
 # Step 3: Academic (depends on programs + users)

@@ -73,7 +73,7 @@ CREATE TABLE users (
     phone VARCHAR(20) NULL,                      -- staff/parent login; NULL for student users
     username VARCHAR(50) NULL,                   -- student login = students.student_id
     password VARCHAR(255) NOT NULL,
-    role ENUM('super_admin','admin','teacher','student','parent','accountant','content_writer','content_moderator') NOT NULL,   -- D65: content_writer/content_moderator are platform roles (institution_id NULL)
+    role ENUM('super_admin','admin','teacher','student','parent','accountant','content_writer','content_moderator','institution_staff') NOT NULL,   -- D65 platform roles; D88 institution_staff is an identity, department duties authorize access
     avatar VARCHAR(255),
     is_active TINYINT(1) DEFAULT 1,
     last_login_at TIMESTAMP NULL,
@@ -3135,3 +3135,88 @@ CREATE TABLE qb_import_map (                                -- D69 (QB.11): whic
 CREATE INDEX idx_fee_refunds_inst_status_created ON fee_refunds(institution_id, status, created_at, id);
 CREATE INDEX idx_fee_refunds_inst_student_created ON fee_refunds(institution_id, student_id, created_at, id);
 CREATE INDEX idx_fee_payments_inst_reverses ON fee_payments(institution_id, reverses_id);
+
+-- D88: staff authorization is scoped by department membership and code-owned permission keys.
+CREATE UNIQUE INDEX unique_users_id_institution ON users(id, institution_id);
+
+CREATE TABLE institution_departments (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    code VARCHAR(40) NULL,
+    name VARCHAR(120) NOT NULL,
+    description VARCHAR(500) NULL,
+    status ENUM('active','archived') NOT NULL DEFAULT 'active',
+    created_by BIGINT UNSIGNED NOT NULL,
+    updated_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    archived_at TIMESTAMP NULL,
+    UNIQUE KEY unique_department_name (institution_id, name),
+    UNIQUE KEY unique_department_code (institution_id, code),
+    UNIQUE KEY unique_department_tenant_identity (id, institution_id),
+    INDEX idx_departments_institution_status (institution_id, status, id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (created_by, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (updated_by, institution_id) REFERENCES users(id, institution_id)
+);
+
+CREATE TABLE department_memberships (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    department_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    status ENUM('active','inactive','ended') NOT NULL DEFAULT 'active',
+    starts_at DATE NULL,
+    ends_at DATE NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_department_membership (institution_id, department_id, user_id),
+    UNIQUE KEY unique_membership_tenant_identity (id, institution_id),
+    INDEX idx_department_memberships_user_status (institution_id, user_id, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (department_id, institution_id) REFERENCES institution_departments(id, institution_id),
+    FOREIGN KEY (user_id, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (created_by, institution_id) REFERENCES users(id, institution_id)
+);
+
+CREATE TABLE department_duties (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    department_id BIGINT UNSIGNED NOT NULL,
+    code VARCHAR(40) NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    description VARCHAR(500) NULL,
+    permission_keys JSON NOT NULL,
+    status ENUM('active','archived') NOT NULL DEFAULT 'active',
+    created_by BIGINT UNSIGNED NOT NULL,
+    updated_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_department_duty_code (institution_id, department_id, code),
+    UNIQUE KEY unique_duty_tenant_identity (id, institution_id),
+    INDEX idx_department_duties_status (institution_id, department_id, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (department_id, institution_id) REFERENCES institution_departments(id, institution_id),
+    FOREIGN KEY (created_by, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (updated_by, institution_id) REFERENCES users(id, institution_id)
+);
+
+CREATE TABLE department_duty_assignments (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    membership_id BIGINT UNSIGNED NOT NULL,
+    duty_id BIGINT UNSIGNED NOT NULL,
+    status ENUM('active','revoked') NOT NULL DEFAULT 'active',
+    assigned_by BIGINT UNSIGNED NOT NULL,
+    revoked_by BIGINT UNSIGNED NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    revoked_at TIMESTAMP NULL,
+    UNIQUE KEY unique_membership_duty (institution_id, membership_id, duty_id),
+    INDEX idx_duty_assignments_membership_status (institution_id, membership_id, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (membership_id, institution_id) REFERENCES department_memberships(id, institution_id),
+    FOREIGN KEY (duty_id, institution_id) REFERENCES department_duties(id, institution_id),
+    FOREIGN KEY (assigned_by, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (revoked_by, institution_id) REFERENCES users(id, institution_id)
+);

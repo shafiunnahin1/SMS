@@ -250,11 +250,11 @@ Tenant-scoped route কখনো `tenant:optional`-এ রাখা যাবে
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController};
-use App\Http\Controllers\Public\{BootstrapController, SignupController, ManifestController, PublicThemeController};
+use App\Http\Controllers\Public\{BootstrapController, SignupController, ManifestController, PublicThemeController, PublicInstitutionSignupController};
 use App\Http\Controllers\Internal\TlsCheckController;
 use App\Http\Controllers\SuperAdmin\{
     InstitutionController, PlanController, PaymentController, ReportController as SAReportController,
-    InstitutionThemeController, ThemePresetController, DomainApprovalController
+    InstitutionThemeController, ThemePresetController, DomainApprovalController, InstitutionApprovalController
 };
 use App\Http\Controllers\Admin\{
     StudentController, TeacherController, ProgramController, BatchController, EnrollmentController,
@@ -263,7 +263,7 @@ use App\Http\Controllers\Admin\{
     ExpenseController, LeadController, TeacherPayoutController, DomainController, ThemeController,
     TerminologyController, SmsCreditController, TeacherAttendanceController,
     PaymentSettingsController, OnlinePaymentController as AdminOnlinePaymentController, SmsSenderController, WebsiteSettingsController,
-    ConsentController, StudentPrivacyController
+    ConsentController, StudentPrivacyController, StaffAccountController, DepartmentController, DepartmentDutyController, DepartmentMembershipController
 };
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Parent\{FeePaymentController, FeePaymentCallbackController};
@@ -289,6 +289,7 @@ use App\Http\Controllers\Platform\{SupportTicketController, CouponController, Ex
 use App\Http\Controllers\PublicSite\{GalleryController, NewsController, SitePageController, PublicTeacherController, PublicEventController, VerifyController};
 use App\Http\Controllers\Teacher\{MarkController, HomeworkController, MaterialController};
 use App\Http\Controllers\Shared\{NotificationController, MessageController, AuditLogController, TransportController};
+use App\Http\Controllers\Staff\DepartmentContextController;
 use App\Http\Controllers\Billing\SslCommerzController;
 
 // ─── 0. Internal (loopback only, NO tenant, NO auth) — path is /api/internal/..., outside v1 ───
@@ -311,6 +312,8 @@ Route::prefix('v1')->group(function () {
     // ─── 2. Central host only: signup, gateway callbacks, Super Admin ─────
     Route::middleware('tenant:central')->group(function () {
         Route::post('/public/signup',         [SignupController::class, 'store']);
+        Route::post('/public/institutions',  [PublicInstitutionSignupController::class, 'store'])->middleware('throttle:signup');
+        Route::post('/public/institutions/{id}/verify', [PublicInstitutionSignupController::class, 'verify'])->middleware('throttle:otp');
         Route::get('/public/slug-check',      [SignupController::class, 'slugCheck']);
         Route::get('/public/plans',           [SignupController::class, 'plans']);
 
@@ -359,6 +362,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/institutions/import',       [SuperImportController::class, 'store']);
             // D55/D84: subscription refund route deferred until module-based billing is specified.
             Route::apiResource('institutions',        InstitutionController::class);      // incl. institution_type, enabled_modules
+            Route::post('/institutions/{id}/approve-registration', [InstitutionApprovalController::class, 'approve']);
             Route::patch('/institutions/{id}/toggle', [InstitutionController::class, 'toggleStatus']);
             Route::post('/institutions/{id}/sms-credits', [SmsCreditController::class, 'adjust']);
             Route::get('/sms-settings',               [UniversalSmsController::class, 'show']);      // D57: the universal BulkSMSBD API + the rate per SMS part (D56)
@@ -524,6 +528,9 @@ Route::prefix('v1')->group(function () {
         // Shared by every tenant role
         Route::post('/auth/logout',               [LoginController::class,         'logout']);
         Route::get('/auth/me',                    [LoginController::class,         'me']);
+        Route::patch('/staff/profile',            [StaffAccountController::class, 'updateOwnProfile'])->middleware('role:institution_staff');
+        Route::get('/staff/departments',          [DepartmentContextController::class, 'index'])->middleware('role:institution_staff');
+        Route::get('/staff/departments/{id}/portal', [DepartmentContextController::class, 'show'])->whereNumber('id')->middleware('role:institution_staff');
         Route::patch('/auth/change-password',     [PasswordResetController::class, 'changePassword']);
         Route::get('/auth/sessions',              [SessionController::class, 'index']);
         Route::delete('/auth/sessions/{id}',      [SessionController::class, 'destroy']);
@@ -550,6 +557,17 @@ Route::prefix('v1')->group(function () {
         // ── Institution Admin ─────────────────────────────────
         Route::middleware('role:admin')->group(function () {
             Route::get('/admin/dashboard',        [DashboardController::class, 'admin']);
+            Route::prefix('admin')->group(function () {
+                Route::apiResource('staff', StaffAccountController::class)->except(['show', 'destroy']);
+                Route::apiResource('departments', DepartmentController::class)->except(['show', 'destroy']);
+                Route::post('/departments/{id}/archive', [DepartmentController::class, 'archive'])->whereNumber('id');
+                Route::get('/departments/{department}/duties', [DepartmentDutyController::class, 'index'])->whereNumber('department');
+                Route::post('/departments/{department}/duties', [DepartmentDutyController::class, 'store'])->whereNumber('department');
+                Route::put('/departments/{department}/duties/{duty}', [DepartmentDutyController::class, 'update'])->whereNumber('department')->whereNumber('duty');
+                Route::post('/departments/{department}/members', [DepartmentMembershipController::class, 'store'])->whereNumber('department');
+                Route::patch('/department-memberships/{id}', [DepartmentMembershipController::class, 'update'])->whereNumber('id');
+                Route::put('/department-memberships/{id}/duties', [DepartmentMembershipController::class, 'assignDuties'])->whereNumber('id');
+            });
             Route::post('/admin/users/{id}/force-logout', [SessionController::class, 'forceLogout']);
             Route::post('/admin/users/{id}/unlock',       [SessionController::class, 'unlock']);
             Route::get('/students/{id}/consents',         [ConsentController::class, 'index']);

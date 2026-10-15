@@ -113,7 +113,7 @@ for role in ['admin','teacher','student','parent','accountant']:
     if m: ok(len(re.findall(r'primary:\s*true',m.group(1)))<=4,f'{role}: at most 4 tab-bar (primary) items')
 used=set()
 for m in re.finditer(r"role:([a-z_,]+)",rt): used|=set(m.group(1).split(','))
-_roles={'super_admin','admin','teacher','student','parent','accountant','content_writer','content_moderator'}   # + the D65 platform writer roles (QB.2)
+_roles={'super_admin','admin','teacher','student','parent','accountant','content_writer','content_moderator','institution_staff'}   # D65 platform roles; D88 department-authorized staff identity
 ok(used<=_roles,f'roles used in routes exist in users.role {used-_roles}')
 closures=re.findall(r"Route::(?:get|post|put|patch|delete|any|match)\([^\n]*,\s*(?:fn|function)\b",rt); ok(not closures,'no action closures in routes (route:cache must work)')
 steps=set(re.findall(r'^###? Step (\d+\.\d+[a-z]?)',rd('docs/BUILD-SEQUENCE.md'),re.M))
@@ -540,6 +540,8 @@ _pc=subprocess.run([sys.executable,os.path.join(R,'infra/spec-verify/gen_release
 _r21=subprocess.run([sys.executable,os.path.join(R,'infra/spec-verify/gen_r21_plan.py'),R,'--check'],capture_output=True,text=True)
 ok(_r21.returncode==0,f'D83 R2.1 planning is blocked, mapped and fresh: {_r21.stdout.strip()} {_r21.stderr.strip()[:120]}')
 _r21tests=subprocess.run([sys.executable,os.path.join(R,'infra/spec-verify/test_r21_plan.py')],capture_output=True,text=True)
+_prefix_tests=subprocess.run([sys.executable,os.path.join(R,'infra/spec-verify/test_route_prefixes.py')],capture_output=True,text=True)
+ok(_prefix_tests.returncode==0,'D88 nested static/chained route-prefix regression tests: '+(_prefix_tests.stderr.strip() or _prefix_tests.stdout.strip()))
 ok(_r21tests.returncode==0,f'D83 planning mutation/freshness tests: {_r21tests.stderr.strip()[-180:]}')
 ok(_pc.returncode==0,f'docs/AGENT-PLAN-R3.md and r3-plan.json are generated from the current specs: {_pc.stdout.strip()[-80:]}')
 ok('RELEASE-3.md' in rd('docs/ROADMAP.md') and 'AGENT-PLAN-R3.md' in rd('AGENTS.md') and 'AGENT-PLAN-R3.md' in rd('README.md'),'ROADMAP, AGENTS and README point at the R3 documents')

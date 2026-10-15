@@ -34,7 +34,7 @@ def routes_of(ctrls):
 def menu_pages(modules):
     """(role, key, path) of menu items that name one of `modules` (directly or through their group)."""
     a = rd('docs/AUTHORIZATION.md'); out = []
-    for role in ['admin', 'teacher', 'accountant', 'parent', 'super_admin']:
+    for role in ['admin', 'teacher', 'accountant', 'institution_staff', 'parent', 'super_admin']:
         m = re.search(r"\n  %s: \[(.*?)\n  \]," % role, a, re.S)
         if not m: continue
         gate = None; ingroup = False
@@ -45,7 +45,7 @@ def menu_pages(modules):
             im = re.match(r"\s*it\('([\w\-]+)',\s*'([^']+)'", ln)
             if not im: continue
             mm = re.search(r"module: '(\w+)'", ln); mod = mm.group(1) if mm else gate
-            if mod in modules: out.append((role, im.group(1), im.group(2)))
+            if mod in modules or re.search(r"(?:staff_access|department_admin):\s*true", ln): out.append((role, im.group(1), im.group(2)))
     return out
 
 PAGES = menu_pages(set(SC['modules']) | set(SC['prerequisites']['modules']))

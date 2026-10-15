@@ -504,3 +504,15 @@ Test-এ tenant নির্ধারণ হয় `Host` header দিয়ে
 | `SmsRechargeTest` | D58: POST /subscription/sms-credits creates a bKash payment (sandbox fake); the central-domain callback executes it once; a success adds the amount to the wallet with a `purchase` row; a repeated or failed callback adds nothing; Super Admin `adjust` writes an `adjustment` row |
 | `SuperInstitutionTest` | 5.3: only super_admin on the central host; create an institution with its admin; suspend / activate; a module override changes that tenant's menu at once; another role or host is refused |
 | `LocaleTest` | `PUT /auth/locale` শুধু `bn`\|`en` (R1) সংরক্ষণ করে `users.locale`; অন্য মান 422; পরের লগইনে ভাষা মনে থাকে |
+
+## D88/D89 — Department Staff Authorization And Institution Onboarding (R3.6a/b, R3.12)
+
+- `InstitutionSignupTest`: Super Admin provisioning and principal self-registration use one tenant-safe onboarding service; contact verification, duplicate/slug/rate-limit checks, pending tenant state, explicit Super Admin approval, and no subscription/trial/departments/permissions by default.
+- `StaffAccountTest`: principal/admin creates staff by phone/email; verified first login; duplicate contact rejected; staff edits only allowlisted profile fields; no self-elevation or self-activation.
+- `DepartmentManagementTest`: create/archive departments; create duties only from the code-owned permission catalog; unknown permission keys fail closed; no permission comes from a free-text designation.
+- `DepartmentTenantTest`: composite tenant references, cross-tenant department/member/duty IDs rejected, multiple departments per user, and unique membership/duty assignment.
+- `DepartmentAuthorizationTest`: each action checks tenant + active membership + duty permission + existing module/feature gates; revocation/account deactivation takes effect immediately; direct API and URL access fail closed.
+- `StaffMigrationTest`: teacher/accountant User, Teacher, StaffMember, nullable user_id, employee IDs, attendance/leave/payee references map without duplicate login or lost history; legacy department strings grant no permission.
+- `PayrollDesignationCompatibilityTest`: HR/payroll designation and salary/bonus snapshots remain unchanged by department membership or display-title changes.
+- `DepartmentRouteInventoryTest`: every tenant route is classified as department-permission staff, principal-only, student/parent, or central-platform; no legacy staff-only route remains unclassified.
+- `DepartmentPortalTest` (Vitest/Playwright): only assigned departments/actions are shown; one/multiple department states, loading/empty/error, context switching, direct-URL denial, Bengali/English, keyboard and 360px/desktop behavior.

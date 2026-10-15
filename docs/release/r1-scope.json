@@ -940,6 +940,27 @@
   "QbWithdrawalController": {
    "release": "R1",
    "step": "QB.10b"
+    },
+    "PublicInstitutionSignupController": {
+     "release": "R3"
+    },
+    "InstitutionApprovalController": {
+     "release": "R3"
+    },
+    "StaffAccountController": {
+     "release": "R3"
+    },
+    "DepartmentController": {
+     "release": "R3"
+    },
+    "DepartmentDutyController": {
+     "release": "R3"
+    },
+    "DepartmentMembershipController": {
+     "release": "R3"
+    },
+    "DepartmentContextController": {
+     "release": "R3"
   }
  },
  "route_exclude": [

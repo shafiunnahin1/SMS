@@ -355,7 +355,7 @@ CREATE TABLE users (
     phone VARCHAR(20) NULL,                      -- staff/parent login; NULL for student users
     username VARCHAR(50) NULL,                   -- student login = students.student_id
     password VARCHAR(255) NOT NULL,
-    role ENUM('super_admin','admin','teacher','student','parent','accountant','content_writer','content_moderator') NOT NULL,   -- D65: content_writer/content_moderator are platform roles (institution_id NULL)
+    role ENUM('super_admin','admin','teacher','student','parent','accountant','content_writer','content_moderator','institution_staff') NOT NULL,   -- D65 platform roles; D88 institution_staff is an identity, department duties authorize access
     avatar VARCHAR(255),
     is_active TINYINT(1) DEFAULT 1,
     last_login_at TIMESTAMP NULL,
@@ -378,6 +378,7 @@ ALTER TABLE users ADD COLUMN whatsapp_number VARCHAR(20) NULL;
 ALTER TABLE users ADD COLUMN whatsapp_enabled TINYINT(1) DEFAULT 0;
 ALTER TABLE users ADD COLUMN name_alt VARCHAR(150) NULL;
 ALTER TABLE users ADD COLUMN ui_preferences JSON NULL;
+CREATE UNIQUE INDEX unique_users_id_institution ON users(id, institution_id);
 
 CREATE TABLE otp_tokens (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -3050,7 +3051,7 @@ php artisan test   # whole suite stays green
 | R1.1 | 35 |
 | R2 | 150 |
 | R2+ | 34 |
-| R3 | 128 |
+| R3 | 147 |
 | R4 | 11 |
 | R5 | 11 |
 
@@ -3063,7 +3064,7 @@ php artisan test   # whole suite stays green
 - **R1.1:** `ExpenseController`, `ExportController`, `NoticeAckController`, `NoticeController`, `RoutineController`, `SuperBackupController`, `SuperImportController`, `SuperSupportController`, `SupportTicketController`
 - **R2:** `AdminOnlinePaymentController`, `AdmissionCycleController`, `AdmissionLeadActionController`, `DomainApprovalController`, `DomainController`, `DueBlockController`, `EmergencyController`, `FeePaymentCallbackController`, `FeePaymentController`, `GalleryController`, `InstitutionThemeController`, `LeadController`, `ManifestController`, `MarksLockController`, `MaterialController`, `MessageController`, `NewsController`, `OnlinePaymentReportController`, `PaymentSettingsController`, `PayoutAccountController`, `PeriodAttendanceController`, `PublicAdmissionController`, `PublicAdmissionPayController`, `PublicAdmissionStatusController`, `PublicEventController`, `PublicSiteController`, `PublicTeacherController`, `PublicThemeController`, `ResultSheetController`, `RoutineBlockController`, `SettlementController`, `SitePageController`, `SmsCampaignController`, `SmsSenderApprovalController`, `SmsTemplateController`, `SmsWebhookController`, `StudentLeaveController`, `SubstitutionController`, `TeacherPayoutController`, `ThemePresetController`, `TlsCheckController`, `WebsiteSettingsController`
 - **R2+:** `HifzController`, `HomeworkController`, `LessonPlanController`, `RiskController`, `SyllabusCoverageController`, `SyllabusUnitController`, `VerifyController`
-- **R3:** `AccountController`, `AccountingReportController`, `AccountingSettingController`, `BankReconciliationController`, `BonusSchemeController`, `BudgetController`, `CashBookController`, `DonationCampaignController`, `DonationController`, `DonationFundController`, `DonorController`, `FeeRefundController`, `FinalSettlementController`, `IncrementBatchController`, `InventoryItemController`, `InventoryMovementController`, `InventoryReportController`, `LeaveController`, `LeaveTypeController`, `PayAccountController`, `PayrollItemController`, `PayrollReportController`, `PayrollRunController`, `ProvidentFundController`, `SalaryAdjustmentController`, `SalaryAdvanceController`, `SalaryComponentController`, `SalaryRevisionController`, `SalaryStructureController`, `StaffAttendanceController`, `StaffController`, `TeacherAttendanceController`, `TeacherSalaryController`, `VoucherController`
+- **R3:** `AccountController`, `AccountingReportController`, `AccountingSettingController`, `BankReconciliationController`, `BonusSchemeController`, `BudgetController`, `CashBookController`, `DepartmentContextController`, `DepartmentController`, `DepartmentDutyController`, `DepartmentMembershipController`, `DonationCampaignController`, `DonationController`, `DonationFundController`, `DonorController`, `FeeRefundController`, `FinalSettlementController`, `IncrementBatchController`, `InstitutionApprovalController`, `InventoryItemController`, `InventoryMovementController`, `InventoryReportController`, `LeaveController`, `LeaveTypeController`, `PayAccountController`, `PayrollItemController`, `PayrollReportController`, `PayrollRunController`, `ProvidentFundController`, `PublicInstitutionSignupController`, `SalaryAdjustmentController`, `SalaryAdvanceController`, `SalaryComponentController`, `SalaryRevisionController`, `SalaryStructureController`, `StaffAccountController`, `StaffAttendanceController`, `StaffController`, `TeacherAttendanceController`, `TeacherSalaryController`, `VoucherController`
 - **R4:** `AttendanceDeviceController`, `DevicePunchController`, `DevicePunchReviewController`, `PersonCredentialController`, `TransportController`
 - **R5:** `CouponController`, `ImpersonationController`, `PlatformSettingController`, `SAReportController`, `SuperCouponController`
 

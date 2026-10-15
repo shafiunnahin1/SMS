@@ -6,12 +6,12 @@
 ## ১. আকার (গুনে পাওয়া)
 | | R3 |
 |---|---|
-| ডেটাবেস টেবিল | **29** (+ পূর্বশর্ত `expenses` ১টি) |
+| ডেটাবেস টেবিল | **33** (+ পূর্বশর্ত `expenses` ১টি) |
 | মডিউল-কী | **6** (`cashbook`, `hr_payroll`, `teacher_attendance`, `inventory`, `accounting`, `donations`) + পূর্বশর্ত `expenses` |
-| Task (ধাপ) | **16** |
-| Route | **128** (+ `expenses`-এর 6টি) |
-| আলাদা পরীক্ষা | **59** |
-| মেনু-পাতা | **24** |
+| Task (ধাপ) | **18** |
+| Route | **147** (+ `expenses`-এর 6টি) |
+| আলাদা পরীক্ষা | **68** |
+| মেনু-পাতা | **28** |
 
 ## ২. R3-এ কী আছে
 | বিষয় | কী |
@@ -38,13 +38,15 @@
 | `R3.3` | ফি রিফান্ড ও reversal | R3.2 | 1 | 5 | 5 |
 | `R3.4` | কর্মচারী, উপস্থিতি ও ছুটি | R3.3 | 5 | 18 | 5 |
 | `R3.5` | বেতন-কাঠামো, ইনক্রিমেন্ট ও বোনাস | R3.4 | 6 | 24 | 5 |
-| `R3.6` | সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ | R3.5 | 2 | 9 | 1 |
-| `R3.7` | Payroll run, payslip ও পরিশোধ | R3.6 | 2 | 13 | 7 |
+| `R3.6` | সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ | R3.5 | 2 | 10 | 1 |
+| `R3.6a` | প্রতিষ্ঠান অনবোর্ডিং ও বিভাগভিত্তিক staff foundation | R3.6 | 4 | 17 | 4 |
+| `R3.6b` | Staff department permission enforcement ও legacy profile migration | R3.6a | 0 | 2 | 4 |
+| `R3.7` | Payroll run, payslip ও পরিশোধ | R3.6b | 2 | 12 | 7 |
 | `R3.8` | ভবিষ্য তহবিল (PF), কর ও চূড়ান্ত নিষ্পত্তি | R3.7 | 1 | 4 | 3 |
 | `R3.9` | স্টোর / ইনভেন্টরি | R3.2 | 2 | 9 | 6 |
 | `R3.10` | হিসাব-খাত (Accounting) — double-entry | R3.3, R3.7, R3.9 | 5 | 20 | 13 |
 | `R3.11` | দান ও তহবিল (ঐচ্ছিক মডিউল) | R3.10 | 4 | 21 | 6 |
-| `R3.12` | R3-এর পাতা (ফ্রন্টএন্ড), ভূমিকাভেদে | R3.11 | 0 | 0 | 1 |
+| `R3.12` | R3-এর পাতা (ফ্রন্টএন্ড), ভূমিকাভেদে | R3.11 | 0 | 0 | 2 |
 | `R3.13` | টাকা ও বেতন-তথ্যের নিরাপত্তা — সামগ্রিক যাচাই | R3.12 | 0 | 0 | 1 |
 | `R3.14` | R3-এর কর্মক্ষমতা (ডেটা বাড়লে) | R3.13 | 0 | 0 | 1 |
 | `R3.A` | R3 গ্রহণ-পরীক্ষা, তারপর চালু | R3.14 | 0 | 0 | 0 |
@@ -59,7 +61,7 @@
 | লাইব্রেরি, পরিবহন, হোস্টেল, অনলাইন ক্লাস/কুইজ | R4 |
 | অনলাইন ফি-পেমেন্ট (ও তার রিফান্ড) | R2 |
 | ব্যাংক-disbursement API, Bangla QR, Nagad | R6 |
-| কর্মচারীর নিজস্ব লগইন (staff self-service role) | ডিফল্টে নেই; শিক্ষকের নিজের বেতন `/teacher/salary` আছে |
+| D88 staff access | R3.6a/b-তে institution_staff identity ও department duties; R3.12-তে portals; পুরনো role label নিজে access দেয় না |
 
 ## ৬. বাইরের কাজ (আপনার/বিশেষজ্ঞের) — এগুলো ছাড়া এগোয় না
 - ব্যাংক-disbursement ফাইলের আসল ফরম্যাট (TODO OD-bank-format)
@@ -93,6 +95,9 @@
 - [ ] Super Admin কোনো বেতন-তথ্য দেখতে পায় না; এক স্কুল অন্যের R3-তথ্য দেখে না (tenancy-পরীক্ষা সবুজ)
 - [ ] আসল MySQL-এ স্কিমা ও আচরণ-পরীক্ষা সবুজ; R3 hot-query পরীক্ষা সবুজ
 - [ ] payroll-এর আইনি/হিসাব যাচাই (PF, কর, গ্র্যাচুইটি, কর্তনের নিয়ম) একজন হিসাবরক্ষক ও আইনজীবী করেছেন
+- [ ] Super Admin provisioning and principal self-registration create one verified first admin for the tenant; pending public registration is not active before Super Admin approval and no subscription/trial/billing is introduced
+- [ ] Institution staff and teachers access tenant actions only through active department membership and code-owned allowlisted duties; designations and legacy department labels never grant permissions
+- [ ] Teacher/StaffMember/payroll history, employee identifiers, attendance/leave links, and salary/bonus designation snapshots survive migration without duplicate login identities or privilege expansion
 
 ## ১০. যাচাই-অবস্থা (সততার সাথে)
 - স্কোপ, টেবিল-নির্ভরতা, route-মডিউল-মিল, পরীক্ষার নাম, শেষ-শর্তের সংখ্যা, কোয়েরির ইনডেক্স — `verify.py` যাচাই করে (২২টি R3-কোয়েরি `plan_check.py`-এ পরিষ্কার)।

@@ -1,6 +1,6 @@
 # DATABASE
 
-**একমাত্র সত্য: `docs/database/schema.sql`** (১৪৩টি টেবিল)। কোনো module-ডক্সে ভিন্ন কলাম দেখলে schema.sql ঠিক (D13)। migration-ক্রম: `docs/database/migrations.md`। seed: `docs/database/seeders.md`।
+**একমাত্র সত্য: `docs/database/schema.sql`** (184টি টেবিল)। কোনো module-ডক্সে ভিন্ন কলাম দেখলে schema.sql ঠিক (D13)। migration-ক্রম: `docs/database/migrations.md`। seed: `docs/database/seeders.md`।
 
 ## নিয়মগুলো (সংক্ষেপে; Cursor-এ `.cursor/rules/database.mdc`)
 1. **Tenant কলাম:** প্রতিটি tenant-ডেটার টেবিলে `institution_id BIGINT UNSIGNED NOT NULL` + FK। ব্যতিক্রম (৬টি + প্রশ্নব্যাংকের ২৯টি): `subscription_plans`, `institutions`, `otp_tokens`, `theme_presets`, `coupons`, `platform_settings`, `qb_class_levels`, `qb_subjects`, `qb_class_level_subject`, `qb_chapters`, `qb_chapter_class_level`, `qb_topics`, `qb_question_types`, `qb_questions`, `qb_question_options`, `qb_creative_parts`, `qb_question_stimuli`, `qb_question_items`, `qb_question_class_level`, `qb_question_occurrences`, `qb_question_revisions`, `qb_media`, `qb_media_links`, `qb_concepts`, `qb_resources`, `qb_prices`, `qb_price_rules`, `qb_writer_earnings`, `qb_writer_wallets`, `qb_writer_wallet_txns`, `qb_withdrawal_requests`, `qb_quiz_packages`, `qb_quizzes`, `qb_quiz_questions`, `qb_import_map` (প্ল্যাটফর্ম-স্তর; মডেল `Coupon`, `PlatformSetting`; `qb_*` = D65-এর প্ল্যাটফর্ম-কনটেন্ট, মডেলে `PlatformCatalogue` — `docs/modules/question-bank.md` §২)। `users` ও `audit_logs`-এ NULL মান বৈধ (Super Admin/প্ল্যাটফর্ম)। `verify.py` এই তালিকা স্কিমার সাথে মেলায়।
@@ -16,11 +16,12 @@
 11. **Index:** composite `(institution_id, …)` সর্বদা আগে `institution_id`; তালিকা-ফিল্টারের কলামে index। N+1 এড়াতে `with()`; ভারী রিপোর্ট ইনডেক্সসহ।
 12. **Migration:** একটি টেবিল = একটি `create_*` migration; `schema.sql`-এর পরবর্তী `ALTER` গুলো মূল `create` migration-এই মিশে যায় (ব্যতিক্রম `migrations.md`-এ নাম-ধরা)। কখনো production-এ `migrate:fresh` নয়।
 
-## টেবিল-গ্রুপ (সব 179টি — এই তালিকা স্ক্রিপ্টে schema.sql-এর সাথে মেলানো)
+## টেবিল-গ্রুপ (সব 184টি — এই তালিকা স্ক্রিপ্টে schema.sql-এর সাথে মেলানো)
 | গ্রুপ | সংখ্যা | টেবিল | নোট |
 |---|---|---|---|
 | প্ল্যাটফর্ম ও tenant | 16 | `subscription_plans`, `institutions`, `payments`, `subscription_invoices`, `institution_theme_logs`, `theme_presets`, `institution_domains`, `ai_usage_logs`, `otp_tokens`, `support_tickets`, `support_ticket_messages`, `coupons`, `coupon_redemptions`, `platform_settings`, `impersonation_sessions`, `tenant_exports` | `institutions` = tenant। `coupons`, `platform_settings` প্ল্যাটফর্ম-স্তরের (`institution_id` নেই)। `payments`/`subscription_invoices` = প্রতিষ্ঠান → প্ল্যাটফর্ম (কর/ছাড়/credit-note কলামসহ) |
 | ব্যবহারকারী ও প্রবেশাধিকার | 4 | `users`, `parent_student`, `audit_logs`, `consents` | `users.institution_id` NULL = Super Admin; `users.locale`, `name_alt`, `ui_preferences` |
+| বিভাগ ও staff অনুমোদন (D88) | 4 | `institution_departments`, `department_memberships`, `department_duties`, `department_duty_assignments` | R3.6a foundation; R3.6b enforcement; memberships use User identity and duties grant only catalogued permissions |
 | একাডেমিক কাঠামো | 11 | `academic_years`, `programs`, `batches`, `enrollments`, `subjects`, `teacher_subjects`, `batch_teachers`, `holidays`, `routines`, `routine_blocks`, `substitutions` | `enrollments` = সদস্যপদের সত্য (D4); `batches.shift`; রুটিন-সংঘর্ষ service-এ |
 | মানুষ | 7 | `students`, `teachers`, `student_documents`, `alumni`, `student_import_logs`, `training_programs`, `teacher_trainings` | `students.program_id/batch_id/roll_no` = cache; `deleted_at`, `anonymized_at` |
 | হাজিরা, পরীক্ষা, ফলাফল | 17 | `attendances`, `archived_attendances`, `period_attendances`, `student_leave_requests`, `exams`, `exam_subjects`, `results`, `report_card_summaries`, `result_sheets`, `final_results`, `exam_seat_plans`, `online_exams`, `exam_questions`, `exam_attempts`, `behavior_logs`, `student_health_records`, `risk_flags` | পরীক্ষাভেদে পূর্ণমান `exam_subjects`-এ; ওজনযুক্ত ফলাফল `result_sheets`→`final_results`; `risk_flags` নিয়ম-ভিত্তিক সতর্কতা |

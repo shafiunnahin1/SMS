@@ -76,6 +76,10 @@
   "certificates",
   "class_materials",
   "consents",
+  "institution_departments",
+  "department_duties",
+  "department_memberships",
+  "department_duty_assignments",
   "donation_funds",
   "donation_campaigns",
   "donors",
@@ -395,6 +399,38 @@
    "refs": {
     "recorded_by": "users",
     "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "institution_departments": {
+   "refs": {
+    "created_by": "users",
+    "updated_by": "users"
+   },
+   "polymorphic": []
+  },
+  "department_duties": {
+   "refs": {
+    "created_by": "users",
+    "department_id": "institution_departments",
+    "updated_by": "users"
+   },
+   "polymorphic": []
+  },
+  "department_memberships": {
+   "refs": {
+    "created_by": "users",
+    "department_id": "institution_departments",
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "department_duty_assignments": {
+   "refs": {
+    "assigned_by": "users",
+    "duty_id": "department_duties",
+    "membership_id": "department_memberships",
+    "revoked_by": "users"
    },
    "polymorphic": []
   },
