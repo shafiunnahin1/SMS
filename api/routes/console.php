@@ -25,3 +25,6 @@ Artisan::command('ops:alert-test', function () {
     $this->info('Forced error reported - check the webhook / mailbox.');
     return 0;
 })->purpose('Send a forced error through the alert path');
+
+// D86 / R3.5: only due approved revisions; no payroll execution.
+\Illuminate\Support\Facades\Schedule::command('payroll:apply-revisions')->dailyAt('00:15')->withoutOverlapping();
