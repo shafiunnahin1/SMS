@@ -1,6 +1,6 @@
 <?php
 namespace Tests\Feature\Hr;
-use App\Models\{SalaryComponent,SalaryRevision,SalaryStructure,SalaryPayAccount,User};
+use App\Models\{SalaryComponent,SalaryRevision,SalaryStructure,SalaryPayAccount,SalaryAdvance,Teacher,User};
 use App\Support\Tenancy;
 class SalaryApiTest extends RevisionTestCase
 {
@@ -75,6 +75,22 @@ class SalaryApiTest extends RevisionTestCase
             $this->assertSame(3,SalaryComponent::where('is_system',true)->count());
         });
     }
+    public function test_teacher_can_only_view_own_salary_advances(): void
+    {
+        [$i,$admin]=$this->setupHr();[$teacher,$profile]=$this->teacher($i);
+        $other=Teacher::create(['user_id'=>$admin->id,'employee_id'=>'OTHER-ADVANCE','status'=>'active']);
+        $service=app(\App\Services\Hr\SalaryAdvanceService::class);$ids=[];
+        foreach([$profile,$other] as $payee){
+            $revision=$this->initial($admin,'teacher',$payee->id);$this->revisionService()->transition($admin,$revision->id,'approve');
+            $ids[]=$service->store($admin,['payee_type'=>'teacher','payee_id'=>$payee->id,'amount'=>'10000.00','installments'=>3,'recover_from_month'=>'2026-10'])->id;
+        }
+        $host=$this->hostOf($i);
+        $this->api('GET',$host,'teacher/salary/advances',$admin)->assertForbidden();
+        $this->api('GET',$host,'teacher/salary/advances',$teacher)->assertOk()->assertJsonCount(1,'data')
+            ->assertJsonPath('data.0.id',$ids[0])->assertJsonMissingPath('data.0.terms_snapshot');
+        $this->assertNotSame($ids[0],$ids[1]);
+    }
+
     public function test_salary_route_uses_existing_web_session_cookie_flow(): void
     {
         [$i,$admin]=$this->setupHr();$host=$this->hostOf($i);
