@@ -1,6 +1,6 @@
 # D86 — owner commit packet
 
-Status: seven clauses approved in chat on 2026-10-15; separate owner registry commit pending. Full approved contract: owner/salary-structure-contract-decision.md, exact clauses a31faef.
+Status: seven clauses approved in chat on 2026-10-15; owner registry commit 4a0999d verified/pushed. R3.5 backend completed/pushed as 3ea968e905f0101967ac12187dbf1977e3477734. Instructions below preserve the historical owner workflow; do not repeat it. Full approved contract: owner/salary-structure-contract-decision.md, exact clauses a31faef.
 
 Prepared registry row (not added by agent):
 

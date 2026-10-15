@@ -1,6 +1,6 @@
 # R3.5 salary structure contract — owner review draft
 
-Status: OWNER APPROVED in chat on 2026-10-15, all seven clauses without alteration; approved text a31faef. Owner D86 locked-decision commit 4a0999d verified/pushed; protected alignment in progress, backend remains incomplete. Prepared 2026-10-15 from pushed 4458ff8 (R3.4 accepted). No R3.5 application/schema/spec/test edits.
+Status: OWNER APPROVED, all seven clauses unchanged from a31faef; owner D86 4a0999d and schema 01d0bed pushed. R3.5 backend COMPLETE: final API 3ea968e905f0101967ac12187dbf1977e3477734, required checks passed and pushed. No app/demo DB migration/UI/live settlement.
 
 ## Evidence and blockers
 
