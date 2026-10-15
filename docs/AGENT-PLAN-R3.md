@@ -201,7 +201,7 @@ POST /fee-refunds/{id}/{action} -> FeeRefundController@transition [role:admin,ac
 
 - **নির্ভর করে:** `R3.3`
 - **লক্ষ্য:** অ-শিক্ষক কর্মচারীর প্রোফাইল, শিক্ষক ও কর্মচারীর দৈনিক উপস্থিতি, ছুটির ধরন ও আবেদন (অনুমোদিত ছুটি উপস্থিতি-সারসংক্ষেপে যোগ, অবৈতনিক ছুটি বেতনে কাটে)।
-- **সীমা / নোট:** ছুটির route (`/hr/leave-types`, `/hr/leaves`, `/teacher/leave`) R17-তে টেমপ্লেটে যোগ হয়েছে — `hr-payroll.md` বর্ণনা করলেও আগে ছিল না। RFID/device-পাঞ্চ (`StaffPunchTest`) R4-এ।
+- **সীমা / নোট:** ছুটির route (`/hr/leave-types`, `/hr/leaves`, `/teacher/leave`) R17-তে টেমপ্লেটে যোগ হয়েছে — `hr-payroll.md` বর্ণনা করলেও আগে ছিল না। RFID/device-পাঞ্চ (`StaffPunchTest`) R4-এ। D85 governs cancelled state, teacher own-pending cancellation, configured weekly calendar and approval snapshots; 18 routes unchanged. Payroll linkage proves lwp_days input only, not later payroll execution. No UI/app-demo DB migration/device/later task.
 - **পড়ুন:** `docs/modules/staff-payroll.md`, `docs/modules/hr-payroll.md`, `docs/LOCKED-DECISIONS.md`
 - **মডিউল-কী:** `hr_payroll`, `teacher_attendance`
 - **টেবিল (migration, model, factory এই ধাপেই):**
@@ -279,19 +279,21 @@ CREATE TABLE leave_applications (
     to_date DATE NOT NULL,
     total_days INT NOT NULL,
     reason TEXT,
-    status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    status ENUM('pending','approved','rejected','cancelled') DEFAULT 'pending',
     approved_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 ALTER TABLE leave_applications ADD COLUMN staff_id BIGINT UNSIGNED NULL;
 CREATE INDEX idx_leave_inst_status ON leave_applications(institution_id, status);
+CREATE INDEX idx_leave_balance_actor ON leave_applications(institution_id, user_id, leave_type_id, status, from_date);
 ```
 - **Route (18):**
 
 ```
 GET /teacher-attendance -> TeacherAttendanceController@index [role:admin] (module teacher_attendance)
 POST /teacher-attendance -> TeacherAttendanceController@store [role:admin] (module teacher_attendance)
+PATCH /hr/leaves/{id}/{action} -> LeaveController@transition [role:admin,teacher] (module hr_payroll)
 GET /hr/staff -> StaffController@index [role:admin,accountant] (module hr_payroll)
 POST /hr/staff -> StaffController@store [role:admin,accountant] (module hr_payroll)
 GET /hr/staff/{id} -> StaffController@show [role:admin,accountant] (module hr_payroll)
@@ -305,12 +307,11 @@ PUT /hr/leave-types/{id} -> LeaveTypeController@update [role:admin] (module hr_p
 GET /hr/leaves -> LeaveController@index [role:admin] (module hr_payroll)
 POST /hr/leaves -> LeaveController@store [role:admin] (module hr_payroll)
 GET /hr/leaves/balance -> LeaveController@balance [role:admin] (module hr_payroll)
-PATCH /hr/leaves/{id}/{action} -> LeaveController@transition [role:admin] (module hr_payroll)
 GET /teacher/leave -> LeaveController@mine [role:teacher] (module hr_payroll)
 POST /teacher/leave -> LeaveController@apply [role:teacher] (module hr_payroll)
 ```
 - **লিখবেন ও সবুজ করবেন:** `AttendanceSummaryTest` (docs/modules/staff-payroll.md), `LeaveOverlapTest` (docs/modules/hr-payroll.md), `LeaveBalanceTest` (docs/modules/hr-payroll.md), `LeavePayrollLinkTest` (docs/modules/hr-payroll.md), `LeaveActorTest` (docs/modules/hr-payroll.md)
-- **শেষ-শর্ত (Done When):** কর্মচারী যোগ/সম্পাদনা (`user_id` ঐচ্ছিক — লগইন ছাড়াও কর্মচারী থাকতে পারে); একই `employee_id` প্রতিষ্ঠানে একবারই। ছুটি: একই জনের দুটি `approved/pending` ছুটির সময় ওভারল্যাপ করলে 422 (`LeaveOverlapTest`); বার্ষিক সীমা পেরোলে 422, Admin `override` করলে audit-এ (`LeaveBalanceTest`); আবেদনকারী ঠিক একজন — `user_id` (শিক্ষক) অথবা `staff_id` (`LeaveActorTest`); অনুমোদিত অবৈতনিক ছুটি payroll-এ `lwp_days` (`LeavePayrollLinkTest`); উপস্থিতি-সারসংক্ষেপ ছুটিকে `leave` গণনা করে (`AttendanceSummaryTest`)।
+- **শেষ-শর্ত (Done When):** কর্মচারী যোগ/সম্পাদনা (`user_id` ঐচ্ছিক — লগইন ছাড়াও কর্মচারী থাকতে পারে); একই `employee_id` প্রতিষ্ঠানে একবারই। ছুটি: একই জনের দুটি `approved/pending` ছুটির সময় ওভারল্যাপ করলে 422 (`LeaveOverlapTest`); বার্ষিক সীমা পেরোলে 422, Admin `override` করলে audit-এ (`LeaveBalanceTest`); আবেদনকারী ঠিক একজন — `user_id` (শিক্ষক) অথবা `staff_id` (`LeaveActorTest`); অনুমোদিত অবৈতনিক ছুটি payroll-এ `lwp_days` (`LeavePayrollLinkTest`); উপস্থিতি-সারসংক্ষেপ ছুটিকে `leave` গণনা করে (`AttendanceSummaryTest`)। D85: cancelled state/role restrictions, annual cross-year caps under institution lock, calendar validation, approval snapshots and idempotent transitions verified; LeavePayrollLinkTest proves unpaid summary input without building payroll.
 - **যাচাই:** `php artisan test --filter=Leave` · `php artisan test --filter=AttendanceSummaryTest`
 
 ### TASK `R3.5` — বেতন-কাঠামো, ইনক্রিমেন্ট ও বোনাস

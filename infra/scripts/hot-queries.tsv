@@ -50,7 +50,7 @@ r3_staff_attendance_day	any	SELECT staff_id, status FROM staff_attendances WHERE
 r3_staff_attendance_month	any	SELECT date, status FROM staff_attendances WHERE institution_id = 7 AND staff_id = 3 AND date BETWEEN '2027-03-01' AND '2027-03-31'
 r3_teacher_attendance_month	any	SELECT date, status FROM teacher_attendances WHERE institution_id = 7 AND teacher_id = 9 AND date BETWEEN '2027-03-01' AND '2027-03-31'
 r3_leave_pending	any	SELECT * FROM leave_applications WHERE institution_id = 7 AND status = 'pending'
-r3_leave_balance	any	SELECT total_days FROM leave_applications WHERE user_id = 88 AND leave_type_id = 2 AND status = 'approved' AND from_date >= '2027-01-01'
+r3_leave_balance	any	SELECT total_days FROM leave_applications WHERE institution_id = 7 AND status = 'approved' AND user_id = 88 AND leave_type_id = 2 AND from_date <= '2027-12-31' AND to_date >= '2027-01-01'
 r3_salary_structure_current	sorted	SELECT * FROM salary_structures WHERE institution_id = 7 AND payee_type = 'teacher' AND payee_id = 9 AND effective_from <= '2027-03-31' ORDER BY effective_from DESC LIMIT 1
 r3_payroll_run_of_month	any	SELECT * FROM payroll_runs WHERE institution_id = 7 AND month = '2027-03' AND kind = 'regular'
 r3_payroll_items_of_run	any	SELECT * FROM payroll_items WHERE run_id = 15

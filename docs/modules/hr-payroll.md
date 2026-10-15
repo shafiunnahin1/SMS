@@ -30,3 +30,12 @@ Module key: `hr_payroll` (ছুটি-অংশ শিক্ষক ও কর�
 
 ## পরীক্ষা
 `LeaveOverlapTest`, `LeaveBalanceTest` (সীমা, override, ক্যালেন্ডার-বছর সীমানা), `LeavePayrollLinkTest` (unpaid → `lwp_days`, paid → কর্তন নেই), `LeaveActorTest` (`user_id` অথবা `staff_id` ঠিক একটি)।
+
+
+## D85 — approved R3.4 contract
+
+Owner approved all seven clauses in owner/staff-leave-contract-decision.md (approved text at 3ab01cc), locked by fb56d8c. They govern R3.4 over historical wording above. Leave status includes cancelled. Pending supports approve/reject/cancel; approved cancellation requires admin, reason and a date before from_date. Teacher access to the existing transition endpoint is limited to own pending cancellation; no accountant cancellation or staff role. Identical transitions are idempotent; conflicts 409; keep application rows and audit actors/reasons.
+
+HR dates are inclusive and institution-local. Exclude all tenant holidays and institutions.settings.hr.weekly_holidays (ISO 1..7, default []); malformed configuration fails closed. Require at least one working date; split working dates across years/months. Under institution lock, check approved annual consumption plus candidate at create and approval; pending blocks overlapping ranges but does not reserve annual allowance. Override needs admin reason/audit. Approval audit snapshots accepted dates/is_paid; balances and summaries use snapshots rather than reinterpret later calendar/type changes. total_days is the accepted count. Audit uses IDs/dates/policy evidence under privacy rules, no pay amounts/PII.
+
+AttendanceSummary::forPayee(type,id,month) clamps to joining/leaving dates and counts each working date once: approved leave takes precedence, missing mark is absent, late is present plus late_count. Return working_days, present_days, absent_days, leave_days, lwp_days, late_count. LeavePayrollLinkTest proves unpaid input (both payees/month boundaries), not later payroll execution or payslip deduction. No frozen payroll rewrite, UI, device, future scheduling tables, app/demo DB migration or later task. Existing 18 routes and all required focused/full/reference/parity/query/deep/guard checks remain.

@@ -788,6 +788,10 @@ Route::prefix('v1')->group(function () {
 
         // ── Revision 10: staff, salary & payroll (docs/modules/staff-payroll.md) ─────────────
         // Admin + Accountant prepare/pay; approval rules (maker-checker) are enforced INSIDE the services, not by route role alone.
+        // D85: teacher may only cancel own pending request; enforced in service.
+        Route::middleware(['role:admin,teacher', 'module:hr_payroll'])->group(function () {
+            Route::patch('/hr/leaves/{id}/{action}', [LeaveController::class, 'transition'])->where('action', 'approve|reject|cancel');
+        });
         Route::middleware(['role:admin,accountant', 'module:hr_payroll'])->prefix('hr')->group(function () {
             Route::apiResource('staff',               StaffController::class);
             Route::apiResource('staff-attendance',    StaffAttendanceController::class)->only(['index', 'store']);
@@ -796,7 +800,6 @@ Route::prefix('v1')->group(function () {
                 Route::get('/leaves',                 [LeaveController::class, 'index']);
                 Route::post('/leaves',                [LeaveController::class, 'store']);             // Admin applies on behalf of a teacher (user_id) or a staff member (staff_id) - exactly one
                 Route::get('/leaves/balance',         [LeaveController::class, 'balance']);           // ?type=teacher|staff&id=
-                Route::patch('/leaves/{id}/{action}', [LeaveController::class, 'transition'])->where('action', 'approve|reject|cancel');
             });
             Route::apiResource('salary-components',   SalaryComponentController::class)->except(['show']);
             Route::get('/people/{type}/{id}/salary',  [SalaryStructureController::class, 'history']);

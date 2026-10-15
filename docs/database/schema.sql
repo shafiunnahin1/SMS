@@ -704,7 +704,7 @@ CREATE TABLE leave_applications (
     to_date DATE NOT NULL,
     total_days INT NOT NULL,
     reason TEXT,
-    status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    status ENUM('pending','approved','rejected','cancelled') DEFAULT 'pending',
     approved_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -2618,7 +2618,8 @@ CREATE INDEX idx_homeworks_teacher ON homeworks(teacher_id, created_at);        
 CREATE INDEX idx_materials_audience ON class_materials(institution_id, program_id, batch_id);   -- materials_for_batch
 CREATE INDEX idx_materials_teacher ON class_materials(teacher_id, created_at);            -- materials_by_teacher
 CREATE INDEX idx_ai_usage_inst_created ON ai_usage_logs(institution_id, created_at);      -- ai_quota_month
-CREATE INDEX idx_leave_inst_status ON leave_applications(institution_id, status);         -- leave_pending
+CREATE INDEX idx_leave_inst_status ON leave_applications(institution_id, status);
+CREATE INDEX idx_leave_balance_actor ON leave_applications(institution_id, user_id, leave_type_id, status, from_date);         -- leave_pending
 CREATE INDEX idx_payouts_inst_month ON teacher_payouts(institution_id, month);            -- payouts_month
 CREATE INDEX idx_waivers_inst_status ON fee_waivers(institution_id, status);              -- waivers_pending
 CREATE INDEX idx_alumni_inst_year ON alumni(institution_id, graduation_year);             -- alumni_by_year

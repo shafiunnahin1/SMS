@@ -254,12 +254,12 @@
     "LeavePayrollLinkTest",
     "LeaveActorTest"
    ],
-   "done": "কর্মচারী যোগ/সম্পাদনা (`user_id` ঐচ্ছিক — লগইন ছাড়াও কর্মচারী থাকতে পারে); একই `employee_id` প্রতিষ্ঠানে একবারই। ছুটি: একই জনের দুটি `approved/pending` ছুটির সময় ওভারল্যাপ করলে 422 (`LeaveOverlapTest`); বার্ষিক সীমা পেরোলে 422, Admin `override` করলে audit-এ (`LeaveBalanceTest`); আবেদনকারী ঠিক একজন — `user_id` (শিক্ষক) অথবা `staff_id` (`LeaveActorTest`); অনুমোদিত অবৈতনিক ছুটি payroll-এ `lwp_days` (`LeavePayrollLinkTest`); উপস্থিতি-সারসংক্ষেপ ছুটিকে `leave` গণনা করে (`AttendanceSummaryTest`)।",
+   "done": "কর্মচারী যোগ/সম্পাদনা (`user_id` ঐচ্ছিক — লগইন ছাড়াও কর্মচারী থাকতে পারে); একই `employee_id` প্রতিষ্ঠানে একবারই। ছুটি: একই জনের দুটি `approved/pending` ছুটির সময় ওভারল্যাপ করলে 422 (`LeaveOverlapTest`); বার্ষিক সীমা পেরোলে 422, Admin `override` করলে audit-এ (`LeaveBalanceTest`); আবেদনকারী ঠিক একজন — `user_id` (শিক্ষক) অথবা `staff_id` (`LeaveActorTest`); অনুমোদিত অবৈতনিক ছুটি payroll-এ `lwp_days` (`LeavePayrollLinkTest`); উপস্থিতি-সারসংক্ষেপ ছুটিকে `leave` গণনা করে (`AttendanceSummaryTest`)। D85: cancelled state/role restrictions, annual cross-year caps under institution lock, calendar validation, approval snapshots and idempotent transitions verified; LeavePayrollLinkTest proves unpaid summary input without building payroll.",
    "verify": [
     "php artisan test --filter=Leave",
     "php artisan test --filter=AttendanceSummaryTest"
    ],
-   "scope": "ছুটির route (`/hr/leave-types`, `/hr/leaves`, `/teacher/leave`) R17-তে টেমপ্লেটে যোগ হয়েছে — `hr-payroll.md` বর্ণনা করলেও আগে ছিল না। RFID/device-পাঞ্চ (`StaffPunchTest`) R4-এ।"
+   "scope": "ছুটির route (`/hr/leave-types`, `/hr/leaves`, `/teacher/leave`) R17-তে টেমপ্লেটে যোগ হয়েছে — `hr-payroll.md` বর্ণনা করলেও আগে ছিল না। RFID/device-পাঞ্চ (`StaffPunchTest`) R4-এ। D85 governs cancelled state, teacher own-pending cancellation, configured weekly calendar and approval snapshots; 18 routes unchanged. Payroll linkage proves lwp_days input only, not later payroll execution. No UI/app-demo DB migration/device/later task."
   },
   {
    "id": "R3.5",

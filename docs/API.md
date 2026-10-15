@@ -688,3 +688,8 @@ POST requires category, title, positive decimal amount (string or integer) and e
 ## D84 institutional refund request contract
 
 POST /fee-refunds accepts request_key (UUID), student_id, original_receipt_no, refund_lines [{fee_payment_id, amount}], reason and method (cash/bank/bkash/nagad). Amount is computed from exact line amounts. The same key/payload returns the original root request; changed payload 409. GET/list returns latest status with immutable history; revision IDs cannot be used as root request IDs. Admin/accountant request/process, admin approve/reject; audited sole-active-admin exception only. Processing uses one captured timestamp, negative fee reversal rows plus one positive refund expense, cash-day 409 day_closed and consent-aware after-commit notification. Online fields/online_gateway fail closed while online_payment is unavailable; no subscription refund route is registered. See D84 and docs/modules/finance-advanced.md.
+
+
+## D85 HR leave transition
+
+PATCH /hr/leaves/{id}/{action} retains approve|reject|cancel and module hr_payroll. Roles admin,teacher; teacher only own pending cancel, admin other transitions. cancelled is distinct from rejected. See hr-payroll.md D85 for calendar, snapshots, annual balance and summary contract. No additional route.
