@@ -38,6 +38,12 @@ class FeePayment extends Model
         'paid_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::updating(fn () => throw new \App\Exceptions\BusinessException(__('refund.immutable'), 'refund_immutable', 409));
+        static::deleting(fn () => throw new \App\Exceptions\BusinessException(__('refund.immutable'), 'refund_immutable', 409));
+    }
+
     public function student() { return $this->belongsTo(Student::class); }
     public function enrollment() { return $this->belongsTo(Enrollment::class); }
     public function batch() { return $this->belongsTo(Batch::class); }

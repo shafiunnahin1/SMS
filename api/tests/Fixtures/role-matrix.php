@@ -11,6 +11,13 @@
 // own sessions / password / language / notifications (Revision 7), and the program + batch names (GET /programs, /batches -
 // names only, used by every panel's filters).
 return [
+    // D84 institutional fee refunds; admin-only review actions are also exercised in RefundImmutabilityTest.
+    'GET api/v1/fee-refunds/refundable' => ['admin', 'accountant'],
+    'GET api/v1/fee-refunds' => ['admin', 'accountant'],
+    'POST api/v1/fee-refunds' => ['admin', 'accountant'],
+    'GET api/v1/fee-refunds/{id}' => ['admin', 'accountant'],
+    'POST api/v1/fee-refunds/{id}/{action}' => ['admin', 'accountant'],
+
     'GET api/v1/cashbook' => ['admin', 'accountant'],
     'GET api/v1/cashbook/range' => ['admin', 'accountant'],
     'GET api/v1/cashbook/{date}/report.{ext}' => ['admin', 'accountant'],

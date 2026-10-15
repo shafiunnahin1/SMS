@@ -130,7 +130,10 @@ class FeeController extends Controller
     {
         $lines = FeePayment::where('receipt_no', $receiptNo)->with(['feeCategory:id,name', 'batch:id,name', 'student.user:id,name'])->orderBy('line_no')->get();
         $first = $lines->first();
+        $original = $first->reverses_id ? FeePayment::findOrFail($first->reverses_id)->receipt_no : null;
+        $refunded = Money::format(-Money::toPaisa(FeePayment::whereIn('reverses_id', $lines->pluck('id'))->sum('paid_amount')));
         return [
+            'is_refund' => $original !== null, 'original_receipt_no' => $original, 'refunded_amount' => $refunded,
             'id' => $first->id, 'receipt_no' => $receiptNo, 'paid_at' => $first->paid_at?->toIso8601String(), 'payment_method' => $first->payment_method,
             'student' => ['id' => $first->student_id, 'student_id' => $first->student?->student_id, 'name' => $first->student?->user?->name],
             'lines' => $lines->map(fn ($l) => [

@@ -47,6 +47,9 @@ class TenantIsolationTest extends TestCase
     private function foreignIds(): array
     {
         return [
+            'GET api/v1/fee-refunds/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeRefund::factory()->create()->id),
+            // Literal {action} checks routing here; RefundCapTest exercises all three actual actions with foreign root IDs.
+            'POST api/v1/fee-refunds/{id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeRefund::factory()->create()->id),
             'GET api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
             // Date routes are independently covered by CashBookTenancyTest (no foreign row ID in the URL).
             'GET api/v1/cashbook/{date}/report.{ext}' => null,

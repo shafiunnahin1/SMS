@@ -3,7 +3,7 @@
 use App\Http\Controllers\Academic\{AttendanceController, BatchController, ConsentController, EnrollmentController, ProgramController, StudentController, SubjectController, TeacherController};
 use App\Http\Controllers\Admin\{ImportController, SettingController, TerminologyController, ThemeController};
 use App\Http\Controllers\Exams\{ExamController, ResultController};
-use App\Http\Controllers\Fees\FeeController;
+use App\Http\Controllers\Fees\{FeeController, FeeRefundController};
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
 use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
@@ -249,6 +249,11 @@ Route::prefix('v1')->group(function () {
         Route::middleware('module:fees')->group(function () {
             Route::get('/fees/payments/student/{id}',     [FeeController::class, 'studentPayments'])->whereNumber('id')->middleware('role:admin,accountant,parent');   // parent: own child only (404)
             Route::middleware('role:admin,accountant')->group(function () {
+                Route::get('/fee-refunds/refundable', [FeeRefundController::class, 'refundable']);
+                Route::get('/fee-refunds', [FeeRefundController::class, 'index']);
+                Route::post('/fee-refunds', [FeeRefundController::class, 'store']);
+                Route::get('/fee-refunds/{id}', [FeeRefundController::class, 'show'])->whereNumber('id');
+                Route::post('/fee-refunds/{id}/{action}', [FeeRefundController::class, 'transition'])->whereNumber('id')->whereIn('action', ['approve', 'reject', 'process']);
                 Route::post('/fees/collect',              [FeeController::class, 'collect']);
                 Route::get('/fees/dues',                  [FeeController::class, 'dues']);
                 Route::get('/fees/receipt/{id}',          [FeeController::class, 'receipt'])->whereNumber('id');

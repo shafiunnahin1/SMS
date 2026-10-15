@@ -11,7 +11,9 @@
   .total td { font-weight: bold; }
   .qr { margin-top: 14px; display: flex; gap: 10px; align-items: center; font-size: 10px; color: #555555; }
 </style>
-<h2>{{ __('pdf.receipt.title') }}</h2>
+<h2>{{ ($receipt['is_refund'] ?? false) ? __('refund.receipt_title') : __('pdf.receipt.title') }}</h2>
+@if(!empty($receipt['original_receipt_no']))<p>{{ __('refund.original_receipt') }}: {{ $receipt['original_receipt_no'] }}</p>@endif
+@if(\App\Support\Money::toPaisa($receipt['refunded_amount'] ?? '0') > 0)<p>{{ __('refund.refunded') }}: {{ $receipt['refunded_amount'] }}</p>@endif
 <table class="meta">
   <tr><td>{{ __('pdf.receipt.no') }}</td><td><strong>{{ $receipt['receipt_no'] }}</strong></td></tr>
   <tr><td>{{ __('pdf.receipt.date') }}</td><td>{{ \Illuminate\Support\Carbon::parse($receipt['paid_at'])->format('d/m/Y') }}</td></tr>
