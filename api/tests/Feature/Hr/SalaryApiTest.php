@@ -55,8 +55,11 @@ class SalaryApiTest extends RevisionTestCase
         $this->api('POST',$host,'hr/increment-batches',$admin,['preview_token'=>$token])->assertOk()->assertJsonCount(1,'data');
         $id=$this->api('POST',$host,'hr/bonus-schemes',$admin,['name'=>'Festival','pay_month'=>'2026-10','basis'=>'fixed','value'=>'500.00'])->assertCreated()->json('data.id');
         $this->api('POST',$host,"hr/bonus-schemes/{$id}/preview",$admin)->assertOk()->assertJsonPath('data.0.amount','500.00');
-        for($n=0;$n<2;$n++)$this->api('POST',$host,"hr/bonus-schemes/{$id}/apply",$admin)->assertConflict()->assertJsonPath('error','dependency_pending');
-        $this->api('POST',$host,"hr/bonus-schemes/{$id}/cancel",$admin)->assertOk()->assertJsonPath('data.status','cancelled');
+        $this->api('POST',$host,"hr/bonus-schemes/{$id}/apply",$admin,['amount'=>'0.01'])->assertUnprocessable();
+        $first=$this->api('POST',$host,"hr/bonus-schemes/{$id}/apply",$admin)->assertOk()->assertJsonCount(1,'data')->assertJsonPath('data.0.status','approved');
+        $this->api('POST',$host,"hr/bonus-schemes/{$id}/apply",$admin)->assertOk()->assertExactJson($first->json());
+        $this->api('GET',$host,"hr/bonus-schemes/{$id}",$admin)->assertOk()->assertJsonMissingPath('data.application_snapshot');
+        $this->api('POST',$host,"hr/bonus-schemes/{$id}/cancel",$admin)->assertConflict()->assertJsonPath('error','dependency_pending');
         $i->update(['enabled_modules'=>['hr_payroll'=>false]]);
         $this->api('GET',$host,'hr/revisions',$admin)->assertForbidden()->assertJsonPath('error','module_disabled');
     }

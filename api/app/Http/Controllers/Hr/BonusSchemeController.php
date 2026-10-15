@@ -14,6 +14,6 @@ class BonusSchemeController extends Controller
     public function update(SalaryWriteRequest $r,int $id,BonusSchemeService $s){return (new SalaryResource($s->save($r->user(),$r->validated(),$id)))->additional(['success'=>true]);}
     public function destroy(\Illuminate\Http\Request $r,int $id,BonusSchemeService $s){$s->end($r->user(),$id,true);return response()->json(['success'=>true]);}
     public function preview(\Illuminate\Http\Request $r,int $id,BonusSchemeService $s){return response()->json(['success'=>true,'data'=>$s->preview($r->user(),$id)]);}
-    public function apply(\Illuminate\Http\Request $r,int $id,BonusSchemeService $s){$s->apply($r->user(),$id);}
+    public function apply(\Illuminate\Http\Request $r,int $id,BonusSchemeService $s){return SalaryResource::collection($s->apply($r->user(),$id,$r->all()))->additional(['success'=>true]);}
     public function cancel(\Illuminate\Http\Request $r,int $id,BonusSchemeService $s){return (new SalaryResource($s->end($r->user(),$id)))->additional(['success'=>true]);}
 }

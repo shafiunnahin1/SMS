@@ -66,6 +66,7 @@ class RoleMatrixContractTest extends TestCase
             // D84: use a valid shared action so route constraints do not preempt the role middleware.
             if ($uri === 'api/v1/hr/leaves/{id}/{action}') $path = str_replace('dry-run', 'cancel', $path);
             if ($uri === 'api/v1/fee-refunds/{id}/{action}') $path = str_replace('dry-run', 'process', $path);
+            if ($uri === 'api/v1/hr/advances/{id}/{action}') $path = str_replace('dry-run', 'approve', $path);
             if ($uri === 'api/v1/hr/people/{type}/{id}/salary') $path = 'hr/people/teacher/'.$salaryTeacher->id.'/salary';
             $host = str_starts_with($path, 'super/') || str_starts_with($path, 'writer/') ? $central : $this->hostOf($i);
             foreach (self::ROLES as $role) {

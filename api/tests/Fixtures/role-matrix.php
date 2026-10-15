@@ -288,4 +288,15 @@ return [
     'POST api/v1/hr/bonus-schemes/{id}/preview' => ['admin','accountant'],
     'POST api/v1/hr/bonus-schemes/{id}/apply' => ['admin','accountant'],
     'POST api/v1/hr/bonus-schemes/{id}/cancel' => ['admin','accountant'],
+    // D87 R3.6: service-level maker-checker narrows approval actions further.
+    'GET api/v1/hr/adjustments' => ['admin','accountant'],
+    'POST api/v1/hr/adjustments' => ['admin','accountant'],
+    'GET api/v1/hr/adjustments/suggest-extra-class' => ['admin','accountant'],
+    'POST api/v1/hr/adjustments/{id}/approve' => ['admin','accountant'],
+    'POST api/v1/hr/adjustments/{id}/cancel' => ['admin','accountant'],
+    'GET api/v1/hr/advances' => ['admin','accountant'],
+    'POST api/v1/hr/advances' => ['admin','accountant'],
+    'GET api/v1/hr/advances/{id}' => ['admin','accountant'],
+    'POST api/v1/hr/advances/{id}/{action}' => ['admin','accountant'],
+    'GET api/v1/teacher/salary/advances' => ['teacher'],
 ];

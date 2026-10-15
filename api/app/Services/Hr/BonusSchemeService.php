@@ -1,14 +1,14 @@
 <?php
 namespace App\Services\Hr;
 use App\Exceptions\BusinessException;
-use App\Models\{AuditLog,BonusScheme,SalaryStructure,StaffMember,Teacher,User};
+use App\Models\{AuditLog,BonusScheme,SalaryAdjustment,SalaryStructure,StaffMember,Teacher,User};
 use App\Support\{Money,Tenancy};
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\{DB,Validator};
 
 class BonusSchemeService
 {
-    public function __construct(private SalaryAccess $access,private SalaryCalculator $money,private SalaryCalendar $calendar) {}
+    public function __construct(private SalaryAccess $access,private SalaryCalculator $money,private SalaryCalendar $calendar,private PayrollApproval $approval) {}
     public function save(User $actor,array $input,?int $id=null): BonusScheme
     {
         $this->access->actor($actor);
@@ -85,10 +85,54 @@ class BonusSchemeService
         return $result;
     }
 
-    public function apply(User $actor,int $id): never
+    private function sourceFingerprint(string $type,int $id,CarbonImmutable $end): string
     {
-        $this->access->actor($actor);BonusScheme::findOrFail($id);
-        throw new BusinessException(__('salary.dependency'),'dependency_pending',409);
+        $model=$type==='teacher'?Teacher::class:StaffMember::class;$payee=$model::findOrFail($id);
+        $structure=SalaryStructure::where('payee_type',$type)->where('payee_id',$id)->where('effective_from','<=',$end->toDateString())
+            ->where(fn($q)=>$q->whereNull('effective_to')->orWhere('effective_to','>=',$end->toDateString()))->orderByDesc('effective_from')->first();
+        $source=['type'=>$type,'id'=>$id,'status'=>$payee->status,'joining_date'=>$payee->joining_date?->toDateString(),'designation'=>$payee->designation,
+            'structure'=>$structure?['id'=>$structure->id,'basic'=>$structure->basic,'gross'=>$structure->gross,'effective_from'=>$structure->effective_from->toDateString(),
+                'effective_to'=>$structure->effective_to?->toDateString()]:null];
+        return hash('sha256',json_encode($source,JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES));
+    }
+    public function apply(User $actor,int $id,array $input=[]): \Illuminate\Database\Eloquent\Collection
+    {
+        $this->access->actor($actor);
+        if($input) throw \Illuminate\Validation\ValidationException::withMessages(['scheme'=>__('salary.invalid')]);
+        return DB::transaction(function()use($actor,$id){
+            $this->approval->lock($actor);$scheme=BonusScheme::findOrFail($id);
+            if($scheme->status==='applied'){
+                $ids=$scheme->application_snapshot['adjustment_ids']??null;
+                if(!is_array($ids)) throw new BusinessException(__('salary.conflict'),'bonus_conflict',409);
+                $rows=SalaryAdjustment::whereIn('id',$ids)->orderBy('id')->get();
+                if($rows->modelKeys()!==array_map('intval',$ids)) throw new BusinessException(__('salary.conflict'),'bonus_conflict',409);
+                return $rows;
+            }
+            if($scheme->status!=='draft') throw new BusinessException(__('salary.conflict'),'revision_conflict',409);
+            $policy=$this->approval->policy();$prepared=$scheme->created_by===null?null:(int)$scheme->created_by;
+            $self=$this->approval->authorize($actor,$prepared,$policy);$preview=$this->preview($actor,$id);
+            $end=CarbonImmutable::parse($scheme->pay_month.'-01')->endOfMonth();
+            $definition=$scheme->only(['id','name','kind','pay_month','basis','value','min_service_months','prorate_below_months','applies_to','max_amount','taxable']);
+            $effects=new \Illuminate\Database\Eloquent\Collection();$lines=[];
+            foreach($preview as $line){
+                $sourceFingerprint=$this->sourceFingerprint($line['type'],(int)$line['id'],$end);$adjustment=null;
+                $amount=Money::toPaisa($line['amount']);
+                if($line['excluded_reason']===null && $amount>0){
+                    $adjustment=SalaryAdjustment::create(['payee_type'=>$line['type'],'payee_id'=>$line['id'],'kind'=>'bonus','direction'=>'earning',
+                        'amount'=>$line['amount'],'month'=>$scheme->pay_month,'taxable'=>$scheme->taxable,'scheme_id'=>$scheme->id,'description'=>'Bonus: '.$scheme->name,
+                        'status'=>'approved','created_by'=>$prepared,'approved_by'=>$actor->id]);
+                    $effects->push($adjustment);
+                }
+                $lines[]=$line+['source_fingerprint'=>$sourceFingerprint,'adjustment_id'=>$adjustment?->id];
+            }
+            $adjustmentIds=$effects->modelKeys();
+            $scheme->application_snapshot=['scheme'=>$definition,'scheme_fingerprint'=>hash('sha256',json_encode($definition,JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES)),
+                'policy'=>['allow_self_approval'=>$policy['allow_self_approval'],'prepared_by'=>$prepared,'approved_by'=>$actor->id,'self_approved'=>$self],
+                'lines'=>$lines,'adjustment_ids'=>$adjustmentIds,'applied_at'=>now()->toIso8601String()];
+            $scheme->status='applied';$scheme->applied_at=now();$scheme->save();
+            $this->approval->audit($actor,$scheme,'bonus.applied',['adjustment_ids'=>$adjustmentIds,'self_approved'=>$self]);
+            return $effects;
+        });
     }
     public function end(User $actor,int $id,bool $delete=false): ?BonusScheme
     {
