@@ -13,7 +13,7 @@ use App\Http\Controllers\Shared\{AuditLogController, DashboardController, Notifi
 use App\Http\Controllers\SuperAdmin\{InstitutionController, TenantPurgeController, UniversalSmsController};
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
 use App\Http\Controllers\Hr\{StaffController,StaffAttendanceController,TeacherAttendanceController,LeaveTypeController,LeaveController};
-use App\Http\Controllers\Hr\{SalaryComponentController,SalaryStructureController,SalaryRevisionController,IncrementBatchController,BonusSchemeController,PayAccountController,SalaryAdvanceController};
+use App\Http\Controllers\Hr\{SalaryComponentController,SalaryStructureController,SalaryRevisionController,IncrementBatchController,BonusSchemeController,PayAccountController,SalaryAdvanceController,SalaryAdjustmentController};
 use Illuminate\Support\Facades\Route;
 
 // Structure: docs/templates/laravel-core-files.md "routes/api.php". Every group runs on exactly one kind of host.
@@ -247,6 +247,11 @@ Route::prefix('v1')->group(function () {
             Route::post('/bonus-schemes/{id}/preview',[BonusSchemeController::class,'preview'])->whereNumber('id');
             Route::post('/bonus-schemes/{id}/apply',[BonusSchemeController::class,'apply'])->whereNumber('id');
             Route::post('/bonus-schemes/{id}/cancel',[BonusSchemeController::class,'cancel'])->whereNumber('id');
+            Route::get('/adjustments',[SalaryAdjustmentController::class,'index']);
+            Route::post('/adjustments',[SalaryAdjustmentController::class,'store']);
+            Route::get('/adjustments/suggest-extra-class',[SalaryAdjustmentController::class,'suggestExtraClass']);
+            Route::post('/adjustments/{id}/approve',[SalaryAdjustmentController::class,'approve'])->whereNumber('id');
+            Route::post('/adjustments/{id}/cancel',[SalaryAdjustmentController::class,'cancel'])->whereNumber('id');
             Route::get('/advances',[SalaryAdvanceController::class,'index']);
             Route::post('/advances',[SalaryAdvanceController::class,'store']);
             Route::get('/advances/{id}',[SalaryAdvanceController::class,'show'])->whereNumber('id');

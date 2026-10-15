@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Resources;
 use App\Models\{SalaryAdvance,SalaryComponent,SalaryRevision,SalaryStructure,BonusScheme};
+use App\Models\SalaryAdjustment;
 use Illuminate\Http\Resources\Json\JsonResource;
 class SalaryResource extends JsonResource
 {
@@ -11,6 +12,7 @@ class SalaryResource extends JsonResource
             $data['skipped_months']=array_map(static fn($skip)=>array_intersect_key($skip,array_flip(['month','reason','at'])),$this->resource->skipped_months??[]);
             return $data;
         }
+        if($this->resource instanceof SalaryAdjustment)return $this->resource->only(['id','payee_type','payee_id','kind','direction','amount','month','taxable','description','status','created_by','approved_by','payroll_item_id']);
         $fields=match(true){
             $this->resource instanceof SalaryComponent=>'id code name type calc taxable is_pf is_system is_active sort_order',
             $this->resource instanceof SalaryRevision=>'id payee_type payee_id kind batch_id batch_label change_mode change_value target old_basic new_basic old_gross new_gross effective_from reason arrears_policy status proposed_by approved_by approved_at letter_no',

@@ -37,6 +37,9 @@ class SalaryWriteRequest extends FormRequest
                 'reason'=>'nullable|string|max:255','installments'=>'sometimes|integer|min:1|max:2147483647','installment_amount'=>'sometimes|required|string','recover_from_month'=>'required|date_format:Y-m']:
                 ($action==='transition'?match($this->route('action')){'disburse'=>['date'=>'required|date_format:Y-m-d|before_or_equal:today','payment_method'=>'required|in:cash,bank,bkash,nagad,rocket,other'],
                     'skip-installment'=>['month'=>'required|date_format:Y-m','reason'=>'required|string|max:255'],'write-off'=>['reason'=>'required|string|max:255'],default=>[]} : []),
+            'SalaryAdjustmentController'=>$action==='store'?['payee_type'=>'required|in:teacher,staff','payee_id'=>'required|integer|min:1','kind'=>'required|in:bonus,allowance,overtime,extra_class,arrear,fine,recovery,other',
+                'direction'=>'required|in:earning,deduction','amount'=>'required|string','month'=>'required|date_format:Y-m','taxable'=>'sometimes|boolean','description'=>'nullable|string|max:255',
+                'attachment'=>'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120']:[],
             'PayAccountController'=>['accounts'=>'required|array|list','default_method'=>'nullable|string|max:12','payee_type'=>'prohibited','payee_id'=>'prohibited'],
             default=>[],
         };

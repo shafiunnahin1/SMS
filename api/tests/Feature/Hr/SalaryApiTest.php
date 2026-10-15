@@ -106,6 +106,20 @@ class SalaryApiTest extends RevisionTestCase
         Tenancy::as($i,fn()=>$this->assertSame(1,\App\Models\Expense::where('source','advance')->count()));
     }
 
+    public function test_adjustment_api_uses_maker_checker_and_fails_closed_for_substitution_suggestions(): void
+    {
+        [$i,$admin,$staff]=$this->setupHr();$accountant=$this->makeUser($i,'accountant');$host=$this->hostOf($i);
+        $input=['payee_type'=>'staff','payee_id'=>$staff->id,'kind'=>'allowance','direction'=>'earning','amount'=>'2500.00','month'=>'2026-10','description'=>'Fixture'];
+        $id=$this->api('POST',$host,'hr/adjustments',$accountant,$input)->assertCreated()->assertJsonPath('data.status','pending')
+            ->assertJsonMissingPath('data.attachment_path')->json('data.id');
+        $this->api('GET',$host,'hr/adjustments',$admin)->assertOk()->assertJsonCount(1,'data')->assertJsonPath('data.0.id',$id);
+        $this->api('POST',$host,"hr/adjustments/{$id}/approve",$accountant)->assertForbidden();
+        $this->api('POST',$host,"hr/adjustments/{$id}/approve",$admin)->assertOk()->assertJsonPath('data.status','approved');
+        $this->api('POST',$host,"hr/adjustments/{$id}/cancel",$admin)->assertOk()->assertJsonPath('data.status','cancelled');
+        $this->api('POST',$host,"hr/adjustments/{$id}/cancel",$admin)->assertOk()->assertJsonPath('data.status','cancelled');
+        $this->api('GET',$host,'hr/adjustments/suggest-extra-class',$admin)->assertStatus(409)->assertJsonPath('error','dependency_pending');
+    }
+
     public function test_salary_route_uses_existing_web_session_cookie_flow(): void
     {
         [$i,$admin]=$this->setupHr();$host=$this->hostOf($i);
