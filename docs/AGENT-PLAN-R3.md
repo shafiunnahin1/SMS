@@ -318,7 +318,7 @@ POST /teacher/leave -> LeaveController@apply [role:teacher] (module hr_payroll)
 
 - **নির্ভর করে:** `R3.4`
 - **লক্ষ্য:** তারিখ-ভিত্তিক বেতন-কাঠামো ও উপাদান, সংশোধন (revision) চক্র, ব্যাচ-ইনক্রিমেন্ট, বোনাস-স্কিম, পরিশোধ-অ্যাকাউন্ট। বেতন-তথ্য সংবেদনশীল (D33)।
-- **সীমা / নোট:** গ্র্যাচুইটি ও ছুটি-নগদায়ন সূত্র-ভিত্তিক নয় — ডিফল্টে হাতে-সমন্বয় (`PRODUCT.md` ডিফল্ট)।
+- **সীমা / নোট:** গ্র্যাচুইটি ও ছুটি-নগদায়ন সূত্র-ভিত্তিক নয় — ডিফল্টে হাতে-সমন্বয় (`PRODUCT.md` ডিফল্ট)। D86 seven-clause contract governs snapshots/access/cache and deferred settlement. Preserve six tables/24 routes; bonus apply fails closed dependency_pending until R3.6, separate bonus run stays R3.7. No UI/app-demo DB migration/later tables.
 - **পড়ুন:** `docs/modules/staff-payroll.md`, `docs/LOCKED-DECISIONS.md`
 - **মডিউল-কী:** `hr_payroll`
 - **টেবিল (migration, model, factory এই ধাপেই):**
@@ -389,6 +389,7 @@ CREATE TABLE salary_revisions (
     new_basic DECIMAL(10,2) NOT NULL,
     old_gross DECIMAL(10,2) NULL,
     new_gross DECIMAL(10,2) NOT NULL,
+    calculation_snapshot JSON NOT NULL,         -- D86: immutable reviewed source/result/lines/policy; sensitive, never logged
     effective_from DATE NOT NULL,
     reason VARCHAR(255) NULL,
     arrears_policy VARCHAR(8) NOT NULL DEFAULT 'auto',   -- auto | none
@@ -445,11 +446,11 @@ CREATE TABLE salary_pay_accounts (
 - **Route (24):**
 
 ```
+GET /hr/people/{type}/{id}/salary -> SalaryStructureController@history [role:admin,accountant,teacher] (module hr_payroll)
 GET /hr/salary-components -> SalaryComponentController@index [role:admin,accountant] (module hr_payroll)
 POST /hr/salary-components -> SalaryComponentController@store [role:admin,accountant] (module hr_payroll)
 PUT /hr/salary-components/{id} -> SalaryComponentController@update [role:admin,accountant] (module hr_payroll)
 DELETE /hr/salary-components/{id} -> SalaryComponentController@destroy [role:admin,accountant] (module hr_payroll)
-GET /hr/people/{type}/{id}/salary -> SalaryStructureController@history [role:admin,accountant] (module hr_payroll)
 GET /hr/people/{type}/{id}/pay-accounts -> PayAccountController@show [role:admin,accountant] (module hr_payroll)
 PUT /hr/people/{type}/{id}/pay-accounts -> PayAccountController@update [role:admin,accountant] (module hr_payroll)
 GET /hr/revisions -> SalaryRevisionController@index [role:admin,accountant] (module hr_payroll)
@@ -471,14 +472,14 @@ POST /hr/bonus-schemes/{id}/apply -> BonusSchemeController@apply [role:admin,acc
 POST /hr/bonus-schemes/{id}/cancel -> BonusSchemeController@cancel [role:admin,accountant] (module hr_payroll)
 ```
 - **লিখবেন ও সবুজ করবেন:** `SalaryStructureTest` (docs/modules/staff-payroll.md), `RevisionLifecycleTest` (docs/modules/staff-payroll.md), `IncrementBatchTest` (docs/modules/staff-payroll.md), `BonusSchemeTest` (docs/modules/staff-payroll.md), `SalaryAccessTest` (docs/modules/staff-payroll.md)
-- **শেষ-শর্ত (Done When):** একই ব্যক্তির দুটি কাঠামোর কার্যকর-সময় ওভারল্যাপ করে না (`SalaryStructureTest`)। সংশোধন draft → অনুমোদিত → প্রয়োগকৃত, প্রয়োগের পর অপরিবর্তনীয় (`RevisionLifecycleTest`)। ব্যাচ-ইনক্রিমেন্ট আগে `preview`, তারপর প্রয়োগ (`IncrementBatchTest`)। বোনাস-স্কিম স্পেকের ভিত্তি/ন্যূনতম-চাকরি/আনুপাতিক নিয়মে (`BonusSchemeTest`)। বেতন-তথ্য শুধু অনুমতিপ্রাপ্ত ভূমিকা দেখে; শিক্ষক শুধু নিজেরটা; **Super Admin ও প্ল্যাটফর্ম-সহায়তা কেউ নয়** (`SalaryAccessTest`, D33)।
+- **শেষ-শর্ত (Done When):** একই ব্যক্তির দুটি কাঠামোর কার্যকর-সময় ওভারল্যাপ করে না (`SalaryStructureTest`)। সংশোধন draft → অনুমোদিত → প্রয়োগকৃত, প্রয়োগের পর অপরিবর্তনীয় (`RevisionLifecycleTest`)। ব্যাচ-ইনক্রিমেন্ট আগে `preview`, তারপর প্রয়োগ (`IncrementBatchTest`)। বোনাস-স্কিম স্পেকের ভিত্তি/ন্যূনতম-চাকরি/আনুপাতিক নিয়মে (`BonusSchemeTest`)। বেতন-তথ্য শুধু অনুমতিপ্রাপ্ত ভূমিকা দেখে; শিক্ষক শুধু নিজেরটা; **Super Admin ও প্ল্যাটফর্ম-সহায়তা কেউ নয়** (`SalaryAccessTest`, D33)। D86: immutable calculation_snapshot and stale-source rejection, due scheduler, decrement/sole-admin safeguards; teacher own history only, Super Admin/explicit impersonated token sensitive_scope, encrypted masked pay accounts. BonusSchemeTest proves preview rules/fail-closed apply and retries; idempotent adjustment execution/bonus-run proof remain later tasks. Ended-month automatic arrears fail closed; explicit none policy audited; no staff cache columns.
 - **যাচাই:** `php artisan test --filter=Salary` · `php artisan test --filter=Revision` · `php artisan test --filter=Bonus`
 
 ### TASK `R3.6` — সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ
 
 - **নির্ভর করে:** `R3.5`
 - **লক্ষ্য:** বেতনের উপর ইতিবাচক/নেতিবাচক সমন্বয় (জরিমানা, ওভারটাইম, অতিরিক্ত ক্লাস) এবং অগ্রিম/ঋণ, কিস্তিতে স্বয়ংক্রিয় কর্তন।
-- **সীমা / নোট:** "অতিরিক্ত ক্লাস" বদলি-শিক্ষক মডিউলের (R2) সাথে যুক্ত হলে স্বয়ংক্রিয়; না থাকলে হাতে-এন্ট্রি।
+- **সীমা / নোট:** "অতিরিক্ত ক্লাস" বদলি-শিক্ষক মডিউলের (R2) সাথে যুক্ত হলে স্বয়ংক্রিয়; না থাকলে হাতে-এন্ট্রি। D86 preserves deferred R3.5 bonus scheme-to-adjustment idempotent integration; do not mark a scheme applied without its approved unique adjustment effects. Paid-history-dependent automatic arrears still waits for R3.7 integration.
 - **পড়ুন:** `docs/modules/staff-payroll.md`, `docs/modules/finance-advanced.md`
 - **মডিউল-কী:** `hr_payroll`
 - **টেবিল (migration, model, factory এই ধাপেই):**
@@ -550,7 +551,7 @@ POST /hr/advances/{id}/{action} -> SalaryAdvanceController@transition [role:admi
 
 - **নির্ভর করে:** `R3.6`
 - **লক্ষ্য:** মাসিক বেতন-হিসাব (run): গণনা → পর্যালোচনা → maker-checker অনুমোদন → পরিশোধ-নথি → payslip PDF। অনুমোদিত run অপরিবর্তনীয়।
-- **সীমা / নোট:** ব্যাংক-ফাইল ও কর-হার আপনার হিসাবরক্ষক/ব্যাংক থেকে আসল ফরম্যাট পেলে।
+- **সীমা / নোট:** ব্যাংক-ফাইল ও কর-হার আপনার হিসাবরক্ষক/ব্যাংক থেকে আসল ফরম্যাট পেলে। D86 preserves separate bonus-run acceptance and paid-history-dependent revision arrears integration (including no duplicate effects); R3.5 preview/fail-closed tests are not settlement/run proof.
 - **পড়ুন:** `docs/modules/staff-payroll.md`, `docs/LOCKED-DECISIONS.md`, `infra/spec-verify/payroll_ref.py`
 - **মডিউল-কী:** `hr_payroll`
 - **টেবিল (migration, model, factory এই ধাপেই):**

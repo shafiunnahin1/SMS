@@ -788,6 +788,10 @@ Route::prefix('v1')->group(function () {
 
         // ── Revision 10: staff, salary & payroll (docs/modules/staff-payroll.md) ─────────────
         // Admin + Accountant prepare/pay; approval rules (maker-checker) are enforced INSIDE the services, not by route role alone.
+        // D86: teacher reads own salary history only; D33 sensitive gate precedes access.
+        Route::middleware(['role:admin,accountant,teacher', 'module:hr_payroll'])->group(function () {
+            Route::get('/hr/people/{type}/{id}/salary', [SalaryStructureController::class, 'history']);
+        });
         // D85: teacher may only cancel own pending request; enforced in service.
         Route::middleware(['role:admin,teacher', 'module:hr_payroll'])->group(function () {
             Route::patch('/hr/leaves/{id}/{action}', [LeaveController::class, 'transition'])->where('action', 'approve|reject|cancel');
@@ -802,7 +806,6 @@ Route::prefix('v1')->group(function () {
                 Route::get('/leaves/balance',         [LeaveController::class, 'balance']);           // ?type=teacher|staff&id=
             });
             Route::apiResource('salary-components',   SalaryComponentController::class)->except(['show']);
-            Route::get('/people/{type}/{id}/salary',  [SalaryStructureController::class, 'history']);
             Route::get('/people/{type}/{id}/pay-accounts', [PayAccountController::class, 'show']);
             Route::put('/people/{type}/{id}/pay-accounts', [PayAccountController::class, 'update']);
             Route::apiResource('revisions',           SalaryRevisionController::class)->only(['index', 'store', 'show']);

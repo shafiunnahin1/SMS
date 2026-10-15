@@ -693,3 +693,8 @@ POST /fee-refunds accepts request_key (UUID), student_id, original_receipt_no, r
 ## D85 HR leave transition
 
 PATCH /hr/leaves/{id}/{action} retains approve|reject|cancel and module hr_payroll. Roles admin,teacher; teacher only own pending cancel, admin other transitions. cancelled is distinct from rejected. See hr-payroll.md D85 for calendar, snapshots, annual balance and summary contract. No additional route.
+
+
+## D86 R3.5 salary access and settlement boundary
+
+GET /hr/people/{type}/{id}/salary uses admin,accountant,teacher (teacher own teacher profile only); no new route. Salary data denies Super Admin/explicit impersonated tokens with 403 sensitive_scope. Bonus apply is 409 dependency_pending without side effects until R3.6 integration; automatic ended-month arrears fail closed until later paid-history/arrears integration. Revision reviewed calculation snapshot is server-owned; source changes are 409 stale_revision. Exact contract: staff-payroll.md D86 and owner/salary-structure-contract-decision.md. Pay account responses never contain full account_number.

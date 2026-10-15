@@ -298,13 +298,13 @@
     "BonusSchemeTest",
     "SalaryAccessTest"
    ],
-   "done": "একই ব্যক্তির দুটি কাঠামোর কার্যকর-সময় ওভারল্যাপ করে না (`SalaryStructureTest`)। সংশোধন draft → অনুমোদিত → প্রয়োগকৃত, প্রয়োগের পর অপরিবর্তনীয় (`RevisionLifecycleTest`)। ব্যাচ-ইনক্রিমেন্ট আগে `preview`, তারপর প্রয়োগ (`IncrementBatchTest`)। বোনাস-স্কিম স্পেকের ভিত্তি/ন্যূনতম-চাকরি/আনুপাতিক নিয়মে (`BonusSchemeTest`)। বেতন-তথ্য শুধু অনুমতিপ্রাপ্ত ভূমিকা দেখে; শিক্ষক শুধু নিজেরটা; **Super Admin ও প্ল্যাটফর্ম-সহায়তা কেউ নয়** (`SalaryAccessTest`, D33)।",
+   "done": "একই ব্যক্তির দুটি কাঠামোর কার্যকর-সময় ওভারল্যাপ করে না (`SalaryStructureTest`)। সংশোধন draft → অনুমোদিত → প্রয়োগকৃত, প্রয়োগের পর অপরিবর্তনীয় (`RevisionLifecycleTest`)। ব্যাচ-ইনক্রিমেন্ট আগে `preview`, তারপর প্রয়োগ (`IncrementBatchTest`)। বোনাস-স্কিম স্পেকের ভিত্তি/ন্যূনতম-চাকরি/আনুপাতিক নিয়মে (`BonusSchemeTest`)। বেতন-তথ্য শুধু অনুমতিপ্রাপ্ত ভূমিকা দেখে; শিক্ষক শুধু নিজেরটা; **Super Admin ও প্ল্যাটফর্ম-সহায়তা কেউ নয়** (`SalaryAccessTest`, D33)। D86: immutable calculation_snapshot and stale-source rejection, due scheduler, decrement/sole-admin safeguards; teacher own history only, Super Admin/explicit impersonated token sensitive_scope, encrypted masked pay accounts. BonusSchemeTest proves preview rules/fail-closed apply and retries; idempotent adjustment execution/bonus-run proof remain later tasks. Ended-month automatic arrears fail closed; explicit none policy audited; no staff cache columns.",
    "verify": [
     "php artisan test --filter=Salary",
     "php artisan test --filter=Revision",
     "php artisan test --filter=Bonus"
    ],
-   "scope": "গ্র্যাচুইটি ও ছুটি-নগদায়ন সূত্র-ভিত্তিক নয় — ডিফল্টে হাতে-সমন্বয় (`PRODUCT.md` ডিফল্ট)।"
+   "scope": "গ্র্যাচুইটি ও ছুটি-নগদায়ন সূত্র-ভিত্তিক নয় — ডিফল্টে হাতে-সমন্বয় (`PRODUCT.md` ডিফল্ট)। D86 seven-clause contract governs snapshots/access/cache and deferred settlement. Preserve six tables/24 routes; bonus apply fails closed dependency_pending until R3.6, separate bonus run stays R3.7. No UI/app-demo DB migration/later tables."
   },
   {
    "id": "R3.6",
@@ -335,7 +335,7 @@
    "verify": [
     "php artisan test --filter=Advance"
    ],
-   "scope": "\"অতিরিক্ত ক্লাস\" বদলি-শিক্ষক মডিউলের (R2) সাথে যুক্ত হলে স্বয়ংক্রিয়; না থাকলে হাতে-এন্ট্রি।"
+   "scope": "\"অতিরিক্ত ক্লাস\" বদলি-শিক্ষক মডিউলের (R2) সাথে যুক্ত হলে স্বয়ংক্রিয়; না থাকলে হাতে-এন্ট্রি। D86 preserves deferred R3.5 bonus scheme-to-adjustment idempotent integration; do not mark a scheme applied without its approved unique adjustment effects. Paid-history-dependent automatic arrears still waits for R3.7 integration."
   },
   {
    "id": "R3.7",
@@ -376,7 +376,7 @@
     "php artisan test --filter=Payroll",
     "python3 infra/spec-verify/verify.py . --deep"
    ],
-   "scope": "ব্যাংক-ফাইল ও কর-হার আপনার হিসাবরক্ষক/ব্যাংক থেকে আসল ফরম্যাট পেলে।"
+   "scope": "ব্যাংক-ফাইল ও কর-হার আপনার হিসাবরক্ষক/ব্যাংক থেকে আসল ফরম্যাট পেলে। D86 preserves separate bonus-run acceptance and paid-history-dependent revision arrears integration (including no duplicate effects); R3.5 preview/fail-closed tests are not settlement/run proof."
   },
   {
    "id": "R3.8",

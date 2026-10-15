@@ -1713,6 +1713,7 @@ CREATE TABLE salary_revisions (
     new_basic DECIMAL(10,2) NOT NULL,
     old_gross DECIMAL(10,2) NULL,
     new_gross DECIMAL(10,2) NOT NULL,
+    calculation_snapshot JSON NOT NULL,         -- D86: immutable reviewed source/result/lines/policy; sensitive, never logged
     effective_from DATE NOT NULL,
     reason VARCHAR(255) NULL,
     arrears_policy VARCHAR(8) NOT NULL DEFAULT 'auto',   -- auto | none
