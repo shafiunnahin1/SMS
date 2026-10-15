@@ -1,6 +1,6 @@
 # R3.4 staff and leave contract — owner review draft
 
-Status: OWNER APPROVED in chat on 2026-10-15, all seven proposed clauses without alteration. Approved text is preserved in commit 3ab01cc. Separate owner locked-decision commit is pending before protected edits. Prepared after pushed R3.3 eefbc74 / completion c3594c3.
+Status: OWNER APPROVED in chat on 2026-10-15, all seven proposed clauses without alteration. Approved text is preserved in commit 3ab01cc. Owner D85 locked-decision commit fb56d8c and protected alignment 5c52574 are pushed. R3.4 backend complete: foundation 592dcae, lifecycle fb85351, final API 74e8d42424dc216c6667db4e6bf236106259050d; required checks pass. No app/demo DB migration or UI execution. Prepared after pushed R3.3 eefbc74 / completion c3594c3.
 
 ## Evidence requiring owner resolution
 
