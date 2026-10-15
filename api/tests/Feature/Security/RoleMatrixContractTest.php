@@ -56,6 +56,7 @@ class RoleMatrixContractTest extends TestCase
             $users[$role] = in_array($role, User::PLATFORM_ROLES, true) ? $this->makeUser(null, $role) : $this->makeUser($i, $role);
             $users[$role]->forceFill(['must_change_password' => false])->save();
         }
+        $salaryTeacher = \App\Support\Tenancy::as($i, fn () => \App\Models\Teacher::create(['user_id'=>$users['teacher']->id,'employee_id'=>'MATRIX-HR']));
         $central = 'admin.' . config('tenancy.base_domain');
 
         $wrong = [];
@@ -65,6 +66,7 @@ class RoleMatrixContractTest extends TestCase
             // D84: use a valid shared action so route constraints do not preempt the role middleware.
             if ($uri === 'api/v1/hr/leaves/{id}/{action}') $path = str_replace('dry-run', 'cancel', $path);
             if ($uri === 'api/v1/fee-refunds/{id}/{action}') $path = str_replace('dry-run', 'process', $path);
+            if ($uri === 'api/v1/hr/people/{type}/{id}/salary') $path = 'hr/people/teacher/'.$salaryTeacher->id.'/salary';
             $host = str_starts_with($path, 'super/') || str_starts_with($path, 'writer/') ? $central : $this->hostOf($i);
             foreach (self::ROLES as $role) {
                 $status = $this->api($method, $host, $path, $users[$role])->baseResponse->getStatusCode();     // a file download is a BinaryFileResponse

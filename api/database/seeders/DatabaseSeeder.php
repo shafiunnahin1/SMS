@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             DemoDataSeeder::class,
             DemoCoachingSeeder::class,
             DemoTutorSeeder::class,
+            SalaryComponentSeeder::class, // D86: definitions only, no salary amounts.
         ]);
     }
 }

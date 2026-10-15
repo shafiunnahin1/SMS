@@ -47,6 +47,22 @@ class TenantIsolationTest extends TestCase
     private function foreignIds(): array
     {
         return [
+            'PUT api/v1/hr/salary-components/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryComponent::factory()->create()->id),
+            'DELETE api/v1/hr/salary-components/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryComponent::factory()->create()->id),
+            'GET api/v1/hr/people/{type}/{id}/salary' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
+            'GET api/v1/hr/people/{type}/{id}/pay-accounts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
+            'PUT api/v1/hr/people/{type}/{id}/pay-accounts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
+            'GET api/v1/hr/revisions/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryRevision::factory()->create()->id),
+            'POST api/v1/hr/revisions/{id}/approve' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryRevision::factory()->create()->id),
+            'POST api/v1/hr/revisions/{id}/reject' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryRevision::factory()->create()->id),
+            'POST api/v1/hr/revisions/{id}/cancel' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryRevision::factory()->create()->id),
+            'GET api/v1/hr/revisions/{id}/letter.pdf' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryRevision::factory()->create()->id),
+            'GET api/v1/hr/bonus-schemes/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\BonusScheme::factory()->create()->id),
+            'PUT api/v1/hr/bonus-schemes/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\BonusScheme::factory()->create()->id),
+            'DELETE api/v1/hr/bonus-schemes/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\BonusScheme::factory()->create()->id),
+            'POST api/v1/hr/bonus-schemes/{id}/preview' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\BonusScheme::factory()->create()->id),
+            'POST api/v1/hr/bonus-schemes/{id}/apply' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\BonusScheme::factory()->create()->id),
+            'POST api/v1/hr/bonus-schemes/{id}/cancel' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\BonusScheme::factory()->create()->id),
             'GET api/v1/hr/staff/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
             'PUT api/v1/hr/staff/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
             'DELETE api/v1/hr/staff/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
@@ -287,6 +303,7 @@ class TenantIsolationTest extends TestCase
                 $id = $make($other);
                 $this->assertNotNull($id, "{$key}: no row seeded for {$slug}");
                 $path = str_replace('{id}', (string) $id, substr($uri, strlen('api/v1/')));
+                if (str_starts_with($uri, 'api/v1/hr/people/')) $path = str_replace('{type}', 'staff', $path);
                 $this->api($method, $this->hostOf($me['institution']), $path, $me['admin'])->assertNotFound();
             }
         }

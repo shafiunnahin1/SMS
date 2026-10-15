@@ -38,4 +38,15 @@ class BonusSchemeTest extends RevisionTestCase
         $this->assertSame('cancelled',$scheme->fresh()->status);
         $this->expectException(BusinessException::class);$service->save($admin,['name'=>'Changed'],$scheme->id);
     }
+    public function test_percentage_and_service_proration_round_only_once_like_decimal_reference(): void
+    {
+        [$i,$admin,$staff]=$this->setupHr();$staff->update(['joining_date'=>'2026-09-01']);
+        SalaryStructure::factory()->create(['payee_id'=>$staff->id,'basic'=>'0.01','gross'=>'0.01']);
+        $service=app(BonusSchemeService::class);
+        $scheme=$service->save($admin,['name'=>'Paisa boundary','pay_month'=>'2026-10','basis'=>'basic','value'=>'50.00','prorate_below_months'=>2]);
+        $this->assertSame('0.00',$service->preview($admin,$scheme->id)[0]['amount']);
+        $service->save($admin,['prorate_below_months'=>0],$scheme->id);
+        $this->assertSame('0.01',$service->preview($admin,$scheme->id)[0]['amount']);
+    }
+
 }

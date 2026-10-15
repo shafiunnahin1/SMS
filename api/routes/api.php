@@ -13,6 +13,7 @@ use App\Http\Controllers\Shared\{AuditLogController, DashboardController, Notifi
 use App\Http\Controllers\SuperAdmin\{InstitutionController, TenantPurgeController, UniversalSmsController};
 use App\Http\Controllers\Auth\{LoginController, PasswordResetController, SessionController};
 use App\Http\Controllers\Hr\{StaffController,StaffAttendanceController,TeacherAttendanceController,LeaveTypeController,LeaveController};
+use App\Http\Controllers\Hr\{SalaryComponentController,SalaryStructureController,SalaryRevisionController,IncrementBatchController,BonusSchemeController,PayAccountController};
 use Illuminate\Support\Facades\Route;
 
 // Structure: docs/templates/laravel-core-files.md "routes/api.php". Every group runs on exactly one kind of host.
@@ -219,6 +220,35 @@ Route::prefix('v1')->group(function () {
         });
 
         // ── Admin + Teacher: attendance (Step 4.3; Spike S5b) ──
+        // D86 / R3.5: salary structures and previews, no settlement execution.
+        Route::middleware(['role:admin,accountant,teacher','module:hr_payroll'])->get('/hr/people/{type}/{id}/salary',[SalaryStructureController::class,'history'])->whereNumber('id');
+        Route::middleware(['role:admin,accountant','module:hr_payroll'])->prefix('hr')->group(function(){
+            Route::get('/salary-components',[SalaryComponentController::class,'index']);
+            Route::post('/salary-components',[SalaryComponentController::class,'store']);
+            Route::put('/salary-components/{id}',[SalaryComponentController::class,'update'])->whereNumber('id');
+            Route::delete('/salary-components/{id}',[SalaryComponentController::class,'destroy'])->whereNumber('id');
+            Route::get('/people/{type}/{id}/pay-accounts',[PayAccountController::class,'show'])->whereNumber('id');
+            Route::put('/people/{type}/{id}/pay-accounts',[PayAccountController::class,'update'])->whereNumber('id');
+            Route::get('/revisions',[SalaryRevisionController::class,'index']);
+            Route::post('/revisions',[SalaryRevisionController::class,'store']);
+            Route::get('/revisions/{id}',[SalaryRevisionController::class,'show'])->whereNumber('id');
+            Route::post('/revisions/{id}/approve',[SalaryRevisionController::class,'approve'])->whereNumber('id');
+            Route::post('/revisions/{id}/reject',[SalaryRevisionController::class,'reject'])->whereNumber('id');
+            Route::post('/revisions/{id}/cancel',[SalaryRevisionController::class,'cancel'])->whereNumber('id');
+            Route::get('/revisions/{id}/letter.pdf',[SalaryRevisionController::class,'letter'])->whereNumber('id');
+            Route::post('/increment-batches/preview',[IncrementBatchController::class,'preview']);
+            Route::post('/increment-batches',[IncrementBatchController::class,'store']);
+            Route::get('/bonus-schemes',[BonusSchemeController::class,'index']);
+            Route::post('/bonus-schemes',[BonusSchemeController::class,'store']);
+            Route::get('/bonus-schemes/{id}',[BonusSchemeController::class,'show'])->whereNumber('id');
+            Route::put('/bonus-schemes/{id}',[BonusSchemeController::class,'update'])->whereNumber('id');
+            Route::delete('/bonus-schemes/{id}',[BonusSchemeController::class,'destroy'])->whereNumber('id');
+            Route::post('/bonus-schemes/{id}/preview',[BonusSchemeController::class,'preview'])->whereNumber('id');
+            Route::post('/bonus-schemes/{id}/apply',[BonusSchemeController::class,'apply'])->whereNumber('id');
+            Route::post('/bonus-schemes/{id}/cancel',[BonusSchemeController::class,'cancel'])->whereNumber('id');
+        });
+
+
         // D85 / R3.4: ordinary staff and leave records; no payroll execution.
         Route::middleware(['role:admin','module:teacher_attendance'])->group(function () {
             Route::get('/teacher-attendance',[TeacherAttendanceController::class,'index']);

@@ -30,7 +30,7 @@ class BonusSchemeService
             $data['value']=Money::format($this->money->paisa($data['value']));
             if(isset($data['max_amount'])) $data['max_amount']=Money::format($this->money->paisa($data['max_amount']));
             $row->fill($data);if(!$id){$row->status='draft';$row->created_by=$actor->id;}$row->save();
-            $this->audit($actor,$row,'saved');return $row;
+            $this->audit($actor,$row,'saved');return $row->fresh();
         });
     }
     private function audit(User $actor,BonusScheme $row,string $action): void
@@ -53,14 +53,16 @@ class BonusSchemeService
                 $amount=0;
                 if(!$reason){
                     $value=$this->money->paisa($scheme->value);
+                    $numerator=$value;$denominator=1;
                     if($scheme->basis==='fixed') $amount=$value;
                     elseif(!$structure) $reason='structure';
                     else{
                         $base=Money::toPaisa($structure->{$scheme->basis});
                         if($base>0 && $value>intdiv(SalaryCalculator::MAX_PAISA*10000,$base)) throw \Illuminate\Validation\ValidationException::withMessages(['value'=>__('salary.invalid')]);
-                        $amount=Money::ratio($base,$value,10000);
+                        $numerator=$base*$value;$denominator=10000;
                     }
-                    if($scheme->prorate_below_months>0 && $months<$scheme->prorate_below_months) $amount=Money::ratio($amount,$months,$scheme->prorate_below_months);
+                    // Match payroll_ref.bonus: percentage and service proration, then ONE half-up rounding.
+                    if(!$reason) $amount=$this->roundedAmount($numerator,$denominator,$months,(int)$scheme->prorate_below_months);
                     if($scheme->max_amount!==null) $amount=min($amount,Money::toPaisa($scheme->max_amount));
                 }
                 $rows[]=['type'=>$type,'id'=>$payee->id,'service_months'=>$months,'amount'=>Money::format($amount),'excluded_reason'=>$reason];
@@ -68,6 +70,21 @@ class BonusSchemeService
         }
         return $rows;
     }
+    private function roundedAmount(int $numerator,int $denominator,int $months,int $below): int
+    {
+        if($below===0 || $months>=$below) return Money::ratio($numerator,1,$denominator);
+        // Split quotient/remainders before multiplying to avoid a large combined denominator/product.
+        $main=intdiv($numerator,$denominator)*$months;
+        $extra=($numerator%$denominator)*$months;
+        $result=intdiv($main,$below);
+        $remainder=($main%$below)+intdiv($extra,$denominator);
+        $result+=intdiv($remainder,$below);
+        $remainder%=$below;
+        $difference=$below-2*$remainder;
+        if($difference<=0 || ($difference===1 && 2*($extra%$denominator)>=$denominator)) $result++;
+        return $result;
+    }
+
     public function apply(User $actor,int $id): never
     {
         $this->access->actor($actor);BonusScheme::findOrFail($id);

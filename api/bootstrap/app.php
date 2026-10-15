@@ -31,6 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // docs/I18N.md section 6: the tenant, then its language, BEFORE `auth:sanctum` - so even "please log in" is in the right language
         $middleware->prependToPriorityList(\Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, TenantMiddleware::class);
         $middleware->prependToPriorityList(\Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, \App\Http\Middleware\SetLocale::class);
+        // D33/D86: authenticate the bearer/session identity before rejecting salary support access, before tenant lookup.
+        $middleware->appendToGroup('api', \App\Http\Middleware\SalarySensitiveScope::class);
+        $middleware->prependToPriorityList(TenantMiddleware::class, \App\Http\Middleware\SalarySensitiveScope::class);
         $middleware->alias([
             'tenant'         => TenantMiddleware::class,            // modes: tenant | tenant:optional | tenant:central
             'tenant.user'    => EnsureUserBelongsToTenant::class,
