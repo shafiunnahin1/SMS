@@ -819,6 +819,7 @@
   "salary_advances": {
    "refs": {
     "approved_by": "users",
+    "expense_id": "expenses",
     "requested_by": "users"
    },
    "polymorphic": [

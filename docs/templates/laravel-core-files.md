@@ -1013,7 +1013,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/teacher/salary',                   [TeacherSalaryController::class, 'summary']);
                 Route::get('/teacher/salary/slips',             [TeacherSalaryController::class, 'slips']);
                 Route::get('/teacher/salary/slips/{id}.pdf',    [TeacherSalaryController::class, 'slip']);
-                Route::get('/teacher/salary/advances',          [TeacherSalaryController::class, 'advances']);
+                Route::get('/teacher/salary/advances',          [SalaryAdvanceController::class, 'mine']); // D87: R3.6 own teacher advances
                 Route::get('/teacher/salary/history',           [TeacherSalaryController::class, 'history']);
                 Route::get('/teacher/leave',                    [LeaveController::class, 'mine']);              // R17: a teacher's own leave applications and balance
                 Route::post('/teacher/leave',                   [LeaveController::class, 'apply']);

@@ -1788,6 +1788,7 @@ CREATE TABLE bonus_schemes (
     max_amount DECIMAL(10,2) NULL,
     taxable TINYINT(1) NOT NULL DEFAULT 1,
     status ENUM('draft','applied','cancelled') NOT NULL DEFAULT 'draft',
+    application_snapshot JSON NULL,                -- D87: immutable successful application source/results/policy
     applied_at TIMESTAMP NULL,
     created_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1803,6 +1804,9 @@ CREATE TABLE salary_advances (
     installments INT NOT NULL DEFAULT 1,
     installment_amount DECIMAL(10,2) NOT NULL,
     recover_from_month VARCHAR(7) NOT NULL,
+    terms_snapshot JSON NOT NULL,                   -- D87: immutable reviewed terms/source/policy
+    expense_id BIGINT UNSIGNED NULL,
+    skipped_months JSON NULL,                       -- D87: service append-only month/reason/approver/time
     recovered DECIMAL(10,2) NOT NULL DEFAULT 0,
     payment_method VARCHAR(12) NULL,
     status ENUM('requested','approved','active','closed','rejected','written_off') NOT NULL DEFAULT 'requested',
@@ -1810,6 +1814,8 @@ CREATE TABLE salary_advances (
     approved_by BIGINT UNSIGNED NULL,
     disbursed_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_advance_expense (institution_id, expense_id),
+    FOREIGN KEY (expense_id) REFERENCES expenses(id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 CREATE TABLE salary_adjustments (

@@ -22,8 +22,8 @@
 | `R3.3` | ফি রিফান্ড ও reversal | R3.2 | 1 | 5 | 5 |
 | `R3.4` | কর্মচারী, উপস্থিতি ও ছুটি | R3.3 | 5 | 18 | 5 |
 | `R3.5` | বেতন-কাঠামো, ইনক্রিমেন্ট ও বোনাস | R3.4 | 6 | 24 | 5 |
-| `R3.6` | সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ | R3.5 | 2 | 9 | 1 |
-| `R3.7` | Payroll run, payslip ও পরিশোধ | R3.6 | 2 | 13 | 7 |
+| `R3.6` | সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ | R3.5 | 2 | 10 | 1 |
+| `R3.7` | Payroll run, payslip ও পরিশোধ | R3.6 | 2 | 12 | 7 |
 | `R3.8` | ভবিষ্য তহবিল (PF), কর ও চূড়ান্ত নিষ্পত্তি | R3.7 | 1 | 4 | 3 |
 | `R3.9` | স্টোর / ইনভেন্টরি | R3.2 | 2 | 9 | 6 |
 | `R3.10` | হিসাব-খাত (Accounting) — double-entry | R3.3, R3.7, R3.9 | 5 | 20 | 13 |
@@ -420,6 +420,7 @@ CREATE TABLE bonus_schemes (
     max_amount DECIMAL(10,2) NULL,
     taxable TINYINT(1) NOT NULL DEFAULT 1,
     status ENUM('draft','applied','cancelled') NOT NULL DEFAULT 'draft',
+    application_snapshot JSON NULL,                -- D87: immutable successful application source/results/policy
     applied_at TIMESTAMP NULL,
     created_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -479,7 +480,7 @@ POST /hr/bonus-schemes/{id}/cancel -> BonusSchemeController@cancel [role:admin,a
 
 - **নির্ভর করে:** `R3.5`
 - **লক্ষ্য:** বেতনের উপর ইতিবাচক/নেতিবাচক সমন্বয় (জরিমানা, ওভারটাইম, অতিরিক্ত ক্লাস) এবং অগ্রিম/ঋণ, কিস্তিতে স্বয়ংক্রিয় কর্তন।
-- **সীমা / নোট:** "অতিরিক্ত ক্লাস" বদলি-শিক্ষক মডিউলের (R2) সাথে যুক্ত হলে স্বয়ংক্রিয়; না থাকলে হাতে-এন্ট্রি। D86 preserves deferred R3.5 bonus scheme-to-adjustment idempotent integration; do not mark a scheme applied without its approved unique adjustment effects. Paid-history-dependent automatic arrears still waits for R3.7 integration.
+- **সীমা / নোট:** D87 approved seven-clause contract owner/advance-adjustment-contract-decision.md governs R3.6. Two task tables and ten routes; teacher advances route assigned SalaryAdvanceController@mine. Add immutable terms_snapshot, unique expense_id FK and append-only skipped_months to advances; application_snapshot to existing bonus_schemes via new migration only. No payroll tables or early applied/recovered claims. Manual extra-class entries allowed; unavailable substitutions return dependency_pending. Admin approvals/skip/write-off with maker-checker/configured sole-active-admin exception; accountant prepares/disburses approved advance. Retain exact tests/references; only explicitly approved SalaryFoundationTest/BonusSchemeTest expectation adaptations. No UI/app-demo DB migration/live payments/new dependencies/task reorder.
 - **পড়ুন:** `docs/modules/staff-payroll.md`, `docs/modules/finance-advanced.md`
 - **মডিউল-কী:** `hr_payroll`
 - **টেবিল (migration, model, factory এই ধাপেই):**
@@ -520,6 +521,9 @@ CREATE TABLE salary_advances (
     installments INT NOT NULL DEFAULT 1,
     installment_amount DECIMAL(10,2) NOT NULL,
     recover_from_month VARCHAR(7) NOT NULL,
+    terms_snapshot JSON NOT NULL,                   -- D87: immutable reviewed terms/source/policy
+    expense_id BIGINT UNSIGNED NULL,
+    skipped_months JSON NULL,                       -- D87: service append-only month/reason/approver/time
     recovered DECIMAL(10,2) NOT NULL DEFAULT 0,
     payment_method VARCHAR(12) NULL,
     status ENUM('requested','approved','active','closed','rejected','written_off') NOT NULL DEFAULT 'requested',
@@ -527,10 +531,12 @@ CREATE TABLE salary_advances (
     approved_by BIGINT UNSIGNED NULL,
     disbursed_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_advance_expense (institution_id, expense_id),
+    FOREIGN KEY (expense_id) REFERENCES expenses(id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 ```
-- **Route (9):**
+- **Route (10):**
 
 ```
 GET /hr/adjustments -> SalaryAdjustmentController@index [role:admin,accountant] (module hr_payroll)
@@ -542,16 +548,17 @@ GET /hr/advances -> SalaryAdvanceController@index [role:admin,accountant] (modul
 POST /hr/advances -> SalaryAdvanceController@store [role:admin,accountant] (module hr_payroll)
 GET /hr/advances/{id} -> SalaryAdvanceController@show [role:admin,accountant] (module hr_payroll)
 POST /hr/advances/{id}/{action} -> SalaryAdvanceController@transition [role:admin,accountant] (module hr_payroll)
+GET /teacher/salary/advances -> SalaryAdvanceController@mine [role:teacher] (module hr_payroll)
 ```
 - **লিখবেন ও সবুজ করবেন:** `AdvanceRecoveryTest` (docs/modules/staff-payroll.md)
-- **শেষ-শর্ত (Done When):** অগ্রিম অনুমোদন → বিতরণ → কিস্তি বেতন থেকে কাটা; কিস্তি বাদ (skip) ও অবলোপন (write-off) নথিভুক্ত (`AdvanceRecoveryTest`); অগ্রিম বিতরণ ক্যাশবুকে নগদ-বহির্গমন। সমন্বয় নির্দিষ্ট মাসে বাঁধা, অনুমোদনের পর বদলায় না। শিক্ষকের `/teacher/salary/advances` শুধু নিজের।
+- **শেষ-শর্ত (Done When):** D87: AdvanceRecoveryTest proves approved advance disbursement, exact pure recovery calculation (balance/min-net/reduced installment/final remainder/approved skips), no recovered mutation during preview, and retained admin skip/write-off evidence. One atomic source=advance expense per disbursement, identical retry idempotent/conflicting retry 409, cashbook derives cash outflow exactly once and rejects closed-day writes. Reviewed terms/source/policy rechecked at approval/disbursement. Approved adjustment values immutable; audited unapplied cancellation only. Bonus apply creates complete unique scheme/payee approved adjustment effects and immutable application snapshot atomically; retry returns original rows. Teacher /teacher/salary/advances is own-profile only; D33/tenant/role/module/privacy checks pass. Actual payroll-linked recovery/update/closure/retry, bonus runs and paid-month arrears are mandatory R3.7 integration proof, not claimed in R3.6.
 - **যাচাই:** `php artisan test --filter=Advance`
 
 ### TASK `R3.7` — Payroll run, payslip ও পরিশোধ
 
 - **নির্ভর করে:** `R3.6`
 - **লক্ষ্য:** মাসিক বেতন-হিসাব (run): গণনা → পর্যালোচনা → maker-checker অনুমোদন → পরিশোধ-নথি → payslip PDF। অনুমোদিত run অপরিবর্তনীয়।
-- **সীমা / নোট:** ব্যাংক-ফাইল ও কর-হার আপনার হিসাবরক্ষক/ব্যাংক থেকে আসল ফরম্যাট পেলে। D86 preserves separate bonus-run acceptance and paid-history-dependent revision arrears integration (including no duplicate effects); R3.5 preview/fail-closed tests are not settlement/run proof.
+- **সীমা / নোট:** ব্যাংক-ফাইল ও কর-হার আপনার হিসাবরক্ষক/ব্যাংক থেকে আসল ফরম্যাট পেলে। D86 preserves separate bonus-run acceptance and paid-history-dependent revision arrears integration (including no duplicate effects); R3.5 preview/fail-closed tests are not settlement/run proof. D87: actual regular-payroll advance deduction and atomic recovered update/closure must consume approved skips and prove retry/no duplicate recovery; pure R3.6 calculation is not payroll settlement proof.
 - **পড়ুন:** `docs/modules/staff-payroll.md`, `docs/LOCKED-DECISIONS.md`, `infra/spec-verify/payroll_ref.py`
 - **মডিউল-কী:** `hr_payroll`
 - **টেবিল (migration, model, factory এই ধাপেই):**
@@ -615,7 +622,7 @@ CREATE TABLE payroll_items (
 );
 CREATE INDEX idx_payroll_items_payee ON payroll_items(institution_id, payee_type, payee_id);
 ```
-- **Route (13):**
+- **Route (12):**
 
 ```
 GET /hr/payroll-runs -> PayrollRunController@index [role:admin,accountant] (module hr_payroll)
@@ -629,7 +636,6 @@ GET /hr/reports/{name} -> PayrollReportController@show [role:admin,accountant] (
 GET /teacher/salary -> TeacherSalaryController@summary [role:teacher] (module hr_payroll)
 GET /teacher/salary/slips -> TeacherSalaryController@slips [role:teacher] (module hr_payroll)
 GET /teacher/salary/slips/{id}.pdf -> TeacherSalaryController@slip [role:teacher] (module hr_payroll)
-GET /teacher/salary/advances -> TeacherSalaryController@advances [role:teacher] (module hr_payroll)
 GET /teacher/salary/history -> TeacherSalaryController@history [role:teacher] (module hr_payroll)
 ```
 - **লিখবেন ও সবুজ করবেন:** `PayrollGoldenTest` (docs/modules/staff-payroll.md), `PayrollProrationTest` (docs/modules/staff-payroll.md), `ArrearsTest` (docs/modules/staff-payroll.md), `MakerCheckerTest` (docs/modules/staff-payroll.md), `PayrollImmutabilityTest` (docs/modules/staff-payroll.md), `PayrollPaymentTest` (docs/modules/staff-payroll.md), `PayrollTenancyTest` (docs/modules/staff-payroll.md)

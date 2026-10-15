@@ -1,6 +1,6 @@
 # R3.6 adjustment and advance contract — owner review draft
 
-Status: all seven clauses approved in chat; separate owner D87 registry commit pending. R3.6 remains incomplete. Approved clauses below are preserved from 5ce435b.
+Status: all seven clauses approved in chat; owner D87 registry commit 0af449a verified/pushed. R3.6 remains incomplete. Approved clauses below are preserved from 5ce435b.
 
 ## Evidence and conflicts
 

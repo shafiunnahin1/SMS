@@ -1,6 +1,6 @@
 # D87 — owner commit packet
 
-Status: all seven clauses approved in chat; separate owner registry commit pending. Approved contract clauses: owner/advance-adjustment-contract-decision.md at 5ce435b. R3.6 remains incomplete.
+Status: all seven clauses approved in chat; owner registry commit 0af449a verified/pushed. Instructions below preserve the historical owner workflow; do not repeat it. Approved contract clauses: owner/advance-adjustment-contract-decision.md at 5ce435b. R3.6 remains incomplete.
 
 Prepared registry row (not added by agent):
 
