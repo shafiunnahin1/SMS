@@ -6,7 +6,7 @@ use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SuperAdmin\{StoreInstitutionRequest, UpdateInstitutionRequest};
 use App\Models\{AuditLog, Institution, SmsCreditTransaction, Student, Teacher, User};
-use App\Services\{ModuleGate, OnboardingService, ThemeService};
+use App\Services\{ModuleGate, ThemeService};
 use App\Support\Tenancy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,21 +38,14 @@ class InstitutionController extends Controller
             'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(), 'per_page' => $page->perPage()]]);
     }
 
-    /** POST /super/institutions: the institution, its type's onboarding defaults and its first admin (must change the password) */
-    public function store(StoreInstitutionRequest $request, OnboardingService $onboarding)
+    /** D90: approved review, pending recipient verification/password setup. */
+    public function store(StoreInstitutionRequest $request, \App\Services\Auth\PrincipalProvisioningService $provisioning)
     {
         $in = $request->validated();
-        $i = DB::transaction(function () use ($in, $onboarding) {
-            $i = Institution::create(collect($in)->only(['name', 'slug', 'institution_type', 'phone', 'email', 'address'])->all() + ['status' => 'active']);
-            $onboarding->applyDefaults($i);
-            Tenancy::as($i, function () use ($i, $in) {
-                User::create(['institution_id' => $i->id, 'name' => $in['admin']['name'], 'phone' => $in['admin']['phone'], 'email' => $in['admin']['email'] ?? null,
-                    'password' => $in['admin']['password'], 'role' => 'admin', 'must_change_password' => true]);
-            });
-            AuditLog::record('institution.created', $i, ['type' => $i->institution_type]);
-            return $i;
-        });
-        return response()->json(['success' => true, 'data' => $this->detail($i->fresh()), 'message' => __('messages.saved')], 201);
+        $state = $provisioning->provision(collect($in)->except('admin')->all(), $in['admin'], $request->user());
+        $i = Institution::findOrFail($state['institution_id']);
+        return response()->json(['success' => true, 'data' => $this->detail($i) + [
+            'activation' => new \App\Http\Resources\PrincipalActivationResource($state)], 'message' => __('messages.saved')], 201);
     }
 
     /** GET /super/institutions/{id} */
@@ -83,9 +76,13 @@ class InstitutionController extends Controller
     /** PATCH /super/institutions/{id}/toggle: suspended <-> active */
     public function toggleStatus(int $id)
     {
-        $i = Institution::findOrFail($id);
-        $i->forceFill(['status' => $i->status === 'suspended' ? 'active' : 'suspended'])->save();
-        AuditLog::record($i->status === 'suspended' ? 'institution.suspended' : 'institution.activated', $i);
+        $i = DB::transaction(function () use ($id) {
+            $i = Institution::whereKey($id)->lockForUpdate()->firstOrFail();
+            app(\App\Services\Auth\PrincipalProvisioningService::class)->assertToggleAllowed($id);
+            $i->forceFill(['status' => $i->status === 'suspended' ? 'active' : 'suspended'])->save();
+            AuditLog::record($i->status === 'suspended' ? 'institution.suspended' : 'institution.activated', $i);
+            return $i;
+        });
         app(ThemeService::class)->flush($i);
         return response()->json(['success' => true, 'data' => $this->detail($i->fresh()), 'message' => __('messages.saved')]);
     }

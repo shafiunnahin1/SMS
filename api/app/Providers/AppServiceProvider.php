@@ -48,6 +48,19 @@ class AppServiceProvider extends ServiceProvider
             return !($lastSeen && $lastSeen->lt(now()->subMinutes($idle)));
         });
 
+        RateLimiter::for('signup', fn (Request $r) => Limit::perHour(config('auth_policy.activation.signup_per_hour'))->by($r->ip()));
+        RateLimiter::for('activation-verify', fn (Request $r) => Limit::perMinute(config('auth_policy.activation.verify_per_minute'))
+            ->by(hash('sha256', is_string($r->input('public_id')) ? $r->input('public_id') : '').'|'.$r->ip()));
+        RateLimiter::for('activation-resend', function (Request $r) {
+            $value = $r->input('contact.value');
+            $value = is_string($value) ? $value : '';
+            $channel = $r->input('contact.channel') === 'phone' ? 'phone' : 'email';
+            $value = $channel === 'phone' ? User::normalisePhone($value) : mb_strtolower(trim($value));
+            $fingerprint = hash_hmac('sha256', $channel.'|'.$value, (string) config('app.key'));
+            return [Limit::perMinute(config('auth_policy.activation.resend_per_minute'))->by('request:'.hash('sha256', is_string($r->input('public_id')) ? $r->input('public_id') : '')),
+                Limit::perHour(config('auth_policy.activation.resend_contact_per_hour'))->by('contact:'.$fingerprint)];
+        });
+
         // IP + identifier: slows guessing before the account lockout kicks in
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by($request->ip() . '|' . mb_strtolower((string) $request->input('login'))));
         // D68 (4): the code check counts per IP and per login attempt (its challenge), not per IP alone - a school's shared IP no longer

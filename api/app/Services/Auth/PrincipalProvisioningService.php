@@ -146,6 +146,20 @@ class PrincipalProvisioningService
         });
     }
 
+    /** Called under the institution lock; legacy institutions have no D90 registration. */
+    public function assertToggleAllowed(int $institutionId): void
+    {
+        Tenancy::as(Institution::findOrFail($institutionId), function () use ($institutionId) {
+            if (!InstitutionRegistration::where('institution_id', $institutionId)->exists()) return;
+            $result = $this->locked($institutionId, function ($i, $registration, $user) {
+                $request = $this->latest($user);
+                if ($registration->review_status !== 'approved' || !$user->is_active || !$request
+                    || $request->status !== 'consumed' || !$this->bound($request, $user)) throw $this->conflict();
+            }, $this->conflict());
+            if ($result instanceof BusinessException) throw $result;
+        });
+    }
+
     private function latest(User $user): ?AccountActivationRequest
     {
         return AccountActivationRequest::where('user_id', $user->id)->where('purpose', self::PURPOSE)
@@ -165,7 +179,8 @@ class PrincipalProvisioningService
         $request->forceFill(['otp_token_id' => $token->id])->save();
         $delivery = (object) ['sent' => false];
         DB::afterCommit(function () use ($i, $request, $channel, $contact, $code, $delivery) {
-            try { $delivery->sent = $this->delivery->send($channel, $contact, $code); }
+            try { $delivery->sent = $this->delivery->deliver($channel, $contact, $code,
+                ['institution_id' => $i->id, 'public_id' => $request->public_id, 'generation' => $request->generation]); }
             catch (\Throwable) { $delivery->sent = false; } // transport exceptions can contain credentials; never log/rethrow them.
             if (!$delivery->sent) Tenancy::as($i, fn () => $this->audit('activation.delivery_pending', $request, $request->user_id, ['generation' => $request->generation]));
         });

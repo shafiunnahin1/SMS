@@ -11,6 +11,8 @@
 // own sessions / password / language / notifications (Revision 7), and the program + batch names (GET /programs, /batches -
 // names only, used by every panel's filters).
 return [
+    // D90: new central registration review route; existing rows remain unchanged.
+    'POST api/v1/super/institutions/{id}/approve-registration' => ['super_admin'],
     // D84 institutional fee refunds; admin-only review actions are also exercised in RefundImmutabilityTest.
     'GET api/v1/fee-refunds/refundable' => ['admin', 'accountant'],
     'GET api/v1/fee-refunds' => ['admin', 'accountant'],

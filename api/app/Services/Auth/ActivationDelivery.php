@@ -7,6 +7,12 @@ namespace App\Services\Auth;
  */
 class ActivationDelivery
 {
+    public function available(): bool { return false; }
+    /** Recipient delivery must include the replacement tracking context as well as the code. */
+    public function deliver(string $channel, string $contact, string $code, array $tracking): bool
+    {
+        return $this->send($channel, $contact, $code);
+    }
     public function send(string $channel, string $contact, string $code): bool
     {
         return false;

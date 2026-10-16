@@ -36,6 +36,11 @@ class TenantMiddleware
             return $this->fail('institution_not_found', 'Institution not found for this domain', 404);
         }
 
+        if ($institution->status === 'inactive' && !$request->is('api/v1/health', 'api/v1/bootstrap',
+            'api/v1/auth/login', 'api/v1/auth/verify-otp', 'api/v1/auth/forgot-password', 'api/v1/auth/reset-password', 'api/v1/auth/logout')) {
+            return $this->fail('institution_inactive', 'Institution is awaiting activation', 403);
+        }
+
         if ($institution->status === 'suspended' && !$request->is(...self::SUSPENDED_ALLOWED)) {
             return $this->fail('institution_suspended', 'এই প্রতিষ্ঠানের অ্যাকাউন্ট স্থগিত আছে', 403);
         }

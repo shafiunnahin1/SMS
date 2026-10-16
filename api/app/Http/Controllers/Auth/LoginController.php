@@ -57,7 +57,7 @@ class LoginController extends Controller
         if (!is_array($c) || ($c['t'] ?? null) !== Tenancy::current()?->id) return $fail;   // a challenge works only on the host that issued it
 
         $user = (Tenancy::current() ? User::inTenant() : User::platform())->find($c['u'] ?? 0);
-        if (!$user || !$user->is_active || ($user->locked_until && now()->lt($user->locked_until))) return $fail;
+        if (!$user || !$user->is_active || Tenancy::current()?->status === 'inactive' || ($user->locked_until && now()->lt($user->locked_until))) return $fail;
         if (!$this->otp->consume($user, OtpService::LOGIN, $request->input('otp'), $c['o'] ?? 0)) {
             $this->otp->wrongAttempt($user, (int) ($c['o'] ?? 0));                    // D68 (4): 5 wrong tries void this code
             return $fail;

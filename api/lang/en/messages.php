@@ -19,4 +19,5 @@ return [
     'fee_collected'      => 'Payment collected.',
     'locale_saved'       => 'Language saved.',
     'deleted'            => 'Deleted.',
+    'activation_resent' => 'If the request is eligible, a new verification message will be sent.',
 ];

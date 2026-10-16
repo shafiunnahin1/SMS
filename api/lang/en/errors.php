@@ -113,4 +113,6 @@ return [
     'cashbook_note' => 'A note is required when counted cash differs from expected cash.',
     'activation_invalid' => 'This activation request is invalid or no longer usable.',
     'activation_conflict' => 'The registration cannot make this transition.',
+    'activation_unavailable' => 'Account activation is not available yet.',
+    'institution_inactive' => 'This institution is awaiting activation.',
 ];

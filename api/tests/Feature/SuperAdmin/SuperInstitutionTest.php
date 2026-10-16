@@ -40,19 +40,33 @@ class SuperInstitutionTest extends TestCase
 
     public function test_opening_an_institution_creates_its_admin_and_its_type_defaults(): void
     {
+        $delivery = new class extends \App\Services\Auth\ActivationDelivery {
+            public string $code = '';
+            public function send(string $channel, string $contact, string $code): bool { $this->code = $code; return true; }
+        };
+        app()->instance(\App\Services\Auth\ActivationDelivery::class, $delivery);
         $res = $this->api('POST', $this->central, 'super/institutions', $this->super, ['name' => 'Alo Coaching', 'slug' => 'alo-coaching', 'institution_type' => 'school',
-            'admin' => ['name' => 'Rina', 'phone' => '+8801712345678', 'password' => 'first-pass-1']])->assertCreated();
+            'admin' => ['name' => 'Rina', 'contact' => ['channel' => 'phone', 'value' => '+8801712345678']]])->assertCreated();
         $i = Institution::where('slug', 'alo-coaching')->firstOrFail();
-        $this->assertSame(['active', 'school', null], [$i->status, $i->institution_type, $i->subscription_plan_id], 'D55: active, no plan');
+        $this->assertSame(['inactive', 'school', null], [$i->status, $i->institution_type, $i->subscription_plan_id], 'D90: pending recipient proof, still no plan');
         $this->assertSame('alo-coaching.' . config('tenancy.base_domain'), $res->json('data.host'));
 
         $admin = User::where('institution_id', $i->id)->where('role', 'admin')->firstOrFail();
         $this->assertSame(['01712345678', true], [$admin->phone, (bool) $admin->must_change_password]);
-        $this->assertTrue(Hash::check('first-pass-1', $admin->password));
+        $this->assertFalse($admin->is_active);
+        $this->assertFalse(Hash::check('first-pass-1', $admin->password));
         $this->assertSame(10, Tenancy::as($i, fn () => Program::count()), 'school onboarding defaults: Class 1-10');
         $this->assertSame(1, Tenancy::as($i, fn () => AuditLog::where('action', 'institution.created')->count()));
 
-        // the new admin can log in on the institution's own host
+        // D90: no login before recipient proof and recipient-owned password setup.
+        $this->json('POST', 'http://' . $res->json('data.host') . '/api/v1/auth/login', ['login' => '01712345678', 'password' => 'first-pass-1'])->assertUnauthorized();
+        $this->api('POST', $this->central, "public/institutions/{$i->id}/verify", null, [
+            'public_id' => $res->json('data.activation.public_id'), 'code' => $delivery->code,
+            'password' => 'first-pass-1', 'password_confirmation' => 'first-pass-1'])->assertOk();
+        $this->assertTrue($admin->fresh()->is_active);
+        $this->assertTrue(Hash::check('first-pass-1', $admin->fresh()->password));
+        $this->assertSame('active', $i->fresh()->status);
+        // the new admin can now log in on the institution's own host
         $this->json('POST', 'http://' . $res->json('data.host') . '/api/v1/auth/login', ['login' => '01712345678', 'password' => 'first-pass-1'])->assertOk();
 
         $this->api('POST', $this->central, 'super/institutions', $this->super, ['name' => 'X', 'slug' => 'alo-coaching', 'institution_type' => 'school',

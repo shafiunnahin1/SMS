@@ -46,10 +46,18 @@ Route::prefix('v1')->group(function () {
         Route::post('/quizzes/{id}/check',                [QbPublicQuizController::class, 'check'])->whereNumber('id');
     });
 
+    // D90: central-host recipient activation; public creation remains disabled by default.
+    Route::middleware(['tenant:central', 'locale'])->group(function () {
+        Route::post('/public/institutions', [\App\Http\Controllers\Auth\PublicInstitutionSignupController::class, 'store'])->middleware('throttle:signup');
+        Route::post('/public/institutions/{id}/verify', [\App\Http\Controllers\Auth\PublicInstitutionSignupController::class, 'verify'])->middleware('throttle:activation-verify')->whereNumber('id');
+        Route::post('/public/institutions/{id}/verification', [\App\Http\Controllers\Auth\PublicInstitutionSignupController::class, 'resend'])->middleware('throttle:activation-resend')->whereNumber('id');
+    });
+
     // ─── 2. Central host only: Super Admin (Step 4.7 dashboard, Step 5.3 panel) ───
     Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:super_admin', 'tenancy.bypass'])->prefix('super')->group(function () {
         Route::get('/dashboard',              [DashboardController::class, 'superAdmin']);
         // Step 5.3 (D55-D58): institutions, their SMS wallet, the universal SMS API
+        Route::post('/institutions/{id}/approve-registration', [\App\Http\Controllers\Auth\InstitutionApprovalController::class, 'review'])->whereNumber('id');
         Route::get('/institutions',                   [InstitutionController::class, 'index']);
         Route::post('/institutions',                  [InstitutionController::class, 'store']);
         Route::get('/institutions/{id}',              [InstitutionController::class, 'show'])->whereNumber('id');

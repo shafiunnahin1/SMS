@@ -21,7 +21,7 @@ class PasswordResetController extends Controller
     public function sendResetLink(ForgotPasswordRequest $request)
     {
         $user = $this->login->findUser($request->input('login'));
-        if ($user && $user->is_active) {
+        if ($user && $user->is_active && \App\Support\Tenancy::current()?->status !== 'inactive') {
             if ($user->email) {
                 [, $token] = $this->otp->issue($user, OtpService::RESET, longToken: true);
                 $link = $request->getSchemeAndHttpHost() . '/reset-password?' . http_build_query(['token' => $token, 'login' => $user->email]);
@@ -39,7 +39,7 @@ class PasswordResetController extends Controller
     {
         $invalid = response()->json(['success' => false, 'error' => 'invalid_token', 'message' => __('errors.invalid_token')], 422);
         $user = $this->login->findUser($request->input('login'));
-        if (!$user || !$user->is_active || !$this->otp->find($user, OtpService::RESET, $request->input('token'))) return $invalid;
+        if (!$user || !$user->is_active || \App\Support\Tenancy::current()?->status === 'inactive' || !$this->otp->find($user, OtpService::RESET, $request->input('token'))) return $invalid;
 
         Validator::make($request->only('password'), ['password' => [new PolicyPassword($user)]])->validate();
         if (!$this->otp->consume($user, OtpService::RESET, $request->input('token'))) return $invalid;

@@ -33,7 +33,7 @@ class LoginService
 
         if ($user->locked_until && now()->lt($user->locked_until)) return null;
 
-        if (!$passwordOk || !$user->is_active) {
+        if (!$passwordOk || !$user->is_active || Tenancy::current()?->status === 'inactive') {
             $attempts = $user->failed_login_attempts + 1;
             if ($attempts >= config('auth_policy.lockout.attempts')) {
                 // lock (UserObserver revokes every token) and start counting afresh after the lock ends

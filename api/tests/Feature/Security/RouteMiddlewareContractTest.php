@@ -24,6 +24,9 @@ class RouteMiddlewareContractTest extends TestCase
 
     /** API routes without a login - each must answer without tenant data */
     private const PUBLIC = [
+        'POST api/v1/public/institutions' => 'D90 pending signup, central host, gated exposure and signup limiter; no token',
+        'POST api/v1/public/institutions/{id}/verify' => 'D90 recipient proof, central host and challenge limiter; no token',
+        'POST api/v1/public/institutions/{id}/verification' => 'D90 central resend, generic 202 and tracking/contact limiters',
         'GET api/v1/bootstrap' => 'theme, terms, enabled modules - allow-listed settings only',
         'GET api/v1/health' => 'status only',
         'POST api/v1/auth/login' => 'throttle:login', 'POST api/v1/auth/verify-otp' => 'throttle:otp',   // D68 (4)

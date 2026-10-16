@@ -19,6 +19,9 @@ return [
 
     'lockout' => ['attempts' => 5, 'minutes' => 30],
     'otp' => ['length' => (int) env('OTP_LENGTH', 6), 'minutes' => (int) env('OTP_EXPIRY_MINUTES', 5)],
+    // D90: public exposure remains closed until runtime/security and safe delivery acceptance.
+    'activation' => ['public_signup_enabled' => (bool) env('PUBLIC_SIGNUP_ENABLED', false), 'signup_per_hour' => 5,
+        'resend_per_minute' => 1, 'resend_contact_per_hour' => 5, 'verify_per_minute' => 5],
     'reset_link_minutes' => 60,
     'check_breached' => (bool) env('PASSWORD_CHECK_BREACHED', false),
 ];
