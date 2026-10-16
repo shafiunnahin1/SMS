@@ -4,9 +4,12 @@ It runs on the REAL schema.sql (translated to SQLite) and answers one question w
 including the ones that have NO foreign key? The generated map is committed as docs/database/tenant-export-map.json and re-checked by verify.py.
 """
 import re,json,sqlite3,os,sys,random,collections
+from pathlib import Path
+
+from schema_inventory import operational_schema, read_inventory
 
 def load_schema(root):
-    s=open(os.path.join(root,'docs/database/schema.sql'),encoding='utf-8').read()
+    s=operational_schema((Path(root)/'docs/database/schema.sql').read_text(encoding='utf-8'))
     t=re.sub(r'--[^\n]*','',s); t=re.sub(r"ENUM\([^)]*\)","TEXT",t)
     t=re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b","INTEGER PRIMARY KEY AUTOINCREMENT",t); t=re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b",r"\1",t)
     t=re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b","",t); t=re.sub(r"\bUNIQUE KEY\s+\w+\s*\(",'UNIQUE (',t); t=re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)",'',t)
@@ -172,7 +175,7 @@ def exported_tables(tenant): return [t for t in tenant if t not in EXCLUDED]
 def build_export_map(root):
     con=load_schema(root); tabs,cols,fks,tenant,out,unres=build_map(con)
     inc=exported_tables(tenant); order=topo(set(inc),{t:out[t] for t in inc})
-    m={'format_version':1,'generated_from':'docs/database/schema.sql (python3 infra/spec-verify/tenant_export_ref.py --write)',
+    m={'format_version':1,'design_only_tables':sorted(read_inventory(root)[2]),'generated_from':'docs/database/schema.sql (python3 infra/spec-verify/tenant_export_ref.py --write)',
        'excluded':EXCLUDED,'backup_excludes':{'tables':BACKUP_EXCLUDE_TABLES,'columns':[f'{a}.{b}' for a,b in BACKUP_REDACT_COLUMNS]},'regenerate_on_import':sorted(f'{a}.{b}' for a,b in REGEN),'order':order,
        'json_with_ids':sorted(f'{a}.{b}' for a,b in JSON_IDS),'json_without_ids':sorted(JSON_NO_IDS),
        'tables':{t:{'refs':dict(sorted(out[t]['refs'].items())),'polymorphic':out[t]['poly']} for t in order},

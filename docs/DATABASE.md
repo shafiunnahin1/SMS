@@ -56,3 +56,7 @@ institutions ─┬─ users ─┬─ students ─── enrollments ─── 
 - নতুন টেবিল: ১) `schema.sql`-এ, ২) `migrations.md`-এর তালিকায়, ৩) tenant model হলে `BelongsToInstitution`, ৪) `TenantPurgeTest`-এর তালিকায় (purge ক্রম — নইলে প্রতিষ্ঠান মুছলে এ টেবিলের ডেটা পড়ে থাকবে), ৫) এই গ্রুপ-তালিকায়।
 - নতুন কলাম: schema.sql ও সংশ্লিষ্ট module-ডক একসাথে; `docs/database/schema.sql` ছাড়া শুধু module-ডকে কলাম নয়।
 - Seed: `docs/database/seeders.md` — তিন demo tenant (school, coaching, private_batch)।
+
+## Design-only tables (D98)
+
+`leave_substitution_slots`, `leave_substitution_events` are canonical design definitions only. They are not deployed/migrated tables, operational export/import data or an executable task. No migration/backfill is authorized. D98 inventory markers preserve full SQL/FK validation while keeping these definitions outside operational inventories. Runtime/dependency acceptance remains pending.

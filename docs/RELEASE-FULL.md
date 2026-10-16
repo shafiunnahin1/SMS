@@ -21,6 +21,8 @@
 | নির্মাণ-ধাপ (মাইলস্টোন) | **৮** (M1–M8) |
 
 ## ৩. নির্মাণ-ধাপ (মাইলস্টোন) ও প্রতিটির পরিকল্পনা-অবস্থা
+D98: operational table totals exclude these canonical design-only definitions (not migrated, exported or executable): `leave_substitution_events`, `leave_substitution_slots`.
+
 | ধাপ | রিলিজ | কী | মডিউল | কাজ-পরিকল্পনা আছে এমন মডিউল | ফিচার | অবস্থা |
 |---|---|---|---|---|---|---|
 | **M1** | R1 | ভিত্তি ও চারটি অপরিহার্য ফিচার | ১০ | ১০ | ৯৯ | **পূর্ণ কাজ-পরিকল্পনা আছে** |
@@ -78,11 +80,11 @@
 | M3 | `result_sheets` | স্পেক থেকে | খসড়া | ৬ | ৬ |
 | M3 | `risk_alerts` | স্পেক থেকে | খসড়া | ৫ | ৫ |
 | M3 | `student_leave` | স্পেক থেকে | খসড়া | ৪ | ৪ |
-| M3 | `substitution` | স্পেক থেকে | খসড়া | ৪ | ৪ |
 | M3 | `syllabus` | স্পেক থেকে | খসড়া | ৮ | ৮ |
 | M3 | `teacher_payouts` | স্পেক থেকে | খসড়া | ৫ | ৫ |
 | M3 | `admission_cycle` | স্পেক থেকে | খসড়া | ৮ | ৮ |
 | M3 | `public_site` | স্পেক থেকে | খসড়া | ১২ | ১১ |
+| M3 | `substitution` | স্পেক থেকে | খসড়া | ৪ | ৪ |
 | M4 | `cashbook` | স্পেক থেকে | পূর্ণ | ৬ | ৫ |
 | M4 | `teacher_attendance` | স্পেক থেকে | পূর্ণ | ৪ | ৩ |
 | M4 | `hr_payroll` | স্পেক থেকে | পূর্ণ | ২৩ | ১৯ |

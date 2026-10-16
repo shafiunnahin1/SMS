@@ -367,6 +367,7 @@ CREATE TABLE users (
     UNIQUE KEY unique_user_email (institution_id, email),
     UNIQUE KEY unique_user_phone (institution_id, phone),
     UNIQUE KEY unique_user_username (institution_id, username),
+    UNIQUE KEY unique_user_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 CREATE INDEX idx_users_institution_role ON users(institution_id, role);
@@ -985,6 +986,7 @@ CREATE TABLE teachers (
     status ENUM('active','inactive','on_leave') DEFAULT 'active',
     deleted_at TIMESTAMP NULL,                  -- R7: soft delete (system-design-patterns.md 'Soft Delete Strategy'); the model uses SoftDeletes
     UNIQUE KEY unique_employee_code (institution_id, employee_id),
+    UNIQUE KEY unique_teacher_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 ALTER TABLE teachers ADD COLUMN leaving_date DATE NULL;

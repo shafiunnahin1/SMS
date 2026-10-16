@@ -1,5 +1,9 @@
 {
  "format_version": 1,
+ "design_only_tables": [
+  "leave_substitution_events",
+  "leave_substitution_slots"
+ ],
  "generated_from": "docs/database/schema.sql (python3 infra/spec-verify/tenant_export_ref.py --write)",
  "excluded": {
   "institution_registrations": "D90 first-principal approval is not portable; new tenant needs fresh review",

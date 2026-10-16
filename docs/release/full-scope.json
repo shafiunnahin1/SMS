@@ -343,7 +343,8 @@
    "routine"
   ],
   "substitution": [
-   "routine"
+   "routine",
+   "period_attendance"
   ],
   "student_leave": [
    "attendance"

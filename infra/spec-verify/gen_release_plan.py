@@ -17,6 +17,8 @@ import gen_agent_plan as G                       # ALL_ROUTES, ddl_of (import is
 ROOT = G.ROOT
 rd = lambda p: open(os.path.join(ROOT, p), encoding='utf-8').read()
 SC = json.loads(rd('docs/release/r3-scope.json')); R1 = json.loads(rd('docs/release/r1-scope.json'))
+if set(SC['tables']) & G.DESIGN_ONLY_SCHEMA or any(set(t['tables']) & G.DESIGN_ONLY_SCHEMA for t in SC['tasks']):
+    raise ValueError('design-only tables cannot be owned by an executable R3 task')
 CTRL_REL = R1['controllers']; ROUTES = G.ALL_ROUTES
 TESTING = rd('docs/TESTING.md')
 DOCS_WITH_TESTS = {}

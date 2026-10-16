@@ -11,7 +11,11 @@ import re, os, sys, json
 ROOT = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')), os.path.join(os.path.dirname(__file__), '..', '..')))
 rd = lambda p: open(os.path.join(ROOT, p), encoding='utf-8').read()
 scope = json.loads(rd('docs/release/r1-scope.json'))
+from schema_inventory import inventory
 bsq = rd('docs/BUILD-SEQUENCE.md'); schema = rd('docs/database/schema.sql')
+_ALL_SCHEMA, DEPLOYED_SCHEMA, DESIGN_ONLY_SCHEMA = inventory(schema)
+if set(scope['tables']) & DESIGN_ONLY_SCHEMA:
+    raise ValueError('design-only tables cannot be owned by an executable R1 task')
 
 # ---------- build steps ----------
 blocks = {}
@@ -42,6 +46,8 @@ def done_of(text):
 # ---------- schema: effective definition of a table ----------
 body_nc = schema
 def ddl_of(tb):
+    if tb not in DEPLOYED_SCHEMA:
+        raise ValueError('task DDL must name an operational table: '+tb)
     m = re.search(r'CREATE TABLE %s \(.*?\n\);' % tb, schema, re.S); parts = [m.group(0)]
     for a in re.finditer(r'^(ALTER TABLE %s ADD COLUMN [^\n]*;|CREATE (?:UNIQUE )?INDEX \w+ ON %s\([^\n]*;)' % (tb, tb), schema, re.M): parts.append(a.group(0))
     return '\n'.join(parts)

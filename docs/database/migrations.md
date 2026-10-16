@@ -383,3 +383,7 @@ The new expenses create migration includes the existing schema ALTER fields and 
 ## D90 — activation foundation order
 
 Create users and otp_tokens, the composite users(id,institution_id) identity key, then institution_registrations and account_activation_requests in new append-only migrations. Registration review/activation state and OTP purpose/owner/generation qualification are service rules, not proven by FK existence. Existing migrations and app/demo DB remain untouched in the canonical-contract phase. Department purge is child-first; purge activation requests before otp_tokens/users and registrations before users/institutions.
+
+## Design-only tables (D98)
+
+`leave_substitution_slots`, `leave_substitution_events` are canonical design definitions only. They are not deployed/migrated tables, operational export/import data or an executable task. No migration/backfill is authorized. D98 inventory markers preserve full SQL/FK validation while keeping these definitions outside operational inventories. Runtime/dependency acceptance remains pending.

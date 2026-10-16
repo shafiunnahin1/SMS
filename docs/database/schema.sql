@@ -85,6 +85,7 @@ CREATE TABLE users (
     UNIQUE KEY unique_user_email (institution_id, email),
     UNIQUE KEY unique_user_phone (institution_id, phone),
     UNIQUE KEY unique_user_username (institution_id, username),
+    UNIQUE KEY unique_user_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 
@@ -174,6 +175,7 @@ CREATE TABLE teachers (
     status ENUM('active','inactive','on_leave') DEFAULT 'active',
     deleted_at TIMESTAMP NULL,                  -- R7: soft delete (system-design-patterns.md 'Soft Delete Strategy'); the model uses SoftDeletes
     UNIQUE KEY unique_employee_code (institution_id, employee_id),
+    UNIQUE KEY unique_teacher_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 
@@ -203,6 +205,7 @@ CREATE TABLE routines (
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     room_no VARCHAR(20),
+    UNIQUE KEY unique_routine_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 
@@ -707,6 +710,7 @@ CREATE TABLE leave_applications (
     status ENUM('pending','approved','rejected','cancelled') DEFAULT 'pending',
     approved_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_leave_application_tenant_identity (id, institution_id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -3264,4 +3268,68 @@ CREATE TABLE department_duty_assignments (
     FOREIGN KEY (duty_id, institution_id) REFERENCES department_duties(id, institution_id),
     FOREIGN KEY (assigned_by, institution_id) REFERENCES users(id, institution_id),
     FOREIGN KEY (revoked_by, institution_id) REFERENCES users(id, institution_id)
+);
+
+-- D96 design contract only: current leave-linked occurrence projection plus append-only lifecycle events.
+-- Preserve legacy `substitutions` rows and storage. No migration, backfill, runtime, or purge implementation is authorized here.
+-- Future D27 tenant-purge order must delete leave_substitution_events before leave_substitution_slots, then leave_applications.
+-- @design-only D98: leave_substitution_slots
+CREATE TABLE leave_substitution_slots (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    leave_application_id BIGINT UNSIGNED NOT NULL,
+    routine_id BIGINT UNSIGNED NOT NULL,
+    original_teacher_id BIGINT UNSIGNED NOT NULL,
+    occurrence_date DATE NOT NULL,
+    source_start_time TIME NOT NULL,
+    source_end_time TIME NOT NULL,
+    source_room_no VARCHAR(20) NULL,
+    substitute_teacher_id BIGINT UNSIGNED NULL,
+    status ENUM('unassigned','nominated','offered','confirmed','cancelled') NOT NULL DEFAULT 'unassigned',
+    version INT UNSIGNED NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_leave_substitution_occurrence (institution_id, routine_id, occurrence_date),
+    UNIQUE KEY unique_leave_substitution_slot_tenant_identity (id, institution_id),
+    INDEX idx_leave_substitution_leave_date (institution_id, leave_application_id, occurrence_date),
+    INDEX idx_leave_substitution_teacher_date (institution_id, substitute_teacher_id, occurrence_date, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (leave_application_id, institution_id) REFERENCES leave_applications(id, institution_id),
+    FOREIGN KEY (routine_id, institution_id) REFERENCES routines(id, institution_id),
+    FOREIGN KEY (original_teacher_id, institution_id) REFERENCES teachers(id, institution_id),
+    FOREIGN KEY (substitute_teacher_id, institution_id) REFERENCES teachers(id, institution_id)
+);
+
+-- @design-only D98: leave_substitution_events
+CREATE TABLE leave_substitution_events (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    leave_substitution_slot_id BIGINT UNSIGNED NOT NULL,
+    leave_application_id BIGINT UNSIGNED NOT NULL,
+    version INT UNSIGNED NOT NULL,
+    event_type ENUM('nomination_set','nomination_cleared','offer_created','offer_accepted','offer_declined','cover_replaced','cover_cleared','leave_rejected','leave_cancelled','source_invalidated','substitute_leave_invalidated') NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    original_teacher_id BIGINT UNSIGNED NOT NULL,
+    substitute_teacher_id BIGINT UNSIGNED NULL,
+    department_id BIGINT UNSIGNED NULL,
+    occurrence_date DATE NOT NULL,
+    source_start_time TIME NOT NULL,
+    source_end_time TIME NOT NULL,
+    source_room_no VARCHAR(20) NULL,
+    reason_code VARCHAR(40) NULL,
+    reason_note VARCHAR(255) NULL,
+    idempotency_key VARCHAR(128) NOT NULL,
+    payload_sha256 CHAR(64) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_leave_substitution_event_version (institution_id, leave_substitution_slot_id, version),
+    UNIQUE KEY unique_leave_substitution_event_tenant_identity (id, institution_id),
+    UNIQUE KEY unique_leave_substitution_event_request (institution_id, user_id, idempotency_key),
+    INDEX idx_leave_substitution_events_leave (institution_id, leave_application_id, occurrence_date, id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (leave_substitution_slot_id, institution_id) REFERENCES leave_substitution_slots(id, institution_id),
+    FOREIGN KEY (leave_application_id, institution_id) REFERENCES leave_applications(id, institution_id),
+    FOREIGN KEY (user_id, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (original_teacher_id, institution_id) REFERENCES teachers(id, institution_id),
+    FOREIGN KEY (substitute_teacher_id, institution_id) REFERENCES teachers(id, institution_id),
+    FOREIGN KEY (department_id, institution_id) REFERENCES institution_departments(id, institution_id)
 );

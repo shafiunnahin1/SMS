@@ -44,7 +44,10 @@ dev=[f for f in mds if re.search(r'[\u0966-\u096F]',rd(f))]
 ok(not dev,f'no stray Devanagari digits {dev[:3]}')
 
 # ---- 2. schema executes -----------------------------------------------------------------------------------------------
+from schema_inventory import inventory, documentation_problems
 sch=rd('docs/database/schema.sql'); names=re.findall(r'CREATE TABLE (\w+)',sch)
+_all_tables, deployed_names, design_only_names = inventory(sch)
+ok(set(names)==_all_tables, 'strict D98 canonical schema classification')
 t=re.sub(r'--[^\n]*','',sch); t=re.sub(r"ENUM\([^)]*\)","TEXT",t)
 t=re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b","INTEGER PRIMARY KEY AUTOINCREMENT",t); t=re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b",r"\1",t)
 t=re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b","",t); t=re.sub(r"\bUNIQUE KEY\s+\w+\s*\(",'UNIQUE (',t); t=re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)",'',t)
@@ -91,9 +94,10 @@ behaves('payroll: teacher #7 and staff #7 are different payees',lambda:ins('payr
 behaves('fee_structures cannot hold two rows for one (program,batch,category,year)',lambda:(ins('fee_structures',institution_id=1,program_id=5,batch_id=0,fee_category_id=1,amount=1,academic_year_id=0),ins('fee_structures',institution_id=1,program_id=5,batch_id=0,fee_category_id=1,amount=2,academic_year_id=0)),True)
 
 # ---- 3. migrations / DATABASE.md vs schema -------------------------------------------------------------------------------
-mig=set(re.findall(r'create_(\w+?)_table',rd('docs/database/migrations.md')))
-ok(mig==set(names),f'migration list == schema tables  extra={sorted(mig-set(names))[:4]} missing={sorted(set(names)-mig)[:4]}')
-db=rd('docs/DATABASE.md'); ok(set(names)<=set(re.findall(r'`(\w+)`',db)),f'DATABASE.md groups every table {sorted(set(names)-set(re.findall(chr(96)+r"(\w+)"+chr(96),db)))[:4]}')
+_inventory_problems = documentation_problems(sch, rd('docs/database/migrations.md'), rd('docs/DATABASE.md'))
+ok(not _inventory_problems, f'migration inventory and separate design-only documentation: {_inventory_problems}')
+_design_tests = subprocess.run([sys.executable, os.path.join(R, 'infra/spec-verify/test_design_only_schema.py'), R], capture_output=True, text=True)
+ok(_design_tests.returncode == 0, 'D98 mutation/export checks: '+(_design_tests.stdout+_design_tests.stderr)[-1000:])
 
 # ---- 4. module keys across config / routes / menu / index / marks ----------------------------------------------------------
 cfg=rd('docs/modules/institution-types.md'); types=['school','college','coaching','private_batch']
@@ -382,7 +386,7 @@ ok(not forced,f'no NOT NULL reference leaves Release 1 (that would pull an unpla
 ok(sorted(optional)==sorted(x.replace(' ','') for x in r1['optional_refs_to_deferred_tables']),f'the optional references to deferred tables are exactly the documented ones {optional}')
 rel=rd('docs/RELEASE-1.md')
 all_steps=set(re.findall(r'^### Step (\d+\.\d+[a-z]?)',rd('docs/BUILD-SEQUENCE.md'),re.M))|set(re.findall(r'\*\*Step (8\.\d)',rd('docs/BUILD-SEQUENCE.md')))
-ok(f"| ডেটাবেস টেবিল | **{len(r1['tables'])}** | {len(names)} |" in lat(rel),f"RELEASE-1.md quotes the table sizes {len(r1['tables'])} of {len(names)}")
+ok(f"| ডেটাবেস টেবিল | **{len(r1['tables'])}** | {len(deployed_names)} |" in lat(rel),f"RELEASE-1.md quotes the operational table sizes {len(r1['tables'])} of {len(deployed_names)}")
 ok(f"| `school`-এর মডিউল-কী | **{len(r1['modules'])}**" in lat(rel) and f"| {len(school_mods)} |" in lat(rel),f"RELEASE-1.md quotes the module sizes {len(r1['modules'])} of {len(school_mods)}")
 ok(f"| Build-step | **{len(r1['steps_in_release'])}** | {len(all_steps)} |" in lat(rel),f"RELEASE-1.md quotes the step sizes {len(r1['steps_in_release'])} of {len(all_steps)}")
 bsq=rd('docs/BUILD-SEQUENCE.md'); tags=dict(re.findall(r"^### Step (\d+\.\d+[a-z]?)[^\n]*\n> \*\*Release: ([^*]+)\*\*",bsq,re.M))

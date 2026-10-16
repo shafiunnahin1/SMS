@@ -284,6 +284,7 @@ CREATE TABLE leave_applications (
     status ENUM('pending','approved','rejected','cancelled') DEFAULT 'pending',
     approved_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_leave_application_tenant_identity (id, institution_id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 ALTER TABLE leave_applications ADD COLUMN staff_id BIGINT UNSIGNED NULL;

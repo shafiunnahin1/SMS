@@ -23,7 +23,7 @@ BN = str.maketrans('0123456789', '০১২৩৪৫৬৭৮৯'); bn = lambda 
 FS = json.loads(rd('docs/release/full-scope.json')); R1S = json.loads(rd('docs/release/r1-scope.json')); R3S = json.loads(rd('docs/release/r3-scope.json'))
 cm, IT, SCOPE, REL, LED, PROP = C.facts(); MODS = {r[0].strip('`'): r for r in cm}
 FEATS = B.load_features(); fphase = {id(f): B.resolve(f['evidence'], f['phase'])[0] for f in FEATS}
-schema = rd('docs/database/schema.sql'); NTABLES = len(re.findall(r'CREATE TABLE', schema))
+schema = rd('docs/database/schema.sql'); NTABLES = len(G.DEPLOYED_SCHEMA)
 ROUTES = collections.defaultdict(list)
 for v, p, c, a, r, m in G.ALL_ROUTES:
     if m: ROUTES[m].append(f"{v} {re.sub(r'/+$', '', p) or '/'} -> {c}@{a}" + (f' [role:{r}]' if r else ''))
@@ -65,7 +65,7 @@ def audit():
     for m in FS['milestones']:
         ks = [k for k, v in per.items() if v['milestone'] == m['id']]
         ms_rows.append(dict(id=m['id'], release=m['release'], name=m['name'], plan_status=m['plan_status'], modules=len(ks), with_task_plan=sum(per[k]['task_plan'] for k in ks), features=sum(per[k]['features'] for k in ks)))
-    return dict(modules_total=len(per), modules_with_task_plan=sum(v['task_plan'] for v in per.values()), features_total=len(FEATS), tables_total=NTABLES, tables_in_task_plans=TASK_PLAN_TABLES,
+    return dict(modules_total=len(per), modules_with_task_plan=sum(v['task_plan'] for v in per.values()), features_total=len(FEATS), tables_total=NTABLES, design_only_tables=sorted(G.DESIGN_ONLY_SCHEMA), tables_in_task_plans=TASK_PLAN_TABLES,
                 tables_without_task=NTABLES - TASK_PLAN_TABLES, external_decisions=len(OD), milestones=ms_rows, gaps=gaps, per_module=per)
 AU = audit()
 
@@ -80,6 +80,8 @@ def md_full():
     w('## ২. সম্পূর্ণ প্রকাশের আকার')
     w(f"| | |\n|---|---|\n| মডিউল | **{bn(nm)}** |\n| ফিচার (প্রমাণসহ, `docs/pricing/features.csv`) | **{bn(AU['features_total'])}** |\n| ডেটাবেস টেবিল | **{bn(AU['tables_total'])}** |\n| প্রতিষ্ঠানের ধরন | স্কুল, কলেজ, কোচিং, প্রাইভেট ব্যাচ (+ মাদ্রাসা-প্রিসেট) |\n| নির্মাণ-ধাপ (মাইলস্টোন) | **{bn(len(FS['milestones']))}** (M1–M{len(FS['milestones'])}) |\n")
     w('## ৩. নির্মাণ-ধাপ (মাইলস্টোন) ও প্রতিটির পরিকল্পনা-অবস্থা')
+    if G.DESIGN_ONLY_SCHEMA:
+        w('D98: operational table totals exclude these canonical design-only definitions (not migrated, exported or executable): '+', '.join('`'+n+'`' for n in sorted(G.DESIGN_ONLY_SCHEMA))+'.\n')
     st = {'task-plan': '**পূর্ণ কাজ-পরিকল্পনা আছে**', 'draft': 'শুধু **খসড়া** কাজ-তালিকা', 'blocked-external': '**বাইরের নথি ছাড়া শুরু করা যায় না**'}
     w('| ধাপ | রিলিজ | কী | মডিউল | কাজ-পরিকল্পনা আছে এমন মডিউল | ফিচার | অবস্থা |\n|---|---|---|---|---|---|---|')
     for r in AU['milestones']: w(f"| **{r['id']}** | {r['release']} | {r['name']} | {bn(r['modules'])} | {bn(r['with_task_plan'])} | {bn(r['features'])} | {st[r['plan_status']]} |")

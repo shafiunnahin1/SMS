@@ -403,31 +403,7 @@ PATCH /leave-requests/students/{id} -> StudentLeaveController@decide [role:admin
 - **শেষ-শর্ত (খসড়া, সাধারণ):** (১) স্পেক-নথির প্রতিটি টেবিলের migration ও model (`BelongsToInstitution`), `schema-diff` শূন্য; (২) ওপরের route প্রতিটি ভূমিকায় ঠিক, মডিউল বন্ধ থাকলে 403; (৩) চেকলিস্টের প্রতিটি ফিচারের অন্তত একটি পরীক্ষা, সবুজ; (৪) tenancy-পরীক্ষা: অন্য প্রতিষ্ঠানের তথ্য অদৃশ্য; (৫) মেনু-আইটেম মডিউল চালু থাকলেই দেখা যায়; (৬) টাকা/শিশুর তথ্য হলে G9 মানা; (৭) স্পেকে `TODO(OD-…)` থাকলে ফাঁকা স্লট রাখা, অনুমান নয়; (৮) `docs/PROGRESS.md` ও গার্ড সবুজ।
 - **ফাঁক:** — (স্পেক-অনুযায়ী পরিশীলনযোগ্য)
 
-### DRAFT `F.M3.14` — বদলি শিক্ষক (মডিউল `substitution`)
-
-- **ভিত্তি:** স্পেক থেকে বের-করা ধাপ
-- **নির্ভর করে (মডিউল):** `routine`
-- **কোন ধরনে:** স্কুল, কলেজ · **গেট:** `core`
-- **পড়ুন:** `docs/modules/academics-advanced.md`
-- **route (মডিউল-গেটেড, ৬):**
-
-```
-GET /substitutions/needed -> SubstitutionController@needed [role:admin]
-GET /substitutions -> SubstitutionController@index [role:admin]
-POST /substitutions -> SubstitutionController@store [role:admin]
-PUT /substitutions/{id} -> SubstitutionController@update [role:admin]
-DELETE /substitutions/{id} -> SubstitutionController@destroy [role:admin]
-GET /routines/available-teachers -> SubstitutionController@availableTeachers [role:admin]
-```
-- **ফিচার-তালিকা = শেষ-শর্তের চেকলিস্ট (৪):**
-  - [ ] কোন ক্লাসে বদলি লাগবে তার তালিকা  <sub>প্রমাণ: `route:GET /substitutions/needed`</sub>
-  - [ ] বদলি শিক্ষক ঠিক করা  <sub>প্রমাণ: `route:POST /substitutions`</sub>
-  - [ ] ওই সময়ে কোন শিক্ষক ফাঁকা তা দেখা  <sub>প্রমাণ: `route:GET /routines/available-teachers`</sub>
-  - [ ] বদলি সম্পাদনা বা বাতিল  <sub>প্রমাণ: `route:PUT /substitutions/{id}`</sub>
-- **শেষ-শর্ত (খসড়া, সাধারণ):** (১) স্পেক-নথির প্রতিটি টেবিলের migration ও model (`BelongsToInstitution`), `schema-diff` শূন্য; (২) ওপরের route প্রতিটি ভূমিকায় ঠিক, মডিউল বন্ধ থাকলে 403; (৩) চেকলিস্টের প্রতিটি ফিচারের অন্তত একটি পরীক্ষা, সবুজ; (৪) tenancy-পরীক্ষা: অন্য প্রতিষ্ঠানের তথ্য অদৃশ্য; (৫) মেনু-আইটেম মডিউল চালু থাকলেই দেখা যায়; (৬) টাকা/শিশুর তথ্য হলে G9 মানা; (৭) স্পেকে `TODO(OD-…)` থাকলে ফাঁকা স্লট রাখা, অনুমান নয়; (৮) `docs/PROGRESS.md` ও গার্ড সবুজ।
-- **ফাঁক:** — (স্পেক-অনুযায়ী পরিশীলনযোগ্য)
-
-### DRAFT `F.M3.15` — সিলেবাস ও পাঠ-পরিকল্পনা (মডিউল `syllabus`)
+### DRAFT `F.M3.14` — সিলেবাস ও পাঠ-পরিকল্পনা (মডিউল `syllabus`)
 
 - **ভিত্তি:** স্পেক থেকে বের-করা ধাপ
 - **নির্ভর করে (মডিউল):** `enrollments` (পূর্ণ পরিকল্পনায়)
@@ -465,7 +441,7 @@ POST /lesson-plans/{id}/{state} -> LessonPlanController@mark [role:admin,teacher
 - **শেষ-শর্ত (খসড়া, সাধারণ):** (১) স্পেক-নথির প্রতিটি টেবিলের migration ও model (`BelongsToInstitution`), `schema-diff` শূন্য; (২) ওপরের route প্রতিটি ভূমিকায় ঠিক, মডিউল বন্ধ থাকলে 403; (৩) চেকলিস্টের প্রতিটি ফিচারের অন্তত একটি পরীক্ষা, সবুজ; (৪) tenancy-পরীক্ষা: অন্য প্রতিষ্ঠানের তথ্য অদৃশ্য; (৫) মেনু-আইটেম মডিউল চালু থাকলেই দেখা যায়; (৬) টাকা/শিশুর তথ্য হলে G9 মানা; (৭) স্পেকে `TODO(OD-…)` থাকলে ফাঁকা স্লট রাখা, অনুমান নয়; (৮) `docs/PROGRESS.md` ও গার্ড সবুজ।
 - **ফাঁক:** — (স্পেক-অনুযায়ী পরিশীলনযোগ্য)
 
-### DRAFT `F.M3.16` — শিক্ষকের প্রতি-ক্লাস পারিশ্রমিক (মডিউল `teacher_payouts`)
+### DRAFT `F.M3.15` — শিক্ষকের প্রতি-ক্লাস পারিশ্রমিক (মডিউল `teacher_payouts`)
 
 - **ভিত্তি:** স্পেক থেকে বের-করা ধাপ
 - **নির্ভর করে (মডিউল):** `attendance` (পূর্ণ পরিকল্পনায়), `fees` (পূর্ণ পরিকল্পনায়)
@@ -489,7 +465,7 @@ POST /teacher-payouts/{id}/pay -> TeacherPayoutController@pay [role:admin]
 - **শেষ-শর্ত (খসড়া, সাধারণ):** (১) স্পেক-নথির প্রতিটি টেবিলের migration ও model (`BelongsToInstitution`), `schema-diff` শূন্য; (২) ওপরের route প্রতিটি ভূমিকায় ঠিক, মডিউল বন্ধ থাকলে 403; (৩) চেকলিস্টের প্রতিটি ফিচারের অন্তত একটি পরীক্ষা, সবুজ; (৪) tenancy-পরীক্ষা: অন্য প্রতিষ্ঠানের তথ্য অদৃশ্য; (৫) মেনু-আইটেম মডিউল চালু থাকলেই দেখা যায়; (৬) টাকা/শিশুর তথ্য হলে G9 মানা; (৭) স্পেকে `TODO(OD-…)` থাকলে ফাঁকা স্লট রাখা, অনুমান নয়; (৮) `docs/PROGRESS.md` ও গার্ড সবুজ।
 - **ফাঁক:** — (স্পেক-অনুযায়ী পরিশীলনযোগ্য)
 
-### DRAFT `F.M3.17` — ভর্তি-চক্র (মডিউল `admission_cycle`)
+### DRAFT `F.M3.16` — ভর্তি-চক্র (মডিউল `admission_cycle`)
 
 - **ভিত্তি:** স্পেক থেকে বের-করা ধাপ
 - **নির্ভর করে (মডিউল):** `leads`
@@ -522,7 +498,7 @@ POST /admission/leads/{id}/{action} -> AdmissionLeadActionController@act [role:a
 - **শেষ-শর্ত (খসড়া, সাধারণ):** (১) স্পেক-নথির প্রতিটি টেবিলের migration ও model (`BelongsToInstitution`), `schema-diff` শূন্য; (২) ওপরের route প্রতিটি ভূমিকায় ঠিক, মডিউল বন্ধ থাকলে 403; (৩) চেকলিস্টের প্রতিটি ফিচারের অন্তত একটি পরীক্ষা, সবুজ; (৪) tenancy-পরীক্ষা: অন্য প্রতিষ্ঠানের তথ্য অদৃশ্য; (৫) মেনু-আইটেম মডিউল চালু থাকলেই দেখা যায়; (৬) টাকা/শিশুর তথ্য হলে G9 মানা; (৭) স্পেকে `TODO(OD-…)` থাকলে ফাঁকা স্লট রাখা, অনুমান নয়; (৮) `docs/PROGRESS.md` ও গার্ড সবুজ।
 - **ফাঁক:** — (স্পেক-অনুযায়ী পরিশীলনযোগ্য)
 
-### DRAFT `F.M3.18` — প্রতিষ্ঠানের ওয়েবসাইট (মডিউল `public_site`)
+### DRAFT `F.M3.17` — প্রতিষ্ঠানের ওয়েবসাইট (মডিউল `public_site`)
 
 - **ভিত্তি:** স্পেক থেকে বের-করা ধাপ
 - **নির্ভর করে (মডিউল):** `leads`
@@ -559,6 +535,30 @@ POST /admin/settings/website/hero -> WebsiteSettingsController@hero [role:admin]
   - [ ] ওয়েবসাইটের ব্যানার ও সেটিং  <sub>প্রমাণ: `route:PUT /admin/settings/website`</sub>
   - [ ] নিজস্ব ডোমেইন (যেমন yourschool.edu.bd) সংযোগ  <sub>প্রমাণ: `ctrl:DomainController`</sub>
   - [ ] সার্চ-ইঞ্জিনের জন্য SEO  <sub>প্রমাণ: `doc:public-website-plus.md`</sub>
+- **শেষ-শর্ত (খসড়া, সাধারণ):** (১) স্পেক-নথির প্রতিটি টেবিলের migration ও model (`BelongsToInstitution`), `schema-diff` শূন্য; (২) ওপরের route প্রতিটি ভূমিকায় ঠিক, মডিউল বন্ধ থাকলে 403; (৩) চেকলিস্টের প্রতিটি ফিচারের অন্তত একটি পরীক্ষা, সবুজ; (৪) tenancy-পরীক্ষা: অন্য প্রতিষ্ঠানের তথ্য অদৃশ্য; (৫) মেনু-আইটেম মডিউল চালু থাকলেই দেখা যায়; (৬) টাকা/শিশুর তথ্য হলে G9 মানা; (৭) স্পেকে `TODO(OD-…)` থাকলে ফাঁকা স্লট রাখা, অনুমান নয়; (৮) `docs/PROGRESS.md` ও গার্ড সবুজ।
+- **ফাঁক:** — (স্পেক-অনুযায়ী পরিশীলনযোগ্য)
+
+### DRAFT `F.M3.18` — বদলি শিক্ষক (মডিউল `substitution`)
+
+- **ভিত্তি:** স্পেক থেকে বের-করা ধাপ
+- **নির্ভর করে (মডিউল):** `routine`, `period_attendance`
+- **কোন ধরনে:** স্কুল, কলেজ · **গেট:** `core`
+- **পড়ুন:** `docs/modules/academics-advanced.md`
+- **route (মডিউল-গেটেড, ৬):**
+
+```
+GET /substitutions/needed -> SubstitutionController@needed [role:admin]
+GET /substitutions -> SubstitutionController@index [role:admin]
+POST /substitutions -> SubstitutionController@store [role:admin]
+PUT /substitutions/{id} -> SubstitutionController@update [role:admin]
+DELETE /substitutions/{id} -> SubstitutionController@destroy [role:admin]
+GET /routines/available-teachers -> SubstitutionController@availableTeachers [role:admin]
+```
+- **ফিচার-তালিকা = শেষ-শর্তের চেকলিস্ট (৪):**
+  - [ ] কোন ক্লাসে বদলি লাগবে তার তালিকা  <sub>প্রমাণ: `route:GET /substitutions/needed`</sub>
+  - [ ] বদলি শিক্ষক ঠিক করা  <sub>প্রমাণ: `route:POST /substitutions`</sub>
+  - [ ] ওই সময়ে কোন শিক্ষক ফাঁকা তা দেখা  <sub>প্রমাণ: `route:GET /routines/available-teachers`</sub>
+  - [ ] বদলি সম্পাদনা বা বাতিল  <sub>প্রমাণ: `route:PUT /substitutions/{id}`</sub>
 - **শেষ-শর্ত (খসড়া, সাধারণ):** (১) স্পেক-নথির প্রতিটি টেবিলের migration ও model (`BelongsToInstitution`), `schema-diff` শূন্য; (২) ওপরের route প্রতিটি ভূমিকায় ঠিক, মডিউল বন্ধ থাকলে 403; (৩) চেকলিস্টের প্রতিটি ফিচারের অন্তত একটি পরীক্ষা, সবুজ; (৪) tenancy-পরীক্ষা: অন্য প্রতিষ্ঠানের তথ্য অদৃশ্য; (৫) মেনু-আইটেম মডিউল চালু থাকলেই দেখা যায়; (৬) টাকা/শিশুর তথ্য হলে G9 মানা; (৭) স্পেকে `TODO(OD-…)` থাকলে ফাঁকা স্লট রাখা, অনুমান নয়; (৮) `docs/PROGRESS.md` ও গার্ড সবুজ।
 - **ফাঁক:** — (স্পেক-অনুযায়ী পরিশীলনযোগ্য)
 
