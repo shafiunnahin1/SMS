@@ -1,6 +1,6 @@
 # R3.6a Gate 0 readiness review
 
-Status: INCOMPLETE / owner contract review required. This packet approves no permissions, schema fields, activation policy or runtime work. R3.6 was accepted in pushed `bdcdeae`; R3.6a is next, followed by R3.6b and R3.7.
+Status: INCOMPLETE / owner contract review required. This packet grants no permissions or schema/runtime authorization. The owner separately finalized the public activation policy on 2026-10-16; the remaining contracts below still require review. R3.6 was accepted in pushed `bdcdeae`; R3.6a is next, followed by R3.6b and R3.7.
 
 ## Authority and execution boundary
 
@@ -12,7 +12,7 @@ The standalone plan still explicitly requires the following before implementatio
 
 > Exit: owner-approved, testable permission matrix and complete route inventory; no implementation scope inferred from menu labels alone.
 
-Source: `DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, Gate 0 and section 10. Its section 1.1 calls the defaults recommendations, not additional locked decisions. No response to the pending activation-policy question is inferred from the owner's absence.
+Source: `DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, Gate 0 and section 10. The owner explicitly answered the public activation-policy question on 2026-10-16: principal contact verification alone is insufficient; Super Admin approval is also required, both institution/account remain inactive, and pending tenant access is denied. Other section 1.1 defaults remain recommendations. No approval of the remaining questions is inferred.
 
 ## Current code evidence
 
@@ -43,7 +43,7 @@ All 297 approved_duty_permission values are null. Buckets are inferred from curr
 
 ## Owner inputs needed for the next implementation checkpoint
 
-1. Finalize pending + contact verification + Super Admin approval behavior, including the Super Admin-provisioned path, abuse/recovery rules and whether public signup remains disabled. An asynchronous question about the recommended public activation policy is pending.
+1. Public activation policy RESOLVED (owner, 2026-10-16): contact verification AND Super Admin approval are required before institution/account activation; no pending tenant access. Still finalize the distinct Super Admin-provisioned path, abuse/recovery rules and release/exposure readiness. This reply does not approve verification storage or a permission matrix.
 2. Approve exact durable verification/review storage and API payload/state transitions. Canonical schema and contract must precede any additive migration; no new column/table is invented in this packet.
 3. Finalize the staff self-edit field allowlist and contact re-verification behavior. Name/photo-only and principal-controlled HR fields remain recommendations until accepted.
 4. Approve the User/Teacher/StaffMember ownership/mapping rules, duplicate-profile handling, HR designation source and non-destructive migration rehearsal. No legacy role/string grants a duty automatically.

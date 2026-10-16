@@ -560,7 +560,7 @@ GET /teacher/salary/advances -> SalaryAdvanceController@mine [role:teacher] (mod
 
 - **নির্ভর করে:** `R3.6`
 - **লক্ষ্য:** D88/D89 অনুযায়ী Super Admin-provisioned এবং principal self-registration পথ, principal-created staff account, tenant-bound department/duty model ও verified activation তৈরি করা; subscription/billing D55-এর বাইরে থাকবে।
-- **সীমা / নোট:** R3.6 অবশ্যই আগে accepted হবে। New login identity is institution_staff; existing User remains canonical auth. Department memberships point to users; Teacher/StaffMember/payroll identity migration is R3.6b. Public signup stores a pending tenant/first-admin, requires contact verification and Super Admin approval; keep route disabled until owner accepts the activation policy. No subscription/trial/plan change or demo-DB migration.
+- **সীমা / নোট:** R3.6 অবশ্যই আগে accepted হবে। New login identity is institution_staff; existing User remains canonical auth. Department memberships point to users; Teacher/StaffMember/payroll identity migration is R3.6b. Public signup stores a pending tenant/first-admin, requires contact verification and Super Admin approval; owner finalized public activation on 2026-10-16: both institution/account remain inactive and pending tenant access is denied until contact verification AND Super Admin approval; keep public exposure disabled until remaining implementation contracts and security checks pass. No subscription/trial/plan change or demo-DB migration.
 - **পড়ুন:** `DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, `docs/LOCKED-DECISIONS.md`, `docs/AUTHORIZATION.md`, `docs/modules/staff-payroll.md`, `docs/TESTING.md`
 - **টেবিল (migration, model, factory এই ধাপেই):**
 

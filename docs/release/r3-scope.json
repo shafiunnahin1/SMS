@@ -383,7 +383,7 @@
         "php artisan test --filter='InstitutionSignupTest|StaffAccountTest|DepartmentManagementTest|DepartmentTenantTest'",
         "python3 infra/spec-verify/gen_release_plan.py . --check"
      ],
-   "scope": "R3.6 অবশ্যই আগে accepted হবে। New login identity is institution_staff; existing User remains canonical auth. Department memberships point to users; Teacher/StaffMember/payroll identity migration is R3.6b. Public signup stores a pending tenant/first-admin, requires contact verification and Super Admin approval; keep route disabled until owner accepts the activation policy. No subscription/trial/plan change or demo-DB migration."
+   "scope": "R3.6 অবশ্যই আগে accepted হবে। New login identity is institution_staff; existing User remains canonical auth. Department memberships point to users; Teacher/StaffMember/payroll identity migration is R3.6b. Public signup stores a pending tenant/first-admin, requires contact verification and Super Admin approval; owner finalized public activation on 2026-10-16: both institution/account remain inactive and pending tenant access is denied until contact verification AND Super Admin approval; keep public exposure disabled until remaining implementation contracts and security checks pass. No subscription/trial/plan change or demo-DB migration."
     },
     {
      "id": "R3.6b",
