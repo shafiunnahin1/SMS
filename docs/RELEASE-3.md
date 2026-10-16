@@ -6,10 +6,10 @@
 ## ১. আকার (গুনে পাওয়া)
 | | R3 |
 |---|---|
-| ডেটাবেস টেবিল | **33** (+ পূর্বশর্ত `expenses` ১টি) |
+| ডেটাবেস টেবিল | **35** (+ পূর্বশর্ত `expenses` ১টি) |
 | মডিউল-কী | **6** (`cashbook`, `hr_payroll`, `teacher_attendance`, `inventory`, `accounting`, `donations`) + পূর্বশর্ত `expenses` |
 | Task (ধাপ) | **18** |
-| Route | **147** (+ `expenses`-এর 6টি) |
+| Route | **150** (+ `expenses`-এর 6টি) |
 | আলাদা পরীক্ষা | **68** |
 | মেনু-পাতা | **28** |
 
@@ -39,7 +39,7 @@
 | `R3.4` | কর্মচারী, উপস্থিতি ও ছুটি | R3.3 | 5 | 18 | 5 |
 | `R3.5` | বেতন-কাঠামো, ইনক্রিমেন্ট ও বোনাস | R3.4 | 6 | 24 | 5 |
 | `R3.6` | সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ | R3.5 | 2 | 10 | 1 |
-| `R3.6a` | প্রতিষ্ঠান অনবোর্ডিং ও বিভাগভিত্তিক staff foundation | R3.6 | 4 | 17 | 4 |
+| `R3.6a` | প্রতিষ্ঠান অনবোর্ডিং ও বিভাগভিত্তিক staff foundation | R3.6 | 6 | 20 | 4 |
 | `R3.6b` | Staff department permission enforcement ও legacy profile migration | R3.6a | 0 | 2 | 4 |
 | `R3.7` | Payroll run, payslip ও পরিশোধ | R3.6b | 2 | 12 | 7 |
 | `R3.8` | ভবিষ্য তহবিল (PF), কর ও চূড়ান্ত নিষ্পত্তি | R3.7 | 1 | 4 | 3 |
@@ -79,6 +79,8 @@
 ```php
 // R3 cumulative: R1's 8 + expenses + the 6 R3 modules. Add R1.1 / R2 modules only when their code exists.
 'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'sms', 'reports', 'data_migration', 'question_bank', 'quiz', 'expenses', 'cashbook', 'hr_payroll', 'teacher_attendance', 'inventory', 'accounting', 'donations'],
+// D90 target roles; runtime addition waits for R3.6a foundation tests.
+'roles' => ['super_admin', 'admin', 'teacher', 'accountant', 'parent', 'content_writer', 'content_moderator', 'student', 'institution_staff'],
 ```
 
 ## ৯. গ্রহণ-শর্ত (সব সত্য হলে তবেই R3 চালু)
@@ -98,6 +100,7 @@
 - [ ] Super Admin provisioning and principal self-registration create one verified first admin for the tenant; pending public registration is not active before Super Admin approval and no subscription/trial/billing is introduced
 - [ ] Institution staff and teachers access tenant actions only through active department membership and code-owned allowlisted duties; designations and legacy department labels never grant permissions
 - [ ] Teacher/StaffMember/payroll history, employee identifiers, attendance/leave links, and salary/bonus designation snapshots survive migration without duplicate login identities or privilege expansion
+- [ ] D90 onboarding/activation and exact staff permission contract passes: recipient-owned credentials, current contact proof plus review, no pending tenant access or default grants, private non-portable activation evidence and reviewed HR/identity mapping; canonical-only probes are not runtime acceptance
 
 ## ১০. যাচাই-অবস্থা (সততার সাথে)
 - স্কোপ, টেবিল-নির্ভরতা, route-মডিউল-মিল, পরীক্ষার নাম, শেষ-শর্তের সংখ্যা, কোয়েরির ইনডেক্স — `verify.py` যাচাই করে (২২টি R3-কোয়েরি `plan_check.py`-এ পরিষ্কার)।

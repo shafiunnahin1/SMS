@@ -107,6 +107,8 @@ def topo(tenant,out):
 # ====================================================================================================================================
 # Export policy (D38). Tables that are NOT exported, each with the reason. Everything else with institution_id IS exported.
 EXCLUDED={
+ 'institution_registrations':'D90 first-principal approval is not portable; new tenant needs fresh review',
+ 'account_activation_requests':'D90 contact/challenge authorization evidence; never export or replay',
  'audit_logs':'platform-held trail; the new institution starts a fresh trail with one "imported" entry',
  'impersonation_sessions':'platform-owned','tenant_exports':'operational','support_tickets':'platform-owned (has internal notes)','support_ticket_messages':'platform-owned',
  'import_jobs':'operational','import_rows':'operational','device_punches':'raw high-volume feed; processed attendance IS exported','attendance_devices':'global device key + secret: re-register on the new institution',

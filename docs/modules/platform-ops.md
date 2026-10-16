@@ -169,3 +169,9 @@ POST /super/institutions/import { export_id | upload, new_slug, type }     POST 
 - [ ] grant ছাড়া impersonation অসম্ভব; grant-সহ read-only সেশনে payroll/নথি ৪০৩; প্রতিষ্ঠান নোটিফিকেশন পায়
 - [ ] একটি demo প্রতিষ্ঠানের export → নতুন slug-এ import → দুটি তুলনায় কাঠামো অভিন্ন, secrets বাদ
 - [ ] স্কিমায় একটি নতুন টেবিল যোগ করে ম্যাপ পুনরুৎপাদন না করলে CI ব্যর্থ
+
+## D90 — non-portable provisioning proof and purge
+
+Exclude `institution_registrations` and `account_activation_requests` from both backup/export (including any include_secrets request): principal approval and contact/challenge authorization cannot migrate to a different institution. New/imported institutions require fresh recipient proof/review, never synthetic approval. This refines only the D90 auth foundation; it does not enable deferred trial/billing or rewrite existing data. Export map is generated from tenant_export_ref.py; no exporter hard-coded table list.
+
+Purge activation requests before otp_tokens/users, registrations before users/institutions, and department duty assignments before memberships/duties/departments. Platform reviewer/authorizer IDs remain actor references, not tenant permissions. Retain audit/financial history according to existing approved retention rules. These are future runtime acceptance obligations, not a claim that import/purge behavior already enforces D90.

@@ -23,7 +23,7 @@
 | `R3.4` | কর্মচারী, উপস্থিতি ও ছুটি | R3.3 | 5 | 18 | 5 |
 | `R3.5` | বেতন-কাঠামো, ইনক্রিমেন্ট ও বোনাস | R3.4 | 6 | 24 | 5 |
 | `R3.6` | সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ | R3.5 | 2 | 10 | 1 |
-| `R3.6a` | প্রতিষ্ঠান অনবোর্ডিং ও বিভাগভিত্তিক staff foundation | R3.6 | 4 | 17 | 4 |
+| `R3.6a` | প্রতিষ্ঠান অনবোর্ডিং ও বিভাগভিত্তিক staff foundation | R3.6 | 6 | 20 | 4 |
 | `R3.6b` | Staff department permission enforcement ও legacy profile migration | R3.6a | 0 | 2 | 4 |
 | `R3.7` | Payroll run, payslip ও পরিশোধ | R3.6b | 2 | 12 | 7 |
 | `R3.8` | ভবিষ্য তহবিল (PF), কর ও চূড়ান্ত নিষ্পত্তি | R3.7 | 1 | 4 | 3 |
@@ -35,7 +35,7 @@
 | `R3.14` | R3-এর কর্মক্ষমতা (ডেটা বাড়লে) | R3.13 | 0 | 0 | 1 |
 | `R3.A` | R3 গ্রহণ-পরীক্ষা, তারপর চালু | R3.14 | 0 | 0 | 0 |
 
-মোট: **18 task · 34 টেবিল · 153 route · 68টি আলাদা পরীক্ষা**। (ক্রম রৈখিক; `R3.9` শুধু `R3.2`-এর পর, তাই `R3.3`–`R3.8` ও `R3.9` সমান্তরালে চলতে পারে।)
+মোট: **18 task · 36 টেবিল · 156 route · 68টি আলাদা পরীক্ষা**। (ক্রম রৈখিক; `R3.9` শুধু `R3.2`-এর পর, তাই `R3.3`–`R3.8` ও `R3.9` সমান্তরালে চলতে পারে।)
 
 ## গ. `config/release.php` — R3-এর জন্য (R1-এর তালিকার উপর)
 
@@ -560,10 +560,55 @@ GET /teacher/salary/advances -> SalaryAdvanceController@mine [role:teacher] (mod
 
 - **নির্ভর করে:** `R3.6`
 - **লক্ষ্য:** D88/D89 অনুযায়ী Super Admin-provisioned এবং principal self-registration পথ, principal-created staff account, tenant-bound department/duty model ও verified activation তৈরি করা; subscription/billing D55-এর বাইরে থাকবে।
-- **সীমা / নোট:** R3.6 অবশ্যই আগে accepted হবে। New login identity is institution_staff; existing User remains canonical auth. Department memberships point to users; Teacher/StaffMember/payroll identity migration is R3.6b. Public signup stores a pending tenant/first-admin, requires contact verification and Super Admin approval; owner finalized public activation on 2026-10-16: both institution/account remain inactive and pending tenant access is denied until contact verification AND Super Admin approval; keep public exposure disabled until remaining implementation contracts and security checks pass. No subscription/trial/plan change or demo-DB migration.
-- **পড়ুন:** `DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, `docs/LOCKED-DECISIONS.md`, `docs/AUTHORIZATION.md`, `docs/modules/staff-payroll.md`, `docs/TESTING.md`
+- **সীমা / নোট:** D90 approved six-clause contract preserved in d7d9a23; docs/architecture/staff-account-contract.md governs six tables/twenty routes, shared provisioning, inactive institution/account until verified contact AND Super Admin approval, recipient-only passwords, purpose/contact/generation-bound atomic verification, durable proof, safe delivery/rate limits, no implicit grants, and own name/avatar allowlist. Super Admin provisioning records approval but recipient verification/password setup still required. Keep public exposure disabled until runtime/security/delivery acceptance. Existing User is canonical; HR/payee/history and old-role values are preserved; actual mapping/enforcement belongs to R3.6b. Only canonical-contract checkpoint first; no runtime code, existing-test edit, app/demo DB migration, live messages/payments, UI or task reorder in that checkpoint. Future targeted SuperInstitutionTest activation/password adaptation only as D90 explicitly permits.
+- **পড়ুন:** `DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, `docs/architecture/staff-account-contract.md`, `docs/LOCKED-DECISIONS.md`, `docs/AUTHORIZATION.md`, `docs/modules/staff-payroll.md`, `docs/TESTING.md`
 - **টেবিল (migration, model, factory এই ধাপেই):**
 
+```sql
+CREATE TABLE institution_registrations (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    first_admin_id BIGINT UNSIGNED NOT NULL,
+    source VARCHAR(20) NOT NULL,
+    review_status VARCHAR(20) NOT NULL,
+    reviewed_by BIGINT UNSIGNED NULL,
+    reviewed_at TIMESTAMP NULL,
+    rejection_reason VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_registration_institution (institution_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (first_admin_id, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (reviewed_by) REFERENCES users(id)
+);
+```
+```sql
+CREATE TABLE account_activation_requests (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    public_id CHAR(36) NOT NULL,
+    purpose VARCHAR(30) NOT NULL,
+    generation INT UNSIGNED NOT NULL,
+    channel VARCHAR(10) NOT NULL,
+    contact_hash CHAR(64) NOT NULL,
+    otp_token_id BIGINT UNSIGNED NULL,
+    authorized_by BIGINT UNSIGNED NULL,
+    status VARCHAR(20) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    contact_verified_at TIMESTAMP NULL,
+    consumed_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_activation_request_public (institution_id, public_id),
+    UNIQUE KEY unique_activation_request_generation (institution_id, user_id, purpose, generation),
+    INDEX idx_activation_request_pending (institution_id, user_id, purpose, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (user_id, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (otp_token_id) REFERENCES otp_tokens(id),
+    FOREIGN KEY (authorized_by) REFERENCES users(id)
+);
+```
 ```sql
 CREATE TABLE institution_departments (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -650,16 +695,19 @@ CREATE TABLE department_duty_assignments (
     FOREIGN KEY (revoked_by, institution_id) REFERENCES users(id, institution_id)
 );
 ```
-- **Route (17):**
+- **Route (20):**
 
 ```
+POST /auth/activate -> AccountActivationController@store
 POST /public/institutions -> PublicInstitutionSignupController@store
 POST /public/institutions/{id}/verify -> PublicInstitutionSignupController@verify
+POST /public/institutions/{id}/verification -> PublicInstitutionSignupController@resend
 POST /super/institutions/{id}/approve-registration -> InstitutionApprovalController@approve [role:super_admin]
 PATCH /staff/profile -> StaffAccountController@updateOwnProfile [role:institution_staff]
 GET /admin/staff -> StaffAccountController@index [role:admin]
 POST /admin/staff -> StaffAccountController@store [role:admin]
 PUT /admin/staff/{id} -> StaffAccountController@update [role:admin]
+POST /admin/staff/{id}/activation -> StaffAccountController@resendActivation [role:admin]
 GET /admin/departments -> DepartmentController@index [role:admin]
 POST /admin/departments -> DepartmentController@store [role:admin]
 PUT /admin/departments/{id} -> DepartmentController@update [role:admin]
@@ -672,7 +720,7 @@ PATCH /admin/department-memberships/{id} -> DepartmentMembershipController@updat
 PUT /admin/department-memberships/{id}/duties -> DepartmentMembershipController@assignDuties [role:admin]
 ```
 - **লিখবেন ও সবুজ করবেন:** `InstitutionSignupTest` (docs/TESTING.md), `StaffAccountTest` (docs/TESTING.md), `DepartmentManagementTest` (docs/TESTING.md), `DepartmentTenantTest` (docs/TESTING.md)
-- **শেষ-শর্ত (Done When):** D89: Super Admin provisioning এবং principal self-registration একই tenant-safe onboarding service ব্যবহার করে; principal account verified contact এবং Super Admin approval ছাড়া active নয়; subscription/trial/billing তৈরি হয় না। D88: staff account principal/admin creates, department free-text name, duty label groups only code-owned permission keys, এক User-এর multiple memberships, self-elevation blocked। চারটি নতুন table tenant composite keys/constraints ও audit আছে; কোনও permission designation থেকে inferred নয়।
+- **শেষ-শর্ত (Done When):** D90: both principal paths share tenant-safe provisioning; contact proof AND Super Admin approval precede institution/account activation, with recipient-only password setup and no pending tenant access. Six tables enforce tenant identities/uniqueness; service tests prove current contact/purpose/generation/token ownership, atomic consume/replay/concurrency, delivery failure/resend/rate limits, review/toggle/reset/deactivation bypass denial, no implicit grants/billing, exact own name/avatar fields and HR-history preservation. institution_staff role/type/token foundation is tested across all four types without granting business access; department/duty administration remains principal-only. Full D90 contract and four focused tests plus required verification gates pass; actual route enforcement/mapping remains R3.6b.
 - **যাচাই:** `php artisan test --filter='InstitutionSignupTest|StaffAccountTest|DepartmentManagementTest|DepartmentTenantTest'` · `python3 infra/spec-verify/gen_release_plan.py . --check`
 
 ### TASK `R3.6b` — Staff department permission enforcement ও legacy profile migration
@@ -680,7 +728,7 @@ PUT /admin/department-memberships/{id}/duties -> DepartmentMembershipController@
 - **নির্ভর করে:** `R3.6a`
 - **লক্ষ্য:** Institution staff/teachers-এর সব tenant API action-এ active department membership ও allowlisted duty permission enforce করা এবং legacy Teacher/StaffMember/payroll profiles নিরাপদে map করা।
 - **সীমা / নোট:** Depends on R3.6a and accepted R3.6. Map all existing role middleware routes; keep student, parent, Super Admin, content writer and moderator authorization separate. No destructive migration; don't alter historical salary/bonus snapshots.
-- **পড়ুন:** `DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, `docs/LOCKED-DECISIONS.md`, `docs/AUTHORIZATION.md`, `docs/modules/staff-payroll.md`, `docs/TESTING.md`
+- **পড়ুন:** `DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, `docs/architecture/staff-account-contract.md`, `docs/department-permission-contract.json`, `docs/LOCKED-DECISIONS.md`, `docs/AUTHORIZATION.md`, `docs/modules/staff-payroll.md`, `docs/TESTING.md`
 - **Route (2):**
 
 ```
@@ -1194,6 +1242,7 @@ institution_staff: profile (/staff/profile)
 14. Super Admin provisioning and principal self-registration create one verified first admin for the tenant; pending public registration is not active before Super Admin approval and no subscription/trial/billing is introduced
 15. Institution staff and teachers access tenant actions only through active department membership and code-owned allowlisted duties; designations and legacy department labels never grant permissions
 16. Teacher/StaffMember/payroll history, employee identifiers, attendance/leave links, and salary/bonus designation snapshots survive migration without duplicate login identities or privilege expansion
+17. D90 onboarding/activation and exact staff permission contract passes: recipient-owned credentials, current contact proof plus review, no pending tenant access or default grants, private non-portable activation evidence and reviewed HR/identity mapping; canonical-only probes are not runtime acceptance
 
 ## চ. বাইরের তথ্য ছাড়া যা এগোয় না (আপনার/বিশেষজ্ঞের কাজ)
 

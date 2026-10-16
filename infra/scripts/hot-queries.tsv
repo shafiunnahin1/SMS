@@ -71,3 +71,7 @@ r3_donation_receipt	any	SELECT * FROM donations WHERE institution_id = 7 AND rec
 r3_budget_lines	any	SELECT * FROM budget_lines WHERE budget_id = 2
 r3_refund_request_latest	sorted	SELECT * FROM fee_refunds WHERE institution_id = 7 AND request_key = '00000000-0000-4000-8000-000000000001' ORDER BY revision DESC LIMIT 1
 r3_refund_reversal_cap	any	SELECT SUM(paid_amount) FROM fee_payments WHERE institution_id = 7 AND reverses_id = 1234
+r3_first_principal_registration	any	SELECT * FROM institution_registrations WHERE institution_id = 7
+r3_activation_public_id	any	SELECT * FROM account_activation_requests WHERE institution_id = 7 AND public_id = '00000000-0000-4000-8000-000000000001'
+r3_activation_latest_generation	sorted	SELECT * FROM account_activation_requests WHERE institution_id = 7 AND user_id = 1234 AND purpose = 'staff_activation' ORDER BY generation DESC LIMIT 1
+r3_activation_pending	any	SELECT id FROM account_activation_requests WHERE institution_id = 7 AND user_id = 1234 AND purpose = 'staff_activation' AND status = 'pending'

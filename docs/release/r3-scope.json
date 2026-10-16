@@ -2,7 +2,7 @@
  "release": "R3",
  "title": "Money & People — টাকা ও মানুষ",
  "audience": "বেসরকারি প্রতিষ্ঠান আগে (D43); সরকারি/এমপিও ঐচ্ছিক (D44)",
- "path_note": "R1 → R3 সরাসরি সম্ভব: R3-এর ২৯ টেবিলের কোনো বাধ্যতামূলক (NOT NULL) রেফারেন্স R1-এর বাইরে যায় না। একমাত্র ব্যবহারিক পূর্বশর্ত `expenses` (R1.1) — R3.1-এ আছে।",
+ "path_note": "R1 → R3 সরাসরি সম্ভব: R3-এর ৩৫ টেবিলের কোনো বাধ্যতামূলক (NOT NULL) রেফারেন্স R1-এর বাইরে যায় না। একমাত্র ব্যবহারিক পূর্বশর্ত `expenses` (R1.1) — R3.1-এ আছে।",
  "prerequisites": {
   "release": "R1 গৃহীত",
   "modules": [
@@ -24,6 +24,7 @@
   "donations"
  ],
  "tables": [
+  "account_activation_requests",
   "bonus_schemes",
   "budget_lines",
   "budgets",
@@ -38,6 +39,7 @@
   "fee_refunds",
   "inventory_items",
   "inventory_movements",
+    "institution_registrations",
     "institution_departments",
   "leave_applications",
   "leave_types",
@@ -86,12 +88,16 @@
    "donations"
   ],
   "roles": [
-   "super_admin",
-   "admin",
-   "teacher",
-   "accountant",
-   "parent"
-  ]
+ "super_admin",
+ "admin",
+ "teacher",
+ "accountant",
+ "parent",
+ "content_writer",
+ "content_moderator",
+ "student",
+ "institution_staff"
+]
  },
  "decisions": [
   "D32",
@@ -103,7 +109,8 @@
   "D44",
   "D84"
     ,"D88",
-    "D89"
+    "D89",
+  "D90"
  ],
  "tasks": [
   {
@@ -352,6 +359,7 @@
      "goal": "D88/D89 অনুযায়ী Super Admin-provisioned এবং principal self-registration পথ, principal-created staff account, tenant-bound department/duty model ও verified activation তৈরি করা; subscription/billing D55-এর বাইরে থাকবে।",
      "spec": [
         "DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md",
+        "docs/architecture/staff-account-contract.md",
         "docs/LOCKED-DECISIONS.md",
         "docs/AUTHORIZATION.md",
         "docs/modules/staff-payroll.md",
@@ -360,6 +368,7 @@
      "modules": [],
      "controllers": [
       "PublicInstitutionSignupController",
+      "AccountActivationController",
       "InstitutionApprovalController",
         "StaffAccountController",
         "DepartmentController",
@@ -367,6 +376,8 @@
         "DepartmentMembershipController"
      ],
      "tables": [
+        "institution_registrations",
+        "account_activation_requests",
         "institution_departments",
         "department_memberships",
         "department_duties",
@@ -378,12 +389,12 @@
         "DepartmentManagementTest",
         "DepartmentTenantTest"
      ],
-     "done": "D89: Super Admin provisioning এবং principal self-registration একই tenant-safe onboarding service ব্যবহার করে; principal account verified contact এবং Super Admin approval ছাড়া active নয়; subscription/trial/billing তৈরি হয় না। D88: staff account principal/admin creates, department free-text name, duty label groups only code-owned permission keys, এক User-এর multiple memberships, self-elevation blocked। চারটি নতুন table tenant composite keys/constraints ও audit আছে; কোনও permission designation থেকে inferred নয়।",
+     "done": "D90: both principal paths share tenant-safe provisioning; contact proof AND Super Admin approval precede institution/account activation, with recipient-only password setup and no pending tenant access. Six tables enforce tenant identities/uniqueness; service tests prove current contact/purpose/generation/token ownership, atomic consume/replay/concurrency, delivery failure/resend/rate limits, review/toggle/reset/deactivation bypass denial, no implicit grants/billing, exact own name/avatar fields and HR-history preservation. institution_staff role/type/token foundation is tested across all four types without granting business access; department/duty administration remains principal-only. Full D90 contract and four focused tests plus required verification gates pass; actual route enforcement/mapping remains R3.6b.",
      "verify": [
         "php artisan test --filter='InstitutionSignupTest|StaffAccountTest|DepartmentManagementTest|DepartmentTenantTest'",
         "python3 infra/spec-verify/gen_release_plan.py . --check"
      ],
-   "scope": "R3.6 অবশ্যই আগে accepted হবে। New login identity is institution_staff; existing User remains canonical auth. Department memberships point to users; Teacher/StaffMember/payroll identity migration is R3.6b. Public signup stores a pending tenant/first-admin, requires contact verification and Super Admin approval; owner finalized public activation on 2026-10-16: both institution/account remain inactive and pending tenant access is denied until contact verification AND Super Admin approval; keep public exposure disabled until remaining implementation contracts and security checks pass. No subscription/trial/plan change or demo-DB migration."
+   "scope": "D90 approved six-clause contract preserved in d7d9a23; docs/architecture/staff-account-contract.md governs six tables/twenty routes, shared provisioning, inactive institution/account until verified contact AND Super Admin approval, recipient-only passwords, purpose/contact/generation-bound atomic verification, durable proof, safe delivery/rate limits, no implicit grants, and own name/avatar allowlist. Super Admin provisioning records approval but recipient verification/password setup still required. Keep public exposure disabled until runtime/security/delivery acceptance. Existing User is canonical; HR/payee/history and old-role values are preserved; actual mapping/enforcement belongs to R3.6b. Only canonical-contract checkpoint first; no runtime code, existing-test edit, app/demo DB migration, live messages/payments, UI or task reorder in that checkpoint. Future targeted SuperInstitutionTest activation/password adaptation only as D90 explicitly permits."
     },
     {
      "id": "R3.6b",
@@ -394,6 +405,8 @@
      "goal": "Institution staff/teachers-এর সব tenant API action-এ active department membership ও allowlisted duty permission enforce করা এবং legacy Teacher/StaffMember/payroll profiles নিরাপদে map করা।",
      "spec": [
         "DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md",
+        "docs/architecture/staff-account-contract.md",
+        "docs/department-permission-contract.json",
         "docs/LOCKED-DECISIONS.md",
         "docs/AUTHORIZATION.md",
         "docs/modules/staff-payroll.md",
@@ -739,7 +752,8 @@
    "payroll-এর আইনি/হিসাব যাচাই (PF, কর, গ্র্যাচুইটি, কর্তনের নিয়ম) একজন হিসাবরক্ষক ও আইনজীবী করেছেন",
    "Super Admin provisioning and principal self-registration create one verified first admin for the tenant; pending public registration is not active before Super Admin approval and no subscription/trial/billing is introduced",
    "Institution staff and teachers access tenant actions only through active department membership and code-owned allowlisted duties; designations and legacy department labels never grant permissions",
-   "Teacher/StaffMember/payroll history, employee identifiers, attendance/leave links, and salary/bonus designation snapshots survive migration without duplicate login identities or privilege expansion"
+   "Teacher/StaffMember/payroll history, employee identifiers, attendance/leave links, and salary/bonus designation snapshots survive migration without duplicate login identities or privilege expansion",
+  "D90 onboarding/activation and exact staff permission contract passes: recipient-owned credentials, current contact proof plus review, no pending tenant access or default grants, private non-portable activation evidence and reviewed HR/identity mapping; canonical-only probes are not runtime acceptance"
  ],
  "must_have_routes": [
   "POST /expenses",

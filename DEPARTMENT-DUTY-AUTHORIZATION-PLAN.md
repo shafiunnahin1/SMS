@@ -1,6 +1,6 @@
 # Department And Duty-Based Staff Authorization Plan
 
-**Status:** Approved decisions D88/D89 are committed as 0149d9b. Canonical R3 planning includes R3.6a/b after accepted R3.6; runtime implementation has not started. Public activation policy was explicitly finalized by the owner on 2026-10-16: both tenant and principal account stay inactive until contact verification and Super Admin approval; pending registrations have no tenant access. Other Gate 0 contracts remain unresolved.
+**Status:** D88/D89 and owner-approved D90 (ff8547b) govern the canonical contract. Public activation policy and clauses 1-6/matrix are approved; canonical execution details are in docs/architecture/staff-account-contract.md. R3.6 is accepted; R3.6a/b runtime remains unimplemented/incomplete.
 **Decisions:** D88 and D89, owner-approved in chat on 2026-10-15. D88 supersedes D17 for institution staff, including teachers. D89 allows both Super Admin provisioning and principal self-registration; D47/D55 subscription, billing, trial, and module-gating deferrals remain unchanged.
 **Repository:** `E:\Projects\School Management`
 
@@ -12,7 +12,7 @@ Designation is an institution-provided display label. It is not an authorization
 
 ## 1.1 Safe-Start Defaults For Owner Review
 
-Public self-registration activation below is owner-finalized on 2026-10-16 under D89. Other defaults below remain recommendations, not additional locked decisions:
+Public self-registration activation below is owner-finalized on 2026-10-16 under D89. The earlier defaults below are superseded only by the exact owner-approved D90 refinements; use the canonical contract rather than inferring new choices:
 
 - **Principal self-registration:** create the institution and first principal account as pending; require verified phone/email and Super Admin approval before activating tenant access. Apply existing rate-limit patterns, duplicate/slug checks, one-time verification, and audit. Owner finalized this public activation rule on 2026-10-16: both institution and principal account remain inactive and pending tenant access is denied until contact verification and Super Admin approval. Keep the route disabled until the remaining verification/review storage, abuse-control and security acceptance contracts pass. Super Admin provisioning uses the same onboarding service; its detailed activation treatment remains a separate contract question.
 - **No implicit access:** neither onboarding path creates departments, staff, duties, permissions, subscriptions, trials, or module gates.
@@ -206,16 +206,9 @@ Each action must be separately justified, module-gated where applicable, and tes
 - Legacy users migrate without silent privilege expansion, lost records, or unrecoverable login state.
 - Reports/logs never include passwords, activation secrets, sensitive child data, or unredacted financial details.
 
-## 10. Open Design Decisions Before Implementation
+## 10. Gate 0 contract decisions resolved by D90
 
-1. **Self-signup activation resolved; implementation contracts open:** owner finalized pending + contact verification + Super Admin approval on 2026-10-16, with both institution/account inactive and no pending tenant access. Finalize durable state storage, rate limits, duplicate handling and recovery before public exposure.
-2. **Account activation:** choose and verify an existing secure flow (verified email/phone OTP or time-limited activation link/code). Never display a reusable password to the principal.
-3. **Editable profile fields:** define exactly which fields staff can self-edit, which require re-verification, and which only principal/admin can edit.
-4. **Profile/designation source:** decide how Teacher and StaffMember profiles share one account, and whether a person may hold different display titles by department without changing payroll designation.
-5. **Department templates:** decide whether to offer optional type-specific starter templates; principal must explicitly choose/create departments and duties.
-6. **Permission catalog ownership:** confirm the platform ships the allowlisted action catalog while principals may create labels/groupings only, not executable permissions.
-7. **Department archive/transfer:** define handling of records, pending approvals, and audit history when a department closes or a staff member leaves.
-8. **Legacy mapping:** review proposed default duties for existing teachers/accountants and StaffMember records per institution before any data backfill.
+The owner approved clauses 1-6 and the matrix preserved in d7d9a23; ff8547b records D90. Activation/review storage and API, recipient-owned credentials, profile/HR identity ownership, catalog/action scopes, archive/revocation, type/token policy and reviewed mapping are defined in `docs/architecture/staff-account-contract.md` and `docs/department-permission-contract.json`. No Gate 0 choice is silently inferred or reopened. Canonical-only verification is the first checkpoint; actual service/security/delivery/rollout tests and R3.6a/b completion remain pending.
 
 ## 11. Scope Boundaries
 
@@ -238,9 +231,13 @@ Before Gate 0.5 code, D89's owner-approved scope must be reflected in the genera
 
 The generated task plan must encode these dependencies before implementation:
 
-1. **R3.6a — Institution onboarding and department/staff data foundation**, after R3.6. Own the four tenant-bound department/membership/duty-assignment tables, principal/staff provisioning APIs, shared D89 onboarding service, contact verification, and department/duty administration APIs. Public self-registration activation is owner-finalized: both institution/account stay inactive until contact verification and Super Admin approval; no pending tenant access. Exposure remains disabled until the remaining implementation contracts and security checks pass.
+1. **R3.6a — Institution onboarding and department/staff data foundation**, after R3.6. Own the six tenant-bound registration/activation/department/membership/duty-assignment tables, principal/staff provisioning APIs, shared D89 onboarding service, contact verification, and department/duty administration APIs. Public self-registration activation is owner-finalized: both institution/account stay inactive until contact verification and Super Admin approval; no pending tenant access. Exposure remains disabled until the remaining implementation contracts and security checks pass.
 2. **R3.6b — Staff authorization rollout and legacy mapping**, after R3.6a. Replace fixed-role authorization for institution staff with department membership/duty checks across existing API routes; preserve student/parent/platform roles and module gates; map Teacher/StaffMember/payroll records without changing historical designation or salary snapshots.
 3. **R3.7 — Payroll run**, must depend on R3.6b so payroll routes cannot ship with obsolete `teacher`/`accountant`-only authorization.
 4. **R3.12 — Department portals and role-based pages**, retain its existing dependency on R3.11 and add principal department/account/duty screens plus staff department selector/portals and permission-filtered navigation. Route authorization remains server-side.
 
 The R3.6 D87 runtime implementation is checkpointed at d0d481d and accepted in pushed bdcdeae after full API/frontend and exact pushed-tree deep verification. R3.6a/b appear in canonical `docs/release/r3-scope.json` and regenerated outputs under D88/D89. R3.6a remains incomplete: resolve the open Gate 0 decisions before runtime implementation; never hand-edit generated R3 plans. Current evidence and unresolved contracts: `owner/department-staff-readiness-review.md`.
+
+## D90 — owner contract resolution (2026-10-16)
+
+Owner approved all six clauses and the matrix preserved in d7d9a23; registry checkpoint ff8547b. The earlier Gate 0 open questions are resolved by `docs/architecture/staff-account-contract.md` and `docs/department-permission-contract.json`, not by inferred defaults. Canonical R3.6a now plans six tables/twenty routes; R3.6b enforcement and R3.7 dependency order remain. The historical proposal stays as approval evidence. First checkpoint is canonical contract only; runtime, shared migrations, actual delivery and feature acceptance remain incomplete. Later sections' earlier four-table/pending-decision descriptions are historical proposals superseded solely within D90's exact approved scope.

@@ -941,6 +941,9 @@
    "release": "R1",
    "step": "QB.10b"
     },
+    "AccountActivationController": {
+     "release": "R3"
+    },
     "PublicInstitutionSignupController": {
      "release": "R3"
     },

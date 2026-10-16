@@ -1,6 +1,6 @@
 # R3.6a/b implementation contract — owner review
 
-**Status: PROPOSED, NOT APPROVED.** This is the concrete next-step proposal requested after the readiness review. It does not alter canonical schema, APIs, guards, runtime code, existing tests or permission grants. Approve or amend clauses 1–6 through the repository Change-Request procedure before implementation. No unused decision number is claimed here.
+**Status: OWNER APPROVED — D90, ff8547b.** The exact six-clause text/matrix approved by the owner is preserved in d7d9a23; canonical refinement is now governed by docs/architecture/staff-account-contract.md. The original proposal wording below is retained as approval evidence, not runtime proof. Historical status at d7d9a23 was PROPOSED, NOT APPROVED. This is the concrete next-step proposal requested after the readiness review. It does not alter canonical schema, APIs, guards, runtime code, existing tests or permission grants. Approve or amend clauses 1–6 through the repository Change-Request procedure before implementation. No unused decision number is claimed here.
 
 **Already final:** public self-registration needs verified principal contact AND Super Admin approval; both institution/account remain inactive and pending tenant access is denied (owner reply, 2026-10-16; `9cfddba`). R3.6 is accepted (`bdcdeae`). Order remains R3.6a → R3.6b → R3.7; portals remain R3.12. D32/D33 and subscription/trial/billing deferrals remain.
 

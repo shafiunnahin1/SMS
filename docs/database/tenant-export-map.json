@@ -2,6 +2,8 @@
  "format_version": 1,
  "generated_from": "docs/database/schema.sql (python3 infra/spec-verify/tenant_export_ref.py --write)",
  "excluded": {
+  "institution_registrations": "D90 first-principal approval is not portable; new tenant needs fresh review",
+  "account_activation_requests": "D90 contact/challenge authorization evidence; never export or replay",
   "audit_logs": "platform-held trail; the new institution starts a fresh trail with one \"imported\" entry",
   "impersonation_sessions": "platform-owned",
   "tenant_exports": "operational",

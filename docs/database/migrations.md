@@ -156,6 +156,8 @@ php artisan make:migration create_alumni_table
 
 # Auth
 php artisan make:migration create_otp_tokens_table
+php artisan make:migration create_institution_registrations_table
+php artisan make:migration create_account_activation_requests_table
 php artisan make:migration add_2fa_whatsapp_to_users_table
 
 # Institution Branch Support
@@ -377,3 +379,7 @@ The new expenses create migration includes the existing schema ALTER fields and 
 ## D82 — R3.2 cashbook revision ledger
 
 `2026_10_15_000001_create_cash_book_closings_table.php` implements the authoritative cashbook schema, including unsigned revision and unique_cash_day_revision (institution_id,date,revision). Close/reopen/reclose append snapshots under the institution row lock shared with cash fee/expense writes. Old snapshots remain immutable; approved tenant purge removes all target-tenant revisions. First opening is manual, later opening derives from preceding counted cash (expected fallback); no future dates or gaps. This documents implementation only; application/demo database migration requires separate owner authorization.
+
+## D90 — activation foundation order
+
+Create users and otp_tokens, the composite users(id,institution_id) identity key, then institution_registrations and account_activation_requests in new append-only migrations. Registration review/activation state and OTP purpose/owner/generation qualification are service rules, not proven by FK existence. Existing migrations and app/demo DB remain untouched in the canonical-contract phase. Department purge is child-first; purge activation requests before otp_tokens/users and registrations before users/institutions.

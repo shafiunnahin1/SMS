@@ -2,8 +2,8 @@
  "modules_total": 58,
  "modules_with_task_plan": 17,
  "features_total": 377,
- "tables_total": 184,
- "tables_in_task_plans": 103,
+ "tables_total": 186,
+ "tables_in_task_plans": 105,
  "tables_without_task": 81,
  "external_decisions": 14,
  "milestones": [

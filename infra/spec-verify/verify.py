@@ -62,6 +62,7 @@ def cols(tb): return [c[1] for c in con.execute(f'PRAGMA table_info({tb})')]
 # Intentional GLOBAL unique keys on tenant tables, each with the reason (anything else is a D12 violation):
 INTENDED_GLOBAL={('payments','invoice_no'),('payments','trx_id'),('subscription_invoices','invoice_number'),   # platform-issued numbers
                  ('online_payments','gateway_ref'),('institution_domains','domain'),('institution_payout_accounts','institution_id'),
+                 ('institution_registrations','institution_id'),                                                 # D90: exactly one first-principal registration per institution
                  ('student_health_records','student_id'),                                                       # one record per student
                  ('attendance_devices','key_id'),                                                               # a device identifies itself BEFORE the tenant is known
                  ('support_tickets','ticket_no'),                                                               # platform-issued ticket numbers
@@ -544,6 +545,10 @@ _prefix_tests=subprocess.run([sys.executable,os.path.join(R,'infra/spec-verify/t
 ok(_prefix_tests.returncode==0,'D88 nested static/chained route-prefix regression tests: '+(_prefix_tests.stderr.strip() or _prefix_tests.stdout.strip()))
 ok(_r21tests.returncode==0,f'D83 planning mutation/freshness tests: {_r21tests.stderr.strip()[-180:]}')
 ok(_pc.returncode==0,f'docs/AGENT-PLAN-R3.md and r3-plan.json are generated from the current specs: {_pc.stdout.strip()[-80:]}')
+_d90=subprocess.run([sys.executable,os.path.join(R,'infra/spec-verify/gen_department_contract.py'),R,'--check'],capture_output=True,text=True)
+ok(_d90.returncode==0,f'D90 approved department contract is fresh: {_d90.stdout.strip()} {_d90.stderr.strip()[:120]}')
+_d90tests=subprocess.run([sys.executable,os.path.join(R,'infra/spec-verify/test_department_contract.py')],capture_output=True,text=True)
+ok(_d90tests.returncode==0,f'D90 mutation/SQLite contract checks: {_d90tests.stderr.strip()[-180:]}')
 ok('RELEASE-3.md' in rd('docs/ROADMAP.md') and 'AGENT-PLAN-R3.md' in rd('AGENTS.md') and 'AGENT-PLAN-R3.md' in rd('README.md'),'ROADMAP, AGENTS and README point at the R3 documents')
 
 

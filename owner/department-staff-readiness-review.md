@@ -1,6 +1,6 @@
 # R3.6a Gate 0 readiness review
 
-Status: INCOMPLETE / owner contract review required. This packet grants no permissions or schema/runtime authorization. The owner separately finalized the public activation policy on 2026-10-16; the remaining contracts below still require review. R3.6 was accepted in pushed `bdcdeae`; R3.6a is next, followed by R3.6b and R3.7.
+Status: CONTRACT APPROVED under D90 / runtime INCOMPLETE. This packet grants no permissions or schema/runtime authorization. The owner separately finalized the public activation policy on 2026-10-16; the remaining contracts were subsequently approved by D90 as recorded below. R3.6 was accepted in pushed `bdcdeae`; R3.6a is next, followed by R3.6b and R3.7.
 
 ## Authority and execution boundary
 
@@ -41,16 +41,14 @@ Capture: `php artisan route:list --path=api --json`, exit 0, against runtime sou
 
 All 297 approved_duty_permission values are null. Buckets are inferred from current middleware and do not grant future access. The twelve shared routes cover auth self-service, own notifications, programs and batches; decide their identity-only versus duty-protected treatment explicitly. No Department/StaffAccount/DepartmentContext runtime controller exists yet.
 
-## Owner inputs needed for the next implementation checkpoint
+## Owner inputs resolved under D90
 
-1. Public activation policy RESOLVED (owner, 2026-10-16): contact verification AND Super Admin approval are required before institution/account activation; no pending tenant access. Still finalize the distinct Super Admin-provisioned path, abuse/recovery rules and release/exposure readiness. This reply does not approve verification storage or a permission matrix.
-2. Approve exact durable verification/review storage and API payload/state transitions. Canonical schema and contract must precede any additive migration; no new column/table is invented in this packet.
-3. Finalize the staff self-edit field allowlist and contact re-verification behavior. Name/photo-only and principal-controlled HR fields remain recommendations until accepted.
-4. Approve the User/Teacher/StaffMember ownership/mapping rules, duplicate-profile handling, HR designation source and non-destructive migration rehearsal. No legacy role/string grants a duty automatically.
-5. Approve an action/resource-scope matrix for the inventory, including the twelve shared routes, permission catalog ownership, department archive/revocation and maker-checker separation. Optional department templates must never grant implicit access.
-
-After those inputs, refine the canonical schema/API/tests under the approved Change-Request procedure, regenerate plans, verify and push one checkpoint, then implement R3.6a in its approved order. Keep R3.6a/b unchecked until their complete Done When passes. The first focused runtime checks remain InstitutionSignupTest, StaffAccountTest, DepartmentManagementTest and DepartmentTenantTest; none is claimed to exist or pass yet.
+Owner explicitly approved all six clauses and the exact matrix preserved in d7d9a23. D90 registry commit ff8547b records that approval. Use `docs/architecture/staff-account-contract.md` and `docs/department-permission-contract.json` for the canonical contract, including two tables/three routes, storage/API/activation/profile/HR mapping and permission rules. These are approved target requirements, not runtime proof. First checkpoint is canonical refinement/verification only; R3.6a/b remains incomplete until implementation and all required gates pass.
 
 ## Concrete recommendation prepared
 
 The requested reviewable recommendation is now in `owner/department-staff-implementation-proposal.md` (clauses 1–6), with the complete route matrix in `owner/department-staff-permission-proposal.json`. It proposes two additional tables and three additional routes, explicit activation/profile/identity rules, and 150 exact candidate permission keys across all 297 existing route entries. Dynamic actions and report types are separately constrained. All matrix approvals remain null; canonical scope still has four tables and seventeen R3.6a routes. This proposal is not a locked decision, approved contract, implemented permission system or authorization to change existing tests.
+
+## Owner resolution — D90
+
+Owner explicitly approved proposal clauses 1-6 and its matrix; separate registry commit ff8547b. Gate 0's contract inputs above are now resolved by the exact approved proposal preserved in d7d9a23, including two tables/three routes and limited future test-expectation adaptations. Canonical execution contract: `docs/architecture/staff-account-contract.md`; matrix: `docs/department-permission-contract.json`. First update is canonical-contract refinement/verification only; no runtime implementation or task completion is inferred.

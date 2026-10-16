@@ -524,3 +524,11 @@ class UserObserver
 }
 ```
 Register in `AppServiceProvider::boot()`: `User::observe(UserObserver::class)`. Note: user-list endpoints must use `User::inTenant()` (fail-closed) - never `User::all()`.
+
+## D90 — approved institution staff/activation policy
+
+`docs/architecture/staff-account-contract.md` and `docs/department-permission-contract.json` govern R3.6a/b. institution_staff is a login identity for school/college/coaching/private_batch, never a role-derived duty. Future foundation registers it in cumulative R3 roles/type/token policy under tests: 720 minutes absolute / 60 idle; retain existing max-token, revocation and old-role policies. Historical R1 config samples remain unchanged; actual runtime configuration is not changed by this canonical checkpoint.
+
+First-principal public activation needs contact proof plus explicit central review; Super Admin provisioning records approval but recipient contact/password setup is still mandatory. Pending institution/account inactive, no tenant token/access. Purpose/contact/generation-bound locked atomic OTP consume; verified proof survives review wait while its contact fingerprint matches. A rejected/manually deactivated account cannot be reactivated by old invitations or generic toggle/reset.
+
+Ten existing active-identity self routes need own identity/session/notification checks without department duties; new own profile edit has the same boundary and a name/avatar-only allowlist. Shared programs/batches are business reads needing explicit staff keys. Principal bootstraps departments through explicit authority while preserving tenant/module/D33/maker-checker rules. Exact staff action + active effective membership + assigned active duty + resource scope is required; no wildcard, role spoofing, implicit legacy mapping or broad transition/report grant. Central/student/parent/public branches retain their current boundaries. Remaining implementation and verification is mandatory before route access or feature completion.

@@ -249,7 +249,7 @@ Tenant-scoped route কখনো `tenant:optional`-এ রাখা যাবে
 ```php
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\{LoginController, PasswordResetController};
+use App\Http\Controllers\Auth\{LoginController, PasswordResetController, AccountActivationController};
 use App\Http\Controllers\Public\{BootstrapController, SignupController, ManifestController, PublicThemeController, PublicInstitutionSignupController};
 use App\Http\Controllers\Internal\TlsCheckController;
 use App\Http\Controllers\SuperAdmin\{
@@ -304,6 +304,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/theme/public',           [PublicThemeController::class, 'show']);
         Route::get('/manifest.webmanifest',   [ManifestController::class,    'show']);   // linked from index.html as /api/v1/manifest.webmanifest
         Route::post('/auth/login',            [LoginController::class,       'login'])->middleware('throttle:login');
+        Route::post('/auth/activate',         [AccountActivationController::class, 'store'])->middleware(['tenant:required', 'throttle:otp']); // D90: pending staff only; service also requires active tenant
         Route::post('/auth/verify-otp',       [LoginController::class,       'verifyOtp'])->middleware('throttle:otp');   // D68 (4): per IP + login attempt; 5 wrong tries void the code
         Route::post('/auth/forgot-password',  [PasswordResetController::class, 'sendResetLink']);
         Route::post('/auth/reset-password',   [PasswordResetController::class, 'reset']);
@@ -314,6 +315,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/public/signup',         [SignupController::class, 'store']);
         Route::post('/public/institutions',  [PublicInstitutionSignupController::class, 'store'])->middleware('throttle:signup');
         Route::post('/public/institutions/{id}/verify', [PublicInstitutionSignupController::class, 'verify'])->middleware('throttle:otp');
+        Route::post('/public/institutions/{id}/verification', [PublicInstitutionSignupController::class, 'resend'])->middleware('throttle:activation-resend'); // D90: generic 202, no secrets
         Route::get('/public/slug-check',      [SignupController::class, 'slugCheck']);
         Route::get('/public/plans',           [SignupController::class, 'plans']);
 
@@ -559,6 +561,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/admin/dashboard',        [DashboardController::class, 'admin']);
             Route::prefix('admin')->group(function () {
                 Route::apiResource('staff', StaffAccountController::class)->except(['show', 'destroy']);
+                Route::post('/staff/{id}/activation', [StaffAccountController::class, 'resendActivation'])->whereNumber('id')->middleware('throttle:activation-resend');
                 Route::apiResource('departments', DepartmentController::class)->except(['show', 'destroy']);
                 Route::post('/departments/{id}/archive', [DepartmentController::class, 'archive'])->whereNumber('id');
                 Route::get('/departments/{department}/duties', [DepartmentDutyController::class, 'index'])->whereNumber('department');

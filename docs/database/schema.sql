@@ -3139,6 +3139,51 @@ CREATE INDEX idx_fee_payments_inst_reverses ON fee_payments(institution_id, reve
 -- D88: staff authorization is scoped by department membership and code-owned permission keys.
 CREATE UNIQUE INDEX unique_users_id_institution ON users(id, institution_id);
 
+-- D90: first-principal review and purpose/contact-bound activation evidence.
+-- Actor role, token ownership, state and generation invariants are service-enforced.
+CREATE TABLE institution_registrations (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    first_admin_id BIGINT UNSIGNED NOT NULL,
+    source VARCHAR(20) NOT NULL,
+    review_status VARCHAR(20) NOT NULL,
+    reviewed_by BIGINT UNSIGNED NULL,
+    reviewed_at TIMESTAMP NULL,
+    rejection_reason VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_registration_institution (institution_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (first_admin_id, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (reviewed_by) REFERENCES users(id)
+);
+
+CREATE TABLE account_activation_requests (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    public_id CHAR(36) NOT NULL,
+    purpose VARCHAR(30) NOT NULL,
+    generation INT UNSIGNED NOT NULL,
+    channel VARCHAR(10) NOT NULL,
+    contact_hash CHAR(64) NOT NULL,
+    otp_token_id BIGINT UNSIGNED NULL,
+    authorized_by BIGINT UNSIGNED NULL,
+    status VARCHAR(20) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    contact_verified_at TIMESTAMP NULL,
+    consumed_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_activation_request_public (institution_id, public_id),
+    UNIQUE KEY unique_activation_request_generation (institution_id, user_id, purpose, generation),
+    INDEX idx_activation_request_pending (institution_id, user_id, purpose, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (user_id, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (otp_token_id) REFERENCES otp_tokens(id),
+    FOREIGN KEY (authorized_by) REFERENCES users(id)
+);
+
 CREATE TABLE institution_departments (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
