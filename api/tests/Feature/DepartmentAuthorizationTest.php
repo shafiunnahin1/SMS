@@ -25,6 +25,74 @@ class DepartmentAuthorizationTest extends TestCase
         });
     }
 
+    public function test_own_context_is_minimal_read_only_metadata_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            extract($this->fixture('context-'.$type, $type));
+            Tenancy::as($i, function () use ($user, $admin, $department, $membership) {
+                $service = app(\App\Services\DepartmentContextService::class);
+                $other = app(DepartmentService::class)->create($admin, ['name' => 'Private unassigned']);
+                $teacher = Teacher::create(['user_id' => $user->id, 'employee_id' => 'CONTEXT-T']);
+                $staff = StaffMember::factory()->create(['user_id' => $user->id]);
+                $before = [$user->fresh()->getAttributes(), $teacher->fresh()->getAttributes(), $staff->fresh()->getAttributes(), $membership->fresh()->getAttributes()];
+                $expected = ['id' => $department->id, 'code' => $department->code, 'name' => 'Office', 'membership_id' => $membership->id];
+                $this->assertSame([$expected], $service->index($user)->all());
+                $this->assertSame($expected, $service->show($user, $department->id));
+                try { $service->show($user, $other->id); $this->fail('Unassigned context exposed'); }
+                catch (\Illuminate\Database\Eloquent\ModelNotFoundException) { $this->assertTrue(true); }
+                $this->assertSame($before, [$user->fresh()->getAttributes(), $teacher->fresh()->getAttributes(), $staff->fresh()->getAttributes(), $membership->fresh()->getAttributes()]);
+            });
+            $this->api('GET', $this->hostOf($i), 'programs', $user)->assertForbidden();
+        }
+    }
+
+    public function test_context_membership_dates_and_department_archive_are_fresh(): void
+    {
+        extract($this->fixture('context-dates')); $this->bindTenant($i);
+        $service = app(\App\Services\DepartmentContextService::class);
+        foreach ([['active', null, null, 'active', true], ['active', today(), today(), 'active', true],
+            ['active', today()->addDay(), null, 'active', false], ['active', null, today()->subDay(), 'active', false],
+            ['inactive', null, null, 'active', false], ['active', null, null, 'archived', false]] as [$status, $start, $end, $deptStatus, $allowed]) {
+            $membership->update(['status' => $status, 'starts_at' => $start, 'ends_at' => $end]);
+            $department->update(['status' => $deptStatus]);
+            $this->assertSame($allowed ? 1 : 0, $service->index($user)->count());
+            if ($allowed) $this->assertSame($department->id, $service->show($user, $department->id)['id']);
+            else {
+                try { $service->show($user, $department->id); $this->fail('Ineffective context exposed'); }
+                catch (\Illuminate\Database\Eloquent\ModelNotFoundException) { $this->assertTrue(true); }
+            }
+        }
+    }
+
+    public function test_context_rejects_foreign_inactive_ambiguous_and_impersonated_identity(): void
+    {
+        $a = $this->fixture('context-a'); $b = $this->fixture('context-b');
+        $service = app(\App\Services\DepartmentContextService::class);
+        $denied = function ($actor) use ($service, $a) {
+            foreach ([fn () => $service->index($actor), fn () => $service->show($actor, $a['department']->id)] as $read) {
+                try { $read(); $this->fail('Invalid identity accepted'); }
+                catch (\App\Exceptions\BusinessException $e) { $this->assertSame(403, $e->status); }
+            }
+        };
+        $denied($a['user']);
+        Tenancy::as($a['i'], function () use ($a, $b, $service, $denied) {
+            $denied($b['user']); $denied($a['admin']);
+            Tenancy::withoutTenancy(fn () => $denied($a['user']));
+            try { $service->show($a['user'], $b['department']->id); $this->fail('Foreign context exposed'); }
+            catch (\Illuminate\Database\Eloquent\ModelNotFoundException) { $this->assertTrue(true); }
+            foreach ([[$a['user'], 'is_active', false], [$a['user'], 'role', 'teacher'], [$a['user'], 'locked_until', now()->addHour()], [$a['i'], 'status', 'inactive']] as [$row, $field, $value]) {
+                $before = $row->getAttribute($field); $row->forceFill([$field => $value])->save();
+                $denied($a['user']); $row->forceFill([$field => $before])->save();
+                $this->assertCount(1, $service->index($a['user']));
+            }
+            $actor = $a['user']->fresh()->withAccessToken($a['user']->createToken('support', ['impersonated'])->accessToken);
+            $denied($actor);
+            StaffMember::factory()->create(['user_id' => $a['user']->id]);
+            $duplicate = StaffMember::factory()->create(['user_id' => $a['user']->id]);
+            $denied($a['user']); $duplicate->delete(); $denied($a['user']);
+        });
+    }
+
     public function test_exact_duty_prerequisite_across_four_types_never_opens_a_business_route(): void
     {
         foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
