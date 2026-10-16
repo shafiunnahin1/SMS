@@ -136,3 +136,7 @@ After audit578b848 push, owner explicitly finalized own-only minimal scope and e
 
 ## 2026-10-17 - D96 request-receipt representation gate
 Design counterexample and concrete alternatives: owner/d96-operation-and-writer-contract.md. Existing slot events cannot alone provide leave/source-wide request replay including zero-slot operations. Recommended separate operation receipt would exceed D98's exactly-two design-only tables; alternative is an explicit root-variant redesign within the existing event table. No schema/tooling/runtime change made. Owner must select representation; a third table requires a separate owner-authored Change-Request under guardrails section4, including narrowly affected inventory/export/generator tests. This is a scope gate, not three failed implementation attempts. Existing D94 and D95 dirty files remain preserved.
+
+
+## 2026-10-17 - Receipt representation selected; exact Change-Request pending
+Owner selected separate receipt; representation choice is resolved. Exact proposed scope is owner/leave-substitution-operation-receipt-change-request.md. Third design-only inventory still needs owner-finalized separate registry decision before protected edits, as D98 permits only the existing pair. No migration/runtime or existing dirty-draft adoption authorized. Prior request-receipt entry is historical; pending gate is now exact row finalization/checkpoint.
