@@ -144,3 +144,7 @@ Owner selected separate receipt; representation choice is resolved. Exact propos
 
 ## 2026-10-17 - D99 receipt Change-Request prerequisite resolved
 Owner explicitly finalized exact row and directed registry-only decision commit/push. D99 registered in451f9f6 and pushed, final fetch0/0; exact/insertion/preservation proof and guard PASS. Prior receipt representation/row-finalization gates are resolved. Physical replay/version/manifest mapping/retention and durable notification details remain design gates; dependencies, migrations/runtime/exposure and task completion remain unapproved. Existing unrelated work is not adopted.
+
+
+## 2026-10-17 - D99 receipt storage/inventory design verified
+D99 design-only schema and strict three-table tooling verified; evidence owner/d99-receipt-design-checkpoint.md. Focused15/freshness/export/parity/invariant/exact-source deep PASS (3 existing warnings). Prior missing request receipt representation is resolved at design level. Exact action/event/version sources, safe portable import/replay rebinding, retry budget, durable notification primitive and dependency/runtime acceptance remain gates. No migration/runtime or task completion.

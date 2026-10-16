@@ -21,7 +21,7 @@
 | নির্মাণ-ধাপ (মাইলস্টোন) | **৮** (M1–M8) |
 
 ## ৩. নির্মাণ-ধাপ (মাইলস্টোন) ও প্রতিটির পরিকল্পনা-অবস্থা
-D98: operational table totals exclude these canonical design-only definitions (not migrated, exported or executable): `leave_substitution_events`, `leave_substitution_slots`.
+D98/D99: operational table totals exclude these canonical design-only definitions (not migrated, exported or executable): `leave_substitution_events`, `leave_substitution_operations`, `leave_substitution_slots`.
 
 | ধাপ | রিলিজ | কী | মডিউল | কাজ-পরিকল্পনা আছে এমন মডিউল | ফিচার | অবস্থা |
 |---|---|---|---|---|---|---|

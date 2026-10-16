@@ -5,6 +5,7 @@
  "tables_total": 186,
  "design_only_tables": [
   "leave_substitution_events",
+  "leave_substitution_operations",
   "leave_substitution_slots"
  ],
  "tables_in_task_plans": 105,

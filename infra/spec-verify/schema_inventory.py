@@ -1,9 +1,11 @@
-"""D98: strict canonical design-only classification, never deployment authorization."""
+"""D98/D99: strict canonical design-only classification, never deployment authorization."""
 import re
 from pathlib import Path
 
-DESIGN_ONLY = frozenset({'leave_substitution_slots', 'leave_substitution_events'})
-SECTION = '## Design-only tables (D98)'
+MARKERS = {'leave_substitution_slots': 'D98', 'leave_substitution_events': 'D98',
+           'leave_substitution_operations': 'D99'}
+DESIGN_ONLY = frozenset(MARKERS)
+SECTION = '## Design-only tables (D98/D99)'
 
 
 def inventory(schema):
@@ -11,16 +13,19 @@ def inventory(schema):
     names = re.findall(r'^CREATE TABLE (\w+)\s*\(', clean, re.M)
     if len(names) != len(set(names)):
         raise ValueError('duplicate CREATE TABLE')
-    markers = re.findall(r'^-- @design-only D98: (\w+)\r?$', schema, re.M)
+    pairs = re.findall(r'^-- @design-only (D\d+): (\w+)\r?$', schema, re.M)
+    markers = [name for decision, name in pairs]
+    if any(MARKERS.get(name) != decision for decision, name in pairs):
+        raise ValueError('unknown design-only table or incorrect decision marker')
     raw = [line for line in schema.splitlines() if '@design-only' in line]
     if len(markers) != len(raw) or len(markers) != len(set(markers)):
         raise ValueError('malformed or duplicate design-only marker')
     design = set(markers)
     expected = set(names) & DESIGN_ONLY
     if design != expected or (expected and expected != DESIGN_ONLY):
-        raise ValueError('exact D98 pair must exist and be marked; no other design-only names allowed')
+        raise ValueError('exact D99 trio must exist and be marked; no other design-only names allowed')
     for name in design:
-        if not re.search(r'^-- @design-only D98: '+name+r'\r?\nCREATE TABLE '+name+r'\s*\(', schema, re.M):
+        if not re.search(r'^-- @design-only '+MARKERS[name]+r': '+name+r'\r?\nCREATE TABLE '+name+r'\s*\(', schema, re.M):
             raise ValueError('design-only marker must immediately precede its table')
     deployed = set(names) - design
     for name, body in re.findall(r'^CREATE TABLE (\w+)\s*\((.*?)\n\);', clean, re.M | re.S):
@@ -35,7 +40,7 @@ def inventory(schema):
 def operational_schema(schema):
     _, _, design = inventory(schema)
     for name in design:
-        schema = re.sub(r'^-- @design-only D98: '+name+r'\r?\nCREATE TABLE '+name+r'\s*\(.*?\n\);', '', schema, flags=re.M | re.S)
+        schema = re.sub(r'^-- @design-only '+MARKERS[name]+r': '+name+r'\r?\nCREATE TABLE '+name+r'\s*\(.*?\n\);', '', schema, flags=re.M | re.S)
     return schema
 
 

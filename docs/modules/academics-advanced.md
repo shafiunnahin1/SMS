@@ -183,3 +183,8 @@ POST /exams/{id}/subjects/{subjectId}/submit        POST /exams/{id}/subjects/{s
 - [ ] একই শিক্ষকের দুই ওভারল্যাপিং period সংরক্ষণ 422; বদলি-প্রবাহ শেষ পর্যন্ত
 - [ ] অনুমোদিত ছুটিতে হাজিরা default `leave` ও অনুপস্থিত-SMS নেই
 - [ ] marks জমা → lock → আনলক (কারণসহ) audit-এ
+
+
+## D99 request receipt and history boundary (design only)
+
+D99 narrowly extends D98's design-only pair to `leave_substitution_operations`, `leave_substitution_slots`, `leave_substitution_events`. Operation receipts record successful request identity and a relational result manifest; slots record current dated occurrence state; events retain non-null slot/version history and tenant/actor-bound operation linkage. See `docs/API.md` D99 for canonical digest, atomic fan-out, zero-slot success, replay/privacy, retention and export gates. Existing weekly routine and legacy non-leave substitutions remain unchanged. Cancellation/replacement does not erase history or change payroll. The receipt is not durable notification intent storage. No implementation, task activation or dependency acceptance follows; exact action/event/version mapping and delivery remain gated.

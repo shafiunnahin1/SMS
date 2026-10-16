@@ -81,7 +81,7 @@ def md_full():
     w(f"| | |\n|---|---|\n| মডিউল | **{bn(nm)}** |\n| ফিচার (প্রমাণসহ, `docs/pricing/features.csv`) | **{bn(AU['features_total'])}** |\n| ডেটাবেস টেবিল | **{bn(AU['tables_total'])}** |\n| প্রতিষ্ঠানের ধরন | স্কুল, কলেজ, কোচিং, প্রাইভেট ব্যাচ (+ মাদ্রাসা-প্রিসেট) |\n| নির্মাণ-ধাপ (মাইলস্টোন) | **{bn(len(FS['milestones']))}** (M1–M{len(FS['milestones'])}) |\n")
     w('## ৩. নির্মাণ-ধাপ (মাইলস্টোন) ও প্রতিটির পরিকল্পনা-অবস্থা')
     if G.DESIGN_ONLY_SCHEMA:
-        w('D98: operational table totals exclude these canonical design-only definitions (not migrated, exported or executable): '+', '.join('`'+n+'`' for n in sorted(G.DESIGN_ONLY_SCHEMA))+'.\n')
+        w('D98/D99: operational table totals exclude these canonical design-only definitions (not migrated, exported or executable): '+', '.join('`'+n+'`' for n in sorted(G.DESIGN_ONLY_SCHEMA))+'.\n')
     st = {'task-plan': '**পূর্ণ কাজ-পরিকল্পনা আছে**', 'draft': 'শুধু **খসড়া** কাজ-তালিকা', 'blocked-external': '**বাইরের নথি ছাড়া শুরু করা যায় না**'}
     w('| ধাপ | রিলিজ | কী | মডিউল | কাজ-পরিকল্পনা আছে এমন মডিউল | ফিচার | অবস্থা |\n|---|---|---|---|---|---|---|')
     for r in AU['milestones']: w(f"| **{r['id']}** | {r['release']} | {r['name']} | {bn(r['modules'])} | {bn(r['with_task_plan'])} | {bn(r['features'])} | {st[r['plan_status']]} |")

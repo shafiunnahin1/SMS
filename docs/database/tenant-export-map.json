@@ -2,6 +2,7 @@
  "format_version": 1,
  "design_only_tables": [
   "leave_substitution_events",
+  "leave_substitution_operations",
   "leave_substitution_slots"
  ],
  "generated_from": "docs/database/schema.sql (python3 infra/spec-verify/tenant_export_ref.py --write)",

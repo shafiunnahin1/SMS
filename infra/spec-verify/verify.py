@@ -47,7 +47,7 @@ ok(not dev,f'no stray Devanagari digits {dev[:3]}')
 from schema_inventory import inventory, documentation_problems
 sch=rd('docs/database/schema.sql'); names=re.findall(r'CREATE TABLE (\w+)',sch)
 _all_tables, deployed_names, design_only_names = inventory(sch)
-ok(set(names)==_all_tables, 'strict D98 canonical schema classification')
+ok(set(names)==_all_tables, 'strict D98/D99 canonical schema classification')
 t=re.sub(r'--[^\n]*','',sch); t=re.sub(r"ENUM\([^)]*\)","TEXT",t)
 t=re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b","INTEGER PRIMARY KEY AUTOINCREMENT",t); t=re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b",r"\1",t)
 t=re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b","",t); t=re.sub(r"\bUNIQUE KEY\s+\w+\s*\(",'UNIQUE (',t); t=re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)",'',t)

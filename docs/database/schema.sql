@@ -3272,7 +3272,7 @@ CREATE TABLE department_duty_assignments (
 
 -- D96 design contract only: current leave-linked occurrence projection plus append-only lifecycle events.
 -- Preserve legacy `substitutions` rows and storage. No migration, backfill, runtime, or purge implementation is authorized here.
--- Future D27 tenant-purge order must delete leave_substitution_events before leave_substitution_slots, then leave_applications.
+-- Future D27 tenant-purge order: events before slots and operations, then leave_applications/users/departments.
 -- @design-only D98: leave_substitution_slots
 CREATE TABLE leave_substitution_slots (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -3300,9 +3300,33 @@ CREATE TABLE leave_substitution_slots (
     FOREIGN KEY (substitute_teacher_id, institution_id) REFERENCES teachers(id, institution_id)
 );
 
+-- D99 design only: immutable successful request receipt, not an outbox or deployed table.
+-- Result manifest is the ordered linked event set, including an empty set for zero-slot success.
+-- @design-only D99: leave_substitution_operations
+CREATE TABLE leave_substitution_operations (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    department_id BIGINT UNSIGNED NULL,
+    action VARCHAR(64) NOT NULL,
+    idempotency_key_sha256 CHAR(64) NOT NULL,
+    payload_sha256 CHAR(64) NOT NULL,
+    result_code VARCHAR(40) NOT NULL,
+    result_http_status SMALLINT UNSIGNED NOT NULL,
+    result_slot_count INT UNSIGNED NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_leave_substitution_operation_request (institution_id, user_id, idempotency_key_sha256),
+    UNIQUE KEY unique_leave_substitution_operation_tenant_identity (id, institution_id),
+    UNIQUE KEY unique_leave_substitution_operation_actor_identity (id, institution_id, user_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (user_id, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (department_id, institution_id) REFERENCES institution_departments(id, institution_id)
+);
+
 -- @design-only D98: leave_substitution_events
 CREATE TABLE leave_substitution_events (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    leave_substitution_operation_id BIGINT UNSIGNED NOT NULL,
     institution_id BIGINT UNSIGNED NOT NULL,
     leave_substitution_slot_id BIGINT UNSIGNED NOT NULL,
     leave_application_id BIGINT UNSIGNED NOT NULL,
@@ -3324,8 +3348,10 @@ CREATE TABLE leave_substitution_events (
     UNIQUE KEY unique_leave_substitution_event_version (institution_id, leave_substitution_slot_id, version),
     UNIQUE KEY unique_leave_substitution_event_tenant_identity (id, institution_id),
     UNIQUE KEY unique_leave_substitution_event_request (institution_id, user_id, idempotency_key),
+    UNIQUE KEY unique_leave_substitution_operation_slot (institution_id, leave_substitution_operation_id, leave_substitution_slot_id),
     INDEX idx_leave_substitution_events_leave (institution_id, leave_application_id, occurrence_date, id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (leave_substitution_operation_id, institution_id, user_id) REFERENCES leave_substitution_operations(id, institution_id, user_id),
     FOREIGN KEY (leave_substitution_slot_id, institution_id) REFERENCES leave_substitution_slots(id, institution_id),
     FOREIGN KEY (leave_application_id, institution_id) REFERENCES leave_applications(id, institution_id),
     FOREIGN KEY (user_id, institution_id) REFERENCES users(id, institution_id),
