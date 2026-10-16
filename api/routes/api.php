@@ -160,7 +160,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/batches',                    [BatchController::class, 'index']);   // Step 4.1 (also the admission form's list)
         Route::get('/programs',                   [ProgramController::class, 'index']);
-        Route::get('/teacher/batches',            [BatchController::class, 'mine'])->middleware('role:teacher');
+        Route::get('/teacher/batches',            [BatchController::class, 'mine'])->middleware('role:teacher,institution_staff');
 
         // ── Institution Admin ─────────────────────────────────
         Route::middleware('role:admin')->group(function () {

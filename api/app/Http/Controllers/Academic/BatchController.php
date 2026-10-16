@@ -7,6 +7,7 @@ use App\Http\Requests\Academic\BatchRequest;
 use App\Http\Resources\BatchResource;
 use App\Models\{Batch, Enrollment, Teacher};
 use App\Services\AcademicStructureService;
+use App\Services\{DepartmentAcademicReadService, DepartmentRequestContextService};
 use Illuminate\Http\Request;
 
 // Step 4.1 (docs/modules/academic-structure.md). index keeps the shape the admission form uses (Spike S4) and adds filters.
@@ -14,7 +15,7 @@ class BatchController extends Controller
 {
     private const DETAIL = ['program:id,name', 'teacher.user:id,name', 'subjectTeachers.subject:id,name', 'subjectTeachers.teacher.user:id,name'];
 
-    public function __construct(private AcademicStructureService $academic) {}
+    public function __construct(private AcademicStructureService $academic, private DepartmentRequestContextService $contexts, private DepartmentAcademicReadService $staffAcademic) {}
 
     public function index(Request $request)
     {
@@ -72,7 +73,9 @@ class BatchController extends Controller
     public function mine(Request $request)
     {
         $teacher = Teacher::where('user_id', $request->user()->id)->first();
-        $batches = $teacher ? $this->academic->batchesOf($teacher) : collect();
+        $batches = $request->user()->role === 'institution_staff'
+            ? $this->staffAcademic->ownBatches($request->user(), $this->contexts->forRoute($request))
+            : ($teacher ? $this->academic->batchesOf($teacher) : collect());
         return response()->json(['success' => true, 'data' => $batches->map(fn ($b) => ['id' => $b->id, 'name' => $b->name,
             'program' => $b->program ? ['id' => $b->program->id, 'name' => $b->program->name] : null,
             'is_class_teacher' => $teacher && (int) $b->teacher_id === $teacher->id])->values()]);

@@ -18,8 +18,12 @@ class StaffIdentityBoundary
     ];
     public function handle(Request $request, Closure $next)
     {
+        // Only this reviewed business integration reaches its controller's D91 + own-resource checks.
+        $ownBatches = in_array($request->method(), ['GET', 'HEAD'], true)
+            && $request->route()->uri() === 'api/v1/teacher/batches'
+            && ltrim($request->route()->getActionName(), '\\') === \App\Http\Controllers\Academic\BatchController::class.'@mine';
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true)) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         return $next($request);
