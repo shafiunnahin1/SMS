@@ -162,6 +162,9 @@ Route::prefix('v1')->group(function () {
 
         // ── Institution Admin ─────────────────────────────────
         Route::middleware('role:admin')->group(function () {
+            Route::get('/admin/departments/{department}/duties', [\App\Http\Controllers\DepartmentDutyController::class, 'index'])->whereNumber('department');
+            Route::post('/admin/departments/{department}/duties', [\App\Http\Controllers\DepartmentDutyController::class, 'store'])->whereNumber('department');
+            Route::put('/admin/departments/{department}/duties/{duty}', [\App\Http\Controllers\DepartmentDutyController::class, 'update'])->whereNumber(['department', 'duty']);
             Route::get('/admin/departments', [\App\Http\Controllers\DepartmentController::class, 'index']);
             Route::post('/admin/departments', [\App\Http\Controllers\DepartmentController::class, 'store']);
             Route::put('/admin/departments/{id}', [\App\Http\Controllers\DepartmentController::class, 'update'])->whereNumber('id');

@@ -11,6 +11,9 @@
 // own sessions / password / language / notifications (Revision 7), and the program + batch names (GET /programs, /batches -
 // names only, used by every panel's filters).
 return [
+    'GET api/v1/admin/departments/{department}/duties' => ['admin'],
+    'POST api/v1/admin/departments/{department}/duties' => ['admin'],
+    'PUT api/v1/admin/departments/{department}/duties/{duty}' => ['admin'],
     'GET api/v1/admin/departments' => ['admin'],
     'POST api/v1/admin/departments' => ['admin'],
     'PUT api/v1/admin/departments/{id}' => ['admin'],

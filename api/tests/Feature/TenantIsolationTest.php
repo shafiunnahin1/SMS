@@ -47,6 +47,9 @@ class TenantIsolationTest extends TestCase
     private function foreignIds(): array
     {
         return [
+            'GET api/v1/admin/departments/{department}/duties' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentDuty::factory()->create()),
+            'POST api/v1/admin/departments/{department}/duties' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentDuty::factory()->create()),
+            'PUT api/v1/admin/departments/{department}/duties/{duty}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentDuty::factory()->create()),
             'PUT api/v1/admin/departments/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\InstitutionDepartment::factory()->create()->id),
             'POST api/v1/admin/departments/{id}/archive' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\InstitutionDepartment::factory()->create()->id),
             // D90 new account identities; existing foreign-id cases remain intact.
@@ -311,6 +314,11 @@ class TenantIsolationTest extends TestCase
                 if ($slug === 'isoschoola') continue;
                 $id = $make($other);
                 $this->assertNotNull($id, "{$key}: no row seeded for {$slug}");
+                if ($id instanceof \App\Models\DepartmentDuty) {
+                    $path = str_replace(['{department}', '{duty}'], [(string) $id->department_id, (string) $id->id], substr($uri, strlen('api/v1/')));
+                    $this->api($method, $this->hostOf($me['institution']), $path, $me['admin'], ['code' => 'VALID', 'name' => 'Valid fixture', 'permission_keys' => ['staff.dashboard.accountant']])->assertNotFound();
+                    continue;
+                }
                 $path = str_replace('{id}', (string) $id, substr($uri, strlen('api/v1/')));
                 if (str_starts_with($uri, 'api/v1/hr/people/')) $path = str_replace('{type}', 'staff', $path);
                 if ($uri === 'POST api/v1/hr/advances/{id}/{action}') $path = str_replace('{action}', 'approve', $path);

@@ -63,6 +63,8 @@ class RoleMatrixContractTest extends TestCase
         foreach (self::matrix() as $key => $allowed) {
             [$method, $uri] = explode(' ', $key, 2);
             $path = strtr(substr($uri, strlen('api/v1/')), self::PARAMS);
+            // D90 adds two numeric row placeholders; retain the same role assertions and all existing substitutions.
+            $path = strtr($path, ['{department}' => '999999', '{duty}' => '999999']);
             // D84: use a valid shared action so route constraints do not preempt the role middleware.
             if ($uri === 'api/v1/hr/leaves/{id}/{action}') $path = str_replace('dry-run', 'cancel', $path);
             if ($uri === 'api/v1/fee-refunds/{id}/{action}') $path = str_replace('dry-run', 'process', $path);
