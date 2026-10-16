@@ -11,6 +11,10 @@
 // own sessions / password / language / notifications (Revision 7), and the program + batch names (GET /programs, /batches -
 // names only, used by every panel's filters).
 return [
+    'GET api/v1/admin/departments' => ['admin'],
+    'POST api/v1/admin/departments' => ['admin'],
+    'PUT api/v1/admin/departments/{id}' => ['admin'],
+    'POST api/v1/admin/departments/{id}/archive' => ['admin'],
     // D90 new account routes: all eight legacy roles are denied own institution_staff profile; StaffAccountTest exercises the new role.
     'PATCH api/v1/staff/profile' => [],
     'GET api/v1/admin/staff' => ['admin'],
