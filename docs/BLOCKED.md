@@ -148,3 +148,7 @@ Owner explicitly finalized exact row and directed registry-only decision commit/
 
 ## 2026-10-17 - D99 receipt storage/inventory design verified
 D99 design-only schema and strict three-table tooling verified; evidence owner/d99-receipt-design-checkpoint.md. Focused15/freshness/export/parity/invariant/exact-source deep PASS (3 existing warnings). Prior missing request receipt representation is resolved at design level. Exact action/event/version sources, safe portable import/replay rebinding, retry budget, durable notification primitive and dependency/runtime acceptance remain gates. No migration/runtime or task completion.
+
+
+## 2026-10-17 - D96 existing-slot action mapping refined; lifecycle gates remain
+Six existing-slot action/capability/version/event mappings and common writer-lock rank documented; owner/d96-slot-actions-checkpoint.md records focused/static/exact-tree non-deep spec PASS3warnings. Existing leave approve/reject remains principal-only under D90/D85. Initial materialization/history, approval affected set/invalid nomination behavior, unique occurrence cancel/reapply, department-resource binding and delivery remain unresolved design/exposure gates. No schema/runtime/migration or task completion. Earlier generic action-mapping gap is narrowed, not claimed fully resolved.
