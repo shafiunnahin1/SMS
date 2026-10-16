@@ -111,4 +111,6 @@ return [
     'cashbook_sequence' => 'Close the preceding day first, without gaps.',
     'cashbook_opening' => 'Enter opening cash for the first day; closing dates must follow their existing history.',
     'cashbook_note' => 'A note is required when counted cash differs from expected cash.',
+    'activation_invalid' => 'This activation request is invalid or no longer usable.',
+    'activation_conflict' => 'The registration cannot make this transition.',
 ];
