@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Academic;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Academic\BatchRequest;
 use App\Http\Resources\BatchResource;
+use App\Http\Resources\StaffBatchResource;
 use App\Models\{Batch, Enrollment, Teacher};
 use App\Services\AcademicStructureService;
 use App\Services\{DepartmentAcademicReadService, DepartmentRequestContextService};
@@ -19,7 +20,11 @@ class BatchController extends Controller
 
     public function index(Request $request)
     {
-        $request->validate(['program_id' => 'nullable|integer', 'status' => 'nullable|in:upcoming,running,completed,archived,all']);
+        $input = $request->validate(['program_id' => 'nullable|integer', 'status' => 'nullable|in:upcoming,running,completed,archived,all']);
+        if ($request->user()->role === 'institution_staff') {
+            return StaffBatchResource::collection($this->staffAcademic->listBatches($request->user(), $this->contexts->forRoute($request), $input))
+                ->additional(['success' => true]);
+        }
         $status = $request->input('status');
         $batches = Batch::with(['program:id,name', 'teacher.user:id,name'])->withCount('activeEnrollments')
             ->when($request->input('program_id'), fn ($q, $p) => $q->where('program_id', $p))

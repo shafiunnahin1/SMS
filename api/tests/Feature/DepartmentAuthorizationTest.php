@@ -25,6 +25,94 @@ class DepartmentAuthorizationTest extends TestCase
         });
     }
 
+    private function staffBatchListHttp(array $fixture, $header = null, array $query = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+        $headers = ['Authorization' => 'Bearer '.($token ?? $fixture['user']->createToken('batch-list-http')->plainTextToken)];
+        if ($header !== null) $headers['X-Department-Id'] = $header;
+        return $this->json($method, 'http://'.$this->hostOf($fixture['i']).'/api/v1/batches'.($query ? '?'.http_build_query($query) : ''), [], $headers);
+    }
+
+    public function test_staff_batch_list_only_returns_own_metadata_with_its_exact_key_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $a = $this->academicFixture('batch-list-'.$type, $type); $b = $this->academicFixture('batch-list-foreign-'.$type, $type);
+            $this->staffBatchListHttp($a, (string) $a['department']->id)->assertForbidden();
+            Tenancy::as($a['i'], fn () => $a['duty']->update(['permission_keys' => ['staff.batch.index']]));
+            $expected = ['success' => true, 'data' => [
+                ['id' => $a['classBatch']->id, 'name' => 'A', 'status' => 'upcoming', 'program' => ['id' => $a['program']->id, 'name' => 'Own program']],
+                ['id' => $a['subjectBatch']->id, 'name' => 'B', 'status' => 'running', 'program' => ['id' => $a['program']->id, 'name' => 'Own program']],
+            ]];
+            $this->staffBatchListHttp($a, (string) $a['department']->id)->assertOk()->assertExactJson($expected);
+            $this->staffBatchListHttp($a, (string) $a['department']->id, ['status' => 'all', 'user_id' => $b['user']->id, 'teacher_id' => $b['teacher']->id, 'department_id' => $b['department']->id])
+                ->assertOk()->assertExactJson($expected);
+            $this->staffBatchListHttp($a, (string) $a['department']->id, method: 'HEAD')->assertOk();
+            $this->staffBatchListHttp($a)->assertForbidden();
+            $this->staffBatchListHttp($a, (string) $b['department']->id)->assertForbidden();
+            $this->ownBatchHttp($a, (string) $a['department']->id)->assertForbidden();
+            $this->staffProgramHttp($a, (string) $a['department']->id)->assertForbidden();
+            $this->api('GET', $this->hostOf($a['i']), 'batches', $a['admin'])->assertOk()->assertJsonStructure(['data' => [['monthly_fee', 'students_count', 'teacher']]]);
+        }
+    }
+
+    public function test_staff_batch_filters_only_narrow_ownership_and_never_restore_historical_or_unassigned_rows(): void
+    {
+        $a = $this->academicFixture('batch-list-filters'); $foreign = $this->academicFixture('batch-filter-foreign');
+        $other = Tenancy::as($a['i'], function () use ($a) {
+            $a['duty']->update(['permission_keys' => ['staff.batch.index']]);
+            $program = \App\Models\Program::create(['name' => 'Second owned program']);
+            return \App\Models\Batch::create(['program_id' => $program->id, 'teacher_id' => $a['teacher']->id, 'name' => 'C', 'status' => 'running']);
+        });
+        $header = (string) $a['department']->id;
+        $this->staffBatchListHttp($a, $header, ['status' => 'all'])->assertOk()->assertJsonCount(3, 'data');
+        $this->staffBatchListHttp($a, $header, ['program_id' => $a['program']->id])->assertOk()->assertJsonCount(2, 'data');
+        $this->staffBatchListHttp($a, $header, ['program_id' => $other->program_id, 'status' => 'running'])->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $other->id);
+        $this->staffBatchListHttp($a, $header, ['status' => 'upcoming'])->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $a['classBatch']->id);
+        foreach ([['status' => 'completed'], ['status' => 'archived'], ['program_id' => $a['invalidBatch']->program_id], ['program_id' => $foreign['program']->id]] as $query) {
+            $this->staffBatchListHttp($a, $header, $query)->assertOk()->assertExactJson(['success' => true, 'data' => []]);
+        }
+        foreach ([['status' => 'unknown'], ['program_id' => ['1']], ['program_id' => 'invalid']] as $query) {
+            $this->staffBatchListHttp($a, $header, $query)->assertUnprocessable();
+        }
+    }
+
+    public function test_staff_batch_list_rechecks_context_duties_profile_and_revocation_with_the_same_token(): void
+    {
+        $a = $this->academicFixture('batch-list-auth');
+        [$other, $member, $duty] = Tenancy::as($a['i'], function () use ($a) {
+            $a['duty']->update(['permission_keys' => ['staff.batch.index']]);
+            $manage = app(DepartmentService::class);
+            $department = $manage->create($a['admin'], ['name' => 'Other']);
+            $member = $manage->addMember($a['admin'], $department->id, ['user_id' => $a['user']->id]);
+            $duty = $manage->createDuty($a['admin'], $department->id, ['code' => 'OTHER', 'name' => 'Other', 'permission_keys' => ['staff.program.index']]);
+            $manage->assignDuties($a['admin'], $member->id, ['duty_ids' => [$duty->id]]);
+            return [$department, $member, $duty];
+        });
+        $token = $a['user']->createToken('batch-list-same-token')->plainTextToken;
+        $header = (string) $a['department']->id;
+        $this->staffBatchListHttp($a, $header, token: $token)->assertOk();
+        $this->staffBatchListHttp($a, (string) $other->id, ['department_id' => $a['department']->id], token: $token)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $duty->update(['permission_keys' => ['staff.batch.index']]));
+        $this->staffBatchListHttp($a, (string) $other->id, token: $token)->assertOk();
+        Tenancy::as($a['i'], fn () => DepartmentDutyAssignment::where('membership_id', $member->id)->update(['status' => 'revoked']));
+        $this->staffBatchListHttp($a, (string) $other->id, token: $token)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $a['membership']->update(['ends_at' => today()->subDay()]));
+        $this->staffBatchListHttp($a, $header, token: $token)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $a['membership']->update(['ends_at' => null]));
+        foreach ([null, '', '0', '1,1', ['1', '1'], '[1]', (string) PHP_INT_MAX.'0'] as $invalid) {
+            $this->staffBatchListHttp($a, $invalid, ['department_id' => $a['department']->id])->assertForbidden();
+        }
+        $support = $a['user']->createToken('batch-list-support', ['impersonated'])->plainTextToken;
+        $this->staffBatchListHttp($a, $header, token: $support)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $a['teacher']->update(['status' => 'inactive']));
+        $this->staffBatchListHttp($a, $header, token: $token)->assertForbidden();
+        Tenancy::as($a['i'], function () use ($a) {
+            $a['teacher']->update(['status' => 'active']);
+            Teacher::create(['user_id' => $a['user']->id, 'employee_id' => 'BATCH-LIST-DUP', 'status' => 'active'])->delete();
+        });
+        $this->staffBatchListHttp($a, $header, token: $token)->assertForbidden();
+    }
+
     private function staffProgramHttp(array $fixture, $header = null, array $query = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
     {
         $this->app['auth']->forgetGuards();

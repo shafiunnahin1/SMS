@@ -26,6 +26,14 @@ class DepartmentAcademicReadService
             ->orderBy('sort_order')->orderBy('numeric_name')->orderBy('name')->get(['id', 'name']);
     }
 
+    public function listBatches(User $actor, int $departmentId, array $filters): Collection
+    {
+        return $this->batches($actor, $departmentId, 'staff.batch.index')->with('program:id,name')
+            ->when($filters['program_id'] ?? null, fn ($q, $id) => $q->where('program_id', $id))
+            ->when(isset($filters['status']) && $filters['status'] !== 'all', fn ($q) => $q->where('status', $filters['status']))
+            ->orderBy('program_id')->orderBy('name')->get();
+    }
+
     private function batches(User $actor, int $departmentId, string $permission): Builder
     {
         if (!$this->permissions->has($actor, $departmentId, $permission)) $this->forbidden();
