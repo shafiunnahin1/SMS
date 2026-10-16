@@ -25,6 +25,102 @@ class DepartmentAuthorizationTest extends TestCase
         });
     }
 
+    private function staffBatchShowHttp(array $fixture, int $id, $header = null, array $query = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+        $headers = ['Authorization' => 'Bearer '.($token ?? $fixture['user']->createToken('batch-show-http')->plainTextToken)];
+        if ($header !== null) $headers['X-Department-Id'] = $header;
+        return $this->json($method, 'http://'.$this->hostOf($fixture['i']).'/api/v1/batches/'.$id.($query ? '?'.http_build_query($query) : ''), [], $headers);
+    }
+
+    public function test_staff_batch_show_requires_its_exact_key_and_own_resource_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $a = $this->academicFixture('batch-show-'.$type, $type); $b = $this->academicFixture('batch-show-foreign-'.$type, $type);
+            $header = (string) $a['department']->id;
+            $this->staffBatchShowHttp($a, $a['classBatch']->id, $header)->assertForbidden();
+            Tenancy::as($a['i'], fn () => $a['duty']->update(['permission_keys' => ['staff.batch.show']]));
+            foreach ([$a['classBatch'], $a['subjectBatch']] as $batch) {
+                $expected = ['success' => true, 'data' => ['id' => $batch->id, 'name' => $batch->name, 'status' => $batch->status,
+                    'program' => ['id' => $a['program']->id, 'name' => 'Own program']]];
+                $this->staffBatchShowHttp($a, $batch->id, $header, ['id' => $b['classBatch']->id, 'teacher_id' => $b['teacher']->id])->assertOk()->assertExactJson($expected);
+            }
+            $this->staffBatchShowHttp($a, $a['classBatch']->id, $header, method: 'HEAD')->assertOk();
+            foreach ([$a['unassigned']->id, $a['invalidBatch']->id, $b['classBatch']->id, 999999] as $id) {
+                $this->staffBatchShowHttp($a, $id, $header, ['id' => $a['classBatch']->id])->assertNotFound();
+            }
+            Tenancy::as($a['i'], fn () => $a['classBatch']->update(['status' => 'completed']));
+            $this->staffBatchShowHttp($a, $a['classBatch']->id, $header)->assertNotFound();
+            Tenancy::as($a['i'], fn () => $a['subjectBatch']->update(['status' => 'archived']));
+            $this->staffBatchShowHttp($a, $a['subjectBatch']->id, $header)->assertNotFound();
+            $this->staffBatchShowHttp($a, $a['classBatch']->id)->assertForbidden();
+            $this->staffBatchShowHttp($a, $a['classBatch']->id, (string) $b['department']->id)->assertForbidden();
+            $this->staffBatchListHttp($a, $header)->assertForbidden();
+            $this->api('GET', $this->hostOf($a['i']), 'batches/'.$a['classBatch']->id, $a['admin'])->assertOk()
+                ->assertJsonStructure(['data' => ['monthly_fee', 'students_count', 'teacher', 'subject_teachers']]);
+        }
+    }
+
+    public function test_staff_batch_show_rechecks_context_key_revocation_and_assignment_with_the_same_token(): void
+    {
+        $a = $this->academicFixture('batch-show-switch');
+        [$other, $member, $duty] = Tenancy::as($a['i'], function () use ($a) {
+            $a['duty']->update(['permission_keys' => ['staff.batch.index', 'staff.batch.mine', 'staff.program.index']]);
+            $manage = app(DepartmentService::class);
+            $department = $manage->create($a['admin'], ['name' => 'Other']);
+            $member = $manage->addMember($a['admin'], $department->id, ['user_id' => $a['user']->id]);
+            $duty = $manage->createDuty($a['admin'], $department->id, ['code' => 'SHOW', 'name' => 'Show', 'permission_keys' => ['staff.batch.show']]);
+            $manage->assignDuties($a['admin'], $member->id, ['duty_ids' => [$duty->id]]);
+            return [$department, $member, $duty];
+        });
+        $token = $a['user']->createToken('batch-show-same-token')->plainTextToken;
+        $id = $a['classBatch']->id;
+        $this->staffBatchShowHttp($a, $id, (string) $a['department']->id, ['department_id' => $other->id], token: $token)->assertForbidden();
+        $this->staffBatchShowHttp($a, $id, (string) $other->id, token: $token)->assertOk();
+        Tenancy::as($a['i'], fn () => $a['classBatch']->update(['teacher_id' => null]));
+        $this->staffBatchShowHttp($a, $id, (string) $other->id, token: $token)->assertNotFound();
+        Tenancy::as($a['i'], function () use ($a, $member) {
+            $a['classBatch']->update(['teacher_id' => $a['teacher']->id]);
+            $member->update(['starts_at' => today()->addDay()]);
+        });
+        $this->staffBatchShowHttp($a, $id, (string) $other->id, token: $token)->assertForbidden();
+        Tenancy::as($a['i'], function () use ($member) {
+            $member->update(['starts_at' => null]);
+            DepartmentDutyAssignment::where('membership_id', $member->id)->update(['status' => 'revoked']);
+        });
+        $this->staffBatchShowHttp($a, $id, (string) $other->id, token: $token)->assertForbidden();
+        Tenancy::as($a['i'], function () use ($member, $other) {
+            DepartmentDutyAssignment::where('membership_id', $member->id)->update(['status' => 'active']);
+            $other->update(['status' => 'archived']);
+        });
+        $this->staffBatchShowHttp($a, $id, (string) $other->id, token: $token)->assertForbidden();
+    }
+
+    public function test_staff_batch_show_rejects_invalid_context_profile_and_unrelated_admin_actions(): void
+    {
+        $a = $this->fixture('batch-show-profile');
+        Tenancy::as($a['i'], fn () => $a['duty']->update(['permission_keys' => ['staff.batch.show']]));
+        $header = (string) $a['department']->id;
+        $this->staffBatchShowHttp($a, 999999, $header)->assertForbidden();
+        $teacher = Tenancy::as($a['i'], fn () => Teacher::create(['user_id' => $a['user']->id, 'employee_id' => 'SHOW-T', 'status' => 'active']));
+        foreach ([null, '', '0', '1,1', ['1', '1'], '[1]', (string) PHP_INT_MAX.'0'] as $invalid) {
+            $this->staffBatchShowHttp($a, 999999, $invalid, ['department_id' => $a['department']->id])->assertForbidden();
+        }
+        $support = $a['user']->createToken('batch-show-support', ['impersonated'])->plainTextToken;
+        $this->staffBatchShowHttp($a, 999999, $header, token: $support)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $teacher->update(['status' => 'inactive']));
+        $this->staffBatchShowHttp($a, 999999, $header)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $teacher->update(['status' => 'active']));
+        $token = $a['user']->createToken('batch-show-bounded')->plainTextToken;
+        foreach ([['PUT', 'batches/999999'], ['DELETE', 'batches/999999'], ['GET', 'batches/999999/students'], ['GET', 'programs/999999']] as [$method, $path]) {
+            $this->app['auth']->forgetGuards();
+            $this->json($method, 'http://'.$this->hostOf($a['i']).'/api/v1/'.$path, [],
+                ['Authorization' => 'Bearer '.$token, 'X-Department-Id' => $header])->assertForbidden();
+        }
+        Tenancy::as($a['i'], fn () => Teacher::create(['user_id' => $a['user']->id, 'employee_id' => 'SHOW-DUP', 'status' => 'active'])->delete());
+        $this->staffBatchShowHttp($a, 999999, $header)->assertForbidden();
+    }
+
     private function staffBatchListHttp(array $fixture, $header = null, array $query = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
     {
         $this->app['auth']->forgetGuards();

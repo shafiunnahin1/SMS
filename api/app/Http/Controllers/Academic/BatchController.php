@@ -45,8 +45,12 @@ class BatchController extends Controller
             ->additional(['success' => true, 'message' => __('messages.saved')])->response()->setStatusCode(201);
     }
 
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
+        if ($request->user()->role === 'institution_staff') {
+            return (new StaffBatchResource($this->staffAcademic->showBatch($request->user(), $this->contexts->forRoute($request), $id)))
+                ->additional(['success' => true]);
+        }
         return (new BatchResource(Batch::with(self::DETAIL)->withCount('activeEnrollments')->findOrFail($id)))->additional(['success' => true]);
     }
 

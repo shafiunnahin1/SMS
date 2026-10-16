@@ -34,6 +34,11 @@ class DepartmentAcademicReadService
             ->orderBy('program_id')->orderBy('name')->get();
     }
 
+    public function showBatch(User $actor, int $departmentId, int $id): Batch
+    {
+        return $this->batches($actor, $departmentId, 'staff.batch.show')->with('program:id,name')->findOrFail($id);
+    }
+
     private function batches(User $actor, int $departmentId, string $permission): Builder
     {
         if (!$this->permissions->has($actor, $departmentId, $permission)) $this->forbidden();
