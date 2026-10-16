@@ -164,6 +164,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/batches/{id}',               [BatchController::class, 'show'])->whereNumber('id')->middleware('role:admin,institution_staff');
         Route::get('/programs/{id}',              [ProgramController::class, 'show'])->whereNumber('id')->middleware('role:admin,institution_staff');
         Route::get('/subjects',                  [SubjectController::class, 'index'])->middleware('role:admin,institution_staff');
+        Route::get('/subjects/{id}',             [SubjectController::class, 'show'])->whereNumber('id')->middleware('role:admin,institution_staff');
 
         // ── Institution Admin ─────────────────────────────────
         Route::middleware('role:admin')->group(function () {
@@ -217,7 +218,6 @@ Route::prefix('v1')->group(function () {
             Route::delete('/batches/{id}',                [BatchController::class, 'destroy'])->whereNumber('id');
             Route::get('/batches/{id}/students',          [BatchController::class, 'students'])->whereNumber('id');
             Route::post('/subjects',                      [SubjectController::class, 'store']);
-            Route::get('/subjects/{id}',                  [SubjectController::class, 'show'])->whereNumber('id');
             Route::put('/subjects/{id}',                  [SubjectController::class, 'update'])->whereNumber('id');
             Route::delete('/subjects/{id}',               [SubjectController::class, 'destroy'])->whereNumber('id');
             Route::get('/teachers',                       [TeacherController::class, 'index']);

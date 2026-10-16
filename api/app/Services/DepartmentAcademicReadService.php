@@ -46,16 +46,27 @@ class DepartmentAcademicReadService
 
     public function listSubjects(User $actor, int $departmentId, array $filters): Collection
     {
-        if (!$this->permissions->has($actor, $departmentId, 'staff.subject.index')) $this->forbidden();
+        return $this->subjects($actor, $departmentId, 'staff.subject.index')
+            ->when($filters['program_id'] ?? null, fn ($q, $id) => $q->where('program_id', $id))
+            ->with('program:id,name')->orderBy('program_id')->orderBy('name')->get(['id', 'name', 'program_id']);
+    }
+
+    public function showSubject(User $actor, int $departmentId, int $id): Subject
+    {
+        return $this->subjects($actor, $departmentId, 'staff.subject.show')->with('program:id,name')
+            ->findOrFail($id, ['id', 'name', 'program_id']);
+    }
+
+    private function subjects(User $actor, int $departmentId, string $permission): Builder
+    {
+        if (!$this->permissions->has($actor, $departmentId, $permission)) $this->forbidden();
         $teacher = Teacher::where('user_id', $actor->id)->where('status', 'active')->first();
         if (!$teacher) $this->forbidden();
 
         // D92: explicit subject assignments only; batch/class ownership and zero never expand this set.
         return Subject::whereIn('id', BatchTeacher::where('teacher_id', $teacher->id)->where('subject_id', '>', 0)
             ->whereHas('batch', fn ($batch) => $batch->whereIn('status', ['upcoming', 'running'])
-                ->whereColumn('batches.program_id', 'subjects.program_id'))->select('subject_id'))
-            ->when($filters['program_id'] ?? null, fn ($q, $id) => $q->where('program_id', $id))
-            ->with('program:id,name')->orderBy('program_id')->orderBy('name')->get(['id', 'name', 'program_id']);
+                ->whereColumn('batches.program_id', 'subjects.program_id'))->select('subject_id'));
     }
 
     private function batches(User $actor, int $departmentId, string $permission): Builder

@@ -38,8 +38,12 @@ class SubjectController extends Controller
             ->additional(['success' => true, 'message' => __('messages.saved')])->response()->setStatusCode(201);
     }
 
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
+        if ($request->user()->role === 'institution_staff') {
+            return (new StaffSubjectResource($this->staffAcademic->showSubject($request->user(), $this->contexts->forRoute($request), $id)))
+                ->additional(['success' => true]);
+        }
         return (new SubjectResource(Subject::with(['program:id,name', 'teacher.user:id,name'])->findOrFail($id)))->additional(['success' => true]);
     }
 
