@@ -1,6 +1,6 @@
 # R3.6b business-request department context binding review
 
-Status: owner finalized the proposed context contract in chat on 2026-10-16. No new runtime header or business-route access implemented; separate owner decision checkpoint required by guardrails section 4 remains pending.
+Status: owner finalized the proposed context contract in chat on 2026-10-16 and explicitly instructed its separate decision commit/push. D91 registry-only checkpoint 4b29f90 is pushed. Canonical refinement follows that decision; no new runtime header or business-route access is implemented by this packet.
 
 ## Verified gap
 
@@ -21,4 +21,4 @@ Status: owner finalized the proposed context contract in chat on 2026-10-16. No 
 
 Missing/invalid/foreign selector, valid membership without key, key only in a different department, same-process revocation/archive/end-date, context switch, impersonation and stale identity must be denied. Positive own-resource reads must work for all four institution types without a role mutation, preserving unrelated role/module/host boundaries. Retain business default-deny until the route-specific integration passes.
 
-AGENTS.md working rules 2/3 and G16 prohibit inventing an unstated contract silently. The owner has now finalized the selection contract. This packet does not amend a protected source or self-approve a decision. Guardrails section 4 still requires a separate owner-authored decision checkpoint before canonical protected refinements and runtime integration; the exact proposed registry row is in owner/decision-D91-context.md.
+AGENTS.md working rules 2/3 and G16 prohibit inventing an unstated contract silently. Owner input and the separate owner-directed D91 registry checkpoint 4b29f90 resolve that gate. The approved registry-row draft remains preserved in owner/decision-D91-context.md. Actual header binding, route integration and rollout acceptance remain separate work.
