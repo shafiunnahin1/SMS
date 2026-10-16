@@ -25,6 +25,103 @@ class DepartmentAuthorizationTest extends TestCase
         });
     }
 
+    private function academicFixture(string $slug, string $type = 'school'): array
+    {
+        $base = $this->fixture($slug, $type);
+        return Tenancy::as($base['i'], function () use ($base) {
+            $base['duty']->update(['permission_keys' => ['staff.batch.mine']]);
+            $teacher = Teacher::create(['user_id' => $base['user']->id, 'employee_id' => 'ACADEMIC-T', 'status' => 'active']);
+            $program = \App\Models\Program::create(['name' => 'Own program']);
+            $subject = \App\Models\Subject::create(['program_id' => $program->id, 'name' => 'Math']);
+            $classBatch = \App\Models\Batch::create(['program_id' => $program->id, 'name' => 'A', 'teacher_id' => $teacher->id, 'status' => 'upcoming']);
+            $subjectBatch = \App\Models\Batch::create(['program_id' => $program->id, 'name' => 'B', 'status' => 'running']);
+            $assignment = \App\Models\BatchTeacher::create(['batch_id' => $subjectBatch->id, 'teacher_id' => $teacher->id, 'subject_id' => $subject->id]);
+            $unassigned = \App\Models\Batch::create(['program_id' => $program->id, 'name' => 'Unassigned']);
+            $otherProgram = \App\Models\Program::create(['name' => 'Other program']);
+            $invalidBatch = \App\Models\Batch::create(['program_id' => $otherProgram->id, 'name' => 'Wrong subject program']);
+            \App\Models\BatchTeacher::create(['batch_id' => $invalidBatch->id, 'teacher_id' => $teacher->id, 'subject_id' => $subject->id]);
+            \App\Models\Batch::create(['program_id' => $program->id, 'name' => 'Completed', 'teacher_id' => $teacher->id, 'status' => 'completed']);
+            \App\Models\Batch::create(['program_id' => $program->id, 'name' => 'Archived', 'teacher_id' => $teacher->id, 'status' => 'archived']);
+            return $base + compact('teacher', 'program', 'classBatch', 'subjectBatch', 'assignment', 'unassigned', 'invalidBatch');
+        });
+    }
+
+    public function test_academic_predicate_only_returns_real_own_class_and_valid_subject_batches_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $a = $this->academicFixture('academic-'.$type, $type); $b = $this->academicFixture('academic-foreign-'.$type, $type);
+            Tenancy::as($a['i'], function () use ($a, $b) {
+                $service = app(\App\Services\DepartmentAcademicReadService::class);
+                $staff = StaffMember::factory()->create(['user_id' => $a['user']->id]);
+                $before = [$a['user']->fresh()->getAttributes(), $a['teacher']->fresh()->getAttributes(), $staff->fresh()->getAttributes()];
+                $rows = $service->ownBatches($a['user'], $a['department']->id);
+                $this->assertSame([$a['classBatch']->id, $a['subjectBatch']->id], $rows->pluck('id')->all());
+                $this->assertNotContains($a['unassigned']->id, $rows->pluck('id')->all());
+                $this->assertNotContains($a['invalidBatch']->id, $rows->pluck('id')->all());
+                $this->assertNotContains($b['classBatch']->id, $rows->pluck('id')->all());
+                $this->assertSame([$a['program']->id], $rows->pluck('program.id')->unique()->values()->all());
+                $this->assertSame($before, [$a['user']->fresh()->getAttributes(), $a['teacher']->fresh()->getAttributes(), $staff->fresh()->getAttributes()]);
+                $a['classBatch']->update(['teacher_id' => null]);
+                $otherTeacher = Teacher::create(['user_id' => $a['admin']->id, 'employee_id' => 'ACADEMIC-OTHER', 'status' => 'active']);
+                $a['assignment']->update(['teacher_id' => $otherTeacher->id]);
+                $this->assertCount(0, $service->ownBatches($a['user'], $a['department']->id));
+            });
+            $this->api('GET', $this->hostOf($a['i']), 'teacher/batches', $a['user'])->assertForbidden();
+        }
+    }
+
+    public function test_academic_predicate_rechecks_duty_membership_account_and_profile_without_caches(): void
+    {
+        extract($this->academicFixture('academic-revocation')); $this->bindTenant($i);
+        $service = app(\App\Services\DepartmentAcademicReadService::class);
+        $denied = function () use ($service, $user, $department) {
+            try { $service->ownBatches($user, $department->id); $this->fail('Academic access must fail closed'); }
+            catch (\App\Exceptions\BusinessException $e) { $this->assertSame(403, $e->status); }
+        };
+        $grant = DepartmentDutyAssignment::sole();
+        foreach ([[$grant, 'status', 'revoked'], [$duty, 'status', 'archived'], [$duty, 'permission_keys', ['staff.batch.index']],
+            [$membership, 'status', 'inactive'], [$department, 'status', 'archived'], [$user, 'is_active', false],
+            [$user, 'role', 'teacher'], [$user, 'locked_until', now()->addHour()], [$teacher, 'status', 'inactive']] as [$row, $field, $value]) {
+            $before = $row->getAttribute($field); $this->assertCount(2, $service->ownBatches($user, $department->id));
+            $row->forceFill([$field => $value])->save(); $denied();
+            $row->forceFill([$field => $before])->save();
+        }
+        $membership->update(['starts_at' => today(), 'ends_at' => today()]);
+        $this->assertCount(2, $service->ownBatches($user, $department->id));
+        $membership->update(['starts_at' => today()->addDay(), 'ends_at' => null]); $denied();
+        $membership->update(['starts_at' => null, 'ends_at' => today()->subDay()]); $denied();
+        $membership->update(['starts_at' => null, 'ends_at' => null]);
+        $classBatch->update(['teacher_id' => null]);
+        $subjectBatch->update(['status' => 'completed']);
+        $this->assertCount(0, $service->ownBatches($user, $department->id));
+        $teacher->delete(); $denied();
+    }
+
+    public function test_academic_predicate_denies_missing_ambiguous_foreign_context_and_impersonation(): void
+    {
+        $a = $this->fixture('academic-no-profile'); $b = $this->academicFixture('academic-other');
+        $service = app(\App\Services\DepartmentAcademicReadService::class);
+        $denied = function ($actor, $departmentId) use ($service) {
+            try { $service->ownBatches($actor, $departmentId); $this->fail('Invalid academic context accepted'); }
+            catch (\App\Exceptions\BusinessException $e) { $this->assertSame(403, $e->status); }
+        };
+        $denied($b['user'], $b['department']->id);
+        Tenancy::as($a['i'], function () use ($a, $b, $service, $denied) {
+            $a['duty']->update(['permission_keys' => ['staff.batch.mine']]);
+            $denied($a['user'], $a['department']->id);
+            $this->assertSame(0, Teacher::count()); $this->assertSame(0, StaffMember::count());
+            $denied($b['user'], $a['department']->id); $denied($a['user'], $b['department']->id);
+            $denied($a['admin'], $a['department']->id);
+            Tenancy::withoutTenancy(fn () => $denied($a['user'], $a['department']->id));
+            Teacher::create(['user_id' => $a['user']->id, 'employee_id' => 'ACADEMIC-REAL', 'status' => 'active']);
+            $this->assertCount(0, $service->ownBatches($a['user'], $a['department']->id));
+            $actor = $a['user']->fresh()->withAccessToken($a['user']->createToken('support', ['impersonated'])->accessToken);
+            $denied($actor, $a['department']->id);
+            Teacher::create(['user_id' => $a['user']->id, 'employee_id' => 'ACADEMIC-DUPLICATE', 'status' => 'active'])->delete();
+            $denied($a['user'], $a['department']->id);
+        });
+    }
+
     public function test_http_context_is_own_metadata_across_four_types_and_foreign_ids_are_404(): void
     {
         foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
