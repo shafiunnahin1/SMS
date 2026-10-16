@@ -25,6 +25,99 @@ class DepartmentAuthorizationTest extends TestCase
         });
     }
 
+    private function staffProgramHttp(array $fixture, $header = null, array $query = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+        $headers = ['Authorization' => 'Bearer '.($token ?? $fixture['user']->createToken('program-http')->plainTextToken)];
+        if ($header !== null) $headers['X-Department-Id'] = $header;
+        return $this->json($method, 'http://'.$this->hostOf($fixture['i']).'/api/v1/programs'.($query ? '?'.http_build_query($query) : ''), [], $headers);
+    }
+
+    public function test_staff_program_http_only_returns_owned_program_names_with_an_independent_exact_key_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $a = $this->academicFixture('program-http-'.$type, $type); $b = $this->academicFixture('program-foreign-'.$type, $type);
+            $this->staffProgramHttp($a, (string) $a['department']->id)->assertForbidden(); // batch.mine is not program.index
+            Tenancy::as($a['i'], function () use ($a) {
+                $a['duty']->update(['permission_keys' => ['staff.program.index']]);
+                $a['program']->update(['course_fee' => '99.50']);
+                $completed = \App\Models\Program::create(['name' => 'Only completed own batches', 'course_fee' => '800.00']);
+                \App\Models\Batch::create(['program_id' => $completed->id, 'teacher_id' => $a['teacher']->id, 'name' => 'Old', 'status' => 'completed']);
+                StaffMember::factory()->create(['user_id' => $a['user']->id]);
+            });
+            $expected = ['success' => true, 'data' => [['id' => $a['program']->id, 'name' => 'Own program']]];
+            $this->staffProgramHttp($a, (string) $a['department']->id)->assertOk()->assertExactJson($expected);
+            $this->staffProgramHttp($a, (string) $a['department']->id, ['teacher_id' => $b['teacher']->id, 'user_id' => $b['user']->id, 'department_id' => $b['department']->id])
+                ->assertOk()->assertExactJson($expected);
+            $this->staffProgramHttp($a, (string) $a['department']->id, method: 'HEAD')->assertOk();
+            $this->staffProgramHttp($a)->assertForbidden();
+            $this->staffProgramHttp($a, (string) $b['department']->id)->assertForbidden();
+            $this->ownBatchHttp($a, (string) $a['department']->id)->assertForbidden(); // program.index is not batch.mine
+            $this->api('GET', $this->hostOf($a['i']), 'programs', $a['admin'])->assertOk()->assertJsonStructure(['data' => [['course_fee', 'batches_count']]]);
+        }
+    }
+
+    public function test_staff_program_http_rechecks_context_keys_ownership_and_revocation_with_the_same_token(): void
+    {
+        $a = $this->academicFixture('program-switch');
+        [$other, $member, $duty] = Tenancy::as($a['i'], function () use ($a) {
+            $a['duty']->update(['permission_keys' => ['staff.program.index']]);
+            $manage = app(DepartmentService::class);
+            $department = $manage->create($a['admin'], ['name' => 'Other']);
+            $member = $manage->addMember($a['admin'], $department->id, ['user_id' => $a['user']->id]);
+            $duty = $manage->createDuty($a['admin'], $department->id, ['code' => 'OTHER', 'name' => 'Other', 'permission_keys' => ['staff.batch.mine']]);
+            $manage->assignDuties($a['admin'], $member->id, ['duty_ids' => [$duty->id]]);
+            return [$department, $member, $duty];
+        });
+        $token = $a['user']->createToken('program-same-token')->plainTextToken;
+        $this->staffProgramHttp($a, (string) $a['department']->id, token: $token)->assertOk()->assertJsonCount(1, 'data');
+        $this->staffProgramHttp($a, (string) $other->id, ['department_id' => $a['department']->id], token: $token)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $duty->update(['permission_keys' => ['staff.program.index']]));
+        $this->staffProgramHttp($a, (string) $other->id, token: $token)->assertOk();
+        Tenancy::as($a['i'], fn () => $a['duty']->update(['permission_keys' => ['staff.batch.mine']]));
+        $this->staffProgramHttp($a, (string) $a['department']->id, token: $token)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $member->update(['starts_at' => today()->addDay()]));
+        $this->staffProgramHttp($a, (string) $other->id, token: $token)->assertForbidden();
+        Tenancy::as($a['i'], function () use ($member) {
+            $member->update(['starts_at' => null]);
+            DepartmentDutyAssignment::where('membership_id', $member->id)->update(['status' => 'revoked']);
+        });
+        $this->staffProgramHttp($a, (string) $other->id, token: $token)->assertForbidden();
+        Tenancy::as($a['i'], function () use ($member, $a) {
+            DepartmentDutyAssignment::where('membership_id', $member->id)->update(['status' => 'active']);
+            $a['classBatch']->update(['teacher_id' => null]);
+            $a['subjectBatch']->update(['status' => 'archived']);
+        });
+        $this->staffProgramHttp($a, (string) $other->id, token: $token)->assertOk()->assertExactJson(['success' => true, 'data' => []]);
+        Tenancy::as($a['i'], fn () => $other->update(['status' => 'archived']));
+        $this->staffProgramHttp($a, (string) $other->id, token: $token)->assertForbidden();
+    }
+
+    public function test_staff_program_http_rejects_invalid_headers_profiles_and_unrelated_routes(): void
+    {
+        $a = $this->fixture('program-profile');
+        Tenancy::as($a['i'], fn () => $a['duty']->update(['permission_keys' => ['staff.program.index']]));
+        $this->staffProgramHttp($a, (string) $a['department']->id)->assertForbidden();
+        $teacher = Tenancy::as($a['i'], fn () => Teacher::create(['user_id' => $a['user']->id, 'employee_id' => 'PROGRAM-T', 'status' => 'active']));
+        $this->staffProgramHttp($a, (string) $a['department']->id)->assertOk()->assertExactJson(['success' => true, 'data' => []]);
+        foreach ([null, '', '0', '+1', '1e0', '1,1', ['1', '1'], '[1]', (string) PHP_INT_MAX.'0'] as $header) {
+            $this->staffProgramHttp($a, $header, ['department_id' => $a['department']->id])->assertForbidden();
+        }
+        $support = $a['user']->createToken('program-support', ['impersonated'])->plainTextToken;
+        $this->staffProgramHttp($a, (string) $a['department']->id, token: $support)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $teacher->update(['status' => 'inactive']));
+        $this->staffProgramHttp($a, (string) $a['department']->id)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $teacher->update(['status' => 'active']));
+        $token = $a['user']->createToken('program-bounded')->plainTextToken;
+        foreach (['batches', 'programs/999999', 'teacher/dashboard', 'accountant/reports/dues'] as $path) {
+            $this->app['auth']->forgetGuards();
+            $this->getJson('http://'.$this->hostOf($a['i']).'/api/v1/'.$path,
+                ['Authorization' => 'Bearer '.$token, 'X-Department-Id' => (string) $a['department']->id])->assertForbidden();
+        }
+        Tenancy::as($a['i'], fn () => Teacher::create(['user_id' => $a['user']->id, 'employee_id' => 'PROGRAM-DUP', 'status' => 'active'])->delete());
+        $this->staffProgramHttp($a, (string) $a['department']->id)->assertForbidden();
+    }
+
     private function ownBatchHttp(array $fixture, $header = null, array $input = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
     {
         $this->app['auth']->forgetGuards();
