@@ -80,3 +80,12 @@ Owner finalized the scope in owner/r36b-subject-index-scope-review.md and explic
 Grant only subjects explicitly assigned to that Teacher through nonzero batch_teachers.subject_id rows in own-tenant upcoming/running batches, with Subject.program_id equal to Batch.program_id. Deduplicate subjects. A program_id filter only narrows this set. Return only subject id/name and program id/name; preserve the existing admin response.
 
 Direct subjects.teacher_id, the zero-subject sentinel, teacher_subjects rows and class-teacher ownership alone do not grant this first staff subject read. Preserve their data and legacy consumers. Any source expansion requires separate review. This authorizes no additional detail/write/export/student access, schema, endpoint, UI, tenant switch or mapping conversion. Keep the route unavailable to institution_staff until its focused integration and required checks pass; this canonical refinement is not runtime exposure or R3.6b acceptance.
+
+
+## D93 — First staff subject-show resource scope
+
+Owner finalized the scope in owner/r36b-subject-show-scope-review.md and explicitly directed the separate registry checkpoint 8cf6f8f. Existing GET|HEAD api/v1/subjects/{id} requires D91 selected-department authorization and independently exact staff.subject.show, plus fresh active unambiguous own Teacher.
+
+Restrict the path-bound subject to that Teacher's explicit nonzero batch_teachers assignment in own-tenant upcoming/running batches where subject and batch program match. Preserve D92's exclusions: direct subjects.teacher_id, zero sentinel, teacher_subjects and class-teacher ownership alone do not grant access. Return only subject id/name and program id/name; preserve the existing admin response. Index permission alone does not authorize show, and show permission alone does not authorize index.
+
+Invalid context/duty/Teacher is denied403; a foreign/nonexistent/non-owned path subject is404 after valid prerequisites. Query/body IDs cannot override path ownership. Preserve numeric path and independent security/module boundaries, legacy data/consumers and other-action default-deny. No marks/teacher identity disclosure, write/export/student access, mapping, tenant switch, schema, new endpoint or UI is authorized. Keep staff show unavailable until its integration and required checks pass; this canonical refinement does not complete R3.6b.
