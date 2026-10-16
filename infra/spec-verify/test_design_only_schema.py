@@ -82,18 +82,19 @@ class DesignOnlyTests(unittest.TestCase):
 
 
 class ReceiptDesignTests(unittest.TestCase):
-    """Executable design model over the three real definitions; not HTTP/MySQL proof."""
+    """Executable design model over canonical design/academic definitions; not HTTP/MySQL proof."""
 
     def setUp(self):
         self.con = sqlite3.connect(':memory:')
         self.addCleanup(self.con.close)
         self.con.execute('PRAGMA foreign_keys=ON')
         self.con.execute('CREATE TABLE institutions(id INTEGER PRIMARY KEY)')
-        for name in ['users', 'institution_departments', 'teachers', 'leave_applications', 'routines']:
+        for name in ['users', 'institution_departments', 'teachers', 'leave_applications']:
             self.con.execute(f'CREATE TABLE {name}(id INTEGER PRIMARY KEY, institution_id INTEGER NOT NULL, UNIQUE(id,institution_id))')
         schema = (ROOT/'docs/database/schema.sql').read_text(encoding='utf-8')
-        for name in ['leave_substitution_slots', 'leave_substitution_operations', 'leave_substitution_events']:
+        for name in ['programs', 'batches', 'subjects', 'routines', 'leave_substitution_slots', 'leave_substitution_operations', 'leave_substitution_events']:
             ddl = re.search(r'CREATE TABLE '+name+r' \(.*?\n\);', schema, re.S).group()
+            ddl = re.sub(r'--[^\n]*', '', ddl)
             ddl = re.sub(r'ENUM\([^)]*\)', 'TEXT', ddl)
             ddl = ddl.replace('BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT')
             ddl = re.sub(r'\b(BIGINT|INT|SMALLINT) UNSIGNED\b', r'\1', ddl)
@@ -102,9 +103,15 @@ class ReceiptDesignTests(unittest.TestCase):
             self.con.execute(ddl)
         for tenant in [1, 2]:
             self.con.execute('INSERT INTO institutions VALUES(?)', (tenant,))
-            for table in ['users', 'institution_departments', 'teachers', 'leave_applications', 'routines']:
+            for table in ['users', 'institution_departments', 'teachers', 'leave_applications']:
                 for offset in [0, 10]:
                     self.con.execute(f'INSERT INTO {table} VALUES(?,?)', (tenant+offset, tenant))
+        for tenant in [1, 2]:
+            for record in [tenant, tenant+10]:
+                self.con.execute('INSERT INTO programs(id,institution_id,name) VALUES(?,?,?)', (record, tenant, 'Program'))
+                self.con.execute('INSERT INTO batches(id,institution_id,program_id,name) VALUES(?,?,?,?)', (record, tenant, record, 'Batch'))
+                self.con.execute('INSERT INTO subjects(id,institution_id,program_id,name) VALUES(?,?,?,?)', (record, tenant, record, 'Subject'))
+                self.con.execute("INSERT INTO routines(id,institution_id,program_id,batch_id,subject_id,teacher_id,day_of_week,start_time,end_time) VALUES(?,?,?,?,?,?,'tue','09:00','10:00')", (record, tenant, record, record, record, tenant))
         for slot, leave, routine in [(1, 1, 1), (2, 11, 11)]:
             self.con.execute("INSERT INTO leave_substitution_slots(id,institution_id,leave_application_id,routine_id,original_teacher_id,occurrence_date,source_start_time,source_end_time) VALUES(?,1,?,?,1,'2030-01-01','09:00','10:00')", (slot, leave, routine))
         self.con.commit()
@@ -141,8 +148,12 @@ class ReceiptDesignTests(unittest.TestCase):
                     raise ValueError('forced_failure')
             return op
 
-    def event(self, op, slot, version, actor=1, tenant=1, digest='a'*64, event_type='offer_created', result_status='offered', leave=None):
-        self.con.execute("INSERT INTO leave_substitution_events(leave_substitution_operation_id,institution_id,leave_substitution_slot_id,leave_application_id,version,event_type,result_status,user_id,original_teacher_id,occurrence_date,source_start_time,source_end_time,idempotency_key,payload_sha256) VALUES(?,?,?,?,?,?,?, ?,1,'2030-01-01','09:00','10:00',?,?)", (op, tenant, slot, leave if leave is not None else (1 if slot == 1 else 11), version, event_type, result_status, actor, self.digest(['leave-substitution-event-v1', str(tenant), str(actor), str(op), str(slot)]), digest))
+    def event(self, op, slot, version, actor=1, tenant=1, digest='a'*64, event_type='offer_created', result_status='offered', leave=None, source_context=None, interval=('09:00','10:00'), substitute=None):
+        if source_context is None:
+            source_context = self.con.execute('SELECT r.program_id,r.batch_id,r.subject_id FROM routines r JOIN leave_substitution_slots s ON s.routine_id=r.id WHERE s.id=?', (slot,)).fetchone()
+        columns = ['leave_substitution_operation_id','institution_id','leave_substitution_slot_id','leave_application_id','version','event_type','result_status','user_id','original_teacher_id','substitute_teacher_id','source_program_id','source_batch_id','source_subject_id','occurrence_date','source_start_time','source_end_time','idempotency_key','payload_sha256']
+        values = (op,tenant,slot,leave if leave is not None else (1 if slot==1 else 11),version,event_type,result_status,actor,1,substitute,*source_context,'2030-01-01',*interval,self.digest(['leave-substitution-event-v1',str(tenant),str(actor),str(op),str(slot)]),digest)
+        self.con.execute('INSERT INTO leave_substitution_events('+','.join(columns)+') VALUES('+','.join('?' for _ in values)+')', values)
 
     def test_multi_leave_fanout_replays_before_stale_check(self):
         op = self.operation('request', self.envelope(), [1, 2])
@@ -247,6 +258,49 @@ class ReceiptDesignTests(unittest.TestCase):
         self.assertFalse(occupied())
         # This query must run under the shared institution lock in future runtime.
         # Per-leave SQL uniqueness alone is deliberately not concurrency proof.
+
+    def test_source_context_is_tenant_bound_required_and_allows_no_batch(self):
+        op = self.operation('context', self.envelope(), [])
+        for context in [(2,1,1), (1,2,1), (1,1,2), (999,1,1), (None,1,1), (1,1,None)]:
+            with self.subTest(context=context), self.assertRaises(sqlite3.IntegrityError), self.con:
+                self.event(op, 1, 2, source_context=context)
+        with self.con:
+            self.con.execute('UPDATE routines SET batch_id=NULL WHERE id=1')
+            self.event(op, 1, 2, source_context=(1,None,1))
+        self.assertEqual((1,None,1), self.con.execute('SELECT source_program_id,source_batch_id,source_subject_id FROM leave_substitution_events').fetchone())
+
+    def test_refresh_stores_new_context_without_retargeting_accepted_history(self):
+        schema = (ROOT/'docs/database/schema.sql').read_text(encoding='utf-8')
+        self.assertIn("'source_refreshed'", re.search(r'event_type ENUM\((.*?)\)', schema).group(1))
+        accepted = self.operation('accepted-history', self.envelope(), [])
+        with self.con:
+            self.con.execute("UPDATE leave_substitution_slots SET status='confirmed',substitute_teacher_id=11,version=2 WHERE id=1")
+            self.event(accepted, 1, 2, event_type='offer_accepted', result_status='confirmed', substitute=11)
+        historical = self.con.execute('SELECT * FROM leave_substitution_events').fetchall()
+        with self.con:
+            self.con.execute("UPDATE routines SET program_id=11,batch_id=11,subject_id=11,start_time='10:30',end_time='11:30' WHERE id=1")
+        invalidated = self.operation('invalidated', self.envelope(), [])
+        with self.con:
+            self.con.execute("UPDATE leave_substitution_slots SET status='cancelled',substitute_teacher_id=NULL,version=3 WHERE id=1")
+            self.event(invalidated, 1, 3, event_type='source_invalidated', result_status='cancelled', source_context=(1,1,1))
+        routine = self.con.execute('SELECT * FROM routines WHERE id=1').fetchone()
+        refreshed = self.operation('refresh', self.envelope(), [])
+        with self.con:
+            self.con.execute("UPDATE leave_substitution_slots SET status='unassigned',substitute_teacher_id=NULL,version=4,source_start_time='10:30',source_end_time='11:30' WHERE id=1")
+            self.event(refreshed, 1, 4, event_type='source_refreshed', result_status='unassigned', interval=('10:30','11:30'))
+        self.assertEqual(historical, self.con.execute('SELECT * FROM leave_substitution_events WHERE version=2').fetchall())
+        self.assertEqual([(2,1,1,1,'confirmed',11), (3,1,1,1,'cancelled',None), (4,11,11,11,'unassigned',None)], self.con.execute('SELECT version,source_program_id,source_batch_id,source_subject_id,result_status,substitute_teacher_id FROM leave_substitution_events ORDER BY version').fetchall())
+        self.assertEqual(('unassigned',None,4), self.con.execute('SELECT status,substitute_teacher_id,version FROM leave_substitution_slots WHERE id=1').fetchone())
+        self.assertEqual(routine, self.con.execute('SELECT * FROM routines WHERE id=1').fetchone())
+
+    def test_old_context_parent_cannot_be_deleted_after_routine_moves(self):
+        op = self.operation('old-context', self.envelope(), [])
+        with self.con:
+            self.event(op, 1, 2)
+            self.con.execute('UPDATE routines SET batch_id=11,subject_id=11,program_id=11 WHERE id=1')
+        for table in ['batches', 'subjects']:
+            with self.subTest(table=table), self.assertRaises(sqlite3.IntegrityError), self.con:
+                self.con.execute('DELETE FROM '+table+' WHERE id=1')
 
 
 if __name__ == '__main__':

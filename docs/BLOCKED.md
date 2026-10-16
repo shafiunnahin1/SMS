@@ -160,3 +160,7 @@ D96/D99 lifecycle packet owner/d96-leave-lifecycle-checkpoint.md closes initial 
 
 ## 2026-10-17 - Source refresh specified; source-history and delivery readiness pending
 D96 bounded refresh contract/readiness evidence owner/d96-refresh-delivery-readiness.md. Static/exact-tree non-deep spec PASS3warnings; no runtime/schema change or acceptance. Next physical design gate is source_refreshed enum plus immutable source program/batch/subject identities and tenant-safe keys under existing D96/D99, with required schema deep checks. NotificationService/afterCommit patterns do not establish P14 durable intent/recovery/dedup; choose/prove accepted reuse or obtain explicit separate delivery scope before new storage/runtime. Source/resource/read, writer inventory, portable replay and dependency gates remain. No task complete/executable mark.
+
+
+## 2026-10-17 - Source refresh identity storage gap refined at design level
+D96/D99 source_refreshed enum, immutable program/batch/subject context and tenant-safe keys verified; owner/d96-source-history-checkpoint.md. Focused23/freshness/export/parity/invariant/exact-tree deep PASS3warnings. Prior absent enum/identity-field gate is resolved for canonical design only. No migrated/runtime/route activation or task completion. Read/picker/resource/department binding, all writer/settings classification, durable delivery/ambiguous provider outcomes, safe portable import and dependency/runtime acceptance remain gated.

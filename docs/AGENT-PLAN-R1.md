@@ -548,6 +548,7 @@ CREATE TABLE programs (
     public_description VARCHAR(500) NULL,
     sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_program_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 ALTER TABLE programs ADD COLUMN name_alt VARCHAR(150) NULL;
@@ -567,6 +568,7 @@ CREATE TABLE batches (
     room VARCHAR(30) NULL,
     max_capacity INT DEFAULT 40,
     status ENUM('upcoming','running','completed','archived') DEFAULT 'running',
+    UNIQUE KEY unique_batch_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (program_id) REFERENCES programs(id)
 );
@@ -583,6 +585,7 @@ CREATE TABLE subjects (
     full_marks INT DEFAULT 100,
     pass_marks INT DEFAULT 33,
     is_optional TINYINT(1) DEFAULT 0,            -- R6: optional / 4th subject (see docs/modules/college.md)
+    UNIQUE KEY unique_subject_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (program_id) REFERENCES programs(id)
 );

@@ -105,6 +105,7 @@ CREATE TABLE programs (
     public_description VARCHAR(500) NULL,
     sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_program_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
 
@@ -123,6 +124,7 @@ CREATE TABLE batches (
     room VARCHAR(30) NULL,
     max_capacity INT DEFAULT 40,
     status ENUM('upcoming','running','completed','archived') DEFAULT 'running',
+    UNIQUE KEY unique_batch_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (program_id) REFERENCES programs(id)
 );
@@ -190,6 +192,7 @@ CREATE TABLE subjects (
     full_marks INT DEFAULT 100,
     pass_marks INT DEFAULT 33,
     is_optional TINYINT(1) DEFAULT 0,            -- R6: optional / 4th subject (see docs/modules/college.md)
+    UNIQUE KEY unique_subject_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (program_id) REFERENCES programs(id)
 );
@@ -3335,9 +3338,12 @@ CREATE TABLE leave_substitution_events (
     leave_application_id BIGINT UNSIGNED NOT NULL,
     version INT UNSIGNED NOT NULL,
     result_status ENUM('unassigned','nominated','offered','confirmed','cancelled') NOT NULL,
-    event_type ENUM('slot_created','leave_approved','nomination_set','nomination_cleared','offer_created','offer_accepted','offer_declined','cover_replaced','cover_cleared','leave_rejected','leave_cancelled','source_invalidated','substitute_leave_invalidated') NOT NULL,
+    event_type ENUM('slot_created','leave_approved','nomination_set','nomination_cleared','offer_created','offer_accepted','offer_declined','cover_replaced','cover_cleared','leave_rejected','leave_cancelled','source_invalidated','substitute_leave_invalidated','source_refreshed') NOT NULL,
     user_id BIGINT UNSIGNED NOT NULL,
     original_teacher_id BIGINT UNSIGNED NOT NULL,
+    source_program_id BIGINT UNSIGNED NOT NULL,
+    source_batch_id BIGINT UNSIGNED NULL,
+    source_subject_id BIGINT UNSIGNED NOT NULL,
     substitute_teacher_id BIGINT UNSIGNED NULL,
     department_id BIGINT UNSIGNED NULL,
     occurrence_date DATE NOT NULL,
@@ -3359,6 +3365,9 @@ CREATE TABLE leave_substitution_events (
     FOREIGN KEY (leave_substitution_slot_id, institution_id, leave_application_id) REFERENCES leave_substitution_slots(id, institution_id, leave_application_id),
     FOREIGN KEY (leave_application_id, institution_id) REFERENCES leave_applications(id, institution_id),
     FOREIGN KEY (user_id, institution_id) REFERENCES users(id, institution_id),
+    FOREIGN KEY (source_program_id, institution_id) REFERENCES programs(id, institution_id),
+    FOREIGN KEY (source_batch_id, institution_id) REFERENCES batches(id, institution_id),
+    FOREIGN KEY (source_subject_id, institution_id) REFERENCES subjects(id, institution_id),
     FOREIGN KEY (original_teacher_id, institution_id) REFERENCES teachers(id, institution_id),
     FOREIGN KEY (substitute_teacher_id, institution_id) REFERENCES teachers(id, institution_id),
     FOREIGN KEY (department_id, institution_id) REFERENCES institution_departments(id, institution_id)
