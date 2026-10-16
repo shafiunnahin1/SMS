@@ -47,6 +47,9 @@ class TenantIsolationTest extends TestCase
     private function foreignIds(): array
     {
         return [
+            'POST api/v1/admin/departments/{department}/members' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()),
+            'PATCH api/v1/admin/department-memberships/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()->id),
+            'PUT api/v1/admin/department-memberships/{id}/duties' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()->id),
             'GET api/v1/admin/departments/{department}/duties' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentDuty::factory()->create()),
             'POST api/v1/admin/departments/{department}/duties' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentDuty::factory()->create()),
             'PUT api/v1/admin/departments/{department}/duties/{duty}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentDuty::factory()->create()),
@@ -314,6 +317,15 @@ class TenantIsolationTest extends TestCase
                 if ($slug === 'isoschoola') continue;
                 $id = $make($other);
                 $this->assertNotNull($id, "{$key}: no row seeded for {$slug}");
+                if ($key === 'PUT api/v1/admin/department-memberships/{id}/duties') {
+                    $this->api($method, $this->hostOf($me['institution']), 'admin/department-memberships/'.$id.'/duties', $me['admin'], ['duty_ids' => []])->assertNotFound();
+                    continue;
+                }
+                if ($id instanceof \App\Models\DepartmentMembership) {
+                    $path = str_replace('{department}', (string) $id->department_id, substr($uri, strlen('api/v1/')));
+                    $this->api($method, $this->hostOf($me['institution']), $path, $me['admin'], ['user_id' => $id->user_id])->assertNotFound();
+                    continue;
+                }
                 if ($id instanceof \App\Models\DepartmentDuty) {
                     $path = str_replace(['{department}', '{duty}'], [(string) $id->department_id, (string) $id->id], substr($uri, strlen('api/v1/')));
                     $this->api($method, $this->hostOf($me['institution']), $path, $me['admin'], ['code' => 'VALID', 'name' => 'Valid fixture', 'permission_keys' => ['staff.dashboard.accountant']])->assertNotFound();

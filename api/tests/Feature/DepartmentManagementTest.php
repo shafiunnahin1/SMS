@@ -12,6 +12,113 @@ class DepartmentManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_memberships_and_explicit_assignment_replacement_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $i = $this->makeInstitution('member-'.$type, $type); $admin = $this->makeUser($i, 'admin'); $user = $this->makeUser($i, 'institution_staff');
+            $s = app(DepartmentService::class); $d = Tenancy::as($i, fn () => $s->create($admin, ['name' => 'Office']));
+            $duty = Tenancy::as($i, fn () => $s->createDuty($admin, $d->id, ['code' => 'READ', 'name' => 'Reader', 'permission_keys' => ['staff.report.dues']]));
+            $host = $this->hostOf($i); $today = today()->toDateString();
+            $res = $this->api('POST', $host, "admin/departments/$d->id/members", $admin, ['user_id' => $user->id, 'starts_at' => $today, 'ends_at' => $today])->assertCreated();
+            $id = $res->json('data.id'); $path = "admin/department-memberships/$id";
+            $this->assertSame(['id', 'department_id', 'user_id', 'status', 'starts_at', 'ends_at'], array_keys($res->json('data')));
+            $this->assertSame(0, Tenancy::as($i, fn () => \App\Models\DepartmentDutyAssignment::count()));
+            $this->api('PUT', $host, "$path/duties", $admin, ['duty_ids' => [$duty->id]])->assertOk();
+            $before = Tenancy::as($i, fn () => \App\Models\DepartmentDutyAssignment::sole()->getAttributes());
+            $this->api('PUT', $host, "$path/duties", $admin, ['duty_ids' => [$duty->id]])->assertOk();
+            $this->assertSame($before, Tenancy::as($i, fn () => \App\Models\DepartmentDutyAssignment::sole()->getAttributes()));
+            $this->api('PUT', $host, "$path/duties", $admin, ['duty_ids' => []])->assertOk();
+            Tenancy::as($i, function () use ($admin, $before) {
+                $a = \App\Models\DepartmentDutyAssignment::sole(); $this->assertSame($before['id'], $a->id);
+                $this->assertSame('revoked', $a->status); $this->assertSame($admin->id, $a->revoked_by); $this->assertNotNull($a->revoked_at);
+            });
+            $this->api('PUT', $host, "$path/duties", $admin, ['duty_ids' => []])->assertOk();
+            $this->api('PUT', $host, "$path/duties", $admin, ['duty_ids' => [$duty->id]])->assertOk();
+            Tenancy::as($i, function () use ($before, $admin) {
+                $a = \App\Models\DepartmentDutyAssignment::sole(); $this->assertSame($before['id'], $a->id);
+                $this->assertSame('active', $a->status); $this->assertSame($admin->id, $a->assigned_by); $this->assertNull($a->revoked_at);
+                $events = AuditLog::where('model', 'DepartmentDutyAssignment')->get(); $this->assertCount(3, $events);
+                $this->assertSame(['department_duty_assignment.granted', 'department_duty_assignment.revoked', 'department_duty_assignment.granted'], $events->pluck('action')->all());
+                foreach ($events as $event) $this->assertSame(['membership_id', 'duty_id', 'state'], array_keys($event->new_data));
+            });
+            // Foundation records are not yet an executable business grant.
+            $this->api('GET', $host, 'accountant/dashboard', $user)->assertForbidden();
+            $this->assertSame(0, Tenancy::as($i, fn () => Teacher::count())); $this->assertSame(0, Tenancy::as($i, fn () => StaffMember::count()));
+        }
+    }
+
+    public function test_membership_revocation_preserves_other_membership_session_then_revokes_last_and_never_restores_duties(): void
+    {
+        $i = $this->makeInstitution('member-revoke'); $admin = $this->makeUser($i, 'admin'); $user = $this->makeUser($i, 'institution_staff');
+        $this->bindTenant($i); $s = app(DepartmentService::class);
+        $a = $s->create($admin, ['name' => 'A']); $b = $s->create($admin, ['name' => 'B']);
+        $m = $s->addMember($admin, $a->id, ['user_id' => $user->id]); $other = $s->addMember($admin, $b->id, ['user_id' => $user->id]);
+        $duty = $s->createDuty($admin, $a->id, ['code' => 'VIEW', 'name' => 'View', 'permission_keys' => ['staff.report.dues']]);
+        $s->assignDuties($admin, $m->id, ['duty_ids' => [$duty->id]]); $user->createToken('retained');
+        $s->updateMember($admin, $m->id, ['status' => 'inactive']);
+        $this->assertSame(1, $user->tokens()->count());
+        $assignment = \App\Models\DepartmentDutyAssignment::sole(); $this->assertSame('revoked', $assignment->status);
+        $s->updateMember($admin, $other->id, ['status' => 'ended']); $this->assertSame(0, $user->tokens()->count());
+        $s->updateMember($admin, $m->id, ['status' => 'active']); $this->assertSame('revoked', $assignment->fresh()->status);
+        $this->assertSame('ended', $s->updateMember($admin, $other->id, ['status' => 'ended'])->status);
+        $this->assertSame('active', $s->updateMember($admin, $other->id, ['status' => 'active'])->status);
+        $this->assertSame('revoked', $assignment->fresh()->status);
+        $this->assertSame($user->id, $m->fresh()->user_id); $this->assertTrue($user->fresh()->is_active);
+    }
+
+    public function test_membership_dates_are_merged_and_ineffective_dates_revoke_assignments_and_last_sessions(): void
+    {
+        $i = $this->makeInstitution('member-dates'); $admin = $this->makeUser($i, 'admin'); $user = $this->makeUser($i, 'institution_staff'); $this->bindTenant($i);
+        $s = app(DepartmentService::class); $d = $s->create($admin, ['name' => 'Dates']);
+        $m = $s->addMember($admin, $d->id, ['user_id' => $user->id, 'starts_at' => today()->subDays(2)->toDateString(), 'ends_at' => today()->addDay()->toDateString()]);
+        $duty = $s->createDuty($admin, $d->id, ['code' => 'VIEW', 'name' => 'View', 'permission_keys' => ['staff.report.dues']]);
+        foreach ([['starts_at' => today()->addDays(2)->toDateString()], ['ends_at' => today()->subDays(3)->toDateString()], ['starts_at' => '2026-02-30']] as $input) {
+            try { $s->updateMember($admin, $m->id, $input); $this->fail('Invalid merged dates accepted'); }
+            catch (\Illuminate\Validation\ValidationException $e) { $this->assertNotEmpty($e->errors()); }
+        }
+        $s->assignDuties($admin, $m->id, ['duty_ids' => [$duty->id]]); $user->createToken('expired');
+        $s->updateMember($admin, $m->id, ['ends_at' => today()->subDay()->toDateString()]);
+        $this->assertSame(0, $user->tokens()->count()); $this->assertSame('revoked', \App\Models\DepartmentDutyAssignment::sole()->status);
+        try { $s->assignDuties($admin, $m->id, ['duty_ids' => [$duty->id]]); $this->fail('Expired membership assigned'); }
+        catch (BusinessException $e) { $this->assertSame(409, $e->status); }
+        $s->updateMember($admin, $m->id, ['starts_at' => today()->addDay()->toDateString(), 'ends_at' => null]);
+        try { $s->assignDuties($admin, $m->id, ['duty_ids' => [$duty->id]]); $this->fail('Future membership assigned'); }
+        catch (BusinessException $e) { $this->assertSame(409, $e->status); }
+        $s->assignDuties($admin, $m->id, ['duty_ids' => []]);
+    }
+
+    public function test_membership_and_assignment_http_and_direct_allowlists_and_atomic_rollback(): void
+    {
+        $i = $this->makeInstitution('member-validation'); $admin = $this->makeUser($i, 'admin'); $user = $this->makeUser($i, 'institution_staff'); $s = app(DepartmentService::class);
+        $d = Tenancy::as($i, fn () => $s->create($admin, ['name' => 'Office'])); $host = $this->hostOf($i);
+        foreach ([['status' => 'active'], ['created_by' => $admin->id], ['department_id' => $d->id], ['institution_id' => $i->id], ['designation' => 'Payroll'], ['starts_at' => 'wrong'], ['ends_at' => '2026-02-30']] as $extra) {
+            $input = ['user_id' => $user->id] + $extra;
+            $this->api('POST', $host, "admin/departments/$d->id/members", $admin, $input)->assertUnprocessable();
+            try { Tenancy::as($i, fn () => $s->addMember($admin, $d->id, $input)); $this->fail('Injected member fields accepted'); }
+            catch (\Illuminate\Validation\ValidationException $e) { $this->assertNotEmpty($e->errors()); }
+        }
+        $m = Tenancy::as($i, fn () => $s->addMember($admin, $d->id, ['user_id' => $user->id]));
+        $this->api('POST', $host, "admin/departments/$d->id/members", $admin, ['user_id' => $user->id])->assertStatus(409);
+        foreach ([[], ['duty_ids' => null], ['duty_ids' => [1, '1']], ['duty_ids' => ['x' => 1]], ['duty_ids' => [0]], ['duty_ids' => [], 'assigned_by' => $admin->id]] as $input) {
+            $this->api('PUT', $host, "admin/department-memberships/$m->id/duties", $admin, $input)->assertUnprocessable();
+            try { Tenancy::as($i, fn () => $s->assignDuties($admin, $m->id, $input)); $this->fail('Invalid assignment accepted'); }
+            catch (\Illuminate\Validation\ValidationException $e) { $this->assertNotEmpty($e->errors()); }
+        }
+        $this->api('PATCH', $host, "admin/department-memberships/$m->id", $admin, ['user_id' => $admin->id])->assertUnprocessable();
+        Tenancy::as($i, function () use ($s, $d, $m, $admin, $user) {
+            $duty = $s->createDuty($admin, $d->id, ['code' => 'READ', 'name' => 'Reader', 'permission_keys' => ['staff.report.dues']]);
+            $s->assignDuties($admin, $m->id, ['duty_ids' => [$duty->id]]); $user->createToken('rollback');
+            $before = [$m->fresh()->getAttributes(), \App\Models\DepartmentDutyAssignment::sole()->getAttributes(), AuditLog::count()];
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            $s->updateMember($admin, $m->id, ['status' => 'ended']); \Illuminate\Support\Facades\DB::rollBack();
+            $this->assertSame($before, [$m->fresh()->getAttributes(), \App\Models\DepartmentDutyAssignment::sole()->getAttributes(), AuditLog::count()]);
+            $this->assertSame(1, $user->tokens()->count());
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            $s->assignDuties($admin, $m->id, ['duty_ids' => []]); \Illuminate\Support\Facades\DB::rollBack();
+            $this->assertSame('active', \App\Models\DepartmentDutyAssignment::sole()->status);
+        });
+    }
+
     public function test_runtime_duty_keys_exactly_match_all_150_owner_approved_options(): void
     {
         $contract = json_decode(file_get_contents(base_path('../docs/department-permission-contract.json')), true, flags: JSON_THROW_ON_ERROR);

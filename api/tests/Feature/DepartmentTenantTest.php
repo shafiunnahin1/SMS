@@ -12,6 +12,59 @@ class DepartmentTenantTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_membership_assignment_checks_foreign_ids_same_department_and_principal_at_every_boundary(): void
+    {
+        $i = $this->makeInstitution('membership-local'); $other = $this->makeInstitution('membership-foreign');
+        $admin = $this->makeUser($i, 'admin'); $user = $this->makeUser($i, 'institution_staff');
+        $fa = $this->makeUser($other, 'admin'); $fu = $this->makeUser($other, 'institution_staff'); $s = app(DepartmentService::class);
+        $d = Tenancy::as($i, fn () => $s->create($admin, ['name' => 'Local']));
+        $second = Tenancy::as($i, fn () => $s->create($admin, ['name' => 'Second']));
+        $fd = Tenancy::as($other, fn () => $s->create($fa, ['name' => 'Foreign']));
+        $m = Tenancy::as($i, fn () => $s->addMember($admin, $d->id, ['user_id' => $user->id]));
+        $fm = Tenancy::as($other, fn () => $s->addMember($fa, $fd->id, ['user_id' => $fu->id]));
+        $makeDuty = fn ($actor, $dept) => $s->createDuty($actor, $dept, ['code' => 'READ', 'name' => 'Read', 'permission_keys' => ['staff.report.dues']]);
+        $wrong = Tenancy::as($i, fn () => $makeDuty($admin, $second->id)); $foreign = Tenancy::as($other, fn () => $makeDuty($fa, $fd->id));
+        $host = $this->hostOf($i); $path = "admin/department-memberships/$m->id";
+        $this->api('POST', $host, "admin/departments/$fd->id/members", $admin, ['user_id' => $user->id])->assertNotFound();
+        $this->api('POST', $host, "admin/departments/$second->id/members", $admin, ['user_id' => $fu->id])->assertNotFound();
+        $this->api('PATCH', $host, "admin/department-memberships/$fm->id", $admin, ['status' => 'ended'])->assertNotFound();
+        $this->api('PUT', $host, "admin/department-memberships/$fm->id/duties", $admin, ['duty_ids' => []])->assertNotFound();
+        foreach ([$wrong->id, $foreign->id, 999999] as $duty) {
+            $this->api('PUT', $host, "$path/duties", $admin, ['duty_ids' => [$duty]])->assertNotFound();
+            try { Tenancy::as($i, fn () => $s->assignDuties($admin, $m->id, ['duty_ids' => [$duty]])); $this->fail('Mismatched duty accepted'); }
+            catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) { $this->assertSame(0, Tenancy::as($i, fn () => \App\Models\DepartmentDutyAssignment::count())); }
+        }
+        foreach (['teacher', 'accountant', 'institution_staff', 'parent', 'student'] as $role) {
+            $actor = $role === 'institution_staff' ? $user : $this->makeUser($i, $role);
+            $this->api('POST', $host, "admin/departments/$second->id/members", $actor, ['user_id' => $user->id])->assertForbidden();
+            $this->api('PATCH', $host, $path, $actor, ['status' => 'ended'])->assertForbidden();
+            $this->api('PUT', $host, "$path/duties", $actor, ['duty_ids' => []])->assertForbidden();
+        }
+        $stale = $admin->fresh(); $admin->update(['role' => 'teacher']);
+        foreach ([fn () => $s->addMember($stale, $second->id, ['user_id' => $user->id]), fn () => $s->updateMember($stale, $m->id, ['status' => 'ended']), fn () => $s->assignDuties($stale, $m->id, ['duty_ids' => []])] as $op) {
+            try { Tenancy::as($i, $op); $this->fail('Stale principal accepted'); }
+            catch (BusinessException $e) { $this->assertSame(403, $e->status); }
+        }
+    }
+
+    public function test_inactive_accounts_and_archived_duties_cannot_be_granted_but_can_be_resolved(): void
+    {
+        $i = $this->makeInstitution('membership-states'); $admin = $this->makeUser($i, 'admin'); $user = $this->makeUser($i, 'institution_staff'); $this->bindTenant($i); $s = app(DepartmentService::class);
+        $d = $s->create($admin, ['name' => 'Office']); $m = $s->addMember($admin, $d->id, ['user_id' => $user->id]);
+        $duty = $s->createDuty($admin, $d->id, ['code' => 'VIEW', 'name' => 'View', 'permission_keys' => ['staff.report.dues']]);
+        $s->updateDuty($admin, $d->id, $duty->id, ['status' => 'archived']);
+        try { $s->assignDuties($admin, $m->id, ['duty_ids' => [$duty->id]]); $this->fail('Archived duty granted'); }
+        catch (BusinessException $e) { $this->assertSame(409, $e->status); }
+        $user->update(['is_active' => false]);
+        try { $s->assignDuties($admin, $m->id, ['duty_ids' => [$duty->id]]); $this->fail('Inactive account granted'); }
+        catch (BusinessException $e) { $this->assertSame(409, $e->status); }
+        $s->assignDuties($admin, $m->id, ['duty_ids' => []]); $s->updateMember($admin, $m->id, ['status' => 'ended']);
+        $s->archive($admin, $d->id);
+        try { $s->addMember($admin, $d->id, ['user_id' => $user->id]); $this->fail('Archived department received member'); }
+        catch (BusinessException $e) { $this->assertSame(409, $e->status); }
+        $this->assertSame('ended', $m->fresh()->status); $this->assertFalse($user->fresh()->is_active);
+    }
+
     public function test_duties_require_same_tenant_and_same_department_with_principal_authorization(): void
     {
         $i = $this->makeInstitution('duty-local'); $other = $this->makeInstitution('duty-foreign');
