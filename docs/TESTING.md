@@ -559,3 +559,10 @@ Future runtime tests must cover own applicant nomination, exact selected-departm
 ## D96/D99 materialization design checks
 
 Retain all prior design/inventory/replay assertions. Extend `py -3.14 infra/spec-verify/test_design_only_schema.py .` with zero-slot receipt initiating-leave replay/foreign-tenant FK rejection, explicit creation/approval event/result-state history, distinct cancel/reapply slot IDs with old history untouched and duplicate same-leave occurrence rejection, and the active-occurrence query obligation separate from SQL uniqueness. These are SQLite design/constraint probes, not complete approval workflow or MySQL concurrency tests. Future implementation must prove P2/P3 gap behavior, exhaustive/stale affected sets, original snapshot retention, zero-slot lost-response retries, cancel/reapply races and atomic durable intents.
+
+
+## D96 refresh and delivery readiness checks (design only)
+
+Static review must confirm the independent refresh route/key and fresh unassigned result, cancelled-slot denial by ordinary offer, immutable old acceptance, terminal-leave/source/cutoff rejection and explicit absent source_refreshed/history-snapshot gate. Current event schema must not be described as already supporting the planned refresh event. Audit existing NotificationService/GeneralNotification/SendSmsJob/LeaveService/config defaults for actual intent/dedup semantics; do not infer deployed queue configuration or send real messages.
+
+Future implementation tests must cover reviewer-only refresh, no self-review, stale retry/ABA, both cutoff timestamps, missing/changed-original-Teacher source, retained old program/batch/subject context, history/weekly/attendance/payroll unchanged, and separate new offer/acceptance. Delivery proof needs crash between commit and dispatch, committed-intent recovery, duplicate worker/replay, obsolete invitation versus old-target cancellation, preference/consent revocation and provider accepted-but-response-lost outcomes. Until primitive/provider behavior is resolved these remain unfulfilled gates, not tests to skip.

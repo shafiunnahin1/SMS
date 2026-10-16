@@ -91,3 +91,10 @@ Retry recognized transactional deadlocks/timeouts by rolling back and rerunning 
 ## D96/D99 occurrence identity across leave cycles
 
 Per-leave slot uniqueness permits new slots after a D85 cancel/reapply; it does not allow two active leaves to claim one dated source occurrence. Every materializer must hold the institution lock, perform D85 overlap checks and reject a different non-cancelled slot for the same tenant/routine/date. Cancelled old slots/events remain bound to their original leave and source snapshots. No slot reparenting, hard-delete or weekly routine rewrite. A source change must first invalidate affected future slots; same-leave refresh after that invalidation still needs its own reviewed transition and must not silently revive cancelled versions. Real two-connection checks remain required for runtime acceptance.
+
+
+## D96 source refresh after invalidation (design only)
+
+A source writer cancels stale future offers/confirmation with source_invalidated under the shared lock; restoring source fields later does not restore cover authority. The separate reviewer refresh-source action described in `docs/API.md` may be implemented only after its event/history/read gates close. It retains occurrence/leave/original-Teacher identity, validates both old/new cutoff and live routine/working-date eligibility, then creates a fresh unassigned version; later offer/acceptance is separate. Deleted/different-day/different-Teacher source and terminal cancelled/rejected leave cannot be retargeted through refresh. Weekly routine CRUD remains a different permission.
+
+Historical source program/batch/subject cannot be recovered by joining an old event to today's mutable routine. The current D99 history shape therefore needs a further reviewed D96 design-only snapshot/key refinement before refresh is storage-ready. No automatic refresh job, new enum, field, migration or runtime writer is introduced by this paragraph.
