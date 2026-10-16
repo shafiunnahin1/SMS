@@ -57,7 +57,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:super_admin', 'tenancy.bypass'])->prefix('super')->group(function () {
         Route::get('/dashboard',              [DashboardController::class, 'superAdmin']);
         // Step 5.3 (D55-D58): institutions, their SMS wallet, the universal SMS API
-        Route::post('/institutions/{id}/approve-registration', [\App\Http\Controllers\Auth\InstitutionApprovalController::class, 'review'])->whereNumber('id');
+        Route::post('/institutions/{id}/approve-registration', [\App\Http\Controllers\Auth\InstitutionApprovalController::class, 'approve'])->whereNumber('id');
         Route::get('/institutions',                   [InstitutionController::class, 'index']);
         Route::post('/institutions',                  [InstitutionController::class, 'store']);
         Route::get('/institutions/{id}',              [InstitutionController::class, 'show'])->whereNumber('id');

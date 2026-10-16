@@ -14,6 +14,22 @@ class InstitutionSignupTest extends TestCase
     private const CENTRAL = 'admin.schoolapp.com';
     private ActivationDelivery $delivery;
 
+    public function test_all_twenty_foundation_routes_match_the_canonical_task_actions(): void
+    {
+        $plan = json_decode(file_get_contents(base_path('../docs/release/r3-plan.json')), true, flags: JSON_THROW_ON_ERROR);
+        $task = collect($plan['tasks'])->firstWhere('id', 'R3.6a');
+        $this->assertCount(20, $task['routes']);
+        foreach ($task['routes'] as $spec) {
+            [$endpoint, $target] = explode(' -> ', $spec);
+            [$method, $path] = explode(' ', $endpoint, 2);
+            $expected = explode(' [', $target)[0];
+            $routes = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+                ->filter(fn ($r) => $r->uri() === 'api/v1'.$path && in_array($method, $r->methods(), true));
+            $this->assertCount(1, $routes, $spec);
+            $this->assertSame($expected, class_basename($routes->first()->getActionName()), $spec);
+        }
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
