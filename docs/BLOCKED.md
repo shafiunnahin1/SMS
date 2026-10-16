@@ -140,3 +140,7 @@ Design counterexample and concrete alternatives: owner/d96-operation-and-writer-
 
 ## 2026-10-17 - Receipt representation selected; exact Change-Request pending
 Owner selected separate receipt; representation choice is resolved. Exact proposed scope is owner/leave-substitution-operation-receipt-change-request.md. Third design-only inventory still needs owner-finalized separate registry decision before protected edits, as D98 permits only the existing pair. No migration/runtime or existing dirty-draft adoption authorized. Prior request-receipt entry is historical; pending gate is now exact row finalization/checkpoint.
+
+
+## 2026-10-17 - D99 receipt Change-Request prerequisite resolved
+Owner explicitly finalized exact row and directed registry-only decision commit/push. D99 registered in451f9f6 and pushed, final fetch0/0; exact/insertion/preservation proof and guard PASS. Prior receipt representation/row-finalization gates are resolved. Physical replay/version/manifest mapping/retention and durable notification details remain design gates; dependencies, migrations/runtime/exposure and task completion remain unapproved. Existing unrelated work is not adopted.

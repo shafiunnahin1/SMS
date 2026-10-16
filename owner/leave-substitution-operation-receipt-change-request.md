@@ -28,3 +28,8 @@ Owner finalization of this exact row and explicit direction for its separate reg
 ## Preparation checks
 
 Focused command: `py -3.14 %TEMP%/school-receipt-cr-proof.py`. Checks the exact unnumbered row, bounded path list, three-table inventory and explicit exclusions, current D98 two-table limit, and preservation of all pre-existing modified files before own evidence append. No schema, generator, application, database, migration or runtime changes in this preparation checkpoint. Guard and diff-check evidence is recorded in the own handoff/progress append; no deep/application PASS is claimed.
+
+
+## Owner finalization and decision checkpoint
+
+On 2026-10-17 the owner explicitly finalized this exact row and directed the separate registry-only decision commit/push. D99 was recorded with identifier substitution only in `451f9f6`, pushed to `origin/claude/elegant-cori-gw2mw5`; final fetch showed0/0. Exact-row/insertion-only/registry-only/preservation proof, diff check and guard passed. Earlier pending-finalization text is historical preparation context. Only the listed design refinements are now authorized; no implementation/dependency/task acceptance follows.
