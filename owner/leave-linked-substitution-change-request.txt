@@ -1,3 +1,5 @@
+CURRENT STATUS: owner-directed registry-only D95 committed and pushed as 31a1512 on 2026-10-16 after planning evidence33ba79f. Historical unnumbered draft/procedure below is preserved as approval evidence. Canonical refinement is next; excluded technical/runtime gates remain pending.
+
 LEAVE-LINKED SUBSTITUTION — EXACT OWNER CHANGE-REQUEST DRAFT
 2026-10-16. Prepared for owner authorship/explicit recording instruction and active-agent coordination. NOT REGISTERED. No D-number assigned or reserved. No formal decision commit or protected edits authorized by this draft itself.
 
