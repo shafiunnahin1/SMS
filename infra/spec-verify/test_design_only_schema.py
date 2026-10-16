@@ -121,7 +121,7 @@ class ReceiptDesignTests(unittest.TestCase):
     def digest(value):
         return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
 
-    def operation(self, key, envelope, slots, fail=False, stale=False, tenant=1, actor=1):
+    def operation(self, key, envelope, slots, fail=False, stale=False, tenant=1, actor=1, root_leave=None):
         """Minimal proposed ordering, deliberately independent of future runtime services."""
         digest = self.digest(envelope)
         with self.con:
@@ -132,7 +132,7 @@ class ReceiptDesignTests(unittest.TestCase):
                 return prior[0]
             if stale:
                 raise ValueError('stale_version')
-            op = self.con.execute("INSERT INTO leave_substitution_operations(institution_id,user_id,action,idempotency_key_sha256,payload_sha256,result_code,result_http_status,result_slot_count) VALUES(?,?,'review',?,?,'applied',200,?)", (tenant, actor, self.digest(['leave-substitution-key-v1', key]), digest, len(slots))).lastrowid
+            op = self.con.execute("INSERT INTO leave_substitution_operations(institution_id,user_id,leave_application_id,action,idempotency_key_sha256,payload_sha256,result_code,result_http_status,result_slot_count) VALUES(?,?,?,'review',?,?,'applied',200,?)", (tenant, actor, root_leave, self.digest(['leave-substitution-key-v1', key]), digest, len(slots))).lastrowid
             for slot in slots:
                 version = self.con.execute('SELECT version FROM leave_substitution_slots WHERE id=?', (slot,)).fetchone()[0]+1
                 self.con.execute('UPDATE leave_substitution_slots SET version=? WHERE id=?', (version, slot))
@@ -141,8 +141,8 @@ class ReceiptDesignTests(unittest.TestCase):
                     raise ValueError('forced_failure')
             return op
 
-    def event(self, op, slot, version, actor=1, tenant=1, digest='a'*64):
-        self.con.execute("INSERT INTO leave_substitution_events(leave_substitution_operation_id,institution_id,leave_substitution_slot_id,leave_application_id,version,event_type,user_id,original_teacher_id,occurrence_date,source_start_time,source_end_time,idempotency_key,payload_sha256) VALUES(?,?,?,?,?,'offer_created',?,1,'2030-01-01','09:00','10:00',?,?)", (op, tenant, slot, 1 if slot == 1 else 11, version, actor, self.digest(['leave-substitution-event-v1', str(tenant), str(actor), str(op), str(slot)]), digest))
+    def event(self, op, slot, version, actor=1, tenant=1, digest='a'*64, event_type='offer_created', result_status='offered', leave=None):
+        self.con.execute("INSERT INTO leave_substitution_events(leave_substitution_operation_id,institution_id,leave_substitution_slot_id,leave_application_id,version,event_type,result_status,user_id,original_teacher_id,occurrence_date,source_start_time,source_end_time,idempotency_key,payload_sha256) VALUES(?,?,?,?,?,?,?, ?,1,'2030-01-01','09:00','10:00',?,?)", (op, tenant, slot, leave if leave is not None else (1 if slot == 1 else 11), version, event_type, result_status, actor, self.digest(['leave-substitution-event-v1', str(tenant), str(actor), str(op), str(slot)]), digest))
 
     def test_multi_leave_fanout_replays_before_stale_check(self):
         op = self.operation('request', self.envelope(), [1, 2])
@@ -191,6 +191,62 @@ class ReceiptDesignTests(unittest.TestCase):
         other = self.operation('another', self.envelope(), [])
         with self.assertRaises(sqlite3.IntegrityError), self.con:
             self.event(other, 1, 2)
+
+    def test_zero_slot_root_leave_is_replayable_and_tenant_bound(self):
+        op = self.operation('empty-leave', self.envelope(), [], root_leave=1)
+        replay = self.operation('empty-leave', self.envelope(), [], stale=True, root_leave=1)
+        self.assertEqual(op, replay)
+        self.assertEqual((1, 0), self.con.execute('SELECT leave_application_id,result_slot_count FROM leave_substitution_operations WHERE id=?', (op,)).fetchone())
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.operation('foreign-leave', self.envelope(), [], root_leave=2)
+
+    def test_event_cannot_claim_another_leave_within_the_same_tenant(self):
+        op = self.operation('wrong-leave', self.envelope(), [])
+        with self.assertRaises(sqlite3.IntegrityError), self.con:
+            self.event(op, 1, 2, leave=11)
+
+    def test_creation_and_approval_record_explicit_final_state(self):
+        schema = (ROOT/'docs/database/schema.sql').read_text(encoding='utf-8')
+        event_enum = re.search(r'event_type ENUM\((.*?)\)', schema).group(1)
+        self.assertIn("'slot_created'", event_enum)
+        self.assertIn("'leave_approved'", event_enum)
+        op = self.operation('create', self.envelope(), [])
+        with self.con:
+            self.event(op, 1, 1, event_type='slot_created', result_status='unassigned')
+        approve = self.operation('approve-gap', self.envelope(), [])
+        with self.con:
+            self.con.execute("UPDATE leave_substitution_slots SET version=2 WHERE id=1")
+            self.event(approve, 1, 2, event_type='leave_approved', result_status='unassigned')
+        self.assertEqual([('slot_created', 'unassigned', 1), ('leave_approved', 'unassigned', 2)], self.con.execute('SELECT event_type,result_status,version FROM leave_substitution_events ORDER BY version').fetchall())
+        with self.assertRaises(sqlite3.IntegrityError), self.con:
+            self.con.execute('UPDATE leave_substitution_events SET result_status=NULL WHERE id=1')
+
+    def test_cancel_reapply_keeps_distinct_slots_and_original_history(self):
+        op = self.operation('cancel', self.envelope(), [])
+        with self.con:
+            self.con.execute("UPDATE leave_substitution_slots SET status='cancelled',version=2 WHERE id=1")
+            self.event(op, 1, 2, event_type='leave_cancelled', result_status='cancelled')
+        old = self.con.execute('SELECT * FROM leave_substitution_events WHERE leave_substitution_slot_id=1').fetchall()
+        values = (1, 11, 1, 1, '2030-01-01', '09:00', '10:00')
+        def insert():
+            return self.con.execute('INSERT INTO leave_substitution_slots(institution_id,leave_application_id,routine_id,original_teacher_id,occurrence_date,source_start_time,source_end_time) VALUES(?,?,?,?,?,?,?)', values).lastrowid
+        with self.con:
+            new_slot = insert()
+        self.assertNotEqual(1, new_slot)
+        self.assertEqual(old, self.con.execute('SELECT * FROM leave_substitution_events WHERE leave_substitution_slot_id=1').fetchall())
+        self.assertEqual((1, 'cancelled', 2), self.con.execute('SELECT leave_application_id,status,version FROM leave_substitution_slots WHERE id=1').fetchone())
+        with self.assertRaises(sqlite3.IntegrityError), self.con:
+            insert()
+
+    def test_active_occurrence_guard_is_separate_from_per_leave_unique(self):
+        def occupied():
+            return self.con.execute("SELECT id FROM leave_substitution_slots WHERE institution_id=1 AND routine_id=1 AND occurrence_date='2030-01-01' AND status!='cancelled'").fetchall()
+        self.assertTrue(occupied())
+        with self.con:
+            self.con.execute("UPDATE leave_substitution_slots SET status='cancelled' WHERE id=1")
+        self.assertFalse(occupied())
+        # This query must run under the shared institution lock in future runtime.
+        # Per-leave SQL uniqueness alone is deliberately not concurrency proof.
 
 
 if __name__ == '__main__':

@@ -44,3 +44,8 @@ AttendanceSummary::forPayee(type,id,month) clamps to joining/leaving dates and c
 ## D96 cover-review versus leave-approval boundary (design only)
 
 Cover offer/clear keys defined in `docs/AUTHORIZATION.md` apply only to an already-approved bound leave, never approve/reject it. D90 principal-only leave approval and D85 snapshots/cancellation remain intact. Nomination availability cannot reserve time or make leave approval conditional on a cover. Substitute-leave approval must reconcile future incompatible covers atomically under the shared institution-first protocol in `docs/modules/routine.md`; whole leave-wide materialization/version/approval reconciliation remains gated. No payroll, expense, payout or adjustment integration is implemented or authorized by these design contracts.
+
+
+## D96/D99 materialization and approval reconciliation boundary
+
+D85 remains authoritative for leave creation, overlap/balance checks, approved working-date/is_paid snapshots and pre-start approved cancellation. The design in `docs/API.md` now defines atomic cover materialization/reconciliation without widening existing leave-action authorization. Preserve owner-finalized P2 valid leave despite invalid separate nomination, and P3 approval with explicit gaps when reviewed nominees are newly conflicting. Approved dates remain the accepted snapshot; later calendar changes do not reinterpret them. No automatic payroll adjustment or financial row change. No source refresh, historical cover correction, outbox or runtime implementation is authorized by this design refinement.

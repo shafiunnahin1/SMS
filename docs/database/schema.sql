@@ -3289,8 +3289,9 @@ CREATE TABLE leave_substitution_slots (
     version INT UNSIGNED NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL,
-    UNIQUE KEY unique_leave_substitution_occurrence (institution_id, routine_id, occurrence_date),
+    UNIQUE KEY unique_leave_substitution_occurrence (institution_id, leave_application_id, routine_id, occurrence_date),
     UNIQUE KEY unique_leave_substitution_slot_tenant_identity (id, institution_id),
+    UNIQUE KEY unique_leave_substitution_slot_leave_identity (id, institution_id, leave_application_id),
     INDEX idx_leave_substitution_leave_date (institution_id, leave_application_id, occurrence_date),
     INDEX idx_leave_substitution_teacher_date (institution_id, substitute_teacher_id, occurrence_date, status),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
@@ -3305,6 +3306,7 @@ CREATE TABLE leave_substitution_slots (
 -- @design-only D99: leave_substitution_operations
 CREATE TABLE leave_substitution_operations (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    leave_application_id BIGINT UNSIGNED NULL,
     institution_id BIGINT UNSIGNED NOT NULL,
     user_id BIGINT UNSIGNED NOT NULL,
     department_id BIGINT UNSIGNED NULL,
@@ -3319,6 +3321,7 @@ CREATE TABLE leave_substitution_operations (
     UNIQUE KEY unique_leave_substitution_operation_tenant_identity (id, institution_id),
     UNIQUE KEY unique_leave_substitution_operation_actor_identity (id, institution_id, user_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (leave_application_id, institution_id) REFERENCES leave_applications(id, institution_id),
     FOREIGN KEY (user_id, institution_id) REFERENCES users(id, institution_id),
     FOREIGN KEY (department_id, institution_id) REFERENCES institution_departments(id, institution_id)
 );
@@ -3331,7 +3334,8 @@ CREATE TABLE leave_substitution_events (
     leave_substitution_slot_id BIGINT UNSIGNED NOT NULL,
     leave_application_id BIGINT UNSIGNED NOT NULL,
     version INT UNSIGNED NOT NULL,
-    event_type ENUM('nomination_set','nomination_cleared','offer_created','offer_accepted','offer_declined','cover_replaced','cover_cleared','leave_rejected','leave_cancelled','source_invalidated','substitute_leave_invalidated') NOT NULL,
+    result_status ENUM('unassigned','nominated','offered','confirmed','cancelled') NOT NULL,
+    event_type ENUM('slot_created','leave_approved','nomination_set','nomination_cleared','offer_created','offer_accepted','offer_declined','cover_replaced','cover_cleared','leave_rejected','leave_cancelled','source_invalidated','substitute_leave_invalidated') NOT NULL,
     user_id BIGINT UNSIGNED NOT NULL,
     original_teacher_id BIGINT UNSIGNED NOT NULL,
     substitute_teacher_id BIGINT UNSIGNED NULL,
@@ -3352,7 +3356,7 @@ CREATE TABLE leave_substitution_events (
     INDEX idx_leave_substitution_events_leave (institution_id, leave_application_id, occurrence_date, id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (leave_substitution_operation_id, institution_id, user_id) REFERENCES leave_substitution_operations(id, institution_id, user_id),
-    FOREIGN KEY (leave_substitution_slot_id, institution_id) REFERENCES leave_substitution_slots(id, institution_id),
+    FOREIGN KEY (leave_substitution_slot_id, institution_id, leave_application_id) REFERENCES leave_substitution_slots(id, institution_id, leave_application_id),
     FOREIGN KEY (leave_application_id, institution_id) REFERENCES leave_applications(id, institution_id),
     FOREIGN KEY (user_id, institution_id) REFERENCES users(id, institution_id),
     FOREIGN KEY (original_teacher_id, institution_id) REFERENCES teachers(id, institution_id),

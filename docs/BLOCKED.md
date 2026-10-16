@@ -152,3 +152,7 @@ D99 design-only schema and strict three-table tooling verified; evidence owner/d
 
 ## 2026-10-17 - D96 existing-slot action mapping refined; lifecycle gates remain
 Six existing-slot action/capability/version/event mappings and common writer-lock rank documented; owner/d96-slot-actions-checkpoint.md records focused/static/exact-tree non-deep spec PASS3warnings. Existing leave approve/reject remains principal-only under D90/D85. Initial materialization/history, approval affected set/invalid nomination behavior, unique occurrence cancel/reapply, department-resource binding and delivery remain unresolved design/exposure gates. No schema/runtime/migration or task completion. Earlier generic action-mapping gap is narrowed, not claimed fully resolved.
+
+
+## 2026-10-17 - Initial materialization/approval/cancel-reapply design refined
+D96/D99 lifecycle packet owner/d96-leave-lifecycle-checkpoint.md closes initial creation history, zero-slot initiating leave replay and distinct cancel/reapply lineage at design level. P2/P3 already finalized separate nomination and approval with newly conflicting candidate gaps; no new owner decision inferred. Focused20/freshness/export/parity/invariants/exact-tree deep PASS3warnings. Cross-leave active occurrence still requires shared-lock service checks and real two-connection acceptance. Same-leave invalidated-source refresh, resource/read/department binding, durable delivery/import and implementation/dependency gates remain. No runtime/migration/task completion.
