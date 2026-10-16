@@ -72,6 +72,12 @@ class RouteMiddlewareContractTest extends TestCase
             if ($r->getActionName() === 'Closure') $problems[] = "{$key}: closure route";
             $path = substr($uri, strlen('api/v1/'));
 
+            // D90 adds one exact unauthenticated tenant-bound identity endpoint, not a general public exception.
+            if ($key === 'POST api/v1/auth/activate') {
+                foreach (['tenant', 'locale', 'throttle:activation-verify'] as $mw) if (!self::has($r, $mw)) $problems[] = "$key: missing $mw";
+                if (self::hasPrefix($r, 'auth:') || self::has($r, 'tenant:optional') || self::has($r, 'tenancy.bypass')) $problems[] = "$key: invalid activation boundary";
+                continue;
+            }
             if (isset(self::PUBLIC[$key])) {
                 if (self::hasPrefix($r, 'auth:') || self::has($r, 'tenant')) $problems[] = "{$key}: listed public but has auth/tenant";
                 if (str_starts_with($path, 'auth/') && !self::has($r, $path === 'auth/verify-otp' ? 'throttle:otp' : 'throttle:login')) $problems[] = "{$key}: login-type route without its throttle";   // D68 (4): the code check has its own limiter

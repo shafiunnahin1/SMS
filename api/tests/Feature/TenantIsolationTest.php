@@ -47,6 +47,9 @@ class TenantIsolationTest extends TestCase
     private function foreignIds(): array
     {
         return [
+            // D90 new account identities; existing foreign-id cases remain intact.
+            'PUT api/v1/admin/staff/{id}' => fn (array $other) => User::firstOrCreate(['institution_id' => $other['institution']->id, 'role' => 'institution_staff'], ['name' => 'Foreign staff fixture', 'password' => 'Fixture@1234', 'is_active' => false])->id,
+            'POST api/v1/admin/staff/{id}/activation' => fn (array $other) => User::firstOrCreate(['institution_id' => $other['institution']->id, 'role' => 'institution_staff'], ['name' => 'Foreign staff fixture', 'password' => 'Fixture@1234', 'is_active' => false])->id,
             'PUT api/v1/hr/salary-components/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryComponent::factory()->create()->id),
             'DELETE api/v1/hr/salary-components/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryComponent::factory()->create()->id),
             'GET api/v1/hr/people/{type}/{id}/salary' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),

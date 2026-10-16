@@ -61,6 +61,18 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perHour(config('auth_policy.activation.resend_contact_per_hour'))->by('contact:'.$fingerprint)];
         });
 
+        RateLimiter::for('staff-activation-reissue', function (Request $r) {
+            if ($r->user()?->role !== 'admin') return Limit::none(); // Preserve role-denial precedence; no invitation is sent.
+            $tenant = \App\Support\Tenancy::current();
+            $user = $tenant ? User::inTenant()->where('role', 'institution_staff')->whereKey($r->route('id'))->first() : null;
+            $channel = $user?->email ? 'email' : 'phone';
+            $value = $user?->email ? mb_strtolower(trim($user->email)) : User::normalisePhone($user?->phone);
+            $fingerprint = hash_hmac('sha256', $channel.'|'.$value, (string) config('app.key'));
+            $key = ($tenant?->id ?? 0).':'.$r->route('id');
+            return [Limit::perMinute(config('auth_policy.activation.resend_per_minute'))->by('staff:'.$key),
+                Limit::perHour(config('auth_policy.activation.resend_contact_per_hour'))->by('contact:'.($user ? $fingerprint : hash('sha256', $key)))];
+        });
+
         // IP + identifier: slows guessing before the account lockout kicks in
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by($request->ip() . '|' . mb_strtolower((string) $request->input('login'))));
         // D68 (4): the code check counts per IP and per login attempt (its challenge), not per IP alone - a school's shared IP no longer

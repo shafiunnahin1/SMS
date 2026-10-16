@@ -17,7 +17,7 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'username' => $this->username,
             'role' => $this->role,
-            'avatar' => $this->avatar,
+            'avatar' => $this->role === 'institution_staff' ? \App\Support\UserAvatar::url($this->resource) : $this->avatar,
             'locale' => $this->locale,
             'must_change_password' => (bool) $this->must_change_password,
             'two_factor_enabled' => (bool) $this->two_factor_enabled,

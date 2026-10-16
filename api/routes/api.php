@@ -141,8 +141,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/resources/{id}/reject',         [QbResourceController::class, 'reject'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
     });
 
+    // D90: recipient staff activation is tenant-bound but does not require an existing login.
+    Route::middleware(['tenant', 'locale', 'throttle:activation-verify'])->post('/auth/activate', [\App\Http\Controllers\Auth\AccountActivationController::class, 'store']);
+
     // ─── 3. Tenant host only ───────────────────────────────────
-    Route::middleware(['tenant', 'locale', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription'])->group(function () {
+    Route::middleware(['tenant', 'locale', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription', \App\Http\Middleware\StaffIdentityBoundary::class])->group(function () {
+        Route::patch('/staff/profile', [\App\Http\Controllers\Auth\StaffAccountController::class, 'updateOwnProfile'])->middleware('role:institution_staff');
         Route::patch('/auth/change-password', [PasswordResetController::class, 'changePassword']);
         Route::get('/auth/sessions',          [SessionController::class, 'index']);
         Route::delete('/auth/sessions/{id}',  [SessionController::class, 'destroy'])->whereNumber('id');
@@ -158,6 +162,10 @@ Route::prefix('v1')->group(function () {
 
         // ── Institution Admin ─────────────────────────────────
         Route::middleware('role:admin')->group(function () {
+            Route::get('/admin/staff', [\App\Http\Controllers\Auth\StaffAccountController::class, 'index']);
+            Route::post('/admin/staff', [\App\Http\Controllers\Auth\StaffAccountController::class, 'store']);
+            Route::put('/admin/staff/{id}', [\App\Http\Controllers\Auth\StaffAccountController::class, 'update'])->whereNumber('id');
+            Route::post('/admin/staff/{id}/activation', [\App\Http\Controllers\Auth\StaffAccountController::class, 'resendActivation'])->whereNumber('id')->middleware('throttle:staff-activation-reissue');
             Route::post('/admin/users/{id}/force-logout', [SessionController::class, 'forceLogout'])->whereNumber('id');
             Route::post('/admin/users/{id}/unlock',       [SessionController::class, 'unlock'])->whereNumber('id');
             Route::get('/admin/settings/terminology',     [TerminologyController::class, 'show']);
