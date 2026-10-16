@@ -1,0 +1,106 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Services\DepartmentRoutePermissionResolver;
+use App\Support\{DepartmentPermissionKeys, DepartmentRouteCatalog};
+use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
+use Tests\TestCase;
+
+class DepartmentRouteInventoryTest extends TestCase
+{
+    public function test_code_owned_catalog_preserves_the_entire_approved_matrix_and_foundation_contract(): void
+    {
+        $approved = json_decode(file_get_contents(base_path('../docs/department-permission-contract.json')), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertCount(297, DepartmentRouteCatalog::CAPTURED);
+        $this->assertCount(22, DepartmentRouteCatalog::FOUNDATION);
+        $this->assertSame($approved['routes'], DepartmentRouteCatalog::CAPTURED);
+        $this->assertSame($approved['planned_foundation_routes'], DepartmentRouteCatalog::FOUNDATION);
+        $counts = [];
+        foreach (DepartmentRouteCatalog::CAPTURED as $entry) $counts[$entry['staff_mode']] = ($counts[$entry['staff_mode']] ?? 0) + 1;
+        $this->assertEqualsCanonicalizing($approved['mode_counts'], $counts);
+        foreach (DepartmentRouteCatalog::CAPTURED as $entry) {
+            $this->assertSame('D90', $entry['approval']);
+            $this->assertNotEmpty($entry['resource_scope']);
+            foreach ($entry['permission_options'] as $key) $this->assertContains($key, DepartmentPermissionKeys::ALL);
+        }
+    }
+
+    public function test_every_live_route_is_classified_and_captured_action_and_module_boundaries_still_match(): void
+    {
+        $resolver = app(DepartmentRoutePermissionResolver::class); $seen = [];
+        foreach (\Illuminate\Support\Facades\Route::getRoutes()->getRoutes() as $route) {
+            if (!str_starts_with($route->uri(), 'api/v1/')) continue;
+            foreach (array_diff($route->methods(), ['HEAD']) as $method) {
+                $key = $method.' '.$route->uri(); $seen[] = $key;
+                $captured = collect(DepartmentRouteCatalog::CAPTURED)->first(fn ($e) => $e['uri'] === $route->uri() && in_array($method, explode('|', $e['method']), true));
+                if ($captured && $captured['selector_variants']) {
+                    $variant = $captured['selector_variants'][0];
+                    $request = $this->request($route, $method, [$variant['selector'] => $variant['value']]);
+                } else $request = $this->request($route, $method);
+                $result = $resolver->resolve($request); $this->assertNotNull($result, $key);
+                $this->assertArrayNotHasKey('allowed', $result);
+                if (!$captured) continue;
+                $this->assertSame($captured['action'], ltrim($route->getActionName(), '\\'), $key);
+                $gates = array_values(array_filter(app('router')->gatherRouteMiddleware($route), fn ($m) => str_starts_with($m, 'App\\Http\\Middleware\\ModuleMiddleware:') || str_starts_with($m, 'App\\Http\\Middleware\\FeatureMiddleware:')));
+                $expectedGates = $captured['current_module_feature_gates'];
+                $this->assertSame($expectedGates, $gates, $key);
+            }
+        }
+        $this->assertCount(count(array_unique($seen)), $seen, 'No duplicated method/URI silently shadows a rule');
+        foreach (DepartmentRouteCatalog::CAPTURED as $entry) {
+            foreach (array_diff(explode('|', $entry['method']), ['HEAD']) as $method) $this->assertContains($method.' '.$entry['uri'], $seen);
+        }
+    }
+
+    public function test_each_selector_uses_only_exact_bound_path_values_and_preserves_principal_only_actions(): void
+    {
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        foreach (DepartmentRouteCatalog::CAPTURED as $entry) {
+            if (!$entry['selector_variants']) continue;
+            $method = explode('|', $entry['method'])[0];
+            foreach ($entry['selector_variants'] as $variant) {
+                $route = new Route([$method], $entry['uri'], ['uses' => $entry['action'], 'controller' => $entry['action']]);
+                $request = $this->request($route, $method, [$variant['selector'] => $variant['value']], [$variant['selector'] => 'override']);
+                $resolved = $resolver->resolve($request); $this->assertNotNull($resolved, $entry['uri'].' '.$variant['value']);
+                $this->assertSame($variant['principal_only'] ? null : $variant['permission'], $resolved['permission']);
+                $this->assertSame($variant['principal_only'] ? 'principal_only' : 'exact_duty_permission', $resolved['resolved_mode']);
+                $this->assertSame($variant['resource_scope'], $resolved['contract']['resource_scope']);
+            }
+            foreach ([null, 'unknown', '*', strtoupper($entry['selector_variants'][0]['value']), ['approve']] as $bad) {
+                $variant = $entry['selector_variants'][0];
+                $route = new Route([$method], $entry['uri'], ['uses' => $entry['action'], 'controller' => $entry['action']]);
+                $request = $this->request($route, $method, [$variant['selector'] => $bad], [$variant['selector'] => $variant['value']]);
+                $this->assertNull($resolver->resolve($request), $entry['uri']);
+            }
+        }
+    }
+
+    public function test_head_matches_get_but_unknown_routes_and_action_drift_fail_closed(): void
+    {
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        foreach (DepartmentRouteCatalog::CAPTURED as $entry) {
+            if ($entry['method'] !== 'GET|HEAD' || $entry['selector_variants']) continue;
+            $route = new Route(['GET', 'HEAD'], $entry['uri'], ['uses' => $entry['action'], 'controller' => $entry['action']]);
+            $get = $resolver->resolve($this->request($route, 'GET'));
+            $this->assertNotNull($get, $entry['uri']);
+            $this->assertSame($get, $resolver->resolve($this->request($route, 'HEAD')));
+        }
+        $unknown = new Route(['GET'], 'api/v1/not-approved', ['uses' => 'App\\Http\\Controllers\\DepartmentController@index']);
+        $this->assertNull($resolver->resolve($this->request($unknown, 'GET')));
+        $known = DepartmentRouteCatalog::CAPTURED[0];
+        $drift = new Route(['GET'], $known['uri'], ['uses' => 'App\\Http\\Controllers\\DepartmentController@index']);
+        $this->assertNull($resolver->resolve($this->request($drift, 'GET')));
+        $this->assertNull($resolver->resolve(Request::create('/api/v1/programs')));
+    }
+
+    private function request(Route $original, string $method, array $parameters = [], array $body = []): Request
+    {
+        $request = Request::create('/'.preg_replace('/\{[^}]+\}/', 'fixture', $original->uri()), $method, $body);
+        $route = clone $original; $route->bind($request);
+        foreach ($parameters as $key => $value) $route->setParameter($key, $value);
+        $request->setRouteResolver(fn () => $route);
+        return $request;
+    }
+}

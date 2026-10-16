@@ -30,3 +30,7 @@ AGENTS.md G12 and docs/ops/agent-guardrails.md G12 require STOP and a blocker en
 These drafts contain the failing intermediate state and are intentionally untracked. Do not treat them as accepted runtime enforcement or overwrite them without inspection. Their SHA256 evidence is in `%TEMP%/school-r36b-catalog-blocked-state.json`. `%TEMP%/school-r36b-catalog-focused.log/.exit` retains the last failed run; selector and live-action diagnostics are in the matching `school-r36b-catalog-*diagnostic*` files. No full-suite or new deep pass is claimed for these drafts.
 
 Only this review and own handoff/progress/blocker hunks belong to the documentation checkpoint. Original owner log edits, decision drafts, caches and `text.txt` remain preserved. No schema, protected plan/guard/CI, dependency, reference-repository, app/demo DB, environment or live gateway change.
+
+## Resumed recovery verified — 2026-10-16
+
+Owner resumed after the stop. Applied the exact leading-namespace and synthetic-controller fixes from repository root with fail-fast dependencies. Focused9 tests/2752 assertions, full API 756/16891, frontend105/22, theme142/0 and spec PASS/3 existing warnings; no new recovery failure. The three former drafts are now verified classification code for this checkpoint, not API/resource-policy authorization. Original failure evidence above remains historical; the specific G12 blocker is resolved, while R3.6b implementation/acceptance remains incomplete. Full commands/evidence and limits are in AGENT-HANDOFF.md.
