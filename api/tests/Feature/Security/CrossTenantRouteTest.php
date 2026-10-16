@@ -23,6 +23,7 @@ class CrossTenantRouteTest extends TestCase
     private function plan(array $mine, array $theirs): array
     {
         return [
+            'GET api/v1/staff/departments/{id}/portal' => ['institution_staff', "staff/departments/{$theirs['department']}/portal"],
             'GET api/v1/parent/children/{id}/export'       => ['parent', "parent/children/{$theirs['student']}/export"],
             'GET api/v1/parent/children/{id}/results'      => ['parent', "parent/children/{$theirs['student']}/results"],
             'GET api/v1/parent/children/{id}/attendance'   => ['parent', "parent/children/{$theirs['student']}/attendance"],
@@ -59,6 +60,13 @@ class CrossTenantRouteTest extends TestCase
         });
         $users['parent'] = Tenancy::as($i, fn () => Student::find($ids['student'])->parents()->first());
         $users['parent']->forceFill(['must_change_password' => false])->save();
+        $users['institution_staff'] = $this->makeUser($i, 'institution_staff');
+        $ids['department'] = Tenancy::as($i, function () use ($users) {
+            $service = app(\App\Services\DepartmentService::class);
+            $department = $service->create($users['admin'], ['name' => 'Own context']);
+            $service->addMember($users['admin'], $department->id, ['user_id' => $users['institution_staff']->id]);
+            return $department->id;
+        });
         return ['institution' => $i, 'users' => $users] + $ids;
     }
 
@@ -83,6 +91,7 @@ class CrossTenantRouteTest extends TestCase
         $this->api('GET', $this->hostOf($a['institution']), "parent/children/{$a['student']}/export", $a['users']['parent'])->assertOk();
         $this->api('GET', $this->hostOf($a['institution']), "exams/{$a['exam']}/subjects/{$a['subject']}/entry", $a['users']['admin'])->assertOk();
         // mixed: my exam with their subject
+        $this->api('GET', $this->hostOf($a['institution']), "staff/departments/{$a['department']}/portal", $a['users']['institution_staff'])->assertOk();
         $this->api('GET', $this->hostOf($a['institution']), "exams/{$a['exam']}/subjects/{$b['subject']}/entry", $a['users']['admin'])->assertNotFound();
     }
 

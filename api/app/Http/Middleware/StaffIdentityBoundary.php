@@ -13,6 +13,8 @@ class StaffIdentityBoundary
         'PATCH api/v1/auth/change-password', 'GET api/v1/auth/sessions', 'DELETE api/v1/auth/sessions/{id}',
         'POST api/v1/auth/logout-all', 'PUT api/v1/auth/locale', 'GET api/v1/notifications',
         'PATCH api/v1/notifications/read-all', 'PATCH api/v1/notifications/{id}/read', 'PATCH api/v1/staff/profile',
+        'GET api/v1/staff/departments', 'HEAD api/v1/staff/departments',
+        'GET api/v1/staff/departments/{id}/portal', 'HEAD api/v1/staff/departments/{id}/portal',
     ];
     public function handle(Request $request, Closure $next)
     {

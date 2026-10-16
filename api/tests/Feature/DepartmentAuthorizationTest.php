@@ -25,6 +25,76 @@ class DepartmentAuthorizationTest extends TestCase
         });
     }
 
+    public function test_http_context_is_own_metadata_across_four_types_and_foreign_ids_are_404(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            extract($this->fixture('http-context-'.$type, $type));
+            $foreign = $this->fixture('http-foreign-'.$type, $type);
+            $unassigned = Tenancy::as($i, fn () => app(DepartmentService::class)->create($admin, ['name' => 'Unassigned private']));
+            $host = $this->hostOf($i);
+            $expected = ['id' => $department->id, 'code' => $department->code, 'name' => 'Office', 'membership_id' => $membership->id];
+            $this->api('GET', $host, 'staff/departments', $user)->assertOk()->assertJsonPath('success', true)
+                ->assertJsonPath('data', [$expected])->assertJsonPath('meta.total', 1);
+            $this->api('GET', $host, "staff/departments/{$department->id}/portal", $user)->assertOk()
+                ->assertExactJson(['success' => true, 'data' => $expected]);
+            $this->api('HEAD', $host, 'staff/departments', $user)->assertOk();
+            $this->api('HEAD', $host, "staff/departments/{$department->id}/portal", $user)->assertOk();
+            foreach ([$foreign['department']->id, $unassigned->id, 999999] as $id) {
+                $this->api('GET', $host, "staff/departments/{$id}/portal", $user)->assertNotFound();
+            }
+            $this->api('GET', $host, 'staff/departments', $foreign['user'])->assertForbidden();
+            $this->api('GET', $host, 'staff/departments')->assertUnauthorized();
+            $this->api('GET', $host, 'staff/departments', $admin)->assertForbidden();
+            $this->api('GET', $host, 'accountant/reports/dues', $user)->assertForbidden();
+        }
+    }
+
+    public function test_http_context_pagination_empty_state_and_input_allowlist(): void
+    {
+        extract($this->fixture('http-context-pages')); $host = $this->hostOf($i);
+        $second = Tenancy::as($i, function () use ($admin, $user) {
+            $service = app(DepartmentService::class);
+            $department = $service->create($admin, ['name' => 'Second']);
+            $service->addMember($admin, $department->id, ['user_id' => $user->id]);
+            return $department;
+        });
+        $this->api('GET', $host, 'staff/departments?per_page=1&page=2', $user)->assertOk()
+            ->assertJsonPath('meta.total', 2)->assertJsonPath('meta.current_page', 2)->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $second->id);
+        $this->api('GET', $host, 'staff/departments?per_page=1&page=3', $user)->assertOk()->assertJsonPath('data', []);
+        foreach (['per_page=101', 'page=0', 'per_page[]=1', 'user_id=1', 'institution_id=1', 'department_id=1', 'permission_keys[]=*'] as $query) {
+            $this->api('GET', $host, 'staff/departments?'.$query, $user)->assertUnprocessable();
+        }
+        $this->api('GET', $host, "staff/departments/{$department->id}/portal?user_id=1", $user)->assertUnprocessable();
+        $this->api('GET', $host, 'staff/departments', $user, ['role' => 'admin'])->assertUnprocessable();
+        Tenancy::as($i, fn () => \App\Models\DepartmentMembership::where('user_id', $user->id)->update(['status' => 'inactive']));
+        $this->api('GET', $host, 'staff/departments', $user)->assertOk()->assertJsonPath('data', [])->assertJsonPath('meta.total', 0);
+    }
+
+    public function test_http_context_rechecks_dates_archive_and_identity_on_every_request(): void
+    {
+        extract($this->fixture('http-context-revoke')); $host = $this->hostOf($i); $path = "staff/departments/{$department->id}/portal";
+        foreach ([['active', null, null, 'active', true], ['active', today(), today(), 'active', true],
+            ['active', today()->addDay(), null, 'active', false], ['active', null, today()->subDay(), 'active', false],
+            ['inactive', null, null, 'active', false], ['active', null, null, 'archived', false]] as [$status, $start, $end, $deptStatus, $allowed]) {
+            Tenancy::as($i, function () use ($membership, $department, $status, $start, $end, $deptStatus) {
+                $membership->update(['status' => $status, 'starts_at' => $start, 'ends_at' => $end]);
+                $department->update(['status' => $deptStatus]);
+            });
+            $this->api('GET', $host, 'staff/departments', $user)->assertOk()->assertJsonPath('meta.total', $allowed ? 1 : 0);
+            $this->api('GET', $host, $path, $user)->assertStatus($allowed ? 200 : 404);
+        }
+        Tenancy::as($i, fn () => $department->update(['status' => 'active']));
+        $user->forceFill(['locked_until' => now()->addHour()])->save();
+        $this->api('GET', $host, 'staff/departments', $user)->assertForbidden();
+        $user->forceFill(['locked_until' => null])->save();
+        Tenancy::as($i, function () use ($user) {
+            Teacher::create(['user_id' => $user->id, 'employee_id' => 'HTTP-T1']);
+            Teacher::create(['user_id' => $user->id, 'employee_id' => 'HTTP-T2'])->delete();
+        });
+        $this->api('GET', $host, $path, $user)->assertForbidden();
+        $this->api('GET', $host, 'staff/departments', $user)->assertForbidden();
+    }
+
     public function test_own_context_is_minimal_read_only_metadata_across_four_types(): void
     {
         foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {

@@ -147,6 +147,8 @@ Route::prefix('v1')->group(function () {
     // ─── 3. Tenant host only ───────────────────────────────────
     Route::middleware(['tenant', 'locale', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription', \App\Http\Middleware\StaffIdentityBoundary::class])->group(function () {
         Route::patch('/staff/profile', [\App\Http\Controllers\Auth\StaffAccountController::class, 'updateOwnProfile'])->middleware('role:institution_staff');
+        Route::get('/staff/departments', [\App\Http\Controllers\DepartmentContextController::class, 'index'])->middleware('role:institution_staff');
+        Route::get('/staff/departments/{id}/portal', [\App\Http\Controllers\DepartmentContextController::class, 'show'])->whereNumber('id')->middleware('role:institution_staff');
         Route::patch('/auth/change-password', [PasswordResetController::class, 'changePassword']);
         Route::get('/auth/sessions',          [SessionController::class, 'index']);
         Route::delete('/auth/sessions/{id}',  [SessionController::class, 'destroy'])->whereNumber('id');

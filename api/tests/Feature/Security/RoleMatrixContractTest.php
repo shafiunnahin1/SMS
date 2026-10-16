@@ -60,7 +60,11 @@ class RoleMatrixContractTest extends TestCase
         $central = 'admin.' . config('tenancy.base_domain');
 
         $wrong = [];
+        // The growing route inventory exceeds the real 300/user/minute limit. Keep every role assertion,
+        // but spread this exhaustive role test across clock windows; production throttling stays enabled.
+        $checkedRoutes = 0;
         foreach (self::matrix() as $key => $allowed) {
+            if (++$checkedRoutes % 100 === 0) $this->travel(61)->seconds();
             [$method, $uri] = explode(' ', $key, 2);
             $path = strtr(substr($uri, strlen('api/v1/')), self::PARAMS);
             // D90 adds two numeric row placeholders; retain the same role assertions and all existing substitutions.

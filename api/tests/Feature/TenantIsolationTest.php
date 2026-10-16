@@ -47,6 +47,7 @@ class TenantIsolationTest extends TestCase
     private function foreignIds(): array
     {
         return [
+            'GET api/v1/staff/departments/{id}/portal' => null, // CrossTenantRouteTest uses institution_staff and a real foreign department.
             'POST api/v1/admin/departments/{department}/members' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()),
             'PATCH api/v1/admin/department-memberships/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()->id),
             'PUT api/v1/admin/department-memberships/{id}/duties' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()->id),

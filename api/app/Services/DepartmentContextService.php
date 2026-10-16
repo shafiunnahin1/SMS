@@ -7,6 +7,7 @@ use App\Models\{DepartmentMembership, Institution, InstitutionDepartment, StaffM
 use App\Support\Tenancy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /** Own membership metadata only. This is not a duty, module or business-resource grant. */
 class DepartmentContextService
@@ -14,6 +15,19 @@ class DepartmentContextService
     public function index(User $actor): Collection
     {
         $memberships = $this->memberships($actor)->orderBy('department_id')->get(['id', 'department_id']);
+        return $this->metadataFor($memberships);
+    }
+
+    public function paginate(User $actor, int $perPage = 25, int $page = 1): LengthAwarePaginator
+    {
+        $rows = $this->memberships($actor)
+            ->whereIn('department_id', InstitutionDepartment::where('status', 'active')->select('id'))
+            ->orderBy('department_id')->paginate($perPage, ['id', 'department_id'], 'page', $page);
+        return $rows->setCollection($this->metadataFor($rows->getCollection()));
+    }
+
+    private function metadataFor(Collection $memberships): Collection
+    {
         $departments = InstitutionDepartment::whereIn('id', $memberships->pluck('department_id'))
             ->where('status', 'active')->get(['id', 'code', 'name'])->keyBy('id');
 
