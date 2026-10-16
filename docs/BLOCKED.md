@@ -114,3 +114,9 @@ Canonical staff contract and standalone Gate2/6 require server-verified selected
 
 ## 2026-10-16 — Department context contract/decision gate RESOLVED
 Owner finalized the selector contract and explicitly instructed the exact D91 row's separate decision commit/push;4b29f90 is pushed, registry-only, guard0/0 and final remote0/0. Canonical staff/API/auth/testing contracts now reflect that row. The policy input and section4 owner-decision prerequisite are resolved; header parsing/binding, route integration, reviewed rollout/mapping and full R3.6b acceptance are still incomplete. No automatic business access or tenant switch follows. Focused contract proof/generator freshness and spec PASS3 existing warnings; prior gap evidence and owner draft remain preserved.
+
+
+## 2026-10-16 - R3.6b subject index assignment-source policy pending
+Subject route matrix defines staff.subject.index but does not resolve four differing assignment-source consumers. Concrete evidence/minimal proposal: owner/r36b-subject-index-scope-review.md. Owner finalization requested under AGENTS rules 2/3 and G16; protected refinement needs the separate owner-directed decision checkpoint under guardrails section 4. Runtime remains closed for this route. Existing academic/catalog focused tests: 10/2751 passed. Other completed R3.6b reads are unaffected.
+
+Policy-input follow-up: owner explicitly finalized the narrow proposed subject scope. Missing policy input is resolved; next prerequisite is separate owner-directed decision registry commit/push for prepared owner/decision-D92-subject-index.md, then canonical refinement and tested integration. No runtime subject grant yet.

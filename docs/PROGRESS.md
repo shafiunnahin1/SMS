@@ -657,3 +657,9 @@ Exact checks with process-local Git Bash usr/bin PATH: cd api; php artisan test 
 R3.6b remains incomplete; no blocker for this bounded integration. Next safe action after staged guard/fetch/commit/push: read-only audit of staff.subject.index ownership/filter/field constraints before the next bounded academic integration. Other unintegrated routes retain default-deny; reviewed legacy mapping/per-tenant switch/rollback and full route/security/deep acceptance remain pending; R3.7/UI wait. Original owner changes/drafts/caches/text.txt preserved and unstaged.
 
 Checkpoint gate: py -3.14 infra/guard/agent_guard.py --staged --msg-file %TEMP%/school-d91-program-show-commit.txt PASS0 failures/0 warnings; git fetch origin and git rev-list --left-right --count HEAD...origin/claude/elegant-cori-gw2mw5 returned0/0 before commit.
+
+
+## 2026-10-16 - R3.6b subject index audit (incomplete)
+Audited ownership/filter/response sources at f2379da; review packet owner/r36b-subject-index-scope-review.md. Specific batch assignments, zero sentinel, direct subject teacher and teacher_subjects have differing consumers; proposed narrow first grant remains unapproved. Focused: php artisan test --filter='AcademicStructureApiTest|DepartmentRouteInventoryTest' (api) => 10 passed / 2751 assertions. No runtime or canonical changes; subject HTTP stays closed to institution_staff. Next owner policy decision; R3.6b remains incomplete.
+
+Owner finalized narrow subject scope; exact draft owner/decision-D92-subject-index.md awaits separate owner-directed decision checkpoint. Quick spec initially failed missing Git Bash PATH hook check; corrected environment rerun ALL CHECKS PASSED / 3 existing warnings (uv run --offline --with PyYAML --no-project --python 3.14 infra/spec-verify/verify.py .). Staged agent_guard --msg-file %TEMP%/school-r36b-subject-audit-msg.txt => 0/0; diff check passed, fetch0/0. No new runtime acceptance claimed.
