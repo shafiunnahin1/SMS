@@ -50,3 +50,7 @@ All 297 approved_duty_permission values are null. Buckets are inferred from curr
 5. Approve an action/resource-scope matrix for the inventory, including the twelve shared routes, permission catalog ownership, department archive/revocation and maker-checker separation. Optional department templates must never grant implicit access.
 
 After those inputs, refine the canonical schema/API/tests under the approved Change-Request procedure, regenerate plans, verify and push one checkpoint, then implement R3.6a in its approved order. Keep R3.6a/b unchecked until their complete Done When passes. The first focused runtime checks remain InstitutionSignupTest, StaffAccountTest, DepartmentManagementTest and DepartmentTenantTest; none is claimed to exist or pass yet.
+
+## Concrete recommendation prepared
+
+The requested reviewable recommendation is now in `owner/department-staff-implementation-proposal.md` (clauses 1–6), with the complete route matrix in `owner/department-staff-permission-proposal.json`. It proposes two additional tables and three additional routes, explicit activation/profile/identity rules, and 150 exact candidate permission keys across all 297 existing route entries. Dynamic actions and report types are separately constrained. All matrix approvals remain null; canonical scope still has four tables and seventeen R3.6a routes. This proposal is not a locked decision, approved contract, implemented permission system or authorization to change existing tests.
