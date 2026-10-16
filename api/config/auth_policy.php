@@ -3,6 +3,7 @@
 // docs/AUTHORIZATION.md "Token Strategy & Session Lifetime (Revision 7)" - conservative starting values, change after real use
 return [
     'tokens' => [   // minutes: [absolute, idle]
+        'institution_staff' => [(int) env('TOKEN_ABS_INSTITUTION_STAFF', 720), (int) env('TOKEN_IDLE_INSTITUTION_STAFF', 60)],
         'super_admin' => [(int) env('TOKEN_ABS_SUPER_ADMIN', 480),   (int) env('TOKEN_IDLE_SUPER_ADMIN', 30)],
         'admin'       => [(int) env('TOKEN_ABS_ADMIN', 720),         (int) env('TOKEN_IDLE_ADMIN', 60)],
         'accountant'  => [(int) env('TOKEN_ABS_ACCOUNTANT', 720),    (int) env('TOKEN_IDLE_ACCOUNTANT', 60)],

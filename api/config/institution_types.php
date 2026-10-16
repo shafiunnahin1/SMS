@@ -6,7 +6,7 @@ return [
         'label'          => ['bn' => 'স্কুল', 'en' => 'School', 'ar' => 'مدرسة'],
         'default_layout' => 'sidebar-classic',
         'default_preset' => 'classic-blue',
-        'roles'          => ['admin', 'teacher', 'student', 'parent', 'accountant'],
+        'roles'          => ['admin', 'teacher', 'student', 'parent', 'accountant', 'institution_staff'],
         'terms' => [
             'institution'   => ['bn' => 'স্কুল',      'en' => 'School', 'ar' => 'المدرسة'],
             'program'       => ['bn' => 'শ্রেণি',     'en' => 'Class', 'ar' => 'الصف'],
@@ -30,7 +30,7 @@ return [
         'label'          => ['bn' => 'কলেজ', 'en' => 'College', 'ar' => 'كلية'],
         'default_layout' => 'sidebar-classic',
         'default_preset' => 'classic-blue',          // campus-top (topnav) stays available as a token-only preset; it has no themes/ folder yet
-        'roles'          => ['admin', 'teacher', 'student', 'parent', 'accountant'],
+        'roles'          => ['admin', 'teacher', 'student', 'parent', 'accountant', 'institution_staff'],
         'terms' => [
             'institution'   => ['bn' => 'কলেজ',          'en' => 'College', 'ar' => 'الكلية'],
             'program'       => ['bn' => 'শ্রেণি ও বিভাগ', 'en' => 'Class & Group', 'ar' => 'الصف والقسم'],
@@ -54,7 +54,7 @@ return [
         'label'          => ['bn' => 'কোচিং সেন্টার', 'en' => 'Coaching Center', 'ar' => 'مركز تعليمي'],
         'default_layout' => 'sidebar-mini',
         'default_preset' => 'modern-mint',
-        'roles'          => ['admin', 'teacher', 'student', 'parent', 'accountant'],
+        'roles'          => ['admin', 'teacher', 'student', 'parent', 'accountant', 'institution_staff'],
         'terms' => [
             'institution'   => ['bn' => 'কোচিং',       'en' => 'Coaching', 'ar' => 'المركز التعليمي'],
             'program'       => ['bn' => 'কোর্স',       'en' => 'Course', 'ar' => 'الدورة'],
@@ -76,7 +76,7 @@ return [
         'label'          => ['bn' => 'প্রাইভেট ব্যাচ', 'en' => 'Private Batch', 'ar' => 'دفعة خاصة'],
         'default_layout' => 'mobile-compact',
         'default_preset' => 'tutor-lite',
-        'roles'          => ['admin', 'student', 'parent'],
+        'roles'          => ['admin', 'student', 'parent', 'institution_staff'],
         'terms' => [
             'institution'   => ['bn' => 'ব্যাচ',       'en' => 'Tuition', 'ar' => 'الدرس الخاص'],
             'program'       => ['bn' => 'বিষয়',       'en' => 'Subject', 'ar' => 'المادة'],

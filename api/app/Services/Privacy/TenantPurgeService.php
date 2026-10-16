@@ -17,6 +17,8 @@ class TenantPurgeService
 
     /** Every table with an institution_id, children before parents (FK order). TenantPurgeFilesTest fails when a new one is missing. */
     public const ORDER = [
+        'account_activation_requests', 'institution_registrations',
+        'department_duty_assignments', 'department_memberships', 'department_duties', 'institution_departments',
         'qb_paper_items', 'qb_paper_sections', 'qb_papers', 'qb_quiz_attempts', 'qb_student_package_access', 'qb_student_unlocks',   // D65 question bank
         'qb_student_orders', 'qb_unlocks',
         'salary_adjustments', 'salary_advances', 'salary_structure_lines', 'salary_structures', 'salary_revisions', 'salary_components', 'salary_pay_accounts', 'bonus_schemes',
@@ -65,8 +67,11 @@ class TenantPurgeService
         $counts = DB::transaction(function () use ($i, $userIds) {
             $counts = [];
             DB::table('personal_access_tokens')->where('tokenable_type', \App\Models\User::class)->whereIn('tokenable_id', $userIds)->delete();
+            // D90: activation evidence references OTP rows and must be purged first.
+            $counts['account_activation_requests'] = DB::table('account_activation_requests')->where('institution_id', $i->id)->delete();
             DB::table('otp_tokens')->whereIn('user_id', $userIds)->delete();
             foreach (self::ORDER as $t) {
+                if ($t === 'account_activation_requests') continue;
                 if ($t === 'expenses') {
                     // D27 approved full-tenant purge: immutable expense ledger children precede their parents.
                     $counts[$t] = 0;
