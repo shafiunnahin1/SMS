@@ -71,3 +71,12 @@ Owner finalized the context contract and explicitly directed the separate D91 re
 The header is only a selector, never membership or permission proof. On every request recheck active tenant, fresh account, selected active department, own effective membership, active assignment/duty and exact route/action permission, plus real Teacher/payee/resource ownership, independent module/feature gates, D33 and principal/maker-checker rules. Never union permissions from other departments: a key held only elsewhere does not authorize the selected context. No first/sole-department fallback, legacy role/text grant, body/query override or cached grant.
 
 Switching means supplying another selector on the next request and revalidating it in full. Introduce no selection storage, cookie, token claim, endpoint or migration. This contract does not authorize tenant rollout, legacy conversion/mapping, public exposure, UI or R3.6b completion. Business routes remain unavailable until their route-specific context/capability/resource/module enforcement and focused tests pass. The approved route matrix is unchanged.
+
+
+## D92 — First staff subject-index resource scope
+
+Owner finalized the scope in owner/r36b-subject-index-scope-review.md and explicitly directed separate registry checkpoint 4cac920. For the existing GET|HEAD api/v1/subjects route, institution_staff requires D91 selected-department authorization with exactly staff.subject.index and a fresh active unambiguous own Teacher identity.
+
+Grant only subjects explicitly assigned to that Teacher through nonzero batch_teachers.subject_id rows in own-tenant upcoming/running batches, with Subject.program_id equal to Batch.program_id. Deduplicate subjects. A program_id filter only narrows this set. Return only subject id/name and program id/name; preserve the existing admin response.
+
+Direct subjects.teacher_id, the zero-subject sentinel, teacher_subjects rows and class-teacher ownership alone do not grant this first staff subject read. Preserve their data and legacy consumers. Any source expansion requires separate review. This authorizes no additional detail/write/export/student access, schema, endpoint, UI, tenant switch or mapping conversion. Keep the route unavailable to institution_staff until its focused integration and required checks pass; this canonical refinement is not runtime exposure or R3.6b acceptance.
