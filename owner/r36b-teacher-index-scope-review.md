@@ -25,3 +25,5 @@ Across four institution types prove own-only exact id/name response and GET/HEAD
 ## Decision gate
 
 Owner must finalize own-only minimal first read or specify a different reviewed record/field/search scope. AGENTS working rules2/3 and G16 prohibit silently inventing the directory policy. A finalized protected refinement requires a separate owner-directed registry checkpoint under docs/ops/agent-guardrails.md section4 before canonical/runtime work. No runtime opening follows from this audit alone.
+
+Owner follow-up: own-only minimal scope explicitly finalized on 2026-10-16, followed by explicit separate decision commit/push instruction. Exact row recorded in registry-only checkpoint4da2d09 (D94). Prepared row retained in owner/decision-teacher-index.txt. Policy/decision prerequisite is resolved; canonical refinement and verified runtime implementation remain next separate work.
