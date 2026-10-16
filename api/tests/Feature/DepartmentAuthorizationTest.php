@@ -25,6 +25,97 @@ class DepartmentAuthorizationTest extends TestCase
         });
     }
 
+    private function contextRequest($actor, $header = null, string $path = 'accountant/reports/dues', array $input = [], string $method = 'GET'): \Illuminate\Http\Request
+    {
+        $request = \Illuminate\Http\Request::create('/api/v1/'.$path, $method, $input);
+        if ($header !== null) $request->headers->set('X-Department-Id', $header);
+        $route = clone app('router')->getRoutes()->match($request);
+        $request->setRouteResolver(fn () => $route);
+        $request->setUserResolver(fn () => $actor);
+        return $request;
+    }
+
+    public function test_request_context_accepts_only_one_positive_decimal_header_without_fallback(): void
+    {
+        extract($this->fixture('request-context-header')); $this->bindTenant($i);
+        $service = app(\App\Services\DepartmentRequestContextService::class);
+        foreach ([null, '', '0', '000', '-1', '+1', '1.0', '1e0', ' 1', '1 ', '1,2', '1,1', '[1]', '{"id":1}',
+            ['1', '2'], ['1', '1'], [], "1\n", "1\0", '١', (string) PHP_INT_MAX.'0'] as $header) {
+            $request = $this->contextRequest($user, $header, input: ['department_id' => $department->id, 'X-Department-Id' => $department->id]);
+            try { $service->forRoute($request); $this->fail('Invalid/missing selector accepted'); }
+            catch (\App\Exceptions\BusinessException $e) { $this->assertSame(403, $e->status); }
+        }
+        foreach ([(string) $department->id, '000'.$department->id] as $header) {
+            $this->assertSame($department->id, $service->forRoute($this->contextRequest($user, $header)));
+        }
+        $this->assertSame($department->id, $service->forRoute($this->contextRequest($user, (string) $department->id, method: 'HEAD')));
+    }
+
+    public function test_request_context_never_unions_other_department_duties_and_switches_fresh_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            extract($this->fixture('request-context-'.$type, $type));
+            Tenancy::as($i, function () use ($i, $user, $admin, $department, $membership, $duty) {
+                $service = app(\App\Services\DepartmentRequestContextService::class);
+                $manage = app(DepartmentService::class);
+                $other = $manage->create($admin, ['name' => 'Second context']);
+                $otherMember = $manage->addMember($admin, $other->id, ['user_id' => $user->id]);
+                $otherDuty = $manage->createDuty($admin, $other->id, ['code' => 'OTHER', 'name' => 'Other', 'permission_keys' => ['staff.batch.mine']]);
+                $manage->assignDuties($admin, $otherMember->id, ['duty_ids' => [$otherDuty->id]]);
+                $allowed = $this->contextRequest($user, (string) $department->id, input: ['department_id' => $other->id, 'permission' => 'staff.batch.mine']);
+                $wrong = $this->contextRequest($user, (string) $other->id, input: ['department_id' => $department->id, 'permission' => 'staff.report.dues']);
+                $denied = function ($request) use ($service) {
+                    try { $service->forRoute($request); $this->fail('Wrong selected context authorized'); }
+                    catch (\App\Exceptions\BusinessException $e) { $this->assertSame(403, $e->status); }
+                };
+                $this->assertSame($department->id, $service->forRoute($allowed)); $denied($wrong);
+                $otherDuty->update(['permission_keys' => ['staff.report.dues']]);
+                $this->assertSame($other->id, $service->forRoute($wrong));
+                $duty->update(['permission_keys' => ['staff.batch.mine']]); $denied($allowed);
+                $this->assertSame($other->id, $service->forRoute($wrong));
+                $otherMember->update(['ends_at' => today()->subDay()]); $denied($wrong);
+                $otherMember->update(['ends_at' => null]);
+                DepartmentDutyAssignment::where('membership_id', $otherMember->id)->update(['status' => 'revoked']); $denied($wrong);
+                $membership->update(['starts_at' => today()->addDay()]);
+                $duty->update(['permission_keys' => ['staff.report.dues']]); $denied($allowed);
+                $membership->update(['starts_at' => null]);
+                $this->assertSame($department->id, $service->forRoute($allowed));
+                $department->update(['status' => 'archived']); $denied($allowed);
+                $this->assertSame('institution_staff', $user->fresh()->role);
+            });
+            $this->api('GET', $this->hostOf($i), 'accountant/reports/dues', $user)->assertForbidden();
+        }
+    }
+
+    public function test_request_context_rejects_foreign_identity_impersonation_unknown_principal_and_selector_drift(): void
+    {
+        $a = $this->academicFixture('request-academic'); $b = $this->fixture('request-foreign');
+        $service = app(\App\Services\DepartmentRequestContextService::class);
+        $denied = function ($request) use ($service) {
+            try { $service->forRoute($request); $this->fail('Unverified route/identity authorized'); }
+            catch (\App\Exceptions\BusinessException $e) { $this->assertSame(403, $e->status); }
+        };
+        Tenancy::as($a['i'], function () use ($a, $b, $service, $denied) {
+            $request = $this->contextRequest($a['user'], (string) $a['department']->id, 'teacher/batches');
+            $id = $service->forRoute($request);
+            $this->assertSame($a['department']->id, $id);
+            $this->assertCount(2, app(\App\Services\DepartmentAcademicReadService::class)->ownBatches($a['user'], $id));
+            $denied($this->contextRequest($a['user'], (string) $b['department']->id, 'teacher/batches'));
+            $denied($this->contextRequest($b['user'], (string) $a['department']->id, 'teacher/batches'));
+            $denied($this->contextRequest(null, (string) $a['department']->id, 'teacher/batches'));
+            $denied($this->contextRequest($a['admin'], (string) $a['department']->id, 'teacher/batches'));
+            $actor = $a['user']->fresh()->withAccessToken($a['user']->createToken('support', ['impersonated'])->accessToken);
+            $denied($this->contextRequest($actor, (string) $a['department']->id, 'teacher/batches'));
+            Tenancy::withoutTenancy(fn () => $denied($request));
+            foreach (['staff/departments', 'admin/departments', 'accountant/reports/unknown', 'admin/reports/dues'] as $path) {
+                $denied($this->contextRequest($a['user'], (string) $a['department']->id, $path, ['type' => 'dues', 'permission' => 'staff.batch.mine']));
+            }
+            $request->route()->setAction(['uses' => 'UnknownController@index', 'controller' => 'UnknownController@index']); $denied($request);
+            $a['user']->forceFill(['locked_until' => now()->addHour()])->save();
+            $denied($this->contextRequest($a['user'], (string) $a['department']->id, 'teacher/batches'));
+        });
+    }
+
     private function academicFixture(string $slug, string $type = 'school'): array
     {
         $base = $this->fixture($slug, $type);
