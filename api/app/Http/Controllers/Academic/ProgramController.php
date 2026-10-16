@@ -32,8 +32,12 @@ class ProgramController extends Controller
         return (new ProgramResource($program->loadCount('batches')))->additional(['success' => true, 'message' => __('messages.saved')])->response()->setStatusCode(201);
     }
 
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
+        if ($request->user()->role === 'institution_staff') {
+            return (new StaffProgramResource($this->staffAcademic->showProgram($request->user(), $this->contexts->forRoute($request), $id)))
+                ->additional(['success' => true]);
+        }
         return (new ProgramResource(Program::withCount('batches')->findOrFail($id)))->additional(['success' => true]);
     }
 

@@ -39,6 +39,11 @@ class DepartmentAcademicReadService
         return $this->batches($actor, $departmentId, 'staff.batch.show')->with('program:id,name')->findOrFail($id);
     }
 
+    public function showProgram(User $actor, int $departmentId, int $id): Program
+    {
+        return Program::whereIn('id', $this->batches($actor, $departmentId, 'staff.program.show')->select('program_id'))->findOrFail($id, ['id', 'name']);
+    }
+
     private function batches(User $actor, int $departmentId, string $permission): Builder
     {
         if (!$this->permissions->has($actor, $departmentId, $permission)) $this->forbidden();

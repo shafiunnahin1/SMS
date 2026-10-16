@@ -31,8 +31,11 @@ class StaffIdentityBoundary
         $batchShow = in_array($request->method(), ['GET', 'HEAD'], true)
             && $request->route()->uri() === 'api/v1/batches/{id}'
             && ltrim($request->route()->getActionName(), '\\') === \App\Http\Controllers\Academic\BatchController::class.'@show';
+        $programShow = in_array($request->method(), ['GET', 'HEAD'], true)
+            && $request->route()->uri() === 'api/v1/programs/{id}'
+            && ltrim($request->route()->getActionName(), '\\') === \App\Http\Controllers\Academic\ProgramController::class.'@show';
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         return $next($request);
