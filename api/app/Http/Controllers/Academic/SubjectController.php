@@ -7,15 +7,23 @@ use App\Http\Requests\Academic\SubjectRequest;
 use App\Http\Resources\SubjectResource;
 use App\Models\Subject;
 use App\Services\AcademicStructureService;
+use App\Services\{DepartmentAcademicReadService, DepartmentRequestContextService};
+use App\Http\Resources\StaffSubjectResource;
 use Illuminate\Http\Request;
 
 // Step 4.1: subjects belong to a program (schema.sql `subjects`)
 class SubjectController extends Controller
 {
-    public function __construct(private AcademicStructureService $academic) {}
+    public function __construct(private AcademicStructureService $academic, private DepartmentRequestContextService $contexts, private DepartmentAcademicReadService $staffAcademic) {}
 
     public function index(Request $request)
     {
+        if ($request->user()->role === 'institution_staff') {
+            $departmentId = $this->contexts->forRoute($request);
+            $filters = $request->validate(['program_id' => 'nullable|integer']);
+            return StaffSubjectResource::collection($this->staffAcademic->listSubjects($request->user(), $departmentId, $filters))
+                ->additional(['success' => true]);
+        }
         $request->validate(['program_id' => 'nullable|integer']);
         $subjects = Subject::with(['program:id,name', 'teacher.user:id,name'])
             ->when($request->input('program_id'), fn ($q, $p) => $q->where('program_id', $p))

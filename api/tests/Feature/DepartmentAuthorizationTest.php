@@ -25,6 +25,91 @@ class DepartmentAuthorizationTest extends TestCase
         });
     }
 
+
+    private function staffSubjectHttp(array $a, $h = null, array $query = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+        $headers = ['Authorization' => 'Bearer '.($token ?? $a['user']->createToken('subject-read')->plainTextToken)];
+        if ($h !== null) $headers['X-Department-Id'] = $h;
+        return $this->json($method, 'http://'.$this->hostOf($a['i']).'/api/v1/subjects'.($query ? '?'.http_build_query($query) : ''), [], $headers);
+    }
+
+    public function test_staff_subject_index_exact_minimal_sources_and_filters_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $a = $this->academicFixture('subject-'.$type, $type); $b = $this->academicFixture('subject-foreign-'.$type, $type); $h = (string) $a['department']->id;
+            $this->staffSubjectHttp($a, $h)->assertForbidden();
+            $subject = Tenancy::as($a['i'], function () use ($a) {
+                $a['duty']->update(['permission_keys' => ['staff.subject.index']]);
+                $subject = \App\Models\Subject::findOrFail($a['assignment']->subject_id);
+                $subject->update(['teacher_id' => $a['teacher']->id]);
+                \App\Models\BatchTeacher::create(['batch_id' => $a['classBatch']->id, 'teacher_id' => $a['teacher']->id, 'subject_id' => $subject->id]);
+                foreach (['Direct only', 'Zero only', 'TeacherSubject only', 'Class only'] as $name) {
+                    $s = \App\Models\Subject::create(['program_id' => $a['program']->id, 'name' => $name, 'teacher_id' => $name === 'Direct only' ? $a['teacher']->id : null]);
+                    if ($name === 'TeacherSubject only') \App\Models\TeacherSubject::create(['teacher_id' => $a['teacher']->id, 'subject_id' => $s->id, 'program_id' => $a['program']->id]);
+                }
+                \App\Models\BatchTeacher::create(['batch_id' => $a['subjectBatch']->id, 'teacher_id' => $a['teacher']->id, 'subject_id' => 0]);
+                return $subject;
+            });
+            $expected = ['success' => true, 'data' => [['id' => $subject->id, 'name' => 'Math', 'program' => ['id' => $a['program']->id, 'name' => 'Own program']]]];
+            $this->staffSubjectHttp($a, $h, ['teacher_id' => $b['teacher']->id, 'department_id' => $b['department']->id])->assertOk()->assertExactJson($expected);
+            $this->staffSubjectHttp($a, $h, method: 'HEAD')->assertOk();
+            $this->staffSubjectHttp($a, $h, ['program_id' => $a['program']->id])->assertOk()->assertExactJson($expected);
+            foreach ([$b['program']->id, $a['invalidBatch']->program_id, 999999] as $id) $this->staffSubjectHttp($a, $h, ['program_id' => $id])->assertOk()->assertJsonPath('data', []);
+            $this->staffSubjectHttp($a, $h, ['program_id' => 'bad'])->assertUnprocessable();
+            $this->staffSubjectHttp($a, (string) $b['department']->id)->assertForbidden();
+            $this->api('GET', $this->hostOf($a['i']), 'subjects', $a['admin'])->assertOk()->assertJsonStructure(['data' => [['full_marks', 'pass_marks', 'teacher_id', 'is_optional']]]);
+            Tenancy::as($a['i'], function () use ($a) { \App\Models\BatchTeacher::where('batch_id', $a['classBatch']->id)->delete(); $a['assignment']->delete(); });
+            $this->staffSubjectHttp($a, $h)->assertOk()->assertJsonPath('data', []);
+        }
+    }
+
+    public function test_staff_subject_index_context_and_resource_revocation_are_fresh(): void
+    {
+        $a = $this->academicFixture('subject-revoke');
+        [$other, $member] = Tenancy::as($a['i'], function () use ($a) {
+            $s = app(DepartmentService::class); $other = $s->create($a['admin'], ['name' => 'Subject context']);
+            $member = $s->addMember($a['admin'], $other->id, ['user_id' => $a['user']->id]);
+            $d = $s->createDuty($a['admin'], $other->id, ['code' => 'SUBJECT', 'name' => 'Subject', 'permission_keys' => ['staff.subject.index']]);
+            $s->assignDuties($a['admin'], $member->id, ['duty_ids' => [$d->id]]); return [$other, $member];
+        });
+        $token = $a['user']->createToken('subject-same-token')->plainTextToken; $h = (string) $other->id;
+        $this->staffSubjectHttp($a, (string) $a['department']->id, ['department_id' => $other->id], token: $token)->assertForbidden();
+        $this->staffSubjectHttp($a, $h, token: $token)->assertOk()->assertJsonCount(1, 'data');
+        foreach (['completed', 'archived'] as $status) {
+            Tenancy::as($a['i'], fn () => $a['subjectBatch']->update(['status' => $status]));
+            $this->staffSubjectHttp($a, $h, token: $token)->assertOk()->assertJsonPath('data', []);
+        }
+        Tenancy::as($a['i'], fn () => $a['subjectBatch']->update(['status' => 'upcoming']));
+        $this->staffSubjectHttp($a, $h, token: $token)->assertOk()->assertJsonCount(1, 'data');
+        Tenancy::as($a['i'], fn () => $member->update(['ends_at' => today()->subDay()]));
+        $this->staffSubjectHttp($a, $h, token: $token)->assertForbidden();
+        Tenancy::as($a['i'], function () use ($member) { $member->update(['ends_at' => null]); DepartmentDutyAssignment::where('membership_id', $member->id)->update(['status' => 'revoked']); });
+        $this->staffSubjectHttp($a, $h, token: $token)->assertForbidden();
+        Tenancy::as($a['i'], function () use ($member, $other) { DepartmentDutyAssignment::where('membership_id', $member->id)->update(['status' => 'active']); $other->update(['status' => 'archived']); });
+        $this->staffSubjectHttp($a, $h, token: $token)->assertForbidden();
+    }
+
+    public function test_staff_subject_index_rejects_headers_identity_and_other_actions(): void
+    {
+        $a = $this->fixture('subject-profile'); $h = (string) $a['department']->id;
+        Tenancy::as($a['i'], fn () => $a['duty']->update(['permission_keys' => ['staff.subject.index']]));
+        $this->staffSubjectHttp($a, $h)->assertForbidden();
+        $teacher = Tenancy::as($a['i'], fn () => Teacher::create(['user_id' => $a['user']->id, 'employee_id' => 'SUBJECT-T', 'status' => 'active']));
+        foreach ([null, '', '0', '1,1', ['1', '1'], '[1]', (string) PHP_INT_MAX.'0'] as $bad) $this->staffSubjectHttp($a, $bad, ['department_id' => $a['department']->id])->assertForbidden();
+        $this->staffSubjectHttp($a, $h, token: $a['user']->createToken('support', ['impersonated'])->plainTextToken)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $teacher->update(['status' => 'inactive']));
+        $this->staffSubjectHttp($a, $h)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $teacher->update(['status' => 'active']));
+        $token = $a['user']->createToken('subject-bounded')->plainTextToken;
+        foreach ([['GET', 'subjects/999999'], ['POST', 'subjects'], ['PUT', 'subjects/999999'], ['DELETE', 'subjects/999999'], ['GET', 'batches/999999/students'], ['GET', 'programs']] as [$method, $path]) {
+            $this->app['auth']->forgetGuards();
+            $this->json($method, 'http://'.$this->hostOf($a['i']).'/api/v1/'.$path, [], ['Authorization' => 'Bearer '.$token, 'X-Department-Id' => $h])->assertForbidden();
+        }
+        Tenancy::as($a['i'], fn () => Teacher::create(['user_id' => $a['user']->id, 'employee_id' => 'SUBJECT-DUP'])->delete());
+        $this->staffSubjectHttp($a, $h)->assertForbidden();
+    }
+
     private function staffProgramShowHttp(array $fixture, int $id, $header = null, array $query = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
     {
         $this->app['auth']->forgetGuards();
