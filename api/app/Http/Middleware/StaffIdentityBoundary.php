@@ -55,8 +55,11 @@ class StaffIdentityBoundary
         $financialReport = in_array($request->method(), ['GET', 'HEAD'], true)
             && $request->route()->uri() === 'api/v1/accountant/reports/{type}'
             && ltrim($request->route()->getActionName(), '\\') === \App\Http\Controllers\Reports\ReportController::class.'@financial';
+        $ownSalaryHistory = in_array($request->method(), ['GET', 'HEAD'], true)
+            && $request->route()->uri() === 'api/v1/hr/people/{type}/{id}/salary'
+            && ltrim($request->route()->getActionName(), '\\') === \App\Http\Controllers\Hr\SalaryStructureController::class.'@history';
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         return $next($request);

@@ -300,7 +300,7 @@ return [
     'POST api/v1/hr/salary-components' => ['admin','accountant'],
     'PUT api/v1/hr/salary-components/{id}' => ['admin','accountant'],
     'DELETE api/v1/hr/salary-components/{id}' => ['admin','accountant'],
-    'GET api/v1/hr/people/{type}/{id}/salary' => ['admin','accountant','teacher'],
+    'GET api/v1/hr/people/{type}/{id}/salary' => ['admin','accountant','teacher','institution_staff'],
     'GET api/v1/hr/people/{type}/{id}/pay-accounts' => ['admin','accountant'],
     'PUT api/v1/hr/people/{type}/{id}/pay-accounts' => ['admin','accountant'],
     'GET api/v1/hr/revisions' => ['admin','accountant'],

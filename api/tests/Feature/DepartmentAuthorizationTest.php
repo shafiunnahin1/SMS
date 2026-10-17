@@ -1031,6 +1031,33 @@ class DepartmentAuthorizationTest extends TestCase
         $call('dues')->assertForbidden();
     }
 
+    public function test_staff_salary_history_is_own_payee_only(): void
+    {
+        $fixture = $this->academicFixture('staff-salary-history');
+        $fixture['i']->forceFill(['enabled_modules' => ['hr_payroll' => true]])->save();
+        $header = (string) $fixture['department']->id;
+        $token = $fixture['user']->createToken('salary-history')->plainTextToken;
+        $call = function (string $type, int $id, ?string $h = null) use ($fixture, $token, $header) {
+            $this->app['auth']->forgetGuards();
+            return $this->json('GET', 'http://'.$this->hostOf($fixture['i'])."/api/v1/hr/people/$type/$id/salary", [], ['Authorization' => 'Bearer '.$token, 'X-Department-Id' => $h ?? $header]);
+        };
+        [$ownStaff, $otherTeacher, $otherStaff] = Tenancy::as($fixture['i'], function () use ($fixture) {
+            $ownStaff = StaffMember::factory()->create(['user_id' => $fixture['user']->id]);
+            $otherTeacher = Teacher::create(['user_id' => $this->makeUser($fixture['i'], 'teacher')->id, 'employee_id' => 'OTHER-SAL']);
+            $otherStaff = StaffMember::factory()->create();
+            return [$ownStaff, $otherTeacher, $otherStaff];
+        });
+        $call('teacher', $fixture['teacher']->id)->assertForbidden();
+        Tenancy::as($fixture['i'], fn () => $fixture['duty']->update(['permission_keys' => ['staff.salary_structure.history']]));
+        $call('teacher', $fixture['teacher']->id)->assertOk();
+        $call('staff', $ownStaff->id)->assertOk();
+        $call('teacher', $otherTeacher->id)->assertForbidden();
+        $call('staff', $otherStaff->id)->assertForbidden();
+        $call('teacher', $fixture['teacher']->id, '999999')->assertForbidden();
+        $fixture['i']->forceFill(['staff_department_mode' => 'legacy'])->save();
+        $call('teacher', $fixture['teacher']->id)->assertForbidden();
+    }
+
     private function academicFixture(string $slug, string $type = 'school'): array
     {
         $base = $this->fixture($slug, $type);
