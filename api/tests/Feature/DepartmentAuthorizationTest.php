@@ -1011,6 +1011,26 @@ class DepartmentAuthorizationTest extends TestCase
         $call()->assertForbidden();
     }
 
+    public function test_staff_financial_report_needs_the_exact_per_type_key(): void
+    {
+        $fixture = $this->academicFixture('staff-fin-report');
+        $fixture['i']->forceFill(['enabled_modules' => ['reports' => true]])->save();
+        $header = (string) $fixture['department']->id;
+        $token = $fixture['user']->createToken('fin-report')->plainTextToken;
+        $call = function (string $type, ?string $h = null) use ($fixture, $token, $header) {
+            $this->app['auth']->forgetGuards();
+            return $this->json('GET', 'http://'.$this->hostOf($fixture['i']).'/api/v1/accountant/reports/'.$type, [], ['Authorization' => 'Bearer '.$token, 'X-Department-Id' => $h ?? $header]);
+        };
+        $call('dues')->assertForbidden();
+        Tenancy::as($fixture['i'], fn () => $fixture['duty']->update(['permission_keys' => ['staff.report.dues']]));
+        $this->assertNotSame(403, $call('dues')->status());
+        $call('fees')->assertForbidden();
+        $call('students')->assertForbidden();
+        $call('dues', '999999')->assertForbidden();
+        $fixture['i']->forceFill(['staff_department_mode' => 'legacy'])->save();
+        $call('dues')->assertForbidden();
+    }
+
     private function academicFixture(string $slug, string $type = 'school'): array
     {
         $base = $this->fixture($slug, $type);

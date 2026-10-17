@@ -135,7 +135,7 @@ class DepartmentRouteInventoryTest extends TestCase
 
     public function test_d101_teacher_advance_overlay_keeps_teacher_role_and_requires_own_payee_scope(): void
     {
-        $this->assertCount(4, DepartmentRouteCatalog::D101);
+        $this->assertCount(5, DepartmentRouteCatalog::D101);
         $entry = DepartmentRouteCatalog::D101[0];
         $this->assertSame(['GET|HEAD', 'api/v1/teacher/salary/advances', 'D101', ['teacher', 'institution_staff'], ['staff.salary_advance.mine']], [
             $entry['method'], $entry['uri'], $entry['approval'], $entry['current_roles'], $entry['permission_options'],
@@ -193,6 +193,21 @@ class DepartmentRouteInventoryTest extends TestCase
         $this->assertContains('App\\Http\\Middleware\\RoleMiddleware:admin,accountant,institution_staff', $middleware);
         $resolved = app(DepartmentRoutePermissionResolver::class)->resolve($this->request($route, 'GET'));
         $this->assertSame(['D101', 'exact_duty_permission', 'staff.sms_log.index'], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
+    }
+
+    public function test_d101_financial_report_overlay_resolves_only_reviewed_report_types(): void
+    {
+        $entry = DepartmentRouteCatalog::D101[4];
+        $this->assertSame(['api/v1/accountant/reports/{type}', 'D101', 'conditional_report_type', ['accountant', 'institution_staff']], [$entry['uri'], $entry['approval'], $entry['staff_mode'], $entry['current_roles']]);
+        $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+            ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array('GET', $candidate->methods(), true));
+        $this->assertContains('App\\Http\\Middleware\\ModuleMiddleware:reports', app('router')->gatherRouteMiddleware($route));
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        foreach (['dues' => 'staff.report.dues', 'fees' => 'staff.report.fees'] as $type => $key) {
+            $resolved = $resolver->resolve($this->request($route, 'GET', ['type' => $type]));
+            $this->assertSame(['D101', 'exact_duty_permission', $key], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
+        }
+        $this->assertNull($resolver->resolve($this->request($route, 'GET', ['type' => 'students'])), 'an unreviewed report type resolves to nothing');
     }
 
     private function request(Route $original, string $method, array $parameters = [], array $body = []): Request

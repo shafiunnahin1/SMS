@@ -42,7 +42,7 @@ class RoleMatrixContractTest extends TestCase
         $this->assertSame([], array_values(array_diff(self::authRoutes(), $keys)), 'add these routes to tests/Fixtures/role-matrix.php');
         $this->assertSame([], array_values(array_diff($keys, self::authRoutes())), 'stale rows in the matrix');
         foreach (self::matrix() as $key => $roles) {
-            $knownRoles = in_array($key, ['GET api/v1/teachers', 'GET api/v1/teacher/salary/advances', 'GET api/v1/teacher/dashboard', 'GET api/v1/accountant/dashboard', 'GET api/v1/sms-logs'], true) ? [...self::ROLES, 'institution_staff'] : self::ROLES;
+            $knownRoles = in_array($key, ['GET api/v1/teachers', 'GET api/v1/teacher/salary/advances', 'GET api/v1/teacher/dashboard', 'GET api/v1/accountant/dashboard', 'GET api/v1/sms-logs', 'GET api/v1/accountant/reports/{type}'], true) ? [...self::ROLES, 'institution_staff'] : self::ROLES;
             $this->assertSame([], array_values(array_diff($roles, $knownRoles)), "{$key}: unknown role");
             if (str_starts_with(explode(' ', $key, 2)[1], 'api/v1/super/')) $this->assertSame(['super_admin'], $roles, "{$key}: the platform panel is Super Admin only");
         }
@@ -66,7 +66,7 @@ class RoleMatrixContractTest extends TestCase
             $departments = app(DepartmentService::class);
             $department = $departments->create($users['admin'], ['name' => 'Teacher index']);
             $membership = $departments->addMember($users['admin'], $department->id, ['user_id' => $staff->id]);
-            $duty = $departments->createDuty($users['admin'], $department->id, ['code' => 'TEACHER_INDEX', 'name' => 'Teacher index', 'permission_keys' => ['staff.teacher.index', 'staff.salary_advance.mine', 'staff.dashboard.teacher', 'staff.dashboard.accountant', 'staff.sms_log.index']]);
+            $duty = $departments->createDuty($users['admin'], $department->id, ['code' => 'TEACHER_INDEX', 'name' => 'Teacher index', 'permission_keys' => ['staff.teacher.index', 'staff.salary_advance.mine', 'staff.dashboard.teacher', 'staff.dashboard.accountant', 'staff.sms_log.index', 'staff.report.dues', 'staff.report.fees']]);
             $departments->assignDuties($users['admin'], $membership->id, ['duty_ids' => [$duty->id]]);
             Teacher::create(['user_id' => $staff->id, 'employee_id' => 'MATRIX-STAFF']);
             return $department->id;
@@ -87,6 +87,8 @@ class RoleMatrixContractTest extends TestCase
             if ($uri === 'api/v1/hr/leaves/{id}/{action}') $path = str_replace('dry-run', 'cancel', $path);
             if ($uri === 'api/v1/fee-refunds/{id}/{action}') $path = str_replace('dry-run', 'process', $path);
             if ($uri === 'api/v1/hr/advances/{id}/{action}') $path = str_replace('dry-run', 'approve', $path);
+            // D101: department staff hold per-report-type keys; use a reviewed financial type so the role assertion is not preempted.
+            if ($uri === 'api/v1/accountant/reports/{type}') $path = 'accountant/reports/dues';
             if ($uri === 'api/v1/hr/people/{type}/{id}/salary') $path = 'hr/people/teacher/'.$salaryTeacher->id.'/salary';
             $host = str_starts_with($path, 'super/') || str_starts_with($path, 'writer/') ? $central : $this->hostOf($i);
             foreach (self::ROLES as $role) {
@@ -96,7 +98,7 @@ class RoleMatrixContractTest extends TestCase
                 if ($ok && ($status === 403 || $status >= 500)) $wrong[] = "{$key} as {$role}: {$status} (allowed)";
                 if (!$ok && $status !== 403) $wrong[] = "{$key} as {$role}: {$status} (should be 403)";
             }
-            if (in_array($uri, ['api/v1/teachers', 'api/v1/teacher/salary/advances', 'api/v1/teacher/dashboard', 'api/v1/accountant/dashboard', 'api/v1/sms-logs'], true)) {
+            if (in_array($uri, ['api/v1/teachers', 'api/v1/teacher/salary/advances', 'api/v1/teacher/dashboard', 'api/v1/accountant/dashboard', 'api/v1/sms-logs', 'api/v1/accountant/reports/{type}'], true)) {
                 $this->app['auth']->forgetGuards();
                 $response = $this->json($method, 'http://'.$host.'/api/v1/'.$path, [], [
                     'Authorization' => 'Bearer '.$staff->createToken('role-matrix')->plainTextToken,

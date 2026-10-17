@@ -62,7 +62,7 @@ return [
     'PUT api/v1/expenses/{id}' => ['admin', 'accountant'],
     'DELETE api/v1/expenses/{id}' => ['admin', 'accountant'],
     'GET api/v1/accountant/dashboard' => ['accountant', 'institution_staff'],
-    'GET api/v1/accountant/reports/{type}' => ['accountant'],
+    'GET api/v1/accountant/reports/{type}' => ['accountant', 'institution_staff'],
     'GET api/v1/admin/dashboard' => ['admin'],
     'GET api/v1/admin/reports/{type}' => ['admin'],
     'GET api/v1/admin/settings/general' => ['admin'],

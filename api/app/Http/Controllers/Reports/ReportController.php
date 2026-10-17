@@ -23,6 +23,8 @@ class ReportController extends Controller
 
     public function financial(Request $request, string $type, PdfService $pdf)
     {
+        // D101: department staff need D91 context + the per-type key (staff.report.dues / staff.report.fees); unknown types fail closed
+        if ($request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
         return $this->respond($request, $type, ReportService::ACCOUNTANT, $pdf);
     }
 

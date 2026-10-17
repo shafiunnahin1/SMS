@@ -449,7 +449,7 @@ Route::prefix('v1')->group(function () {
         // ── Reports (Step 4.8): PDF / Excel ──
         Route::middleware('module:reports')->group(function () {
             Route::get('/admin/reports/{type}',           [ReportController::class, 'generate'])->middleware('role:admin');
-            Route::get('/accountant/reports/{type}',      [ReportController::class, 'financial'])->middleware('role:accountant');
+            Route::get('/accountant/reports/{type}',      [ReportController::class, 'financial'])->middleware('role:accountant,institution_staff');
         });
 
         // ── Exams & results (Step 4.5) ──
