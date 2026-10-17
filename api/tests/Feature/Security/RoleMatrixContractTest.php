@@ -42,7 +42,7 @@ class RoleMatrixContractTest extends TestCase
         $this->assertSame([], array_values(array_diff(self::authRoutes(), $keys)), 'add these routes to tests/Fixtures/role-matrix.php');
         $this->assertSame([], array_values(array_diff($keys, self::authRoutes())), 'stale rows in the matrix');
         foreach (self::matrix() as $key => $roles) {
-            $knownRoles = in_array($key, ['GET api/v1/teachers', 'GET api/v1/teacher/salary/advances'], true) ? [...self::ROLES, 'institution_staff'] : self::ROLES;
+            $knownRoles = in_array($key, ['GET api/v1/teachers', 'GET api/v1/teacher/salary/advances', 'GET api/v1/teacher/dashboard'], true) ? [...self::ROLES, 'institution_staff'] : self::ROLES;
             $this->assertSame([], array_values(array_diff($roles, $knownRoles)), "{$key}: unknown role");
             if (str_starts_with(explode(' ', $key, 2)[1], 'api/v1/super/')) $this->assertSame(['super_admin'], $roles, "{$key}: the platform panel is Super Admin only");
         }
@@ -66,7 +66,7 @@ class RoleMatrixContractTest extends TestCase
             $departments = app(DepartmentService::class);
             $department = $departments->create($users['admin'], ['name' => 'Teacher index']);
             $membership = $departments->addMember($users['admin'], $department->id, ['user_id' => $staff->id]);
-            $duty = $departments->createDuty($users['admin'], $department->id, ['code' => 'TEACHER_INDEX', 'name' => 'Teacher index', 'permission_keys' => ['staff.teacher.index', 'staff.salary_advance.mine']]);
+            $duty = $departments->createDuty($users['admin'], $department->id, ['code' => 'TEACHER_INDEX', 'name' => 'Teacher index', 'permission_keys' => ['staff.teacher.index', 'staff.salary_advance.mine', 'staff.dashboard.teacher']]);
             $departments->assignDuties($users['admin'], $membership->id, ['duty_ids' => [$duty->id]]);
             Teacher::create(['user_id' => $staff->id, 'employee_id' => 'MATRIX-STAFF']);
             return $department->id;
@@ -96,7 +96,7 @@ class RoleMatrixContractTest extends TestCase
                 if ($ok && ($status === 403 || $status >= 500)) $wrong[] = "{$key} as {$role}: {$status} (allowed)";
                 if (!$ok && $status !== 403) $wrong[] = "{$key} as {$role}: {$status} (should be 403)";
             }
-            if (in_array($uri, ['api/v1/teachers', 'api/v1/teacher/salary/advances'], true)) {
+            if (in_array($uri, ['api/v1/teachers', 'api/v1/teacher/salary/advances', 'api/v1/teacher/dashboard'], true)) {
                 $this->app['auth']->forgetGuards();
                 $response = $this->json($method, 'http://'.$host.'/api/v1/'.$path, [], [
                     'Authorization' => 'Bearer '.$staff->createToken('role-matrix')->plainTextToken,

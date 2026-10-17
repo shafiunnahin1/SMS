@@ -63,7 +63,15 @@ class DashboardController extends Controller
     /** GET /teacher/dashboard: my batches with today's attendance state, and exams waiting for my marks */
     public function teacher(Request $request, AcademicStructureService $academic, ExamService $exams)
     {
-        $teacher = Teacher::where('user_id', $request->user()->id)->first();
+        if ($request->user()?->role === 'institution_staff') {
+            // D101: department staff reach their own Teacher dashboard only with D91 context + staff.dashboard.teacher and exactly one active linked Teacher
+            app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
+            $profiles = Teacher::where('user_id', $request->user()->id)->where('status', 'active')->limit(2)->get();
+            if ($profiles->count() !== 1) throw new \Illuminate\Auth\Access\AuthorizationException();
+            $teacher = $profiles->first();
+        } else {
+            $teacher = Teacher::where('user_id', $request->user()->id)->first();
+        }
         $batches = $teacher ? $academic->batchesOf($teacher) : collect();
         $taken = Attendance::where('date', now()->toDateString())->whereIn('batch_id', $batches->pluck('id'))->distinct()->pluck('batch_id')->map(fn ($v) => (int) $v)->all();
         $pending = Exam::where('status', '!=', 'published')->orderByDesc('id')->get()->flatMap(fn ($exam) => ExamSubject::where('exam_id', $exam->id)->with('subject:id,name')->get()

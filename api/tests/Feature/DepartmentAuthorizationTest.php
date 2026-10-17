@@ -918,6 +918,54 @@ class DepartmentAuthorizationTest extends TestCase
         });
     }
 
+    private function staffTeacherDashboardHttp(array $fixture, $departmentHeader = null, string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+        $headers = ['Authorization' => 'Bearer '.($token ?? $fixture['user']->createToken('teacher-dashboard')->plainTextToken)];
+        if ($departmentHeader !== null) $headers['X-Department-Id'] = $departmentHeader;
+        return $this->json($method, 'http://'.$this->hostOf($fixture['i']).'/api/v1/teacher/dashboard', [], $headers);
+    }
+
+    public function test_staff_teacher_dashboard_is_own_teacher_only_and_requires_exact_duty_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $fixture = $this->academicFixture('staff-dashboard-'.$type, $type);
+            $header = (string) $fixture['department']->id;
+            $this->staffTeacherDashboardHttp($fixture, $header)->assertForbidden();
+            Tenancy::as($fixture['i'], fn () => $fixture['duty']->update(['permission_keys' => ['staff.dashboard.teacher']]));
+            $res = $this->staffTeacherDashboardHttp($fixture, $header)->assertOk();
+            $ids = collect($res->json('data.batches'))->pluck('id')->all();
+            $this->assertContains($fixture['classBatch']->id, $ids);
+            $this->assertContains($fixture['subjectBatch']->id, $ids);
+            $this->assertNotContains($fixture['unassigned']->id, $ids);
+            $this->staffTeacherDashboardHttp($fixture, '')->assertForbidden();
+            $foreign = $this->makeInstitution('foreign-dashboard-'.$type);
+            $foreignAdmin = $this->makeUser($foreign, 'admin');
+            $foreignDepartment = Tenancy::as($foreign, fn () => app(DepartmentService::class)->create($foreignAdmin, ['name' => 'Foreign department']));
+            $this->staffTeacherDashboardHttp($fixture, (string) $foreignDepartment->id)->assertForbidden();
+            $this->staffTeacherDashboardHttp($fixture, $header, 'HEAD')->assertOk();
+            $this->api('GET', $this->hostOf($fixture['i']), 'accountant/dashboard', $fixture['user'])->assertForbidden();
+        }
+    }
+
+    public function test_staff_teacher_dashboard_fails_closed_for_legacy_mode_inactive_and_ambiguous_teacher(): void
+    {
+        $fixture = $this->academicFixture('staff-dashboard-boundary');
+        $header = (string) $fixture['department']->id;
+        Tenancy::as($fixture['i'], fn () => $fixture['duty']->update(['permission_keys' => ['staff.dashboard.teacher']]));
+        $token = $fixture['user']->createToken('staff-dashboard-boundary')->plainTextToken;
+        $this->staffTeacherDashboardHttp($fixture, $header, token: $token)->assertOk();
+        Tenancy::as($fixture['i'], fn () => $fixture['teacher']->update(['status' => 'inactive']));
+        $this->staffTeacherDashboardHttp($fixture, $header, token: $token)->assertForbidden();
+        Tenancy::as($fixture['i'], fn () => $fixture['teacher']->update(['status' => 'active']));
+        Tenancy::as($fixture['i'], fn () => Teacher::create(['user_id' => $fixture['user']->id, 'employee_id' => 'DASH-DUP', 'status' => 'active']));
+        $this->staffTeacherDashboardHttp($fixture, $header, token: $token)->assertForbidden();
+        Tenancy::as($fixture['i'], fn () => Teacher::where('employee_id', 'DASH-DUP')->forceDelete());
+        $this->staffTeacherDashboardHttp($fixture, $header, token: $token)->assertOk();
+        Tenancy::as($fixture['i'], fn () => $fixture['i']->forceFill(['staff_department_mode' => 'legacy'])->save());
+        $this->staffTeacherDashboardHttp($fixture, $header, token: $token)->assertForbidden();
+    }
+
     private function academicFixture(string $slug, string $type = 'school'): array
     {
         $base = $this->fixture($slug, $type);

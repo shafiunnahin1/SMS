@@ -270,7 +270,7 @@ return [
     'POST api/v1/super/tenant-purge/{institutionId}/dry-run' => ['super_admin'],
     'POST api/v1/super/tenant-purge/{institutionId}/execute' => ['super_admin'],
     'GET api/v1/teacher/batches' => ['teacher'],
-    'GET api/v1/teacher/dashboard' => ['teacher'],
+    'GET api/v1/teacher/dashboard' => ['teacher', 'institution_staff'],
     'GET api/v1/teachers' => ['admin', 'institution_staff'],
     'POST api/v1/teachers' => ['admin'],
     'GET api/v1/teachers/{id}' => ['admin'],
