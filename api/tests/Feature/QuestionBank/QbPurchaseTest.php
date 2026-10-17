@@ -104,6 +104,55 @@ class QbPurchaseTest extends TestCase
         $this->assertSame(0, Tenancy::as($i, fn () => QbUnlock::count()));
     }
 
+    /** D101: a department staff member with the given duty keys (school in department mode) */
+    private function staff(Institution $i, User $admin, array $keys): array
+    {
+        $i->forceFill(['staff_department_mode' => 'department'])->save();
+        $staff = $this->makeUser($i, 'institution_staff');
+        $department = Tenancy::as($i, function () use ($admin, $staff, $keys) {
+            $s = app(\App\Services\DepartmentService::class);
+            $d = $s->create($admin, ['name' => 'QB']);
+            $m = $s->addMember($admin, $d->id, ['user_id' => $staff->id]);
+            $duty = $s->createDuty($admin, $d->id, ['code' => 'QB', 'name' => 'QB', 'permission_keys' => $keys]);
+            $s->assignDuties($admin, $m->id, ['duty_ids' => [$duty->id]]);
+            return $d->id;
+        });
+        return [$staff, $department];
+    }
+
+    private function asStaff(string $method, string $host, string $path, User $staff, $department, array $body = []): \Illuminate\Testing\TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+        $headers = ['Authorization' => 'Bearer '.$staff->createToken('qb')->plainTextToken];
+        if ($department !== null) $headers['X-Department-Id'] = (string) $department;
+        return $this->json($method, 'http://'.$host.'/api/v1/'.$path, $body, $headers);
+    }
+
+    public function test_d101_department_staff_buy_under_the_teacher_cap_with_exact_keys(): void
+    {
+        $a = $this->question(); $b = $this->question();
+        [$i, $host, $admin] = $this->school('qbstaff', '10.00');
+        [$staff, $d] = $this->staff($i, $admin, ['staff.qb_purchase.buy', 'staff.qb_purchase.questions', 'staff.qb_library.curriculum', 'staff.qb_paper.index']);
+        $this->api('PUT', $host, 'question-bank/caps', $admin, ['default_cap' => '0.60'])->assertOk();
+
+        $this->asStaff('GET', $host, 'question-bank/curriculum', $staff, $d)->assertOk();
+        $this->asStaff('GET', $host, 'question-bank/questions', $staff, $d)->assertOk()->assertDontSee('SECRET-ANSWER');
+        $this->asStaff('GET', $host, 'question-bank/papers', $staff, $d)->assertOk()->assertJsonCount(0, 'data');
+        $this->asStaff('POST', $host, 'question-bank/buy', $staff, $d, ['item_type' => 'question', 'item_id' => $a->id])->assertCreated();
+        $this->asStaff('POST', $host, 'question-bank/buy', $staff, $d, ['item_type' => 'question', 'item_id' => $b->id])->assertStatus(422)->assertJsonPath('error', 'qb_teacher_cap_reached');
+        $this->assertSame('9.50', $this->balance($i), 'the cap holds for department staff too');
+
+        // no key for this action, no context, a foreign department, admin-only spending/caps, legacy mode: all closed
+        $this->asStaff('POST', $host, 'question-bank/buy-many', $staff, $d, ['question_ids' => [$b->id]])->assertForbidden();
+        $this->asStaff('GET', $host, 'question-bank/curriculum', $staff, null)->assertForbidden();
+        $this->asStaff('GET', $host, 'question-bank/curriculum', $staff, 999999)->assertForbidden();
+        $this->asStaff('GET', $host, 'question-bank/spending', $staff, $d)->assertForbidden();
+        $this->asStaff('PUT', $host, 'question-bank/caps', $staff, $d, ['default_cap' => '99'])->assertForbidden();
+        $i->forceFill(['staff_department_mode' => 'legacy'])->save();
+        $this->asStaff('GET', $host, 'question-bank/curriculum', $staff, $d)->assertForbidden();
+        $this->assertSame('9.50', $this->balance($i));
+    }
+
     public function test_the_monthly_cap_per_teacher(): void
     {
         $a = $this->question();

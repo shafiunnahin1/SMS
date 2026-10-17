@@ -47,7 +47,7 @@ final class QbPurchaseService
             if ($q['price'] === null) throw new BusinessException('this item has no price yet', 'qb_not_for_sale', 422);
             $price = Money::toPaisa($q['price']);
 
-            if ($price > 0 && $user->role === 'teacher') {
+            if ($price > 0 && in_array($user->role, ['teacher', 'institution_staff'], true)) {   // D101: department staff share the teacher cap
                 $cap = $this->cap($user, $locked);
                 if ($cap !== null && $this->spentThisMonth($user) + $price > $cap) throw new BusinessException('the monthly question-bank limit is reached', 'qb_teacher_cap_reached', 422);
             }

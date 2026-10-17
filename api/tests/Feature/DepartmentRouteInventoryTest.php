@@ -135,7 +135,7 @@ class DepartmentRouteInventoryTest extends TestCase
 
     public function test_d101_teacher_advance_overlay_keeps_teacher_role_and_requires_own_payee_scope(): void
     {
-        $this->assertCount(16, DepartmentRouteCatalog::D101);
+        $this->assertCount(33, DepartmentRouteCatalog::D101);
         $entry = DepartmentRouteCatalog::D101[0];
         $this->assertSame(['GET|HEAD', 'api/v1/teacher/salary/advances', 'D101', ['teacher', 'institution_staff'], ['staff.salary_advance.mine']], [
             $entry['method'], $entry['uri'], $entry['approval'], $entry['current_roles'], $entry['permission_options'],
@@ -256,6 +256,25 @@ class DepartmentRouteInventoryTest extends TestCase
             $this->assertContains('App\\Http\\Middleware\\ModuleMiddleware:exams', app('router')->gatherRouteMiddleware($route));
             $resolved = $resolver->resolve($this->request($route, $method));
             $this->assertSame(['D101', 'exact_duty_permission', $key], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
+        }
+    }
+
+    public function test_d101_question_bank_overlay_keeps_module_gate_and_leaves_spending_and_caps_admin_only(): void
+    {
+        $entries = array_slice(DepartmentRouteCatalog::D101, 16, 17);
+        $uris = array_column($entries, 'uri');
+        $this->assertNotContains('api/v1/question-bank/spending', $uris);
+        $this->assertNotContains('api/v1/question-bank/caps', $uris);
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        foreach ($entries as $entry) {
+            $this->assertStringStartsWith('api/v1/question-bank/', $entry['uri']);
+            $this->assertSame(['D101', ['admin', 'institution_staff', 'teacher']], [$entry['approval'], $entry['current_roles']]);
+            $method = explode('|', $entry['method'])[0];
+            $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+                ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array($method, $candidate->methods(), true));
+            $this->assertContains('App\\Http\\Middleware\\ModuleMiddleware:question_bank', app('router')->gatherRouteMiddleware($route));
+            $resolved = $resolver->resolve($this->request($route, $method));
+            $this->assertSame(['D101', 'exact_duty_permission', $entry['permission_options'][0]], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
         }
     }
 

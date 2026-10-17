@@ -14,14 +14,16 @@ use Illuminate\Http\Request;
 class QbLibraryController extends Controller
 {
     /** GET /question-bank/curriculum: the class → subject → chapter → topic tree */
-    public function curriculum()
+    public function curriculum(Request $request)
     {
+        $this->staffGate($request);
         return response()->json(['success' => true, 'data' => QbCurriculumController::treeData()]);
     }
 
     /** GET /question-bank/concepts?qb_topic_id=: a topic's published concepts (titles; unlocked ones say so) */
     public function concepts(Request $request)
     {
+        $this->staffGate($request);
         $f = $request->validate(['qb_topic_id' => 'required|integer']);
         $rows = QbConcept::where('qb_topic_id', $f['qb_topic_id'])->orderBy('sort_order')->orderBy('id')->limit(500)->get();
         $open = $this->unlocked('concept', $rows->pluck('id')->all());
@@ -29,8 +31,9 @@ class QbLibraryController extends Controller
     }
 
     /** GET /question-bank/concepts/{id} */
-    public function concept(int $id)
+    public function concept(Request $request, int $id)
     {
+        $this->staffGate($request);
         $c = QbConcept::findOrFail($id);
         return response()->json(['success' => true, 'data' => QbContentPublicResource::concept($c, $this->unlocked('concept', [$c->id]) !== [])]);
     }
@@ -38,6 +41,7 @@ class QbLibraryController extends Controller
     /** GET /question-bank/resources?kind=&qb_subject_id=&qb_chapter_id=&qb_topic_id=: the published resources filed at that place */
     public function resources(Request $request)
     {
+        $this->staffGate($request);
         $f = $request->validate(['kind' => 'nullable|in:slide,book,pdf', 'qb_subject_id' => 'nullable|integer', 'qb_chapter_id' => 'nullable|integer', 'qb_topic_id' => 'nullable|integer']);
         $rows = QbResource::query()
             ->when($f['kind'] ?? null, fn ($q, $v) => $q->where('kind', $v))
@@ -50,8 +54,9 @@ class QbLibraryController extends Controller
     }
 
     /** GET /question-bank/resources/{id}: the preview pages always; the PDF only once unlocked */
-    public function resource(int $id)
+    public function resource(Request $request, int $id)
     {
+        $this->staffGate($request);
         $r = QbResource::findOrFail($id);
         return response()->json(['success' => true, 'data' => QbContentPublicResource::resource($r, $this->unlocked('resource', [$r->id]) !== [])]);
     }
@@ -60,5 +65,11 @@ class QbLibraryController extends Controller
     private function unlocked(string $type, array $ids): array
     {
         return $ids ? QbUnlock::where('item_type', $type)->whereIn('item_id', $ids)->pluck('item_id')->map(fn ($v) => (int) $v)->all() : [];
+    }
+
+    /** D101: department staff need their X-Department-Id context and this route's exact duty key on every request */
+    private function staffGate(Request $request): void
+    {
+        if ($request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
     }
 }

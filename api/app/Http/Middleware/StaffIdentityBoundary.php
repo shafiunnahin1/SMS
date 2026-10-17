@@ -61,11 +61,15 @@ class StaffIdentityBoundary
         $results = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Exams\ResultController::class.'@')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/results', 'HEAD api/v1/results', 'POST api/v1/results/bulk', 'PUT api/v1/results/{id}',
                 'GET api/v1/exams/{id}/subjects/{subjectId}/entry', 'HEAD api/v1/exams/{id}/subjects/{subjectId}/entry', 'GET api/v1/results/marksheet/{studentId}', 'HEAD api/v1/results/marksheet/{studentId}'], true);
+        // D101: the question-bank library, questions/quote/buy and own papers (spending and caps stay admin-only by their own role middleware)
+        $questionBank = str_starts_with($request->route()->uri(), 'api/v1/question-bank/')
+            && !in_array($request->route()->uri(), ['api/v1/question-bank/spending', 'api/v1/question-bank/caps'], true)
+            && collect(['QbLibraryController', 'QbPurchaseController', 'QbPaperController'])->contains(fn ($c) => str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\QuestionBank\\'.$c.'@'));
         $attendance = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Academic\AttendanceController::class.'@')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/attendance', 'HEAD api/v1/attendance', 'POST api/v1/attendance', 'PUT api/v1/attendance/{id}',
                 'GET api/v1/attendance/report', 'HEAD api/v1/attendance/report', 'GET api/v1/attendance/summary/{id}', 'HEAD api/v1/attendance/summary/{id}'], true);
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         return $next($request);

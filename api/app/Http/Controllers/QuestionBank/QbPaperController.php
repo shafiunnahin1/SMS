@@ -24,6 +24,7 @@ class QbPaperController extends Controller
     /** GET /question-bank/papers?status= */
     public function index(Request $request)
     {
+        $this->staffGate($request);
         $f = $request->validate(['status' => 'nullable|in:draft,final']);
         $rows = $this->visible($request->user())->when($f['status'] ?? null, fn ($q, $s) => $q->where('status', $s))->orderByDesc('updated_at')->limit(200)->get();
         $authors = User::whereIn('id', $rows->pluck('created_by')->unique())->pluck('name', 'id');
@@ -34,6 +35,7 @@ class QbPaperController extends Controller
     /** POST /question-bank/papers */
     public function store(Request $request)
     {
+        $this->staffGate($request);
         $in = $this->validated($request);
         if ($missing = $this->unbought($in)) return $missing;
         $paper = DB::transaction(function () use ($in, $request) {
@@ -47,12 +49,14 @@ class QbPaperController extends Controller
     /** GET /question-bank/papers/{id} */
     public function show(Request $request, int $id)
     {
+        $this->staffGate($request);
         return response()->json(['success' => true, 'data' => $this->row($this->find($request->user(), $id))]);
     }
 
     /** PUT /question-bank/papers/{id}: the whole paper again (sections and items replaced); drafts only */
     public function update(Request $request, int $id)
     {
+        $this->staffGate($request);
         $paper = $this->find($request->user(), $id);
         if ($paper->status !== 'draft') throw new BusinessException('a final paper cannot be changed', 'qb_paper_final', 422);
         $in = $this->validated($request);
@@ -69,6 +73,7 @@ class QbPaperController extends Controller
     /** DELETE /question-bank/papers/{id}: drafts only */
     public function destroy(Request $request, int $id)
     {
+        $this->staffGate($request);
         $paper = $this->find($request->user(), $id);
         if ($paper->status !== 'draft') throw new BusinessException('a final paper cannot be deleted', 'qb_paper_final', 422);
         DB::transaction(function () use ($paper) {
@@ -82,6 +87,7 @@ class QbPaperController extends Controller
     /** POST /question-bank/papers/{id}/finalize: a paper with at least one question becomes final (printed, no longer edited) */
     public function finalize(Request $request, int $id)
     {
+        $this->staffGate($request);
         $paper = $this->find($request->user(), $id);
         if ($paper->status !== 'draft') throw new BusinessException('already final', 'qb_paper_final', 422);
         if ($this->items($paper)->isEmpty()) throw new BusinessException('a paper needs at least one question', 'qb_paper_empty', 422);
@@ -93,6 +99,7 @@ class QbPaperController extends Controller
     /** GET /question-bank/papers/{id}/pdf?set=A|B&answers=0|1[&format=json] */
     public function pdf(Request $request, int $id, PdfService $pdf)
     {
+        $this->staffGate($request);
         $f = $request->validate(['set' => 'nullable|in:A,B', 'answers' => 'nullable|boolean', 'format' => 'nullable|in:json']);
         $paper = $this->find($request->user(), $id);
         $data = $this->printable($paper, $f['set'] ?? 'A', (bool) ($f['answers'] ?? false));
@@ -203,5 +210,11 @@ class QbPaperController extends Controller
             $out[$m->id] = 'data:' . $m->mime . ';base64,' . base64_encode(\Illuminate\Support\Facades\Storage::disk('private')->get($m->path));
         }
         return $out;
+    }
+
+    /** D101: department staff need their X-Department-Id context and this route's exact duty key on every request */
+    private function staffGate(Request $request): void
+    {
+        if ($request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
     }
 }

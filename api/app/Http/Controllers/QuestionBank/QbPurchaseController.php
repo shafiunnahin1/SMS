@@ -19,6 +19,7 @@ class QbPurchaseController extends Controller
     /** GET /question-bank/questions?qb_subject_id=&qb_chapter_id=&qb_topic_id=&qb_question_type_id=&difficulty=&q=&page= */
     public function questions(Request $request)
     {
+        $this->staffGate($request);
         $f = $request->validate(['qb_subject_id' => 'nullable|integer', 'qb_chapter_id' => 'nullable|integer', 'qb_topic_id' => 'nullable|integer',
             'qb_question_type_id' => 'nullable|integer', 'difficulty' => 'nullable|integer|min:1|max:5', 'q' => 'nullable|string|max:100', 'per_page' => 'nullable|integer|min:1|max:50']);
         $page = QbQuestion::query()
@@ -36,8 +37,9 @@ class QbPurchaseController extends Controller
     }
 
     /** GET /question-bank/questions/{id}: the question, its answer only once bought, and the price */
-    public function question(int $id)
+    public function question(Request $request, int $id)
     {
+        $this->staffGate($request);
         $q = $this->purchases->item('question', $id);
         $open = QbUnlock::where('item_type', 'question')->where('item_id', $q->id)->exists();
         return response()->json(['success' => true, 'data' => QbQuestionPublicResource::make($q, $open) + ['quote' => $open ? null : $this->priceOnly($this->purchases->quote('question', $q))]]);
@@ -46,6 +48,7 @@ class QbPurchaseController extends Controller
     /** GET /question-bank/quote?item_type=&item_id= */
     public function quote(Request $request)
     {
+        $this->staffGate($request);
         $f = $request->validate(['item_type' => 'required|in:question,concept,resource', 'item_id' => 'required|integer']);
         $item = $this->purchases->item($f['item_type'], (int) $f['item_id']);
         $open = QbUnlock::where('item_type', $f['item_type'])->where('item_id', $item->id)->exists();
@@ -56,6 +59,7 @@ class QbPurchaseController extends Controller
     /** POST /question-bank/buy {item_type, item_id} */
     public function buy(Request $request)
     {
+        $this->staffGate($request);
         $f = $request->validate(['item_type' => 'required|in:question,concept,resource', 'item_id' => 'required|integer', 'price' => 'prohibited', 'amount' => 'prohibited']);
         $r = $this->purchases->buy($request->user(), $f['item_type'], (int) $f['item_id']);
         return response()->json(['success' => true, 'data' => ['item_type' => $r['unlock']->item_type, 'item_id' => (int) $r['unlock']->item_id,
@@ -67,6 +71,7 @@ class QbPurchaseController extends Controller
      *  its own purchase (already owned ones cost nothing); the first refusal (402 / 422) stops the rest, the ones before it stay bought. */
     public function buyMany(Request $request)
     {
+        $this->staffGate($request);
         $f = $request->validate(['question_ids' => 'required|array|min:1|max:100', 'question_ids.*' => 'integer|distinct', 'price' => 'prohibited', 'amount' => 'prohibited']);
         $charged = 0;
         foreach ($f['question_ids'] as $id) $charged += Money::toPaisa($this->purchases->buy($request->user(), 'question', (int) $id)['charged']);
@@ -112,5 +117,11 @@ class QbPurchaseController extends Controller
     private function priceOnly(array $q): array
     {
         return ['price' => $q['price'], 'base' => $q['base'], 'free_pages' => $q['free_pages']];
+    }
+
+    /** D101: department staff need their X-Department-Id context and this route's exact duty key on every request */
+    private function staffGate(Request $request): void
+    {
+        if ($request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
     }
 }

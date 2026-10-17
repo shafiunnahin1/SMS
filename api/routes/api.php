@@ -383,7 +383,7 @@ Route::prefix('v1')->group(function () {
         // ── Question bank (D65, QB.1): the admin links a program to a platform class ──
         Route::get('/qb/class-levels',                    [QbCurriculumController::class, 'classLevels'])->middleware(['role:admin', 'module:question_bank']);
         // ── Question bank (D65, QB.5): teachers read published concepts and resources; body / file only once unlocked ──
-        Route::middleware(['role:admin,teacher', 'module:question_bank'])->prefix('question-bank')->group(function () {
+        Route::middleware(['role:admin,teacher,institution_staff', 'module:question_bank'])->prefix('question-bank')->group(function () {
             Route::get('/curriculum',                     [QbLibraryController::class, 'curriculum']);
             Route::get('/concepts',                       [QbLibraryController::class, 'concepts']);
             Route::get('/concepts/{id}',                  [QbLibraryController::class, 'concept'])->whereNumber('id');
