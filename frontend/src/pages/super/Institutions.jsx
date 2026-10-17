@@ -66,12 +66,13 @@ function CreateInstitution({ open, onClose, onCreated }) {
   const submit = async (v) => {
     try {
       const { data } = await api.post('/super/institutions', { name: v.name, slug: v.slug, institution_type: v.institution_type, phone: v.phone || null,
-        admin: { name: v.admin_name, phone: v.admin_phone, email: v.admin_email || null, password: v.admin_password } })
+        // D90: the first admin gets an activation code on one contact channel, no password is set here
+        admin: { name: v.admin_name, contact: v.admin_phone ? { channel: 'phone', value: v.admin_phone } : { channel: 'email', value: v.admin_email } } })
       useUiStore.getState().addToast(t('common.saved'))
       qc.invalidateQueries({ queryKey: ['super'] })
       reset(); onClose(); onCreated(data.data)
     } catch (e) {
-      Object.entries(e.response?.data?.errors ?? {}).forEach(([k, m]) => setError(k.replace('admin.', 'admin_'), { message: m[0] }))
+      Object.entries(e.response?.data?.errors ?? {}).forEach(([k, m]) => setError(k.startsWith('admin.contact') ? (v.admin_phone ? 'admin_phone' : 'admin_email') : k.replace('admin.', 'admin_'), { message: m[0] }))
     }
   }
   const req = { required: t('super.required') }
@@ -84,9 +85,8 @@ function CreateInstitution({ open, onClose, onCreated }) {
         <Input label={t('super.phone')} ltr inputMode="tel" error={errors.phone?.message} {...register('phone')} />
         <h3 className="sm:col-span-2 font-semibold mt-2">{t('super.first_admin')}</h3>
         <Input label={t('super.name')} error={errors.admin_name?.message} {...register('admin_name', req)} />
-        <Input label={t('super.phone')} ltr inputMode="tel" error={errors.admin_phone?.message} {...register('admin_phone', req)} />
+        <Input label={t('super.phone')} ltr inputMode="tel" error={errors.admin_phone?.message} {...register('admin_phone', { validate: (val, all) => (val || all.admin_email ? true : t('super.required')) })} />
         <Input label={t('super.email')} ltr type="email" error={errors.admin_email?.message} {...register('admin_email')} />
-        <Input label={t('super.password')} ltr type="text" autoComplete="off" hint={t('super.password_hint')} error={errors.admin_password?.message} {...register('admin_password', req)} />
         <div className="sm:col-span-2 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
           <Button type="submit" loading={isSubmitting}>{t('common.save')}</Button>
