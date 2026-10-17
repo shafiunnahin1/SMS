@@ -95,6 +95,23 @@ class DepartmentRouteInventoryTest extends TestCase
         $this->assertNull($resolver->resolve(Request::create('/api/v1/programs')));
     }
 
+    public function test_d100_inventory_routes_match_live_routes_and_stay_principal_only(): void
+    {
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        $this->assertCount(9, DepartmentRouteCatalog::D100);
+        foreach (DepartmentRouteCatalog::D100 as $entry) {
+            $this->assertSame(['D100', 'principal_only', [], ['accountant', 'admin']], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
+            $this->assertStringStartsWith('api/v1/inventory/', $entry['uri']);
+            foreach (array_diff(explode('|', $entry['method']), ['HEAD']) as $method) {
+                $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())->first(fn ($r) => $r->uri() === $entry['uri'] && in_array($method, $r->methods(), true));
+                $this->assertNotNull($route, $method.' '.$entry['uri']);
+                $this->assertSame($entry['action'], ltrim($route->getActionName(), '\\'));
+                $result = $resolver->resolve($this->request($route, $method));
+                $this->assertSame(['principal_only', null], [$result['resolved_mode'] ?? null, array_key_exists('permission', $result ?? []) ? $result['permission'] : 'missing'], $method.' '.$entry['uri']);
+            }
+        }
+    }
+
     private function request(Route $original, string $method, array $parameters = [], array $body = []): Request
     {
         $request = Request::create('/'.preg_replace('/\{[^}]+\}/', 'fixture', $original->uri()), $method, $body);
