@@ -331,4 +331,17 @@ return [
     'GET api/v1/hr/advances/{id}' => ['admin', 'institution_staff', 'accountant'],
     'POST api/v1/hr/advances/{id}/{action}' => ['admin','accountant'],
     'GET api/v1/teacher/salary/advances' => ['teacher', 'institution_staff'],
+    // R3.7 / D104 payroll
+    'GET api/v1/hr/payroll-runs' => ['accountant', 'admin'],
+    'POST api/v1/hr/payroll-runs' => ['accountant', 'admin'],
+    'GET api/v1/hr/payroll-runs/{id}' => ['accountant', 'admin'],
+    'POST api/v1/hr/payroll-runs/{id}/{action}' => ['accountant', 'admin'],
+    'GET api/v1/hr/payroll-runs/{id}/{file}' => ['accountant', 'admin'],
+    'PATCH api/v1/hr/payroll-items/{id}' => ['accountant', 'admin'],
+    'GET api/v1/hr/payroll-items/{id}/slip.pdf' => ['accountant', 'admin'],
+    'GET api/v1/hr/reports/{name}' => ['accountant', 'admin'],
+    'GET api/v1/teacher/salary' => ['teacher'],
+    'GET api/v1/teacher/salary/slips' => ['teacher'],
+    'GET api/v1/teacher/salary/slips/{id}.pdf' => ['teacher'],
+    'GET api/v1/teacher/salary/history' => ['teacher'],
 ];

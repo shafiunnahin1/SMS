@@ -88,6 +88,10 @@ class RoleMatrixContractTest extends TestCase
             if ($uri === 'api/v1/hr/leaves/{id}/{action}') $path = str_replace('dry-run', 'cancel', $path);
             if ($uri === 'api/v1/fee-refunds/{id}/{action}') $path = str_replace('dry-run', 'process', $path);
             if ($uri === 'api/v1/hr/advances/{id}/{action}') $path = str_replace('dry-run', 'approve', $path);
+            // D104: valid payroll action/file/report names so route constraints do not preempt the role middleware
+            if ($uri === 'api/v1/hr/payroll-runs/{id}/{action}') $path = str_replace('dry-run', 'review', $path);
+            if ($uri === 'api/v1/hr/payroll-runs/{id}/{file}') $path = 'hr/payroll-runs/999999/disbursement.csv';
+            if ($uri === 'api/v1/hr/reports/{name}') $path = 'hr/reports/held';
             // D101: department staff hold per-report-type keys; use a reviewed financial type so the role assertion is not preempted.
             if ($uri === 'api/v1/accountant/reports/{type}') $path = 'accountant/reports/dues';
             if ($uri === 'api/v1/hr/people/{type}/{id}/salary') $path = 'hr/people/teacher/'.$salaryTeacher->id.'/salary';

@@ -287,6 +287,24 @@ Route::prefix('v1')->group(function () {
         });
 
 
+        // R3.7 / D104: payroll runs, payment, payslips and the teacher's own salary (staff-payroll.md §15)
+        Route::middleware(['role:admin,accountant','module:hr_payroll'])->prefix('hr')->group(function () {
+            Route::get('/payroll-runs',[\App\Http\Controllers\Hr\PayrollRunController::class,'index']);
+            Route::post('/payroll-runs',[\App\Http\Controllers\Hr\PayrollRunController::class,'store']);
+            Route::get('/payroll-runs/{id}',[\App\Http\Controllers\Hr\PayrollRunController::class,'show'])->whereNumber('id');
+            Route::post('/payroll-runs/{id}/{action}',[\App\Http\Controllers\Hr\PayrollRunController::class,'transition'])->whereNumber('id')->whereIn('action',['recompute','review','approve','reject','cancel','pay']);
+            Route::get('/payroll-runs/{id}/{file}',[\App\Http\Controllers\Hr\PayrollRunController::class,'download'])->whereNumber('id')->whereIn('file',['disbursement.csv','register.pdf']);
+            Route::patch('/payroll-items/{id}',[\App\Http\Controllers\Hr\PayrollItemController::class,'update'])->whereNumber('id');
+            Route::get('/payroll-items/{id}/slip.pdf',[\App\Http\Controllers\Hr\PayrollItemController::class,'slip'])->whereNumber('id');
+            Route::get('/reports/{name}',[\App\Http\Controllers\Hr\PayrollReportController::class,'show'])->whereIn('name',['register','held','monthly-cost']);
+        });
+        Route::middleware(['role:teacher','module:hr_payroll'])->prefix('teacher/salary')->group(function () {
+            Route::get('/',[\App\Http\Controllers\Hr\TeacherSalaryController::class,'summary']);
+            Route::get('/slips',[\App\Http\Controllers\Hr\TeacherSalaryController::class,'slips']);
+            Route::get('/slips/{id}.pdf',[\App\Http\Controllers\Hr\TeacherSalaryController::class,'slip'])->whereNumber('id');
+            Route::get('/history',[\App\Http\Controllers\Hr\TeacherSalaryController::class,'history']);
+        });
+
         // D85 / R3.4: ordinary staff and leave records; no payroll execution.
         Route::middleware(['role:admin','module:teacher_attendance'])->group(function () {
             Route::get('/teacher-attendance',[TeacherAttendanceController::class,'index']);

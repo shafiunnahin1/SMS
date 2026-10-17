@@ -29,6 +29,7 @@ class CrossTenantRouteTest extends TestCase
             'GET api/v1/parent/children/{id}/attendance'   => ['parent', "parent/children/{$theirs['student']}/attendance"],
             'GET api/v1/results/marksheet/{studentId}'     => ['admin', "results/marksheet/{$theirs['student']}?exam_id={$theirs['exam']}&format=json"],
             'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/entry"],
+            'GET api/v1/teacher/salary/slips/{id}.pdf' => ['teacher', "teacher/salary/slips/{$theirs['payroll_item']}.pdf"],
         ];
     }
 
@@ -36,6 +37,7 @@ class CrossTenantRouteTest extends TestCase
     private const NOT_ROW_IDS = [
         'GET api/v1/cashbook/{date}/report.{ext}', 'POST api/v1/cashbook/{date}/close', 'POST api/v1/cashbook/{date}/reopen', // CashBookTenancyTest: dates/format read only the caller's cashbook
         'GET api/v1/admin/reports/{type}', 'GET api/v1/accountant/reports/{type}',     // report name; ReportTest: a foreign program_id is 422
+        'GET api/v1/hr/reports/{name}',                                                 // payroll report name; reads only the caller's runs (PayrollTenancyTest)
         'GET api/v1/inventory/reports/{name}', 'POST api/v1/inventory/{type}',             // report name / movement type; InventoryTenancyTest: a foreign item_id is 404
         'GET api/v1/inventory/sales/{receipt_no}/receipt.pdf',                         // InventoryTenancyTest: another institution's STR- receipt is 404
         'GET api/v1/imports/templates/{kind}.xlsx',                                    // template name, no data
@@ -63,6 +65,11 @@ class CrossTenantRouteTest extends TestCase
         $users['parent'] = Tenancy::as($i, fn () => Student::find($ids['student'])->parents()->first());
         $users['parent']->forceFill(['must_change_password' => false])->save();
         $users['institution_staff'] = $this->makeUser($i, 'institution_staff');
+        $users['teacher'] = $this->makeUser($i, 'teacher');
+        $ids['payroll_item'] = Tenancy::as($i, function () use ($users) {
+            $teacher = \App\Models\Teacher::create(['user_id' => $users['teacher']->id, 'employee_id' => 'PAY-T', 'status' => 'active']);
+            return \App\Models\PayrollItem::factory()->create(['payee_id' => $teacher->id])->id;
+        });
         $ids['department'] = Tenancy::as($i, function () use ($users) {
             $service = app(\App\Services\DepartmentService::class);
             $department = $service->create($users['admin'], ['name' => 'Own context']);

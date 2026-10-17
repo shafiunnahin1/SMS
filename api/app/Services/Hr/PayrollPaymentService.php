@@ -59,6 +59,7 @@ class PayrollPaymentService
     /** §8: the bank returned a payment - the item becomes failed (payable again) and the expense is offset by a negative row */
     public function fail(User $actor, int $itemId, array $input): PayrollItem
     {
+        $this->access->actor($actor); PayrollItem::findOrFail($itemId);   // another institution's item is 404 before any validation
         if (array_diff(array_keys($input), ['reason', 'date'])) $this->invalid('payroll');
         $data = Validator::make($input, ['reason' => 'required|string|max:255', 'date' => 'sometimes|date_format:Y-m-d|before_or_equal:today'])->validate();
         return DB::transaction(function () use ($actor, $itemId, $data) {
@@ -79,6 +80,7 @@ class PayrollPaymentService
     /** PATCH /hr/payroll-items/{id} { action: hold|release, reason }: only unpaid items; release needs the hold cause resolved */
     public function hold(User $actor, int $itemId, array $input): PayrollItem
     {
+        $this->access->actor($actor); PayrollItem::findOrFail($itemId);
         if (array_diff(array_keys($input), ['action', 'reason'])) $this->invalid('payroll');
         $data = Validator::make($input, ['action' => 'required|in:hold,release', 'reason' => 'required_if:action,hold|nullable|string|max:255'])->validate();
         return DB::transaction(function () use ($actor, $itemId, $data) {

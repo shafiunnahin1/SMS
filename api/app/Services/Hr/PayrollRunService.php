@@ -3,6 +3,7 @@
 namespace App\Services\Hr;
 
 use App\Exceptions\BusinessException;
+use App\Jobs\GeneratePayrollRun;
 use App\Models\{PayrollItem, PayrollRun, SalaryAdjustment, SalaryAdvance, SalaryComponent, SalaryPayAccount, SalaryStructure, SalaryStructureLine, StaffMember, Teacher, User};
 use App\Support\{Money, Tenancy};
 use Carbon\CarbonImmutable;
@@ -36,7 +37,7 @@ class PayrollRunService
             if (PayrollRun::where('month', $data['month'])->where('kind', $kind)->where('label', $label)->exists()) $this->conflict();
             $run = PayrollRun::create(['month' => $data['month'], 'kind' => $kind, 'label' => $label, 'status' => 'draft',
                 'settings_snapshot' => $settings, 'prepared_by' => $actor->id]);
-            $this->generate($run);
+            \Illuminate\Support\Facades\Bus::dispatchNow(new GeneratePayrollRun($run->id, $run->institution_id));   // in-request: the tenant is already bound
             $this->approval->audit($actor, $run, 'payroll.created', ['month' => $run->month, 'kind' => $kind]);
             return $run->fresh('items');
         });
@@ -63,7 +64,7 @@ class PayrollRunService
         if ($input) $this->invalid('payroll');
         if ($run->status !== 'draft') $this->immutable();
         $run->settings_snapshot = $this->settings(); $run->save();
-        $this->generate($run);
+        \Illuminate\Support\Facades\Bus::dispatchNow(new GeneratePayrollRun($run->id, $run->institution_id));   // in-request: the tenant is already bound
         $this->approval->audit($actor, $run, 'payroll.recomputed');
         return $run->fresh('items');
     }
@@ -124,6 +125,15 @@ class PayrollRunService
         $run->fill(['status' => 'cancelled', 'cancelled_reason' => $reason])->save();
         $this->approval->audit($actor, $run, 'payroll.cancelled', ['reason' => $reason]);
         return $run->load('items');
+    }
+
+    /** GeneratePayrollRun entry point: draft only, under the run's row lock */
+    public function generateDraft(int $runId): void
+    {
+        DB::transaction(function () use ($runId) {
+            $run = PayrollRun::lockForUpdate()->findOrFail($runId);
+            if ($run->status === 'draft') $this->generate($run);
+        });
     }
 
     /** draft only: rebuild every item from current server-owned inputs (idempotent) */

@@ -77,6 +77,13 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/hr/bonus-schemes/{id}/cancel' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\BonusScheme::factory()->create()->id),
             'POST api/v1/hr/adjustments/{id}/approve' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryAdjustment::factory()->create()->id),
             'POST api/v1/hr/adjustments/{id}/cancel' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryAdjustment::factory()->create()->id),
+            'GET api/v1/hr/payroll-runs/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollRun::factory()->create()->id),
+            'POST api/v1/hr/payroll-runs/{id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollRun::factory()->create()->id),
+            'GET api/v1/hr/payroll-runs/{id}/{file}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollRun::factory()->create()->id),
+            'PATCH api/v1/hr/payroll-items/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollItem::factory()->create()->id),
+            'GET api/v1/hr/payroll-items/{id}/slip.pdf' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollItem::factory()->create()->id),
+            'GET api/v1/hr/reports/{name}' => null,
+            'GET api/v1/teacher/salary/slips/{id}.pdf' => null,
             'GET api/v1/hr/advances/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryAdvance::factory()->create()->id),
             'POST api/v1/hr/advances/{id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryAdvance::factory()->create()->id),
             'GET api/v1/hr/staff/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
@@ -341,6 +348,8 @@ class TenantIsolationTest extends TestCase
                 $path = str_replace('{id}', (string) $id, substr($uri, strlen('api/v1/')));
                 if (str_starts_with($uri, 'api/v1/hr/people/')) $path = str_replace('{type}', 'staff', $path);
                 if ($uri === 'POST api/v1/hr/advances/{id}/{action}') $path = str_replace('{action}', 'approve', $path);
+                if ($uri === 'POST api/v1/hr/payroll-runs/{id}/{action}') $path = str_replace('{action}', 'review', $path);
+                if ($uri === 'GET api/v1/hr/payroll-runs/{id}/{file}') $path = str_replace('{file}', 'disbursement.csv', $path);
                 $this->api($method, $this->hostOf($me['institution']), $path, $me['admin'])->assertNotFound();
             }
         }
