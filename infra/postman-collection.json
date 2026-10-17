@@ -1,0 +1,204 @@
+{
+  "info": {
+    "name": "Education Management SaaS API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",       "value": "http://localhost:8000/api/v1" },
+    { "key": "prodBaseUrl",   "value": "https://{{domain}}/api/v1/v1" },
+    { "key": "token",         "value": "" },
+    { "key": "institutionDomain",  "value": "dhanmondi.schoolapp.com" },
+    { "key": "studentId",     "value": "1" },
+    { "key": "examId",        "value": "1" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "pm.request.headers.add({ key: 'Host', value: pm.variables.get('institutionDomain') });",
+          "pm.request.headers.add({ key: 'Accept', value: 'application/json' });",
+          "pm.request.headers.add({ key: 'Accept-Language', value: 'bn' });"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "const res = pm.response.json();",
+            "if (res.token) { pm.variables.set('token', res.token); }",
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has token', () => pm.expect(res.token).to.be.a('string'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"principal@dhanmondischool.edu.bd\", \"password\": \"School@1234\" }",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" }
+        },
+        {
+          "name": "Logout",
+          "request": { "method": "POST", "url": "{{baseUrl}}/auth/logout" }
+        }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "List Students",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/students?page=1&per_page=20&program_id=1",
+              "query": [
+                { "key": "page",     "value": "1" },
+                { "key": "per_page", "value": "20" },
+                { "key": "program_id", "value": "1" },
+                { "key": "search",   "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Student",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/students",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"মো: রাজু আহমেদ\", \"program_id\": 1, \"batch_id\": 1, \"roll_no\": 5, \"date_of_birth\": \"2010-05-15\", \"gender\": \"male\", \"father_name\": \"আবদুল করিম\", \"guardian_phone\": \"01711111111\", \"admission_date\": \"2025-01-01\" }",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Get Student",
+          "request": { "method": "GET", "url": "{{baseUrl}}/students/{{studentId}}" }
+        },
+        {
+          "name": "Student ID Card PDF",
+          "request": { "method": "GET", "url": "{{baseUrl}}/students/{{studentId}}/card" }
+        }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "Bulk Attendance Entry",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/attendance",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"program_id\": 1, \"batch_id\": 1, \"date\": \"2025-01-15\", \"records\": [ { \"student_id\": 1, \"status\": \"present\" }, { \"student_id\": 2, \"status\": \"absent\" } ] }",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Monthly Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/attendance/report?student_id={{studentId}}&month=2025-01",
+              "query": [
+                { "key": "student_id", "value": "{{studentId}}" },
+                { "key": "month",      "value": "2025-01" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fees",
+      "item": [
+        {
+          "name": "Collect Fee",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/fees/collect",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"student_id\": 1, \"fee_category_id\": 1, \"amount\": 500, \"payment_method\": \"cash\", \"month\": \"2025-01\" }",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Due List",
+          "request": { "method": "GET", "url": "{{baseUrl}}/fees/dues?program_id=1" }
+        },
+        {
+          "name": "Receipt PDF",
+          "request": { "method": "GET", "url": "{{baseUrl}}/fees/receipt/1" }
+        }
+      ]
+    },
+    {
+      "name": "Results",
+      "item": [
+        {
+          "name": "Bulk Mark Entry",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/results/bulk",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"exam_id\": {{examId}}, \"subject_id\": 1, \"marks\": [ { \"student_id\": 1, \"marks_obtained\": 85 }, { \"student_id\": 2, \"marks_obtained\": 72 } ] }",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Publish Exam Results",
+          "request": { "method": "POST", "url": "{{baseUrl}}/exams/{{examId}}/publish" }
+        },
+        {
+          "name": "Marksheet PDF",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/results/marksheet/{{studentId}}?exam_id={{examId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "API Health",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('DB OK', () => pm.expect(pm.response.json().db).to.equal('ok'));",
+            "pm.test('Redis OK', () => pm.expect(pm.response.json().redis).to.equal('ok'));"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    }
+  ]
+}

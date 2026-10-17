@@ -1,0 +1,6 @@
+| D48 | Spike Gate (D28) | Go (শর্তসহ): Phase 3 শুরু; Phase 4-এর PDF-এর আগে D50 বাস্তবায়ন; যা মাপা যায়নি (মানুষের কর্ম-ঘণ্টা, ৩টি ডিভাইস, SMS sandbox, আরবি পাঠক, আসল রসিদ-স্ক্যান, k6) খোলা থাকবে। মালিক, 2026-10-07 |
+| D49 | Loading state | পেজ/অংশ লোডিং-এ কনটেন্টের আকারের skeleton (থিম-token, RTL, reduced-motion); spinner শুধু বাটন/ইনলাইন কাজে। মালিক, 2026-10-07 |
+| D50 | PDF engine | dompdf বাতিল (বাংলা যুক্তাক্ষর ও আরবি শেপিং ভাঙে — Spike S5c)। PDF = headless Chromium; সার্ভারে Chromium চালানো যায় এমন হোস্টিং (VPS/Docker)। এজেন্ট একটি bridge package/সার্ভিস প্রস্তাব করে যোগ করতে পারে (এই সিদ্ধান্তই Change-Request)। মালিক, 2026-10-07 |
+| D51 | Web auth | ওয়েব = Sanctum cookie-SPA session (HttpOnly, host-only cookie, CSRF); মোবাইল/API = Bearer token। D1-এর "bearer token" ওয়েবের জন্য এটি দিয়ে প্রতিস্থাপিত; role-ভিত্তিক মেয়াদ, idle-timeout, force-logout session-এও প্রযোজ্য। মালিক, 2026-10-07 |
+| D52 | Fonts | বাংলা ফন্ট Google Fonts থেকে (I18N.md §4.4-এর self-host নিয়ম প্রতিস্থাপিত); CSP-তে fonts.googleapis.com ও fonts.gstatic.com অনুমোদিত। জানা ঝুঁকি: ব্যবহারকারীর IP Google-এ যায়, অফলাইন/ধীর নেটে ফন্ট দেরিতে আসে। মালিক, 2026-10-07 |
+| D53 | Language order | কার্যকর ভাষা: users.locale → মনে-রাখা পছন্দ → প্রতিষ্ঠানের default_locale → bn। ব্রাউজারের ভাষা (Accept-Language) আর ব্যবহার হয় না। মালিক, 2026-10-07 |

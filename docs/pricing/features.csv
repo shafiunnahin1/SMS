@@ -1,0 +1,378 @@
+﻿module,feature_bn,evidence,phase
+platform,"মোবাইল নম্বর বা ইমেইল দিয়ে লগইন, শক্ত পাসওয়ার্ড-নীতি",route:POST /auth/login,R1
+platform,এককালীন কোড (OTP) দিয়ে যাচাই,route:POST /auth/verify-otp,R1
+platform,পাসওয়ার্ড ভুলে গেলে নিজে রিসেট,route:POST /auth/forgot-password,R1
+platform,পাসওয়ার্ড পরিবর্তন,route:PATCH /auth/change-password,R1
+platform,নিজের লগইন-সেশনের তালিকা ও অন্য ডিভাইস থেকে লগআউট,route:GET /auth/sessions,R1
+platform,সব ডিভাইস থেকে একসাথে লগআউট,route:POST /auth/logout-all,R1
+platform,প্রশাসক কাউকে জোর করে লগআউট বা আনলক করতে পারেন,route:POST /admin/users/{id}/force-logout,R1
+platform,"প্রতিষ্ঠানের সাধারণ তথ্য (নাম, ঠিকানা ইত্যাদি) সেটিং",route:GET /admin/settings/general,R1
+platform,বাংলা ও ইংরেজি — ভাষা বেছে নেওয়া,route:PUT /admin/settings/language,R1
+platform,"প্রতিষ্ঠানের নিজস্ব শব্দ (""শ্রেণি/শাখা"" বা ""কোর্স/ব্যাচ"")",route:PUT /admin/settings/terminology,R1
+platform,লোগো ও প্রতিষ্ঠানের নিজস্ব রং/থিম,route:POST /admin/theme/logo,R1
+platform,অডিট-লগ: কে কখন কী বদলাল,route:GET /audit-logs,R1
+platform,অ্যাপের ভিতরে বিজ্ঞপ্তি (ঘণ্টা-চিহ্ন),route:GET /notifications,R1
+platform,"নিজে সাইন-আপ করে প্রতিষ্ঠান খোলা, ট্রায়াল",route:POST /public/signup,R1
+platform,সাবস্ক্রিপশন দেখা ও অনলাইনে পরিশোধ,route:POST /subscription/checkout,R1
+platform,প্রতিষ্ঠানের সব তথ্য ডাউনলোড (ব্যাকআপ),ctrl:ExportController,R1
+platform,মোবাইলে অ্যাপের মতো ব্যবহার (PWA),doc:advanced-features.md,L
+platform,দ্বি-স্তর নিরাপত্তা (লগইনে OTP বাধ্যতামূলক করা),doc:extended-features.md,L
+students,"ছাত্রের পূর্ণ প্রোফাইল তৈরি (ছবি, অভিভাবক, ঠিকানা, ভর্তি-তথ্য)",route:POST /students,R1
+students,ছাত্র-আইডি স্বয়ংক্রিয়ভাবে তৈরি,route:POST /students,R1
+students,ছাত্র-তালিকা: খোঁজা ও ফিল্টার করা,route:GET /students,R1
+students,এক পাতায় ছাত্রের সব তথ্য,route:GET /students/{id},R1
+students,প্রোফাইল সম্পাদনা,route:PUT /students/{id},R1
+students,"ছাত্র বাদ দেওয়া — তথ্য মুছে যায় না, সংরক্ষিত থাকে",route:DELETE /students/{id},R1
+students,একই অভিভাবকের একাধিক সন্তান এক লগইনে,route:GET /parent/children,R1
+students,"অভিভাবকের সম্মতি-ফর্ম (ছবি, তথ্য-ব্যবহার) ও তার PDF",route:GET /students/{id}/consent-form.pdf,R1
+students,সম্মতির রেকর্ড রাখা,route:POST /students/{id}/consents,R1
+students,অভিভাবক নিজে সম্মতি দেখতে ও বদলাতে পারেন,route:PUT /parent/consents/{type},R1
+students,প্রয়োজনে ছাত্রের ব্যক্তিগত তথ্য মুছে ফেলা (anonymize),route:POST /students/{id}/anonymize,R1
+students,অভিভাবক সন্তানের সব তথ্য ডাউনলোড করতে পারেন,route:GET /parent/children/{id}/export,R1
+enrollments,শ্রেণি বা কোর্স তৈরি,route:POST /programs,R1
+enrollments,শাখা বা ব্যাচ তৈরি,route:POST /batches,R1
+enrollments,বিষয়-তালিকা তৈরি,route:POST /subjects,R1
+enrollments,শিক্ষক যোগ ও শিক্ষকের প্রোফাইল,route:POST /teachers,R1
+enrollments,ছাত্রকে শ্রেণি-শাখায় ভর্তি,route:POST /enrollments,R1
+enrollments,এক শাখা থেকে অন্য শাখায় বদলি — পুরনো ইতিহাস সংরক্ষিত,route:POST /enrollments/{id}/transfer,R1
+enrollments,শিক্ষাবর্ষ শেষে ভর্তির সমাপ্তি,route:POST /enrollments/{id}/end,R1
+enrollments,শাখার ছাত্র-তালিকা,route:GET /batches/{id}/students,R1
+enrollments,শিক্ষক নিজের শাখাগুলো দেখেন,route:GET /teacher/batches,R1
+enrollments,ছাত্রের পূর্ণ ভর্তি-ইতিহাস,route:GET /students/{id}/enrollments,R1
+enrollments,কোচিং: একজন ছাত্র একাধিক ব্যাচে,doc:coaching-private-batch.md,R2
+enrollments,"কলেজ: শ্রেণি + গ্রুপ, ঐচ্ছিক (৪র্থ) বিষয়",doc:college.md,L
+enrollments,শিক্ষকের বিষয়-নিয়োগ ম্যাট্রিক্স,doc:teacher-subjects.md,L
+reports,"প্রশাসকের ড্যাশবোর্ড — আজকের হাজিরা, আদায়, বকেয়া এক নজরে",route:GET /admin/dashboard,R1
+reports,হিসাবরক্ষকের ড্যাশবোর্ড,route:GET /accountant/dashboard,R1
+reports,শিক্ষকের ড্যাশবোর্ড,route:GET /teacher/dashboard,R1
+reports,অভিভাবকের ড্যাশবোর্ড,route:GET /parent/dashboard,R1
+reports,প্রশাসকের প্রতিবেদন (ধরন বেছে নিয়ে),route:GET /admin/reports/{type},R1
+reports,হিসাবরক্ষকের আদায়-প্রতিবেদন,route:GET /accountant/reports/{type},R1
+reports,প্রতিবেদন PDF ও Excel-এ ডাউনলোড,route:GET /admin/reports/{type};doc:pdf-reports.md,R1
+support,সহায়তা-অনুরোধ (টিকিট) খোলা ও অনুসরণ,ctrl:SupportTicketController,R1.1
+support,অনুরোধের উত্তর ও অবস্থা জানা,ctrl:SupportTicketController,R1.1
+data_migration,আমদানির Excel টেমপ্লেট ডাউনলোড,route:GET /imports/templates/{kind}.xlsx,R1
+data_migration,ফাইল আপলোড,route:POST /imports,R1
+data_migration,নিজের ফাইলের কলাম টেমপ্লেটের সাথে মেলানো (mapping),route:PUT /imports/{id}/mapping,R1
+data_migration,আমদানির আগে যাচাই (dry-run) — কোথায় ভুল তা আগেই জানা,route:GET /imports/{id},R1
+data_migration,ভুলের তালিকা Excel-এ ডাউনলোড,route:GET /imports/{id}/errors.xlsx,R1
+data_migration,"নিশ্চিত করে আমদানি, ভুল হলে ফেরত (rollback)",route:POST /imports/{id}/{action},R1
+attendance,শ্রেণি বা শাখা ধরে দৈনিক হাজিরা নেওয়া,route:POST /attendance,R1
+attendance,উপস্থিত / অনুপস্থিত / দেরি / ছুটি — হাজিরার অবস্থা,route:POST /attendance,R1
+attendance,অনুপস্থিত ছাত্রের অভিভাবকের কাছে স্বয়ংক্রিয় SMS,route:POST /attendance;doc:notifications.md,R1
+attendance,ভুল হলে হাজিরা সংশোধন,route:PUT /attendance/{id},R1
+attendance,শাখা-ভিত্তিক হাজিরা-প্রতিবেদন,route:GET /attendance/report,R1
+attendance,ছাত্রের মাসিক হাজিরা-সারসংক্ষেপ,route:GET /attendance/summary/{id},R1
+attendance,অভিভাবক সন্তানের হাজিরা দেখেন,route:GET /parent/children/{id}/attendance,R1
+attendance,ছাত্র নিজে (ছাত্র-লগইনে) নিজের হাজিরা দেখে,route:GET /student/attendance,R1
+attendance,ছুটির দিনে হাজিরা বন্ধ (ক্যালেন্ডারের সাথে যুক্ত),doc:academic-calendar.md,L
+period_attendance,শিক্ষকের আজকের পিরিয়ড-তালিকা,route:GET /teacher/periods/today,R2
+period_attendance,পিরিয়ড বা বিষয় ধরে হাজিরা,route:POST /period-attendance,R2
+period_attendance,পিরিয়ড-হাজিরার প্রতিবেদন,route:GET /period-attendance/report,R2
+teacher_attendance,শিক্ষকের দৈনিক হাজিরা,route:POST /teacher-attendance,R3
+teacher_attendance,শিক্ষকের হাজিরার তালিকা ও মাসিক সারসংক্ষেপ,route:GET /teacher-attendance,R3
+teacher_attendance,কর্মচারীর দৈনিক হাজিরা,ctrl:StaffAttendanceController,R3
+teacher_attendance,"অনুমোদিত ছুটি হাজিরায় ""ছুটি"" হিসেবে গণ্য",doc:hr-payroll.md,R3
+attendance_devices,"কার্ড, QR বা RFID যন্ত্র নিবন্ধন",route:POST /attendance-devices,R4
+attendance_devices,ছাত্র/শিক্ষকের কার্ড বা QR-পরিচিতি,route:POST /person-credentials,R4
+attendance_devices,পরিচিতি Excel থেকে আমদানি,route:POST /person-credentials/import,R4
+attendance_devices,যন্ত্রের পাঞ্চ-তালিকা পর্যালোচনা,route:GET /device-punches,R4
+attendance_devices,অচেনা পাঞ্চ হাতে ছাত্রের সাথে মেলানো,route:POST /device-punches/{id}/assign,R4
+attendance_devices,পাঞ্চ থেকে হাজিরা স্বয়ংক্রিয় তৈরি,doc:attendance-devices.md,R4
+student_leave,অভিভাবক অ্যাপ/পোর্টাল থেকে ছুটির আবেদন করেন,route:POST /parent/children/{id}/leave-requests,R2
+student_leave,অভিভাবক নিজের আবেদনগুলোর অবস্থা দেখেন,route:GET /parent/leave-requests,R2
+student_leave,শিক্ষক/প্রশাসক আবেদনের তালিকা দেখেন,route:GET /leave-requests/students,R2
+student_leave,আবেদন অনুমোদন বা বাতিল,route:PATCH /leave-requests/students/{id},R2
+routine,শাখা-ভিত্তিক ক্লাস-রুটিন তৈরি,route:POST /routines,R1.1
+routine,পিরিয়ড/সময়-ব্লক ঠিক করা,route:POST /routine-blocks,R1.1
+routine,একই শিক্ষক বা কক্ষ দুই জায়গায় পড়লে আগেই সংঘর্ষ ধরা,doc:academics-advanced.md,R1.1
+routine,রুটিন ছাপা,route:GET /routines/{batchId}/print,R1.1
+routine,শিক্ষকের আজকের রুটিন,route:GET /teacher/routine/today,R1.1
+routine,ছাত্র নিজের রুটিন দেখে,route:GET /student/routine,R1.1
+substitution,কোন ক্লাসে বদলি লাগবে তার তালিকা,route:GET /substitutions/needed,R2
+substitution,বদলি শিক্ষক ঠিক করা,route:POST /substitutions,R2
+substitution,ওই সময়ে কোন শিক্ষক ফাঁকা তা দেখা,route:GET /routines/available-teachers,R2
+substitution,বদলি সম্পাদনা বা বাতিল,route:PUT /substitutions/{id},R2
+academic_calendar,শিক্ষাবর্ষ তৈরি ও ব্যবস্থাপনা,doc:academic-calendar.md,L
+academic_calendar,ছুটির তালিকা (সরকারি ও প্রতিষ্ঠানের),doc:academic-calendar.md,L
+academic_calendar,প্রতিষ্ঠানের ক্যালেন্ডার-পাতা,doc:academic-calendar.md,L
+academic_calendar,পরীক্ষার আসন-বিন্যাস (seat plan) তৈরি,route:POST /exams/{id}/seat-plan/generate,L
+academic_calendar,আসন হাতে বদলানো,route:PUT /exams/{id}/seat-plan/{studentId},L
+academic_calendar,আসন-বিন্যাস ছাপা,route:GET /exams/{id}/seat-plan/print,L
+academic_calendar,ছাত্রের নথি (জন্মনিবন্ধন ইত্যাদি) সংরক্ষণ,doc:academic-calendar.md,L
+syllabus,বিষয়-ভিত্তিক সিলেবাসের ইউনিট তৈরি,route:POST /syllabus/units,R2
+syllabus,আগের বছরের সিলেবাস কপি,route:POST /syllabus/units/clone,R2
+syllabus,Excel থেকে সিলেবাস আমদানি,route:POST /syllabus/units/import,R2
+syllabus,শিক্ষক কোন ইউনিট কতটা পড়ালেন তা চিহ্নিত করা,route:POST /syllabus/coverage,R2
+syllabus,সিলেবাস কতটা শেষ হলো — সারসংক্ষেপ,route:GET /syllabus/overview,R2
+syllabus,কোন শাখা পিছিয়ে আছে তা ধরা,route:GET /syllabus/behind,R2
+syllabus,পাঠ-পরিকল্পনা তৈরি,route:POST /lesson-plans,R2
+syllabus,পাঠ-পরিকল্পনা জমা ও অনুমোদন-ধাপ,route:POST /lesson-plans/{id}/{state},R2
+homework,বাড়ির কাজ দেওয়া (শ্রেণি/শাখা ধরে),route:POST /homework,R2
+homework,বাড়ির কাজের তালিকা ও সম্পাদনা,route:GET /homework,R2
+homework,ছাত্র ফাইল আকারে জমা দেয়,doc:extended-features.md,R2
+homework,শিক্ষক জমা দেখে নম্বর দেন,doc:extended-features.md,R2
+homework,"পাঠ-সামগ্রী (নোট, ফাইল) আপলোড",route:POST /materials,R2
+homework,শিক্ষক-অভিভাবক বার্তা,route:POST /messages,R2
+exams,পরীক্ষা তৈরি (শ্রেণি/শাখা ধরে),route:POST /exams,R1
+exams,পরীক্ষার তালিকা ও সম্পাদনা,route:PUT /exams/{id},R1
+exams,বিষয়-ভিত্তিক পূর্ণমান ও পাস-নম্বর,route:PUT /exams/{id}/subjects,R1
+exams,শিক্ষক বিষয় ধরে একসাথে সব ছাত্রের নম্বর তোলেন,route:POST /results/bulk,R1
+exams,নম্বর-গ্রহণের ফর্ম (বিষয় ও পরীক্ষা ধরে),route:GET /exams/{id}/subjects/{subjectId}/entry,R1
+exams,ভুল নম্বর সংশোধন,route:PUT /results/{id},R1
+exams,GPA ও গ্রেড স্বয়ংক্রিয় হিসাব,route:GET /results;doc:grading.md,R1
+exams,ফল প্রকাশ — প্রকাশের আগে অভিভাবক দেখতে পান না,route:POST /exams/{id}/publish,R1
+exams,মার্কশিট PDF,route:GET /results/marksheet/{studentId},R1
+exams,অভিভাবক সন্তানের ফল দেখেন,route:GET /parent/children/{id}/results,R1
+exams,"বিষয়-শিক্ষক নম্বর জমা দিয়ে লক করেন, বদলাতে প্রশাসকের অনুমতি লাগে",route:POST /exams/{id}/subjects/{subjectId}/submit,R1
+exams,Excel থেকে নম্বর আপলোড,doc:extended-features.md,L
+exams,ছাত্র নিজে ফল দেখে (ছাত্র-লগইনে),route:GET /student/results,R1
+exams,রিপোর্ট কার্ড ইমেইলে পাঠানো,doc:extended-features.md,L
+result_sheets,একাধিক পরীক্ষা মিলিয়ে ওজন দিয়ে চূড়ান্ত ফলাফলের নিয়ম তৈরি,route:POST /result-sheets,R2
+result_sheets,নিয়ম অনুযায়ী ফলাফল হিসাব,route:POST /result-sheets/{id}/compute,R2
+result_sheets,প্রকাশের আগে প্রিভিউ,route:GET /result-sheets/{id}/preview,R2
+result_sheets,চূড়ান্ত ফলাফল প্রকাশ,route:POST /result-sheets/{id}/publish,R2
+result_sheets,"প্রকাশের পর সংশোধন — নতুন সংস্করণ হিসেবে, পুরনোটি সংরক্ষিত",route:POST /result-sheets/{id}/new-version,R2
+result_sheets,Tabulation Sheet PDF,route:GET /result-sheets/{id}/tabulation.pdf,R2
+admit_card,পরীক্ষার প্রবেশপত্র তৈরি (একসাথে পুরো শাখার),doc:advanced-features.md,L
+admit_card,ছাত্র নিজে প্রবেশপত্র দেখে ও ডাউনলোড করে,doc:advanced-features.md,L
+admit_card,A5 আকারে ছাপা,doc:advanced-features.md,L
+merit_list,পরীক্ষার মেধা-তালিকা,route:GET /exams/{id}/merit-list,R1.1
+merit_list,ফলাফল অভিভাবককে SMS-এ জানানো,doc:coaching-private-batch.md,R1.1
+promotion_tc,পুরো শ্রেণির ছাত্র একসাথে পরের শ্রেণিতে উত্তরণ,route:POST /students/promote,L
+promotion_tc,অন্য প্রতিষ্ঠানে বদলি,route:POST /students/{id}/transfer,L
+promotion_tc,ছাড়পত্র (TC) তৈরি ও ছাপা,doc:promotion-tc.md,L
+promotion_tc,সনদ ও ছাড়পত্রে QR — যে কেউ আসল কি না যাচাই করতে পারে,doc:quick-wins.md,L
+certificates,সনদ ও প্রত্যয়নপত্র তৈরি,doc:extended-features.md,L
+certificates,সনদ ডাউনলোড ও ছাপা,doc:extended-features.md,L
+certificates,একসাথে অনেক ছাত্রের সনদ,doc:extended-features.md,L
+online_quiz,"অনলাইন কুইজ/পরীক্ষা তৈরি, MCQ প্রশ্ন",doc:extended-features.md,R4
+online_quiz,প্রশ্ন একসাথে আমদানি,doc:extended-features.md,R4
+online_quiz,ছাত্র সময়মতো শুরু ও জমা দেয়,doc:extended-features.md,R4
+online_quiz,MCQ-এর নম্বর স্বয়ংক্রিয়,doc:extended-features.md,R4
+online_quiz,ফল দেখা (শিক্ষক ও ছাত্র),doc:extended-features.md,R4
+online_class,"অনলাইন ক্লাসের সময়সূচি ও লিংক (Zoom, Meet ইত্যাদি)",doc:online-class.md,R4
+online_class,"ক্লাসের বিবরণ, সময়কাল, পাসকোড",doc:online-class.md,R4
+online_class,রেকর্ডিং-লিংক সংরক্ষণ,doc:online-class.md,R4
+online_class,ছাত্রের রুটিন-পাতায় ক্লাসের লিংক,doc:online-class.md,R4
+online_class,Zoom-এ স্বয়ংক্রিয় মিটিং তৈরি,doc:extended-features.md,R4
+fees,"ফি-খাত তৈরি (ভর্তি, মাসিক, পরীক্ষা ইত্যাদি)",route:POST /fees/categories,R1
+fees,ফি-খাত সম্পাদনা ও তালিকা,route:PUT /fees/categories/{id},R1
+fees,ফি আদায় — এক রসিদে একাধিক খাত,route:POST /fees/collect,R1
+fees,ছাত্রের বকেয়ার স্বয়ংক্রিয় হিসাব ও বকেয়া-তালিকা,route:GET /fees/dues,R1
+fees,সিরিয়াল-নম্বরযুক্ত রসিদ PDF,route:GET /fees/receipt/{id},R1
+fees,ছাত্রের ফি-ইতিহাস,route:GET /fees/payments/student/{id},R1
+fees,সব আদায়ের তালিকা,route:GET /fees/payments,R1
+fees,আদায়-প্রতিবেদন,route:GET /fees/report,R1
+fees,অভিভাবক নিজের সন্তানের বকেয়া ও রসিদ দেখেন,route:GET /parent/fees,R1
+fees,বকেয়ার স্মারক SMS একসাথে অনেক অভিভাবককে,doc:extended-features.md,R1.1
+fees,ফি মওকুফের আবেদন ও অনুমোদন-ধাপ,route:GET /fees/waivers,R1
+fees,বিলম্ব-জরিমানা স্বয়ংক্রিয় হিসাব,doc:fees-advanced.md,L
+fees,ভাইবোন থাকলে ছাড়,doc:fees-advanced.md,L
+fees,ব্যাংক ও চেকে পরিশোধের হিসাব,doc:fees-advanced.md,L
+fees,শ্রেণি/ব্যাচ অনুযায়ী আলাদা ফি-কাঠামো,doc:fees-advanced.md,L
+fees,ফি-রসিদে QR — স্ক্যান করে আদায়,doc:extended-features.md,L
+fees,ফি ফেরত (রিফান্ড): আবেদন → অনুমোদন → ফেরত,route:POST /fee-refunds,R1
+fees,ফেরতযোগ্য অঙ্ক হিসাব করে দেখানো,route:GET /fee-refunds/refundable,R1
+fees,"ফি বকেয়া থাকলে প্রবেশপত্র/ফল আটকানো, ছাড়সহ",ctrl:DueBlockController,R1
+fee_installment,ফি কিস্তি-পরিকল্পনা তৈরি,doc:extended-features.md,L
+fee_installment,কিস্তি আদায়,doc:extended-features.md,L
+fee_installment,অতিদেয় কিস্তির তালিকা,doc:extended-features.md,L
+online_payment,"অভিভাবক অনলাইনে ফি দেন (bKash, কার্ড, ব্যাংক ইত্যাদি গেটওয়ে)",route:POST /fees/payment/{gateway}/create,R2
+online_payment,কোন মাধ্যমে দেওয়া যাবে তার তালিকা,route:GET /parent/fees/payment-options,R2
+online_payment,পেমেন্টের অবস্থা জানা,route:GET /parent/online-payments/{ref},R2
+online_payment,পেমেন্ট সফল হলে স্বয়ংক্রিয় রসিদ ও বকেয়া মিলকরণ,ctrl:FeePaymentCallbackController,R2
+online_payment,প্রশাসকের অনলাইন-পেমেন্টের তালিকা,route:GET /admin/payments,R2
+online_payment,প্রতিষ্ঠানের হিসাবে নিষ্পত্তি (settlement) ও তার প্রতিবেদন,route:GET /admin/payments/settlements,R2
+online_payment,সন্দেহজনক বা আটকে-থাকা পেমেন্ট পর্যালোচনা,doc:online-fee-payment.md,R2
+online_payment,বাংলা QR-এ পরিশোধ,doc:banglaqr-readiness.md,L
+cashbook,দৈনিক ক্যাশবুক (ফি-রসিদ ও খরচ থেকে স্বয়ংক্রিয়),route:GET /cashbook,R3
+cashbook,তারিখ-সীমার সারসংক্ষেপ,route:GET /cashbook/range,R3
+cashbook,দিন-শেষে হিসাব মিলিয়ে বন্ধ করা (day-end close),route:POST /cashbook/{date}/close,R3
+cashbook,বন্ধ দিনে রসিদ বা খরচ বদলানো যায় না,doc:finance-advanced.md,R3
+cashbook,প্রশাসক কারণ লিখে দিন পুনরায় খুলতে পারেন,route:POST /cashbook/{date}/reopen,R3
+cashbook,ক্যাশবুক রিপোর্ট PDF/Excel,route:GET /cashbook/{date}/report.{ext},R3
+expenses,"খরচ যোগ করা (খাত, তারিখ, অঙ্ক)",route:POST /expenses,R1.1
+expenses,খরচের তালিকা ও সম্পাদনা,route:GET /expenses,R1.1
+expenses,খরচ মোছা,route:DELETE /expenses/{id},R1.1
+expenses,মাসিক খরচ-প্রতিবেদন,route:GET /expenses/report,R1.1
+accounting,হিসাবের তালিকা (chart of accounts) — ডিফল্ট তালিকা তৈরি,route:GET /accounting/accounts,R3
+accounting,নতুন হিসাব যোগ ও গাছ-আকারে দেখা,route:GET /accounting/accounts/tree,R3
+accounting,"ভাউচার: ফি, খরচ, বেতন থেকে স্বয়ংক্রিয় এবং হাতে লেখা",route:POST /accounting/vouchers,R3
+accounting,"ভাউচার পোস্ট/বাতিল — ভুল সংশোধন উল্টো ভাউচারে, মোছা যায় না",route:POST /accounting/vouchers/{id}/{action},R3
+accounting,ব্যাংক-মিলকরণ,route:GET /accounting/bank-reconciliation/{account_id},R3
+accounting,বাজেট তৈরি ও অনুমোদন,route:POST /accounting/budgets,R3
+accounting,বাজেট বনাম বাস্তব খরচ,route:GET /accounting/budgets/{id},R3
+accounting,"প্রতিবেদন: ট্রায়াল ব্যালেন্স, আয়-ব্যয়, খতিয়ান ইত্যাদি",route:GET /accounting/reports/{name},R3
+accounting,শুরুর জের (opening balance) বসানো,route:POST /accounting/opening-balances,R3
+accounting,হিসাবের মেয়াদ-লক — পুরনো তারিখে আর পরিবর্তন নয়,route:PUT /accounting/settings,R3
+donations,দাতার তালিকা ও দাতার স্টেটমেন্ট PDF,route:GET /donors/{id}/statement.pdf,R3
+donations,তহবিল তৈরি (সীমিত/অসীমিত),route:POST /donation-funds,R3
+donations,তহবিলের স্টেটমেন্ট,route:GET /donation-funds/{id}/statement,R3
+donations,প্রচারণা (campaign) ও তার অগ্রগতি,route:GET /donation-campaigns/{id}/progress,R3
+donations,দান গ্রহণ ও রসিদ PDF,route:GET /donations/{id}/receipt.pdf,R3
+donations,"দান বাতিল — নতুন উল্টো সারি, মোছা নয়",route:POST /donations/{id}/reverse,R3
+donations,তহবিলের বেশি খরচ আটকানো,doc:donations.md,R3
+donations,দাতার তথ্য শুধু অনুমতিপ্রাপ্তরা দেখেন,doc:donations.md,R3
+scholarships,বৃত্তি ও ফি-ছাড়ের প্রকল্প তৈরি,doc:advanced-features.md,L
+scholarships,ছাত্রের আবেদন,doc:advanced-features.md,L
+scholarships,আবেদন পর্যালোচনা ও বৃত্তি প্রদান,doc:advanced-features.md,L
+scholarships,ছাত্র নিজের বৃত্তি দেখে,doc:advanced-features.md,L
+sms,প্রি-পেইড SMS-ক্রেডিট কেনা ও ব্যালেন্স দেখা,route:POST /subscription/sms-credits,R1
+sms,পাঠানো সব SMS-এর লগ ও ডেলিভারির অবস্থা,route:GET /sms-logs,R1
+sms,অনুপস্থিতিতে স্বয়ংক্রিয় SMS,route:POST /attendance,R1
+sms,বাংলা SMS সমর্থন — অক্ষর অনুযায়ী খরচের হিসাব,route:POST /attendance;doc:notifications.md,
+sms,নিজের নামে পাঠানোর জন্য Sender ID,ctrl:SmsSenderController,R1
+sms,SMS টেমপ্লেট তৈরি ও প্রিভিউ,route:POST /sms/templates/{id}/preview,R1
+sms,"নির্বাচিত দলকে ক্যাম্পেইন SMS, নির্দিষ্ট সময়ে পাঠানো",route:POST /sms/campaigns,R1
+sms,ক্যাম্পেইনের রিপোর্ট,route:GET /sms/campaigns/{id}/report,R1
+sms,"জরুরি SMS — সব অভিভাবককে একসাথে, আগে খরচের অনুমান",route:POST /sms/emergency,R1
+sms,WhatsApp-এ বিজ্ঞপ্তি,doc:extended-features.md,L
+notices,নোটিশ প্রকাশ (সবাই বা নির্দিষ্ট শ্রেণি/শাখা),route:POST /notices,R1.1
+notices,"নোটিশের তালিকা, সম্পাদনা, মোছা",route:GET /notices,R1.1
+notices,কে নোটিশ দেখেছে তার তালিকা,route:GET /notices/{id}/receipts,R1.1
+notices,যারা দেখেনি তাদের স্মরণ করানো,route:POST /notices/{id}/remind-missing,R1.1
+notices,শিক্ষক-অভিভাবক সরাসরি বার্তা,route:GET /messages,R1.1
+parent_meeting,অভিভাবক-সভার সময় চেয়ে অনুরোধ,doc:extended-features.md,L
+parent_meeting,শিক্ষক সভা নিশ্চিত বা বাতিল করেন,doc:extended-features.md,L
+parent_meeting,আসন্ন সভার তালিকা,doc:extended-features.md,L
+parent_meeting,অভিভাবক নিজের সভাগুলো দেখেন,doc:extended-features.md,L
+events,প্রতিষ্ঠানের অনুষ্ঠান ও প্রতিযোগিতা তৈরি,doc:advanced-features.md,L
+events,ছাত্রের নিবন্ধন,doc:advanced-features.md,L
+events,অংশগ্রহণের উপস্থিতি,doc:advanced-features.md,L
+events,ফলাফল ও আসন্ন অনুষ্ঠানের তালিকা,doc:advanced-features.md,L
+events,ছাত্র নিজে অনুষ্ঠানগুলো দেখে,doc:advanced-features.md,L
+risk_alerts,"ঝুঁকিপূর্ণ ছাত্রের তালিকা (ঘন ঘন অনুপস্থিত, ফলে পিছিয়ে-পড়া)",route:GET /risk/flags,R2
+risk_alerts,একজন ছাত্রের ঝুঁকির কারণ বিশ্লেষণ,route:GET /risk/students/{id},R2
+risk_alerts,শিক্ষক ব্যবস্থা নিয়ে সতর্কতা নিষ্পত্তি করেন,route:POST /risk/flags/{id}/{action},R2
+risk_alerts,কতটা অনুপস্থিতিতে সতর্কতা — প্রতিষ্ঠান নিজে সীমা ঠিক করে,route:PUT /risk/settings,R2
+risk_alerts,যেকোনো সময় নতুন করে মূল্যায়ন,route:POST /risk/evaluate,R2
+admission_cycle,"ভর্তি-চক্র তৈরি (সময়, আসন, শর্ত)",route:POST /admission/cycles,R2
+admission_cycle,আবেদন গ্রহণ শুরু ও বন্ধ,route:POST /admission/cycles/{id}/{action},R2
+admission_cycle,ভর্তি-পরীক্ষার নম্বর তোলা,route:POST /admission/cycles/{id}/test-marks,R2
+admission_cycle,মেধা-তালিকা ও অপেক্ষমান তালিকা তৈরি,route:POST /admission/cycles/{id}/list/{mode},R2
+admission_cycle,যাচাইযোগ্য লটারি,route:GET /admission/cycles/{id}/draw,R2
+admission_cycle,অভিভাবকের জন্য স্বচ্ছতা-পাতা — কীভাবে নির্বাচন হলো,route:GET /public/admission/cycle/{id}/transparency,R2
+admission_cycle,আবেদনকারী নিজের আবেদনের অবস্থা জানেন,route:GET /public/admission/status,R2
+admission_cycle,নির্বাচিত আবেদনকারীকে ছাত্রে রূপান্তর,route:POST /admission/leads/{id}/{action},R2
+leads,"ভর্তিতে আগ্রহীদের তালিকা (ফোন, শ্রেণি, উৎস)",route:POST /leads,R2
+leads,তালিকা খোঁজা ও সম্পাদনা,route:GET /leads,R2
+leads,আগ্রহীকে ছাত্রে রূপান্তর,route:POST /leads/{id}/convert,R2
+leads,লিড মোছা,route:DELETE /leads/{id},R2
+public_site,প্রতিষ্ঠানের নিজস্ব পাবলিক ওয়েবসাইট,route:GET /public/site,R2
+public_site,ওয়েবসাইটে প্রকাশ্য নোটিশ,route:GET /public/notices,R2
+public_site,খবর ও ঘোষণা,route:GET /public/news,R2
+public_site,ফটো-গ্যালারি,route:GET /public/gallery,R2
+public_site,নিজের পাতা (আমাদের সম্পর্কে ইত্যাদি),route:GET /public/pages/{slug},R2
+public_site,শিক্ষক-পরিচিতি,route:GET /public/teachers,R2
+public_site,প্রকাশ্য অনুষ্ঠান-ক্যালেন্ডার,route:GET /public/events,R2
+public_site,অনলাইন ভর্তি-ফর্ম,route:POST /public/admission,R2
+public_site,ভর্তি-ফি অনলাইনে পরিশোধ,route:POST /public/admission/{lead_id}/pay,R2
+public_site,ওয়েবসাইটের ব্যানার ও সেটিং,route:PUT /admin/settings/website,R2
+public_site,নিজস্ব ডোমেইন (যেমন yourschool.edu.bd) সংযোগ,ctrl:DomainController,R2
+public_site,সার্চ-ইঞ্জিনের জন্য SEO,doc:public-website-plus.md,R2
+hr_payroll,কর্মচারী (অ-শিক্ষক) প্রোফাইল,ctrl:StaffController,R3
+hr_payroll,ছুটির ধরন ও বার্ষিক সীমা,route:POST /hr/leave-types,R3
+hr_payroll,ছুটির আবেদন (প্রশাসক বা নিজে) ও অনুমোদন,route:POST /hr/leaves,R3
+hr_payroll,ছুটির হিসাব — কতদিন বাকি,route:GET /hr/leaves/balance,R3
+hr_payroll,শিক্ষক নিজে ছুটির আবেদন করেন,route:POST /teacher/leave,R3
+hr_payroll,তারিখ-ভিত্তিক বেতন-কাঠামো,ctrl:SalaryStructureController,R3
+hr_payroll,বেতন-উপাদান (ভাতা ও কর্তন) আপনার মতো ঠিক করা,ctrl:SalaryComponentController,R3
+hr_payroll,"ইনক্রিমেন্ট/ডিকারমেন্ট — আবেদন, অনুমোদন, চিঠি",ctrl:SalaryRevisionController,R3
+hr_payroll,একসাথে অনেকের ইনক্রিমেন্ট — আগে প্রিভিউ,route:POST /hr/increment-batches/preview,R3
+hr_payroll,"বোনাস-স্কিম (ঈদ, উৎসব, কর্মদক্ষতা)",ctrl:BonusSchemeController,R3
+hr_payroll,"জরিমানা, ওভারটাইম, অতিরিক্ত ক্লাসের সমন্বয়",ctrl:SalaryAdjustmentController,R3
+hr_payroll,অগ্রিম/ঋণ ও কিস্তিতে স্বয়ংক্রিয় কর্তন,route:POST /hr/advances,R3
+hr_payroll,মাসিক বেতন-হিসাব (payroll run),route:POST /hr/payroll-runs,R3
+hr_payroll,যে বানায় সে অনুমোদন করে না — দুই-ধাপের অনুমোদন,doc:staff-payroll.md,R3
+hr_payroll,অনুমোদনের পর বেতন-হিসাব বদলানো যায় না,doc:staff-payroll.md,R3
+hr_payroll,payslip PDF,route:GET /hr/payroll-items/{id}/slip.pdf,R3
+hr_payroll,শিক্ষক নিজের payslip ও বেতন-ইতিহাস দেখেন,route:GET /teacher/salary/slips,R3
+hr_payroll,ভবিষ্য তহবিল (PF) খতিয়ান ও স্টেটমেন্ট,route:GET /hr/pf/entries,R3
+hr_payroll,চাকরি ছাড়ার সময় চূড়ান্ত নিষ্পত্তি,route:POST /hr/final-settlement/{type}/{id}/start,R3
+hr_payroll,বেতন-প্রতিবেদন,ctrl:PayrollReportController,R3
+hr_payroll,পরিশোধের মাধ্যম (ব্যাংক/bKash),ctrl:PayAccountController,R3
+hr_payroll,"উৎসে-কর (ডিফল্টে বন্ধ, প্রয়োজনে চালু)",doc:staff-payroll.md,R3
+hr_payroll,বেতন-তথ্য শুধু অনুমতিপ্রাপ্তরা দেখেন — প্ল্যাটফর্মের কর্মীরাও নন,doc:staff-payroll.md,R3
+teacher_payouts,কোচিং: ক্লাস বা ব্যাচ-ভিত্তিক শিক্ষক-পারিশ্রমিক গণনা,route:POST /teacher-payouts/generate,R2
+teacher_payouts,গণনা সংশোধন,route:PUT /teacher-payouts/{id},R2
+teacher_payouts,অনুমোদন,route:POST /teacher-payouts/{id}/approve,R2
+teacher_payouts,পরিশোধ,route:POST /teacher-payouts/{id}/pay,R2
+teacher_payouts,পারিশ্রমিকের তালিকা,route:GET /teacher-payouts,R2
+cpd,প্রশিক্ষণ-কর্মসূচি তৈরি,doc:advanced-features.md,L
+cpd,শিক্ষকদের নিবন্ধন,doc:advanced-features.md,L
+cpd,প্রশিক্ষণ সম্পন্ন চিহ্নিত করা,doc:advanced-features.md,L
+cpd,শিক্ষকের প্রশিক্ষণ-ইতিহাস ও CPD-প্রতিবেদন,doc:advanced-features.md,L
+inventory,"পণ্য তৈরি (কোড, একক, বিক্রয়-মূল্য, পুনঃক্রয়-সীমা)",route:POST /inventory/items,R3
+inventory,"ক্রয়, ইস্যু, বিক্রি ও সমন্বয় — স্টক শুধু এই আসা-যাওয়ার মাধ্যমে বদলায়",route:POST /inventory/{type},R3
+inventory,গড়-ব্যয় (moving average) স্বয়ংক্রিয় হিসাব,doc:inventory.md,R3
+inventory,পণ্যের খতিয়ান,route:GET /inventory/items/{id}/ledger,R3
+inventory,বর্তমান স্টকের অবস্থা,route:GET /inventory/stock,R3
+inventory,স্টক-প্রতিবেদন,route:GET /inventory/reports/{name},R3
+inventory,"বিক্রয়-রসিদ PDF — ইউনিফর্ম, বই, খাতা বিক্রি",route:GET /inventory/sales/{receipt_no}/receipt.pdf,R3
+inventory,একসাথে অনেকে ইস্যু করলেও স্টক ঋণাত্মক হয় না,doc:inventory.md,R3
+library,"বইয়ের ক্যাটালগ (শিরোনাম, লেখক, ISBN, বিষয়)",doc:library.md,R4
+library,কপি-সংখ্যা ও কতটি আছে,doc:library.md,R4
+library,শেলফ-অবস্থান,doc:library.md,R4
+library,ছাত্রকে বই ইস্যু ও ফেরত,doc:library.md,R4
+library,ফেরতের তারিখ ও দেরির জরিমানা,doc:library.md,R4
+library,ছাত্র নিজের লাইব্রেরি-ইতিহাস দেখে,doc:library.md,R4
+transport,"গাড়ির তালিকা (নম্বর, ধারণক্ষমতা, চালক, সহকারী)",doc:transport.md,R4
+transport,রুট ও সকাল-বিকালের সময়সূচি,doc:transport.md,R4
+transport,"রুটের স্টপ, পিকআপ ও ড্রপের সময়",doc:transport.md,R4
+transport,ছাত্রকে রুট ও স্টপে নিয়োগ,doc:transport.md,R4
+transport,রুট-ভিত্তিক মাসিক পরিবহন-ফি,doc:transport.md,R4
+transport,অভিভাবক সন্তানের পরিবহন-তথ্য দেখেন,doc:transport.md,R4
+hostel,হোস্টেল ও ওয়ার্ডেনের তথ্য,doc:hostel.md,R4
+hostel,"কক্ষ, ফ্লোর, ধারণক্ষমতা ও মাসিক ভাড়া",doc:hostel.md,R4
+hostel,ছাত্রকে কক্ষ বরাদ্দ,doc:hostel.md,R4
+hostel,ফাঁকা কক্ষ দেখা,doc:hostel.md,R4
+hostel,হোস্টেল ছাড়া (check-out),doc:hostel.md,R4
+hostel,দখল-প্রতিবেদন (occupancy),doc:hostel.md,R4
+hostel,হোস্টেল-ফি ফি-ব্যবস্থার সাথে যুক্ত,doc:hostel.md,R4
+id_cards,ছাত্রের ID কার্ড,doc:extended-features.md,R1.1
+id_cards,একসাথে পুরো শাখার ID কার্ড ছাপা,doc:extended-features.md,R1.1
+id_cards,ছাত্র-প্রোফাইল-কার্ড,route:GET /students/{id}/card,R1.1
+visitors,দর্শনার্থীর আগমন নিবন্ধন (check-in),doc:extended-features.md,L
+visitors,প্রস্থান নিবন্ধন (check-out),doc:extended-features.md,L
+visitors,দর্শনার্থীর তালিকা ও প্রতিবেদন,doc:extended-features.md,L
+health,"ছাত্রের স্বাস্থ্য-তথ্য (রক্তের গ্রুপ, অ্যালার্জি ইত্যাদি)",doc:extended-features.md,L
+health,শ্রেণি-ভিত্তিক স্বাস্থ্য-প্রতিবেদন,doc:extended-features.md,L
+health,অভিভাবক সন্তানের স্বাস্থ্য-তথ্য দেখেন,doc:extended-features.md,L
+behavior,ছাত্রের আচরণ-লগ (ভালো ও সতর্কতার ঘটনা),doc:extended-features.md,L
+behavior,আচরণের সারসংক্ষেপ,doc:extended-features.md,L
+behavior,অভিভাবককে ঘটনা জানানো,doc:extended-features.md,L
+behavior,অভিভাবক সন্তানের আচরণ-লগ দেখেন,doc:extended-features.md,L
+gps,বাসের লাইভ অবস্থান,doc:advanced-features.md,L
+gps,আজকের রুট,doc:advanced-features.md,L
+gps,অভিভাবক মানচিত্রে বাস দেখেন,doc:advanced-features.md,L
+hifz,"হিফজ-রেকর্ড (সবক, সবকী, মানযিল)",route:POST /hifz/records,R2
+hifz,ছাত্রের অগ্রগতি,route:GET /hifz/students/{id}/progress,R2
+hifz,শাখার সার্বিক চিত্র,route:GET /hifz/batches/{id}/overview,R2
+hifz,মাসিক প্রতিবেদন PDF,route:GET /hifz/reports/monthly.pdf,R2
+hifz,হিজরি ক্যালেন্ডার,doc:madrasa.md,R2
+hifz,নামের সাথে আরবি নাম (সনদ/ID-তে),doc:madrasa.md,R2
+alumni,প্রাক্তন শিক্ষার্থীর তালিকা (ডিরেক্টরি),doc:extended-features.md,L
+alumni,প্রোফাইল ও যোগাযোগ,doc:extended-features.md,L
+alumni,পরিসংখ্যান,doc:extended-features.md,L
+multi_branch,একই অ্যাকাউন্টে একাধিক শাখা,doc:extended-features.md,L
+multi_branch,প্রধান কার্যালয় থেকে শাখাগুলোর তুলনামূলক প্রতিবেদন,doc:extended-features.md,L
+analytics,ছাত্রের পারফরম্যান্স-বিশ্লেষণ,doc:advanced-features.md,L
+analytics,প্রবণতা ও তুলনা-চার্ট,doc:advanced-features.md,L
+analytics,শিক্ষক ও প্রশাসকের ড্যাশবোর্ড,doc:advanced-features.md,L
+ai_assistant,নোটিশ লিখতে AI-সহায়তা,doc:advanced-features.md,L
+ai_assistant,প্রশ্ন তৈরিতে AI-সহায়তা,doc:advanced-features.md,L
+ai_assistant,ডেটার সারসংক্ষেপ বুঝতে AI-সহায়তা,doc:advanced-features.md,L
+support,সহায়তা-কর্মী আপনার অনুমতি নিয়ে সীমিত সময়ের জন্য আপনার পাতা দেখে সমস্যা ধরতে পারেন — অনুমতি ও সময় আপনার হাতে,ctrl:ImpersonationController,
+merit_list,কোচিং সেন্টারের জন্য ব্যাচ-ভিত্তিক মেধা-ক্রম,doc:coaching-private-batch.md,R1.1
+multi_branch,"প্রতিটি শাখার তথ্য আলাদা থাকে, প্রধান কার্যালয় সব শাখা দেখে",doc:extended-features.md,L
+multi_branch,শাখা-ভিত্তিক আলাদা প্রশাসক,doc:extended-features.md,L
+question_bank,শ্রেণি→বিষয়→অধ্যায়→টপিক ভিত্তিক প্রশ্ন খোঁজা ও দেখা (বিনামূল্যে),doc:question-bank.md,L
+question_bank,প্রশ্নের ধরনভেদে দামে উত্তর দেখা ও প্রশ্নপত্রে ব্যবহার — প্রতিষ্ঠানের সব শিক্ষকের জন্য একবার কেনা,doc:question-bank.md,L
+question_bank,"প্রশ্নপত্র তৈরি ও PDF (উত্তরসহ/ছাড়া, সেট); প্রধান শিক্ষক সব প্রশ্নপত্র দেখেন",doc:question-bank.md,L
+question_bank,"টপিক-ভিত্তিক কনসেপ্ট, স্লাইড, বই ও PDF",doc:question-bank.md,L
+question_bank,শিক্ষক-ভিত্তিক খরচের হিসাব ও মাসিক খরচ-সীমা,doc:question-bank.md,L
+quiz,"শিক্ষার্থীর অনলাইন কুইজ (সময়-গণনা, সার্ভারে মূল্যায়ন)",doc:question-bank.md,L
+quiz,মেয়াদসহ কুইজ-প্যাকেজ bKash-এ কেনা,doc:question-bank.md,L
+quiz,বিনামূল্যের ও সার্বজনীন কুইজ,doc:question-bank.md,L
+quiz,নিজের ফলের ইতিহাস ও ব্যাখ্যা,doc:question-bank.md,L

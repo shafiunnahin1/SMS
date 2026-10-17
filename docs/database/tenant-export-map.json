@@ -1,0 +1,1250 @@
+{
+ "format_version": 1,
+ "design_only_tables": [
+  "leave_substitution_events",
+  "leave_substitution_operations",
+  "leave_substitution_slots"
+ ],
+ "generated_from": "docs/database/schema.sql (python3 infra/spec-verify/tenant_export_ref.py --write)",
+ "excluded": {
+  "institution_registrations": "D90 first-principal approval is not portable; new tenant needs fresh review",
+  "account_activation_requests": "D90 contact/challenge authorization evidence; never export or replay",
+  "audit_logs": "platform-held trail; the new institution starts a fresh trail with one \"imported\" entry",
+  "impersonation_sessions": "platform-owned",
+  "tenant_exports": "operational",
+  "support_tickets": "platform-owned (has internal notes)",
+  "support_ticket_messages": "platform-owned",
+  "import_jobs": "operational",
+  "import_rows": "operational",
+  "device_punches": "raw high-volume feed; processed attendance IS exported",
+  "attendance_devices": "global device key + secret: re-register on the new institution",
+  "institution_domains": "a domain is globally unique and belongs to one institution",
+  "institution_payment_gateways": "credentials (secrets)",
+  "institution_payout_accounts": "bank/mobile account numbers (secrets)",
+  "settlements": "platform money flow",
+  "sms_logs": "personal message bodies; heavy",
+  "sms_credit_transactions": "platform credit ledger",
+  "coupon_redemptions": "platform-owned",
+  "institution_theme_logs": "history only",
+  "student_import_logs": "operational",
+  "subscription_invoices": "platform billing",
+  "payments": "platform billing"
+ },
+ "backup_excludes": {
+  "tables": [
+   "salary_components",
+   "salary_structures",
+   "salary_structure_lines",
+   "salary_revisions",
+   "salary_adjustments",
+   "bonus_schemes",
+   "salary_advances",
+   "salary_pay_accounts",
+   "payroll_runs",
+   "payroll_items",
+   "provident_fund_entries"
+  ],
+  "columns": [
+   "teachers.salary",
+   "teachers.house_rent",
+   "teachers.medical_allowance",
+   "teachers.transport_allowance"
+  ]
+ },
+ "regenerate_on_import": [
+  "online_payments.gateway_ref",
+  "qb_student_orders.ref"
+ ],
+ "order": [
+  "academic_years",
+  "programs",
+  "admission_cycles",
+  "users",
+  "teachers",
+  "batches",
+  "students",
+  "admission_leads",
+  "admission_draws",
+  "ai_usage_logs",
+  "alumni",
+  "archived_attendances",
+  "attendances",
+  "subjects",
+  "batch_teachers",
+  "behavior_logs",
+  "staff_members",
+  "bonus_schemes",
+  "books",
+  "book_issues",
+  "budgets",
+  "ledger_accounts",
+  "budget_lines",
+  "cash_book_closings",
+  "certificates",
+  "class_materials",
+  "consents",
+  "institution_departments",
+  "department_duties",
+  "department_memberships",
+  "department_duty_assignments",
+  "donation_funds",
+  "donation_campaigns",
+  "donors",
+  "donations",
+  "due_block_exemptions",
+  "enrollments",
+  "institution_events",
+  "event_registrations",
+  "event_results",
+  "online_exams",
+  "exam_questions",
+  "exam_attempts",
+  "exams",
+  "exam_seat_plans",
+  "exam_subjects",
+  "payroll_runs",
+  "expenses",
+  "fee_categories",
+  "fee_installment_plans",
+  "online_payments",
+  "fee_payments",
+  "fee_installments",
+  "fee_refunds",
+  "fee_structures",
+  "fee_waivers",
+  "result_sheets",
+  "final_results",
+  "gallery_albums",
+  "gallery_items",
+  "hifz_records",
+  "holidays",
+  "homeworks",
+  "homework_submissions",
+  "hostels",
+  "hostel_rooms",
+  "hostel_allocations",
+  "inventory_items",
+  "inventory_movements",
+  "lead_payments",
+  "leave_types",
+  "leave_applications",
+  "syllabus_units",
+  "lesson_plans",
+  "messages",
+  "notices",
+  "notice_receipts",
+  "online_classes",
+  "parent_meetings",
+  "parent_student",
+  "salary_revisions",
+  "salary_structures",
+  "salary_adjustments",
+  "salary_advances",
+  "payroll_items",
+  "routines",
+  "period_attendances",
+  "person_credentials",
+  "provident_fund_entries",
+  "qb_papers",
+  "qb_paper_sections",
+  "qb_paper_items",
+  "qb_quiz_attempts",
+  "qb_student_orders",
+  "qb_student_package_access",
+  "qb_student_unlocks",
+  "qb_unlocks",
+  "report_card_summaries",
+  "results",
+  "risk_flags",
+  "vehicles",
+  "transport_routes",
+  "route_stops",
+  "routine_blocks",
+  "salary_components",
+  "salary_pay_accounts",
+  "salary_structure_lines",
+  "scholarships",
+  "scholarship_applications",
+  "site_posts",
+  "sms_templates",
+  "sms_campaigns",
+  "staff_attendances",
+  "student_documents",
+  "student_health_records",
+  "student_leave_requests",
+  "student_transport",
+  "substitutions",
+  "syllabus_coverage",
+  "tc_certificates",
+  "teacher_attendances",
+  "teacher_payouts",
+  "teacher_subjects",
+  "teacher_trainings",
+  "training_programs",
+  "vehicle_locations",
+  "visitor_logs",
+  "vouchers",
+  "voucher_lines"
+ ],
+ "json_with_ids": [
+  "admission_draws.result",
+  "bonus_schemes.applies_to",
+  "exam_attempts.answers",
+  "fee_refunds.refund_lines",
+  "final_results.details",
+  "institution_events.program_ids",
+  "online_payments.items",
+  "payroll_items.breakdown",
+  "result_sheets.rule",
+  "sms_campaigns.audience"
+ ],
+ "json_without_ids": [
+  "admission_cycles.rule",
+  "audit_logs.new_data",
+  "audit_logs.old_data",
+  "batches.schedule",
+  "device_punches.raw",
+  "exam_questions.options",
+  "exam_subjects.components",
+  "import_jobs.mapping",
+  "import_jobs.summary",
+  "import_rows.data",
+  "institution_theme_logs.new_values",
+  "institution_theme_logs.old_values",
+  "online_payments.raw_response",
+  "payroll_runs.settings_snapshot",
+  "results.component_marks",
+  "risk_flags.details",
+  "salary_components.name",
+  "scholarship_applications.documents",
+  "settlements.payout_snapshot",
+  "sms_templates.body",
+  "student_import_logs.error_log",
+  "support_ticket_messages.attachments",
+  "users.notification_preferences",
+  "users.ui_preferences"
+ ],
+ "tables": {
+  "academic_years": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "programs": {
+   "refs": {
+    "qb_class_level_id": "qb_class_levels"
+   },
+   "polymorphic": []
+  },
+  "admission_cycles": {
+   "refs": {
+    "academic_year_id": "academic_years",
+    "program_id": "programs"
+   },
+   "polymorphic": []
+  },
+  "users": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "teachers": {
+   "refs": {
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "batches": {
+   "refs": {
+    "academic_year_id": "academic_years",
+    "program_id": "programs",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "students": {
+   "refs": {
+    "batch_id": "batches",
+    "program_id": "programs",
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "admission_leads": {
+   "refs": {
+    "converted_student_id": "students",
+    "created_by": "users",
+    "cycle_id": "admission_cycles",
+    "interested_batch_id": "batches",
+    "interested_program_id": "programs"
+   },
+   "polymorphic": []
+  },
+  "admission_draws": {
+   "refs": {
+    "cycle_id": "admission_cycles",
+    "drawn_by": "users"
+   },
+   "polymorphic": []
+  },
+  "ai_usage_logs": {
+   "refs": {
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "alumni": {
+   "refs": {
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "archived_attendances": {
+   "refs": {
+    "academic_year_id": "academic_years",
+    "batch_id": "batches",
+    "program_id": "programs",
+    "student_id": "students",
+    "taken_by": "users"
+   },
+   "polymorphic": []
+  },
+  "attendances": {
+   "refs": {
+    "batch_id": "batches",
+    "program_id": "programs",
+    "student_id": "students",
+    "taken_by": "users"
+   },
+   "polymorphic": []
+  },
+  "subjects": {
+   "refs": {
+    "program_id": "programs",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "batch_teachers": {
+   "refs": {
+    "batch_id": "batches",
+    "subject_id": "subjects",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "behavior_logs": {
+   "refs": {
+    "reported_by": "users",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "staff_members": {
+   "refs": {
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "bonus_schemes": {
+   "refs": {
+    "created_by": "users"
+   },
+   "polymorphic": []
+  },
+  "books": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "book_issues": {
+   "refs": {
+    "book_id": "books",
+    "issued_by": "users",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "budgets": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "ledger_accounts": {
+   "refs": {
+    "parent_id": "ledger_accounts"
+   },
+   "polymorphic": []
+  },
+  "budget_lines": {
+   "refs": {
+    "account_id": "ledger_accounts",
+    "budget_id": "budgets"
+   },
+   "polymorphic": []
+  },
+  "cash_book_closings": {
+   "refs": {
+    "closed_by": "users",
+    "reopened_by": "users"
+   },
+   "polymorphic": []
+  },
+  "certificates": {
+   "refs": {
+    "issued_by": "users",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "class_materials": {
+   "refs": {
+    "batch_id": "batches",
+    "program_id": "programs",
+    "subject_id": "subjects",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "consents": {
+   "refs": {
+    "recorded_by": "users",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "institution_departments": {
+   "refs": {
+    "created_by": "users",
+    "updated_by": "users"
+   },
+   "polymorphic": []
+  },
+  "department_duties": {
+   "refs": {
+    "created_by": "users",
+    "department_id": "institution_departments",
+    "updated_by": "users"
+   },
+   "polymorphic": []
+  },
+  "department_memberships": {
+   "refs": {
+    "created_by": "users",
+    "department_id": "institution_departments",
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "department_duty_assignments": {
+   "refs": {
+    "assigned_by": "users",
+    "duty_id": "department_duties",
+    "membership_id": "department_memberships",
+    "revoked_by": "users"
+   },
+   "polymorphic": []
+  },
+  "donation_funds": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "donation_campaigns": {
+   "refs": {
+    "fund_id": "donation_funds"
+   },
+   "polymorphic": []
+  },
+  "donors": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "donations": {
+   "refs": {
+    "campaign_id": "donation_campaigns",
+    "donor_id": "donors",
+    "fund_id": "donation_funds",
+    "received_by": "users",
+    "reverses_id": "donations"
+   },
+   "polymorphic": []
+  },
+  "due_block_exemptions": {
+   "refs": {
+    "granted_by": "users",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "enrollments": {
+   "refs": {
+    "academic_year_id": "academic_years",
+    "batch_id": "batches",
+    "optional_subject_id": "subjects",
+    "program_id": "programs",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "institution_events": {
+   "refs": {
+    "created_by": "users"
+   },
+   "polymorphic": []
+  },
+  "event_registrations": {
+   "refs": {
+    "event_id": "institution_events",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "event_results": {
+   "refs": {
+    "event_id": "institution_events",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "online_exams": {
+   "refs": {
+    "batch_id": "batches",
+    "created_by": "users",
+    "program_id": "programs",
+    "subject_id": "subjects"
+   },
+   "polymorphic": []
+  },
+  "exam_questions": {
+   "refs": {
+    "online_exam_id": "online_exams"
+   },
+   "polymorphic": []
+  },
+  "exam_attempts": {
+   "refs": {
+    "online_exam_id": "online_exams",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "exams": {
+   "refs": {
+    "batch_id": "batches",
+    "program_id": "programs"
+   },
+   "polymorphic": []
+  },
+  "exam_seat_plans": {
+   "refs": {
+    "exam_id": "exams",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "exam_subjects": {
+   "refs": {
+    "exam_id": "exams",
+    "locked_by": "users",
+    "subject_id": "subjects"
+   },
+   "polymorphic": []
+  },
+  "payroll_runs": {
+   "refs": {
+    "approved_by": "users",
+    "prepared_by": "users",
+    "reviewed_by": "users"
+   },
+   "polymorphic": []
+  },
+  "expenses": {
+   "refs": {
+    "added_by": "users",
+    "fund_id": "donation_funds",
+    "payroll_run_id": "payroll_runs",
+    "replaces_expense_id": "expenses",
+    "reversal_of_id": "expenses"
+   },
+   "polymorphic": []
+  },
+  "fee_categories": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "fee_installment_plans": {
+   "refs": {
+    "approved_by": "users",
+    "fee_category_id": "fee_categories",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "online_payments": {
+   "refs": {
+    "lead_id": "admission_leads",
+    "parent_user_id": "users",
+    "settlement_id": "settlements",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "fee_payments": {
+   "refs": {
+    "batch_id": "batches",
+    "collected_by": "users",
+    "enrollment_id": "enrollments",
+    "fee_category_id": "fee_categories",
+    "online_payment_id": "online_payments",
+    "reverses_id": "fee_payments",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "fee_installments": {
+   "refs": {
+    "payment_id": "fee_payments",
+    "plan_id": "fee_installment_plans"
+   },
+   "polymorphic": []
+  },
+  "fee_refunds": {
+   "refs": {
+    "approved_by": "users",
+    "online_payment_id": "online_payments",
+    "processed_by": "users",
+    "requested_by": "users",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "fee_structures": {
+   "refs": {
+    "academic_year_id": "academic_years",
+    "batch_id": "batches",
+    "fee_category_id": "fee_categories",
+    "program_id": "programs"
+   },
+   "polymorphic": []
+  },
+  "fee_waivers": {
+   "refs": {
+    "approved_by": "users",
+    "fee_category_id": "fee_categories",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "result_sheets": {
+   "refs": {
+    "academic_year_id": "academic_years",
+    "batch_id": "batches",
+    "created_by": "users",
+    "program_id": "programs"
+   },
+   "polymorphic": []
+  },
+  "final_results": {
+   "refs": {
+    "result_sheet_id": "result_sheets",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "gallery_albums": {
+   "refs": {
+    "created_by": "users",
+    "event_id": "institution_events"
+   },
+   "polymorphic": []
+  },
+  "gallery_items": {
+   "refs": {
+    "album_id": "gallery_albums"
+   },
+   "polymorphic": []
+  },
+  "hifz_records": {
+   "refs": {
+    "student_id": "students",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "holidays": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "homeworks": {
+   "refs": {
+    "batch_id": "batches",
+    "program_id": "programs",
+    "subject_id": "subjects",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "homework_submissions": {
+   "refs": {
+    "homework_id": "homeworks",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "hostels": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "hostel_rooms": {
+   "refs": {
+    "hostel_id": "hostels"
+   },
+   "polymorphic": []
+  },
+  "hostel_allocations": {
+   "refs": {
+    "room_id": "hostel_rooms",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "inventory_items": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "inventory_movements": {
+   "refs": {
+    "created_by": "users",
+    "item_id": "inventory_items",
+    "student_id": "students"
+   },
+   "polymorphic": [
+    {
+     "type_col": "issued_to_type",
+     "id_col": "issued_to_id",
+     "targets": {
+      "student": "students",
+      "teacher": "teachers",
+      "staff": "staff_members"
+     }
+    }
+   ]
+  },
+  "lead_payments": {
+   "refs": {
+    "lead_id": "admission_leads",
+    "online_payment_id": "online_payments"
+   },
+   "polymorphic": []
+  },
+  "leave_types": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "leave_applications": {
+   "refs": {
+    "approved_by": "users",
+    "leave_type_id": "leave_types",
+    "staff_id": "staff_members",
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "syllabus_units": {
+   "refs": {
+    "parent_id": "syllabus_units",
+    "program_id": "programs",
+    "subject_id": "subjects"
+   },
+   "polymorphic": []
+  },
+  "lesson_plans": {
+   "refs": {
+    "batch_id": "batches",
+    "subject_id": "subjects",
+    "teacher_id": "teachers",
+    "unit_id": "syllabus_units"
+   },
+   "polymorphic": []
+  },
+  "messages": {
+   "refs": {
+    "from_user_id": "users",
+    "to_user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "notices": {
+   "refs": {
+    "batch_id": "batches",
+    "created_by": "users",
+    "program_id": "programs"
+   },
+   "polymorphic": []
+  },
+  "notice_receipts": {
+   "refs": {
+    "notice_id": "notices",
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "online_classes": {
+   "refs": {
+    "batch_id": "batches",
+    "program_id": "programs",
+    "subject_id": "subjects",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "parent_meetings": {
+   "refs": {
+    "student_id": "students",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "parent_student": {
+   "refs": {
+    "parent_user_id": "users",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "salary_revisions": {
+   "refs": {
+    "approved_by": "users",
+    "proposed_by": "users"
+   },
+   "polymorphic": [
+    {
+     "type_col": "payee_type",
+     "id_col": "payee_id",
+     "targets": {
+      "teacher": "teachers",
+      "staff": "staff_members"
+     }
+    }
+   ]
+  },
+  "salary_structures": {
+   "refs": {
+    "created_by": "users",
+    "revision_id": "salary_revisions"
+   },
+   "polymorphic": [
+    {
+     "type_col": "payee_type",
+     "id_col": "payee_id",
+     "targets": {
+      "teacher": "teachers",
+      "staff": "staff_members"
+     }
+    }
+   ]
+  },
+  "salary_adjustments": {
+   "refs": {
+    "approved_by": "users",
+    "created_by": "users",
+    "payroll_item_id": "payroll_items",
+    "revision_id": "salary_revisions",
+    "scheme_id": "bonus_schemes"
+   },
+   "polymorphic": [
+    {
+     "type_col": "payee_type",
+     "id_col": "payee_id",
+     "targets": {
+      "teacher": "teachers",
+      "staff": "staff_members"
+     }
+    }
+   ]
+  },
+  "salary_advances": {
+   "refs": {
+    "approved_by": "users",
+    "expense_id": "expenses",
+    "requested_by": "users"
+   },
+   "polymorphic": [
+    {
+     "type_col": "payee_type",
+     "id_col": "payee_id",
+     "targets": {
+      "teacher": "teachers",
+      "staff": "staff_members"
+     }
+    }
+   ]
+  },
+  "payroll_items": {
+   "refs": {
+    "paid_by": "users",
+    "run_id": "payroll_runs",
+    "structure_id": "salary_structures"
+   },
+   "polymorphic": [
+    {
+     "type_col": "payee_type",
+     "id_col": "payee_id",
+     "targets": {
+      "teacher": "teachers",
+      "staff": "staff_members"
+     }
+    }
+   ]
+  },
+  "routines": {
+   "refs": {
+    "batch_id": "batches",
+    "program_id": "programs",
+    "subject_id": "subjects",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "period_attendances": {
+   "refs": {
+    "routine_id": "routines",
+    "student_id": "students",
+    "taken_by": "users"
+   },
+   "polymorphic": []
+  },
+  "person_credentials": {
+   "refs": {},
+   "polymorphic": [
+    {
+     "type_col": "person_type",
+     "id_col": "person_id",
+     "targets": {
+      "student": "students",
+      "teacher": "teachers",
+      "staff": "staff_members"
+     }
+    }
+   ]
+  },
+  "provident_fund_entries": {
+   "refs": {
+    "created_by": "users",
+    "payroll_item_id": "payroll_items"
+   },
+   "polymorphic": [
+    {
+     "type_col": "payee_type",
+     "id_col": "payee_id",
+     "targets": {
+      "teacher": "teachers",
+      "staff": "staff_members"
+     }
+    }
+   ]
+  },
+  "qb_papers": {
+   "refs": {
+    "created_by": "users",
+    "program_id": "programs",
+    "qb_subject_id": "qb_subjects"
+   },
+   "polymorphic": []
+  },
+  "qb_paper_sections": {
+   "refs": {
+    "qb_paper_id": "qb_papers"
+   },
+   "polymorphic": []
+  },
+  "qb_paper_items": {
+   "refs": {
+    "qb_paper_section_id": "qb_paper_sections",
+    "qb_question_id": "qb_questions"
+   },
+   "polymorphic": []
+  },
+  "qb_quiz_attempts": {
+   "refs": {
+    "qb_quiz_id": "qb_quizzes",
+    "student_user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "qb_student_orders": {
+   "refs": {
+    "student_user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "qb_student_package_access": {
+   "refs": {
+    "qb_quiz_package_id": "qb_quiz_packages",
+    "qb_student_order_id": "qb_student_orders",
+    "student_user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "qb_student_unlocks": {
+   "refs": {
+    "qb_student_order_id": "qb_student_orders",
+    "student_user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "qb_unlocks": {
+   "refs": {
+    "qb_price_rule_id": "qb_price_rules",
+    "unlocked_by": "users"
+   },
+   "polymorphic": []
+  },
+  "report_card_summaries": {
+   "refs": {
+    "exam_id": "exams",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "results": {
+   "refs": {
+    "exam_id": "exams",
+    "student_id": "students",
+    "subject_id": "subjects"
+   },
+   "polymorphic": []
+  },
+  "risk_flags": {
+   "refs": {
+    "acknowledged_by": "users",
+    "batch_id": "batches",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "vehicles": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "transport_routes": {
+   "refs": {
+    "vehicle_id": "vehicles"
+   },
+   "polymorphic": []
+  },
+  "route_stops": {
+   "refs": {
+    "route_id": "transport_routes"
+   },
+   "polymorphic": []
+  },
+  "routine_blocks": {
+   "refs": {
+    "program_id": "programs"
+   },
+   "polymorphic": []
+  },
+  "salary_components": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "salary_pay_accounts": {
+   "refs": {},
+   "polymorphic": [
+    {
+     "type_col": "payee_type",
+     "id_col": "payee_id",
+     "targets": {
+      "teacher": "teachers",
+      "staff": "staff_members"
+     }
+    }
+   ]
+  },
+  "salary_structure_lines": {
+   "refs": {
+    "component_id": "salary_components",
+    "structure_id": "salary_structures"
+   },
+   "polymorphic": []
+  },
+  "scholarships": {
+   "refs": {
+    "academic_year_id": "academic_years"
+   },
+   "polymorphic": []
+  },
+  "scholarship_applications": {
+   "refs": {
+    "approved_by": "users",
+    "scholarship_id": "scholarships",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "site_posts": {
+   "refs": {
+    "created_by": "users"
+   },
+   "polymorphic": []
+  },
+  "sms_templates": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "sms_campaigns": {
+   "refs": {
+    "created_by": "users",
+    "template_id": "sms_templates"
+   },
+   "polymorphic": []
+  },
+  "staff_attendances": {
+   "refs": {
+    "marked_by": "users",
+    "staff_id": "staff_members"
+   },
+   "polymorphic": []
+  },
+  "student_documents": {
+   "refs": {
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "student_health_records": {
+   "refs": {
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "student_leave_requests": {
+   "refs": {
+    "decided_by": "users",
+    "requested_by": "users",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "student_transport": {
+   "refs": {
+    "route_id": "transport_routes",
+    "stop_id": "route_stops",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "substitutions": {
+   "refs": {
+    "created_by": "users",
+    "original_teacher_id": "teachers",
+    "routine_id": "routines",
+    "substitute_teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "syllabus_coverage": {
+   "refs": {
+    "batch_id": "batches",
+    "teacher_id": "teachers",
+    "unit_id": "syllabus_units"
+   },
+   "polymorphic": []
+  },
+  "tc_certificates": {
+   "refs": {
+    "issued_by": "users",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "teacher_attendances": {
+   "refs": {
+    "marked_by": "users",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "teacher_payouts": {
+   "refs": {
+    "batch_id": "batches",
+    "payroll_item_id": "payroll_items",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "teacher_subjects": {
+   "refs": {
+    "batch_id": "batches",
+    "program_id": "programs",
+    "subject_id": "subjects",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "teacher_trainings": {
+   "refs": {
+    "program_id": "programs",
+    "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "training_programs": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "vehicle_locations": {
+   "refs": {
+    "vehicle_id": "vehicles"
+   },
+   "polymorphic": []
+  },
+  "visitor_logs": {
+   "refs": {
+    "created_by": "users"
+   },
+   "polymorphic": []
+  },
+  "vouchers": {
+   "refs": {
+    "created_by": "users",
+    "posted_by": "users",
+    "reverses_id": "vouchers"
+   },
+   "polymorphic": [
+    {
+     "type_col": "(see note)",
+     "id_col": "source_id",
+     "targets": "by source"
+    }
+   ]
+  },
+  "voucher_lines": {
+   "refs": {
+    "account_id": "ledger_accounts",
+    "voucher_id": "vouchers"
+   },
+   "polymorphic": []
+  }
+ },
+ "refs_to_excluded_or_platform": {
+  "programs": {
+   "qb_class_level_id": "qb_class_levels"
+  },
+  "online_payments": {
+   "settlement_id": "settlements"
+  },
+  "qb_papers": {
+   "qb_subject_id": "qb_subjects"
+  },
+  "qb_paper_items": {
+   "qb_question_id": "qb_questions"
+  },
+  "qb_quiz_attempts": {
+   "qb_quiz_id": "qb_quizzes"
+  },
+  "qb_student_package_access": {
+   "qb_quiz_package_id": "qb_quiz_packages"
+  },
+  "qb_unlocks": {
+   "qb_price_rule_id": "qb_price_rules"
+  }
+ }
+}

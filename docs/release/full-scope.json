@@ -1,0 +1,417 @@
+{
+ "release": "FULL",
+ "decision": "D45",
+ "milestones": [
+  {
+   "id": "M1",
+   "release": "R1",
+   "name": "ভিত্তি ও চারটি অপরিহার্য ফিচার",
+   "plan": "docs/AGENT-PLAN-R1.md",
+   "plan_status": "task-plan"
+  },
+  {
+   "id": "M2",
+   "release": "R1.1",
+   "name": "প্রথম সংস্করণের পরপর: নোটিশ, খরচ, রুটিন, ID কার্ড, সহায়তা",
+   "plan": null,
+   "plan_status": "draft"
+  },
+  {
+   "id": "M3",
+   "release": "R2",
+   "name": "প্রতিষ্ঠান-গভীরতা: ফল, ভর্তি, অনলাইন-পেমেন্ট, ওয়েবসাইট, একাডেমিক-উন্নত",
+   "plan": null,
+   "plan_status": "draft"
+  },
+  {
+   "id": "M4",
+   "release": "R3",
+   "name": "টাকা ও মানুষ: ক্যাশবুক, বেতন, হিসাব-খাত, ইনভেন্টরি, দান",
+   "plan": "docs/AGENT-PLAN-R3.md",
+   "plan_status": "task-plan"
+  },
+  {
+   "id": "M5",
+   "release": "R4",
+   "name": "ক্যাম্পাস ও যন্ত্র: লাইব্রেরি, পরিবহন, হোস্টেল, অনলাইন ক্লাস, কার্ড-যন্ত্র",
+   "plan": null,
+   "plan_status": "draft"
+  },
+  {
+   "id": "M6",
+   "release": "R5",
+   "name": "প্ল্যাটফর্ম-ব্যবসা ও বিশ্লেষণ: একাধিক শাখা, অ্যানালিটিক্স",
+   "plan": null,
+   "plan_status": "draft"
+  },
+  {
+   "id": "M7",
+   "release": "R6",
+   "name": "বাহ্যিক সংযোগ: বাংলা QR, Nagad, ব্যাংক-API (বাইরের নথি ছাড়া শুরু করা যায় না)",
+   "plan": null,
+   "plan_status": "blocked-external"
+  },
+  {
+   "id": "M8",
+   "release": "R7",
+   "name": "মোবাইল-অ্যাপ, AI, GPS",
+   "plan": null,
+   "plan_status": "draft"
+  }
+ ],
+ "modules": {
+  "students": {
+   "milestone": "M1",
+   "basis": "derived"
+  },
+  "enrollments": {
+   "milestone": "M1",
+   "basis": "derived"
+  },
+  "attendance": {
+   "milestone": "M1",
+   "basis": "derived"
+  },
+  "fees": {
+   "milestone": "M1",
+   "basis": "derived"
+  },
+  "exams": {
+   "milestone": "M1",
+   "basis": "derived"
+  },
+  "sms": {
+   "milestone": "M1",
+   "basis": "derived"
+  },
+  "reports": {
+   "milestone": "M1",
+   "basis": "derived"
+  },
+  "data_migration": {
+   "milestone": "M1",
+   "basis": "derived"
+  },
+  "support": {
+   "milestone": "M2",
+   "basis": "derived"
+  },
+  "notices": {
+   "milestone": "M2",
+   "basis": "derived"
+  },
+  "routine": {
+   "milestone": "M2",
+   "basis": "derived"
+  },
+  "expenses": {
+   "milestone": "M2",
+   "basis": "derived"
+  },
+  "id_cards": {
+   "milestone": "M2",
+   "basis": "derived"
+  },
+  "merit_list": {
+   "milestone": "M2",
+   "basis": "derived"
+  },
+  "result_sheets": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "period_attendance": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "substitution": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "student_leave": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "admission_cycle": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "online_payment": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "public_site": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "leads": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "teacher_payouts": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "hifz": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "syllabus": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "risk_alerts": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "homework": {
+   "milestone": "M3",
+   "basis": "derived"
+  },
+  "academic_calendar": {
+   "milestone": "M3",
+   "basis": "proposed"
+  },
+  "promotion_tc": {
+   "milestone": "M3",
+   "basis": "proposed"
+  },
+  "admit_card": {
+   "milestone": "M3",
+   "basis": "proposed"
+  },
+  "fee_installment": {
+   "milestone": "M3",
+   "basis": "proposed"
+  },
+  "certificates": {
+   "milestone": "M3",
+   "basis": "proposed"
+  },
+  "cashbook": {
+   "milestone": "M4",
+   "basis": "derived"
+  },
+  "inventory": {
+   "milestone": "M4",
+   "basis": "derived"
+  },
+  "accounting": {
+   "milestone": "M4",
+   "basis": "derived"
+  },
+  "donations": {
+   "milestone": "M4",
+   "basis": "derived"
+  },
+  "teacher_attendance": {
+   "milestone": "M4",
+   "basis": "derived"
+  },
+  "hr_payroll": {
+   "milestone": "M4",
+   "basis": "derived"
+  },
+  "attendance_devices": {
+   "milestone": "M5",
+   "basis": "derived"
+  },
+  "library": {
+   "milestone": "M5",
+   "basis": "derived"
+  },
+  "transport": {
+   "milestone": "M5",
+   "basis": "derived"
+  },
+  "hostel": {
+   "milestone": "M5",
+   "basis": "derived"
+  },
+  "online_class": {
+   "milestone": "M5",
+   "basis": "derived"
+  },
+  "online_quiz": {
+   "milestone": "M5",
+   "basis": "derived"
+  },
+  "behavior": {
+   "milestone": "M5",
+   "basis": "proposed"
+  },
+  "health": {
+   "milestone": "M5",
+   "basis": "proposed"
+  },
+  "visitors": {
+   "milestone": "M5",
+   "basis": "proposed"
+  },
+  "parent_meeting": {
+   "milestone": "M5",
+   "basis": "proposed"
+  },
+  "scholarships": {
+   "milestone": "M5",
+   "basis": "proposed"
+  },
+  "events": {
+   "milestone": "M5",
+   "basis": "proposed"
+  },
+  "alumni": {
+   "milestone": "M5",
+   "basis": "proposed"
+  },
+  "cpd": {
+   "milestone": "M5",
+   "basis": "proposed"
+  },
+  "multi_branch": {
+   "milestone": "M6",
+   "basis": "proposed"
+  },
+  "analytics": {
+   "milestone": "M6",
+   "basis": "proposed"
+  },
+  "ai_assistant": {
+   "milestone": "M8",
+   "basis": "derived"
+  },
+  "gps": {
+   "milestone": "M8",
+   "basis": "derived"
+  },
+  "question_bank": {
+   "milestone": "M1",
+   "basis": "derived"
+  },
+  "quiz": {
+   "milestone": "M1",
+   "basis": "derived"
+  }
+ },
+ "depends": {
+  "online_payment": [
+   "fees"
+  ],
+  "result_sheets": [
+   "exams"
+  ],
+  "merit_list": [
+   "exams"
+  ],
+  "admit_card": [
+   "exams"
+  ],
+  "fee_installment": [
+   "fees"
+  ],
+  "cashbook": [
+   "fees",
+   "expenses"
+  ],
+  "accounting": [
+   "fees",
+   "expenses",
+   "hr_payroll",
+   "inventory"
+  ],
+  "hr_payroll": [
+   "teacher_attendance"
+  ],
+  "inventory": [
+   "cashbook"
+  ],
+  "donations": [
+   "accounting"
+  ],
+  "teacher_payouts": [
+   "attendance",
+   "fees"
+  ],
+  "admission_cycle": [
+   "leads"
+  ],
+  "public_site": [
+   "leads"
+  ],
+  "period_attendance": [
+   "attendance",
+   "routine"
+  ],
+  "substitution": [
+   "routine",
+   "period_attendance"
+  ],
+  "student_leave": [
+   "attendance"
+  ],
+  "routine": [
+   "enrollments"
+  ],
+  "syllabus": [
+   "enrollments"
+  ],
+  "homework": [
+   "enrollments"
+  ],
+  "risk_alerts": [
+   "attendance",
+   "exams"
+  ],
+  "hifz": [
+   "enrollments"
+  ],
+  "id_cards": [
+   "students"
+  ],
+  "notices": [
+   "students"
+  ],
+  "expenses": [
+   "fees"
+  ],
+  "attendance_devices": [
+   "attendance"
+  ],
+  "online_quiz": [
+   "exams"
+  ],
+  "online_class": [
+   "routine"
+  ],
+  "transport": [
+   "fees"
+  ],
+  "hostel": [
+   "fees"
+  ],
+  "library": [
+   "students"
+  ],
+  "scholarships": [
+   "fees"
+  ],
+  "analytics": [
+   "attendance",
+   "fees",
+   "exams"
+  ],
+  "multi_branch": [
+   "students",
+   "fees"
+  ]
+ },
+ "launch": {
+  "gate": "all modules of all milestones accepted; MySQL smoke + load test green; legal and accountant reviews done; owner sign-off",
+  "closed_beta": "optional, allowed at any milestone: SIGNUP_MODE=invite with invited schools; this is NOT a public launch"
+ },
+ "open_decisions": [
+  "OD-full-1: confirm or change the 19 PROPOSED module placements (basis = proposed)",
+  "OD-full-2: closed beta at M1 and M4 (recommended) or none",
+  "OD-full-3: what happens to a feature whose external input (bank format, gateway document, legal rate) never arrives - cut it by a new decision, never guess"
+ ]
+}

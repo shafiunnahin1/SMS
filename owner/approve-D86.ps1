@@ -1,0 +1,20 @@
+# Owner-run only: the agent must not execute this approval script.
+$ErrorActionPreference = 'Stop'
+$repo = Split-Path -Parent $PSScriptRoot
+Set-Location -LiteralPath $repo
+git diff --cached --quiet
+if ($LASTEXITCODE -ne 0) { throw 'Staging area must be empty; preserve existing staged changes.' }
+git diff HEAD --quiet -- docs/LOCKED-DECISIONS.md
+if ($LASTEXITCODE -ne 0) { throw 'Registry has local changes; review them before approval.' }
+$registry = Join-Path $repo 'docs\LOCKED-DECISIONS.md'
+$content = [IO.File]::ReadAllText($registry)
+$rows = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'decision-D86.md') -Encoding UTF8 | Where-Object { $_ -match '^\| D86 \|' })
+if ($rows.Count -ne 1 -or $content -notmatch '(?m)^\| D85 \|' -or $content -match '(?m)^\| D86 \|') { throw 'D86 packet or registry validation failed.' }
+$newline = if ($content.Contains("`r`n")) { "`r`n" } else { "`n" }
+$updated = [regex]::Replace($content, '(?m)^(\| D85 \|[^\r\n]*)', ('$1' + $newline + $rows[0]))
+[IO.File]::WriteAllText($registry, $updated, [Text.UTF8Encoding]::new($false))
+git add -- docs/LOCKED-DECISIONS.md
+if ($LASTEXITCODE -ne 0) { throw 'Staging failed; inspect registry diff.' }
+git diff --cached --stat
+git commit -m "docs: approve D86 salary structure and settlement boundaries" -m "Change-Request: D86"
+if ($LASTEXITCODE -ne 0) { throw 'Approval commit did not complete; inspect git status.' }

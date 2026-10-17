@@ -1,0 +1,63 @@
+# Step 9.1 (D64) - infra/github-actions-cicd.yml made real: deploys to the server AFTER the ci workflow is green on main.
+# Switched OFF until the owner has a server (D64): set the repository variable DEPLOY_ENABLED=true and the secrets
+# SERVER_IP, SERVER_USER, SSH_PRIVATE_KEY, APP_HEALTH_URL (e.g. https://admin.<domain>/up). Until then this job is skipped.
+name: deploy
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to the server
+    runs-on: ubuntu-latest
+    if: vars.DEPLOY_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build React (same-origin API, docs/ops/deployment-plan.md)
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+      - name: Upload the build
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "frontend/dist/*"
+          target: "/tmp/frontend-build/"
+          strip_components: 2
+      - name: Deploy the API and restart the workers
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: DEPLOY_SHA
+          script: |
+            set -e
+            cd /var/www/api
+            git fetch origin main
+            git checkout --force "$DEPLOY_SHA"            # the exact commit CI tested
+            composer install --no-dev --optimize-autoloader --no-interaction
+            php artisan migrate --force                    # one place, one time (docker-setup.md)
+            php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan event:cache
+            rsync -a --delete /tmp/frontend-build/ /var/www/frontend/dist/ && rm -rf /tmp/frontend-build
+            supervisorctl restart laravel-worker:* laravel-scheduler
+      - name: Health check
+        run: |
+          for i in 1 2 3 4 5; do curl -fsS "${{ secrets.APP_HEALTH_URL }}" && exit 0; sleep 5; done
+          echo "health check failed"; exit 1

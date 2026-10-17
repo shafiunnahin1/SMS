@@ -1,0 +1,7 @@
+# infra/mysql/slow-query.cnf - Step 9.1 (D64): log every query slower than 0.5 s (docs/ops/performance-benchmarks.md "Monitoring Queries").
+# Host install: copy to /etc/mysql/mysql.conf.d/; Docker: mounted by docker-compose.prod.yml.
+[mysqld]
+slow_query_log = 1
+long_query_time = 0.5
+slow_query_log_file = /var/lib/mysql/slow-query.log
+log_queries_not_using_indexes = 0

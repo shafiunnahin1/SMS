@@ -1,0 +1,60 @@
+/* docs/THEMING.md "theme/tokens.css - Full Code" + docs/I18N.md section 4.4 (Arabic font stack) */
+:root {
+  --color-primary: #185FA5; --color-secondary: #0F6E56; --color-accent: #E67E22; --color-on-primary: #FFFFFF;
+  --radius: 0.5rem; --space: 1rem; --row-h: 2.75rem; --font-body: 'Hind Siliguri', system-ui, sans-serif;
+  --card-border: 1px solid rgb(229 231 235); --card-shadow: none;
+  --surface: #FFFFFF; --surface-muted: #F8FAFC; --text: #111827; --text-muted: #6B7280; --line: #E5E7EB;
+}
+.dark { --surface: #0F172A; --surface-muted: #1E293B; --text: #F1F5F9; --text-muted: #94A3B8; --line: #334155; --card-border: 1px solid rgb(51 65 85); }
+
+:root { --color-primary-soft: color-mix(in srgb, var(--color-primary) 12%, var(--surface));
+        --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 12%, var(--surface)); }
+.dark { --color-primary-soft: color-mix(in srgb, var(--color-primary) 22%, var(--surface)); }
+
+:root  { --color-primary-fg: var(--color-primary); }
+.dark  { --color-primary-fg: color-mix(in srgb, var(--color-primary) 60%, white); }
+
+[data-radius='none'] { --radius: 0; }       [data-radius='sm'] { --radius: 0.25rem; }
+[data-radius='md']   { --radius: 0.5rem; }  [data-radius='lg'] { --radius: 0.875rem; }
+[data-radius='xl']   { --radius: 1.25rem; }
+
+[data-density='compact']     { --space: 0.625rem; --row-h: 2.25rem; }
+[data-density='comfortable'] { --space: 1rem;     --row-h: 2.75rem; }
+[data-density='spacious']    { --space: 1.375rem; --row-h: 3.25rem; }
+
+[data-card='flat']     { --card-border: none; --card-shadow: none; }
+[data-card='bordered'] { --card-shadow: none; }
+[data-card='shadow']   { --card-border: none; --card-shadow: 0 1px 3px rgb(0 0 0 / .08), 0 8px 24px rgb(0 0 0 / .06); }
+
+.dark[data-card='shadow']                { --card-border: 1px solid var(--line); --card-shadow: none; }
+@media (forced-colors: active)           { [data-card='shadow'] { --card-border: 1px solid CanvasText; } }
+@media print                             { [data-card='shadow'] { --card-border: 1px solid #ccc; --card-shadow: none; } }
+
+[data-font='hind-siliguri']     { --font-body-chosen: 'Hind Siliguri', system-ui, sans-serif; }
+[data-font='noto-sans-bengali'] { --font-body-chosen: 'Noto Sans Bengali', system-ui, sans-serif; }
+[data-font='baloo-da-2']        { --font-body-chosen: 'Baloo Da 2', system-ui, sans-serif; }
+[data-font='anek-bangla']       { --font-body-chosen: 'Anek Bangla', system-ui, sans-serif; }
+[data-font='inter']             { --font-body-chosen: 'Inter', 'Hind Siliguri', system-ui, sans-serif; }
+:root                           { --font-ar: 'Noto Sans Arabic', 'Noto Naskh Arabic'; --font-body: var(--font-body-chosen); }
+[data-locale='ar']              { --font-body: var(--font-ar), var(--font-body-chosen), system-ui, sans-serif; }
+[data-locale='ar'] body         { font-size: 1.0625rem; line-height: 1.8; }
+
+[data-sidebar='light'] { --sidebar-bg: var(--surface); --sidebar-text: var(--text); }
+[data-sidebar='dark']  { --sidebar-bg: #0F172A; --sidebar-text: #E2E8F0; }
+[data-sidebar='brand'] { --sidebar-bg: var(--color-primary); --sidebar-text: var(--color-on-primary); }
+
+body { font-family: var(--font-body); background: var(--surface-muted); color: var(--text); }
+[data-table='striped'] tbody tr:nth-child(even) { background: var(--surface-muted); }
+
+/* Skeleton loader (owner request 2026-10-06, DECISIONS): a token-coloured shimmer; no animation under reduced motion */
+.skeleton { background: var(--line); border-radius: var(--radius); position: relative; overflow: hidden; }
+.skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--surface) 60%, transparent), transparent);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite; }
+[dir='rtl'] .skeleton::after { animation-direction: reverse; }
+@keyframes skeleton-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .skeleton::after { animation: none; display: none; } }
+
+/* Status colours (not brand): success / danger / warning / info - used by StatusBadge and the charts, which need a colour VALUE (SVG fill) */
+:root { --status-success: #16A34A; --status-danger: #DC2626; --status-warning: #D97706; --status-info: var(--color-primary); --status-muted: #94A3B8; }
+.dark { --status-success: #4ADE80; --status-danger: #F87171; --status-warning: #FBBF24; --status-muted: #64748B; }

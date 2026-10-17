@@ -1,0 +1,452 @@
+{
+  "release_id": "R2.1",
+  "decision": "D83",
+  "status": "planning_incomplete",
+  "observed_on": "2026-10-15",
+  "timezone": "Asia/Dhaka",
+  "source": {
+    "root": "E:\\Projects\\exam-management",
+    "commit": "40f769c966c90217de654e7fad846b2ac5cfb980",
+    "branch": "feat/occurrence-sources",
+    "state": "clean",
+    "inspection": "read_only_files_only",
+    "tests_executed": false,
+    "db_accessed": false
+  },
+  "target": {
+    "commit": "881eb5a9394d2efd649b08ea82ae0fd6115aa667",
+    "runtime_release": "R3",
+    "preexisting_blocker_hash": "ad2bfbc64b603e52d291607793010b0c8626efe1"
+  },
+  "imported_draft_sha256": "872d9ec3515fca3fd350f6210b496cb1b87ad21e840bf42bb7e9538e0f55dc54",
+  "registry_counts": {
+    "source_anchor": "app/Services/QmxVisualImportService.php",
+    "DIAGRAM_VERSIONS": 32,
+    "GRAPH_TYPES": 27,
+    "proves": "static_import_registry_membership_only",
+    "editable_modes_verified": false
+  },
+  "placement": {
+    "after": "R3.A",
+    "before": "R4",
+    "first_executable_task": "R2.1.0",
+    "runtime_switch_authorized": false
+  },
+  "gates": [
+    {
+      "id": "r3_acceptance",
+      "status": "open",
+      "reason": "R3.A acceptance incomplete; R2.1.0 executable work waits for it."
+    },
+    {
+      "id": "refined_scope",
+      "status": "open",
+      "reason": "Exact executable task/schema/API/route/role/acceptance scope and generator/guard support still require refinement and owner approval."
+    },
+    {
+      "id": "source_execution",
+      "status": "open",
+      "reason": "D83 allows read-only source files only; source tests/DB/benchmarks require an explicitly authorized environment."
+    },
+    {
+      "id": "identity_mapping",
+      "status": "open",
+      "reason": "Source users/roles/institutions/member semantics must map to canonical identities without guesses."
+    },
+    {
+      "id": "external_services",
+      "status": "open",
+      "reason": "Google linking/OCR/extraction dependencies and handling policy unresolved; no secrets requested."
+    },
+    {
+      "id": "format_visual_mapping",
+      "status": "open",
+      "reason": "Per-format and per-mode editor/importer/renderer contracts and observed round-trip fixtures pending."
+    },
+    {
+      "id": "dataset_ownership",
+      "status": "open",
+      "reason": "Authenticated/user/tenant/guest ownership and storage/version/limits/in-use deletion contract pending."
+    },
+    {
+      "id": "canonical_import_scope",
+      "status": "open",
+      "reason": "JSON/TOON/PDF canonical staged schema/parser/limits/queue/review/selected persistence/permissions scope pending."
+    },
+    {
+      "id": "paper_mapping",
+      "status": "open",
+      "reason": "Source paper-folder/variant/blueprint semantics must map to existing qb_papers without duplicate entities."
+    },
+    {
+      "id": "omr_result_mapping",
+      "status": "open",
+      "reason": "OMR identity/set/duplicate/review and canonical mark/result/publication mapping pending."
+    },
+    {
+      "id": "financial_settlement",
+      "status": "open",
+      "reason": "Unresolved legacy balances/orders/paid rights need explicit owner settlement before cutover."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "baseline",
+      "tasks": [
+        "R2.1.0"
+      ],
+      "source_anchors": [
+        "routes/web.php",
+        "app/Http/Controllers/Web/OmrController.php"
+      ],
+      "target_anchors": [
+        "docs/PROGRESS.md",
+        "api/config/release.php"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Source is clean at 40f769c9; current target runtime is R3 and R3.A remains incomplete. No source commands/tests/benchmarks executed.",
+      "gap": "Measured baseline, fixture identities and complete route/action inventory remain pending.",
+      "blocked_by": [
+        "r3_acceptance",
+        "refined_scope",
+        "source_execution"
+      ],
+      "required_acceptance": "Approved baseline environment; observed performance/OMR results and source fixture IDs, not registry or UI presence."
+    },
+    {
+      "id": "identity_and_membership",
+      "tasks": [
+        "R2.1.1"
+      ],
+      "source_anchors": [
+        "routes/web.php",
+        "app/Http/Controllers/Web/InstitutionController.php"
+      ],
+      "target_anchors": [
+        "api/app/Http/Controllers/Auth/LoginController.php",
+        "api/app/Services/EnrollmentService.php"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Canonical destination auth and enrollment surfaces already exist. Source institution controller/routes are present.",
+      "gap": "Source account/role/institution/member semantics and Google linking need explicit mapping; source behavior not validated.",
+      "blocked_by": [
+        "identity_mapping",
+        "external_services",
+        "refined_scope"
+      ],
+      "required_acceptance": "Reviewed source-to-target identity/role/member table; session/OTP/link-conflict, assignment and linked-child isolation fixtures."
+    },
+    {
+      "id": "writer_moderator_portals",
+      "tasks": [
+        "R2.1.1"
+      ],
+      "source_anchors": [
+        "routes/web.php"
+      ],
+      "target_anchors": [
+        "frontend/src/router/index.jsx",
+        "frontend/src/nav/menu.js",
+        "api/app/Http/Controllers/QuestionBank/QbQuestionController.php"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Menus differ by role; controller denies moderator authoring. React /writer area is shared by writer/moderator/super_admin.",
+      "gap": "Distinct dashboard/post-login destination acceptance is not satisfied merely by different menu items or existing API checks.",
+      "blocked_by": [
+        "identity_mapping",
+        "refined_scope"
+      ],
+      "required_acceptance": "Distinct portal route/navigation E2E plus writer cannot publish, moderator cannot author/earn/withdraw and tenant cannot enter central tools."
+    },
+    {
+      "id": "curriculum_and_authoring",
+      "tasks": [
+        "R2.1.2"
+      ],
+      "source_anchors": [
+        "database/seeders/QuestionTypeSeeder.php",
+        "app/Models/Question.php",
+        "app/Models/QuestionType.php",
+        "resources/views/questions/edit.blade.php"
+      ],
+      "target_anchors": [
+        "api/app/Http/Controllers/QuestionBank/QbCurriculumController.php",
+        "api/app/Http/Controllers/QuestionBank/QbQuestionController.php",
+        "frontend/src/pages/writer/QbQuestionEdit.jsx",
+        "frontend/src/pages/writer/QbQuestionStart.jsx",
+        "api/app/Support/QbRichText.php",
+        "docs/PROGRESS.md"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "QB.13/QB.14 are complete per accepted historical progress; current curriculum/editor/rich-content surfaces exist. Older backlog incompletion is historical. Additional static roster: 75 literal seed declarations / 74 unique slugs; application occurs twice with cognitive and formal-writing meanings. Persisted active types/contracts remain unknown.",
+      "gap": "Per-format source metadata-driven authoring and response/editor contracts still need semantic comparison; no runtime parity result in this slice. Duplicate source slug/default/interaction precedence must be resolved in owner-reviewed canonical mappings; do not classify by slug alone.",
+      "blocked_by": [
+        "format_visual_mapping",
+        "refined_scope"
+      ],
+      "required_acceptance": "Every supported format: create/save/reopen/edit/preview/export; D72-D74 layout, metadata, mixed items and safe renderer regressions."
+    },
+    {
+      "id": "media_and_structured_content",
+      "tasks": [
+        "R2.1.2"
+      ],
+      "source_anchors": [
+        "app/Models/Question.php",
+        "resources/views/questions/edit.blade.php"
+      ],
+      "target_anchors": [
+        "api/app/Http/Controllers/QuestionBank/QbMediaController.php",
+        "api/app/Http/Controllers/QuestionBank/QbQuestionController.php",
+        "frontend/src/features/qb/imageTransforms.js"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Existing canonical media/structured item/rich-content support is a reuse baseline.",
+      "gap": "Source association/placement and format-specific structured semantics need mapped round-trip coverage.",
+      "blocked_by": [
+        "format_visual_mapping",
+        "refined_scope"
+      ],
+      "required_acceptance": "Upload/attach/replace/remove, private-media authorization, mixed-child/stimulus/source metadata persistence and image transform fidelity."
+    },
+    {
+      "id": "visual_modes_and_datasets",
+      "tasks": [
+        "R2.1.2"
+      ],
+      "source_anchors": [
+        "app/Services/QmxVisualImportService.php",
+        "routes/qmx_graph_datasets.php",
+        "app/Http/Controllers/GraphDatasetController.php",
+        "app/Services/GraphDatasetOwner.php",
+        "app/Services/GraphDatasetStorage.php"
+      ],
+      "target_anchors": [
+        "frontend/src/pages/writer/QbQuestionEdit.jsx",
+        "api/app/Models/QbQuestion.php"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Read-only constant extraction: DIAGRAM_VERSIONS=32 and GRAPH_TYPES=27. Dataset CRUD/capabilities routes present. No matching target GraphDataset surface found in inspected paths. Static roster separates 37 initially planned base launcher entries, 41 lazy modules / 43 mode declarations and importer membership; 11 lazy modes lie outside the 32 import diagram modes.",
+      "gap": "Counts are import-registry counts; each editor/import/render classification, version contract and user/tenant/guest dataset ownership remains unresolved. Loader/launcher/importer coverage differences need per-mode path/fixture classification; static asset existence does not establish editability.",
+      "blocked_by": [
+        "format_visual_mapping",
+        "dataset_ownership",
+        "refined_scope"
+      ],
+      "required_acceptance": "Per-mode source editor/importer/renderer anchors and fixtures; editable CRUD/reopen/export, import/read-only preservation, stale-version/in-use deletion and ownership denial checks."
+    },
+    {
+      "id": "json_and_toon",
+      "tasks": [
+        "R2.1.3"
+      ],
+      "source_anchors": [
+        "routes/ai-json.php",
+        "app/Services/AiJsonImportService.php",
+        "app/Http/Controllers/Web/JsonImport2Controller.php"
+      ],
+      "target_anchors": [
+        "api/config/release.php",
+        "api/app/Http/Controllers/Admin/ImportController.php",
+        "api/app/Console/Commands/QbImportFromQbank.php"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Source decode uses a 20 MB string check, repairCommonLatexBackslashes and whole-payload json_decode. Target generic import_kinds remains students; legacy command is a different workflow.",
+      "gap": "Streaming 10k staged/versioned adapter, exact decoded LaTeX fidelity and destination-only TOON parser/review/selected-save schema are not established.",
+      "blocked_by": [
+        "canonical_import_scope",
+        "format_visual_mapping",
+        "refined_scope"
+      ],
+      "required_acceptance": "Versioned JSON v1/v2 and TOON examples; field-path errors; exact accepted/failed counts; valid decoded LaTeX unchanged; resumable/idempotent 10k fixture and selected draft persistence."
+    },
+    {
+      "id": "pdf_staging",
+      "tasks": [
+        "R2.1.4"
+      ],
+      "source_anchors": [
+        "routes/pdf-extractor.php",
+        "app/Http/Controllers/Web/PdfQuestionExtractorController.php",
+        "app/Services/PdfStagingDraftFinalizationService.php",
+        "app/Models/PdfImportBatch.php"
+      ],
+      "target_anchors": [
+        "api/app/Services/PdfService.php"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Source upload/review/open-editor/import-selected/discard routes and finalization service exist. Target PdfService is an output engine, not proof of extraction.",
+      "gap": "No matching target PDF extractor declaration in inspected surface; extraction/OCR policy, staged schema and validated limits pending.",
+      "blocked_by": [
+        "canonical_import_scope",
+        "external_services",
+        "refined_scope"
+      ],
+      "required_acceptance": "Page-range, hybrid/scanned unresolved states, source-page provenance, staged edit/reopen/finalize, duplicates, LaTeX and explicit publication boundaries."
+    },
+    {
+      "id": "finder",
+      "tasks": [
+        "R2.1.2"
+      ],
+      "source_anchors": [
+        "routes/question-finder.php",
+        "app/Services/QuestionCandidateService.php",
+        "app/Services/QuestionMatcherService.php"
+      ],
+      "target_anchors": [
+        "api/app/Http/Controllers/QuestionBank/QbPurchaseController.php"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Source search controller/service routes exist; destination question catalogue search already exists.",
+      "gap": "OCR-text candidate ranking, confidence/margin calibration and manual selection parity are unverified; no matching finder declaration found in inspected target paths.",
+      "blocked_by": [
+        "format_visual_mapping",
+        "refined_scope"
+      ],
+      "required_acceptance": "Labeled ordering/ambiguity fixtures, reviewed thresholds and locked-answer leakage checks; uncertain matches require manual selection."
+    },
+    {
+      "id": "paper_variants_and_blueprints",
+      "tasks": [
+        "R2.1.5"
+      ],
+      "source_anchors": [
+        "app/Models/QuestionSet.php",
+        "app/Models/QuestionSetFolder.php",
+        "app/Models/QuestionSetSubset.php",
+        "app/Services/AssessmentBlueprintResolver.php"
+      ],
+      "target_anchors": [
+        "api/app/Models/QbPaper.php",
+        "api/app/Http/Controllers/QuestionBank/QbPaperController.php",
+        "frontend/src/pages/qb/QbPaperEdit.jsx"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Destination paper models/workflow exist; owner mapping is QuestionSet to paper, subset to variant, folders to paper organization.",
+      "gap": "Persisted folder/variant and blueprint semantics need approved canonical mapping; A/B printing alone is not source subset parity.",
+      "blocked_by": [
+        "paper_mapping",
+        "refined_scope"
+      ],
+      "required_acceptance": "Folder cycles/moves, deterministic snapshots/variants/permutations, blueprint ambiguity/eligibility, marks/media/PDF/answer key and entitlement/tenant checks."
+    },
+    {
+      "id": "omr",
+      "tasks": [
+        "R2.1.6"
+      ],
+      "source_anchors": [
+        "app/Http/Controllers/Web/OmrController.php",
+        "app/Services/OmrAnswerComparisonService.php",
+        "app/Services/OmrBatchComparisonService.php",
+        "app/Models/QuestionSetOmrForm.php",
+        "app/Models/QuestionSetOmrScan.php"
+      ],
+      "target_anchors": [
+        "api/app/Services/ExamService.php",
+        "api/app/Services/ResultService.php",
+        "api/app/Services/EnrollmentService.php"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Source configure/generate/print/scan/layout-lock surfaces and comparison services exist. Target matching OMR declarations not found; only legacy import exclusion comment observed.",
+      "gap": "Schema/result/identity mapping and measured golden/noisy-scan baseline pending; source floats/implementation cannot override School financial/mark/result policy.",
+      "blocked_by": [
+        "source_execution",
+        "paper_mapping",
+        "omr_result_mapping",
+        "refined_scope"
+      ],
+      "required_acceptance": "Golden identity/set/answer/marks plus noise/rotation/blank/multiple/duplicate ambiguity, per-record recovery, capacity, review and publication/assignment isolation."
+    },
+    {
+      "id": "exams_and_results",
+      "tasks": [
+        "R2.1.7"
+      ],
+      "source_anchors": [
+        "app/Http/Controllers/Web/InstitutionController.php",
+        "routes/web.php"
+      ],
+      "target_anchors": [
+        "api/app/Services/ExamService.php",
+        "api/app/Services/ResultService.php",
+        "api/app/Http/Controllers/Exams/ResultController.php"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Canonical exams/results/publishing already exist.",
+      "gap": "Source routine/type-breakdown/merit/Bangla-digit export and OMR handoff need comparison; retain destination grading/enrollment/publication semantics.",
+      "blocked_by": [
+        "identity_mapping",
+        "omr_result_mapping",
+        "refined_scope"
+      ],
+      "required_acceptance": "Mapped canonical IDs, grade/pass/merit/export fixtures and released student/parent visibility with assignment/tenant denial tests."
+    },
+    {
+      "id": "financial_entitlements",
+      "tasks": [
+        "R2.1.8"
+      ],
+      "source_anchors": [
+        "app/Services/WalletService.php",
+        "app/Services/PaymentService.php"
+      ],
+      "target_anchors": [
+        "api/app/Services/QbPricingService.php",
+        "api/app/Services/QbPurchaseService.php",
+        "api/app/Services/QbEarningService.php",
+        "api/app/Services/Billing/BkashService.php",
+        "api/app/Http/Controllers/QuestionBank/QbStudentOrderCallbackController.php"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Existing destination pricing, institution purchase, student order and writer earning/payment services are authoritative. Source financial services are reference only.",
+      "gap": "Legacy identity/item/paid-right/order/balance mapping and owner settlement pending; source personal wallet/subscription discounts/payment manager must not be ported.",
+      "blocked_by": [
+        "identity_mapping",
+        "financial_settlement",
+        "refined_scope"
+      ],
+      "required_acceptance": "Exact-decimal append-only reconciliation, verified rights grants/idempotency, exact order reference/amount callbacks and unresolved-right/balance cutover block."
+    },
+    {
+      "id": "acceptance",
+      "tasks": [
+        "R2.1.9"
+      ],
+      "source_anchors": [
+        "routes/web.php"
+      ],
+      "target_anchors": [
+        "frontend/src/router/index.jsx",
+        "docs/TESTING.md",
+        "docs/PROGRESS.md"
+      ],
+      "evidence_level": "read_only_file_inspection",
+      "accepted": false,
+      "observation": "Existing application suites and prior accepted QB/R3 evidence are baselines, not new R2.1 acceptance.",
+      "gap": "Refined commands/fixtures, complete feature coverage and runtime-switch gate pending; no feature accepted here.",
+      "blocked_by": [
+        "r3_acceptance",
+        "refined_scope",
+        "source_execution"
+      ],
+      "required_acceptance": "All planned tasks plus portal/tenant/security/persistence/E2E, import-scale, OMR regression and approved runtime acceptance prerequisites pass."
+    }
+  ],
+  "static_inventory": "docs/release/r21-static-inventory.json",
+  "static_inventory_note": "D83 file-only extension at target planning checkpoint 172fb20; no capability acceptance or source execution."
+}

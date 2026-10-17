@@ -1,0 +1,43 @@
+# /etc/caddy/Caddyfile   (Revision 6)
+# Caddy = public edge. Terminates TLS for every host and proxies to Nginx on 127.0.0.1:8080.
+# Build Caddy with the Cloudflare DNS plugin (needed for the wildcard certificate):
+#   xcaddy build --with github.com/caddy-dns/cloudflare
+# Environment (in /etc/caddy/caddy.env, loaded by the systemd unit):
+#   CLOUDFLARE_API_TOKEN=...   (Zone:DNS:Edit for the platform zone only)
+# Replace schoolapp.com with APP_BASE_DOMAIN.
+
+{
+	email ops@schoolapp.com
+	on_demand_tls {
+		# Caddy asks Laravel before issuing a certificate for an unknown host.
+		# 200 = issue, anything else = refuse. Without this anyone could make
+		# the server request certificates for arbitrary domains.
+		ask http://{$UPSTREAM:127.0.0.1:8080}/api/internal/tls-check
+	}
+}
+
+(app) {
+	# Internal endpoints are never reachable from the internet
+	@internal path /api/internal/*
+	respond @internal 404
+
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy {$UPSTREAM:127.0.0.1:8080}      # host install: 127.0.0.1:8080 | docker compose: set UPSTREAM=nginx:8080
+}
+
+# 1) Platform domain + every tenant subdomain: one wildcard certificate (DNS-01)
+schoolapp.com, *.schoolapp.com {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+	}
+	import app
+}
+
+# 2) Every other host = tenant custom domain: certificate issued on first request (HTTP-01)
+https:// {
+	tls {
+		on_demand
+	}
+	import app
+}

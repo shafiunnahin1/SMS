@@ -1,0 +1,29 @@
+# Step 9.1 (D64): builds the production api image (api/Dockerfile.prod) on every push, so a broken Dockerfile shows up long before a deploy.
+# Also validates the compose files. Nothing is pushed to a registry and nothing is deployed here.
+name: image
+
+on:
+  push:
+    branches: [main, develop, 'claude/**']
+  pull_request:
+
+jobs:
+  api-image:
+    name: Build the api image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker build api/Dockerfile.prod
+        run: docker build -f api/Dockerfile.prod -t sms-api:ci api
+      - name: The image has what production needs (PHP extensions, Chromium, fonts)
+        run: |
+          docker run --rm --entrypoint php sms-api:ci -m | grep -qx sockets
+          docker run --rm --entrypoint php sms-api:ci -m | grep -qx redis
+          docker run --rm --entrypoint php sms-api:ci -m | grep -qx pdo_mysql
+          docker run --rm --entrypoint sh sms-api:ci -c 'chromium --version && fc-list | grep -qi "Noto Sans Bengali"'
+      - name: Compose files are valid
+        run: |
+          cp api/.env.example api/.env.production
+          export DB_ROOT_PASSWORD=x DB_DATABASE=x DB_USERNAME=x DB_PASSWORD=x REDIS_PASSWORD=x CLOUDFLARE_API_TOKEN=x
+          docker compose -f docker-compose.prod.yml config -q
+          docker compose -f docker-compose.prod.yml -f docker-compose.staging.yml config -q

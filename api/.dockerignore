@@ -1,0 +1,14 @@
+# never in the image: secrets, local state, dependencies installed by the build itself
+.env
+.env.*
+!.env.example
+vendor
+node_modules
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/private/*
+storage/app/public/*
+tests
+.phpunit.result.cache

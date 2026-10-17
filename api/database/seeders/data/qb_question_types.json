@@ -1,0 +1,1489 @@
+{
+ "source": "owner's qbank, database/seeders/QuestionTypeSeeder.php at 40f769c (data only; family / structure = this platform's grouping, D65 QB.4)",
+ "types": [
+  {
+   "slug": "seen_passage",
+   "name_bn": "সিন প্যাসেজ",
+   "name_en": "Seen Passage",
+   "family": "other",
+   "sort_order": 1,
+   "is_active": true,
+   "ui_config": {
+    "structure": "passage",
+    "qbank": null
+   }
+  },
+  {
+   "slug": "unseen_passage",
+   "name_bn": "আনসিন প্যাসেজ",
+   "name_en": "Unseen Passage",
+   "family": "other",
+   "sort_order": 2,
+   "is_active": true,
+   "ui_config": {
+    "structure": "passage",
+    "qbank": null
+   }
+  },
+  {
+   "slug": "mcq",
+   "name_bn": "বহুনির্বাচনী প্রশ্ন",
+   "name_en": "Multiple Choice Question",
+   "family": "mcq",
+   "sort_order": 3,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "seen_mcq",
+   "name_bn": "সিন এমসিকিউ",
+   "name_en": "Seen MCQ",
+   "family": "mcq",
+   "sort_order": 3,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "unseen_mcq",
+   "name_bn": "আনসিন এমসিকিউ",
+   "name_en": "Unseen MCQ",
+   "family": "mcq",
+   "sort_order": 3,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "stimulus_mcq_group",
+   "name_bn": "উদ্দীপকভিত্তিক বহুনির্বাচনী প্রশ্ন",
+   "name_en": "Stimulus Based MCQ",
+   "family": "mcq",
+   "sort_order": 4,
+   "is_active": true,
+   "ui_config": {
+    "structure": "passage_mcq",
+    "qbank": null
+   }
+  },
+  {
+   "slug": "short",
+   "name_bn": "সংক্ষিপ্ত প্রশ্ন",
+   "name_en": "Short Question",
+   "family": "short",
+   "sort_order": 5,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "knowledge",
+   "name_bn": "জ্ঞানমূলক প্রশ্ন",
+   "name_en": "Knowledge Question",
+   "family": "short",
+   "sort_order": 6,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "understanding",
+   "name_bn": "অনুধাবনমূলক প্রশ্ন",
+   "name_en": "Understanding Question",
+   "family": "short",
+   "sort_order": 7,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "higher_order",
+   "name_bn": "উচ্চতর দক্ষতামূলক প্রশ্ন",
+   "name_en": "Higher Order Question",
+   "family": "short",
+   "sort_order": 9,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "descriptive",
+   "name_bn": "বর্ণনামূলক প্রশ্ন",
+   "name_en": "Descriptive Question",
+   "family": "short",
+   "sort_order": 10,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "true_false",
+   "name_bn": "সত্য / মিথ্যা",
+   "name_en": "True / False",
+   "family": "true_false",
+   "sort_order": 10,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "creative",
+   "name_bn": "সৃজনশীল প্রশ্ন",
+   "name_en": "Creative Question",
+   "family": "creative",
+   "sort_order": 11,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "gap_fill",
+   "name_bn": "শূন্যস্থান পূরণ",
+   "name_en": "Gap Fill",
+   "family": "fill_gap",
+   "sort_order": 11,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer",
+       "explanation"
+      ],
+      "order": [
+       "question",
+       "answer",
+       "explanation"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_without_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "generic_gap",
+      "clue_mode": "none",
+      "slot_scope": "word",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  },
+  {
+   "slug": "rearrange",
+   "name_bn": "পুনর্বিন্যাস",
+   "name_en": "Rearrange",
+   "family": "ordering",
+   "sort_order": 12,
+   "is_active": true,
+   "ui_config": {
+    "structure": "order",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "rearranging"
+     }
+    }
+   }
+  },
+  {
+   "slug": "structured",
+   "name_bn": "কাঠামোবদ্ধ",
+   "name_en": "Structured",
+   "family": "other",
+   "sort_order": 12,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "reading_qa",
+   "name_bn": "রিডিং প্রশ্নোত্তর",
+   "name_en": "Reading Question Answer",
+   "family": "short",
+   "sort_order": 13,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "information_transfer",
+   "name_bn": "তথ্য স্থানান্তর / ফ্লো চার্ট",
+   "name_en": "Information Transfer / Flow Chart",
+   "family": "other",
+   "sort_order": 14,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "summary",
+   "name_bn": "সারাংশ",
+   "name_en": "Summary",
+   "family": "writing",
+   "sort_order": 15,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "matching",
+   "name_bn": "ম্যাচিং",
+   "name_en": "Matching",
+   "family": "matching",
+   "sort_order": 16,
+   "is_active": true,
+   "ui_config": {
+    "structure": "match",
+    "qbank": null
+   }
+  },
+  {
+   "slug": "poem_qa",
+   "name_bn": "কবিতা প্রশ্নোত্তর",
+   "name_en": "Poem Question Answer",
+   "family": "short",
+   "sort_order": 17,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "story_qa",
+   "name_bn": "গল্প প্রশ্নোত্তর",
+   "name_en": "Story Question Answer",
+   "family": "short",
+   "sort_order": 18,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "open_ended",
+   "name_bn": "উন্মুক্ত প্রশ্ন",
+   "name_en": "Open-Ended Question",
+   "family": "short",
+   "sort_order": 19,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "cloze_test_with_clues",
+   "name_bn": "ক্লোজ টেস্ট (ক্লুসহ)",
+   "name_en": "Cloze Test With Clues",
+   "family": "fill_gap",
+   "sort_order": 20,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_with_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "cloze",
+      "clue_mode": "word_bank",
+      "slot_scope": "word",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  },
+  {
+   "slug": "cloze_test_without_clues",
+   "name_bn": "ক্লোজ টেস্ট (ক্লুবিহীন)",
+   "name_en": "Cloze Test Without Clues",
+   "family": "fill_gap",
+   "sort_order": 21,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_without_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "cloze",
+      "clue_mode": "none",
+      "slot_scope": "word",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  },
+  {
+   "slug": "first_letter_seeing_picture",
+   "name_bn": "ছবি দেখে প্রথম অক্ষর",
+   "name_en": "First Letter Seeing the Picture",
+   "family": "fill_gap",
+   "sort_order": 21,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_without_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "first_letter_seeing_picture",
+      "clue_mode": "none",
+      "slot_scope": "word",
+      "answer_kind": "text",
+      "layout": "inline"
+     }
+    }
+   }
+  },
+  {
+   "slug": "completing_story",
+   "name_bn": "গল্প সম্পূর্ণকরণ",
+   "name_en": "Completing Story",
+   "family": "writing",
+   "sort_order": 22,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "dialogue",
+   "name_bn": "সংলাপ",
+   "name_en": "Dialogue",
+   "family": "writing",
+   "sort_order": 23,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "article",
+   "name_bn": "আর্টিকেল",
+   "name_en": "Article",
+   "family": "fill_gap",
+   "sort_order": 24,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_without_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "article",
+      "clue_mode": "none",
+      "slot_scope": "word",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  },
+  {
+   "slug": "preposition",
+   "name_bn": "প্রিপজিশন",
+   "name_en": "Preposition",
+   "family": "fill_gap",
+   "sort_order": 25,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_without_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "preposition",
+      "clue_mode": "none",
+      "slot_scope": "word",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  },
+  {
+   "slug": "substitution_table",
+   "name_bn": "সাবস্টিটিউশন টেবিল",
+   "name_en": "Substitution Table",
+   "family": "matching",
+   "sort_order": 26,
+   "is_active": true,
+   "ui_config": {
+    "structure": "match",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "matching"
+     },
+     "authoring": {
+      "family": "matching",
+      "task_kind": "substitution_table",
+      "clue_mode": "none",
+      "slot_scope": "item",
+      "answer_kind": "mapping",
+      "layout": "columns",
+      "browser_mode": "structured_matching_edit"
+     }
+    }
+   }
+  },
+  {
+   "slug": "blank_box_fill",
+   "name_bn": "খালি ঘর পূরণ",
+   "name_en": "Blank Box Completion",
+   "family": "fill_gap",
+   "sort_order": 27,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_without_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "blank_box_fill",
+      "clue_mode": "none",
+      "slot_scope": "cell",
+      "answer_kind": "text",
+      "layout": "inline",
+      "browser_mode": "structured_fill_gap_without_clue_edit"
+     }
+    }
+   }
+  },
+  {
+   "slug": "right_form_verbs",
+   "name_bn": "সঠিক verb form",
+   "name_en": "Right Form of Verbs",
+   "family": "fill_gap",
+   "sort_order": 27,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "right_form_of_verb",
+      "clue_mode": "none",
+      "slot_scope": "word",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  },
+  {
+   "slug": "sentence_transformation",
+   "name_bn": "বাক্য রূপান্তর",
+   "name_en": "Sentence Transformation",
+   "family": "other",
+   "sort_order": 28,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "narration",
+   "name_bn": "ন্যারেশন",
+   "name_en": "Narration",
+   "family": "short",
+   "sort_order": 29,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer",
+       "explanation"
+      ],
+      "order": [
+       "question",
+       "answer",
+       "explanation"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "authoring": {
+      "family": "transformation"
+     }
+    }
+   }
+  },
+  {
+   "slug": "tag_question",
+   "name_bn": "ট্যাগ প্রশ্ন",
+   "name_en": "Tag Question",
+   "family": "fill_gap",
+   "sort_order": 29,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_without_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "tag_question",
+      "clue_mode": "none",
+      "slot_scope": "phrase",
+      "answer_kind": "text",
+      "layout": "inline"
+     }
+    }
+   }
+  },
+  {
+   "slug": "prefix_suffix",
+   "name_bn": "প্রিফিক্স / সাফিক্স",
+   "name_en": "Prefix / Suffix",
+   "family": "fill_gap",
+   "sort_order": 30,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "suffix_prefix",
+      "clue_mode": "inline_root",
+      "slot_scope": "word",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  },
+  {
+   "slug": "pronoun_reference",
+   "name_bn": "সর্বনাম নির্দেশ",
+   "name_en": "Pronoun Reference",
+   "family": "short",
+   "sort_order": 30,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer",
+       "explanation"
+      ],
+      "order": [
+       "question",
+       "answer",
+       "explanation"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "authoring": {
+      "family": "transformation"
+     }
+    }
+   }
+  },
+  {
+   "slug": "connectors",
+   "name_bn": "কানেক্টর",
+   "name_en": "Connectors",
+   "family": "fill_gap",
+   "sort_order": 31,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_without_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "connector",
+      "clue_mode": "none",
+      "slot_scope": "word",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  },
+  {
+   "slug": "punctuation",
+   "name_bn": "বিরামচিহ্ন",
+   "name_en": "Punctuation",
+   "family": "other",
+   "sort_order": 32,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "paragraph",
+   "name_bn": "প্যারাগ্রাফ",
+   "name_en": "Paragraph",
+   "family": "writing",
+   "sort_order": 33,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "email",
+   "name_bn": "ইমেইল",
+   "name_en": "Email",
+   "family": "writing",
+   "sort_order": 34,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "letter",
+   "name_bn": "চিঠি",
+   "name_en": "Letter",
+   "family": "writing",
+   "sort_order": 35,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "application",
+   "name_bn": "দরখাস্ত",
+   "name_en": "Application",
+   "family": "writing",
+   "sort_order": 36,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "composition",
+   "name_bn": "রচনা",
+   "name_en": "Composition",
+   "family": "writing",
+   "sort_order": 37,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "very_short_answer",
+   "name_bn": "অতিসংক্ষিপ্ত উত্তর",
+   "name_en": "Very Short Answer",
+   "family": "short",
+   "sort_order": 38,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "letter_matching",
+   "name_bn": "লেটার ম্যাচিং",
+   "name_en": "Letter Matching",
+   "family": "matching",
+   "sort_order": 39,
+   "is_active": true,
+   "ui_config": {
+    "structure": "match",
+    "qbank": null
+   }
+  },
+  {
+   "slug": "one_word_answer",
+   "name_bn": "এককথায় উত্তর",
+   "name_en": "One Word Answer",
+   "family": "short",
+   "sort_order": 39,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "capital_letter",
+   "name_bn": "বড় হাতের অক্ষর",
+   "name_en": "Capital Letter",
+   "family": "other",
+   "sort_order": 40,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "fill_in_the_blank",
+   "name_bn": "সাধারণ শূন্যস্থান পূরণ",
+   "name_en": "Fill in the Blank",
+   "family": "fill_gap",
+   "sort_order": 40,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer",
+       "explanation"
+      ],
+      "order": [
+       "question",
+       "answer",
+       "explanation"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_without_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "generic_gap",
+      "clue_mode": "none",
+      "slot_scope": "word",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  },
+  {
+   "slug": "problem_solving",
+   "name_bn": "সমস্যা সমাধান",
+   "name_en": "Problem Solving",
+   "family": "short",
+   "sort_order": 41,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "small_letter",
+   "name_bn": "ছোট হাতের অক্ষর",
+   "name_en": "Small Letter",
+   "family": "other",
+   "sort_order": 41,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "drawing_labeling",
+   "name_bn": "চিত্র অঙ্কন ও লেবেলিং",
+   "name_en": "Drawing and Labeling",
+   "family": "other",
+   "sort_order": 42,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "missing_letter",
+   "name_bn": "মিসিং লেটার",
+   "name_en": "Missing Letter",
+   "family": "fill_gap",
+   "sort_order": 42,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "missing_letter",
+      "clue_mode": "none",
+      "slot_scope": "character",
+      "answer_kind": "text",
+      "layout": "inline"
+     }
+    }
+   }
+  },
+  {
+   "slug": "number_writing",
+   "name_bn": "সংখ্যা লেখা",
+   "name_en": "Number Writing",
+   "family": "other",
+   "sort_order": 43,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "oral",
+   "name_bn": "মৌখিক",
+   "name_en": "Oral",
+   "family": "other",
+   "sort_order": 43,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "practical",
+   "name_bn": "ব্যবহারিক / প্রদর্শনমূলক",
+   "name_en": "Practical / Demonstration",
+   "family": "other",
+   "sort_order": 44,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "word_picture_matching",
+   "name_bn": "শব্দ-ছবি মিল",
+   "name_en": "Word Picture Matching",
+   "family": "matching",
+   "sort_order": 44,
+   "is_active": true,
+   "ui_config": {
+    "structure": "match",
+    "qbank": null
+   }
+  },
+  {
+   "slug": "map_work",
+   "name_bn": "মানচিত্র / লোকেশন ওয়ার্ক",
+   "name_en": "Map / Location Work",
+   "family": "other",
+   "sort_order": 45,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "picture_word",
+   "name_bn": "ছবি দেখে শব্দ",
+   "name_en": "Picture Word",
+   "family": "other",
+   "sort_order": 45,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "graph_chart",
+   "name_bn": "গ্রাফ / চার্ট",
+   "name_en": "Graph / Chart",
+   "family": "other",
+   "sort_order": 46,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "word_rearrange",
+   "name_bn": "শব্দ পুনর্বিন্যাস",
+   "name_en": "Word Rearrange",
+   "family": "ordering",
+   "sort_order": 46,
+   "is_active": true,
+   "ui_config": {
+    "structure": "order",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "rearranging"
+     }
+    }
+   }
+  },
+  {
+   "slug": "number_word",
+   "name_bn": "সংখ্যা থেকে শব্দ",
+   "name_en": "Number Word",
+   "family": "other",
+   "sort_order": 47,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "dialogue_completion",
+   "name_bn": "সংলাপ পূরণ",
+   "name_en": "Dialogue Completion",
+   "family": "fill_gap",
+   "sort_order": 48,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "sentence_completion",
+      "clue_mode": "none",
+      "slot_scope": "sentence",
+      "answer_kind": "text",
+      "layout": "dialogue"
+     }
+    }
+   }
+  },
+  {
+   "slug": "vocabulary_recall",
+   "name_bn": "শব্দভান্ডার স্মরণ",
+   "name_en": "Vocabulary Recall",
+   "family": "short",
+   "sort_order": 49,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "reading_mcq",
+   "name_bn": "রিডিং এমসিকিউ",
+   "name_en": "Reading MCQ",
+   "family": "mcq",
+   "sort_order": 50,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "ordinal_number",
+   "name_bn": "ক্রমবাচক সংখ্যা",
+   "name_en": "Ordinal Number",
+   "family": "other",
+   "sort_order": 51,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "singular_plural",
+   "name_bn": "একবচন / বহুবচন",
+   "name_en": "Singular / Plural",
+   "family": "other",
+   "sort_order": 52,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "parts_of_speech_identification",
+   "name_bn": "Parts of Speech চিহ্নিতকরণ",
+   "name_en": "Parts of Speech Identification",
+   "family": "other",
+   "sort_order": 53,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "wh_question",
+   "name_bn": "WH প্রশ্ন",
+   "name_en": "WH Question",
+   "family": "short",
+   "sort_order": 54,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "adjective_form",
+   "name_bn": "Adjective Form",
+   "name_en": "Adjective Form",
+   "family": "other",
+   "sort_order": 55,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "sentence_writing",
+   "name_bn": "বাক্য লেখা",
+   "name_en": "Sentence Writing",
+   "family": "writing",
+   "sort_order": 56,
+   "is_active": true,
+   "ui_config": {
+    "structure": null,
+    "qbank": null
+   }
+  },
+  {
+   "slug": "words_phrases",
+   "name_bn": "শব্দ/ফ্রেজ",
+   "name_en": "Words/Phrases",
+   "family": "fill_gap",
+   "sort_order": 57,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_with_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "words_phrases",
+      "clue_mode": "word_bank",
+      "slot_scope": "phrase",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  },
+  {
+   "slug": "clauses_phrases",
+   "name_bn": "ক্লজ/ফ্রেজ",
+   "name_en": "Clauses/Phrases",
+   "family": "fill_gap",
+   "sort_order": 58,
+   "is_active": true,
+   "ui_config": {
+    "structure": "gap",
+    "qbank": {
+     "version": 1,
+     "fields": {
+      "visible": [
+       "question",
+       "answer"
+      ],
+      "order": [
+       "question",
+       "answer"
+      ]
+     },
+     "numbering": [],
+     "grouping": {
+      "enabled": false,
+      "instruction_enabled": false,
+      "child_instruction_enabled": false,
+      "allow_duplicate_types": false
+     },
+     "interaction": {
+      "type": "fill_gap_without_clue"
+     },
+     "authoring": {
+      "family": "fill_gap",
+      "task_kind": "clauses_phrases",
+      "clue_mode": "none",
+      "slot_scope": "phrase",
+      "answer_kind": "text",
+      "layout": "paragraph"
+     }
+    }
+   }
+  }
+ ]
+}

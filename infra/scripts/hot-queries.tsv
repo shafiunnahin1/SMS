@@ -1,0 +1,77 @@
+attendance_take	sorted	SELECT student_id, status FROM attendances WHERE institution_id = 7 AND batch_id = 33 AND date = '2027-03-02'
+attendance_student_month	any	SELECT date, status FROM attendances WHERE institution_id = 7 AND student_id = 1234 AND date BETWEEN '2027-03-01' AND '2027-03-31'
+attendance_absent_today	any	SELECT COUNT(*) FROM attendances WHERE institution_id = 7 AND date = '2027-03-02' AND status = 'absent'
+attendance_range_report	any	SELECT batch_id, status, COUNT(*) FROM attendances WHERE institution_id = 7 AND date BETWEEN '2027-03-01' AND '2027-03-31' GROUP BY batch_id, status
+cash_collection_day	any	SELECT SUM(paid_amount) FROM fee_payments WHERE institution_id = 7 AND paid_at >= '2027-03-02 00:00:00' AND paid_at < '2027-03-03 00:00:00'
+student_fee_history	sorted	SELECT * FROM fee_payments WHERE student_id = 1234 ORDER BY paid_at DESC LIMIT 20
+receipt_lookup	any	SELECT * FROM fee_payments WHERE institution_id = 7 AND receipt_no = 'R1234-3'
+fee_structure_by_batch	any	SELECT amount FROM fee_structures WHERE batch_id = 12 AND fee_category_id = 3 AND academic_year_id IN (2027, 0) ORDER BY academic_year_id DESC
+sms_log_page	sorted	SELECT * FROM sms_logs WHERE institution_id = 7 ORDER BY sent_at DESC LIMIT 50
+sms_campaign_report	any	SELECT status, COUNT(*) FROM sms_logs WHERE campaign_id = 7 GROUP BY status
+audit_page	sorted	SELECT * FROM audit_logs WHERE institution_id = 7 ORDER BY created_at DESC LIMIT 50
+audit_record_history	sorted	SELECT * FROM audit_logs WHERE model = 'students' AND model_id = 1234 ORDER BY created_at DESC
+expenses_month	any	SELECT SUM(amount) FROM expenses WHERE institution_id = 7 AND expense_date BETWEEN '2027-03-01' AND '2027-03-31'
+message_inbox	sorted	SELECT * FROM messages WHERE to_user_id = 1234 ORDER BY created_at DESC LIMIT 30
+message_unread_count	any	SELECT COUNT(*) FROM messages WHERE to_user_id = 1234 AND is_read = 0
+homework_for_batch	any	SELECT * FROM homeworks WHERE institution_id = 7 AND program_id = 3 AND (batch_id IS NULL OR batch_id = 12) AND deleted_at IS NULL ORDER BY due_date DESC LIMIT 20
+homework_by_teacher	any	SELECT * FROM homeworks WHERE teacher_id = 9 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 20
+materials_for_batch	any	SELECT * FROM class_materials WHERE institution_id = 7 AND program_id = 3 AND (batch_id IS NULL OR batch_id = 12) AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 20
+materials_by_teacher	any	SELECT * FROM class_materials WHERE teacher_id = 9 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 20
+ai_quota_month	any	SELECT COUNT(*) FROM ai_usage_logs WHERE institution_id = 7 AND created_at >= '2027-03-01 00:00:00'
+leave_pending	any	SELECT * FROM leave_applications WHERE institution_id = 7 AND status = 'pending'
+payouts_month	any	SELECT * FROM teacher_payouts WHERE institution_id = 7 AND month = '2027-03'
+waivers_pending	any	SELECT * FROM fee_waivers WHERE institution_id = 7 AND status = 'pending'
+enrollments_in_batch	any	SELECT student_id FROM enrollments WHERE batch_id = 33 AND status = 'active'
+result_of_student	any	SELECT * FROM results WHERE exam_id = 40 AND student_id = 1234
+notice_page	sorted	SELECT * FROM notices WHERE institution_id = 7 AND deleted_at IS NULL ORDER BY published_at DESC LIMIT 20
+alumni_by_year	any	SELECT * FROM alumni WHERE institution_id = 7 AND graduation_year = 2020
+vehicle_list	any	SELECT * FROM vehicles WHERE institution_id = 7
+punches_unmatched	sorted	SELECT * FROM device_punches WHERE institution_id = 7 AND status = 'unmatched' ORDER BY punched_at DESC LIMIT 50
+online_payments_review	any	SELECT * FROM online_payments WHERE institution_id = 7 AND status = 'review' ORDER BY paid_at DESC
+voucher_ledger_period	sorted	SELECT * FROM vouchers WHERE institution_id = 7 AND date BETWEEN '2027-03-01' AND '2027-03-31' ORDER BY date
+voucher_lines_of_account	any	SELECT * FROM voucher_lines WHERE institution_id = 7 AND account_id = 5
+payroll_items_of_payee	any	SELECT * FROM payroll_items WHERE institution_id = 7 AND payee_type = 'teacher' AND payee_id = 9
+sms_credit_ledger	sorted	SELECT * FROM sms_credit_transactions WHERE institution_id = 7 ORDER BY created_at DESC LIMIT 50
+student_list	any	SELECT id FROM students WHERE institution_id = 7 AND deleted_at IS NULL
+message_sent_box	sorted	SELECT * FROM messages WHERE from_user_id = 1234 ORDER BY created_at DESC LIMIT 30
+hostel_list	any	SELECT * FROM hostels WHERE institution_id = 7
+leave_type_list	any	SELECT * FROM leave_types WHERE institution_id = 7
+training_program_list	any	SELECT * FROM training_programs WHERE institution_id = 7
+event_result_list	any	SELECT * FROM event_results WHERE event_id = 31
+retention_sms_trim	any	SELECT id FROM sms_logs WHERE institution_id = 7 AND sent_at < '2027-01-01 00:00:00' AND message IS NOT NULL LIMIT 5000
+retention_audit_trim	any	SELECT id FROM audit_logs WHERE institution_id = 7 AND created_at < '2027-01-01 00:00:00' LIMIT 5000
+retention_audit_platform	any	SELECT id FROM audit_logs WHERE institution_id IS NULL AND created_at < '2027-01-01 00:00:00' LIMIT 5000
+retention_leads_purge	any	SELECT id FROM admission_leads WHERE institution_id = 7 AND created_at < '2026-03-01 00:00:00' AND status = 'new'
+retention_punches_prune	any	SELECT id FROM device_punches WHERE institution_id = 7 AND status = 'processed' AND punched_at < '2026-12-01 00:00:00' LIMIT 5000
+retention_risk_prune	any	SELECT id FROM risk_flags WHERE institution_id = 7 AND status = 'resolved' AND computed_on < '2026-12-01'
+retention_imports_prune	any	SELECT id FROM import_jobs WHERE institution_id = 7 AND created_at < '2026-12-01 00:00:00'
+attendance_batch_month_report	any	SELECT student_id, status, COUNT(*) FROM attendances WHERE institution_id = 7 AND batch_id = 33 AND date BETWEEN '2027-03-01' AND '2027-03-31' GROUP BY student_id, status
+r3_staff_attendance_day	any	SELECT staff_id, status FROM staff_attendances WHERE institution_id = 7 AND date = '2027-03-02'
+r3_staff_attendance_month	any	SELECT date, status FROM staff_attendances WHERE institution_id = 7 AND staff_id = 3 AND date BETWEEN '2027-03-01' AND '2027-03-31'
+r3_teacher_attendance_month	any	SELECT date, status FROM teacher_attendances WHERE institution_id = 7 AND teacher_id = 9 AND date BETWEEN '2027-03-01' AND '2027-03-31'
+r3_leave_pending	any	SELECT * FROM leave_applications WHERE institution_id = 7 AND status = 'pending'
+r3_leave_balance	any	SELECT total_days FROM leave_applications WHERE institution_id = 7 AND status = 'approved' AND user_id = 88 AND leave_type_id = 2 AND from_date <= '2027-12-31' AND to_date >= '2027-01-01'
+r3_salary_structure_current	sorted	SELECT * FROM salary_structures WHERE institution_id = 7 AND payee_type = 'teacher' AND payee_id = 9 AND effective_from <= '2027-03-31' ORDER BY effective_from DESC LIMIT 1
+r3_payroll_run_of_month	any	SELECT * FROM payroll_runs WHERE institution_id = 7 AND month = '2027-03' AND kind = 'regular'
+r3_payroll_items_of_run	any	SELECT * FROM payroll_items WHERE run_id = 15
+r3_payroll_items_of_payee	any	SELECT * FROM payroll_items WHERE institution_id = 7 AND payee_type = 'teacher' AND payee_id = 9
+r3_adjustments_month	any	SELECT * FROM salary_adjustments WHERE institution_id = 7 AND month = '2027-03' AND status = 'approved'
+r3_advances_open	any	SELECT * FROM salary_advances WHERE institution_id = 7 AND status = 'disbursed'
+r3_pf_statement	sorted	SELECT * FROM provident_fund_entries WHERE institution_id = 7 AND payee_type = 'staff' AND payee_id = 3 ORDER BY month
+r3_cashbook_day	any	SELECT * FROM cash_book_closings WHERE institution_id = 7 AND date = '2027-03-02'
+r3_cashbook_range	any	SELECT date, cash_in, cash_out FROM cash_book_closings WHERE institution_id = 7 AND date BETWEEN '2027-03-01' AND '2027-03-31'
+r3_refunds_pending	any	SELECT * FROM fee_refunds WHERE institution_id = 7 AND status = 'requested'
+r3_refunds_of_student	any	SELECT * FROM fee_refunds WHERE institution_id = 7 AND student_id = 1234
+r3_stock_movements	sorted	SELECT * FROM inventory_movements WHERE institution_id = 7 AND item_id = 5 ORDER BY created_at DESC LIMIT 50
+r3_store_receipt	any	SELECT * FROM inventory_movements WHERE institution_id = 7 AND receipt_no = 'STR-2027-0001'
+r3_low_stock	any	SELECT id FROM inventory_items WHERE institution_id = 7 AND is_active = 1 AND stock <= reorder_level
+r3_voucher_by_source	any	SELECT id FROM vouchers WHERE institution_id = 7 AND source = 'fee' AND source_id = 10
+r3_fund_donations	any	SELECT * FROM donations WHERE fund_id = 3 AND institution_id = 7
+r3_donation_receipt	any	SELECT * FROM donations WHERE institution_id = 7 AND receipt_no = 'DON-2027-00005'
+r3_budget_lines	any	SELECT * FROM budget_lines WHERE budget_id = 2
+r3_refund_request_latest	sorted	SELECT * FROM fee_refunds WHERE institution_id = 7 AND request_key = '00000000-0000-4000-8000-000000000001' ORDER BY revision DESC LIMIT 1
+r3_refund_reversal_cap	any	SELECT SUM(paid_amount) FROM fee_payments WHERE institution_id = 7 AND reverses_id = 1234
+r3_first_principal_registration	any	SELECT * FROM institution_registrations WHERE institution_id = 7
+r3_activation_public_id	any	SELECT * FROM account_activation_requests WHERE institution_id = 7 AND public_id = '00000000-0000-4000-8000-000000000001'
+r3_activation_latest_generation	sorted	SELECT * FROM account_activation_requests WHERE institution_id = 7 AND user_id = 1234 AND purpose = 'staff_activation' ORDER BY generation DESC LIMIT 1
+r3_activation_pending	any	SELECT id FROM account_activation_requests WHERE institution_id = 7 AND user_id = 1234 AND purpose = 'staff_activation' AND status = 'pending'
