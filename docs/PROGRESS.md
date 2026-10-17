@@ -249,6 +249,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
   - Next agent: D101 storage and rollout gates are pushed in `db6ca64` and `e4396b6`; focused StaffMigration and TenantPurge suites pass.
   - Next step: restore `docs/DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, then finish route-by-route department enforcement and R3.6b acceptance.
   - Open blocker: required route plan is absent and broader enforcement is incomplete; see BLOCKED 2026-10-17. Final pre-push gates: API 807 passed / 1 Poppler mismatch, frontend 104/105 (one loader timeout), theme lint 142/0; neither unrelated test was retried or weakened.
+  - 2026-10-17 D94 canonical checkpoint — recorded the approved own-only `/teachers` staff resource, response/filter boundaries, and required test cases in the staff-account, API, authorization, and testing contracts. Documentation only; no route exposure or runtime change yet. Next: implement the existing route with focused D94 authorization and resource tests.
 - [ ] R3.7 — Payroll run, payslip ও পরিশোধ
 - [ ] R3.8 — ভবিষ্য তহবিল (PF), কর ও চূড়ান্ত নিষ্পত্তি
 - [x] R3.9 — স্টোর / ইনভেন্টরি — a7b0d62 (+ D100 catalog) — InventoryGate/StockLedger/StockConcurrency/InventoryImmutability/StoreReceipt/InventoryTenancy — 2026-10-17 local MySQL 8: `php artisan test --filter=Inventory` 153 passed (3188 assertions); `php artisan test --filter=Stock` 3 passed (50); `python3 infra/spec-verify/refs_r11.py` 56/56; full `php artisan test` 800 passed. The inventory page itself is R3.12 (`/admin/inventory`), not R3.9.
