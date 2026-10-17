@@ -21,7 +21,7 @@ class TenantPurgeService
         'department_duty_assignments', 'department_memberships', 'department_duties', 'institution_departments',
         'qb_paper_items', 'qb_paper_sections', 'qb_papers', 'qb_quiz_attempts', 'qb_student_package_access', 'qb_student_unlocks',   // D65 question bank
         'qb_student_orders', 'qb_unlocks',
-        'salary_adjustments', 'salary_advances', 'salary_structure_lines', 'salary_structures', 'salary_revisions', 'salary_components', 'salary_pay_accounts', 'bonus_schemes',
+        'salary_adjustments', 'salary_advances', 'payroll_items', 'payroll_runs', 'salary_structure_lines', 'salary_structures', 'salary_revisions', 'salary_components', 'salary_pay_accounts', 'bonus_schemes',
         'leave_applications', 'leave_types', 'staff_mapping_reviews', 'staff_attendances', 'teacher_attendances', 'staff_members',
         'inventory_movements', 'inventory_items',   // R3.9 store: movements reference items
         'fee_refunds', 'cash_book_closings', 'expenses', 'results', 'exam_subjects', 'attendances', 'fee_payments', 'fee_structures', 'consents', 'parent_student', 'enrollments',
