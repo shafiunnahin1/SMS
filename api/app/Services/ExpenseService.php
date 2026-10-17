@@ -80,6 +80,14 @@ class ExpenseService
         });
     }
 
+    /** R3.7 internal operation: one summary row per run and payment method (negative for a returned payment); caller holds the cashbook lock */
+    public function recordPayroll(\App\Models\PayrollRun $run, string $method, int $paisa, string $date, \App\Models\User $actor, string $title): Expense
+    {
+        app(CashBookService::class)->assertCashWrite($date, $method);
+        return $this->append(['category' => 'salary', 'title' => $title, 'amount' => Money::format($paisa), 'expense_date' => $date,
+            'payment_method' => $method, 'source' => 'payroll', 'payroll_run_id' => $run->id], $actor->id);
+    }
+
     public function correct(int $id, ?array $replacement, int $by): Expense
     {
         if ($replacement !== null) $replacement = array_intersect_key($replacement, array_flip(self::INPUT_FIELDS));

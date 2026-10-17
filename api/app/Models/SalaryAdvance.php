@@ -13,9 +13,12 @@ class SalaryAdvance extends Model
     protected static function booted(): void
     {
         static::updating(function($row){
-            if(in_array($row->getOriginal('status'),['closed','rejected','written_off'],true) || array_diff(array_keys($row->getDirty()),['status','approved_by','expense_id','payment_method','disbursed_at','skipped_months']))
+            if(in_array($row->getOriginal('status'),['closed','rejected','written_off'],true) || array_diff(array_keys($row->getDirty()),['status','approved_by','expense_id','payment_method','disbursed_at','skipped_months','recovered']))
                 throw new \App\Exceptions\BusinessException(__('salary.immutable'),'salary_immutable',409);
             if($row->getOriginal('expense_id')!==null && $row->isDirty(['expense_id','payment_method','disbursed_at']))
+                throw new \App\Exceptions\BusinessException(__('salary.immutable'),'salary_immutable',409);
+            // R3.7: payroll payment only ever adds to recovered, never past the principal
+            if($row->isDirty('recovered') && (\App\Support\Money::toPaisa((string)$row->recovered)<\App\Support\Money::toPaisa((string)$row->getOriginal('recovered')) || \App\Support\Money::toPaisa((string)$row->recovered)>\App\Support\Money::toPaisa((string)$row->amount)))
                 throw new \App\Exceptions\BusinessException(__('salary.immutable'),'salary_immutable',409);
             $old=$row->getOriginal('skipped_months')??[];$new=$row->skipped_months??[];
             if(!is_array($new) || array_slice($new,0,count($old))!==$old)

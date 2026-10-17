@@ -266,3 +266,5 @@ R3.3 draft checkpoint focused evidence: py -3.14 %TEMP%/school-r33-contract-prob
 - 2026-10-17 · R3.6b · Owner chose more facilities (chat 2026-10-17 "yes"): staff may request and process fee refunds (approve/reject admin-only); inventory opens; HR/payroll opens with per-area keys but every approval stays admin-only and staff never change their own pay rows.
 
 - 2026-10-17 · R3.6b · Owner chose A: legacy roles stay on every D101/D102-opened route beside the department checks; dropping them is a later task step (D101 clause 3), not R3.6b.
+
+- 2026-10-17 · R3.7 · Expense rows per payment: staff-payroll.md §8 says one summary row per run and method, but expenses are append-only and partial payments happen over time. Chose one row per pay action per method (each carrying payroll_run_id), and a negative row for a returned payment; the sum per run and method equals what was actually paid. Spec: staff-payroll.md §8, D32, D104.

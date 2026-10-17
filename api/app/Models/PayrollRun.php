@@ -17,7 +17,9 @@ class PayrollRun extends Model
         static::updating(function($run){
             $from=$run->getOriginal('status');
             // frozen once approved: only the paid stamp / cancellation of an unpaid approved run may change
-            if(in_array($from,['paid','cancelled'],true) || ($from==='approved' && array_diff(array_keys($run->getDirty()),['status','paid_at','cancelled_reason'])))
+            // a returned payment (§8) reopens paid -> approved; nothing else of a paid run moves
+            $reopen=$from==='paid' && $run->status==='approved' && !array_diff(array_keys($run->getDirty()),['status','paid_at']);
+            if($from==='cancelled' || ($from==='paid' && !$reopen) || ($from==='approved' && array_diff(array_keys($run->getDirty()),['status','paid_at','cancelled_reason'])))
                 throw new BusinessException(__('salary.immutable'),'salary_immutable',409);
         });
         static::deleting(fn()=>throw new BusinessException(__('salary.immutable'),'salary_immutable',409));

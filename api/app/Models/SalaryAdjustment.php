@@ -13,7 +13,9 @@ class SalaryAdjustment extends Model
     protected static function booted(): void
     {
         static::updating(function($row){
-            if(in_array($row->getOriginal('status'),['applied','cancelled'],true) || array_diff(array_keys($row->getDirty()),['status','approved_by']))
+            // R3.7: payroll payment links an approved adjustment to its item exactly once, as it becomes applied
+            $link=$row->isDirty('payroll_item_id') && $row->getOriginal('payroll_item_id')===null && $row->getOriginal('status')==='approved' && $row->status==='applied';
+            if(in_array($row->getOriginal('status'),['applied','cancelled'],true) || array_diff(array_keys($row->getDirty()),$link?['status','approved_by','payroll_item_id']:['status','approved_by']))
                 throw new \App\Exceptions\BusinessException(__('salary.immutable'),'salary_immutable',409);
         });
         static::deleting(fn()=>throw new \App\Exceptions\BusinessException(__('salary.immutable'),'salary_immutable',409));
