@@ -71,8 +71,10 @@ class StaffIdentityBoundary
                 'GET api/v1/cashbook', 'HEAD api/v1/cashbook', 'GET api/v1/cashbook/range', 'HEAD api/v1/cashbook/range', 'POST api/v1/cashbook/{date}/close',
                 'GET api/v1/cashbook/{date}/report.{ext}', 'HEAD api/v1/cashbook/{date}/report.{ext}',
                 'POST api/v1/fees/collect', 'GET api/v1/fees/dues', 'HEAD api/v1/fees/dues', 'GET api/v1/fees/receipt/{id}', 'HEAD api/v1/fees/receipt/{id}',
-                'GET api/v1/fees/payments', 'HEAD api/v1/fees/payments', 'GET api/v1/fees/payments/student/{id}', 'HEAD api/v1/fees/payments/student/{id}'], true)
-            && collect(['Expenses\\ExpenseController', 'CashBook\\CashBookController', 'Fees\\FeeController'])->contains(fn ($c) => str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\'.$c.'@'));
+                'GET api/v1/fees/payments', 'HEAD api/v1/fees/payments', 'GET api/v1/fees/payments/student/{id}', 'HEAD api/v1/fees/payments/student/{id}',
+                'GET api/v1/fee-refunds', 'HEAD api/v1/fee-refunds', 'POST api/v1/fee-refunds', 'GET api/v1/fee-refunds/refundable', 'HEAD api/v1/fee-refunds/refundable',
+                'GET api/v1/fee-refunds/{id}', 'HEAD api/v1/fee-refunds/{id}', 'POST api/v1/fee-refunds/{id}/{action}'], true)
+            && collect(['Expenses\\ExpenseController', 'CashBook\\CashBookController', 'Fees\\FeeController', 'Fees\\FeeRefundController'])->contains(fn ($c) => str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\'.$c.'@'));
         $attendance = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Academic\AttendanceController::class.'@')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/attendance', 'HEAD api/v1/attendance', 'POST api/v1/attendance', 'PUT api/v1/attendance/{id}',
                 'GET api/v1/attendance/report', 'HEAD api/v1/attendance/report', 'GET api/v1/attendance/summary/{id}', 'HEAD api/v1/attendance/summary/{id}'], true);

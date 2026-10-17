@@ -135,7 +135,7 @@ class DepartmentRouteInventoryTest extends TestCase
 
     public function test_d101_teacher_advance_overlay_keeps_teacher_role_and_requires_own_payee_scope(): void
     {
-        $this->assertCount(48, DepartmentRouteCatalog::D101);
+        $this->assertCount(53, DepartmentRouteCatalog::D101);
         $entry = DepartmentRouteCatalog::D101[0];
         $this->assertSame(['GET|HEAD', 'api/v1/teacher/salary/advances', 'D101', ['teacher', 'institution_staff'], ['staff.salary_advance.mine']], [
             $entry['method'], $entry['uri'], $entry['approval'], $entry['current_roles'], $entry['permission_options'],
@@ -282,7 +282,7 @@ class DepartmentRouteInventoryTest extends TestCase
     {
         $entries = array_slice(DepartmentRouteCatalog::D101, 33, 15);
         $uris = array_column($entries, 'uri');
-        foreach (['api/v1/cashbook/{date}/reopen', 'api/v1/fee-refunds', 'api/v1/fee-refunds/{id}/{action}', 'api/v1/fees/categories', 'api/v1/fees/report'] as $closed) $this->assertNotContains($closed, $uris);
+        foreach (['api/v1/cashbook/{date}/reopen', 'api/v1/fees/categories', 'api/v1/fees/report'] as $closed) $this->assertNotContains($closed, $uris);
         $resolver = app(DepartmentRoutePermissionResolver::class);
         foreach ($entries as $entry) {
             $this->assertSame('D101', $entry['approval']);

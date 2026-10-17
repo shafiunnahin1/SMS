@@ -18,7 +18,7 @@ class FeeRefundService
     private function actor(int $by): User
     {
         $user = User::whereKey($by)->where('institution_id', Tenancy::current()->id)->where('is_active', true)->first();
-        if (!$user || !in_array($user->role, ['admin', 'accountant'], true)) throw new AuthorizationException();
+        if (!$user || !in_array($user->role, ['admin', 'accountant', 'institution_staff'], true)) throw new AuthorizationException();   // D101 staff: request/process only (approve/reject stay admin)
         return $user;
     }
 

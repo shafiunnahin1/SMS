@@ -34,11 +34,11 @@ return [
     // D90: new central registration review route; existing rows remain unchanged.
     'POST api/v1/super/institutions/{id}/approve-registration' => ['super_admin'],
     // D84 institutional fee refunds; admin-only review actions are also exercised in RefundImmutabilityTest.
-    'GET api/v1/fee-refunds/refundable' => ['admin', 'accountant'],
-    'GET api/v1/fee-refunds' => ['admin', 'accountant'],
-    'POST api/v1/fee-refunds' => ['admin', 'accountant'],
-    'GET api/v1/fee-refunds/{id}' => ['admin', 'accountant'],
-    'POST api/v1/fee-refunds/{id}/{action}' => ['admin', 'accountant'],
+    'GET api/v1/fee-refunds/refundable' => ['admin', 'institution_staff', 'accountant'],
+    'GET api/v1/fee-refunds' => ['admin', 'institution_staff', 'accountant'],
+    'POST api/v1/fee-refunds' => ['admin', 'institution_staff', 'accountant'],
+    'GET api/v1/fee-refunds/{id}' => ['admin', 'institution_staff', 'accountant'],
+    'POST api/v1/fee-refunds/{id}/{action}' => ['admin', 'institution_staff', 'accountant'],
 
     'GET api/v1/cashbook' => ['admin', 'institution_staff', 'accountant'],
     'GET api/v1/cashbook/range' => ['admin', 'institution_staff', 'accountant'],

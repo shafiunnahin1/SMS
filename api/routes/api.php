@@ -360,7 +360,7 @@ Route::prefix('v1')->group(function () {
 
         Route::middleware('module:fees')->group(function () {
             Route::get('/fees/payments/student/{id}',     [FeeController::class, 'studentPayments'])->whereNumber('id')->middleware('role:admin,accountant,parent,institution_staff');   // parent: own child only (404)
-            Route::middleware('role:admin,accountant')->group(function () {
+            Route::middleware('role:admin,accountant,institution_staff')->group(function () {   // D101: staff request and process; approve/reject admin only (FeeRefundService)
                 Route::get('/fee-refunds/refundable', [FeeRefundController::class, 'refundable']);
                 Route::get('/fee-refunds', [FeeRefundController::class, 'index']);
                 Route::post('/fee-refunds', [FeeRefundController::class, 'store']);
