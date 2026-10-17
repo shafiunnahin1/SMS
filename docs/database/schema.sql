@@ -40,6 +40,9 @@ CREATE TABLE institutions (
     sms_sender_note VARCHAR(255) NULL,           -- rejection reason / Super Admin note
     onboarding_completed TINYINT(1) DEFAULT 0,
     onboarding_step INT DEFAULT 1,
+    staff_department_mode ENUM('legacy','department') NOT NULL DEFAULT 'legacy', -- D101: per-institution rollout switch
+    switched_by BIGINT UNSIGNED NULL,
+    switched_at TIMESTAMP NULL,
     address TEXT,
     phone VARCHAR(20),
     email VARCHAR(100),
@@ -88,6 +91,9 @@ CREATE TABLE users (
     UNIQUE KEY unique_user_tenant_identity (id, institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
+
+ALTER TABLE institutions
+    ADD CONSTRAINT institutions_switched_by_foreign FOREIGN KEY (switched_by) REFERENCES users(id);
 
 -- R6: programs = Class (school) | Class+Group (college) | Course (coaching) | default "General" (private_batch)
 CREATE TABLE programs (
@@ -1673,6 +1679,26 @@ CREATE TABLE staff_members (
     UNIQUE KEY unique_staff_code (institution_id, employee_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id)
 );
+
+-- D101: principal-reviewed legacy profile mappings are append-only; corrections add a new row.
+CREATE TABLE staff_mapping_reviews (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    teacher_id BIGINT UNSIGNED NULL,
+    staff_member_id BIGINT UNSIGNED NULL,
+    decision VARCHAR(40) NOT NULL,
+    reviewed_by BIGINT UNSIGNED NOT NULL,
+    reviewed_at TIMESTAMP NOT NULL,
+    note VARCHAR(255) NULL,
+    INDEX idx_staff_mapping_reviews_user (institution_id, user_id, reviewed_at, id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id),
+    FOREIGN KEY (staff_member_id) REFERENCES staff_members(id),
+    FOREIGN KEY (reviewed_by) REFERENCES users(id)
+);
+
 CREATE TABLE staff_attendances (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,

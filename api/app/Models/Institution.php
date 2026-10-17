@@ -15,6 +15,7 @@ class Institution extends Model
         'onboarding_completed','onboarding_step','primary_color','secondary_color','accent_color',
         'logo_path','favicon_path','theme_mode','theme_preset_id','layout_key','theme_tokens',
         'theme_updated_by','theme_updated_at','parent_institution_id','branch_name','is_head_office',
+        'staff_department_mode','switched_by','switched_at',
     ];
 
     protected $hidden = ['sms_api_key'];        // D59: the institution's own key never leaves the server
@@ -23,6 +24,7 @@ class Institution extends Model
         'enabled_modules' => 'array', 'terminology' => 'array', 'settings' => 'array', 'theme_tokens' => 'array',
         'subscription_expires_at' => 'datetime', 'theme_updated_at' => 'datetime',
         'onboarding_completed' => 'boolean', 'is_head_office' => 'boolean',
+        'switched_by' => 'integer', 'switched_at' => 'datetime',
         'sms_balance' => 'decimal:2', 'sms_universal_enabled' => 'boolean', 'sms_own_enabled' => 'boolean', 'sms_api_key' => 'encrypted',
     ];
 

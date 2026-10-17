@@ -2,8 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\{DepartmentDutyAssignment, DepartmentMembership, StaffMember, Teacher, User};
-use App\Services\LegacyStaffMappingDryRunService;
+use App\Models\{DepartmentDutyAssignment, DepartmentMembership, StaffMappingReview, StaffMember, Teacher, User};
+use App\Models\Institution;
+use App\Services\{LegacyStaffMappingDryRunService, StaffDepartmentModeService};
 use App\Support\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +38,20 @@ class StaffMigrationTest extends TestCase
             Teacher::create(['user_id' => $staff->id, 'employee_id' => 'T-6', 'designation' => 'Lecturer']);
             StaffMember::create(['user_id' => $staff->id, 'employee_id' => 'S-3', 'name' => 'Same person', 'designation' => 'Clerk']);
         });
-        return compact('i', 'teacher', 'accountant', 'twice', 'parent', 'staff', 'foreign');
+        return compact('i', 'other', 'teacher', 'accountant', 'twice', 'parent', 'staff', 'foreign');
+    }
+
+    private function cleanFixture(string $slug): array
+    {
+        $i = $this->makeInstitution($slug);
+        $admin = $this->user($i, 'admin', $slug.'-admin');
+        $teacher = $this->user($i, 'teacher', $slug.'-teacher');
+        $accountant = $this->user($i, 'accountant', $slug.'-accountant');
+        Tenancy::as($i, function () use ($teacher, $accountant) {
+            Teacher::create(['user_id' => $teacher->id, 'employee_id' => 'T-CLEAN']);
+            StaffMember::create(['user_id' => $accountant->id, 'employee_id' => 'S-CLEAN', 'name' => 'Accountant']);
+        });
+        return compact('i', 'admin', 'teacher', 'accountant');
     }
 
     private function snapshot(): array
@@ -94,5 +108,80 @@ class StaffMigrationTest extends TestCase
     public function test_the_command_refuses_an_unknown_institution(): void
     {
         $this->artisan('staff:mapping-dry-run', ['institution' => 'nope'])->assertFailed();
+    }
+
+    public function test_review_rows_are_tenant_scoped_append_only_and_institutions_default_to_legacy_mode(): void
+    {
+        $f = $this->fixture(); $admin = $this->user($f['i'], 'admin', 'admin-review');
+        $review = Tenancy::as($f['i'], fn () => app(StaffDepartmentModeService::class)->recordReview(
+            $admin, $f['teacher'], Teacher::where('user_id', $f['teacher']->id)->value('id'), null, 'confirmed', 'Identity checked',
+        ));
+
+        $this->assertSame('legacy', $f['i']->fresh()->staff_department_mode);
+        $this->assertSame(1, Tenancy::as($f['i'], fn () => StaffMappingReview::count()));
+        $this->assertSame(0, Tenancy::as($f['other'], fn () => StaffMappingReview::count()));
+        $this->expectException(\LogicException::class);
+        $review->update(['decision' => 'changed']);
+    }
+
+    public function test_department_mode_requires_clean_dry_run_and_a_review_for_every_legacy_account(): void
+    {
+        $f = $this->fixture(); $admin = $this->user($f['i'], 'admin', 'admin-switch');
+        $service = app(StaffDepartmentModeService::class);
+
+        try {
+            Tenancy::as($f['i'], fn () => $service->switchMode($admin, 'department'));
+            $this->fail('identity collisions must block rollout');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            $this->assertArrayHasKey('mapping', $exception->errors());
+        }
+        $this->assertSame('legacy', $f['i']->fresh()->staff_department_mode);
+
+        $f = $this->cleanFixture('clean-mode-switch');
+        Tenancy::as($f['i'], function () use ($f, $service) {
+            foreach ([$f['teacher'], $f['accountant']] as $user) {
+                $teacherId = Teacher::where('user_id', $user->id)->value('id');
+                $staffId = StaffMember::where('user_id', $user->id)->value('id');
+                $service->recordReview($f['admin'], $user, $teacherId, $staffId, 'confirmed');
+            }
+            $this->assertSame('department', $service->switchMode($f['admin'], 'department')->staff_department_mode);
+        });
+
+        $this->assertSame('department', $f['i']->fresh()->staff_department_mode);
+        $this->assertNotNull($f['i']->fresh()->switched_at);
+    }
+
+    public function test_department_mode_refuses_an_incomplete_review_set(): void
+    {
+        $f = $this->cleanFixture('incomplete-mode-switch');
+        $service = app(StaffDepartmentModeService::class);
+        Tenancy::as($f['i'], fn () => $service->recordReview($f['admin'], $f['teacher'], null, null, 'reviewed'));
+
+        try {
+            Tenancy::as($f['i'], fn () => $service->switchMode($f['admin'], 'department'));
+            $this->fail('every in-scope user must have a review');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            $this->assertArrayHasKey('mapping', $exception->errors());
+        }
+        $this->assertSame('legacy', $f['i']->fresh()->staff_department_mode);
+    }
+
+    public function test_switching_back_to_legacy_revokes_legacy_sessions_without_changing_review_history(): void
+    {
+        $f = $this->cleanFixture('clean-mode-rollback'); $admin = $f['admin'];
+        $service = app(StaffDepartmentModeService::class);
+        Tenancy::as($f['i'], function () use ($f, $admin, $service) {
+            foreach ([$f['teacher'], $f['accountant']] as $user) {
+                $service->recordReview($admin, $user, null, null, 'reviewed');
+            }
+            $this->assertSame(0, Tenancy::as($f['i'], fn () => app(LegacyStaffMappingDryRunService::class)->report()['summary']['unresolved_identity_collisions']));
+            $service->switchMode($admin, 'department');
+            $f['teacher']->createToken('rollback-test');
+            $this->assertSame(1, $f['teacher']->tokens()->count());
+            $service->switchMode($admin, 'legacy');
+            $this->assertSame(0, $f['teacher']->tokens()->count());
+            $this->assertSame(2, StaffMappingReview::count());
+            $this->assertSame('legacy', Institution::find($f['i']->id)->staff_department_mode);
+        });
     }
 }

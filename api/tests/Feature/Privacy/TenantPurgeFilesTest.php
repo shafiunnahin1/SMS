@@ -67,6 +67,7 @@ class TenantPurgeFilesTest extends TestCase
     {
         [$gone, $admin] = $this->populate('gone');
         [$kept, $keptAdmin, $keptStudent] = $this->populate('kept');
+        $gone->forceFill(['staff_department_mode' => 'department', 'switched_by' => $admin->id, 'switched_at' => now()])->save();
         $this->suspend($gone, 31);
 
         $this->assertSame([$gone->id], array_column($this->api('GET', $this->central, 'super/tenant-purge/candidates', $this->super)->json('data'), 'id'));
