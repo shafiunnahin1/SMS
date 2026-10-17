@@ -27,6 +27,14 @@ class FeeRefundService
         throw ValidationException::withMessages([$key => __('refund.invalid')]);
     }
 
+    /** MySQL JSON columns do not keep object key order, so a retry compares the stored lines key-sorted */
+    private function sorted(mixed $value): mixed
+    {
+        if (!is_array($value)) return $value;
+        if (!array_is_list($value)) ksort($value);
+        return array_map(fn ($item) => $this->sorted($item), $value);
+    }
+
     private function conflict(): never
     {
         throw new BusinessException(__('refund.conflict'), 'refund_conflict', 409);
@@ -103,7 +111,7 @@ class FeeRefundService
             $data = $this->canonical($input);
             $existing = FeeRefund::where('request_key', $data['request_key'])->where('revision', 1)->first();
             if ($existing) {
-                foreach ($data as $key => $value) if ($existing->$key !== $value) $this->conflict();
+                foreach ($data as $key => $value) if ($this->sorted($existing->$key) !== $this->sorted($value)) $this->conflict();
                 return $this->find($existing->id);
             }
             $this->validateLines($data);
