@@ -39,7 +39,7 @@ class DepartmentManagementTest extends TestCase
                 $this->assertSame('active', $a->status); $this->assertSame($admin->id, $a->assigned_by); $this->assertNull($a->revoked_at);
                 $events = AuditLog::where('model', 'DepartmentDutyAssignment')->get(); $this->assertCount(3, $events);
                 $this->assertSame(['department_duty_assignment.granted', 'department_duty_assignment.revoked', 'department_duty_assignment.granted'], $events->pluck('action')->all());
-                foreach ($events as $event) $this->assertSame(['membership_id', 'duty_id', 'state'], array_keys($event->new_data));
+                foreach ($events as $event) $this->assertEqualsCanonicalizing(['membership_id', 'duty_id', 'state'], array_keys($event->new_data)); // MySQL JSON does not keep key order
             });
             // Foundation records are not yet an executable business grant.
             $this->api('GET', $host, 'accountant/dashboard', $user)->assertForbidden();
@@ -158,7 +158,7 @@ class DepartmentManagementTest extends TestCase
                 $duty = DepartmentDuty::findOrFail($id); $this->assertSame($admin->id, $duty->created_by); $this->assertSame($admin->id, $duty->updated_by);
                 $audits = AuditLog::where('model', 'DepartmentDuty')->get(); $this->assertCount(3, $audits);
                 foreach ($audits as $audit) {
-                    $this->assertSame(['department_id', 'state'], array_keys($audit->new_data));
+                    $this->assertEqualsCanonicalizing(['department_id', 'state'], array_keys($audit->new_data)); // MySQL JSON does not keep key order
                     $this->assertStringNotContainsString('Private duty label', json_encode($audit->getAttributes()));
                     $this->assertStringNotContainsString('staff.report.dues', json_encode($audit->getAttributes()));
                 }
