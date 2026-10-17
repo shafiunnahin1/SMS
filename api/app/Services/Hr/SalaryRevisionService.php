@@ -101,12 +101,14 @@ class SalaryRevisionService
                 if($snapshot['decrement'] && !$hasAck && !$notice) throw ValidationException::withMessages(['notice'=>__('salary.invalid')]);
                 if($snapshot['decrement'] && $policy['decrement_requires_acknowledgement'] &&
                     (!$row->acknowledged_path || !Storage::disk('private')->exists($row->acknowledged_path))) throw ValidationException::withMessages(['acknowledgement'=>__('salary.invalid')]);
-                if($row->arrears_policy==='auto' && $row->effective_from->toDateString()<now()->startOfMonth()->toDateString()) throw new BusinessException(__('salary.dependency'),'dependency_pending',409);
+                // D86/D104: paid-month arrears need the settled payroll history; without it approval still fails closed
+                $arrears=$row->arrears_policy==='auto'?app(PayrollArrearsService::class)->amount($row):null;
                 $row->approved_by=$actor->id;$row->approved_at=now();
             }
             $row->status=$state;$row->save();
             $this->audit($row,$actor,$state,['self_approved'=>$self,'arrears_policy'=>$row->arrears_policy]);
             if($action==='approve' && $row->effective_from->toDateString()<=now()->toDateString()) $this->structures->apply($row->id,$actor);
+            if($action==='approve' && ($arrears??null)!==null) app(PayrollArrearsService::class)->record($row->fresh(),$arrears,$actor);
             return $row->fresh();
         });
     }

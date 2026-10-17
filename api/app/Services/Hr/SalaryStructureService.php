@@ -23,7 +23,7 @@ class SalaryStructureService
             if($revision->status==='applied') return SalaryStructure::where('revision_id',$revision->id)->firstOrFail();
             if($revision->status!=='approved' || $revision->effective_from->toDateString()>now()->toDateString()) throw new BusinessException(__('salary.conflict'),'revision_conflict',409);
             $snapshot=$this->snapshots->current($actor,$revision);
-            if($revision->arrears_policy==='auto' && $revision->effective_from->toDateString()<now()->startOfMonth()->toDateString()) throw new BusinessException(__('salary.dependency'),'dependency_pending',409);
+            if($revision->arrears_policy==='auto') app(\App\Services\Hr\PayrollArrearsService::class)->amount($revision);   // D86/D104: settled history or fail closed
             if($revision->approved_by===null) throw new BusinessException(__('salary.conflict'),'revision_conflict',409);
             $source=$snapshot['source'];
             if($source){
