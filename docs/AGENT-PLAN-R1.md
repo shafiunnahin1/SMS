@@ -255,6 +255,9 @@ CREATE TABLE institutions (
     sms_sender_note VARCHAR(255) NULL,           -- rejection reason / Super Admin note
     onboarding_completed TINYINT(1) DEFAULT 0,
     onboarding_step INT DEFAULT 1,
+    staff_department_mode ENUM('legacy','department') NOT NULL DEFAULT 'legacy', -- D101: per-institution rollout switch
+    switched_by BIGINT UNSIGNED NULL,
+    switched_at TIMESTAMP NULL,
     address TEXT,
     phone VARCHAR(20),
     email VARCHAR(100),

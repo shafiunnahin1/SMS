@@ -43,7 +43,7 @@ sch = re.sub(r'--[^\n]*', '', open(os.path.join(ROOT, 'docs/database/schema.sql'
 lite = re.sub(r"ENUM\([^)]*\)", "TEXT", sch); lite = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", lite); lite = re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b", r"\1", lite)
 lite = re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b", "", lite); lite = re.sub(r"\bUNIQUE KEY\s+\w+\s*\(", 'UNIQUE (', lite); lite = re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)", '', lite)
 meta = sqlite3.connect(':memory:')
-for st in [x.strip() for x in lite.split(';') if x.strip()]:
+for st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',lite).split(';') if x.strip()]:
     if not st.upper().startswith('CREATE INDEX'): meta.execute(st)
 enums = {}
 for m in re.finditer(r'CREATE TABLE (\w+) \((.*?)\n\);', sch, re.S):

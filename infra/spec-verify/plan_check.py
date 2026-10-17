@@ -26,7 +26,7 @@ def load(root):
             blk = re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+(\w+)\s*\(([^)]*)\)", lambda m: (extra.append((tbl, m.group(1), m.group(2))), '')[1], blk)
         out.append(blk)
     con = sqlite3.connect(':memory:')
-    for st in [x.strip() for x in ''.join(out).split(';') if x.strip()]: con.execute(st)
+    for st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',''.join(out)).split(';') if x.strip()]: con.execute(st)
     for tbl, name, cols in extra:
         try: con.execute(f'CREATE INDEX inline_{tbl}_{name} ON {tbl}({cols})')
         except sqlite3.Error: pass

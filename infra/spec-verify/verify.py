@@ -52,7 +52,7 @@ t=re.sub(r'--[^\n]*','',sch); t=re.sub(r"ENUM\([^)]*\)","TEXT",t)
 t=re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b","INTEGER PRIMARY KEY AUTOINCREMENT",t); t=re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b",r"\1",t)
 t=re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b","",t); t=re.sub(r"\bUNIQUE KEY\s+\w+\s*\(",'UNIQUE (',t); t=re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)",'',t)
 con=sqlite3.connect(':memory:'); fails=[]
-for st in [x.strip() for x in t.split(';') if x.strip()]:
+for st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',t).split(';') if x.strip()]:
     try: con.execute(st)
     except Exception as e: fails.append((st[:60].replace('\n',' '),str(e)))
 ok(not fails,f'schema.sql EXECUTES: {len(names)} tables (MySQL syntax translated to SQLite) {fails[:3]}')
@@ -375,7 +375,7 @@ refs_of={k:v['refs'] for k,v in emap.items() if isinstance(v,dict) and 'refs' in
 if not refs_of: refs_of={k:v['refs'] for k,v in emap.get('tables',{}).items()}
 meta=sqlite3.connect(':memory:'); _t=re.sub(r'--[^\n]*','',sch); _t=re.sub(r"ENUM\([^)]*\)","TEXT",_t); _t=re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b","INTEGER PRIMARY KEY AUTOINCREMENT",_t); _t=re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b",r"\1",_t)
 _t=re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b","",_t); _t=re.sub(r"\bUNIQUE KEY\s+\w+\s*\(",'UNIQUE (',_t); _t=re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)",'',_t)
-for _st in [x.strip() for x in _t.split(';') if x.strip()]: meta.execute(_st)
+for _st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',_t).split(';') if x.strip()]: meta.execute(_st)
 nn={(tb,c[1]):bool(c[3]) for tb in names for c in meta.execute(f'PRAGMA table_info({tb})')}
 R1T=set(r1['tables']); forced=[]; optional=[]
 for tb in sorted(R1T):

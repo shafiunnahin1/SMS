@@ -20,7 +20,7 @@ lite = re.sub(r"ENUM\([^)]*\)", "TEXT", t)
 lite = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", lite); lite = re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b", r"\1", lite)
 lite = re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b", "", lite); lite = re.sub(r"\bUNIQUE KEY\s+\w+\s*\(", 'UNIQUE (', lite); lite = re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)", '', lite)
 con = sqlite3.connect(':memory:')
-for st in [x.strip() for x in lite.split(';') if x.strip()]: con.execute(st)
+for st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',lite).split(';') if x.strip()]: con.execute(st)
 tables = [r[0] for r in con.execute("select name from sqlite_master where type='table' and name not like 'sqlite_%'")]
 fks = {tb: {fk[3]: fk[2] for fk in con.execute(f'PRAGMA foreign_key_list({tb})')} for tb in tables}
 uniq = {tb: set(c[2] for ix in con.execute(f'PRAGMA index_list({tb})') if ix[2] for c in con.execute(f'PRAGMA index_info({ix[1]})')) for tb in tables}

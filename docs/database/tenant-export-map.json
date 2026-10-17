@@ -169,6 +169,7 @@
   "sms_templates",
   "sms_campaigns",
   "staff_attendances",
+  "staff_mapping_reviews",
   "student_documents",
   "student_health_records",
   "student_leave_requests",
@@ -1100,6 +1101,15 @@
    "refs": {
     "marked_by": "users",
     "staff_id": "staff_members"
+   },
+   "polymorphic": []
+  },
+  "staff_mapping_reviews": {
+   "refs": {
+    "reviewed_by": "users",
+    "staff_member_id": "staff_members",
+    "teacher_id": "teachers",
+    "user_id": "users"
    },
    "polymorphic": []
   },

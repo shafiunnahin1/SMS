@@ -6,7 +6,7 @@
 ## ১. আকার (গুনে পাওয়া)
 | | R3 |
 |---|---|
-| ডেটাবেস টেবিল | **35** (+ পূর্বশর্ত `expenses` ১টি) |
+| ডেটাবেস টেবিল | **36** (+ পূর্বশর্ত `expenses` ১টি) |
 | মডিউল-কী | **6** (`cashbook`, `hr_payroll`, `teacher_attendance`, `inventory`, `accounting`, `donations`) + পূর্বশর্ত `expenses` |
 | Task (ধাপ) | **18** |
 | Route | **150** (+ `expenses`-এর 6টি) |

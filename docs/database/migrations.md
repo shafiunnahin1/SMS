@@ -256,6 +256,7 @@ php artisan make:migration create_routine_blocks_table
 php artisan make:migration create_substitutions_table
 php artisan make:migration create_student_leave_requests_table
 php artisan make:migration create_staff_members_table
+php artisan make:migration create_staff_mapping_reviews_table   # D101 (shipped in 2026_10_17_000002 together with the institutions switch columns)
 php artisan make:migration create_staff_attendances_table
 php artisan make:migration create_salary_components_table
 php artisan make:migration create_salary_revisions_table

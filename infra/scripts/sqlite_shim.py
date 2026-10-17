@@ -27,13 +27,13 @@ if db is None: fail('no database selected')
 con = sqlite3.connect(path(db)); con.execute('PRAGMA foreign_keys=ON')
 try:
     if sql is None:                                   # schema on stdin
-        for st in [x.strip() for x in translate(sys.stdin.read()).split(';') if x.strip()]: con.execute(st)
+        for st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',translate(sys.stdin.read())).split(';') if x.strip()]: con.execute(st)
         con.commit(); sys.exit(0)
     m = re.search(r"information_schema\.tables", sql, re.I)
     if m:
         print(con.execute("select count(*) from sqlite_master where type='table' and name not like 'sqlite_%'").fetchone()[0]); sys.exit(0)
     last = []
-    for st in [x.strip() for x in sql.split(';') if x.strip()]:
+    for st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',sql).split(';') if x.strip()]:
         if re.match(r'SET\s+FOREIGN_KEY_CHECKS\s*=\s*0', st, re.I): con.execute('PRAGMA foreign_keys=OFF'); continue
         if re.match(r'SET\s', st, re.I): continue                       # session settings have no SQLite meaning
         if re.match(r'ANALYZE\s+TABLE', st, re.I): st = 'ANALYZE'

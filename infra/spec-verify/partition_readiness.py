@@ -13,7 +13,7 @@ def load():
     t = re.sub(r"ENUM\([^)]*\)", "TEXT", t); t = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", t); t = re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b", r"\1", t)
     t = re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b", "", t); t = re.sub(r"\bUNIQUE KEY\s+\w+\s*\(", 'UNIQUE (', t); t = re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)", '', t)
     con = sqlite3.connect(':memory:')
-    for st in [x.strip() for x in t.split(';') if x.strip()]: con.execute(st)
+    for st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',t).split(';') if x.strip()]: con.execute(st)
     return con
 def report():
     con = load(); out = {}
