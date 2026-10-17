@@ -2,7 +2,7 @@
  "release": "R3",
  "title": "Money & People — টাকা ও মানুষ",
  "audience": "বেসরকারি প্রতিষ্ঠান আগে (D43); সরকারি/এমপিও ঐচ্ছিক (D44)",
- "path_note": "R1 → R3 সরাসরি সম্ভব: R3-এর ৩৫ টেবিলের কোনো বাধ্যতামূলক (NOT NULL) রেফারেন্স R1-এর বাইরে যায় না। একমাত্র ব্যবহারিক পূর্বশর্ত `expenses` (R1.1) — R3.1-এ আছে।",
+ "path_note": "R1 → R3 সরাসরি সম্ভব: R3-এর ৩৭ টেবিলের কোনো বাধ্যতামূলক (NOT NULL) রেফারেন্স R1-এর বাইরে যায় না। একমাত্র ব্যবহারিক পূর্বশর্ত `expenses` (R1.1) — R3.1-এ আছে।",
  "prerequisites": {
   "release": "R1 গৃহীত",
   "modules": [
@@ -54,6 +54,7 @@
   "salary_revisions",
   "salary_structure_lines",
   "salary_structures",
+   "staff_mapping_reviews",
   "staff_attendances",
   "staff_members",
   "teacher_attendances",
@@ -110,7 +111,8 @@
   "D84"
     ,"D88",
     "D89",
-  "D90"
+   "D90",
+   "D101"
  ],
  "tasks": [
   {
@@ -416,19 +418,21 @@
      "controllers": [
         "DepartmentContextController"
      ],
-     "tables": [],
+     "tables": [
+        "staff_mapping_reviews"
+     ],
      "tests": [
         "DepartmentAuthorizationTest",
         "StaffMigrationTest",
         "PayrollDesignationCompatibilityTest",
         "DepartmentRouteInventoryTest"
      ],
-     "done": "প্রতিটি tenant staff route tenant + active membership + allowlisted permission যাচাই করে; `module:`/`feature:` gates অতিরিক্ত থাকে; direct URL/API, stale/revoked/cross-tenant access fail closed। Existing teacher/accountant role labels no longer grant staff permissions; student/parent/platform roles unchanged. Teacher.user_id, StaffMember.user_id, employee IDs, attendance/leave, payee types, payroll designation and historical snapshots are preserved; legacy department text requires principal review and grants no duties. Migration dry-run proves no duplicate users or privilege expansion.",
+   "done": "D101: an institution starts in legacy mode; principal-reviewed staff_mapping_reviews rows are append-only and remain tenant scoped. Switching to department mode requires zero unresolved identity collisions in staff:mapping-dry-run and a reviewed row for every in-scope login; switching back revokes legacy sessions without restoring revoked grants or rewriting history. Legacy role routes remain alongside department checks until each route's enforcement test passes, after which that route drops its legacy role. In addition, every tenant staff route verifies active membership and allowlisted permission, with module/feature gates retained; stale, revoked, cross-tenant, direct-URL and API access fail closed. Student/parent/platform authorization remains separate. Teacher.user_id, StaffMember.user_id, employee IDs, attendance/leave, payee types, payroll designation and historical snapshots are preserved; legacy department text grants no duties. Migration dry-run proves no duplicate users or privilege expansion.",
      "verify": [
         "php artisan test --filter='DepartmentAuthorizationTest|StaffMigrationTest|PayrollDesignationCompatibilityTest|DepartmentRouteInventoryTest'",
         "python3 infra/spec-verify/verify.py . --deep"
      ],
-     "scope": "Depends on R3.6a and accepted R3.6. Map all existing role middleware routes; keep student, parent, Super Admin, content writer and moderator authorization separate. No destructive migration; don't alter historical salary/bonus snapshots."
+   "scope": "Depends on R3.6a and accepted R3.6. D101 authorizes the append-only mapping review table, institution rollout fields, and staged legacy-role removal only after each route's department enforcement test passes. Map all existing role middleware routes; keep student, parent, Super Admin, content writer and moderator authorization separate. No destructive migration; don't alter historical salary/bonus snapshots."
     },
     {
      "id": "R3.7",

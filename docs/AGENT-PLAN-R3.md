@@ -24,7 +24,7 @@
 | `R3.5` | বেতন-কাঠামো, ইনক্রিমেন্ট ও বোনাস | R3.4 | 6 | 24 | 5 |
 | `R3.6` | সমন্বয় (জরিমানা/ওভারটাইম) ও অগ্রিম/ঋণ | R3.5 | 2 | 10 | 1 |
 | `R3.6a` | প্রতিষ্ঠান অনবোর্ডিং ও বিভাগভিত্তিক staff foundation | R3.6 | 6 | 20 | 4 |
-| `R3.6b` | Staff department permission enforcement ও legacy profile migration | R3.6a | 0 | 2 | 4 |
+| `R3.6b` | Staff department permission enforcement ও legacy profile migration | R3.6a | 1 | 2 | 4 |
 | `R3.7` | Payroll run, payslip ও পরিশোধ | R3.6b | 2 | 12 | 7 |
 | `R3.8` | ভবিষ্য তহবিল (PF), কর ও চূড়ান্ত নিষ্পত্তি | R3.7 | 1 | 4 | 3 |
 | `R3.9` | স্টোর / ইনভেন্টরি | R3.2 | 2 | 9 | 6 |
@@ -35,7 +35,7 @@
 | `R3.14` | R3-এর কর্মক্ষমতা (ডেটা বাড়লে) | R3.13 | 0 | 0 | 1 |
 | `R3.A` | R3 গ্রহণ-পরীক্ষা, তারপর চালু | R3.14 | 0 | 0 | 0 |
 
-মোট: **18 task · 36 টেবিল · 156 route · 68টি আলাদা পরীক্ষা**। (ক্রম রৈখিক; `R3.9` শুধু `R3.2`-এর পর, তাই `R3.3`–`R3.8` ও `R3.9` সমান্তরালে চলতে পারে।)
+মোট: **18 task · 37 টেবিল · 156 route · 68টি আলাদা পরীক্ষা**। (ক্রম রৈখিক; `R3.9` শুধু `R3.2`-এর পর, তাই `R3.3`–`R3.8` ও `R3.9` সমান্তরালে চলতে পারে।)
 
 ## গ. `config/release.php` — R3-এর জন্য (R1-এর তালিকার উপর)
 
@@ -728,8 +728,29 @@ PUT /admin/department-memberships/{id}/duties -> DepartmentMembershipController@
 
 - **নির্ভর করে:** `R3.6a`
 - **লক্ষ্য:** Institution staff/teachers-এর সব tenant API action-এ active department membership ও allowlisted duty permission enforce করা এবং legacy Teacher/StaffMember/payroll profiles নিরাপদে map করা।
-- **সীমা / নোট:** Depends on R3.6a and accepted R3.6. Map all existing role middleware routes; keep student, parent, Super Admin, content writer and moderator authorization separate. No destructive migration; don't alter historical salary/bonus snapshots.
+- **সীমা / নোট:** Depends on R3.6a and accepted R3.6. D101 authorizes the append-only mapping review table, institution rollout fields, and staged legacy-role removal only after each route's department enforcement test passes. Map all existing role middleware routes; keep student, parent, Super Admin, content writer and moderator authorization separate. No destructive migration; don't alter historical salary/bonus snapshots.
 - **পড়ুন:** `DEPARTMENT-DUTY-AUTHORIZATION-PLAN.md`, `docs/architecture/staff-account-contract.md`, `docs/department-permission-contract.json`, `docs/LOCKED-DECISIONS.md`, `docs/AUTHORIZATION.md`, `docs/modules/staff-payroll.md`, `docs/TESTING.md`
+- **টেবিল (migration, model, factory এই ধাপেই):**
+
+```sql
+CREATE TABLE staff_mapping_reviews (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    teacher_id BIGINT UNSIGNED NULL,
+    staff_member_id BIGINT UNSIGNED NULL,
+    decision VARCHAR(40) NOT NULL,
+    reviewed_by BIGINT UNSIGNED NOT NULL,
+    reviewed_at TIMESTAMP NOT NULL,
+    note VARCHAR(255) NULL,
+    INDEX idx_staff_mapping_reviews_user (institution_id, user_id, reviewed_at, id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id),
+    FOREIGN KEY (staff_member_id) REFERENCES staff_members(id),
+    FOREIGN KEY (reviewed_by) REFERENCES users(id)
+);
+```
 - **Route (2):**
 
 ```
@@ -737,7 +758,7 @@ GET /staff/departments -> DepartmentContextController@index [role:institution_st
 GET /staff/departments/{id}/portal -> DepartmentContextController@show [role:institution_staff]
 ```
 - **লিখবেন ও সবুজ করবেন:** `DepartmentAuthorizationTest` (docs/TESTING.md), `StaffMigrationTest` (docs/TESTING.md), `PayrollDesignationCompatibilityTest` (docs/TESTING.md), `DepartmentRouteInventoryTest` (docs/TESTING.md)
-- **শেষ-শর্ত (Done When):** প্রতিটি tenant staff route tenant + active membership + allowlisted permission যাচাই করে; `module:`/`feature:` gates অতিরিক্ত থাকে; direct URL/API, stale/revoked/cross-tenant access fail closed। Existing teacher/accountant role labels no longer grant staff permissions; student/parent/platform roles unchanged. Teacher.user_id, StaffMember.user_id, employee IDs, attendance/leave, payee types, payroll designation and historical snapshots are preserved; legacy department text requires principal review and grants no duties. Migration dry-run proves no duplicate users or privilege expansion.
+- **শেষ-শর্ত (Done When):** D101: an institution starts in legacy mode; principal-reviewed staff_mapping_reviews rows are append-only and remain tenant scoped. Switching to department mode requires zero unresolved identity collisions in staff:mapping-dry-run and a reviewed row for every in-scope login; switching back revokes legacy sessions without restoring revoked grants or rewriting history. Legacy role routes remain alongside department checks until each route's enforcement test passes, after which that route drops its legacy role. In addition, every tenant staff route verifies active membership and allowlisted permission, with module/feature gates retained; stale, revoked, cross-tenant, direct-URL and API access fail closed. Student/parent/platform authorization remains separate. Teacher.user_id, StaffMember.user_id, employee IDs, attendance/leave, payee types, payroll designation and historical snapshots are preserved; legacy department text grants no duties. Migration dry-run proves no duplicate users or privilege expansion.
 - **যাচাই:** `php artisan test --filter='DepartmentAuthorizationTest|StaffMigrationTest|PayrollDesignationCompatibilityTest|DepartmentRouteInventoryTest'` · `python3 infra/spec-verify/verify.py . --deep`
 
 ### TASK `R3.7` — Payroll run, payslip ও পরিশোধ

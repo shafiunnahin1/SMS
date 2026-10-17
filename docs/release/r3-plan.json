@@ -410,7 +410,9 @@
    ],
    "goal": "Institution staff/teachers-এর সব tenant API action-এ active department membership ও allowlisted duty permission enforce করা এবং legacy Teacher/StaffMember/payroll profiles নিরাপদে map করা।",
    "modules": [],
-   "tables": [],
+   "tables": [
+    "staff_mapping_reviews"
+   ],
    "controllers": [
     "DepartmentContextController"
    ],
@@ -424,12 +426,12 @@
     "PayrollDesignationCompatibilityTest",
     "DepartmentRouteInventoryTest"
    ],
-   "done_when": "প্রতিটি tenant staff route tenant + active membership + allowlisted permission যাচাই করে; `module:`/`feature:` gates অতিরিক্ত থাকে; direct URL/API, stale/revoked/cross-tenant access fail closed। Existing teacher/accountant role labels no longer grant staff permissions; student/parent/platform roles unchanged. Teacher.user_id, StaffMember.user_id, employee IDs, attendance/leave, payee types, payroll designation and historical snapshots are preserved; legacy department text requires principal review and grants no duties. Migration dry-run proves no duplicate users or privilege expansion.",
+   "done_when": "D101: an institution starts in legacy mode; principal-reviewed staff_mapping_reviews rows are append-only and remain tenant scoped. Switching to department mode requires zero unresolved identity collisions in staff:mapping-dry-run and a reviewed row for every in-scope login; switching back revokes legacy sessions without restoring revoked grants or rewriting history. Legacy role routes remain alongside department checks until each route's enforcement test passes, after which that route drops its legacy role. In addition, every tenant staff route verifies active membership and allowlisted permission, with module/feature gates retained; stale, revoked, cross-tenant, direct-URL and API access fail closed. Student/parent/platform authorization remains separate. Teacher.user_id, StaffMember.user_id, employee IDs, attendance/leave, payee types, payroll designation and historical snapshots are preserved; legacy department text grants no duties. Migration dry-run proves no duplicate users or privilege expansion.",
    "verify": [
     "php artisan test --filter='DepartmentAuthorizationTest|StaffMigrationTest|PayrollDesignationCompatibilityTest|DepartmentRouteInventoryTest'",
     "python3 infra/spec-verify/verify.py . --deep"
    ],
-   "scope_note": "Depends on R3.6a and accepted R3.6. Map all existing role middleware routes; keep student, parent, Super Admin, content writer and moderator authorization separate. No destructive migration; don't alter historical salary/bonus snapshots."
+   "scope_note": "Depends on R3.6a and accepted R3.6. D101 authorizes the append-only mapping review table, institution rollout fields, and staged legacy-role removal only after each route's department enforcement test passes. Map all existing role middleware routes; keep student, parent, Super Admin, content writer and moderator authorization separate. No destructive migration; don't alter historical salary/bonus snapshots."
   },
   {
    "id": "R3.7",
