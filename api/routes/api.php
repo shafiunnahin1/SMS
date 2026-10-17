@@ -317,7 +317,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/teacher/leave',[LeaveController::class,'apply']);
         });
 
-        Route::middleware(['role:admin,teacher', 'module:attendance'])->group(function () {
+        Route::middleware(['role:admin,teacher,institution_staff', 'module:attendance'])->group(function () {
             Route::get('/attendance',                     [AttendanceController::class, 'index']);    // ?batch_id=&date=
             Route::post('/attendance',                    [AttendanceController::class, 'store']);    // { batch_id, date, records[] }
             Route::put('/attendance/{id}',                [AttendanceController::class, 'update'])->whereNumber('id');

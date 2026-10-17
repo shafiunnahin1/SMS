@@ -42,7 +42,7 @@ class RoleMatrixContractTest extends TestCase
         $this->assertSame([], array_values(array_diff(self::authRoutes(), $keys)), 'add these routes to tests/Fixtures/role-matrix.php');
         $this->assertSame([], array_values(array_diff($keys, self::authRoutes())), 'stale rows in the matrix');
         foreach (self::matrix() as $key => $roles) {
-            $knownRoles = in_array($key, ['GET api/v1/teachers', 'GET api/v1/teacher/salary/advances', 'GET api/v1/teacher/dashboard', 'GET api/v1/accountant/dashboard', 'GET api/v1/sms-logs', 'GET api/v1/accountant/reports/{type}', 'GET api/v1/hr/people/{type}/{id}/salary'], true) ? [...self::ROLES, 'institution_staff'] : self::ROLES;
+            $knownRoles = in_array($key, ['GET api/v1/teachers', 'GET api/v1/teacher/salary/advances', 'GET api/v1/teacher/dashboard', 'GET api/v1/accountant/dashboard', 'GET api/v1/sms-logs', 'GET api/v1/accountant/reports/{type}', 'GET api/v1/hr/people/{type}/{id}/salary', 'GET api/v1/attendance', 'POST api/v1/attendance', 'GET api/v1/attendance/report', 'GET api/v1/attendance/summary/{id}', 'PUT api/v1/attendance/{id}'], true) ? [...self::ROLES, 'institution_staff'] : self::ROLES;
             $this->assertSame([], array_values(array_diff($roles, $knownRoles)), "{$key}: unknown role");
             if (str_starts_with(explode(' ', $key, 2)[1], 'api/v1/super/')) $this->assertSame(['super_admin'], $roles, "{$key}: the platform panel is Super Admin only");
         }

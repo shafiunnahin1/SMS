@@ -1058,6 +1058,61 @@ class DepartmentAuthorizationTest extends TestCase
         $call('teacher', $fixture['teacher']->id)->assertForbidden();
     }
 
+    private function staffAttendanceHttp(array $a, string $method, string $path, array $body = [], $header = null): \Illuminate\Testing\TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+        $headers = ['Authorization' => 'Bearer '.$a['user']->createToken('attendance')->plainTextToken];
+        if ($header !== null) $headers['X-Department-Id'] = (string) $header;
+        return $this->json($method, 'http://'.$this->hostOf($a['i']).'/api/v1/'.$path, $body, $headers);
+    }
+
+    public function test_d101_staff_attendance_is_own_batch_only_with_exact_keys_across_four_types(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $a = $this->academicFixture('staff-att-'.$type, $type); $h = $a['department']->id;
+            [$own, $outsider, $record] = Tenancy::as($a['i'], function () use ($a) {
+                $own = \App\Models\Student::create(['student_id' => 'OWN', 'guardian_phone' => '01700000001']);
+                $outsider = \App\Models\Student::create(['student_id' => 'OUT', 'guardian_phone' => '01700000002']);
+                app(\App\Services\EnrollmentService::class)->enroll($own, $a['subjectBatch']);
+                app(\App\Services\EnrollmentService::class)->enroll($outsider, $a['unassigned']);
+                $record = \App\Models\Attendance::create(['student_id' => $outsider->id, 'batch_id' => $a['unassigned']->id, 'program_id' => $a['unassigned']->program_id, 'date' => '2026-03-01', 'status' => 'present']);
+                $a['duty']->update(['permission_keys' => ['staff.attendance.index', 'staff.attendance.store', 'staff.attendance.report', 'staff.attendance.summary', 'staff.attendance.update']]);
+                return [$own, $outsider, $record];
+            });
+            $date = now()->subDay()->toDateString();
+            foreach ([$a['classBatch'], $a['subjectBatch']] as $batch) {
+                $this->staffAttendanceHttp($a, 'GET', "attendance?batch_id={$batch->id}&date={$date}", [], $h)->assertOk();
+                $this->staffAttendanceHttp($a, 'GET', "attendance/report?batch_id={$batch->id}&month=2026-03", [], $h)->assertOk();
+            }
+            $this->staffAttendanceHttp($a, 'POST', 'attendance', ['batch_id' => $a['subjectBatch']->id, 'date' => $date, 'records' => [['student_id' => $own->id, 'status' => 'present']]], $h)->assertCreated();
+            $this->staffAttendanceHttp($a, 'GET', "attendance/summary/{$own->id}?month=2026-03", [], $h)->assertOk();
+            foreach ([$a['unassigned'], $a['invalidBatch']] as $batch) {
+                $this->staffAttendanceHttp($a, 'GET', "attendance?batch_id={$batch->id}&date={$date}", [], $h)->assertForbidden();
+                $this->staffAttendanceHttp($a, 'GET', "attendance/report?batch_id={$batch->id}&month=2026-03", [], $h)->assertForbidden();
+            }
+            $this->staffAttendanceHttp($a, 'POST', 'attendance', ['batch_id' => $a['unassigned']->id, 'date' => $date, 'records' => [['student_id' => $outsider->id, 'status' => 'absent']]], $h)->assertForbidden();
+            $this->staffAttendanceHttp($a, 'PUT', "attendance/{$record->id}", ['status' => 'absent'], $h)->assertForbidden();
+            $this->staffAttendanceHttp($a, 'GET', "attendance/summary/{$outsider->id}?month=2026-03", [], $h)->assertForbidden();
+            $this->staffAttendanceHttp($a, 'GET', "attendance/summary/{$own->id}?month=2026-03&batch_id={$a['unassigned']->id}", [], $h)->assertForbidden();
+            $this->assertSame('present', Tenancy::as($a['i'], fn () => $record->fresh()->status));
+        }
+    }
+
+    public function test_d101_staff_attendance_fails_closed_without_context_key_or_department_mode(): void
+    {
+        $a = $this->academicFixture('staff-att-closed'); $batch = $a['classBatch']; $date = now()->subDay()->toDateString();
+        $path = "attendance?batch_id={$batch->id}&date={$date}";
+        Tenancy::as($a['i'], fn () => $a['duty']->update(['permission_keys' => ['staff.attendance.report']]));
+        $this->staffAttendanceHttp($a, 'GET', $path, [], $a['department']->id)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $a['duty']->update(['permission_keys' => ['staff.attendance.index']]));
+        $this->staffAttendanceHttp($a, 'GET', $path)->assertForbidden();
+        $this->staffAttendanceHttp($a, 'GET', $path, [], 999999)->assertForbidden();
+        $this->staffAttendanceHttp($a, 'GET', $path, [], $a['department']->id)->assertOk();
+        $a['i']->forceFill(['staff_department_mode' => 'legacy'])->save();
+        $this->staffAttendanceHttp($a, 'GET', $path, [], $a['department']->id)->assertForbidden();
+    }
+
     private function academicFixture(string $slug, string $type = 'school'): array
     {
         $base = $this->fixture($slug, $type);

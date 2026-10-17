@@ -83,6 +83,12 @@ class DepartmentAcademicReadService
                 ->whereColumn('batches.program_id', 'subjects.program_id'))->select('subject_id'));
     }
 
+    /** D101: the same own class/subject-teacher batch predicate for other staff routes (attendance), gated by the route's exact key */
+    public function ownBatchQuery(User $actor, int $departmentId, string $permission): Builder
+    {
+        return $this->batches($actor, $departmentId, $permission);
+    }
+
     private function batches(User $actor, int $departmentId, string $permission): Builder
     {
         if (!$this->permissions->has($actor, $departmentId, $permission)) $this->forbidden();

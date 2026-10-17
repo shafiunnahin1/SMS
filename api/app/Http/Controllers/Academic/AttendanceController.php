@@ -70,6 +70,13 @@ class AttendanceController extends Controller
     {
         $student = Student::findOrFail($id);
         $data = $request->validate(['month' => 'required|date_format:Y-m', 'batch_id' => 'nullable|integer']);
+        if ($request->user()?->role === 'institution_staff') {
+            // D101: only a student actively enrolled in one of the staff member's own batches, and only that batch's records
+            $own = $this->staffBatches($request)->pluck('id');
+            $batchIds = Enrollment::where('student_id', $student->id)->where('status', 'active')->whereIn('batch_id', $own)->pluck('batch_id');
+            if ($batchIds->isEmpty() || (isset($data['batch_id']) && !$batchIds->contains((int) $data['batch_id']))) throw new BusinessException('not your student', 'forbidden', 403);
+            $data['batch_id'] = $data['batch_id'] ?? (int) $batchIds->first();
+        }
         return response()->json(['success' => true, 'data' => $this->summaryData($student, $data['month'], $data['batch_id'] ?? null)]);
     }
 
@@ -91,6 +98,18 @@ class AttendanceController extends Controller
 
     private function authorizeBatch(Request $request, Batch $batch): void
     {
+        if ($request->user()?->role === 'institution_staff') {
+            if (!$this->staffBatches($request)->whereKey($batch->id)->exists()) throw new BusinessException('not your batch', 'forbidden', 403);
+            return;
+        }
         if (!$this->attendance->canTake($request->user(), $batch)) throw new BusinessException('not your batch', 'forbidden', 403);
+    }
+
+    /** D101: department staff reach only their own (class or subject teacher) upcoming/running batches, via D91 context + the route's exact key */
+    private function staffBatches(Request $request): \Illuminate\Database\Eloquent\Builder
+    {
+        $department = app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
+        $permission = app(\App\Services\DepartmentRoutePermissionResolver::class)->resolve($request)['permission'];
+        return app(\App\Services\DepartmentAcademicReadService::class)->ownBatchQuery($request->user(), $department, $permission);
     }
 }

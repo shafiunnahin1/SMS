@@ -135,7 +135,7 @@ class DepartmentRouteInventoryTest extends TestCase
 
     public function test_d101_teacher_advance_overlay_keeps_teacher_role_and_requires_own_payee_scope(): void
     {
-        $this->assertCount(6, DepartmentRouteCatalog::D101);
+        $this->assertCount(11, DepartmentRouteCatalog::D101);
         $entry = DepartmentRouteCatalog::D101[0];
         $this->assertSame(['GET|HEAD', 'api/v1/teacher/salary/advances', 'D101', ['teacher', 'institution_staff'], ['staff.salary_advance.mine']], [
             $entry['method'], $entry['uri'], $entry['approval'], $entry['current_roles'], $entry['permission_options'],
@@ -220,6 +220,25 @@ class DepartmentRouteInventoryTest extends TestCase
         $this->assertContains('App\\Http\\Middleware\\ModuleMiddleware:hr_payroll', app('router')->gatherRouteMiddleware($route));
         $resolved = app(DepartmentRoutePermissionResolver::class)->resolve($this->request($route, 'GET'));
         $this->assertSame(['D101', 'exact_duty_permission', 'staff.salary_structure.history'], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
+    }
+
+    public function test_d101_attendance_overlay_is_own_batch_and_keeps_module_gate(): void
+    {
+        $keys = ['staff.attendance.index', 'staff.attendance.store', 'staff.attendance.report', 'staff.attendance.summary', 'staff.attendance.update'];
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        foreach ($keys as $offset => $key) {
+            $entry = DepartmentRouteCatalog::D101[6 + $offset];
+            $this->assertSame(['D101', ['admin', 'institution_staff', 'teacher'], [$key]], [$entry['approval'], $entry['current_roles'], $entry['permission_options']]);
+            $this->assertStringStartsWith('D101 own active linked Teacher', $entry['resource_scope']);
+            $method = explode('|', $entry['method'])[0];
+            $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+                ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array($method, $candidate->methods(), true));
+            $middleware = app('router')->gatherRouteMiddleware($route);
+            $this->assertContains('App\\Http\\Middleware\\ModuleMiddleware:attendance', $middleware);
+            $this->assertContains('App\\Http\\Middleware\\RoleMiddleware:admin,teacher,institution_staff', $middleware);
+            $resolved = $resolver->resolve($this->request($route, $method));
+            $this->assertSame(['D101', 'exact_duty_permission', $key], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
+        }
     }
 
     private function request(Route $original, string $method, array $parameters = [], array $body = []): Request
