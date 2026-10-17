@@ -345,6 +345,19 @@ Route::prefix('v1')->group(function () {
             Route::delete('/expenses/{id}', [\App\Http\Controllers\Expenses\ExpenseController::class, 'destroy'])->whereNumber('id');
         });
 
+        // ── Store / inventory (R3.9, docs/modules/inventory.md) ──
+        Route::middleware(['module:inventory', 'role:admin,accountant'])->group(function () {
+            Route::get('/inventory/items', [\App\Http\Controllers\Inventory\InventoryItemController::class, 'index']);
+            Route::post('/inventory/items', [\App\Http\Controllers\Inventory\InventoryItemController::class, 'store']);
+            Route::put('/inventory/items/{id}', [\App\Http\Controllers\Inventory\InventoryItemController::class, 'update'])->whereNumber('id');
+            Route::delete('/inventory/items/{id}', [\App\Http\Controllers\Inventory\InventoryItemController::class, 'destroy'])->whereNumber('id');
+            Route::get('/inventory/items/{id}/ledger', [\App\Http\Controllers\Inventory\InventoryItemController::class, 'ledger'])->whereNumber('id');
+            Route::get('/inventory/stock', [\App\Http\Controllers\Inventory\InventoryReportController::class, 'stock']);
+            Route::get('/inventory/reports/{name}', [\App\Http\Controllers\Inventory\InventoryReportController::class, 'show']);   // name checked in the controller, after the role gate
+            Route::get('/inventory/sales/{receipt_no}/receipt.pdf', [\App\Http\Controllers\Inventory\InventoryReportController::class, 'receipt']);
+            Route::post('/inventory/{type}', [\App\Http\Controllers\Inventory\InventoryMovementController::class, 'store']);   // type checked in the controller, after the role gate (POST /inventory/items is matched first)
+        });
+
         Route::middleware('module:fees')->group(function () {
             Route::get('/fees/payments/student/{id}',     [FeeController::class, 'studentPayments'])->whereNumber('id')->middleware('role:admin,accountant,parent');   // parent: own child only (404)
             Route::middleware('role:admin,accountant')->group(function () {

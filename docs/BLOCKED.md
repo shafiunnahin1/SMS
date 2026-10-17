@@ -164,3 +164,8 @@ D96 bounded refresh contract/readiness evidence owner/d96-refresh-delivery-readi
 
 ## 2026-10-17 - Source refresh identity storage gap refined at design level
 D96/D99 source_refreshed enum, immutable program/batch/subject context and tenant-safe keys verified; owner/d96-source-history-checkpoint.md. Focused23/freshness/export/parity/invariant/exact-tree deep PASS3warnings. Prior absent enum/identity-field gate is resolved for canonical design only. No migrated/runtime/route activation or task completion. Read/picker/resource/department binding, all writer/settings classification, durable delivery/ambiguous provider outcomes, safe portable import and dependency/runtime acceptance remain gated.
+
+
+## 2026-10-17 - R3.9 inventory backend done; owner Change-Request needed for two protected lists
+R3.9 code and its six test files are green on branch `claude/r3.9-inventory`. Two things only the owner can approve (G3/C1): (1) the 9 new rows in `api/tests/Fixtures/role-matrix.php` (all `admin, accountant`, exactly the plan's route roles); (2) 9 department-catalog entries for the new routes, because `DepartmentRouteInventoryTest` requires every live route to be in the D90 contract (`docs/department-permission-contract.json`, sealed by the approved source digest). Proposed entries: `owner/r3.9-inventory-route-catalog-proposal.md`. Asked of the owner: one decision row (next free D-number) approving both, so the commit can carry `Change-Request: D<n>` and the catalog/contract can be regenerated.
+
