@@ -38,7 +38,6 @@ test('5.3 super admin: institutions, wallet, modules, settings', async ({ page }
   await form.locator('input[name="slug"]').fill(slug)
   await form.locator('input[name="admin_name"]').fill('E2E Admin')
   await form.locator('input[name="admin_phone"]').fill('01755555555')
-  await form.locator('input[name="admin_password"]').fill('E2e-pass-123')
   await form.locator('button[type="submit"]').click()
   await expect(page.locator('[data-testid="institution-detail"]')).toContainText(`${slug}.`)
 
