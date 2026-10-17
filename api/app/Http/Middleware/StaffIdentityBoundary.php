@@ -46,8 +46,11 @@ class StaffIdentityBoundary
         $ownTeacherDashboard = in_array($request->method(), ['GET', 'HEAD'], true)
             && $request->route()->uri() === 'api/v1/teacher/dashboard'
             && ltrim($request->route()->getActionName(), '\\') === \App\Http\Controllers\Shared\DashboardController::class.'@teacher';
+        $accountantDashboard = in_array($request->method(), ['GET', 'HEAD'], true)
+            && $request->route()->uri() === 'api/v1/accountant/dashboard'
+            && ltrim($request->route()->getActionName(), '\\') === \App\Http\Controllers\Shared\DashboardController::class.'@accountant';
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         return $next($request);

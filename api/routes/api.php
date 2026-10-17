@@ -443,7 +443,7 @@ Route::prefix('v1')->group(function () {
 
         // ── Dashboards (Step 4.7) ──
         Route::get('/admin/dashboard',                    [DashboardController::class, 'admin'])->middleware('role:admin');
-        Route::get('/accountant/dashboard',               [DashboardController::class, 'accountant'])->middleware('role:accountant');
+        Route::get('/accountant/dashboard',               [DashboardController::class, 'accountant'])->middleware('role:accountant,institution_staff');
         Route::get('/teacher/dashboard',                  [DashboardController::class, 'teacher'])->middleware('role:teacher,institution_staff');
 
         // ── Reports (Step 4.8): PDF / Excel ──

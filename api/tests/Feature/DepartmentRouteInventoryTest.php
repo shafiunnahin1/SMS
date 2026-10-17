@@ -135,7 +135,7 @@ class DepartmentRouteInventoryTest extends TestCase
 
     public function test_d101_teacher_advance_overlay_keeps_teacher_role_and_requires_own_payee_scope(): void
     {
-        $this->assertCount(2, DepartmentRouteCatalog::D101);
+        $this->assertCount(3, DepartmentRouteCatalog::D101);
         $entry = DepartmentRouteCatalog::D101[0];
         $this->assertSame(['GET|HEAD', 'api/v1/teacher/salary/advances', 'D101', ['teacher', 'institution_staff'], ['staff.salary_advance.mine']], [
             $entry['method'], $entry['uri'], $entry['approval'], $entry['current_roles'], $entry['permission_options'],
@@ -167,6 +167,19 @@ class DepartmentRouteInventoryTest extends TestCase
             $resolved = app(DepartmentRoutePermissionResolver::class)->resolve($this->request($route, $method));
             $this->assertSame(['D101', 'exact_duty_permission', 'staff.dashboard.teacher'], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
         }
+    }
+
+    public function test_d101_accountant_dashboard_overlay_requires_exact_duty(): void
+    {
+        $entry = DepartmentRouteCatalog::D101[2];
+        $this->assertSame(['GET|HEAD', 'api/v1/accountant/dashboard', 'D101', ['accountant', 'institution_staff'], ['staff.dashboard.accountant']], [
+            $entry['method'], $entry['uri'], $entry['approval'], $entry['current_roles'], $entry['permission_options'],
+        ]);
+        $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+            ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array('GET', $candidate->methods(), true));
+        $this->assertContains('App\\Http\\Middleware\\RoleMiddleware:accountant,institution_staff', app('router')->gatherRouteMiddleware($route));
+        $resolved = app(DepartmentRoutePermissionResolver::class)->resolve($this->request($route, 'GET'));
+        $this->assertSame(['D101', 'exact_duty_permission', 'staff.dashboard.accountant'], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
     }
 
     private function request(Route $original, string $method, array $parameters = [], array $body = []): Request

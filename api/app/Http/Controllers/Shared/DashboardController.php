@@ -49,8 +49,10 @@ class DashboardController extends Controller
     }
 
     /** GET /accountant/dashboard */
-    public function accountant()
+    public function accountant(Request $request)
     {
+        // D101: department staff need D91 context + staff.dashboard.accountant (tenant-wide fee summary, same data as the accountant role)
+        if ($request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
         $recent = FeePayment::selectRaw('receipt_no, MIN(id) AS id, student_id, MAX(paid_at) AS paid_at, SUM(paid_amount) AS total')
             ->groupBy('receipt_no', 'student_id')->orderByDesc('paid_at')->limit(5)->with('student.user:id,name')->get();
         return response()->json(['success' => true, 'data' => [

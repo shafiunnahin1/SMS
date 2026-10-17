@@ -966,6 +966,29 @@ class DepartmentAuthorizationTest extends TestCase
         $this->staffTeacherDashboardHttp($fixture, $header, token: $token)->assertForbidden();
     }
 
+    public function test_staff_accountant_dashboard_requires_exact_duty_context_and_department_mode(): void
+    {
+        foreach (['school', 'coaching'] as $type) {
+            $fixture = $this->academicFixture('staff-acc-dash-'.$type, $type);
+            $header = (string) $fixture['department']->id;
+            $token = $fixture['user']->createToken('acc-dash')->plainTextToken;
+            $call = function ($h) use ($fixture, $token) {
+                $this->app['auth']->forgetGuards();
+                $headers = ['Authorization' => 'Bearer '.$token];
+                if ($h !== null) $headers['X-Department-Id'] = $h;
+                return $this->json('GET', 'http://'.$this->hostOf($fixture['i']).'/api/v1/accountant/dashboard', [], $headers);
+            };
+            $call($header)->assertForbidden();
+            Tenancy::as($fixture['i'], fn () => $fixture['duty']->update(['permission_keys' => ['staff.dashboard.accountant']]));
+            $call($header)->assertOk()->assertJsonStructure(['data' => ['collection', 'recent_receipts']]);
+            $call(null)->assertForbidden();
+            $call('999999')->assertForbidden();
+            $this->staffTeacherDashboardHttp($fixture, $header, token: $token)->assertForbidden();
+            Tenancy::as($fixture['i'], fn () => $fixture['i']->forceFill(['staff_department_mode' => 'legacy'])->save());
+            $call($header)->assertForbidden();
+        }
+    }
+
     private function academicFixture(string $slug, string $type = 'school'): array
     {
         $base = $this->fixture($slug, $type);
