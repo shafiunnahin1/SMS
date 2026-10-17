@@ -135,7 +135,7 @@ class DepartmentRouteInventoryTest extends TestCase
 
     public function test_d101_teacher_advance_overlay_keeps_teacher_role_and_requires_own_payee_scope(): void
     {
-        $this->assertCount(3, DepartmentRouteCatalog::D101);
+        $this->assertCount(4, DepartmentRouteCatalog::D101);
         $entry = DepartmentRouteCatalog::D101[0];
         $this->assertSame(['GET|HEAD', 'api/v1/teacher/salary/advances', 'D101', ['teacher', 'institution_staff'], ['staff.salary_advance.mine']], [
             $entry['method'], $entry['uri'], $entry['approval'], $entry['current_roles'], $entry['permission_options'],
@@ -180,6 +180,19 @@ class DepartmentRouteInventoryTest extends TestCase
         $this->assertContains('App\\Http\\Middleware\\RoleMiddleware:accountant,institution_staff', app('router')->gatherRouteMiddleware($route));
         $resolved = app(DepartmentRoutePermissionResolver::class)->resolve($this->request($route, 'GET'));
         $this->assertSame(['D101', 'exact_duty_permission', 'staff.dashboard.accountant'], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
+    }
+
+    public function test_d101_sms_log_overlay_keeps_module_gate_and_requires_exact_duty(): void
+    {
+        $entry = DepartmentRouteCatalog::D101[3];
+        $this->assertSame(['GET|HEAD', 'api/v1/sms-logs', 'D101', ['staff.sms_log.index']], [$entry['method'], $entry['uri'], $entry['approval'], $entry['permission_options']]);
+        $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+            ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array('GET', $candidate->methods(), true));
+        $middleware = app('router')->gatherRouteMiddleware($route);
+        $this->assertContains('App\\Http\\Middleware\\ModuleMiddleware:sms', $middleware);
+        $this->assertContains('App\\Http\\Middleware\\RoleMiddleware:admin,accountant,institution_staff', $middleware);
+        $resolved = app(DepartmentRoutePermissionResolver::class)->resolve($this->request($route, 'GET'));
+        $this->assertSame(['D101', 'exact_duty_permission', 'staff.sms_log.index'], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
     }
 
     private function request(Route $original, string $method, array $parameters = [], array $body = []): Request

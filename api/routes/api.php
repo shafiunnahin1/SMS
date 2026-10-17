@@ -430,7 +430,7 @@ Route::prefix('v1')->group(function () {
 
         // ── SMS (Step 4.6): log and balance; sending happens from attendance / fee collection through SendSmsJob ──
         Route::middleware('module:sms')->group(function () {
-            Route::get('/sms-logs',                       [SmsLogController::class, 'index'])->middleware('role:admin,accountant');
+            Route::get('/sms-logs',                       [SmsLogController::class, 'index'])->middleware('role:admin,accountant,institution_staff');
             Route::get('/subscription/sms-credits',       [SmsCreditController::class, 'balance'])->middleware('role:admin');
             Route::post('/subscription/sms-credits',      [SmsCreditController::class, 'purchase'])->middleware(['role:admin', 'throttle:10,1']);   // D58: bKash recharge
             // D59: the universal / own API switches and the institution's own BulkSMSBD key + masking sender

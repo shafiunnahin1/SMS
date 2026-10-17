@@ -989,6 +989,28 @@ class DepartmentAuthorizationTest extends TestCase
         }
     }
 
+    public function test_staff_sms_log_requires_exact_duty_module_and_department_mode(): void
+    {
+        $fixture = $this->academicFixture('staff-sms-log');
+        $header = (string) $fixture['department']->id;
+        $token = $fixture['user']->createToken('sms-log')->plainTextToken;
+        $call = function ($h = null) use ($fixture, $token, $header) {
+            $this->app['auth']->forgetGuards();
+            return $this->json('GET', 'http://'.$this->hostOf($fixture['i']).'/api/v1/sms-logs', [], ['Authorization' => 'Bearer '.$token, 'X-Department-Id' => $h ?? $header]);
+        };
+        $fixture['i']->forceFill(['enabled_modules' => ['sms' => true]])->save();
+        $call()->assertForbidden();
+        Tenancy::as($fixture['i'], fn () => $fixture['duty']->update(['permission_keys' => ['staff.sms_log.index']]));
+        $call()->assertOk()->assertJsonStructure(['data', 'meta' => ['next_cursor', 'per_page']]);
+        $call('999999')->assertForbidden();
+        $this->app['auth']->forgetGuards();
+        $this->json('GET', 'http://'.$this->hostOf($fixture['i']).'/api/v1/subscription/sms-credits', [], ['Authorization' => 'Bearer '.$token, 'X-Department-Id' => $header])->assertForbidden();
+        $fixture['i']->forceFill(['enabled_modules' => ['sms' => false]])->save();
+        $call()->assertForbidden();
+        $fixture['i']->forceFill(['enabled_modules' => ['sms' => true], 'staff_department_mode' => 'legacy'])->save();
+        $call()->assertForbidden();
+    }
+
     private function academicFixture(string $slug, string $type = 'school'): array
     {
         $base = $this->fixture($slug, $type);

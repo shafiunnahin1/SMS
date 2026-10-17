@@ -12,6 +12,8 @@ class SmsLogController extends Controller
 {
     public function index(Request $request)
     {
+        // D101: department staff need D91 context + staff.sms_log.index (same tenant log as the accountant role)
+        if ($request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
         $f = $request->validate(['per_page' => 'nullable|integer|min:1|max:100', 'status' => 'nullable|in:sent,failed', 'cursor' => 'nullable|string|max:500']);
         $page = SmsLog::query()->when($f['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
             ->orderByDesc('id')->cursorPaginate($f['per_page'] ?? 50);

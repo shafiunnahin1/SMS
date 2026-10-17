@@ -148,7 +148,7 @@ return [
     'PUT api/v1/results/{id}' => ['admin', 'teacher'],
     'GET api/v1/settings' => ['admin'],
     'PUT api/v1/settings' => ['admin'],
-    'GET api/v1/sms-logs' => ['admin', 'accountant'],
+    'GET api/v1/sms-logs' => ['admin', 'accountant', 'institution_staff'],
     'GET api/v1/students' => ['admin'],
     'POST api/v1/students' => ['admin'],
     'GET api/v1/students/{id}' => ['admin'],
