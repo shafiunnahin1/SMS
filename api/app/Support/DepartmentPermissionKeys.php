@@ -157,4 +157,23 @@ final class DepartmentPermissionKeys
         'staff.teacher_attendance.index',
         'staff.teacher_attendance.store',
     ];
+
+    /** D102: the nine R3.9 inventory keys; kept apart so ALL stays exactly the D90 contract's 150 options */
+    public const D102 = [
+        'staff.inventory.item_destroy',
+        'staff.inventory.item_index',
+        'staff.inventory.item_store',
+        'staff.inventory.item_update',
+        'staff.inventory.ledger',
+        'staff.inventory.movement',
+        'staff.inventory.receipt',
+        'staff.inventory.report',
+        'staff.inventory.stock',
+    ];
+
+    /** every key a duty may hold: the D90 contract plus owner-approved later additions */
+    public static function known(): array
+    {
+        return [...self::ALL, ...self::D102];
+    }
 }

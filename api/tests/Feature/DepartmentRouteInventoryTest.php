@@ -107,9 +107,16 @@ class DepartmentRouteInventoryTest extends TestCase
                 $this->assertNotNull($route, $method.' '.$entry['uri']);
                 $this->assertSame($entry['action'], ltrim($route->getActionName(), '\\'));
                 $result = $resolver->resolve($this->request($route, $method));
-                $this->assertSame(['principal_only', null], [$result['resolved_mode'] ?? null, array_key_exists('permission', $result ?? []) ? $result['permission'] : 'missing'], $method.' '.$entry['uri']);
+                // D102 (owner, Change-Request D102) amends D100 for exactly these routes: each now resolves to its own exact staff.inventory.* key
+                $d102 = collect(DepartmentRouteCatalog::D102)->first(fn ($e) => $e['uri'] === $entry['uri'] && $e['action'] === $entry['action'] && $e['method'] === $entry['method']);
+                $this->assertNotNull($d102, $method.' '.$entry['uri']);
+                $this->assertSame(['D102', 'exact_duty_permission', $d102['permission_options'][0]], [$result['contract']['approval'] ?? null, $result['resolved_mode'] ?? null, $result['permission'] ?? 'missing'], $method.' '.$entry['uri']);
+                $this->assertContains($d102['permission_options'][0], \App\Support\DepartmentPermissionKeys::D102);
             }
         }
+        $this->assertCount(9, DepartmentRouteCatalog::D102);
+        $this->assertCount(9, array_unique(array_merge(...array_column(DepartmentRouteCatalog::D102, 'permission_options'))), 'one distinct key per route');
+        $this->assertSame([], array_values(array_intersect(\App\Support\DepartmentPermissionKeys::D102, \App\Support\DepartmentPermissionKeys::ALL)), 'D102 keys stay outside the sealed D90 list');
     }
 
     public function test_d94_teacher_index_overlay_is_exact_and_keeps_the_sealed_capture_unchanged(): void

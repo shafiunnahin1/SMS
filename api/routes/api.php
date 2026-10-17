@@ -346,7 +346,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // ── Store / inventory (R3.9, docs/modules/inventory.md) ──
-        Route::middleware(['module:inventory', 'role:admin,accountant'])->group(function () {
+        Route::middleware(['module:inventory', 'role:admin,accountant,institution_staff'])->group(function () {
             Route::get('/inventory/items', [\App\Http\Controllers\Inventory\InventoryItemController::class, 'index']);
             Route::post('/inventory/items', [\App\Http\Controllers\Inventory\InventoryItemController::class, 'store']);
             Route::put('/inventory/items/{id}', [\App\Http\Controllers\Inventory\InventoryItemController::class, 'update'])->whereNumber('id');

@@ -187,7 +187,7 @@ class DepartmentService
             'name' => [$required, 'required', 'string', 'max:120'],
             'description' => 'sometimes|nullable|string|max:500',
             'permission_keys' => [$required, 'required', 'array', 'min:1', 'max:150'],
-            'permission_keys.*' => ['required', 'string', 'distinct:strict', Rule::in(DepartmentPermissionKeys::ALL)],
+            'permission_keys.*' => ['required', 'string', 'distinct:strict', Rule::in(DepartmentPermissionKeys::known())],
             'status' => 'sometimes|required|in:active,archived',
         ])->after(function ($v) use ($input, $allowed) {
             if (array_diff(array_keys($input), $allowed)) $v->errors()->add('request', __('errors.validation_failed'));

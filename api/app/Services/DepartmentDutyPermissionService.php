@@ -13,7 +13,7 @@ class DepartmentDutyPermissionService
     public function has(User $actor, int $departmentId, string $permission): bool
     {
         $tenant = Tenancy::current();
-        if (!$tenant || Tenancy::isBypassed() || !in_array($permission, DepartmentPermissionKeys::ALL, true)
+        if (!$tenant || Tenancy::isBypassed() || !in_array($permission, DepartmentPermissionKeys::known(), true)
             || in_array('impersonated', $actor->currentAccessToken()?->abilities ?? [], true)) return false;
 
         if (!Institution::whereKey($tenant->id)->where('status', 'active')->where('staff_department_mode', 'department')->exists()) return false;
@@ -39,7 +39,7 @@ class DepartmentDutyPermissionService
             $keys = $duty->permission_keys;
             if (!is_array($keys) || !array_is_list($keys) || !$keys) continue;
             foreach ($keys as $key) {
-                if (!is_string($key) || !in_array($key, DepartmentPermissionKeys::ALL, true)) continue 2;
+                if (!is_string($key) || !in_array($key, DepartmentPermissionKeys::known(), true)) continue 2;
             }
             if (count(array_unique($keys)) !== count($keys)) continue;
             if (in_array($permission, $keys, true)) return true;
