@@ -326,7 +326,7 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::middleware(['module:cashbook'])->group(function () {
-            Route::middleware('role:admin,accountant')->group(function () {
+            Route::middleware('role:admin,accountant,institution_staff')->group(function () {
                 Route::get('/cashbook', [\App\Http\Controllers\CashBook\CashBookController::class, 'show']);
                 Route::get('/cashbook/range', [\App\Http\Controllers\CashBook\CashBookController::class, 'range']);
                 Route::get('/cashbook/{date}/report.{ext}', [\App\Http\Controllers\CashBook\CashBookController::class, 'report']);
@@ -336,7 +336,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // ── Fees (Step 4.4; slice: dues -> collect -> receipt) ──
-        Route::middleware(['module:expenses', 'role:admin,accountant'])->group(function () {
+        Route::middleware(['module:expenses', 'role:admin,accountant,institution_staff'])->group(function () {
             Route::get('/expenses/report', [\App\Http\Controllers\Expenses\ExpenseController::class, 'report']);
             Route::get('/expenses', [\App\Http\Controllers\Expenses\ExpenseController::class, 'index']);
             Route::post('/expenses', [\App\Http\Controllers\Expenses\ExpenseController::class, 'store']);
@@ -359,13 +359,15 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::middleware('module:fees')->group(function () {
-            Route::get('/fees/payments/student/{id}',     [FeeController::class, 'studentPayments'])->whereNumber('id')->middleware('role:admin,accountant,parent');   // parent: own child only (404)
+            Route::get('/fees/payments/student/{id}',     [FeeController::class, 'studentPayments'])->whereNumber('id')->middleware('role:admin,accountant,parent,institution_staff');   // parent: own child only (404)
             Route::middleware('role:admin,accountant')->group(function () {
                 Route::get('/fee-refunds/refundable', [FeeRefundController::class, 'refundable']);
                 Route::get('/fee-refunds', [FeeRefundController::class, 'index']);
                 Route::post('/fee-refunds', [FeeRefundController::class, 'store']);
                 Route::get('/fee-refunds/{id}', [FeeRefundController::class, 'show'])->whereNumber('id');
                 Route::post('/fee-refunds/{id}/{action}', [FeeRefundController::class, 'transition'])->whereNumber('id')->whereIn('action', ['approve', 'reject', 'process']);
+            });
+            Route::middleware('role:admin,accountant,institution_staff')->group(function () {   // D101: department staff with exact staff.fee.* keys
                 Route::post('/fees/collect',              [FeeController::class, 'collect']);
                 Route::get('/fees/dues',                  [FeeController::class, 'dues']);
                 Route::get('/fees/receipt/{id}',          [FeeController::class, 'receipt'])->whereNumber('id');

@@ -135,7 +135,7 @@ class DepartmentRouteInventoryTest extends TestCase
 
     public function test_d101_teacher_advance_overlay_keeps_teacher_role_and_requires_own_payee_scope(): void
     {
-        $this->assertCount(33, DepartmentRouteCatalog::D101);
+        $this->assertCount(48, DepartmentRouteCatalog::D101);
         $entry = DepartmentRouteCatalog::D101[0];
         $this->assertSame(['GET|HEAD', 'api/v1/teacher/salary/advances', 'D101', ['teacher', 'institution_staff'], ['staff.salary_advance.mine']], [
             $entry['method'], $entry['uri'], $entry['approval'], $entry['current_roles'], $entry['permission_options'],
@@ -273,6 +273,25 @@ class DepartmentRouteInventoryTest extends TestCase
             $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
                 ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array($method, $candidate->methods(), true));
             $this->assertContains('App\\Http\\Middleware\\ModuleMiddleware:question_bank', app('router')->gatherRouteMiddleware($route));
+            $resolved = $resolver->resolve($this->request($route, $method));
+            $this->assertSame(['D101', 'exact_duty_permission', $entry['permission_options'][0]], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
+        }
+    }
+
+    public function test_d101_money_overlay_keeps_module_gates_and_leaves_refunds_reopen_and_admin_fee_routes_closed(): void
+    {
+        $entries = array_slice(DepartmentRouteCatalog::D101, 33, 15);
+        $uris = array_column($entries, 'uri');
+        foreach (['api/v1/cashbook/{date}/reopen', 'api/v1/fee-refunds', 'api/v1/fee-refunds/{id}/{action}', 'api/v1/fees/categories', 'api/v1/fees/report'] as $closed) $this->assertNotContains($closed, $uris);
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        foreach ($entries as $entry) {
+            $this->assertSame('D101', $entry['approval']);
+            $this->assertContains('institution_staff', $entry['current_roles']);
+            $method = explode('|', $entry['method'])[0];
+            $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+                ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array($method, $candidate->methods(), true));
+            $module = str_starts_with($entry['uri'], 'api/v1/expenses') ? 'expenses' : (str_starts_with($entry['uri'], 'api/v1/cashbook') ? 'cashbook' : 'fees');
+            $this->assertContains('App\\Http\\Middleware\\ModuleMiddleware:'.$module, app('router')->gatherRouteMiddleware($route));
             $resolved = $resolver->resolve($this->request($route, $method));
             $this->assertSame(['D101', 'exact_duty_permission', $entry['permission_options'][0]], [$resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission']]);
         }

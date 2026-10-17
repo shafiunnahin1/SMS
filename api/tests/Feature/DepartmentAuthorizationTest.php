@@ -1165,6 +1165,31 @@ class DepartmentAuthorizationTest extends TestCase
         $this->staffAttendanceHttp($a, 'GET', 'results', [], $a['department']->id)->assertForbidden();
     }
 
+    public function test_d101_staff_money_routes_need_exact_keys_and_keep_refunds_and_reopen_closed_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $f = $this->fixture('staff-money-'.$type, $type); $h = $f['department']->id; $today = now()->toDateString();
+            $f['i']->forceFill(['enabled_modules' => array_fill_keys(config('release.modules'), true)])->save();
+            Tenancy::as($f['i'], fn () => $f['duty']->update(['permission_keys' => ['staff.expense.index', 'staff.expense.store', 'staff.cash_book.show', 'staff.fee.dues', 'staff.fee.payments']]));
+            $this->staffAttendanceHttp($f, 'POST', 'expenses', ['category' => 'Office', 'title' => 'Chalk', 'amount' => '120.50', 'expense_date' => $today], $h)->assertCreated();
+            $this->staffAttendanceHttp($f, 'GET', 'expenses', [], $h)->assertOk()->assertJsonPath('data.0.amount', '120.50');
+            $this->staffAttendanceHttp($f, 'GET', 'cashbook', [], $h)->assertOk();
+            $this->staffAttendanceHttp($f, 'GET', 'fees/dues', [], $h)->assertStatus(422)->assertJsonValidationErrors('student_id');   // past the staff gate, into the existing validation
+            $this->staffAttendanceHttp($f, 'GET', 'fees/payments', [], $h)->assertOk();
+            // no key for that action; refunds, reopen and admin-only fee routes stay closed whatever the duty says
+            $this->staffAttendanceHttp($f, 'GET', 'expenses/report', [], $h)->assertForbidden();
+            $this->staffAttendanceHttp($f, 'POST', "cashbook/{$today}/close", [], $h)->assertForbidden();
+            $this->staffAttendanceHttp($f, 'POST', "cashbook/{$today}/reopen", [], $h)->assertForbidden();
+            $this->staffAttendanceHttp($f, 'GET', 'fee-refunds', [], $h)->assertForbidden();
+            $this->staffAttendanceHttp($f, 'GET', 'fees/report', [], $h)->assertForbidden();
+            $this->staffAttendanceHttp($f, 'GET', 'expenses')->assertForbidden();
+            $this->staffAttendanceHttp($f, 'GET', 'expenses', [], 999999)->assertForbidden();
+            $f['i']->forceFill(['staff_department_mode' => 'legacy'])->save();
+            $this->staffAttendanceHttp($f, 'GET', 'expenses', [], $h)->assertForbidden();
+            $this->assertSame(1, Tenancy::as($f['i'], fn () => \App\Models\Expense::count()));
+        }
+    }
+
     private function academicFixture(string $slug, string $type = 'school'): array
     {
         $base = $this->fixture($slug, $type);
