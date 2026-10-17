@@ -14,6 +14,20 @@ class DepartmentAcademicReadService
 {
     public function __construct(private DepartmentDutyPermissionService $permissions) {}
 
+    public function ownTeachers(User $actor, int $departmentId, array $filters): Collection
+    {
+        if (!$this->permissions->has($actor, $departmentId, 'staff.teacher.index')) $this->forbidden();
+
+        $profiles = Teacher::where('user_id', $actor->id)->limit(2)->get(['id', 'user_id', 'status']);
+        if ($profiles->count() !== 1 || $profiles->first()->status !== 'active') $this->forbidden();
+
+        return Teacher::whereKey($profiles->first()->id)->with('user:id,name')
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
+            ->when(isset($filters['q']) && $filters['q'] !== '', fn ($q) => $q->whereHas('user',
+                fn ($user) => $user->where('name', 'like', '%'.$filters['q'].'%')))
+            ->get(['id', 'user_id']);
+    }
+
     public function ownBatches(User $actor, int $departmentId): Collection
     {
         return $this->batches($actor, $departmentId, 'staff.batch.mine')->with('program:id,name')

@@ -25,6 +25,92 @@ class DepartmentAuthorizationTest extends TestCase
         });
     }
 
+    private function staffTeacherIndexHttp(array $fixture, $departmentHeader = null, array $query = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+        $headers = ['Authorization' => 'Bearer '.($token ?? $fixture['user']->createToken('teacher-index')->plainTextToken)];
+        if ($departmentHeader !== null) $headers['X-Department-Id'] = $departmentHeader;
+        $url = 'http://'.$this->hostOf($fixture['i']).'/api/v1/teachers'.($query ? '?'.http_build_query($query) : '');
+        return $this->json($method, $url, [], $headers);
+    }
+
+    public function test_staff_teacher_index_is_own_name_only_and_minimal_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $fixture = $this->academicFixture('teacher-index-'.$type, $type);
+            $departmentHeader = (string) $fixture['department']->id;
+            $this->staffTeacherIndexHttp($fixture, $departmentHeader)->assertForbidden();
+
+            $otherTeacher = Tenancy::as($fixture['i'], function () use ($fixture, $type) {
+                $fixture['duty']->update(['permission_keys' => ['staff.teacher.index']]);
+                $fixture['user']->update(['name' => 'Own Teacher '.$type, 'phone' => '01700000001']);
+                $fixture['teacher']->update(['employee_id' => 'OWN-'.$type]);
+                $otherUser = $this->makeUser($fixture['i'], 'teacher');
+                $otherUser->update(['name' => 'Other Teacher '.$type, 'phone' => '01800000001']);
+                return Teacher::create(['user_id' => $otherUser->id, 'employee_id' => 'OTHER-'.$type, 'status' => 'active']);
+            });
+
+            $expected = ['success' => true, 'data' => [['id' => $fixture['teacher']->id, 'name' => 'Own Teacher '.$type]]];
+            $this->staffTeacherIndexHttp($fixture, $departmentHeader)->assertOk()->assertExactJson($expected);
+            $this->staffTeacherIndexHttp($fixture, $departmentHeader, ['q' => 'Own Teacher'])->assertOk()->assertExactJson($expected);
+            foreach (['01700000001', 'OWN-'.$type, 'Other Teacher '.$type] as $query) {
+                $this->staffTeacherIndexHttp($fixture, $departmentHeader, ['q' => $query])->assertOk()->assertJsonPath('data', []);
+            }
+            foreach (['inactive', 'on_leave'] as $status) {
+                $this->staffTeacherIndexHttp($fixture, $departmentHeader, ['status' => $status])->assertOk()->assertJsonPath('data', []);
+            }
+            $this->staffTeacherIndexHttp($fixture, $departmentHeader, [
+                'teacher_id' => $otherTeacher->id, 'user_id' => $otherTeacher->user_id,
+                'department_id' => 999999, 'program_id' => 999999,
+            ])->assertOk()->assertExactJson($expected);
+            $this->staffTeacherIndexHttp($fixture, $departmentHeader, method: 'HEAD')->assertOk();
+            $this->staffTeacherIndexHttp($fixture, $departmentHeader, ['q' => str_repeat('x', 51)])->assertUnprocessable();
+            $this->staffTeacherIndexHttp($fixture, $departmentHeader, ['status' => 'unknown'])->assertUnprocessable();
+
+            $this->api('GET', $this->hostOf($fixture['i']), 'teachers', $fixture['admin'])->assertOk()
+                ->assertJsonStructure(['data' => [['id', 'name', 'phone', 'email', 'employee_id', 'designation']]]);
+            $this->assertCount(2, $this->api('GET', $this->hostOf($fixture['i']), 'teachers', $fixture['admin'])->json('data'));
+        }
+    }
+
+    public function test_staff_teacher_index_rechecks_profile_context_duty_and_other_actions(): void
+    {
+        $fixture = $this->fixture('teacher-index-boundary');
+        $departmentHeader = (string) $fixture['department']->id;
+        Tenancy::as($fixture['i'], fn () => $fixture['duty']->update(['permission_keys' => ['staff.teacher.index']]));
+
+        foreach ([null, '', '0', '1,1', ['1', '1'], '[1]', (string) PHP_INT_MAX.'0'] as $invalidHeader) {
+            $this->staffTeacherIndexHttp($fixture, $invalidHeader, ['department_id' => $fixture['department']->id])->assertForbidden();
+        }
+        $this->staffTeacherIndexHttp($fixture, $departmentHeader)->assertForbidden();
+
+        $teacher = Tenancy::as($fixture['i'], fn () => Teacher::create([
+            'user_id' => $fixture['user']->id, 'employee_id' => 'INDEX-T', 'status' => 'inactive',
+        ]));
+        $this->staffTeacherIndexHttp($fixture, $departmentHeader)->assertForbidden();
+        Tenancy::as($fixture['i'], fn () => $teacher->update(['status' => 'active']));
+        $token = $fixture['user']->createToken('teacher-index-same-token')->plainTextToken;
+        $this->staffTeacherIndexHttp($fixture, $departmentHeader, token: $token)->assertOk();
+
+        $otherDepartment = Tenancy::as($fixture['i'], fn () => app(DepartmentService::class)->create($fixture['admin'], ['name' => 'Unassigned context']));
+        $this->staffTeacherIndexHttp($fixture, (string) $otherDepartment->id, token: $token)->assertForbidden();
+        $this->app['auth']->forgetGuards();
+        Tenancy::as($fixture['i'], fn () => DepartmentDutyAssignment::where('membership_id', $fixture['membership']->id)->update(['status' => 'revoked']));
+        $this->staffTeacherIndexHttp($fixture, $departmentHeader, token: $token)->assertForbidden();
+        $this->staffTeacherIndexHttp($fixture, $departmentHeader, token: $fixture['user']->createToken('support', ['impersonated'])->plainTextToken)->assertForbidden();
+
+        Tenancy::as($fixture['i'], fn () => DepartmentDutyAssignment::where('membership_id', $fixture['membership']->id)->update(['status' => 'active']));
+        Tenancy::as($fixture['i'], fn () => Teacher::create(['user_id' => $fixture['user']->id, 'employee_id' => 'INDEX-DUP', 'status' => 'active']));
+        $this->staffTeacherIndexHttp($fixture, $departmentHeader, token: $token)->assertForbidden();
+
+        foreach ([['GET', 'teachers/999999'], ['POST', 'teachers'], ['PUT', 'teachers/999999'], ['DELETE', 'teachers/999999']] as [$method, $path]) {
+            $this->app['auth']->forgetGuards();
+            $this->json($method, 'http://'.$this->hostOf($fixture['i']).'/api/v1/'.$path, [], [
+                'Authorization' => 'Bearer '.$token, 'X-Department-Id' => $departmentHeader,
+            ])->assertForbidden();
+        }
+    }
+
 
 
     private function staffSubjectShowHttp(array $a, int $id, $h = null, array $query = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse

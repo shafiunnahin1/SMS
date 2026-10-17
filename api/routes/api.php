@@ -165,6 +165,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/programs/{id}',              [ProgramController::class, 'show'])->whereNumber('id')->middleware('role:admin,institution_staff');
         Route::get('/subjects',                  [SubjectController::class, 'index'])->middleware('role:admin,institution_staff');
         Route::get('/subjects/{id}',             [SubjectController::class, 'show'])->whereNumber('id')->middleware('role:admin,institution_staff');
+        Route::get('/teachers',                  [TeacherController::class, 'index'])->middleware('role:admin,institution_staff');
 
         // ── Institution Admin ─────────────────────────────────
         Route::middleware('role:admin')->group(function () {
@@ -220,7 +221,6 @@ Route::prefix('v1')->group(function () {
             Route::post('/subjects',                      [SubjectController::class, 'store']);
             Route::put('/subjects/{id}',                  [SubjectController::class, 'update'])->whereNumber('id');
             Route::delete('/subjects/{id}',               [SubjectController::class, 'destroy'])->whereNumber('id');
-            Route::get('/teachers',                       [TeacherController::class, 'index']);
             Route::post('/teachers',                      [TeacherController::class, 'store']);
             Route::get('/teachers/{id}',                  [TeacherController::class, 'show'])->whereNumber('id');
             Route::put('/teachers/{id}',                  [TeacherController::class, 'update'])->whereNumber('id');

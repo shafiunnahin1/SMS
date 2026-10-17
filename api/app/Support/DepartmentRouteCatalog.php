@@ -307,6 +307,11 @@ final class DepartmentRouteCatalog
         ['method' => 'POST', 'uri' => 'api/v1/writer/withdrawals', 'action' => 'App\\Http\\Controllers\\QuestionBank\\QbEarningController@requestWithdrawal', 'current_roles' => ['content_moderator', 'content_writer', 'super_admin'], 'preserve_nonstaff_roles' => ['content_moderator', 'content_writer', 'super_admin'], 'current_module_feature_gates' => [], 'selector_variants' => [], 'resource_scope' => 'existing host/auth/ownership contract; no staff permission', 'approval' => 'D90', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
     ];
 
+    /** D94: one narrow existing-route overlay; CAPTURED remains the sealed D90 matrix. */
+    public const D94 = [
+        ['method' => 'GET|HEAD', 'uri' => 'api/v1/teachers', 'action' => 'App\\Http\\Controllers\\Academic\\TeacherController@index', 'current_roles' => ['admin', 'institution_staff'], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => [], 'selector_variants' => [], 'resource_scope' => 'own active linked Teacher only; id and linked User.name; q searches name only; status narrows own active row', 'approval' => 'D94', 'staff_mode' => 'exact_duty_permission', 'permission_options' => ['staff.teacher.index']],
+    ];
+
     /** D100: R3.9 store/inventory routes, principal_only (no staff.inventory.* keys yet); kept apart so the sealed D90 list and digest stay unchanged */
     public const D100 = [
         ['method' => 'GET|HEAD', 'uri' => 'api/v1/inventory/items', 'action' => 'App\\Http\\Controllers\\Inventory\\InventoryItemController@index', 'current_roles' => ['accountant', 'admin'], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:inventory'], 'selector_variants' => [], 'resource_scope' => 'same tenant principal; preserve current service, module, maker-checker and D33 restrictions', 'approval' => 'D100', 'staff_mode' => 'principal_only', 'permission_options' => []],

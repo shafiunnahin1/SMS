@@ -15,6 +15,7 @@ class StaffIdentityBoundary
         'PATCH api/v1/notifications/read-all', 'PATCH api/v1/notifications/{id}/read', 'PATCH api/v1/staff/profile',
         'GET api/v1/staff/departments', 'HEAD api/v1/staff/departments',
         'GET api/v1/staff/departments/{id}/portal', 'HEAD api/v1/staff/departments/{id}/portal',
+        'GET api/v1/teachers', 'HEAD api/v1/teachers',
     ];
     public function handle(Request $request, Closure $next)
     {

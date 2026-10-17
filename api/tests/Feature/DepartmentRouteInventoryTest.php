@@ -112,6 +112,27 @@ class DepartmentRouteInventoryTest extends TestCase
         }
     }
 
+    public function test_d94_teacher_index_overlay_is_exact_and_keeps_the_sealed_capture_unchanged(): void
+    {
+        $this->assertCount(297, DepartmentRouteCatalog::CAPTURED);
+        $this->assertCount(1, DepartmentRouteCatalog::D94);
+        $entry = DepartmentRouteCatalog::D94[0];
+        $this->assertSame(['GET|HEAD', 'api/v1/teachers', 'D94', ['admin', 'institution_staff'], 'exact_duty_permission', ['staff.teacher.index']], [
+            $entry['method'], $entry['uri'], $entry['approval'], $entry['current_roles'], $entry['staff_mode'], $entry['permission_options'],
+        ]);
+
+        $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+            ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array('GET', $candidate->methods(), true));
+        $this->assertNotNull($route);
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        $get = $resolver->resolve($this->request($route, 'GET'));
+        $head = $resolver->resolve($this->request($route, 'HEAD'));
+        $this->assertSame(['D94', 'exact_duty_permission', 'staff.teacher.index'], [
+            $get['contract']['approval'], $get['resolved_mode'], $get['permission'],
+        ]);
+        $this->assertSame($get, $head);
+    }
+
     private function request(Route $original, string $method, array $parameters = [], array $body = []): Request
     {
         $request = Request::create('/'.preg_replace('/\{[^}]+\}/', 'fixture', $original->uri()), $method, $body);

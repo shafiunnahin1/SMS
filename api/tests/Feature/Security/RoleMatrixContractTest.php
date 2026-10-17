@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Security;
 
-use App\Models\{Institution, User};
+use App\Models\{Institution, Teacher, User};
+use App\Services\DepartmentService;
+use App\Support\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{Queue, Route};
 use Tests\TestCase;
@@ -14,7 +16,7 @@ class RoleMatrixContractTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const ROLES = ['super_admin', 'admin', 'teacher', 'accountant', 'parent', 'student', 'content_writer', 'content_moderator'];   // + D65 platform writers
+    private const ROLES = ['super_admin', 'admin', 'teacher', 'accountant', 'parent', 'student', 'content_writer', 'content_moderator'];
     private const PARAMS = ['{id}' => '999999', '{studentId}' => '999999', '{subjectId}' => '999999', '{institutionId}' => '999999',
         '{type}' => 'students', '{kind}' => 'students', '{action}' => 'dry-run'];
 
@@ -40,7 +42,8 @@ class RoleMatrixContractTest extends TestCase
         $this->assertSame([], array_values(array_diff(self::authRoutes(), $keys)), 'add these routes to tests/Fixtures/role-matrix.php');
         $this->assertSame([], array_values(array_diff($keys, self::authRoutes())), 'stale rows in the matrix');
         foreach (self::matrix() as $key => $roles) {
-            $this->assertSame([], array_values(array_diff($roles, self::ROLES)), "{$key}: unknown role");
+            $knownRoles = $key === 'GET api/v1/teachers' ? [...self::ROLES, 'institution_staff'] : self::ROLES;
+            $this->assertSame([], array_values(array_diff($roles, $knownRoles)), "{$key}: unknown role");
             if (str_starts_with(explode(' ', $key, 2)[1], 'api/v1/super/')) $this->assertSame(['super_admin'], $roles, "{$key}: the platform panel is Super Admin only");
         }
     }
@@ -57,6 +60,17 @@ class RoleMatrixContractTest extends TestCase
             $users[$role]->forceFill(['must_change_password' => false])->save();
         }
         $salaryTeacher = \App\Support\Tenancy::as($i, fn () => \App\Models\Teacher::create(['user_id'=>$users['teacher']->id,'employee_id'=>'MATRIX-HR']));
+        $staff = $this->makeUser($i, 'institution_staff');
+        $staff->forceFill(['must_change_password' => false])->save();
+        $staffDepartmentId = Tenancy::as($i, function () use ($i, $users, $staff) {
+            $departments = app(DepartmentService::class);
+            $department = $departments->create($users['admin'], ['name' => 'Teacher index']);
+            $membership = $departments->addMember($users['admin'], $department->id, ['user_id' => $staff->id]);
+            $duty = $departments->createDuty($users['admin'], $department->id, ['code' => 'TEACHER_INDEX', 'name' => 'Teacher index', 'permission_keys' => ['staff.teacher.index']]);
+            $departments->assignDuties($users['admin'], $membership->id, ['duty_ids' => [$duty->id]]);
+            Teacher::create(['user_id' => $staff->id, 'employee_id' => 'MATRIX-STAFF']);
+            return $department->id;
+        });
         $central = 'admin.' . config('tenancy.base_domain');
 
         $wrong = [];
@@ -76,10 +90,20 @@ class RoleMatrixContractTest extends TestCase
             if ($uri === 'api/v1/hr/people/{type}/{id}/salary') $path = 'hr/people/teacher/'.$salaryTeacher->id.'/salary';
             $host = str_starts_with($path, 'super/') || str_starts_with($path, 'writer/') ? $central : $this->hostOf($i);
             foreach (self::ROLES as $role) {
-                $status = $this->api($method, $host, $path, $users[$role])->baseResponse->getStatusCode();     // a file download is a BinaryFileResponse
+                $response = $this->api($method, $host, $path, $users[$role]);
+                $status = $response->baseResponse->getStatusCode();     // a file download is a BinaryFileResponse
                 $ok = in_array($role, $allowed, true);
                 if ($ok && ($status === 403 || $status >= 500)) $wrong[] = "{$key} as {$role}: {$status} (allowed)";
                 if (!$ok && $status !== 403) $wrong[] = "{$key} as {$role}: {$status} (should be 403)";
+            }
+            if ($uri === 'api/v1/teachers') {
+                $this->app['auth']->forgetGuards();
+                $response = $this->json($method, 'http://'.$host.'/api/v1/'.$path, [], [
+                    'Authorization' => 'Bearer '.$staff->createToken('role-matrix')->plainTextToken,
+                    'X-Department-Id' => (string) $staffDepartmentId,
+                ]);
+                $status = $response->baseResponse->getStatusCode();
+                if (in_array('institution_staff', $allowed, true) && ($status === 403 || $status >= 500)) $wrong[] = "{$key} as institution_staff: {$status} (allowed)";
             }
         }
         $this->assertSame([], $wrong);

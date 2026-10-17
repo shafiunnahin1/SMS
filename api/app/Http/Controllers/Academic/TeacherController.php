@@ -4,18 +4,29 @@ namespace App\Http\Controllers\Academic;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Academic\TeacherRequest;
-use App\Http\Resources\TeacherResource;
+use App\Http\Resources\{StaffTeacherResource, TeacherResource};
 use App\Models\Teacher;
-use App\Services\TeacherService;
+use App\Services\{DepartmentAcademicReadService, DepartmentRequestContextService, TeacherService};
 use Illuminate\Http\Request;
 
 // Step 4.1 (owner of the `teachers` table): admin manages the institution's teachers
 class TeacherController extends Controller
 {
-    public function __construct(private TeacherService $teachers) {}
+    public function __construct(
+        private TeacherService $teachers,
+        private DepartmentRequestContextService $contexts,
+        private DepartmentAcademicReadService $staffAcademic,
+    ) {}
 
     public function index(Request $request)
     {
+        if ($request->user()?->role === 'institution_staff') {
+            $departmentId = $this->contexts->forRoute($request);
+            $filters = $request->validate(['q' => 'nullable|string|max:50', 'status' => 'nullable|in:active,inactive,on_leave']);
+            return StaffTeacherResource::collection($this->staffAcademic->ownTeachers($request->user(), $departmentId, $filters))
+                ->additional(['success' => true]);
+        }
+
         $request->validate(['q' => 'nullable|string|max:50', 'status' => 'nullable|in:active,inactive,on_leave']);
         $rows = Teacher::with('user:id,name,phone,email')
             ->when($request->input('status'), fn ($q, $s) => $q->where('status', $s))
