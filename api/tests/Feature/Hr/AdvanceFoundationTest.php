@@ -47,9 +47,9 @@ class AdvanceFoundationTest extends TestCase
             try{$row->update(['terms_snapshot'=>['changed'=>true]]);$this->fail('Reviewed terms changed');}
             catch(BusinessException $e){$this->assertSame('salary_immutable',$e->errorCode);}
             $row->refresh();$skip=['month'=>'2026-10','reason'=>'Fixture','approved_by'=>1,'at'=>'2026-10-15'];
-            $row->update(['skipped_months'=>[$skip]]);$this->assertSame([$skip],$row->fresh()->skipped_months);
+            $row->update(['skipped_months'=>[$skip]]);$this->assertSame(self::keySorted([$skip]),self::keySorted($row->fresh()->skipped_months));
             try{$row->update(['skipped_months'=>[]]);$this->fail('Skip evidence erased');}
-            catch(BusinessException $e){$this->assertSame([$skip],$row->fresh()->skipped_months);}
+            catch(BusinessException $e){$this->assertSame(self::keySorted([$skip]),self::keySorted($row->fresh()->skipped_months));}
         });
     }
     public function test_bonus_application_snapshot_and_final_state_are_immutable(): void
@@ -61,7 +61,15 @@ class AdvanceFoundationTest extends TestCase
                 try{$operation();$this->fail('Bonus history changed');}catch(BusinessException $e){$this->assertSame('salary_immutable',$e->errorCode);}
                 $row->refresh();
             }
-            $this->assertSame($snapshot,$row->application_snapshot);
+            $this->assertSame(self::keySorted($snapshot),self::keySorted($row->application_snapshot));
         });
+    }
+
+    /** MySQL JSON columns return object keys in their own order; compare values and types, not key order */
+    private static function keySorted(mixed $value): mixed
+    {
+        if(!is_array($value))return $value;
+        if(!array_is_list($value))ksort($value);
+        return array_map(fn($item)=>self::keySorted($item),$value);
     }
 }
