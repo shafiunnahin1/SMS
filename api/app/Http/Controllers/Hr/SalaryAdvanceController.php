@@ -5,6 +5,8 @@ use App\Http\Requests\Hr\{SalaryQueryRequest,SalaryWriteRequest};
 use App\Http\Resources\SalaryResource;
 use App\Models\{SalaryAdvance,Teacher};
 use App\Services\Hr\{SalaryAccess,SalaryAdvanceService};
+use App\Services\DepartmentRequestContextService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 class SalaryAdvanceController extends Controller
 {
@@ -34,8 +36,15 @@ class SalaryAdvanceController extends Controller
         return (new SalaryResource($service->transition($request->user(),$id,$action,$request->all())))->additional(['success'=>true]);
     }
 
-    public function mine(SalaryQueryRequest $request,SalaryAccess $access)
+    public function mine(SalaryQueryRequest $request,SalaryAccess $access,DepartmentRequestContextService $contexts)
     {
+        if($request->user()?->role==='institution_staff'){
+            $contexts->forRoute($request);
+            $profiles=Teacher::where('user_id',$request->user()->id)->where('status','active')->limit(2)->get(['id']);
+            if($profiles->count()!==1)throw new AuthorizationException();
+            $advances=SalaryAdvance::where('payee_type','teacher')->where('payee_id',$profiles->first()->id)->orderByDesc('id')->paginate($request->integer('per_page',25));
+            return SalaryResource::collection($advances)->additional(['success'=>true]);
+        }
         $actor=$access->actor($request->user(),true);
         $teacher=Teacher::where('user_id',$actor->id)->firstOrFail();
         $access->payee($actor,'teacher',(int)$teacher->id,true);

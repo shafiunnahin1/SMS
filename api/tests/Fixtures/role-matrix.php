@@ -330,5 +330,5 @@ return [
     'POST api/v1/hr/advances' => ['admin','accountant'],
     'GET api/v1/hr/advances/{id}' => ['admin','accountant'],
     'POST api/v1/hr/advances/{id}/{action}' => ['admin','accountant'],
-    'GET api/v1/teacher/salary/advances' => ['teacher'],
+    'GET api/v1/teacher/salary/advances' => ['teacher', 'institution_staff'],
 ];

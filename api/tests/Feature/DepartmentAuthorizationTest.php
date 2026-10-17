@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{DepartmentDuty, DepartmentDutyAssignment, StaffMember, Teacher};
+use App\Models\{DepartmentDuty, DepartmentDutyAssignment, SalaryAdvance, StaffMember, Teacher};
 use App\Services\{DepartmentDutyPermissionService, DepartmentService};
 use App\Support\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,7 +14,8 @@ class DepartmentAuthorizationTest extends TestCase
 
     private function fixture(string $slug = 'duty-auth', string $type = 'school'): array
     {
-        $i = $this->makeInstitution($slug, $type); $admin = $this->makeUser($i, 'admin'); $user = $this->makeUser($i, 'institution_staff');
+        $i = $this->makeInstitution($slug, $type); $i->forceFill(['staff_department_mode' => 'department'])->save();
+        $admin = $this->makeUser($i, 'admin'); $user = $this->makeUser($i, 'institution_staff');
         return Tenancy::as($i, function () use ($i, $admin, $user) {
             $s = app(DepartmentService::class);
             $department = $s->create($admin, ['name' => 'Office']);
@@ -33,6 +34,14 @@ class DepartmentAuthorizationTest extends TestCase
         $url = 'http://'.$this->hostOf($fixture['i']).'/api/v1/teachers'.($query ? '?'.http_build_query($query) : '');
         return $this->json($method, $url, [], $headers);
     }
+
+        private function staffTeacherAdvancesHttp(array $fixture, $departmentHeader = null, array $query = [], string $method = 'GET', ?string $token = null): \Illuminate\Testing\TestResponse
+        {
+            $this->app['auth']->forgetGuards();
+            $headers = ['Authorization' => 'Bearer '.($token ?? $fixture['user']->createToken('teacher-advances')->plainTextToken)];
+            if ($departmentHeader !== null) $headers['X-Department-Id'] = $departmentHeader;
+            return $this->json($method, 'http://'.$this->hostOf($fixture['i']).'/api/v1/teacher/salary/advances'.($query ? '?'.http_build_query($query) : ''), [], $headers);
+        }
 
     public function test_staff_teacher_index_is_own_name_only_and_minimal_across_four_types(): void
     {
@@ -110,6 +119,71 @@ class DepartmentAuthorizationTest extends TestCase
             ])->assertForbidden();
         }
     }
+
+    public function test_legacy_mode_keeps_department_business_routes_closed_until_the_tenant_switches(): void
+    {
+        $fixture = $this->academicFixture('teacher-index-mode');
+        $header = (string) $fixture['department']->id;
+        Tenancy::as($fixture['i'], fn () => $fixture['duty']->update(['permission_keys' => ['staff.teacher.index']]));
+        $token = $fixture['user']->createToken('teacher-index-mode')->plainTextToken;
+
+        Tenancy::as($fixture['i'], fn () => $fixture['i']->forceFill(['staff_department_mode' => 'legacy'])->save());
+        $this->staffTeacherIndexHttp($fixture, $header, token: $token)->assertForbidden();
+        $this->assertFalse(Tenancy::as($fixture['i'], fn () => app(DepartmentDutyPermissionService::class)->has($fixture['user'], $fixture['department']->id, 'staff.teacher.index')));
+
+        Tenancy::as($fixture['i'], fn () => $fixture['i']->forceFill(['staff_department_mode' => 'department'])->save());
+        $this->staffTeacherIndexHttp($fixture, $header, token: $token)->assertOk();
+    }
+
+        public function test_staff_salary_advance_view_is_own_payee_only_and_requires_exact_duty_across_four_types(): void
+        {
+            foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+                $fixture = $this->academicFixture('staff-advance-'.$type, $type);
+                $fixture['i']->forceFill(['enabled_modules' => ['hr_payroll' => true]])->save();
+                $header = (string) $fixture['department']->id;
+                $this->staffTeacherAdvancesHttp($fixture, $header)->assertForbidden();
+
+                [$ownAdvance, $otherAdvance, $otherTeacher] = Tenancy::as($fixture['i'], function () use ($fixture) {
+                    $fixture['duty']->update(['permission_keys' => ['staff.salary_advance.mine']]);
+                    $otherUser = $this->makeUser($fixture['i'], 'teacher');
+                    $otherTeacher = Teacher::create(['user_id' => $otherUser->id, 'employee_id' => 'OTHER-ADV']);
+                    $ownAdvance = SalaryAdvance::factory()->create(['payee_type' => 'teacher', 'payee_id' => $fixture['teacher']->id, 'reason' => 'own']);
+                    $otherAdvance = SalaryAdvance::factory()->create(['payee_type' => 'teacher', 'payee_id' => $otherTeacher->id, 'reason' => 'other']);
+                    return [$ownAdvance, $otherAdvance, $otherTeacher];
+                });
+
+                $this->staffTeacherAdvancesHttp($fixture, $header)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $ownAdvance->id);
+                $this->staffTeacherAdvancesHttp($fixture, $header, ['payee_type' => 'teacher', 'payee_id' => $otherTeacher->id])
+                    ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $ownAdvance->id)->assertJsonMissing(['id' => $otherAdvance->id]);
+                $this->staffTeacherAdvancesHttp($fixture, '')->assertForbidden();
+                $foreignInstitution = $this->makeInstitution('foreign-advance-'.$type);
+                $foreignAdmin = $this->makeUser($foreignInstitution, 'admin');
+                $foreignDepartment = Tenancy::as($foreignInstitution, fn () => app(DepartmentService::class)->create($foreignAdmin, ['name' => 'Foreign department']));
+                $this->staffTeacherAdvancesHttp($fixture, (string) $foreignDepartment->id)->assertForbidden();
+                $this->staffTeacherAdvancesHttp($fixture, $header, method: 'HEAD')->assertOk();
+                $this->api('GET', $this->hostOf($fixture['i']), 'hr/advances', $fixture['user'])->assertForbidden();
+            }
+        }
+
+        public function test_staff_salary_advance_view_fails_closed_for_legacy_mode_inactive_and_ambiguous_teacher(): void
+        {
+            $fixture = $this->academicFixture('staff-advance-boundary');
+            $fixture['i']->forceFill(['enabled_modules' => ['hr_payroll' => true]])->save();
+            $header = (string) $fixture['department']->id;
+            Tenancy::as($fixture['i'], fn () => $fixture['duty']->update(['permission_keys' => ['staff.salary_advance.mine']]));
+            $token = $fixture['user']->createToken('staff-advance-boundary')->plainTextToken;
+
+            Tenancy::as($fixture['i'], fn () => $fixture['teacher']->update(['status' => 'inactive']));
+            $this->staffTeacherAdvancesHttp($fixture, $header, token: $token)->assertForbidden();
+            Tenancy::as($fixture['i'], fn () => $fixture['teacher']->update(['status' => 'active']));
+            $this->staffTeacherAdvancesHttp($fixture, $header, token: $token)->assertOk();
+
+            Tenancy::as($fixture['i'], fn () => Teacher::create(['user_id' => $fixture['user']->id, 'employee_id' => 'STAFF-ADV-DUP']));
+            $this->staffTeacherAdvancesHttp($fixture, $header, token: $token)->assertForbidden();
+
+            Tenancy::as($fixture['i'], fn () => $fixture['i']->forceFill(['staff_department_mode' => 'legacy'])->save());
+            $this->staffTeacherAdvancesHttp($fixture, $header, token: $token)->assertForbidden();
+        }
 
 
 

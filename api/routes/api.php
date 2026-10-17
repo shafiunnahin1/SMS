@@ -250,7 +250,7 @@ Route::prefix('v1')->group(function () {
         // ── Admin + Teacher: attendance (Step 4.3; Spike S5b) ──
         // D86 / R3.5: salary structures and previews, no settlement execution.
         Route::middleware(['role:admin,accountant,teacher','module:hr_payroll'])->get('/hr/people/{type}/{id}/salary',[SalaryStructureController::class,'history'])->whereNumber('id');
-        Route::middleware(['role:teacher','module:hr_payroll'])->get('/teacher/salary/advances',[SalaryAdvanceController::class,'mine']);
+        Route::middleware(['role:teacher,institution_staff','module:hr_payroll'])->get('/teacher/salary/advances',[SalaryAdvanceController::class,'mine']);
         Route::middleware(['role:admin,accountant','module:hr_payroll'])->prefix('hr')->group(function(){
             Route::get('/salary-components',[SalaryComponentController::class,'index']);
             Route::post('/salary-components',[SalaryComponentController::class,'store']);

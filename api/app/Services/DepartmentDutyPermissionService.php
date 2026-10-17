@@ -16,7 +16,7 @@ class DepartmentDutyPermissionService
         if (!$tenant || Tenancy::isBypassed() || !in_array($permission, DepartmentPermissionKeys::ALL, true)
             || in_array('impersonated', $actor->currentAccessToken()?->abilities ?? [], true)) return false;
 
-        if (!Institution::whereKey($tenant->id)->where('status', 'active')->exists()) return false;
+        if (!Institution::whereKey($tenant->id)->where('status', 'active')->where('staff_department_mode', 'department')->exists()) return false;
         $user = User::inTenant()->whereKey($actor->id)->first();
         if (!$user || $user->role !== 'institution_staff' || !$user->is_active
             || ($user->locked_until && $user->locked_until->isFuture())) return false;

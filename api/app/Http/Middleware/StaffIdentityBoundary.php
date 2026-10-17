@@ -41,8 +41,10 @@ class StaffIdentityBoundary
         $subjectShow = in_array($request->method(), ['GET', 'HEAD'], true)
             && $request->route()->uri() === 'api/v1/subjects/{id}'
             && ltrim($request->route()->getActionName(), '\\') === \App\Http\Controllers\Academic\SubjectController::class.'@show';
+            $ownTeacherAdvances = in_array($request->method(), ['GET', 'HEAD'], true)
+                && $request->route()->uri() === 'api/v1/teacher/salary/advances';
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         return $next($request);

@@ -312,6 +312,11 @@ final class DepartmentRouteCatalog
         ['method' => 'GET|HEAD', 'uri' => 'api/v1/teachers', 'action' => 'App\\Http\\Controllers\\Academic\\TeacherController@index', 'current_roles' => ['admin', 'institution_staff'], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => [], 'selector_variants' => [], 'resource_scope' => 'own active linked Teacher only; id and linked User.name; q searches name only; status narrows own active row', 'approval' => 'D94', 'staff_mode' => 'exact_duty_permission', 'permission_options' => ['staff.teacher.index']],
     ];
 
+    /** D101: staged own-payee route overlay; CAPTURED remains the sealed D90 matrix. */
+    public const D101 = [
+        ['method' => 'GET|HEAD', 'uri' => 'api/v1/teacher/salary/advances', 'action' => 'App\\Http\\Controllers\\Hr\\SalaryAdvanceController@mine', 'current_roles' => ['teacher', 'institution_staff'], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:hr_payroll'], 'selector_variants' => [], 'resource_scope' => 'own active linked Teacher/payee only; D91 context and staff.salary_advance.mine; no client-selected payee', 'approval' => 'D101', 'staff_mode' => 'exact_duty_permission', 'permission_options' => ['staff.salary_advance.mine']],
+    ];
+
     /** D100: R3.9 store/inventory routes, principal_only (no staff.inventory.* keys yet); kept apart so the sealed D90 list and digest stay unchanged */
     public const D100 = [
         ['method' => 'GET|HEAD', 'uri' => 'api/v1/inventory/items', 'action' => 'App\\Http\\Controllers\\Inventory\\InventoryItemController@index', 'current_roles' => ['accountant', 'admin'], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:inventory'], 'selector_variants' => [], 'resource_scope' => 'same tenant principal; preserve current service, module, maker-checker and D33 restrictions', 'approval' => 'D100', 'staff_mode' => 'principal_only', 'permission_options' => []],

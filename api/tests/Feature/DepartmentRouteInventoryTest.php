@@ -133,6 +133,26 @@ class DepartmentRouteInventoryTest extends TestCase
         $this->assertSame($get, $head);
     }
 
+    public function test_d101_teacher_advance_overlay_keeps_teacher_role_and_requires_own_payee_scope(): void
+    {
+        $this->assertCount(1, DepartmentRouteCatalog::D101);
+        $entry = DepartmentRouteCatalog::D101[0];
+        $this->assertSame(['GET|HEAD', 'api/v1/teacher/salary/advances', 'D101', ['teacher', 'institution_staff'], ['staff.salary_advance.mine']], [
+            $entry['method'], $entry['uri'], $entry['approval'], $entry['current_roles'], $entry['permission_options'],
+        ]);
+        $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+            ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array('GET', $candidate->methods(), true));
+        $this->assertNotNull($route);
+        $this->assertContains('App\\Http\\Middleware\\ModuleMiddleware:hr_payroll', app('router')->gatherRouteMiddleware($route));
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        foreach (['GET', 'HEAD'] as $method) {
+            $resolved = $resolver->resolve($this->request($route, $method));
+            $this->assertSame(['D101', 'exact_duty_permission', 'staff.salary_advance.mine'], [
+                $resolved['contract']['approval'], $resolved['resolved_mode'], $resolved['permission'],
+            ]);
+        }
+    }
+
     private function request(Route $original, string $method, array $parameters = [], array $body = []): Request
     {
         $request = Request::create('/'.preg_replace('/\{[^}]+\}/', 'fixture', $original->uri()), $method, $body);
