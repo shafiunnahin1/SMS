@@ -13,7 +13,7 @@ class DepartmentRoutePermissionResolver
     {
         $route = $request->route();
         if (!$route instanceof Route) return null;
-        foreach (DepartmentRouteCatalog::CAPTURED as $entry) {
+        foreach ([...DepartmentRouteCatalog::CAPTURED, ...DepartmentRouteCatalog::D100] as $entry) {
             if ($route->uri() !== $entry['uri'] || !in_array($request->method(), explode('|', $entry['method']), true)) continue;
             // route:list omits a leading namespace separator that live fully-qualified routes may retain.
             if (ltrim($route->getActionName(), '\\') !== $entry['action']) return null;
@@ -49,6 +49,6 @@ class DepartmentRoutePermissionResolver
     private function descriptor(array $entry, string $mode, ?string $permission): ?array
     {
         if ($permission !== null && !in_array($permission, DepartmentPermissionKeys::ALL, true)) return null;
-        return ['source' => 'captured', 'resolved_mode' => $mode, 'permission' => $permission, 'contract' => $entry];
+        return ['source' => $entry['approval'] === 'D100' ? 'd100' : 'captured', 'resolved_mode' => $mode, 'permission' => $permission, 'contract' => $entry];
     }
 }

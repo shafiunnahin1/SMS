@@ -90,6 +90,12 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
             // Date routes are independently covered by CashBookTenancyTest (no foreign row ID in the URL).
             'GET api/v1/cashbook/{date}/report.{ext}' => null,
+            'PUT api/v1/inventory/items/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\InventoryItem::factory()->create()->id),
+            'DELETE api/v1/inventory/items/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\InventoryItem::factory()->create()->id),
+            'GET api/v1/inventory/items/{id}/ledger' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\InventoryItem::factory()->create()->id),
+            'GET api/v1/inventory/reports/{name}' => null,
+            'GET api/v1/inventory/sales/{receipt_no}/receipt.pdf' => null,   // receipt numbers: InventoryTenancyTest
+            'POST api/v1/inventory/{type}' => null,   // item_id in the body: InventoryTenancyTest
             'POST api/v1/cashbook/{date}/close' => null,
             'POST api/v1/cashbook/{date}/reopen' => null,
             'PUT api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),

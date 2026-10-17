@@ -23,6 +23,7 @@ class TenantPurgeService
         'qb_student_orders', 'qb_unlocks',
         'salary_adjustments', 'salary_advances', 'salary_structure_lines', 'salary_structures', 'salary_revisions', 'salary_components', 'salary_pay_accounts', 'bonus_schemes',
         'leave_applications', 'leave_types', 'staff_attendances', 'teacher_attendances', 'staff_members',
+        'inventory_movements', 'inventory_items',   // R3.9 store: movements reference items
         'fee_refunds', 'cash_book_closings', 'expenses', 'results', 'exam_subjects', 'attendances', 'fee_payments', 'fee_structures', 'consents', 'parent_student', 'enrollments',
         'import_rows', 'import_jobs', 'sms_logs', 'sms_credit_transactions', 'batch_teachers', 'teacher_subjects', 'exams',
         'students', 'batches', 'subjects', 'teachers', 'programs', 'fee_categories', 'holidays', 'academic_years',

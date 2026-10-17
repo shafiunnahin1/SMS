@@ -36,6 +36,8 @@ class CrossTenantRouteTest extends TestCase
     private const NOT_ROW_IDS = [
         'GET api/v1/cashbook/{date}/report.{ext}', 'POST api/v1/cashbook/{date}/close', 'POST api/v1/cashbook/{date}/reopen', // CashBookTenancyTest: dates/format read only the caller's cashbook
         'GET api/v1/admin/reports/{type}', 'GET api/v1/accountant/reports/{type}',     // report name; ReportTest: a foreign program_id is 422
+        'GET api/v1/inventory/reports/{name}', 'POST api/v1/inventory/{type}',             // report name / movement type; InventoryTenancyTest: a foreign item_id is 404
+        'GET api/v1/inventory/sales/{receipt_no}/receipt.pdf',                         // InventoryTenancyTest: another institution's STR- receipt is 404
         'GET api/v1/imports/templates/{kind}.xlsx',                                    // template name, no data
         'PUT api/v1/parent/consents/{type}',                                           // consent type of the caller's own children
         'GET api/v1/question-bank/concepts/{id}', 'GET api/v1/question-bank/resources/{id}', 'GET api/v1/question-bank/questions/{id}',

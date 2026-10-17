@@ -115,4 +115,12 @@ return [
     'activation_conflict' => 'The registration cannot make this transition.',
     'activation_unavailable' => 'Account activation is not available yet.',
     'institution_inactive' => 'This institution is awaiting activation.',
+    'insufficient_stock' => 'Not enough stock for this item.',
+    'inventory_immutable' => 'Stock movements cannot be changed or deleted. Record an opposite movement instead.',
+    'inventory_not_sellable' => 'This item is not for sale.',
+    'inventory_inactive' => 'This item is inactive.',
+    'inventory_reason_required' => 'A reason is required for damage and stock adjustments.',
+    'inventory_adjust_needs_admin' => 'An adjustment this large needs an admin.',
+    'inventory_return_invalid' => 'The return does not match a sale receipt of this item or exceeds the quantity sold.',
+    'inventory_qty' => 'Enter a positive quantity with at most two decimal places.',
 ];
