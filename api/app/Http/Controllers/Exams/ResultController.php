@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Exams;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Exams\BulkResultsRequest;
-use App\Models\{Exam, ExamSubject, Result, Student};
-use App\Services\{ExamService, InstitutionSettings, PdfService, ResultService};
+use App\Models\{Enrollment, Exam, ExamSubject, Result, Student};
+use App\Services\{DepartmentAcademicReadService, DepartmentRequestContextService, DepartmentRoutePermissionResolver, ExamService, InstitutionSettings, PdfService, ResultService};
 use App\Support\Tenancy;
 use Illuminate\Http\Request;
 
@@ -20,11 +20,11 @@ class ResultController extends Controller
     public function index(Request $request)
     {
         $f = $request->validate(['exam_id' => 'nullable|integer']);
-        $user = $request->user();
+        if ($request->user()->role === 'institution_staff') $this->staffContext($request);   // D101: context and exact key even when no exam exists
         if (empty($f['exam_id'])) {
             $exams = Exam::with('program:id,name', 'batch:id,name')->orderByDesc('academic_year')->orderByDesc('id')->get()
-                ->map(function ($exam) use ($user) {
-                    $subjects = $this->exams->subjectsOf($exam)->filter(fn ($es) => $this->exams->batchesFor($user, $exam, $es->subject_id) !== [])
+                ->map(function ($exam) use ($request) {
+                    $subjects = $this->exams->subjectsOf($exam)->filter(fn ($es) => $this->batchesFor($request, $exam, $es->subject_id) !== [])
                         ->map(fn ($es) => ['subject_id' => $es->subject_id, 'name' => $es->subject?->name, 'full_marks' => $es->full_marks])->values();
                     return ['id' => $exam->id, 'name' => $exam->name, 'status' => $exam->status, 'academic_year' => (int) $exam->academic_year,
                         'program' => $exam->program?->name, 'batch' => $exam->batch?->name, 'subjects' => $subjects];
@@ -33,7 +33,7 @@ class ResultController extends Controller
         }
 
         $exam = Exam::findOrFail($f['exam_id']);
-        $subjects = $this->exams->subjectsOf($exam)->filter(fn ($es) => $this->exams->batchesFor($user, $exam, $es->subject_id) !== [])->values();
+        $subjects = $this->exams->subjectsOf($exam)->filter(fn ($es) => $this->batchesFor($request, $exam, $es->subject_id) !== [])->values();
         if ($subjects->isEmpty()) throw new BusinessException('no subject of yours', 'forbidden', 403);
         $marks = Result::where('exam_id', $exam->id)->whereIn('subject_id', $subjects->pluck('subject_id'))->get()->groupBy('student_id');
         $students = Student::whereIn('id', $marks->keys())->with('user:id,name')->get()->keyBy('id');
@@ -77,7 +77,7 @@ class ResultController extends Controller
         $result = Result::findOrFail($id);
         $exam = Exam::findOrFail($result->exam_id);
         $es = ExamSubject::where('exam_id', $exam->id)->where('subject_id', $result->subject_id)->with('subject')->firstOrFail();
-        $batchIds = $this->exams->batchesFor($request->user(), $exam, $es->subject_id);
+        $batchIds = $this->batchesFor($request, $exam, $es->subject_id);
         if ($batchIds === [] || ($batchIds !== null && !$this->exams->sitters($exam, $es, $batchIds)->contains('student_id', $result->student_id))) {
             throw new BusinessException('not your subject', 'forbidden', 403);
         }
@@ -122,14 +122,36 @@ class ResultController extends Controller
     {
         $exam = Exam::findOrFail($examId);
         $es = ExamSubject::where('exam_id', $exam->id)->where('subject_id', $subjectId)->with('subject')->firstOrFail();
-        $batchIds = $this->exams->batchesFor($request->user(), $exam, $subjectId);
+        $batchIds = $this->batchesFor($request, $exam, $subjectId);
         if ($batchIds === []) throw new BusinessException('not your subject', 'forbidden', 403);
         return [$exam, $es, $batchIds];
+    }
+
+    /** Legacy roles keep ExamService::batchesFor; D101 department staff get only explicit active own subject assignments */
+    private function batchesFor(Request $request, Exam $exam, int $subjectId): ?array
+    {
+        if ($request->user()->role !== 'institution_staff') return $this->exams->batchesFor($request->user(), $exam, $subjectId);
+        [$department, $permission] = $this->staffContext($request);
+        return app(DepartmentAcademicReadService::class)->ownSubjectBatchIds($request->user(), $department, $permission, $subjectId, $exam->batch_id ? (int) $exam->batch_id : null);
+    }
+
+    private function staffContext(Request $request): array
+    {
+        // cached on the request, never on the controller: the router reuses one controller instance across requests
+        if (!$request->attributes->has('d101.staff_context')) $request->attributes->set('d101.staff_context', [
+            app(DepartmentRequestContextService::class)->forRoute($request), app(DepartmentRoutePermissionResolver::class)->resolve($request)['permission']]);
+        return $request->attributes->get('d101.staff_context');
     }
 
     private function reachable(Request $request, int $id): Student
     {
         $user = $request->user();
+        if ($user->role === 'institution_staff') {
+            // D101: a marksheet only for a student actively enrolled in one of the staff member's own batches
+            [$department, $permission] = $this->staffContext($request);
+            $own = app(DepartmentAcademicReadService::class)->ownBatchQuery($user, $department, $permission)->select('id');
+            if (!Enrollment::where('student_id', $id)->where('status', 'active')->whereIn('batch_id', $own)->exists()) throw new BusinessException('not your student', 'forbidden', 403);
+        }
         return Student::with('user:id,name')->whereKey($id)
             ->when($user->role === 'parent', fn ($q) => $q->whereHas('parents', fn ($p) => $p->whereKey($user->id)))->firstOrFail();
     }

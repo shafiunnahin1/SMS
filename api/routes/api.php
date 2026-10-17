@@ -464,13 +464,13 @@ Route::prefix('v1')->group(function () {
                 Route::get('/exams/{id}/subjects',        [ExamController::class, 'subjects'])->whereNumber('id');
                 Route::put('/exams/{id}/subjects',        [ExamController::class, 'updateSubjects'])->whereNumber('id');
             });
-            Route::middleware('role:admin,teacher')->group(function () {
+            Route::middleware('role:admin,teacher,institution_staff')->group(function () {
                 Route::get('/results',                    [ResultController::class, 'index']);
                 Route::get('/exams/{id}/subjects/{subjectId}/entry', [ResultController::class, 'entrySheet'])->whereNumber(['id', 'subjectId']);
                 Route::post('/results/bulk',              [ResultController::class, 'bulkStore']);
                 Route::put('/results/{id}',               [ResultController::class, 'update'])->whereNumber('id');
             });
-            Route::get('/results/marksheet/{studentId}',  [ResultController::class, 'marksheet'])->whereNumber('studentId')->middleware('role:admin,teacher,parent');
+            Route::get('/results/marksheet/{studentId}',  [ResultController::class, 'marksheet'])->whereNumber('studentId')->middleware('role:admin,teacher,parent,institution_staff');
             Route::get('/parent/children/{id}/results',   [ResultController::class, 'forParent'])->whereNumber('id')->middleware('role:parent');
         });
 

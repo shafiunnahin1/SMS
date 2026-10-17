@@ -256,3 +256,5 @@ R3.3 draft checkpoint focused evidence: py -3.14 %TEMP%/school-r33-contract-prob
 
 
 - 2026-10-17 · R3.6b · Which salary histories may a department staff duty `staff.salary_structure.history` read? · Own payee only (own active Teacher or own StaffMember matching the path); reading other payees needs a separate owner decision · D33 makes payroll sensitive and the D90 scope 'existing service/ownership constraints' does not say staff may read others · docs/LOCKED-DECISIONS.md D33/D90/D101
+
+- 2026-10-17 · R3.6b · D101 marks entry for department staff: should a subject's own `teacher_id` (legacy "subject teacher of every batch") widen staff reach? Chose no: staff get only explicit active `batch_teachers` subject assignments in upcoming/running batches of the subject's program (D92 rule, same as subject list); marksheet only for a student actively enrolled in an own batch. Why: most conservative, matches D92. Spec: docs/modules/staff-account-contract.md, D90/D92/D101.

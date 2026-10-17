@@ -1113,6 +1113,58 @@ class DepartmentAuthorizationTest extends TestCase
         $this->staffAttendanceHttp($a, 'GET', $path, [], $a['department']->id)->assertForbidden();
     }
 
+    private function resultFixture(string $slug, string $type = 'school'): array
+    {
+        $a = $this->academicFixture($slug, $type);
+        return Tenancy::as($a['i'], function () use ($a) {
+            $subject = \App\Models\Subject::findOrFail($a['assignment']->subject_id);
+            $own = \App\Models\Student::create(['student_id' => 'R-OWN', 'guardian_phone' => '01700000003']);
+            $outsider = \App\Models\Student::create(['student_id' => 'R-OUT', 'guardian_phone' => '01700000004']);
+            app(\App\Services\EnrollmentService::class)->enroll($own, $a['subjectBatch']);
+            app(\App\Services\EnrollmentService::class)->enroll($outsider, $a['unassigned']);
+            $other = \App\Models\Subject::create(['program_id' => $a['program']->id, 'name' => 'Other subject']);
+            $exam = \App\Models\Exam::create(['name' => 'Term', 'program_id' => $a['program']->id, 'academic_year' => 2026]);
+            foreach ([$subject, $other] as $sub) \App\Models\ExamSubject::create(['exam_id' => $exam->id, 'subject_id' => $sub->id, 'full_marks' => 100, 'pass_marks' => 33]);
+            $foreignResult = \App\Models\Result::create(['exam_id' => $exam->id, 'subject_id' => $subject->id, 'student_id' => $outsider->id, 'marks_obtained' => 50]);
+            $a['duty']->update(['permission_keys' => ['staff.result.entry_sheet', 'staff.result.index', 'staff.result.bulk_store', 'staff.result.marksheet', 'staff.result.update']]);
+            return $a + compact('subject', 'own', 'outsider', 'other', 'exam', 'foreignResult');
+        });
+    }
+
+    public function test_d101_staff_marks_are_explicit_own_subject_and_batch_only_across_four_types(): void
+    {
+        foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
+            $a = $this->resultFixture('staff-results-'.$type, $type); $h = $a['department']->id; $e = $a['exam'];
+            $list = $this->staffAttendanceHttp($a, 'GET', 'results', [], $h)->assertOk()->json('data');
+            $this->assertSame([[$a['subject']->id]], array_map(fn ($x) => array_column($x['subjects'], 'subject_id'), $list), 'only the explicitly assigned subject');
+            $rows = $this->staffAttendanceHttp($a, 'GET', "exams/{$e->id}/subjects/{$a['subject']->id}/entry", [], $h)->assertOk()->json('data.rows');
+            $this->assertSame([$a['own']->id], array_column($rows, 'student_id'), 'only sitters in own assigned batches');
+            $this->staffAttendanceHttp($a, 'GET', "exams/{$e->id}/subjects/{$a['other']->id}/entry", [], $h)->assertForbidden();
+            $this->staffAttendanceHttp($a, 'POST', 'results/bulk', ['exam_id' => $e->id, 'subject_id' => $a['subject']->id, 'rows' => [['student_id' => $a['own']->id, 'marks_obtained' => 70]]], $h)->assertOk();
+            $this->staffAttendanceHttp($a, 'POST', 'results/bulk', ['exam_id' => $e->id, 'subject_id' => $a['other']->id, 'rows' => [['student_id' => $a['own']->id, 'marks_obtained' => 70]]], $h)->assertForbidden();
+            $this->staffAttendanceHttp($a, 'PUT', "results/{$a['foreignResult']->id}", ['marks_obtained' => 99], $h)->assertForbidden();
+            $this->assertSame(0, Tenancy::as($a['i'], fn () => \App\Models\Result::where('student_id', $a['outsider']->id)->where('marks_obtained', 99)->count()));
+            $this->staffAttendanceHttp($a, 'GET', "results/marksheet/{$a['own']->id}?exam_id={$e->id}&format=json", [], $h)->assertOk();
+            $this->staffAttendanceHttp($a, 'GET', "results/marksheet/{$a['outsider']->id}?exam_id={$e->id}&format=json", [], $h)->assertForbidden();
+            // the subject's own teacher_id never widens staff reach (D92 explicit assignments only)
+            Tenancy::as($a['i'], fn () => \App\Models\Subject::whereKey($a['other']->id)->update(['teacher_id' => $a['teacher']->id]));
+            $this->staffAttendanceHttp($a, 'GET', "exams/{$e->id}/subjects/{$a['other']->id}/entry", [], $h)->assertForbidden();
+        }
+    }
+
+    public function test_d101_staff_marks_fail_closed_without_context_key_or_department_mode(): void
+    {
+        $a = $this->resultFixture('staff-results-closed');
+        Tenancy::as($a['i'], fn () => $a['duty']->update(['permission_keys' => ['staff.result.entry_sheet']]));
+        $this->staffAttendanceHttp($a, 'GET', 'results', [], $a['department']->id)->assertForbidden();
+        Tenancy::as($a['i'], fn () => $a['duty']->update(['permission_keys' => ['staff.result.index']]));
+        $this->staffAttendanceHttp($a, 'GET', 'results')->assertForbidden();
+        $this->staffAttendanceHttp($a, 'GET', 'results', [], 999999)->assertForbidden();
+        $this->staffAttendanceHttp($a, 'GET', 'results', [], $a['department']->id)->assertOk();
+        $a['i']->forceFill(['staff_department_mode' => 'legacy'])->save();
+        $this->staffAttendanceHttp($a, 'GET', 'results', [], $a['department']->id)->assertForbidden();
+    }
+
     private function academicFixture(string $slug, string $type = 'school'): array
     {
         $base = $this->fixture($slug, $type);

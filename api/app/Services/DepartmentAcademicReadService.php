@@ -89,6 +89,20 @@ class DepartmentAcademicReadService
         return $this->batches($actor, $departmentId, $permission);
     }
 
+    /** D101 marks entry: batch ids of the actor's explicit active subject assignments for one subject (D92: never a subject-wide or class-teacher grant) */
+    public function ownSubjectBatchIds(User $actor, int $departmentId, string $permission, int $subjectId, ?int $examBatchId): array
+    {
+        if (!$this->permissions->has($actor, $departmentId, $permission)) $this->forbidden();
+        $teacher = Teacher::where('user_id', $actor->id)->where('status', 'active')->first();
+        if (!$teacher) $this->forbidden();
+
+        return BatchTeacher::where('teacher_id', $teacher->id)->where('subject_id', $subjectId)
+            ->when($examBatchId, fn ($q) => $q->where('batch_id', $examBatchId))
+            ->whereHas('batch', fn ($batch) => $batch->whereIn('status', ['upcoming', 'running'])
+                ->whereHas('program', fn ($program) => $program->whereIn('id', Subject::whereKey($subjectId)->select('program_id'))))
+            ->pluck('batch_id')->map(fn ($v) => (int) $v)->unique()->values()->all();
+    }
+
     private function batches(User $actor, int $departmentId, string $permission): Builder
     {
         if (!$this->permissions->has($actor, $departmentId, $permission)) $this->forbidden();
