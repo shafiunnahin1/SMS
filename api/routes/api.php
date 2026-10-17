@@ -251,7 +251,7 @@ Route::prefix('v1')->group(function () {
         // D86 / R3.5: salary structures and previews, no settlement execution.
         Route::middleware(['role:admin,accountant,teacher,institution_staff','module:hr_payroll'])->get('/hr/people/{type}/{id}/salary',[SalaryStructureController::class,'history'])->whereNumber('id');
         Route::middleware(['role:teacher,institution_staff','module:hr_payroll'])->get('/teacher/salary/advances',[SalaryAdvanceController::class,'mine']);
-        Route::middleware(['role:admin,accountant','module:hr_payroll'])->prefix('hr')->group(function(){
+        Route::middleware(['role:admin,accountant,institution_staff','module:hr_payroll'])->prefix('hr')->group(function(){
             Route::get('/salary-components',[SalaryComponentController::class,'index']);
             Route::post('/salary-components',[SalaryComponentController::class,'store']);
             Route::put('/salary-components/{id}',[SalaryComponentController::class,'update'])->whereNumber('id');
@@ -292,7 +292,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/teacher-attendance',[TeacherAttendanceController::class,'index']);
             Route::post('/teacher-attendance',[TeacherAttendanceController::class,'store']);
         });
-        Route::middleware(['role:admin,accountant','module:hr_payroll'])->prefix('hr')->group(function () {
+        Route::middleware(['role:admin,accountant,institution_staff','module:hr_payroll'])->prefix('hr')->group(function () {
             Route::get('/staff',[StaffController::class,'index']);
             Route::post('/staff',[StaffController::class,'store']);
             Route::get('/staff/{id}',[StaffController::class,'show']);

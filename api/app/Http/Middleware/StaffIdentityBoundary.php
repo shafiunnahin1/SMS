@@ -75,15 +75,68 @@ class StaffIdentityBoundary
                 'GET api/v1/fee-refunds', 'HEAD api/v1/fee-refunds', 'POST api/v1/fee-refunds', 'GET api/v1/fee-refunds/refundable', 'HEAD api/v1/fee-refunds/refundable',
                 'GET api/v1/fee-refunds/{id}', 'HEAD api/v1/fee-refunds/{id}', 'POST api/v1/fee-refunds/{id}/{action}'], true)
             && collect(['Expenses\\ExpenseController', 'CashBook\\CashBookController', 'Fees\\FeeController', 'Fees\\FeeRefundController'])->contains(fn ($c) => str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\'.$c.'@'));
+        // D101 (owner 2026-10-17): HR/payroll work behind per-area keys; approvals, bonus apply, pay-account edits and staff records stay admin-only
+        $hr = in_array($request->method().' '.$request->route()->uri(), [
+                'GET api/v1/hr/adjustments',
+                'HEAD api/v1/hr/adjustments',
+                'POST api/v1/hr/adjustments',
+                'GET api/v1/hr/adjustments/suggest-extra-class',
+                'HEAD api/v1/hr/adjustments/suggest-extra-class',
+                'GET api/v1/hr/advances',
+                'HEAD api/v1/hr/advances',
+                'POST api/v1/hr/advances',
+                'GET api/v1/hr/advances/{id}',
+                'HEAD api/v1/hr/advances/{id}',
+                'GET api/v1/hr/bonus-schemes',
+                'HEAD api/v1/hr/bonus-schemes',
+                'POST api/v1/hr/bonus-schemes',
+                'DELETE api/v1/hr/bonus-schemes/{id}',
+                'GET api/v1/hr/bonus-schemes/{id}',
+                'HEAD api/v1/hr/bonus-schemes/{id}',
+                'PUT api/v1/hr/bonus-schemes/{id}',
+                'POST api/v1/hr/bonus-schemes/{id}/cancel',
+                'POST api/v1/hr/bonus-schemes/{id}/preview',
+                'POST api/v1/hr/increment-batches',
+                'POST api/v1/hr/increment-batches/preview',
+                'GET api/v1/hr/people/{type}/{id}/pay-accounts',
+                'HEAD api/v1/hr/people/{type}/{id}/pay-accounts',
+                'GET api/v1/hr/revisions',
+                'HEAD api/v1/hr/revisions',
+                'POST api/v1/hr/revisions',
+                'GET api/v1/hr/revisions/{id}',
+                'HEAD api/v1/hr/revisions/{id}',
+                'POST api/v1/hr/revisions/{id}/cancel',
+                'GET api/v1/hr/revisions/{id}/letter.pdf',
+                'HEAD api/v1/hr/revisions/{id}/letter.pdf',
+                'GET api/v1/hr/salary-components',
+                'HEAD api/v1/hr/salary-components',
+                'POST api/v1/hr/salary-components',
+                'DELETE api/v1/hr/salary-components/{id}',
+                'PUT api/v1/hr/salary-components/{id}',
+                'GET api/v1/hr/staff',
+                'HEAD api/v1/hr/staff',
+                'GET api/v1/hr/staff/{id}',
+                'HEAD api/v1/hr/staff/{id}',
+                'GET api/v1/hr/staff-attendance',
+                'HEAD api/v1/hr/staff-attendance',
+                'POST api/v1/hr/staff-attendance'], true)
+            && str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\Hr\\');
         $attendance = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Academic\AttendanceController::class.'@')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/attendance', 'HEAD api/v1/attendance', 'POST api/v1/attendance', 'PUT api/v1/attendance/{id}',
                 'GET api/v1/attendance/report', 'HEAD api/v1/attendance/report', 'GET api/v1/attendance/summary/{id}', 'HEAD api/v1/attendance/summary/{id}'], true);
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money && !$hr) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         // D101 money routes: context and exact duty key are checked here, before any FormRequest validation can answer 422
-        if ($money && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
+        if (($money || $hr) && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
+        // D101: staff never write their own pay row (a revision, adjustment or advance naming themselves as payee)
+        if ($hr && $request->user()?->role === 'institution_staff' && $request->isMethod('POST') && $request->filled(['payee_type', 'payee_id'])) {
+            $model = ['teacher' => \App\Models\Teacher::class, 'staff' => \App\Models\StaffMember::class][$request->input('payee_type')] ?? null;
+            if ($model && $model::whereKey((int) $request->input('payee_id'))->where('user_id', $request->user()->id)->exists()) {
+                return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
+            }
+        }
         return $next($request);
     }
 }

@@ -20,7 +20,8 @@ class SalaryAccess
         $institution=Tenancy::current();
         if(!$institution) throw new AuthorizationException();
         $fresh=User::where('institution_id',$institution->id)->whereKey($actor->id)->where('is_active',true)->first();
-        if(!$fresh || !in_array($fresh->role,$allowTeacher?['admin','accountant','teacher']:['admin','accountant'],true)) throw new AuthorizationException();
+        // D101: department staff reach here only through StaffIdentityBoundary (allowlisted route + exact duty key + context)
+        if(!$fresh || !in_array($fresh->role,$allowTeacher?['admin','accountant','teacher','institution_staff']:['admin','accountant','institution_staff'],true)) throw new AuthorizationException();
         if(!app(ModuleGate::class)->allows($institution,'hr_payroll')) throw new BusinessException(__('errors.module_disabled'),'module_disabled',403);
         return $fresh;
     }
