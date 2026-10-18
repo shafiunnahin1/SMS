@@ -20,10 +20,29 @@ final class QbQuestionPublicResource
                 + ($unlocked ? ['is_correct' => (bool) $o->is_correct] : []))->all(),
             'creative_parts' => $q->creativeParts()->get()->map(fn ($p) => $p->only(['part_label', 'cognitive_level', 'marks', 'question_text', 'question_json'])
                 + ($unlocked ? $p->only(['answer_text', 'answer_json']) : []))->all(),
-            'media' => $q->media()->get()->map(fn ($m) => QbMediaController::view($m))->all(),
+            'media' => self::media($q, $unlocked),
             'stimuli' => $q->stimuli()->get()->map(fn ($st) => ['id' => $st->id] + $st->only(['label', 'content_text', 'content_json']))->all(),
         ] + self::items($q, $unlocked);
         return $unlocked ? $out + $q->only(['answer_text', 'answer_json', 'explanation_text', 'explanation_json']) : $out;
+    }
+
+    /** R2.1.2 (D114 (1)): a locked question carries only the pictures its question side shows - a picture used only in the answer,
+     *  the explanation or a part's answer would give the answer away */
+    private static function media(QbQuestion $q, bool $unlocked): array
+    {
+        $all = $q->media()->get();
+        if (!$unlocked) {
+            $texts = collect([$q->question_text])
+                ->merge($q->options()->pluck('content_text'))
+                ->merge($q->creativeParts()->pluck('question_text'))
+                ->merge($q->stimuli()->pluck('content_text'))
+                ->merge($q->items()->get()->flatMap(fn ($it) => array_merge([$it->prompt_text], array_map('strval', (array) ($it->prompt_json['options'] ?? [])))))
+                ->implode(' ');
+            preg_match_all('/data-qmx-media="(\d+)"/', $texts, $m);
+            $shown = array_map('intval', $m[1]);
+            $all = $all->filter(fn ($media) => in_array((int) $media->id, $shown, true));
+        }
+        return $all->map(fn ($m) => QbMediaController::view($m))->values()->all();
     }
 
     /** QB.4: gaps, pairs, steps, sub-questions. Locked: no answer_json, and nothing that gives the answer away by position -
