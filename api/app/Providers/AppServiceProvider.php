@@ -30,6 +30,15 @@ class AppServiceProvider extends ServiceProvider
     {
         User::observe(UserObserver::class);
 
+        // R3.10 (accounting.md §3): money records ask for their voucher after their own transaction commits
+        $post = fn (string $source, $model) => \App\Jobs\PostAccountingVoucher::dispatch($source, (int) $model->id, (int) $model->institution_id)->afterCommit();
+        \App\Models\FeePayment::created(function ($m) use ($post) { if ((int) $m->line_no === 1 && !$m->reverses_id && \App\Support\Money::toPaisa((string) $m->paid_amount) > 0) $post('fee', $m); });
+        \App\Models\FeeRefund::created(function ($m) use ($post) { if ($m->status === 'processed') $post('refund', $m); });
+        \App\Models\Expense::created(function ($m) use ($post) { if (!in_array($m->source, ['refund', 'payroll', 'advance', 'store'], true)) $post('expense', $m); });
+        \App\Models\PayrollRun::updated(function ($m) use ($post) { if ($m->status === 'paid' && $m->wasChanged('status')) $post('payroll', $m); });
+        \App\Models\SalaryAdvance::updated(function ($m) use ($post) { if ($m->expense_id && $m->wasChanged('expense_id')) $post('advance', $m); });
+        \App\Models\InventoryMovement::created(function ($m) use ($post) { if (in_array($m->type, ['sale', 'return'], true)) $post('store', $m); });
+
         // Step 9.1 (D64): queue alerts - a backlog over QUEUE_ALERT_DEPTH (queue:monitor, scheduled) and a job that failed for good
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Queue\Events\QueueBusy::class, fn ($e) => app(\App\Services\Ops\AlertService::class)
             ->send('Queue backlog', ['queue' => $e->connection . ':' . $e->queue, 'jobs waiting' => $e->size, 'limit' => config('monitoring.queue_depth')], "queue-busy:{$e->connection}:{$e->queue}"));
