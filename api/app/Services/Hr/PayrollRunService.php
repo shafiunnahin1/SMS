@@ -190,8 +190,27 @@ class PayrollRunService
         foreach ($adjustments as $a) $breakdown[] = ['code' => $a->kind, 'name' => ['bn' => $a->description, 'en' => $a->description, 'ar' => $a->description],
             'type' => $a->direction, 'amount' => Money::format(Money::toPaisa((string) $a->amount)), 'source' => 'adjustment', 'ref_id' => $a->id];
 
+        $net = Money::toPaisa($result['net']); $deductions = Money::toPaisa($result['total_deductions']); $tax = 0;
+        if ($run->kind !== 'bonus') {
+            // §10 PF: only the employee share is deducted; the employer share is ledger-only (written at payment)
+            if ($settings['pf']['enabled'] && ($pf = $this->percentOf(Money::toPaisa($settings['pf']['base'] === 'gross' ? $result['gross'] : $result['basic']), $settings['pf']['employee_percent'])) > 0) {
+                $net -= $pf; $deductions += $pf;
+                $breakdown[] = ['code' => 'pf_employee', 'name' => ['bn' => 'ভবিষ্য তহবিল (নিজ অংশ)', 'en' => 'Provident fund (own share)', 'ar' => 'صندوق الادخار (حصة الموظف)'],
+                    'type' => 'deduction', 'amount' => Money::format($pf), 'source' => 'pf', 'ref_id' => null];
+            }
+            // §10 tax at source: rates only from the institution's own settings; mode none (default) deducts nothing
+            $taxable = 0;
+            foreach ($result['earnings'] as $code => $amount) {
+                if (str_starts_with($code, 'adjustment_')) { $adj = $adjustments->firstWhere('id', (int) substr($code, 11)); if ($adj?->taxable) $taxable += Money::toPaisa($amount); }
+                elseif ($code === 'basic' || $components->firstWhere('code', $code)?->taxable) $taxable += Money::toPaisa($amount);
+            }
+            if (($tax = $this->tax($taxable, $settings['tax'])) > 0) {
+                $net -= $tax; $deductions += $tax;
+                $breakdown[] = ['code' => 'tax', 'name' => ['bn' => 'উৎসে কর', 'en' => 'Tax at source', 'ar' => 'ضريبة مقتطعة'],
+                    'type' => 'deduction', 'amount' => Money::format($tax), 'source' => 'tax', 'ref_id' => null];
+            }
+        }
         // §6 advance installments: never below min_net_after_recovery (D87 recovery rules incl. approved skips)
-        $net = Money::toPaisa($result['net']); $deductions = Money::toPaisa($result['total_deductions']);
         if ($regular) foreach (SalaryAdvance::where('payee_type', $type)->where('payee_id', $payee->id)->where('status', 'active')->orderBy('id')->get() as $advance) {
             $take = Money::toPaisa($this->advances->recovery($this->actor($run), $advance->id, $run->month, Money::format($net))['recovery']);
             if ($take <= 0) continue;
@@ -212,7 +231,7 @@ class PayrollRunService
             'days_in_month' => $result['days_in_month'], 'paid_days' => Money::format(max(0, ($summary['working_days'] - $summary['absent_days'] - $summary['lwp_days']) * 100)),
             'absent_days' => Money::format($summary['absent_days'] * 100), 'lwp_days' => Money::format($summary['lwp_days'] * 100), 'late_count' => $summary['late_count'],
             'basic' => $result['basic'], 'gross' => $result['gross'], 'total_earnings' => Money::format($earnings), 'total_deductions' => Money::format($deductions),
-            'tax' => '0.00', 'net' => Money::format($net), 'breakdown' => $breakdown, 'status' => $hold ? 'held' : 'ready', 'hold_reason' => $hold]);
+            'tax' => Money::format($tax), 'net' => Money::format($net), 'breakdown' => $breakdown, 'status' => $hold ? 'held' : 'ready', 'hold_reason' => $hold]);
     }
 
     /** active payees with any service in the month; teacher and staff #7 are different payees */
@@ -228,7 +247,7 @@ class PayrollRunService
         return $out;
     }
 
-    /** §13 settings with conservative defaults; PF and tax are R3.8 and fail closed until then (D104 clause 5) */
+    /** §13 settings with conservative defaults; PF and tax are off unless the institution configures them (R3.8) */
     private function settings(): array
     {
         $all = data_get(Tenancy::current()->settings ?? [], 'payroll', []);
@@ -237,8 +256,55 @@ class PayrollRunService
             'pf' => ['enabled' => false], 'tax' => ['mode' => 'none']], array_intersect_key($all, array_flip(['basis_days', 'deduction_base', 'late_policy', 'rounding', 'pf', 'tax'])));
         Validator::make($s, ['basis_days' => 'required|in:calendar,fixed_30,working', 'deduction_base' => 'required|in:gross,basic',
             'late_policy.lates_per_day' => 'required|integer|min:0|max:31', 'rounding' => 'required|in:none,nearest_1'])->validate();
-        if (!empty($s['pf']['enabled']) || ($s['tax']['mode'] ?? 'none') !== 'none') throw new BusinessException(__('salary.conflict'), 'dependency_pending', 409);
+        $s['pf'] = $this->pfSettings($s['pf']); $s['tax'] = $this->taxSettings($s['tax']);
         return $s + ['min_net_after_recovery' => (string) $this->approval->policy()['min_net_after_recovery']];
+    }
+
+    private function pfSettings(mixed $pf): array
+    {
+        if (!is_array($pf)) $this->invalid('pf');
+        $pf = array_replace(['enabled' => false, 'employee_percent' => '0', 'employer_percent' => '0', 'base' => 'basic'], array_intersect_key($pf, array_flip(['enabled', 'employee_percent', 'employer_percent', 'base', 'interest_percent'])));
+        Validator::make($pf, ['enabled' => 'required|boolean', 'employee_percent' => 'required|numeric|min:0|max:100', 'employer_percent' => 'required|numeric|min:0|max:100', 'base' => 'required|in:basic,gross'])->validate();
+        foreach (['employee_percent', 'employer_percent'] as $k) $pf[$k] = Money::format(Money::toPaisa((string) $pf[$k]));
+        $pf['enabled'] = (bool) $pf['enabled'];
+        return $pf;
+    }
+
+    private function taxSettings(mixed $tax): array
+    {
+        if (!is_array($tax)) $this->invalid('tax');
+        $tax = array_replace(['mode' => 'none', 'percent' => '0', 'slabs' => [], 'annual_exemption' => '0'], array_intersect_key($tax, array_flip(['mode', 'percent', 'slabs', 'annual_exemption'])));
+        Validator::make($tax, ['mode' => 'required|in:none,fixed_percent,slab', 'percent' => 'required|numeric|min:0|max:100', 'slabs' => 'present|array|max:20',
+            'slabs.*.up_to' => 'present|nullable|numeric|min:0', 'slabs.*.rate' => 'required|numeric|min:0|max:100', 'annual_exemption' => 'required|numeric|min:0'])->validate();
+        $last = -1;
+        foreach (array_values($tax['slabs']) as $n => $slab) {
+            if ($slab['up_to'] === null) { if ($n !== count($tax['slabs']) - 1) $this->invalid('tax'); continue; }
+            if (Money::toPaisa((string) $slab['up_to']) <= $last) $this->invalid('tax');   // bands must rise
+            $last = Money::toPaisa((string) $slab['up_to']);
+        }
+        if ($tax['mode'] === 'slab' && !$tax['slabs']) $this->invalid('tax');
+        return $tax;
+    }
+
+    /** §10 (simplified, as the spec states): fixed_percent of taxable monthly income, or slabs on taxable x 12 minus the annual exemption, / 12 */
+    private function tax(int $taxable, array $tax): int
+    {
+        if ($tax['mode'] === 'fixed_percent') return $this->percentOf($taxable, (string) $tax['percent']);
+        if ($tax['mode'] !== 'slab') return 0;
+        $annual = max(0, $taxable * 12 - Money::toPaisa((string) $tax['annual_exemption'])); $prev = 0; $total = 0;
+        foreach ($tax['slabs'] as $slab) {
+            $top = $slab['up_to'] === null ? PHP_INT_MAX : Money::toPaisa((string) $slab['up_to']);
+            if ($annual <= $prev) break;
+            $band = min($annual, $top) - $prev;
+            $total += $this->percentOf($band, (string) $slab['rate']);
+            $prev = $top;
+        }
+        return Money::ratio($total, 1, 12);
+    }
+
+    private function percentOf(int $paisa, string $percent): int
+    {
+        return Money::ratio($paisa, Money::toPaisa($percent), 10000);
     }
 
     private function actor(PayrollRun $run): User

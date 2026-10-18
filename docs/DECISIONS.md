@@ -270,3 +270,5 @@ R3.3 draft checkpoint focused evidence: py -3.14 %TEMP%/school-r33-contract-prob
 - 2026-10-17 · R3.7 · Expense rows per payment: staff-payroll.md §8 says one summary row per run and method, but expenses are append-only and partial payments happen over time. Chose one row per pay action per method (each carrying payroll_run_id), and a negative row for a returned payment; the sum per run and method equals what was actually paid. Spec: staff-payroll.md §8, D32, D104.
 
 - 2026-10-17 · R3.7 · Disbursement CSV download: §8 asks for a 24-hour signed URL; chose a direct authenticated, audited download (admin/accountant only, no-store) because the project has no signed-download mechanism for private generated files yet; logged as an idea. Spec: staff-payroll.md §8.
+
+- 2026-10-18 · R3.8 · Taxable income for tax at source: basic + earning components with taxable=true + taxable earning adjustments; deductions are not subtracted (§10 is explicitly simplified). Bonus runs carry no PF/tax line. Spec: staff-payroll.md §10.

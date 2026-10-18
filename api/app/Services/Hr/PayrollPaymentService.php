@@ -3,7 +3,7 @@
 namespace App\Services\Hr;
 
 use App\Exceptions\BusinessException;
-use App\Models\{PayrollItem, PayrollRun, SalaryAdjustment, SalaryAdvance, SalaryPayAccount, User};
+use App\Models\{PayrollItem, PayrollRun, ProvidentFundEntry, SalaryAdjustment, SalaryAdvance, SalaryPayAccount, User};
 use App\Services\{CashBookService, ExpenseService};
 use App\Support\Money;
 use Illuminate\Support\Facades\{DB, Validator};
@@ -106,6 +106,16 @@ class PayrollPaymentService
     /** D87: the frozen breakdown says exactly which adjustments and installments this item settles */
     private function settle(PayrollItem $item): void
     {
+        // §10: the employee share withheld now, and the employer share (never deducted from the payee), as two ledger rows
+        $run = PayrollRun::findOrFail($item->run_id); $pf = $run->settings_snapshot['pf'] ?? ['enabled' => false];
+        foreach ($item->breakdown as $line) if ($line['source'] === 'pf') {
+            $base = Money::toPaisa((string) (($pf['base'] ?? 'basic') === 'gross' ? $item->gross : $item->basic));
+            ProvidentFundEntry::create(['payee_type' => $item->payee_type, 'payee_id' => $item->payee_id, 'month' => $run->month, 'kind' => 'employee',
+                'amount' => $line['amount'], 'payroll_item_id' => $item->id]);
+            if (($employer = Money::ratio($base, Money::toPaisa((string) ($pf['employer_percent'] ?? '0')), 10000)) > 0)
+                ProvidentFundEntry::create(['payee_type' => $item->payee_type, 'payee_id' => $item->payee_id, 'month' => $run->month, 'kind' => 'employer',
+                    'amount' => Money::format($employer), 'payroll_item_id' => $item->id]);
+        }
         foreach ($item->breakdown as $line) {
             if ($line['source'] === 'adjustment') {
                 $adjustment = SalaryAdjustment::lockForUpdate()->findOrFail($line['ref_id']);
