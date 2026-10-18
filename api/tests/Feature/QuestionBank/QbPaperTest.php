@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{QbCreativePart, QbPaper, QbPrice, QbQuestion, QbQuestionOption, QbQuestionType, QbSubject, QbUnlock, User};
+use App\Models\{QbCreativePart, QbQuestionItem, QbQuestionStimulus, QbPaper, QbPrice, QbQuestion, QbQuestionOption, QbQuestionType, QbSubject, QbUnlock, User};
 use App\Services\PdfService;
 use App\Support\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -132,5 +132,37 @@ class QbPaperTest extends TestCase
         $this->assertNotSame($a, $b, 'set B shuffles the options');
         $this->assertSame($b, array_column($json('B'), 'content_text'), 'the same shuffle every time');
         $this->assertSame(['ক', 'খ', 'গ', 'ঘ'], array_column($json('B'), 'label'), 'relabelled by position');
+    }
+
+    /** R2.1.2 (D114 (1)): structured questions print their passage and every part; answers (matching, order, gap, sub-MCQ)
+     *  only on the answer copy */
+    public function test_structured_questions_print_their_passage_and_parts(): void
+    {
+        $type = QbQuestionType::create(['slug' => 'mixed_passage', 'name_bn' => 'অনুচ্ছেদ', 'name_en' => 'Passage', 'family' => 'other', 'ui_config' => ['structure' => 'passage']])->id;
+        $q = QbQuestion::create(['qb_question_type_id' => $type, 'qb_subject_id' => $this->mcq->qb_subject_id, 'question_text' => 'Read and answer.', 'status' => 'published', 'created_by' => $this->super->id]);
+        $st = QbQuestionStimulus::create(['qb_question_id' => $q->id, 'label' => 'passage', 'content_text' => 'Rahim lives in a village.', 'sort_order' => 1]);
+        foreach ([
+            ['sub_mcq', 'Where does he live?', ['options' => ['Town', 'Village']], ['correct' => 1], $st->id],
+            ['match_pair', 'Dhaka', null, ['right' => 'Bangladesh'], null],
+            ['match_pair', 'Delhi', null, ['right' => 'India'], null],
+            ['order_step', 'wake up', null, ['position' => 1], null],
+            ['order_step', 'go to school', null, ['position' => 2], null],
+            ['gap', 'Water boils at', null, ['answers' => ['100 C']], null],
+        ] as $k => [$kind, $prompt, $pj, $aj, $stimulus]) {
+            QbQuestionItem::create(['qb_question_id' => $q->id, 'qb_question_stimulus_id' => $stimulus, 'item_type' => $kind, 'prompt_text' => $prompt, 'prompt_json' => $pj, 'answer_json' => $aj, 'sort_order' => $k + 1]);
+        }
+        $i = $this->makeInstitution('qbpaper-structured');
+        $admin = $this->makeUser($i, 'admin');
+        Tenancy::as($i, fn () => QbUnlock::create(['item_type' => 'question', 'item_id' => $q->id, 'unlocked_by' => $admin->id, 'price' => '0.00', 'reason' => 'free']));
+        $id = $this->api('POST', $this->hostOf($i), 'question-bank/papers', $admin, ['title' => 'Structured', 'sections' => [['title' => 'A', 'items' => [['qb_question_id' => $q->id, 'marks' => '6']]]]])
+            ->assertCreated()->json('data.id');
+
+        $plain = $this->html($id, 'A', false, $i, $admin);
+        foreach (['Rahim lives in a village.', 'Where does he live?', 'Town', 'Village', 'Dhaka', 'Delhi', 'Bangladesh · India', 'wake up', 'go to school', 'Water boils at', '________'] as $text) {
+            $this->assertStringContainsString($text, $plain, "printed: {$text}");
+        }
+        $this->assertStringNotContainsString(__('pdf.qb_paper.answer'), $plain, 'no answers on the question copy');
+        $answers = $this->html($id, 'A', true, $i, $admin);
+        foreach (['100 C', 'Bangladesh', 'খ'] as $text) $this->assertStringContainsString($text, $answers, "answer: {$text}");
     }
 }
