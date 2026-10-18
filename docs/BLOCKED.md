@@ -201,7 +201,7 @@ Owner-approved D101 is present in the synced `docs/LOCKED-DECISIONS.md`: append-
 - Fixed going forward: guard runs with `set -o pipefail`; a non-zero guard exit stops the commit.
 - Needs from owner: commit D105 (draft owner/decision-D105.md). History rewriting (amend / force-push) is forbidden for the agent (G13); a squash merge of PR #1 can carry `Change-Request: D105`.
 
-## 2026-10-18 · R3.A · payroll legal/accounting review (RELEASE-3.md §ঙ item 13, §চ)
+## 2026-10-18 · R3.A · payroll legal/accounting review (RELEASE-3.md §ঙ item 13, §চ) — RESOLVED 2026-10-18 by owner decision D108 (99f0744)
 - **What blocks:** R3.A's Done-When needs "payroll-এর আইনি/হিসাব-যাচাই হয়েছে" — PF, tax at source, gratuity, leave encashment and deduction rules reviewed by an accountant and a lawyer. An agent cannot do or sign this.
 - **Done so far:** every other acceptance item has test evidence (docs/PROGRESS.md, R3.A line); full suite 929 passed, MySQL smoke 33/0.
 - **Also still external (§চ):** the bank disbursement file format (OD-bank-format), the chart-of-accounts and report formats (accountant/auditor), cash vs accrual (default cash basis), PDF engine sign-off for payslips.
