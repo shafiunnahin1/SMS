@@ -23,6 +23,7 @@ class PayrollPaymentService
 
     public function pay(User $actor, int $runId, array $input): PayrollRun
     {
+        $this->access->actor($actor);   // D33: before any validation
         if (array_diff(array_keys($input), ['item_ids', 'method', 'reference', 'date'])) $this->invalid('payroll');
         $data = Validator::make($input, ['item_ids' => 'sometimes|array|min:1|max:1000', 'item_ids.*' => 'integer|distinct|min:1',
             'method' => 'sometimes|in:'.implode(',', self::METHODS), 'reference' => 'sometimes|nullable|string|max:100',

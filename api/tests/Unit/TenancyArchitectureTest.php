@@ -100,4 +100,27 @@ class TenancyArchitectureTest extends TestCase
         }
         $this->assertSame([], $bad, 'tenancy.bypass outside the /super group');
     }
+
+    /**
+     * R3.13 (D25): every Release 3 table that docs/database/schema.sql gives a NOT NULL institution_id has a model with
+     * BelongsToInstitution - read from the schema and the R3 scope, so a new R3 table cannot slip in unscoped.
+     */
+    public function test_every_r3_tenant_table_has_a_model_with_belongs_to_institution(): void
+    {
+        $repo = dirname(self::root());
+        $tables = json_decode(file_get_contents($repo . '/docs/release/r3-scope.json'), true)['tables'];
+        preg_match_all('/CREATE TABLE (\w+) \((.*?)\n\);/s', file_get_contents($repo . '/docs/database/schema.sql'), $m, PREG_SET_ORDER);
+        $scoped = [];
+        foreach ($m as [, $table, $body]) if (preg_match('/^\s*institution_id BIGINT UNSIGNED NOT NULL/m', $body)) $scoped[$table] = true;
+        $checked = 0; $missing = [];
+        foreach ($tables as $table) {
+            if (!isset($scoped[$table])) continue;
+            $class = 'App\\Models\\' . \Illuminate\Support\Str::studly(\Illuminate\Support\Str::singular($table));
+            if (!class_exists($class) || (new $class)->getTable() !== $table) { $missing[] = "{$table}: no model"; continue; }
+            if (!in_array(\App\Traits\BelongsToInstitution::class, class_uses_recursive($class), true)) $missing[] = "{$table}: {$class} lacks BelongsToInstitution";
+            $checked++;
+        }
+        $this->assertSame([], $missing);
+        $this->assertGreaterThanOrEqual(30, $checked, 'the scan found the R3 tenant tables');
+    }
 }

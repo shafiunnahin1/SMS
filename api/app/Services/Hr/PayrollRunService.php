@@ -26,6 +26,7 @@ class PayrollRunService
 
     public function create(User $actor, array $input): PayrollRun
     {
+        $this->access->actor($actor);   // D33: a platform/support token is refused before any validation
         if (array_diff(array_keys($input), ['month', 'kind', 'label'])) $this->invalid('payroll');
         $data = Validator::make($input, ['month' => 'required|date_format:Y-m', 'kind' => 'sometimes|string', 'label' => 'sometimes|nullable|string|max:80'])->validate();
         $kind = $data['kind'] ?? 'regular';
@@ -46,6 +47,7 @@ class PayrollRunService
     /** §11: POST /hr/final-settlement/{type}/{id}/start - a one-payee `final` run for the leaving month (label "type:id") */
     public function startFinal(User $actor, string $type, int $id, array $input = []): PayrollRun
     {
+        $this->access->actor($actor);
         if ($input) $this->invalid('payroll');
         $payee = $this->access->payee($actor, $type, $id);
         if (!$payee->leaving_date) $this->invalid('leaving_date');
