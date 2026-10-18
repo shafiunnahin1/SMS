@@ -195,3 +195,8 @@ Owner-approved D101 is present in the synced `docs/LOCKED-DECISIONS.md`: append-
 
 ## 2026-10-17 · R3.7 · `payroll_runs.kind` VARCHAR(12) cannot hold `supplementary` (13 chars)
 - schema.sql and staff-payroll.md §7.1 list kinds regular | bonus | final | supplementary, but `kind VARCHAR(12)` truncates `supplementary` (MySQL error 1406, seen in PayrollImmutabilityTest). Agent choice: PayrollRunService accepts only regular and bonus (final is R3.8); corrections use a labelled regular run or next-month adjustment (§7.1). Needs owner: widen `kind` to VARCHAR(16) by a new migration + schema.sql (needs a D-row), or rename the kind (e.g. `supplement`).
+
+## 2026-10-18 · R3.8 · commit 5a5d04a changed a protected fixture without a Change-Request trailer (agent error)
+- What happened: the commit added four role-matrix rows for the four R3.8 plan routes (api/tests/Fixtures/role-matrix.php is protected). `agent_guard.py --staged` reported `C1 ... 1 failure`, but the agent piped it through `tail` without `pipefail`, so the commit and push ran anyway. No existing row or assertion was changed.
+- Fixed going forward: guard runs with `set -o pipefail`; a non-zero guard exit stops the commit.
+- Needs from owner: commit D105 (draft owner/decision-D105.md). History rewriting (amend / force-push) is forbidden for the agent (G13); a squash merge of PR #1 can carry `Change-Request: D105`.
