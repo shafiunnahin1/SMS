@@ -43,6 +43,9 @@ def empty_tree(root):
     if not EMPTY_TREE: EMPTY_TREE = git(root, 'hash-object', '-t', 'tree', '/dev/null').strip()
     return EMPTY_TREE
 
+# D111 clause 7: R2.1 tasks whose refined scope a locked decision approved -> (decision, dependencies); all other R2.1 tasks stay blocked
+R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0'])}
+
 def show(root, rev, path):
     r = subprocess.run(['git', '-C', root, 'show', f'{rev}:{path}'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.stdout if r.returncode == 0 else None
@@ -238,10 +241,17 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
         target = release_state(root, commit)
         if target['current'] == 'R3' and task in target['tasks']:
             task_specs = {**task_specs, task: target['tasks'][task]}
+    # D111 clause 7: an R2.1 task is executable only when a locked decision approved its refined scope and its dependencies are done
+    decisions_before = show(root, parent, 'docs/LOCKED-DECISIONS.md') or ''
+    r21_ok = lambda t: t in R21_APPROVED and f'| {R21_APPROVED[t][0]} |' in decisions_before
     if touches_code:
         if task and re.fullmatch(r'R2\.1\.\d+', task):
-            rep.fail('C9', commit, 'D83 permits R2.1 planning only; executable scope needs owner approval and R3.A acceptance')
-        if not task: rep.fail('C9', commit, 'a commit that changes api/ or frontend/ needs a `Task: <id>` trailer (task ids: docs/AGENT-PLAN-R*.md)')
+            if not r21_ok(task):
+                rep.fail('C9', commit, 'D83 permits R2.1 planning only; executable scope needs owner approval and R3.A acceptance')
+            else:
+                missing = [d for d in R21_APPROVED[task][1] if d not in done_before]
+                if missing: rep.fail('C9', commit, f'task {task} depends on {missing}, which are not [x] in docs/PROGRESS.md yet - do the tasks in order')
+        elif not task: rep.fail('C9', commit, 'a commit that changes api/ or frontend/ needs a `Task: <id>` trailer (task ids: docs/AGENT-PLAN-R*.md)')
         elif task not in task_specs:
             why = f'task {task} belongs to a later release (current: {st["current"]})' if task in st['later_tasks'] else f'unknown task id {task}'
             rep.fail('C9', commit, why)
@@ -257,7 +267,7 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
             if un: rep.fail('C10', commit, f'PROGRESS: a done line was removed or un-checked: {un[0].strip()[:60]}')
             newly = [re.search(r'\]\s*([\w.]+)', x).group(1) for x in a if re.match(r'\s*[-*]\s*\[[xX]\]\s*[\w.]+', x)]
             newly = [x for x in newly if x not in done_before]
-            if any(re.fullmatch(r'R2\.1\.\d+', x) for x in newly):
+            if any(re.fullmatch(r'R2\.1\.\d+', x) and not (x == task and r21_ok(x)) for x in newly):
                 rep.fail('C10', commit, 'D83 planning cannot check off R2.1 feature tasks, even in a documentation-only commit')
             if task and any(x != task for x in newly): rep.fail('C10', commit, f'PROGRESS: this commit is `Task: {task}` but also checks off {[x for x in newly if x != task]}')
             if newly and not task: rep.fail('C10', commit, 'PROGRESS: a task was checked off in a commit without a `Task:` trailer')
