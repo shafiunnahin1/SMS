@@ -17,6 +17,9 @@ const NotBuilt    = lazy(() => import('../pages/common/NotBuilt'))
 const r3 = (file, name) => lazy(() => import(`../pages/r3/${file}.jsx`).then(m => ({ default: m[name] })))
 const AccVouchers = r3('Accounting', 'Vouchers'), AccAccounts = r3('Accounting', 'Accounts'), AccBudgets = r3('Accounting', 'Budgets'), AccBank = r3('Accounting', 'Bank'), AccReports = r3('Accounting', 'Reports')
 const DonDonors = r3('Donations', 'Donors'), DonFunds = r3('Donations', 'Funds'), DonCampaigns = r3('Donations', 'Campaigns'), DonList = r3('Donations', 'DonationList')
+const hr = (name) => r3('Hr', name)
+const HrStaff = hr('Staff'), HrComponents = hr('Components'), HrRevisions = hr('Revisions'), HrIncrements = hr('Increments'), HrBonus = hr('Bonus'), HrAdjustments = hr('Adjustments')
+const HrAdvances = hr('Advances'), HrPayroll = hr('Payroll'), HrPf = hr('ProvidentFund'), HrLeave = hr('Leave'), HrAttendance = hr('StaffAttendance'), HrReports = hr('HrReports'), MySalary = hr('MySalary')
 const Expenses = r3('Money', 'Expenses'), Refunds = r3('Money', 'Refunds'), Inventory = r3('Money', 'Inventory'), CashBook = r3('Money', 'CashBook')
 const StudentList = lazy(() => import('../pages/admin/students/StudentList'))
 const StudentAdd  = lazy(() => import('../pages/admin/students/StudentAdd'))
@@ -125,6 +128,9 @@ export const tenantRoutes = [
     { path: 'fees/cashbook', element: S(CashBook) }, { path: 'fees/refunds', element: S(Refunds) }, { path: 'expenses', element: S(Expenses) }, { path: 'inventory', element: S(Inventory) },
     { path: 'accounting/vouchers', element: S(AccVouchers) }, { path: 'accounting/accounts', element: S(AccAccounts) }, { path: 'accounting/budgets', element: S(AccBudgets) },
     { path: 'accounting/bank', element: S(AccBank) }, { path: 'accounting/reports', element: S(AccReports) },
+    { path: 'hr/staff', element: S(HrStaff) }, { path: 'hr/salary-components', element: S(HrComponents) }, { path: 'hr/revisions', element: S(HrRevisions) },
+    { path: 'hr/increments', element: S(HrIncrements) }, { path: 'hr/bonus', element: S(HrBonus) }, { path: 'hr/adjustments', element: S(HrAdjustments) }, { path: 'hr/advances', element: S(HrAdvances) },
+    { path: 'hr/payroll', element: S(HrPayroll) }, { path: 'hr/pf', element: S(HrPf) }, { path: 'hr/leave', element: S(HrLeave) }, { path: 'hr/attendance', element: S(HrAttendance) }, { path: 'hr/reports', element: S(HrReports) },
     { path: 'donations/donors', element: S(DonDonors) }, { path: 'donations/funds', element: S(DonFunds) }, { path: 'donations/campaigns', element: S(DonCampaigns) }, { path: 'donations', element: S(DonList) },
     // Step 3.4: the component gallery - development builds only (import.meta.env.DEV is false in `vite build`)
     ...(import.meta.env.DEV ? [{ path: 'dev/components', element: S(DevComponents) }] : []),
@@ -136,8 +142,9 @@ export const tenantRoutes = [
     { path: 'reports', element: S(Reports) },
     { path: 'cashbook', element: S(CashBook) }, { path: 'refunds', element: S(Refunds) }, { path: 'expenses', element: S(Expenses) }, { path: 'inventory', element: S(Inventory) },
     { path: 'accounting', element: S(AccVouchers) }, { path: 'donations', element: S(DonList) },
+    { path: 'hr/payroll', element: S(HrPayroll) }, { path: 'hr/advances', element: S(HrAdvances) }, { path: 'hr/adjustments', element: S(HrAdjustments) }, { path: 'hr/revisions', element: S(HrRevisions) },
   ]),
-  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }]),
+  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }, { path: 'salary', element: S(MySalary) }]),
   area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }]),   // QB.9 / QB.10: the student portal (other student screens: R1.1)
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },

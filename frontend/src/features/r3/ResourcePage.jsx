@@ -26,8 +26,23 @@ export function useOptions(endpoint, label = 'name') {
   return (q.data ?? []).map(o => ({ value: String(o.id), label: typeof label === 'function' ? label(o) : o[label] }))
 }
 
+// a teacher or staff member as one select value "teacher:12" / "staff:7", sent as payee_type + payee_id
+function usePayees(enabled) {
+  const teachers = useOptions(enabled ? 'teachers' : null)
+  const staff = useOptions(enabled ? 'hr/staff' : null)
+  return [...teachers.map(o => ({ ...o, value: `teacher:${o.value}` })), ...staff.map(o => ({ ...o, value: `staff:${o.value}` }))]
+}
+const expand = (v) => {
+  if (!v.payee) return v
+  const { payee, ...rest } = v
+  const [payee_type, payee_id] = payee.split(':')
+  return { ...rest, payee_type, payee_id: Number(payee_id) }
+}
+
 function Field({ f, register, errors, t }) {
   const options = useOptions(f.optionsFrom, f.optionLabel)
+  const payees = usePayees(f.kind === 'payee')
+  if (f.kind === 'payee') return <Select label={t(f.label)} placeholder="—" options={payees} error={errors[f.name]?.message} {...register(f.name, { required: t(f.label) })} />
   const label = t(f.label)
   const rules = f.required ? { required: label } : {}
   if (f.kind === 'select') {
@@ -70,7 +85,7 @@ export default function ResourcePage({ title, endpoint, params, columns, create,
 
   const send = async (method, url, values, setError) => {
     try {
-      await api[method](url, values)
+      await api[method](url, expand(values))
       toast(t('common.saved'))
       qc.invalidateQueries({ queryKey: [endpoint] })
       return true
@@ -110,7 +125,7 @@ export default function ResourcePage({ title, endpoint, params, columns, create,
     : form?.mode === 'edit'
       ? { title: t('common.edit'), fields: edit.fields, defaults: Object.fromEntries(edit.fields.map(f => [f.name, form.row[f.name] ?? ''])),
           submit: (v, se) => send(edit.method ?? 'put', edit.path ? edit.path(form.row) : `/${endpoint}/${form.row.id}`, clean(v), se) }
-      : form ? { title: t(create.label), fields: create.fields, defaults: create.defaults ?? {}, submit: (v, se) => send('post', create.path ?? `/${endpoint}`, create.transform ? create.transform(clean(v)) : clean(v), se) } : null
+      : form ? { title: t(create.label), fields: create.fields, defaults: create.defaults ?? {}, submit: async (v, se) => send('post', create.path ?? `/${endpoint}`, create.transform ? await create.transform(clean(v)) : clean(v), se) } : null
   return (
     <div>
       <PageHeader title={t(title)} subtitle={intro ? t(intro) : undefined}
