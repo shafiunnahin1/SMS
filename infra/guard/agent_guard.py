@@ -45,6 +45,8 @@ def empty_tree(root):
 
 # D111 clause 7: R2.1 tasks whose refined scope a locked decision approved -> (decision, dependencies); all other R2.1 tasks stay blocked
 R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1'])}
+# D115: the one new table an approved R2.1 task may create, with the decision that approved it
+R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}}
 
 def show(root, rev, path):
     r = subprocess.run(['git', '-C', root, 'show', f'{rev}:{path}'], capture_output=True, text=True, encoding='utf-8', errors='replace')
@@ -190,6 +192,8 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
         if s == 'A':
             body = show(root, commit, p) or ''
             for tb in set(re.findall(r"Schema::(?:create|table|drop|dropIfExists|rename)\(\s*['\"](\w+)['\"]", body)):
+                r21_table = R21_TABLES.get((tr.get('task') or [''])[0] or '', {}).get(tb)
+                if r21_table and re.search(r'^\| %s \|' % r21_table, base_dec, re.M): continue
                 if tb not in st['tables']: rep.fail('C3', commit, f"migration {os.path.basename(p)} touches table `{tb}` which is not in release {st['current']} (docs/release/*-scope.json)")
     # ---- C4 routes
     for s, p in files:
