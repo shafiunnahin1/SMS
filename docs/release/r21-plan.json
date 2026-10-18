@@ -26,6 +26,82 @@
     "modules": [],
     "packages": []
   },
+  "approved_execution_slices": [
+    {
+      "id": "R2.1.2-dataset-lifecycle",
+      "parent_task": "R2.1.2",
+      "decisions": [
+        "D114",
+        "D115",
+        "D116",
+        "D117"
+      ],
+      "depends_on": [
+        "R2.1.1"
+      ],
+      "executable": true,
+      "accepted": false,
+      "scope": "QbGraphDataset lifecycle only: central writer API; a writer manages only their own datasets, moderators are read-only, and Super Admin may manage all; enforce D115 size limits, stale-version conflicts and published-question in-use deletion guard.",
+      "tables": [
+        "qb_graph_datasets"
+      ],
+      "routes": [
+        {
+          "method": "GET|HEAD",
+          "uri": "/writer/graph-datasets",
+          "roles": [
+            "content_writer",
+            "content_moderator",
+            "super_admin"
+          ]
+        },
+        {
+          "method": "POST",
+          "uri": "/writer/graph-datasets",
+          "roles": [
+            "content_writer",
+            "super_admin"
+          ]
+        },
+        {
+          "method": "GET|HEAD",
+          "uri": "/writer/graph-datasets/{id}",
+          "roles": [
+            "content_writer",
+            "content_moderator",
+            "super_admin"
+          ]
+        },
+        {
+          "method": "PUT",
+          "uri": "/writer/graph-datasets/{id}",
+          "roles": [
+            "content_writer",
+            "super_admin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "uri": "/writer/graph-datasets/{id}",
+          "roles": [
+            "content_writer",
+            "super_admin"
+          ]
+        }
+      ],
+      "roles": [
+        "content_writer",
+        "content_moderator",
+        "super_admin"
+      ],
+      "done_when": "Dataset CRUD is central-host-only. Writers manage only their own datasets; moderators can read but never write; Super Admin can manage all. Enforce 50,000 rows, 80 columns, 1,000,000 cells, 2,048 characters per cell, server checksum/version, stale-version conflicts and refusal to delete a dataset referenced by a published question. Parent R2.1.2 remains unchecked; visuals, full format parity and finder are deferred.",
+      "deferred": [
+        "full authoring-format and visual-mode parity matrix",
+        "graph/diagram editor and paper-renderer integration",
+        "question finder and calibrated ranking fixtures"
+      ]
+    }
+  ],
   "regression_commands": [
     {
       "cwd": "api",
@@ -522,5 +598,5 @@
     "AC25": "Responsive UI tests cover 360px mobile and desktop, keyboard access, loading/empty/error/progress states, both applicable UI packs, English/Bangla and RTL-safe behavior.",
     "AC26": "Required backend/frontend suites, module/route authorization tests, import-scale tests, OMR fixture suite and E2E tests pass before release activation."
   },
-  "evidence_note": "Existing entities/routes are reuse anchors, not accepted parity. No new schema/API is approved."
+  "evidence_note": "Only the explicit D114-D117 dataset-lifecycle slice is executable; the full R2.1.2 task and runtime switch remain blocked."
 }
