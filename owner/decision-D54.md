@@ -1,0 +1,1 @@
+| D54 | E2E tools (Step 3.8) | Frontend devDependencies `@playwright/test@1.56.1` ও `@axe-core/playwright@4.13.0` অনুমোদিত (শুধু পরীক্ষার জন্য; G7-এর ব্যতিক্রম, Step 3.8)। CI-তে `e2e` job (Playwright smoke F1/F2/F5 + login-পাতায় axe) যোগ হবে; মার্জ আটকায়। মালিক, 2026-10-07 |

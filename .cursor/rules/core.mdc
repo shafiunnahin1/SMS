@@ -1,0 +1,35 @@
+---
+description: Always-on project rules - what this product is, how to work, what never to do
+alwaysApply: true
+---
+
+# Core
+
+Multi-tenant education-management SaaS for Bangladesh (school, college, coaching, private batch). Laravel 11 API + React/Vite SPA. **The repo is a specification first: code is not written yet.** Read `AGENTS.md`, `PRODUCT.md`, `docs/LOCKED-DECISIONS.md`; follow the current step in `docs/BUILD-SEQUENCE.md`.
+
+## How to work
+- Follow `docs/BUILD-SEQUENCE.md` strictly in order. A step is done only when its "Done When" holds and tests are green.
+- Build only what a spec says. Do not add tables, columns, endpoints, packages or libraries on your own.
+- Unclear or contradictory spec: pick the most conservative option consistent with existing patterns and add one line to `docs/DECISIONS.md` (date, step, question, choice, why, spec file). If it conflicts with a Locked Decision, STOP and ask.
+- After each step: update `docs/PROGRESS.md`, commit once (`step 3.5: fee module`), run `php artisan test`, `npm test`, `npm run lint:theme`.
+- Do not edit the spec files while building (log problems in `docs/DECISIONS.md`). Exception: the spike (`docs/spike/walking-skeleton.md`).
+- Never invent facts about third parties. Bank/gateway/SMS API URLs, field names and limits are unverified placeholders until the owner supplies real docs. Do not guess them.
+
+- Never decide a legal, religious, accounting or tax rule inside the product: institutions configure them; the system enforces what they configured (D39, `docs/modules/staff-payroll.md`, `docs/modules/accounting.md`). Never guess a third-party protocol (SMS unicode flag/DLR, bank file format, device vendor, Bangla QR).
+
+- Build only the CURRENT release (`config/release.php`, `docs/RELEASE-1.md`). A module/step tagged for a later release is a spec, not a task; never add its tables, routes or menu items early. Menu items that sit inside a shipped module or have no `module` key carry `since:'R…'`.
+
+## Never (most are enforced by a test or lint - see docs/TESTING.md; the rest rely on review: log hygiene, secrets)
+- Never query a tenant model without a bound tenant; never use `withoutGlobalScope(s)` or `app()->instance('currentInstitution')` in application code.
+- Never put a hex colour, a Tailwind brand-colour class (`bg-blue-*`, `text-gray-*`) or the words Class/Section/Batch/Course/শ্রেণি/শাখা in a component.
+- Never trust an amount, tenant id or role from the client. Never log a phone number, name, message body or credential.
+- Never branch on the active UI pack, preset or layout in a page or component (use `PageSlot` and `ui/variants`).
+- Never write `students.program_id/batch_id/roll_no` directly (only `EnrollmentService`).
+- Never mark a payment `failed` after the gateway took the money (use `review`).
+- Never commit a secret. `.env.example` holds placeholders only.
+
+## Language
+UI text and user-facing messages: Bengali by default, English available (`src/i18n/`). Code, identifiers, commit messages, log keys: English.
+
+## Where things are
+`docs/ARCHITECTURE.md` (map) · `docs/DATABASE.md` + `docs/database/schema.sql` (the only schema truth) · `docs/API.md` · `docs/AUTHORIZATION.md` · `docs/SECURITY.md` · `docs/THEMING.md` + `themes/` · `docs/modules/README.md` (module index).

@@ -1,0 +1,77 @@
+# docker-compose.prod.yml - docs/ops/docker-setup.md "Production - docker-compose.prod.yml (Revision 7)" (Step 9.1, D64).
+# Topology as the host install: Caddy (public, TLS) -> Nginx (inside, plain HTTP, SPA + FastCGI) -> PHP-FPM.
+# Secrets come from api/.env.production and the shell (CLOUDFLARE_API_TOKEN, DB_*, REDIS_PASSWORD) - never from this file.
+# Local staging without TLS/Cloudflare: docker compose -f docker-compose.prod.yml -f docker-compose.staging.yml up -d
+services:
+  caddy:
+    image: caddy-cloudflare:latest        # built with: xcaddy build --with github.com/caddy-dns/cloudflare
+    ports: ["80:80", "443:443"]
+    environment:
+      - "CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}"
+      - "UPSTREAM=nginx:8080"
+    volumes: [./infra/Caddyfile:/etc/caddy/Caddyfile:ro, caddy_data:/data, caddy_config:/config]
+    depends_on: [nginx]
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    # NO published ports - only Caddy reaches it. infra/nginx.conf and infra/laravel-fastcgi.conf stay the single source (host install):
+    # at start they are adapted for the compose network - the login rate-limit zone (nginx.conf's header asks for it in http {}; conf.d is
+    # inside http {}), listen on 8080 for the network, allow the network on /api/internal/, FastCGI to the api service.
+    volumes:
+      - ./infra/nginx.conf:/etc/nginx/source/nginx.conf:ro
+      - ./infra/laravel-fastcgi.conf:/etc/nginx/source/laravel-fastcgi.conf:ro
+      - frontend_build:/var/www/frontend/dist:ro
+    command: >-
+      sh -c "mkdir -p /etc/nginx/snippets
+      && { echo 'limit_req_zone $$binary_remote_addr zone=login:10m rate=5r/m;';
+      sed -e 's|listen 127.0.0.1:8080|listen 8080|' -e 's|# allow 172.16.0.0/12;|allow 172.16.0.0/12;|' /etc/nginx/source/nginx.conf; } > /etc/nginx/conf.d/default.conf
+      && sed -e 's|fastcgi_pass 127.0.0.1:9000;|fastcgi_pass api:9000;|' /etc/nginx/source/laravel-fastcgi.conf > /etc/nginx/snippets/laravel-fastcgi.conf
+      && exec nginx -g 'daemon off;'"
+    depends_on: [api]
+    restart: unless-stopped
+
+  api:                                     # PHP-FPM on :9000, app at /var/www/api (the path nginx.conf passes as SCRIPT_FILENAME)
+    build: { context: ./api, dockerfile: Dockerfile.prod }
+    image: sms-api:${IMAGE_TAG:-latest}
+    env_file: ./api/.env.production        # APP_KEY, DB_*, REDIS_*, ... - never baked into the image
+    environment:
+      - "INTERNAL_IPS=127.0.0.1,::1,172.16.0.0/12"   # docker-setup.md: the compose network may call /api/internal/
+      - "PDF_CHROME_NO_SANDBOX=true"                 # Chromium inside a container
+    volumes: [api_storage:/var/www/api/storage/app]
+    depends_on: [mysql, redis]
+    restart: unless-stopped
+    deploy: { replicas: 2 }
+
+  queue-worker:
+    image: sms-api:${IMAGE_TAG:-latest}
+    env_file: ./api/.env.production
+    environment:
+      - "PDF_CHROME_NO_SANDBOX=true"
+    volumes: [api_storage:/var/www/api/storage/app]
+    command: php artisan queue:work redis --queue=default,sms,notifications --tries=3 --max-time=3600
+    depends_on: [mysql, redis]
+    restart: unless-stopped
+    deploy: { replicas: 2 }
+
+  scheduler:
+    image: sms-api:${IMAGE_TAG:-latest}
+    env_file: ./api/.env.production
+    volumes: [api_storage:/var/www/api/storage/app]
+    command: php artisan schedule:work
+    depends_on: [mysql, redis]
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    environment: { MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}", MYSQL_DATABASE: "${DB_DATABASE}", MYSQL_USER: "${DB_USERNAME}", MYSQL_PASSWORD: "${DB_PASSWORD}" }
+    volumes: [mysql_data:/var/lib/mysql, ./infra/mysql/slow-query.cnf:/etc/mysql/conf.d/slow-query.cnf:ro]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes: [redis_data:/data]
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    restart: unless-stopped
+
+volumes: { mysql_data: {}, redis_data: {}, frontend_build: {}, caddy_data: {}, caddy_config: {}, api_storage: {} }

@@ -1,0 +1,26 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+// Order: docs/database/seeders.md "Seeder Order (Final)": presets before any institution; three demo tenants
+// (school, coaching, private_batch) - demo logins in docs/database/seeders.md "Demo Credentials".
+class DatabaseSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $this->call([
+            PlanSeeder::class,
+            ThemePresetSeeder::class,
+            SuperAdminSeeder::class,
+            QbCurriculumSeeder::class,     // D65: the platform curriculum (platform data, before any institution)
+            QbQuestionTypeSeeder::class,   // D65 QB.2: the core question types
+            DemoInstitutionSeeder::class,
+            DemoDataSeeder::class,
+            DemoCoachingSeeder::class,
+            DemoTutorSeeder::class,
+            SalaryComponentSeeder::class, // D86: definitions only, no salary amounts.
+        ]);
+    }
+}

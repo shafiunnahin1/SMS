@@ -1,0 +1,1506 @@
+{
+ "release": "R1",
+ "institution_type": "school",
+ "audience": "public sale, self-signup, 10+ unknown PRIVATE schools first (D43); R1 = first MILESTONE, the public launch is the COMPLETE plan (D45); government/MPO institutions stay in the plan as OPTIONAL, lower priority, hidden by default (D44)",
+ "decided_by_owner": {
+  "first_customer": "school",
+  "initial_customers": "10+ (public sale, self signup)",
+  "must_have": [
+   "attendance + absence SMS",
+   "fee collection + receipt",
+   "exams + marksheet",
+   "parent portal (fees / attendance / results)"
+  ]
+ },
+ "modules": [
+  "students",
+  "enrollments",
+  "attendance",
+  "fees",
+  "exams",
+  "sms",
+  "reports",
+  "data_migration",
+  "question_bank",
+  "quiz"
+ ],
+ "tables": [
+  "academic_years",
+  "attendances",
+  "audit_logs",
+  "batch_teachers",
+  "batches",
+  "consents",
+  "enrollments",
+  "exam_subjects",
+  "exams",
+  "fee_categories",
+  "fee_payments",
+  "fee_structures",
+  "holidays",
+  "import_jobs",
+  "import_rows",
+  "institutions",
+  "otp_tokens",
+  "parent_student",
+  "payments",
+  "programs",
+  "results",
+  "sms_credit_transactions",
+  "sms_logs",
+  "students",
+  "subjects",
+  "subscription_invoices",
+  "subscription_plans",
+  "teacher_subjects",
+  "teachers",
+  "theme_presets",
+  "users",
+  "platform_settings",
+  "qb_class_levels",
+  "qb_subjects",
+  "qb_class_level_subject",
+  "qb_chapters",
+  "qb_chapter_class_level",
+  "qb_topics",
+  "qb_question_types",
+  "qb_questions",
+  "qb_question_options",
+  "qb_creative_parts",
+  "qb_question_stimuli",
+  "qb_question_items",
+  "qb_question_class_level",
+  "qb_question_occurrences",
+  "qb_question_revisions",
+  "qb_media",
+  "qb_media_links",
+  "qb_concepts",
+  "qb_resources",
+  "qb_prices",
+  "qb_price_rules",
+  "qb_unlocks",
+  "qb_student_orders",
+  "qb_student_unlocks",
+  "qb_writer_earnings",
+  "qb_writer_wallets",
+  "qb_writer_wallet_txns",
+  "qb_withdrawal_requests",
+  "qb_papers",
+  "qb_paper_sections",
+  "qb_paper_items",
+  "qb_quiz_packages",
+  "qb_quizzes",
+  "qb_quiz_questions",
+  "qb_student_package_access",
+  "qb_quiz_attempts",
+  "qb_import_map"
+ ],
+ "steps_in_release": [
+  "0.1",
+  "0.2",
+  "0.3",
+  "1.1",
+  "1.2",
+  "1.3",
+  "2.1",
+  "2.2",
+  "2.3",
+  "2.4",
+  "2.5",
+  "2.6",
+  "2.7",
+  "3.1",
+  "3.2",
+  "3.3",
+  "3.4",
+  "3.5",
+  "3.6",
+  "3.7",
+  "3.8",
+  "4.1",
+  "4.2",
+  "4.3",
+  "4.4",
+  "4.5",
+  "4.6",
+  "4.7",
+  "4.8",
+  "5.3",
+  "5.1",
+  "5.2",
+  "8.5"
+ ],
+ "steps_later": {
+  "5.2b": "R2",
+  "5.4": "R2",
+  "5.5": "R2",
+  "5.6": "R1.1",
+  "6.1": "R2",
+  "6.2": "R2",
+  "6.3": "R2",
+  "6.4": "R2",
+  "6.5": "R2",
+  "6.6": "R2",
+  "6.7": "R3",
+  "6.8": "R1.1",
+  "6.9": "R2",
+  "8.4": "R1.1"
+ },
+ "step_scope_notes": {
+  "3.6": "UI Pack runtime Phase A only (classic pack). Kept because pages written without PageSlot are expensive to retrofit.",
+  "3.7": "i18n infrastructure (bn + en) only. No Arabic content, no RTL snapshots (logical Tailwind classes are still mandatory).",
+  "3.8": "Smoke subset: F1 login, F2 enrol->fee->receipt->parent, F5 language toggle. Not the 12-combination matrix.",
+  "4.4": "Fee categories, structures, collection, receipts, dues. NOT: expenses, installments, waivers, online payment, refunds, cash book.",
+  "4.5": "Exams, marks entry, grading, marksheet PDF. NOT: admit card, merit list, weighted result sheets, due-blocking. Parents read results via /parent/children/{id}/results and the marksheet via /results/marksheet/{studentId} (admin, teacher, parent of the child, student) - published exams only.",
+  "4.6": "SMS (absence alert after attendance is saved, receipt SMS after a payment), credits, SMS log + balance view (GET /sms-logs, GET /subscription/sms-credits), platform sender with institution suffix. NOT: notices, bulk fee-due reminders (R1.1), templates/campaigns/emergency (R2), the institution's own sender-ID approval flow (R2).",
+  "4.7": "Admin, teacher, accountant, PARENT panels. NOT: student login.",
+  "4.8": "Receipt, marksheet, due list, attendance report, class list. NOT: ID cards, certificates.",
+  "5.1": "Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.",
+  "5.2": "Plans, trial, grace, suspend, invoices, SSLCommerz subscription payment, SMS-credit purchase. Tax/VAT parameter fixed at 0 until OD-4.",
+  "5.3": "D55-D60 (owner, 2026-10-10): Super Admin opens institutions (no plans), suspends/activates, adds or corrects SMS money; the universal BulkSMSBD API (platform key and sender, the rate per SMS part); the institution's SMS wallet in taka (0.40 per part: 150 GSM / 70 Unicode chars), online recharge with bKash (sandbox until credentials); its own BulkSMSBD key + masking sender with the universal/own on-off toggles (replaces the R2 sender-ID approval). NOT: plans, subscription billing (D55), coupons, support tickets, impersonation.",
+  "8.5": "Load test before opening signup (infra/loadtest/peak-hour.k6.mjs).",
+  "4.2": "Students, enrollment, student-ID, Excel import of students. The import API (/imports) lives in module data_migration, which IS in release.modules for R1 but restricted by config('release.import_kinds') = ['students']; other kinds (teachers, fee_history, results, attendance) are R1.1. The OLD /students/import/* endpoints of student-import.md are SUPERSEDED (that document remains the row-validation and template-column spec).",
+  "4.3": "Daily attendance, holidays, absence SMS. Parents read via /parent/children/{id}/attendance."
+ },
+ "later_features": {
+  "R1.1": [
+   "notices",
+   "expenses",
+   "support tickets",
+   "tenant export / backup (D38)",
+   "student login",
+   "admit card + ID card",
+   "routine",
+   "data-migration wizard + quick wins",
+   "fee due reminders (bulk SMS to parents of students with dues)"
+  ],
+  "R2": [
+   "online fee payment (OD-1)",
+   "UI Pack B/C + theme editor",
+   "custom domain",
+   "public website + admission cycle",
+   "advanced academics (weighted results, due-block, substitution)",
+   "coaching / private-batch / college polish",
+   "Arabic + RTL + madrasa pack"
+  ],
+  "R3": [
+   "payroll + staff",
+   "cash book + refund / reversal",
+   "inventory",
+   "accounting + donations"
+  ],
+  "R4": [
+   "attendance devices"
+  ],
+  "R5": [
+   "coupons, VAT, impersonation, saas-metrics"
+  ],
+  "R6": [
+   "Bangla QR, Nagad, bank disbursement"
+  ],
+  "R7": [
+   "mobile app, AI, GPS"
+  ]
+ },
+ "optional_refs_to_deferred_tables": [
+  "fee_payments.online_payment_id -> online_payments"
+ ],
+ "roles": [
+  "super_admin",
+  "admin",
+  "teacher",
+  "accountant",
+  "parent",
+  "content_writer",
+  "content_moderator",
+  "student"
+ ],
+ "menu_since": {
+  "admin": {
+   "waivers": "R2",
+   "refunds": "R3",
+   "appearance": "R2",
+   "domain": "R2",
+   "sms-sender": "R2",
+   "exports": "R1.1",
+   "sms-templates": "R2",
+   "sms-campaigns": "R2",
+   "emergency": "R2"
+  },
+  "teacher": {
+   "materials": "R2",
+   "messages": "R2"
+  },
+  "parent": {
+   "messages": "R2"
+  },
+  "super_admin": {
+   "online": "R2",
+   "payouts": "R2",
+   "settlements": "R2",
+   "senders": "R2",
+   "domains": "R2",
+   "presets": "R2",
+   "support": "R1.1",
+   "coupons": "R5",
+   "exports": "R1.1",
+   "reports": "R5"
+  },
+  "student": {
+   "dashboard": "R1.1",
+   "routine": "R1.1",
+   "results": "R1.1",
+   "fees": "R1.1",
+   "attendance": "R1.1",
+   "homework": "R1.1",
+   "quiz": "R1.1",
+   "materials": "R1.1",
+   "library": "R1.1",
+   "notices": "R1.1"
+  }
+ },
+ "menu_no_module_ok": {
+  "admin": [
+   "dashboard",
+   "teachers",
+   "programs",
+   "subjects",
+   "collect",
+   "dues",
+   "categories",
+   "general",
+   "terms",
+   "subscription"
+  ],
+  "teacher": [
+   "dashboard",
+   "batches"
+  ],
+  "accountant": [
+   "dashboard"
+  ],
+  "parent": [
+   "dashboard"
+  ],
+  "super_admin": [
+   "dashboard",
+   "institutions",
+   "plans",
+   "billing",
+   "settings",
+   "qb-curriculum",
+   "qb-writers",
+   "qb-questions",
+   "qb-concepts",
+   "qb-resources",
+   "qb-pricing",
+   "qb-quizzes",
+   "qb-withdrawals"
+  ],
+  "content_writer": [
+   "questions",
+   "concepts",
+   "resources",
+   "earnings"
+  ],
+  "content_moderator": [
+   "review",
+   "review-concepts",
+   "review-resources"
+  ],
+  "student": []
+ },
+ "step_tables": {
+  "2.1": [
+   "institutions"
+  ],
+  "2.3": [
+   "users",
+   "otp_tokens"
+  ],
+  "2.4": [
+   "theme_presets"
+  ],
+  "2.5": [
+   "academic_years",
+   "programs",
+   "batches",
+   "subjects",
+   "enrollments",
+   "batch_teachers",
+   "teacher_subjects"
+  ],
+  "2.6": [
+   "audit_logs"
+  ],
+  "4.1": [
+   "teachers"
+  ],
+  "4.2": [
+   "students",
+   "parent_student",
+   "consents",
+   "import_jobs",
+   "import_rows"
+  ],
+  "4.3": [
+   "attendances",
+   "holidays"
+  ],
+  "4.4": [
+   "fee_categories",
+   "fee_structures",
+   "fee_payments"
+  ],
+  "4.5": [
+   "exams",
+   "exam_subjects",
+   "results"
+  ],
+  "4.6": [
+   "sms_logs",
+   "sms_credit_transactions"
+  ],
+  "5.2": [
+   "subscription_plans",
+   "payments",
+   "subscription_invoices"
+  ],
+  "5.3": [
+   "platform_settings"
+  ],
+  "QB.0": [
+   "qb_class_levels",
+   "qb_subjects",
+   "qb_class_level_subject",
+   "qb_chapters",
+   "qb_chapter_class_level",
+   "qb_topics",
+   "qb_question_types",
+   "qb_questions",
+   "qb_question_options",
+   "qb_creative_parts",
+   "qb_question_stimuli",
+   "qb_question_items",
+   "qb_question_class_level",
+   "qb_question_occurrences",
+   "qb_question_revisions",
+   "qb_media",
+   "qb_media_links",
+   "qb_concepts",
+   "qb_resources",
+   "qb_prices",
+   "qb_price_rules",
+   "qb_unlocks",
+   "qb_student_orders",
+   "qb_student_unlocks",
+   "qb_writer_earnings",
+   "qb_writer_wallets",
+   "qb_writer_wallet_txns",
+   "qb_withdrawal_requests",
+   "qb_papers",
+   "qb_paper_sections",
+   "qb_paper_items",
+   "qb_quiz_packages",
+   "qb_quizzes",
+   "qb_quiz_questions",
+   "qb_student_package_access",
+   "qb_quiz_attempts"
+  ],
+  "QB.11": [
+   "qb_import_map"
+  ]
+ },
+ "controllers": {
+  "AccountController": {
+   "release": "R3"
+  },
+  "AccountingReportController": {
+   "release": "R3"
+  },
+  "AccountingSettingController": {
+   "release": "R3"
+  },
+  "AdminOnlinePaymentController": {
+   "release": "R2"
+  },
+  "AdmissionCycleController": {
+   "release": "R2"
+  },
+  "AdmissionLeadActionController": {
+   "release": "R2"
+  },
+  "AttendanceController": {
+   "release": "R1",
+   "step": "4.3"
+  },
+  "AttendanceDeviceController": {
+   "release": "R4"
+  },
+  "AuditLogController": {
+   "release": "R1",
+   "step": "2.6"
+  },
+  "BankReconciliationController": {
+   "release": "R3"
+  },
+  "BatchController": {
+   "release": "R1",
+   "step": "4.1"
+  },
+  "BonusSchemeController": {
+   "release": "R3"
+  },
+  "BootstrapController": {
+   "release": "R1",
+   "step": "2.4"
+  },
+  "BudgetController": {
+   "release": "R3"
+  },
+  "CashBookController": {
+   "release": "R3"
+  },
+  "ConsentController": {
+   "release": "R1",
+   "step": "4.2"
+  },
+  "CouponController": {
+   "release": "R5"
+  },
+  "DashboardController": {
+   "release": "R1",
+   "step": "4.7"
+  },
+  "DevicePunchController": {
+   "release": "R4"
+  },
+  "DevicePunchReviewController": {
+   "release": "R4"
+  },
+  "DomainApprovalController": {
+   "release": "R2"
+  },
+  "DomainController": {
+   "release": "R2"
+  },
+  "DonationCampaignController": {
+   "release": "R3"
+  },
+  "DonationController": {
+   "release": "R3"
+  },
+  "DonationFundController": {
+   "release": "R3"
+  },
+  "DonorController": {
+   "release": "R3"
+  },
+  "DueBlockController": {
+   "release": "R2"
+  },
+  "EmergencyController": {
+   "release": "R2"
+  },
+  "EnrollmentController": {
+   "release": "R1",
+   "step": "4.2"
+  },
+  "ExamController": {
+   "release": "R1",
+   "step": "4.5"
+  },
+  "ExpenseController": {
+   "release": "R1.1"
+  },
+  "ExportController": {
+   "release": "R1.1"
+  },
+  "FeeController": {
+   "release": "R1",
+   "step": "4.4"
+  },
+  "FeePaymentCallbackController": {
+   "release": "R2"
+  },
+  "FeePaymentController": {
+   "release": "R2"
+  },
+  "FeeRefundController": {
+   "release": "R3"
+  },
+  "FinalSettlementController": {
+   "release": "R3"
+  },
+  "GalleryController": {
+   "release": "R2"
+  },
+  "HealthController": {
+   "release": "R1",
+   "step": "2.7"
+  },
+  "HifzController": {
+   "release": "R2+"
+  },
+  "HomeworkController": {
+   "release": "R2+"
+  },
+  "ImpersonationController": {
+   "release": "R5"
+  },
+  "ImportController": {
+   "release": "R1",
+   "step": "4.2"
+  },
+  "IncrementBatchController": {
+   "release": "R3"
+  },
+  "InstitutionController": {
+   "release": "R1",
+   "step": "5.3"
+  },
+  "InstitutionThemeController": {
+   "release": "R2"
+  },
+  "InventoryItemController": {
+   "release": "R3"
+  },
+  "InventoryMovementController": {
+   "release": "R3"
+  },
+  "InventoryReportController": {
+   "release": "R3"
+  },
+  "LeadController": {
+   "release": "R2"
+  },
+  "LessonPlanController": {
+   "release": "R2+"
+  },
+  "LoginController": {
+   "release": "R1",
+   "step": "2.3"
+  },
+  "ManifestController": {
+   "release": "R2"
+  },
+  "MarksLockController": {
+   "release": "R2"
+  },
+  "MaterialController": {
+   "release": "R2"
+  },
+  "MessageController": {
+   "release": "R2"
+  },
+  "NewsController": {
+   "release": "R2"
+  },
+  "NoticeAckController": {
+   "release": "R1.1"
+  },
+  "NoticeController": {
+   "release": "R1.1"
+  },
+  "NotificationController": {
+   "release": "R1",
+   "step": "2.6"
+  },
+  "OnlinePaymentReportController": {
+   "release": "R2"
+  },
+  "PasswordResetController": {
+   "release": "R1",
+   "step": "2.3"
+  },
+  "PayAccountController": {
+   "release": "R3"
+  },
+  "PaymentController": {
+   "release": "R1",
+   "step": "5.2"
+  },
+  "PaymentSettingsController": {
+   "release": "R2"
+  },
+  "PayoutAccountController": {
+   "release": "R2"
+  },
+  "PayrollItemController": {
+   "release": "R3"
+  },
+  "PayrollReportController": {
+   "release": "R3"
+  },
+  "PayrollRunController": {
+   "release": "R3"
+  },
+  "PeriodAttendanceController": {
+   "release": "R2"
+  },
+  "PersonCredentialController": {
+   "release": "R4"
+  },
+  "PlanController": {
+   "release": "R1",
+   "step": "5.2"
+  },
+  "PlatformSettingController": {
+   "release": "R5"
+  },
+  "ProgramController": {
+   "release": "R1",
+   "step": "4.1"
+  },
+  "ProvidentFundController": {
+   "release": "R3"
+  },
+  "PublicAdmissionController": {
+   "release": "R2"
+  },
+  "PublicAdmissionPayController": {
+   "release": "R2"
+  },
+  "PublicAdmissionStatusController": {
+   "release": "R2"
+  },
+  "PublicEventController": {
+   "release": "R2"
+  },
+  "PublicSiteController": {
+   "release": "R2"
+  },
+  "PublicTeacherController": {
+   "release": "R2"
+  },
+  "PublicThemeController": {
+   "release": "R2"
+  },
+  "ReportController": {
+   "release": "R1",
+   "step": "4.8"
+  },
+  "ResultController": {
+   "release": "R1",
+   "step": "4.5"
+  },
+  "ResultSheetController": {
+   "release": "R2"
+  },
+  "RiskController": {
+   "release": "R2+"
+  },
+  "RoutineBlockController": {
+   "release": "R2"
+  },
+  "RoutineController": {
+   "release": "R1.1"
+  },
+  "SAReportController": {
+   "release": "R5"
+  },
+  "SalaryAdjustmentController": {
+   "release": "R3"
+  },
+  "SalaryAdvanceController": {
+   "release": "R3"
+  },
+  "SalaryComponentController": {
+   "release": "R3"
+  },
+  "SalaryRevisionController": {
+   "release": "R3"
+  },
+  "SalaryStructureController": {
+   "release": "R3"
+  },
+  "SessionController": {
+   "release": "R1",
+   "step": "2.3"
+  },
+  "SettingController": {
+   "release": "R1",
+   "step": "2.4"
+  },
+  "SettlementController": {
+   "release": "R2"
+  },
+  "SignupController": {
+   "release": "R1",
+   "step": "5.1"
+  },
+  "SitePageController": {
+   "release": "R2"
+  },
+  "SmsCampaignController": {
+   "release": "R2"
+  },
+  "SmsCreditController": {
+   "release": "R1",
+   "step": "5.3"
+  },
+  "SmsSenderApprovalController": {
+   "release": "R2"
+  },
+  "SmsSenderController": {
+   "release": "R1",
+   "step": "5.3"
+  },
+  "SmsTemplateController": {
+   "release": "R2"
+  },
+  "SmsWebhookController": {
+   "release": "R2"
+  },
+  "SslCommerzController": {
+   "release": "R1",
+   "step": "5.2"
+  },
+  "StaffAttendanceController": {
+   "release": "R3"
+  },
+  "StaffController": {
+   "release": "R3"
+  },
+  "StudentController": {
+   "release": "R1",
+   "step": "4.2"
+  },
+  "StudentLeaveController": {
+   "release": "R2"
+  },
+  "StudentPrivacyController": {
+   "release": "R1",
+   "step": "8.1"
+  },
+  "SubjectController": {
+   "release": "R1",
+   "step": "4.1"
+  },
+  "SubscriptionController": {
+   "release": "R1",
+   "step": "5.2"
+  },
+  "SubstitutionController": {
+   "release": "R2"
+  },
+  "SuperBackupController": {
+   "release": "R1.1"
+  },
+  "SuperCouponController": {
+   "release": "R5"
+  },
+  "SuperImportController": {
+   "release": "R1.1"
+  },
+  "SuperRefundController": {
+   "release": "deferred-D55",
+   "blocked_by": "D55/D84: future module-based subscription billing refinement"
+  },
+  "SuperSupportController": {
+   "release": "R1.1"
+  },
+  "SupportTicketController": {
+   "release": "R1.1"
+  },
+  "SyllabusCoverageController": {
+   "release": "R2+"
+  },
+  "SyllabusUnitController": {
+   "release": "R2+"
+  },
+  "TeacherAttendanceController": {
+   "release": "R3"
+  },
+  "TeacherController": {
+   "release": "R1",
+   "step": "4.1"
+  },
+  "TeacherPayoutController": {
+   "release": "R2",
+   "step": "6.1"
+  },
+  "TeacherSalaryController": {
+   "release": "R3"
+  },
+  "TenantPurgeController": {
+   "release": "R1",
+   "step": "8.1"
+  },
+  "TerminologyController": {
+   "release": "R1",
+   "step": "2.2"
+  },
+  "ThemeController": {
+   "release": "R1",
+   "step": "2.4"
+  },
+  "ThemePresetController": {
+   "release": "R2"
+  },
+  "TlsCheckController": {
+   "release": "R2"
+  },
+  "TransportController": {
+   "release": "R4"
+  },
+  "VerifyController": {
+   "release": "R2+"
+  },
+  "VoucherController": {
+   "release": "R3"
+  },
+  "WebsiteSettingsController": {
+   "release": "R2"
+  },
+  "SmsLogController": {
+   "release": "R1",
+   "step": "4.6"
+  },
+  "LeaveTypeController": {
+   "release": "R3",
+   "step": "R3.4"
+  },
+  "LeaveController": {
+   "release": "R3",
+   "step": "R3.4"
+  },
+  "UniversalSmsController": {
+   "release": "R1",
+   "step": "5.3"
+  },
+  "SmsRechargeCallbackController": {
+   "release": "R1",
+   "step": "5.3"
+  },
+  "QbCurriculumController": {
+   "release": "R1",
+   "step": "QB.1"
+  },
+  "QbWriterController": {
+   "release": "R1",
+   "step": "QB.2"
+  },
+  "QbQuestionController": {
+   "release": "R1",
+   "step": "QB.2"
+  },
+  "QbMediaController": {
+   "release": "R1",
+   "step": "QB.3"
+  },
+  "QbConceptController": {
+   "release": "R1",
+   "step": "QB.5"
+  },
+  "QbResourceController": {
+   "release": "R1",
+   "step": "QB.5"
+  },
+  "QbLibraryController": {
+   "release": "R1",
+   "step": "QB.5"
+  },
+  "QbPricingController": {
+   "release": "R1",
+   "step": "QB.6"
+  },
+  "QbPurchaseController": {
+   "release": "R1",
+   "step": "QB.7"
+  },
+  "QbPaperController": {
+   "release": "R1",
+   "step": "QB.8"
+  },
+  "QbStudentController": {
+   "release": "R1",
+   "step": "QB.9"
+  },
+  "QbStudentOrderCallbackController": {
+   "release": "R1",
+   "step": "QB.9"
+  },
+  "QbQuizController": {
+   "release": "R1",
+   "step": "QB.10"
+  },
+  "QbStudentQuizController": {
+   "release": "R1",
+   "step": "QB.10"
+  },
+  "QbPublicQuizController": {
+   "release": "R1",
+   "step": "QB.10"
+  },
+  "QbEarningController": {
+   "release": "R1",
+   "step": "QB.10b"
+  },
+  "QbWithdrawalController": {
+   "release": "R1",
+   "step": "QB.10b"
+    },
+    "AccountActivationController": {
+     "release": "R3"
+    },
+    "PublicInstitutionSignupController": {
+     "release": "R3"
+    },
+    "InstitutionApprovalController": {
+     "release": "R3"
+    },
+    "StaffAccountController": {
+     "release": "R3"
+    },
+    "DepartmentController": {
+     "release": "R3"
+    },
+    "DepartmentDutyController": {
+     "release": "R3"
+    },
+    "DepartmentMembershipController": {
+     "release": "R3"
+    },
+    "DepartmentContextController": {
+     "release": "R3"
+  }
+ },
+ "route_exclude": [
+  {
+   "controller": "FeeController",
+   "path_regex": "^/fees/waivers",
+   "why": "waivers are R2"
+  },
+  {
+   "controller": "ExamController",
+   "path_regex": "^/exams/\\{id\\}/(seat-plan|merit-list)",
+   "why": "seat plan and merit list are R1.1+"
+  },
+  {
+   "controller": "ResultController",
+   "path_regex": "^/student/results",
+   "why": "student login is R1.1"
+  },
+  {
+   "controller": "AttendanceController",
+   "path_regex": "^/student/attendance",
+   "why": "student login is R1.1"
+  },
+  {
+   "controller": "DashboardController",
+   "path_regex": "^/student/dashboard",
+   "why": "student login is R1.1"
+  },
+  {
+   "controller": "StudentController",
+   "path_regex": "^/students/(\\{id\\}/(card|transfer)|promote)$",
+   "why": "ID card, TC/transfer and promotion are later modules"
+  },
+  {
+   "controller": "ThemeController",
+   "path_regex": "^/admin/theme/(tokens|layout|pack|preset|favicon)",
+   "why": "theme editor is R2; R1 has logo and brand colour only"
+  },
+  {
+   "controller": "LoginController",
+   "path_regex": "^/auth/ui-preferences",
+   "why": "accessibility mode is later"
+  },
+  {
+   "controller": "NotificationController",
+   "path_regex": "^/user/fcm-token",
+   "why": "push / mobile app is R7"
+  }
+ ],
+ "step_extra_tests": {
+  "2.2": [
+   "ReleaseGateTest"
+  ],
+  "2.3": [
+   "ReleaseRolesTest",
+   "LocaleTest"
+  ],
+  "2.6": [
+   "TenantBulkGuardTest",
+   "FileDiskNamesTest"
+  ],
+  "3.3": [
+   "MenuReleaseTest"
+  ],
+  "4.2": [
+   "FilePathPrefixTest",
+   "FileCollisionTest",
+   "ImportKindsTest"
+  ],
+  "4.3": [
+   "AttendanceBulkQueryCountTest",
+   "BatchReportQueryCountTest",
+   "ParentAttendanceAccessTest"
+  ],
+  "5.1": [
+   "SignupModeTest"
+  ],
+  "8.1": [
+   "ErasureRemovesAllStudentFilesTest",
+   "TenantPurgeFilesTest",
+   "RetentionPurgeTest"
+  ],
+  "4.5": [
+   "ParentResultAccessTest",
+   "MarksheetAccessTest"
+  ],
+  "4.6": [
+   "SmsLogTest",
+   "SmsCreditBalanceTest"
+  ],
+  "5.3": [
+   "SmsWalletTest",
+   "SmsRouteTest",
+   "SmsRechargeTest",
+   "SuperInstitutionTest"
+  ]
+ },
+ "extra_tasks": [
+  {
+   "id": "S",
+   "after": "2.7",
+   "title": "Walking-skeleton Spike and Gate (D28)",
+   "goal": "Prove the architecture end to end on a thin slice BEFORE building the rest; measure; the owner signs the Gate.",
+   "spec": [
+    "docs/spike/walking-skeleton.md",
+    "docs/spike/SPIKE-READY.md",
+    "docs/spike/SPIKE-RUNBOOK.md"
+   ],
+   "scope": "S0-S8 incl. S5b/S5c/S5d. Run mysql-smoke.sh (exit must be 0) and perf-check.py first (SPIKE-RUNBOOK step 0, S1b).",
+   "done": "Gate recorded and signed in docs/SPIKE-LOG.md. If the Gate says Adjust/Stop, STOP and return to the owner - do not start Phase 3.",
+   "verify": [
+    "bash infra/scripts/mysql-smoke.sh",
+    "python3 infra/scripts/perf-check.py --scale 0.1",
+    "bash infra/scripts/schema-diff.sh lms lms_smoke"
+   ]
+  },
+  {
+   "id": "8.1",
+   "after": "5.3",
+   "title": "Privacy and children's data (D27)",
+   "goal": "Make the product lawful and safe to open to strangers' schools.",
+   "spec": [
+    "docs/legal/privacy-and-consent.md",
+    "docs/architecture/file-storage.md",
+    "docs/SECURITY.md"
+   ],
+   "scope": "StudentErasureService (one deleteDirectory under institutions/{id}/students/{sid}/ + rows); tenant:purge; sms:trim and audit:trim retention (NOT leads:purge, tenants:purge-due, devices:prune, risk:prune - those modules are later); /privacy and /terms pages (text supplied by the owner's lawyer); INCIDENT-RUNBOOK.md; the restore drill.",
+   "done": "ErasureRemovesAllStudentFilesTest, TenantPurgeFilesTest, RetentionPurgeTest green; privacy/terms pages render from the owner-supplied text.",
+   "verify": [
+    "php artisan test --filter=Erasure",
+    "php artisan test --filter=Retention"
+   ]
+  },
+  {
+   "id": "8.2",
+   "after": "8.1",
+   "title": "Security hardening",
+   "goal": "Close the security checklist before strangers use it.",
+   "spec": [
+    "docs/SECURITY.md",
+    "docs/ops/security-checklist.md",
+    "docs/AUTHORIZATION.md"
+   ],
+   "scope": "Every item of the checklist; permission matrix (SECURITY.md) vs RoleMatrixContractTest; token lifetimes per role (D26); rate limits; cross-tenant tests for EVERY R1 route (CrossTenantRouteTest).",
+   "done": "Checklist ticked with evidence in docs/PROGRESS.md; RouteMiddlewareContractTest, CrossTenantRouteTest, RoleMatrixContractTest green.",
+   "verify": [
+    "php artisan test --filter=Contract",
+    "php artisan test --filter=CrossTenant"
+   ]
+  },
+  {
+   "id": "8.5",
+   "after": "8.2",
+   "title": "Load and scale test (before SIGNUP_MODE=open)",
+   "goal": "Know the peak-hour behaviour before strangers arrive.",
+   "spec": [
+    "docs/ops/performance-benchmarks.md",
+    "infra/loadtest/peak-hour.k6.mjs"
+   ],
+   "scope": "perf-check.py at SCALE=1 on target-like hardware; then the k6 peak-hour profile against a disposable database.",
+   "done": "No FULLSCAN/SORT/SLOW; p95 within the owner's limit at the measured peak; scaling triggers in performance-benchmarks.md replaced by measured numbers.",
+   "verify": [
+    "python3 infra/scripts/perf-check.py",
+    "k6 run -e INPUT=infra/loadtest/inputs.json infra/loadtest/peak-hour.k6.mjs"
+   ]
+  },
+  {
+   "id": "9.1",
+   "after": "8.5",
+   "title": "Deployment, backup, monitoring",
+   "goal": "A production environment that survives a bad day.",
+   "spec": [
+    "docs/ops/deployment-plan.md",
+    "docs/ops/docker-setup.md",
+    "infra/nginx.conf",
+    "infra/Caddyfile",
+    "infra/github-actions-cicd.yml",
+    "docs/ops/performance-benchmarks.md"
+   ],
+   "scope": "D64: everything that needs no real server is built and tested NOW - Docker (staging), Nginx internal + Caddy edge config, WILDCARD subdomain only (custom domain is R2: skip custom-domain.md Part C), the CI/CD workflow (its deploy step waits for the server address and secrets), MySQL backup + a restore rehearsed locally, slow-query log (long_query_time 0.5), queue-depth and error monitoring, FILES_DRIVER=s3 if more than one server. Buying the server, DNS, real keys, going live and the load test on the real server wait for the owner's deploy decision.",
+   "done": "D64: the CI workflow runs tests and builds on push (deploy step ready, switched off until the server exists); a backup is restored into a clean database locally and mysql-smoke.sh passes against it; alerts fire on a forced error (locally). On the real server, at deploy: push to main deploys, the restore and the alert are repeated.",
+   "verify": [
+    "bash infra/scripts/mysql-smoke.sh"
+   ]
+  },
+  {
+   "id": "A",
+   "after": "9.1",
+   "title": "Release 1 acceptance (local, D63/D64), open signup at deploy",
+   "goal": "Decide, with evidence, that strangers may sign up.",
+   "spec": [
+    "docs/RELEASE-1.md"
+   ],
+   "scope": "D63/D64: tick, with evidence, every box of RELEASE-1.md section 7 that can be proven locally (attendance->SMS, fee->receipt, marksheet, parent view, cross-tenant, erasure, load test, mysql-smoke.sh and perf-check.py on local MySQL, Spike Gate); the signup/subscription box (5.1/5.2, after all modules - D55) and the server boxes are ticked before deploy; SIGNUP_MODE stays closed/invite.",
+   "done": "Every locally provable box of section 7 ticked with evidence and the owner's acceptance written in docs/PROGRESS.md; Release 3 may start. SIGNUP_MODE=open only at deploy (an owner decision, never the agent's).",
+   "verify": [
+    "python3 infra/spec-verify/verify.py . --deep"
+   ]
+  },
+  {
+   "id": "QB.0",
+   "after": "A",
+   "title": "Question bank foundation: schema, module keys, roles, catalogue rule",
+   "goal": "Every later QB task has its tables, its module gate and the platform-catalogue rule in place.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "D65/D66: the qb_* tables of question-bank.md §3 into docs/database/schema.sql and as migrations (append-only); module keys `question_bank`, `quiz` (all four types); platform roles `content_writer`, `content_moderator`; the PlatformCatalogue rule (catalogue models have no institution_id, tenant hosts read only `published`, writes refused) with an architecture test; student login switched on for the question bank (release roles).",
+   "done": "schema-diff.sh and the schema parity check zero; migrations run on MySQL; TenancyArchitectureTest and a PlatformCatalogueTest green; the module gate refuses the routes when the module is off.",
+   "verify": [
+    "php artisan test",
+    "bash infra/scripts/schema-diff.sh"
+   ]
+  },
+  {
+   "id": "QB.1",
+   "after": "QB.0",
+   "title": "Curriculum: class → subject → chapter → topic",
+   "goal": "The Super Admin maintains the curriculum tree every question hangs on.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "qb_class_levels, qb_subjects, qb_chapters, qb_topics (+ pivots): Super Admin CRUD on the central host and its React pages; a seed from qbank's class/subject lists; optional programs.qb_class_level_id link.",
+   "done": "Super Admin builds a class → subject → chapter → topic tree; other roles 403; tests and e2e smoke.",
+   "verify": [
+    "php artisan test --filter=QbCurriculum",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-curriculum.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.2",
+   "after": "QB.1",
+   "title": "Writers' panel: writers, moderators, revisions, review flow",
+   "goal": "Platform writers and moderators can work on the central host.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "Super Admin adds/removes content_writer and content_moderator users; login on the central host; draft → review → published/rejected with a reason; every save a qb_question_revisions row; audit log.",
+   "done": "A writer cannot publish; a moderator can; a rejected item returns to the writer with the reason; tests.",
+   "verify": [
+    "php artisan test --filter=QbReview",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-writer.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.3",
+   "after": "QB.2",
+   "title": "Questions: core types and the editor",
+   "goal": "Writers create the main question types with text, math and images.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "qb_question_types (qbank's slugs), qb_questions, options, creative parts, occurrences, media: API + React editor for mcq, creative, short, true_false, fill_in_the_blank, one_word_answer; Bengali/English; LaTeX math with `mathlive` (D66); images on the private disk; preview.",
+   "done": "A writer saves each core type with math and an image and sees the preview; answers never leak in any API response without an unlock (QuestionAnswerNeverLeaksTest).",
+   "verify": [
+    "php artisan test --filter=\"QbQuestion|QuestionAnswerNeverLeaks\"",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-editor.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.4",
+   "after": "QB.3",
+   "title": "Questions: the structured types",
+   "goal": "The rest of qbank's question types.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "qb_question_items / stimuli for gap/cloze/matching/rearrange/passage-based types, following qbank's structured model.",
+   "done": "Each structured type round-trips through the API and renders in the editor and the viewer; tests.",
+   "verify": [
+    "php artisan test --filter=\"QbStructured|QuestionAnswerNeverLeaks\"",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-structured.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.5",
+   "after": "QB.4",
+   "title": "Concepts and resources (slides, books, PDFs)",
+   "goal": "Topic-based concepts and downloadable resources.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "qb_concepts (topic-based, same review flow), qb_resources (slide/book/pdf on the private disk, page count, preview pages); viewer pages.",
+   "done": "A concept and a PDF go through review and are viewable within their access rules; tests.",
+   "verify": [
+    "php artisan test --filter=\"QbConcept|QbResource|QbLibrary\"",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-concepts.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.6",
+   "after": "QB.5",
+   "title": "Prices and the free / partly-free / discount rule engine",
+   "goal": "The Super Admin sets every price and every rule.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "qb_prices (audience institution|student, per question type and item kind, new row per change) and qb_price_rules with every method of question-bank.md §4.3 and its precedence; QbPricingService::quote() with the winning rule; the Super Admin's rule pages with a preview.",
+   "done": "Each method and the precedence order are tested to the paisa; ROUND_HALF_UP; never below 0.",
+   "verify": [
+    "php artisan test --filter=QbPricing",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-pricing.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.7",
+   "after": "QB.6",
+   "title": "Teachers: browse, buy with the institution wallet, spending",
+   "goal": "Teachers use the bank; the institution pays once for all its teachers.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "Browse/search/filter (free to view); buying answers+paper use from the institution wallet (the SMS taka wallet, ledger type qb_purchase) in one locked transaction; qb_unlocks unique per institution; a private-batch tenant buys again; monthly cap per teacher; the head teacher's spending report per teacher.",
+   "done": "Two teachers buying the same item at once are charged once; an empty wallet is 402; the cap is 422; another institution's unlock never helps; tests + e2e.",
+   "verify": [
+    "php artisan test --filter=QbPurchase",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-buy.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.8",
+   "after": "QB.7",
+   "title": "Question papers: builder, PDF, the head teacher's view",
+   "goal": "Teachers build institution question papers.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "qb_papers, sections, items; adding a not-yet-bought question buys it after confirmation; Chromium PDF (D50) with/without answers, sets A/B; teachers see their own papers, the head teacher all of the institution's.",
+   "done": "A paper with a creative and an MCQ section prints in Bengali; the head teacher sees every teacher's papers; tests + e2e.",
+   "verify": [
+    "php artisan test --filter=QbPaper",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-paper.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.9",
+   "after": "QB.8",
+   "title": "Student login and portal: practice, concepts, bKash purchases",
+   "goal": "Students prepare from the bank.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "Student login on (release roles); the portal: own class's subject → chapter → topic, questions, concepts; answer/concept purchases by bKash to the platform merchant (D58 BkashService, central callback) with qb_student_orders and qb_student_unlocks; student prices.",
+   "done": "A student sees questions free, pays to see an answer once, and another student does not get it; a failed or tampered payment unlocks nothing; tests.",
+   "verify": [
+    "php artisan test --filter=QbStudent",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-student.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.10",
+   "after": "QB.9",
+   "title": "Quizzes and quiz packages",
+   "goal": "Online quizzes for students.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "qb_quiz_packages (validity days), qb_quizzes (access package|free|public, scope, timing), attempts scored on the server, auto-submit at time-up, public page for public quizzes.",
+   "done": "Package expiry closes its quizzes; free and public quizzes work as specified; scoring is server-side; tests + e2e.",
+   "verify": [
+    "php artisan test --filter=QbQuiz",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-quiz.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.10b",
+   "after": "QB.10",
+   "title": "Writers' earnings, wallet and withdrawals",
+   "goal": "Writers earn a share of every sale and withdraw it.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "qb_writer_earnings in the sale's transaction, writer wallets and ledger, withdrawal requests that hold the amount, the Super Admin's paid (with the bank transaction id) / rejected flow, audit log; writer pages.",
+   "done": "Every sale credits the writer's share to the paisa; a pending request holds the money; paid reduces it once; rejected releases it; tests.",
+   "verify": [
+    "php artisan test --filter=QbWriter",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-earnings.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.11",
+   "after": "QB.10b",
+   "title": "Import from qbank",
+   "goal": "The owner's existing questions come over.",
+   "spec": [
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "`php artisan qb:import-from-qbank` reading qbank's database: curriculum, question types, questions with options/parts/items, occurrences, media; dry run first, idempotent, a report of what was skipped and why.",
+   "done": "A dry run lists counts; a real run imports them once; a second run changes nothing; tests on a fixture.",
+   "verify": [
+    "php artisan test --filter=QbImport",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.12",
+   "after": "QB.11",
+   "title": "qbank-style question editor (D72)",
+   "goal": "Writers get qbank's editor: the same layout and toolbar, formatting kept.",
+   "spec": [
+    "docs/LOCKED-DECISIONS.md",
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "D72: /writer/questions/{id} in qbank's layout (parts list, editor with toolbar, live preview); the toolbar wraps the selection in D72's small HTML vocabulary (math regions get LaTeX); the server keeps only that vocabulary in every *_text field (QbRichText); the browser renders it from an allowlist into elements, never raw HTML; lists and search show the text without tags; the qbank import keeps the vocabulary and --refresh-text brings the formatting back. No new table, column, route or package. Diagram tools, charts and video are a later step.",
+   "done": "Formatting written with the toolbar is saved, shown in the preview and the library the same way; anything outside the vocabulary (script, on*, style, links) never reaches the page; tests.",
+   "verify": [
+    "php artisan test --filter=QbRichText",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-editor.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.13",
+   "after": "QB.12",
+   "title": "Smart editor: mixed parts, new item kinds, the new-question form (D73)",
+   "goal": "Writers can build every board / NCTB question format in one editor.",
+   "spec": [
+    "docs/LOCKED-DECISIONS.md",
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "D73 plus D74: any structured question mixes its parts (sub_mcq, sub_question, gap, match_pair, order_step and the new true_false, table_fill, match_triple, multi_field) with marks per part; gaps may carry a base-word hint; the review check and the quiz marker understand the new kinds; answers never leave without an unlock. The new-question page as qbank's: class levels, exam type, source history (type, full name, short name, year in the existing occurrence fields), a question code shown from type + id, searchable subject / chapter / topic, a draft first and then the editor; the Super Admin may add a subject / chapter / topic from the form (the existing curriculum routes; adding a question type waits for a route of its own). No language or content-mode selector: new writer questions use hidden language=und and content_mode=mixed; imports preserve source metadata. The metadata rail contains type, subject, chapter, topic, difficulty, marks, applicable classes and source history. No new table or column.",
+   "done": "A seen passage with MCQ + answer questions + a gap fill + true/false is written, saved, previewed, submitted and published; each new kind round-trips and is marked; tests.",
+   "verify": [
+    "php artisan test --filter=QbStructured",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-structured.spec.js e2e/qb-editor.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  },
+  {
+   "id": "QB.14",
+   "after": "QB.12",
+   "title": "qbank's table builder and picture tool (D72, later step)",
+   "goal": "Writers build tables and place pictures inside the text as in qbank.",
+   "spec": [
+    "docs/LOCKED-DECISIONS.md",
+    "docs/modules/question-bank.md"
+   ],
+   "scope": "D72's later step: a table builder (rows, columns, caption, border, width, alignment, cell spacing, header row / column, striped rows, a cell grid to type in, merge selected cells and split a cell, editing a table already in the text) and a picture tool (drop, paste or choose; place at the cursor, at the start, at the end or after paragraph N; alignment; size in %; rotation; a light background made transparent; undo / redo; the picture is uploaded as the question's media). The vocabulary gains `caption` and an `img` that names only the question's own media by id with its width and alignment - never a URL; the server keeps nothing else. No new table, column, route or package.",
+   "done": "A table with a merged cell and a caption, and a rotated picture placed after paragraph 2 at 50% width, are saved, shown in the preview, the library and the paper PDF; an img naming a URL or an unknown attribute never survives; tests.",
+   "verify": [
+    "php artisan test --filter=QbRichText",
+    "npm test && npm run lint:theme",
+    "npx playwright test e2e/qb-editor.spec.js",
+    "php artisan test   # whole suite stays green"
+   ]
+  }
+ ],
+ "interview_cards": [
+  "হাজিরা ও অনুপস্থিতির SMS",
+  "ফি আদায় ও রসিদ",
+  "পরীক্ষা ও মার্কশিট",
+  "অভিভাবক-পোর্টাল",
+  "অনলাইনে ফি-পেমেন্ট (bKash/কার্ড)",
+  "অভিভাবককে নোটিশ/ঘোষণা",
+  "ছাত্রের নিজের লগইন",
+  "ক্লাস-রুটিন",
+  "admit card ও ID কার্ড",
+  "খরচের হিসাব ও ক্যাশবুক",
+  "বকেয়া থাকলে ফল আটকানো",
+  "মেধা-তালিকা ও ওজনযুক্ত ফল",
+  "স্কুলের নিজের নামে SMS (sender ID)",
+  "স্কুলের নিজস্ব ওয়েবসাইট",
+  "সব ডেটা Excel-এ নামানো/ব্যাকআপ",
+  "শিক্ষকের বেতন-হিসাব",
+  "ছাত্রের ছুটির আবেদন",
+  "বকেয়া ফি-র স্মারক SMS (অভিভাবককে পাঠানো)"
+ ],
+ "import_kinds": [
+  "students"
+ ],
+ "step_done": {
+  "4.1": "school-এ শ্রেণি (program) ও শাখা (batch) তৈরি/সম্পাদনা; শাখায় শ্রেণিশিক্ষক ও বিষয়-শিক্ষক নিয়োগ; শাখা-ভিত্তিক ছাত্র-তালিকা; terminology-প্রিসেটে 'শ্রেণি/শাখা' শব্দ দেখায় (`GET /bootstrap`)।",
+  "4.2": "school-এ ছাত্র ভর্তি (CRUD, ছাত্র-ID স্বয়ংক্রিয়, অভিভাবকের ফোন থেকে parent অ্যাকাউন্ট); দ্বিতীয় সক্রিয় enrollment চাইলে 422 error; plan-এর `max_students` পূর্ণ হলে 403 `student_limit_reached`; Excel (`kind=students`) আমদানি: ফাইল → dry-run → চালান, ৩০০ ছাত্রে ত্রুটিপূর্ণ সারি আলাদা রিপোর্টে, আবার চালালে দ্বিতীয়বার সব skipped; `kind=teachers` অনুরোধে 422 `kind_not_available`; ছাত্র মুছলে/বেনামি করলে ছবি-সহ সব ফাইল মোছে।",
+  "4.3": "school-এ শিক্ষক নিজের শাখার হাজিরা তোলে ('সবাই উপস্থিত' বোতামসহ, মোবাইলে কার্ড-ধরন); ছুটির দিনে 422 `holiday_date`; অনুপস্থিত ছাত্রের অভিভাবকের জন্য SMS queue-তে যায়; অভিভাবক `/parent/children/{id}/attendance`-এ সন্তানের হাজিরা দেখে, অন্যের সন্তান নয়; ৪০ ছাত্রের সংরক্ষণ ≤ ৬টি কোয়েরি।",
+  "4.5": "school-এ নম্বর-এন্ট্রি (শিক্ষক শুধু নিজের বিষয়ে); GPA marksheet PDF (শতকরা + component-ভিত্তিক পাস নিয়ম অনুযায়ী, বাংলা যুক্তাক্ষর ঠিক) `GET /results/marksheet/{studentId}`: admin/শিক্ষক যেকোনো ছাত্রের, অভিভাবক শুধু নিজের সন্তানের, শুধু প্রকাশিত পরীক্ষার (অপ্রকাশিতে 403); ফল প্রকাশ → অভিভাবক-পোর্টালে দৃশ্যমান; একই (exam, student, subject) দুবার নয়।",
+  "4.6": "sandbox/log driver-এ SMS queue হয়ে `sms_logs`-এ যায়; quota ও credit কাটে (বাংলা বার্তার অংশ-গণনা সঠিক, `sms_logs.segments`); platform default sender + প্রতিষ্ঠানের নামের suffix যুক্ত হয়; gateway ব্যর্থ হলে retry ও `fallback_used`; admin `GET /sms-logs` (cursor-pagination) ও `GET /subscription/sms-credits` (ব্যালেন্স + লেনদেন) দেখে।",
+  "5.3": "`admin.lvh.me`-এ শুধু super_admin; প্রতিষ্ঠান খোলা/বন্ধ; SMS-অংশপ্রতি ওয়ালেট থেকে টাকা কাটে (D56), ব্যালেন্স না থাকলে 402; নিজস্ব API চালু থাকলে ইউনিভার্সাল ব্যবহার হয় না ও টাকা কাটে না (D59); bKash sandbox রিচার্জে ওয়ালেট বাড়ে, লেজারে সারি; module override দিলে সেই tenant-এর menu সঙ্গে সঙ্গে বদলায়।"
+ },
+ "must_have_routes": [
+  "POST /attendance",
+  "GET /attendance",
+  "GET /parent/children/{id}/attendance",
+  "POST /fees/collect",
+  "GET /fees/dues",
+  "GET /fees/receipt/{id}",
+  "GET /parent/fees",
+  "POST /results/bulk",
+  "POST /exams/{id}/publish",
+  "GET /results/marksheet/{studentId}",
+  "GET /parent/children/{id}/results",
+  "GET /parent/children",
+  "GET /parent/dashboard",
+  "GET /sms-logs",
+  "POST /subscription/sms-credits",
+  "POST /public/signup",
+  "POST /subscription/checkout",
+  "POST /billing/ssl/ipn",
+  "GET /super/institutions",
+  "POST /imports",
+  "POST /imports/{id}/{action}",
+  "PUT /auth/locale",
+  "POST /students/{id}/anonymize",
+  "PUT /parent/consents/{type}"
+ ],
+ "api_superseded": [
+  "/students/import"
+ ],
+ "d47_amend": {
+  "2.2": "**D47:** `SubscriptionCheck`-এ plan-সীমা (`max_students`, `max_batches`) **বানাবেন না** — সংখ্যা বা স্টোরেজের কোনো সীমা নেই। মডিউল-গেট (ধরন, মডিউল-তালিকা, রিলিজ-গেট) যেমন আছে তেমন; plan-ভিত্তিক গেট নয় (পুনর্লিখন: `docs/PRICING-MODEL.md` PM-1)।",
+  "4.2": "**D47:** ছাত্র-সংখ্যার সীমা (`student_limit_reached` 403, `max_students`) **বানাবেন না — এই শেষ-শর্ত বাতিল**; ছাত্র বা শাখার সংখ্যার কোনো সীমা নেই।"
+ },
+ "d47_blocked": {
+  "5.1": "**D47:** সাইন-আপে plan বাছাই ও plan-ভিত্তিক ট্রায়াল বাতিল হচ্ছে; মডিউল-ভিত্তিক সাবস্ক্রিপশনের স্পেক (`docs/PRICING-MODEL.md` PM-1) লেখা ও মালিক-অনুমোদিত না হওয়া পর্যন্ত **বানানো নিষিদ্ধ**। **D55/D60 (2026-10-10):** সাবস্ক্রিপশন সব মডিউলের পরে; ক্রমে এখন 9.1-এর পরে।",
+  "5.2": "**D47:** plan-ভিত্তিক সাবস্ক্রিপশন ও বিলিং (`subscription_plans`, `max_*`, plan-গেট) বাতিল; মডিউল-ভিত্তিক সাবস্ক্রিপশন-স্পেক (PM-1) লেখার আগে **বানানো নিষিদ্ধ**। **D55/D60 (2026-10-10):** সাবস্ক্রিপশন সব মডিউলের পরে; ক্রমে এখন 9.1-এর পরে।"
+ }
+}

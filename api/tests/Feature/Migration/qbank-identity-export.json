@@ -1,0 +1,29 @@
+{
+  "users": [
+    {"id": 1, "name": "Root", "email": "root@qbank.test", "email_verified_at": "2026-01-01", "role": "super-admin", "is_active": true},
+    {"id": 2, "name": "Platform Admin", "email": "padmin@qbank.test", "email_verified_at": "2026-01-01", "role": "admin", "is_active": true},
+    {"id": 3, "name": "Moderator", "email": "Mod@qbank.test", "email_verified_at": "2026-01-01", "role": "moderator", "is_active": true},
+    {"id": 4, "name": "Writer", "email": "writer@qbank.test", "email_verified_at": "2026-01-01", "role": "user", "is_active": true},
+    {"id": 5, "name": "Unverified", "email": "late@qbank.test", "email_verified_at": null, "role": "user", "is_active": true},
+    {"id": 6, "name": "Twin A", "email": "twin@qbank.test", "email_verified_at": "2026-01-01", "role": "user", "is_active": true},
+    {"id": 7, "name": "Twin B", "email": "TWIN@qbank.test", "email_verified_at": "2026-01-01", "role": "user", "is_active": true},
+    {"id": 8, "name": "Head Teacher", "email": "head@school.test", "email_verified_at": "2026-01-01", "role": "teacher", "is_active": true},
+    {"id": 9, "name": "Class Teacher", "email": "teacher@school.test", "email_verified_at": "2026-01-01", "role": "teacher", "is_active": true},
+    {"id": 10, "name": "Existing", "email": "existing@platform.test", "email_verified_at": "2026-01-01", "role": "user", "is_active": true},
+    {"id": 11, "name": "Freelance Teacher", "email": "author@qbank.test", "email_verified_at": "2026-01-01", "role": "teacher", "is_active": true}
+  ],
+  "institutions": [
+    {"id": 100, "name_bn": "আদর্শ বিদ্যালয়", "name_en": "Adarsha School", "slug": "adarsha", "institution_type": "school", "is_active": true},
+    {"id": 101, "name_bn": "মালিকহীন কোচিং", "slug": "no-owner", "institution_type": "coaching", "is_active": true}
+  ],
+  "institution_members": [
+    {"institution_id": 100, "user_id": 8, "role": "owner", "status": "active"},
+    {"institution_id": 100, "user_id": 9, "role": "member", "status": "active"},
+    {"institution_id": 101, "user_id": 5, "role": "owner", "status": "active"}
+  ],
+  "institution_students": [
+    {"institution_id": 100, "name": "Rafi", "roll_no": "1", "guardian_phone": "01711000000", "is_active": true},
+    {"institution_id": 100, "name": "Mim", "roll_no": "2", "guardian_phone": "01711000001", "is_active": true},
+    {"institution_id": 100, "name": "Left", "roll_no": "3", "guardian_phone": "01711000002", "is_active": false}
+  ]
+}

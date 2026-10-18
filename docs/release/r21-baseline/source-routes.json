@@ -1,0 +1,2666 @@
+{
+ "source": "shafiunnahin1/qbank",
+ "revision": "40f769c966c90217de654e7fad846b2ac5cfb980",
+ "captured": "2026-10-18",
+ "how": "php artisan route:list --json on PHP 8.4.26 (container, no network), fresh SQLite database after migrate --seed",
+ "route_count": 251,
+ "by_area": {
+  "academic": 62,
+  "exams": 25,
+  "institutions": 22,
+  "pdf-extractor": 17,
+  "questions": 17,
+  "omr": 15,
+  "super-admin": 14,
+  "question-sets": 10,
+  "question-paper": 9,
+  "ai-json": 8,
+  "wallet": 8,
+  "_qmx": 6,
+  "imports": 6,
+  "register": 4,
+  "forgot-password": 3,
+  "question-occurrence-sources": 3,
+  "question-set-folders": 3,
+  "assessment-blueprints": 2,
+  "auth": 2,
+  "login": 2,
+  "question-finder": 2,
+  "storage": 2,
+  "structured-stimuli": 2,
+  "/": 1,
+  "all-questions": 1,
+  "dashboard": 1,
+  "language": 1,
+  "logout": 1,
+  "structured-formats": 1,
+  "up": 1
+ },
+ "routes": [
+  {
+   "method": "GET|HEAD",
+   "uri": "/",
+   "name": "home",
+   "action": "Closure",
+   "middleware": [
+    "web"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "_qmx/graph-datasets",
+   "name": "qmx.graph-datasets.index",
+   "action": "App\\Http\\Controllers\\GraphDatasetController@index",
+   "middleware": [
+    "web",
+    "throttle:90,1"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "_qmx/graph-datasets",
+   "name": "qmx.graph-datasets.store",
+   "action": "App\\Http\\Controllers\\GraphDatasetController@store",
+   "middleware": [
+    "web",
+    "throttle:90,1"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "_qmx/graph-datasets/capabilities",
+   "name": "qmx.graph-datasets.capabilities",
+   "action": "App\\Http\\Controllers\\GraphDatasetController@capabilities",
+   "middleware": [
+    "web",
+    "throttle:90,1"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "_qmx/graph-datasets/{uuid}",
+   "name": "qmx.graph-datasets.show",
+   "action": "App\\Http\\Controllers\\GraphDatasetController@show",
+   "middleware": [
+    "web",
+    "throttle:90,1"
+   ]
+  },
+  {
+   "method": "PUT",
+   "uri": "_qmx/graph-datasets/{uuid}",
+   "name": "qmx.graph-datasets.update",
+   "action": "App\\Http\\Controllers\\GraphDatasetController@update",
+   "middleware": [
+    "web",
+    "throttle:90,1"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "_qmx/graph-datasets/{uuid}",
+   "name": "qmx.graph-datasets.destroy",
+   "action": "App\\Http\\Controllers\\GraphDatasetController@destroy",
+   "middleware": [
+    "web",
+    "throttle:90,1"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/ajax/chapters",
+   "name": "academic.ajax.chapters.search",
+   "action": "App\\Http\\Controllers\\Web\\AcademicAjaxController@searchChapters",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/ajax/chapters",
+   "name": "academic.ajax.chapters.store",
+   "action": "App\\Http\\Controllers\\Web\\AcademicAjaxController@storeChapter",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/ajax/topics",
+   "name": "academic.ajax.topics.search",
+   "action": "App\\Http\\Controllers\\Web\\AcademicAjaxController@searchTopics",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/ajax/topics",
+   "name": "academic.ajax.topics.store",
+   "action": "App\\Http\\Controllers\\Web\\AcademicAjaxController@storeTopic",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/boards",
+   "name": "academic.boards.index",
+   "action": "App\\Http\\Controllers\\Academic\\BoardController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/boards",
+   "name": "academic.boards.store",
+   "action": "App\\Http\\Controllers\\Academic\\BoardController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/boards/create",
+   "name": "academic.boards.create",
+   "action": "App\\Http\\Controllers\\Academic\\BoardController@create",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/boards/options",
+   "name": "academic.boards.options",
+   "action": "App\\Http\\Controllers\\Academic\\BoardController@options",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "PUT|PATCH",
+   "uri": "academic/boards/{board}",
+   "name": "academic.boards.update",
+   "action": "App\\Http\\Controllers\\Academic\\BoardController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "academic/boards/{board}",
+   "name": "academic.boards.destroy",
+   "action": "App\\Http\\Controllers\\Academic\\BoardController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/boards/{board}/edit",
+   "name": "academic.boards.edit",
+   "action": "App\\Http\\Controllers\\Academic\\BoardController@edit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/chapters",
+   "name": "academic.chapters.index",
+   "action": "App\\Http\\Controllers\\Academic\\ChapterController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/chapters",
+   "name": "academic.chapters.store",
+   "action": "App\\Http\\Controllers\\Academic\\ChapterController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/chapters/create",
+   "name": "academic.chapters.create",
+   "action": "App\\Http\\Controllers\\Academic\\ChapterController@create",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/chapters/options",
+   "name": "academic.chapters.options",
+   "action": "App\\Http\\Controllers\\Academic\\ChapterController@options",
+   "middleware": [
+    "web",
+    "throttle:120,1"
+   ]
+  },
+  {
+   "method": "PUT|PATCH",
+   "uri": "academic/chapters/{chapter}",
+   "name": "academic.chapters.update",
+   "action": "App\\Http\\Controllers\\Academic\\ChapterController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "academic/chapters/{chapter}",
+   "name": "academic.chapters.destroy",
+   "action": "App\\Http\\Controllers\\Academic\\ChapterController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/chapters/{chapter}/edit",
+   "name": "academic.chapters.edit",
+   "action": "App\\Http\\Controllers\\Academic\\ChapterController@edit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/class-levels",
+   "name": "academic.class-levels.index",
+   "action": "App\\Http\\Controllers\\Academic\\ClassLevelController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/class-levels",
+   "name": "academic.class-levels.store",
+   "action": "App\\Http\\Controllers\\Academic\\ClassLevelController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/class-levels/create",
+   "name": "academic.class-levels.create",
+   "action": "App\\Http\\Controllers\\Academic\\ClassLevelController@create",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/class-levels/options",
+   "name": "academic.class-levels.options",
+   "action": "App\\Http\\Controllers\\Academic\\ClassLevelController@options",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "PUT|PATCH",
+   "uri": "academic/class-levels/{class_level}",
+   "name": "academic.class-levels.update",
+   "action": "App\\Http\\Controllers\\Academic\\ClassLevelController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "academic/class-levels/{class_level}",
+   "name": "academic.class-levels.destroy",
+   "action": "App\\Http\\Controllers\\Academic\\ClassLevelController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/class-levels/{class_level}/edit",
+   "name": "academic.class-levels.edit",
+   "action": "App\\Http\\Controllers\\Academic\\ClassLevelController@edit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/education-levels",
+   "name": "academic.education-levels.index",
+   "action": "App\\Http\\Controllers\\Academic\\EducationLevelController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/education-levels",
+   "name": "academic.education-levels.store",
+   "action": "App\\Http\\Controllers\\Academic\\EducationLevelController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/education-levels/create",
+   "name": "academic.education-levels.create",
+   "action": "App\\Http\\Controllers\\Academic\\EducationLevelController@create",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "PUT|PATCH",
+   "uri": "academic/education-levels/{education_level}",
+   "name": "academic.education-levels.update",
+   "action": "App\\Http\\Controllers\\Academic\\EducationLevelController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "academic/education-levels/{education_level}",
+   "name": "academic.education-levels.destroy",
+   "action": "App\\Http\\Controllers\\Academic\\EducationLevelController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/education-levels/{education_level}/edit",
+   "name": "academic.education-levels.edit",
+   "action": "App\\Http\\Controllers\\Academic\\EducationLevelController@edit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/quick-options/chapters",
+   "name": "academic.quick-options.chapters.index",
+   "action": "App\\Http\\Controllers\\Academic\\QuickAcademicOptionController@chapters",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/quick-options/chapters",
+   "name": "academic.quick-options.chapters.store",
+   "action": "App\\Http\\Controllers\\Academic\\QuickAcademicOptionController@storeChapter",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/quick-options/question-types",
+   "name": "academic.quick-options.question-types.index",
+   "action": "App\\Http\\Controllers\\Academic\\QuickAcademicOptionController@questionTypes",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/quick-options/question-types",
+   "name": "academic.quick-options.question-types.store",
+   "action": "App\\Http\\Controllers\\Academic\\QuickAcademicOptionController@storeQuestionType",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "PUT",
+   "uri": "academic/quick-options/question-types/{questionType}",
+   "name": "academic.quick-options.question-types.update",
+   "action": "App\\Http\\Controllers\\Academic\\QuickAcademicOptionController@updateQuestionType",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "academic/quick-options/question-types/{questionType}",
+   "name": "academic.quick-options.question-types.destroy",
+   "action": "App\\Http\\Controllers\\Academic\\QuickAcademicOptionController@destroyQuestionType",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/quick-options/subjects",
+   "name": "academic.quick-options.subjects.index",
+   "action": "App\\Http\\Controllers\\Academic\\QuickAcademicOptionController@subjects",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/quick-options/subjects",
+   "name": "academic.quick-options.subjects.store",
+   "action": "App\\Http\\Controllers\\Academic\\QuickAcademicOptionController@storeSubject",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/quick-options/topics",
+   "name": "academic.quick-options.topics.index",
+   "action": "App\\Http\\Controllers\\Academic\\QuickAcademicOptionController@topics",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/quick-options/topics",
+   "name": "academic.quick-options.topics.store",
+   "action": "App\\Http\\Controllers\\Academic\\QuickAcademicOptionController@storeTopic",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/sources",
+   "name": "academic.sources.index",
+   "action": "App\\Http\\Controllers\\Academic\\SourceController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/sources",
+   "name": "academic.sources.store",
+   "action": "App\\Http\\Controllers\\Academic\\SourceController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/sources/create",
+   "name": "academic.sources.create",
+   "action": "App\\Http\\Controllers\\Academic\\SourceController@create",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/sources/options",
+   "name": "academic.sources.options",
+   "action": "App\\Http\\Controllers\\Academic\\SourceController@options",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "PUT|PATCH",
+   "uri": "academic/sources/{source}",
+   "name": "academic.sources.update",
+   "action": "App\\Http\\Controllers\\Academic\\SourceController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "academic/sources/{source}",
+   "name": "academic.sources.destroy",
+   "action": "App\\Http\\Controllers\\Academic\\SourceController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/sources/{source}/edit",
+   "name": "academic.sources.edit",
+   "action": "App\\Http\\Controllers\\Academic\\SourceController@edit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/subjects",
+   "name": "academic.subjects.index",
+   "action": "App\\Http\\Controllers\\Academic\\SubjectController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/subjects",
+   "name": "academic.subjects.store",
+   "action": "App\\Http\\Controllers\\Academic\\SubjectController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/subjects/create",
+   "name": "academic.subjects.create",
+   "action": "App\\Http\\Controllers\\Academic\\SubjectController@create",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/subjects/options",
+   "name": "academic.subjects.options",
+   "action": "App\\Http\\Controllers\\Academic\\SubjectController@options",
+   "middleware": [
+    "web",
+    "throttle:120,1"
+   ]
+  },
+  {
+   "method": "PUT|PATCH",
+   "uri": "academic/subjects/{subject}",
+   "name": "academic.subjects.update",
+   "action": "App\\Http\\Controllers\\Academic\\SubjectController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "academic/subjects/{subject}",
+   "name": "academic.subjects.destroy",
+   "action": "App\\Http\\Controllers\\Academic\\SubjectController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/subjects/{subject}/edit",
+   "name": "academic.subjects.edit",
+   "action": "App\\Http\\Controllers\\Academic\\SubjectController@edit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/topics",
+   "name": "academic.topics.index",
+   "action": "App\\Http\\Controllers\\Academic\\TopicController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "academic/topics",
+   "name": "academic.topics.store",
+   "action": "App\\Http\\Controllers\\Academic\\TopicController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/topics/create",
+   "name": "academic.topics.create",
+   "action": "App\\Http\\Controllers\\Academic\\TopicController@create",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/topics/options",
+   "name": "academic.topics.options",
+   "action": "App\\Http\\Controllers\\Academic\\TopicController@options",
+   "middleware": [
+    "web",
+    "throttle:120,1"
+   ]
+  },
+  {
+   "method": "PUT|PATCH",
+   "uri": "academic/topics/{topic}",
+   "name": "academic.topics.update",
+   "action": "App\\Http\\Controllers\\Academic\\TopicController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "academic/topics/{topic}",
+   "name": "academic.topics.destroy",
+   "action": "App\\Http\\Controllers\\Academic\\TopicController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "academic/topics/{topic}/edit",
+   "name": "academic.topics.edit",
+   "action": "App\\Http\\Controllers\\Academic\\TopicController@edit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "ai-json/import",
+   "name": "ai-json.import.index",
+   "action": "App\\Http\\Controllers\\Web\\AiJsonController@importIndex",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "ai-json/import",
+   "name": "ai-json.import.store",
+   "action": "App\\Http\\Controllers\\Web\\AiJsonController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "ai-json/import/{batch}",
+   "name": "ai-json.import.destroy",
+   "action": "App\\Http\\Controllers\\Web\\AiJsonController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "ai-json/import2",
+   "name": "ai-json.import2.index",
+   "action": "App\\Http\\Controllers\\Web\\JsonImport2Controller@importIndex",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "ai-json/import2",
+   "name": "ai-json.import2.store",
+   "action": "App\\Http\\Controllers\\Web\\JsonImport2Controller@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "ai-json/prompt",
+   "name": "ai-json.prompt",
+   "action": "App\\Http\\Controllers\\Web\\AiJsonController@prompt",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "ai-json/prompt/download",
+   "name": "ai-json.prompt.download",
+   "action": "App\\Http\\Controllers\\Web\\AiJsonController@downloadPrompt",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "ai-json/schema/download",
+   "name": "ai-json.schema.download",
+   "action": "App\\Http\\Controllers\\Web\\AiJsonController@downloadSchema",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "all-questions",
+   "name": "all-questions.index",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@allQuestions",
+   "middleware": [
+    "web"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "assessment-blueprints/resolve",
+   "name": "assessment-blueprints.resolve",
+   "action": "App\\Http\\Controllers\\Web\\AssessmentBlueprintController@resolve",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "assessment-blueprints/{assessmentBlueprint}/question-plan/preview",
+   "name": "assessment-blueprints.preview",
+   "action": "App\\Http\\Controllers\\Web\\AssessmentBlueprintController@previewQuestionPlan",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "auth",
+   "name": "auth",
+   "action": "App\\Http\\Controllers\\AuthController@showAuthForm",
+   "middleware": [
+    "web",
+    "guest"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "auth/google/credential",
+   "name": "auth.google.credential",
+   "action": "App\\Http\\Controllers\\Auth\\GoogleAuthController@authenticate",
+   "middleware": [
+    "web",
+    "guest",
+    "throttle:10,1"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "dashboard",
+   "name": "dashboard",
+   "action": "App\\Http\\Controllers\\DashboardController@index",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams",
+   "name": "exams.index",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams/{institution}",
+   "name": "exams.institution",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams/{institution}/sessions/{session}",
+   "name": "exams.session",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}",
+   "name": "exams.class",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/exam-types",
+   "name": "exams.class.exam-types.store",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/exam-types",
+   "name": "exams.class.exam-types.destroy",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/exam-types",
+   "name": "exams.class.exam-types.update",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans",
+   "name": "exams.plans.index",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans/{plan}",
+   "name": "exams.plans.show",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans/{plan}/mcq-results",
+   "name": "exams.results.mcq",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans/{plan}/mcq-results",
+   "name": "exams.results.mcq.store",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans/{plan}/mcq-results/{result}",
+   "name": "exams.results.mcq.destroy",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PUT",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans/{plan}/mcq-results/{result}",
+   "name": "exams.results.mcq.update",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans/{plan}/results",
+   "name": "exams.results.index",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans/{plan}/written-results",
+   "name": "exams.results.written",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans/{plan}/written-results",
+   "name": "exams.results.written.store",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans/{plan}/written-results/{result}",
+   "name": "exams.results.written.destroy",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PUT",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/plans/{plan}/written-results/{result}",
+   "name": "exams.results.written.update",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/routine",
+   "name": "exams.routine",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/routine",
+   "name": "exams.routine.store",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PUT",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/routine/{routine}",
+   "name": "exams.routine.update",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/routine/{routine}",
+   "name": "exams.routine.destroy",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/subjects",
+   "name": "exams.subjects",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/subjects",
+   "name": "exams.subjects.store",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "exams/{institution}/sessions/{session}/classes/{classGroup}/subjects/result",
+   "name": "exams.subjects.result.store",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "forgot-password",
+   "name": "password.forgot",
+   "action": "App\\Http\\Controllers\\AuthController@sendPasswordResetOtp",
+   "middleware": [
+    "web",
+    "guest"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "forgot-password/reset",
+   "name": "password.reset",
+   "action": "App\\Http\\Controllers\\AuthController@resetPassword",
+   "middleware": [
+    "web",
+    "guest"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "forgot-password/verify",
+   "name": "password.verify",
+   "action": "App\\Http\\Controllers\\AuthController@verifyPasswordResetOtp",
+   "middleware": [
+    "web",
+    "guest"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "imports",
+   "name": "imports.index",
+   "action": "App\\Http\\Controllers\\Import\\ImportSessionController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "imports/create",
+   "name": "imports.create",
+   "action": "App\\Http\\Controllers\\Import\\ImportSessionController@create",
+   "middleware": [
+    "web",
+    "auth",
+    "role:moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "imports/review/import",
+   "name": "imports.review.import",
+   "action": "App\\Http\\Controllers\\Import\\ImportController@importReview",
+   "middleware": [
+    "web",
+    "auth",
+    "role:moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "imports/review/{batch}",
+   "name": "imports.review",
+   "action": "App\\Http\\Controllers\\Import\\ImportController@review",
+   "middleware": [
+    "web",
+    "auth",
+    "role:moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "imports/start",
+   "name": "imports.store",
+   "action": "App\\Http\\Controllers\\Import\\ImportController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "imports/{session}",
+   "name": "imports.show",
+   "action": "App\\Http\\Controllers\\Import\\ImportSessionController@show",
+   "middleware": [
+    "web",
+    "auth",
+    "role:moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "institutions",
+   "name": "institutions.index",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "institutions",
+   "name": "institutions.store",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionController@store",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "institutions/join-requests/{joinRequest}/approve",
+   "name": "institutions.join-requests.approve",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionController@approveJoinRequest",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "institutions/join-requests/{joinRequest}/reject",
+   "name": "institutions.join-requests.reject",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionController@rejectJoinRequest",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "institutions/members/{member}",
+   "name": "institutions.members.destroy",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionController@removeMember",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "institutions/members/{member}",
+   "name": "institutions.members.update",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionController@updateMember",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "institutions/students",
+   "name": "institution-students.index",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@index",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "institutions/students/classes/{classGroup}",
+   "name": "institution-students.classes.update",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@updateClass",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "institutions/students/classes/{classGroup}",
+   "name": "institution-students.classes.destroy",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@destroyClass",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "institutions/students/classes/{classGroup}/students",
+   "name": "institution-students.students.store",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@storeStudent",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "institutions/students/sessions/{session}",
+   "name": "institution-students.sessions.update",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@updateSession",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "institutions/students/sessions/{session}",
+   "name": "institution-students.sessions.destroy",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@destroySession",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "institutions/students/sessions/{session}/classes",
+   "name": "institution-students.classes.store",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@storeClass",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "institutions/students/{institution}",
+   "name": "institution-students.institution",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@showInstitution",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "institutions/students/{institution}/sessions",
+   "name": "institution-students.sessions.store",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@storeSession",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "institutions/students/{institution}/sessions/{session}",
+   "name": "institution-students.session",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@showSession",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "institutions/students/{institution}/sessions/{session}/classes/{classGroup}",
+   "name": "institution-students.class",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@showClass",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "institutions/students/{student}",
+   "name": "institution-students.students.update",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@updateStudent",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "institutions/students/{student}",
+   "name": "institution-students.students.destroy",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionStudentController@destroyStudent",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "institutions/{institution}",
+   "name": "institutions.update",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionController@update",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "institutions/{institution}/invitations",
+   "name": "institutions.invitations.store",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionController@inviteMember",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "institutions/{institution}/join-requests",
+   "name": "institutions.join-requests.store",
+   "action": "App\\Http\\Controllers\\Web\\InstitutionController@requestJoin",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "language/{locale}",
+   "name": "language.switch",
+   "action": "Closure",
+   "middleware": [
+    "web"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "login",
+   "name": "login",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "guest"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "login",
+   "name": "login.store",
+   "action": "App\\Http\\Controllers\\AuthController@login",
+   "middleware": [
+    "web",
+    "guest",
+    "throttle:6,1"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "logout",
+   "name": "logout",
+   "action": "App\\Http\\Controllers\\AuthController@logout",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "omr",
+   "name": "omr.index",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "omr/forms/{form}/batch/compare",
+   "name": "omr.forms.batch.compare",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@compareBatch",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "omr/forms/{form}/batch/save",
+   "name": "omr.forms.batch.save",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@saveBatch",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "omr/forms/{form}/compare",
+   "name": "omr.forms.compare",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@compare",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "omr/forms/{form}/generate",
+   "name": "omr.forms.generate",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@finalize",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "omr/forms/{form}/layout-settings",
+   "name": "omr.forms.layout-settings.update",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@updateLayoutSettings",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "omr/forms/{form}/print",
+   "name": "omr.forms.print",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@print",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "omr/forms/{form}/results",
+   "name": "omr.forms.results",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@results",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "omr/forms/{form}/scan",
+   "name": "omr.forms.scan",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@scan",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "omr/forms/{form}/scans",
+   "name": "omr.forms.scans.store",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@storeScan",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "omr/forms/{form}/scans/{scan}",
+   "name": "omr.forms.scans.destroy",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@destroyScan",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "omr/forms/{form}/scans/{scan}/verify",
+   "name": "omr.forms.scans.verify",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@verifyScan",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "omr/forms/{form}/unlock",
+   "name": "omr.forms.unlock",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@unlock",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "omr/sets/{questionSet}",
+   "name": "omr.sets.generate",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@generate",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "omr/sets/{questionSet}/configure",
+   "name": "omr.sets.configure",
+   "action": "App\\Http\\Controllers\\Web\\OmrController@configure",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "pdf-extractor",
+   "name": "pdf-extractor.index",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "pdf-extractor",
+   "name": "pdf-extractor.store",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "pdf-extractor/{batch}",
+   "name": "pdf-extractor.show",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@show",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "pdf-extractor/{batch}",
+   "name": "pdf-extractor.destroy",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "pdf-extractor/{batch}/apply-settings",
+   "name": "pdf-extractor.",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "pdf-extractor/{batch}/apply-settings",
+   "name": "pdf-extractor.apply-settings",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@applySettings",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "pdf-extractor/{batch}/import-selected",
+   "name": "pdf-extractor.import-selected",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@importSelected",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "pdf-extractor/{batch}/latex-review/verify-selected",
+   "name": "pdf-extractor.latex-review.verify-selected",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@verifySelectedLatex",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "PUT",
+   "uri": "pdf-extractor/{batch}/questions/{extractedQuestion}",
+   "name": "pdf-extractor.questions.update",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "pdf-extractor/{batch}/questions/{extractedQuestion}/draft",
+   "name": "pdf-extractor.questions.discard-draft",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@discardDraft",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "pdf-extractor/{batch}/questions/{extractedQuestion}/edit",
+   "name": "pdf-extractor.questions.edit",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@edit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "PUT",
+   "uri": "pdf-extractor/{batch}/questions/{extractedQuestion}/latex-review",
+   "name": "pdf-extractor.questions.latex-review",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@quickLatexReview",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "pdf-extractor/{batch}/questions/{extractedQuestion}/open-editor",
+   "name": "pdf-extractor.questions.open-editor",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@openEditor",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "pdf-extractor/{batch}/questions/{extractedQuestion}/quick-edit",
+   "name": "pdf-extractor.questions.quick-edit",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@quickEdit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "pdf-extractor/{batch}/questions/{extractedQuestion}/reject",
+   "name": "pdf-extractor.questions.reject",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@reject",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "pdf-extractor/{batch}/re-extract",
+   "name": "pdf-extractor.re-extract",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@reExtract",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "pdf-extractor/{batch}/save-selected",
+   "name": "pdf-extractor.save-selected",
+   "action": "App\\Http\\Controllers\\Web\\PdfQuestionExtractorController@saveSelected",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "question-finder",
+   "name": "question-finder.index",
+   "action": "App\\Http\\Controllers\\Web\\QuestionFinderController@index",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "question-finder/search",
+   "name": "question-finder.search",
+   "action": "App\\Http\\Controllers\\Web\\QuestionFinderController@search",
+   "middleware": [
+    "web",
+    "auth",
+    "throttle:10,1"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "question-occurrence-sources",
+   "name": "question-occurrence-sources.store",
+   "action": "App\\Http\\Controllers\\Web\\QuestionOccurrenceSourceController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "question-occurrence-sources",
+   "name": "question-occurrence-sources.index",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "question-occurrence-sources/{source}",
+   "name": "question-occurrence-sources.destroy",
+   "action": "App\\Http\\Controllers\\Web\\QuestionOccurrenceSourceController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS",
+   "uri": "question-paper",
+   "name": "question-paper.create",
+   "action": "Illuminate\\Routing\\RedirectController",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "question-paper/blueprint/replace-question",
+   "name": "question-paper.blueprint.replace-question",
+   "action": "App\\Http\\Controllers\\Web\\QuestionPaperController@replaceQuestion",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "question-paper/filter/chapters",
+   "name": "question-paper.filter.chapters",
+   "action": "App\\Http\\Controllers\\Web\\QuestionPaperController@filterChapters",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "question-paper/filter/subjects",
+   "name": "question-paper.filter.subjects",
+   "action": "App\\Http\\Controllers\\Web\\QuestionPaperController@filterSubjects",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "question-paper/filter/topics",
+   "name": "question-paper.filter.topics",
+   "action": "App\\Http\\Controllers\\Web\\QuestionPaperController@filterTopics",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "question-paper/generate",
+   "name": "question-paper.generate",
+   "action": "App\\Http\\Controllers\\Web\\QuestionPaperController@generate",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "question-paper/generate-from-blueprint/{assessmentBlueprint}",
+   "name": "question-paper.generate-from-blueprint",
+   "action": "App\\Http\\Controllers\\Web\\QuestionPaperController@generateFromBlueprint",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|POST|HEAD",
+   "uri": "question-paper/preview",
+   "name": "question-paper.preview",
+   "action": "App\\Http\\Controllers\\Web\\QuestionPaperController@preview",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "question-paper/preview/subsets/{subset}",
+   "name": "question-paper.preview.subset",
+   "action": "App\\Http\\Controllers\\Web\\QuestionPaperController@previewSubset",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "question-set-folders",
+   "name": "question-set-folders.store",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@storeFolder",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "question-set-folders/{folder}",
+   "name": "question-set-folders.destroy",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@destroyFolder",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "question-set-folders/{folder}/parent",
+   "name": "question-set-folders.parent.update",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@moveFolder",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "question-sets",
+   "name": "question-sets.store",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@store",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "question-sets",
+   "name": "question-sets.index",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "question-sets/{questionSet}",
+   "name": "question-sets.show",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@show",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "question-sets/{questionSet}",
+   "name": "question-sets.destroy",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@destroy",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "question-sets/{questionSet}/folder",
+   "name": "question-sets.folder.update",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@move",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "PUT",
+   "uri": "question-sets/{questionSet}/questions",
+   "name": "question-sets.questions.update",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@updateQuestions",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "question-sets/{questionSet}/questions/edit",
+   "name": "question-sets.questions.edit",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@editQuestions",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "question-sets/{questionSet}/questions/{question}",
+   "name": "question-sets.questions.destroy",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@destroyQuestion",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "question-sets/{questionSet}/subsets",
+   "name": "question-sets.subsets.store",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@storeSubsets",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "question-sets/{questionSet}/subsets/{subset}",
+   "name": "question-sets.subsets.show",
+   "action": "App\\Http\\Controllers\\Web\\QuestionSetController@showSubset",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "questions",
+   "name": "questions.index",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "questions",
+   "name": "questions.store",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "questions/create",
+   "name": "questions.create",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@create",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "questions/create/media-draft",
+   "name": "questions.create.media-draft",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@bootstrapCreateMediaDraft",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "questions/{question}",
+   "name": "questions.show",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@show",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "PUT|PATCH",
+   "uri": "questions/{question}",
+   "name": "questions.update",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "questions/{question}",
+   "name": "questions.destroy",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "questions/{question}/edit",
+   "name": "questions.edit",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@edit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "questions/{question}/edit-standalone",
+   "name": "questions.edit_standalone",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@editStandalone",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "questions/{question}/media",
+   "name": "questions.media.store",
+   "action": "App\\Http\\Controllers\\Web\\QuestionMediaController@store",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "questions/{question}/media/{attachment}",
+   "name": "questions.media.update",
+   "action": "App\\Http\\Controllers\\Web\\QuestionMediaController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "questions/{question}/media/{attachment}",
+   "name": "questions.media.destroy",
+   "action": "App\\Http\\Controllers\\Web\\QuestionMediaController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "questions/{question}/reject",
+   "name": "questions.reject",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@reject",
+   "middleware": [
+    "web",
+    "auth",
+    "role:moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "questions/{question}/request-publish",
+   "name": "questions.request-publish",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@requestPublish",
+   "middleware": [
+    "web",
+    "auth",
+    "role:user,teacher,moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "questions/{question}/unlock-answer",
+   "name": "questions.unlock-answer",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@unlockAnswer",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "questions/{question}/unlock-answer-with-quota",
+   "name": "questions.unlock-answer-with-quota",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@unlockAnswerWithQuota",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "questions/{question}/verify",
+   "name": "questions.verify",
+   "action": "App\\Http\\Controllers\\Web\\QuestionController@verify",
+   "middleware": [
+    "web",
+    "auth",
+    "role:moderator,admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "register",
+   "name": "register.show",
+   "action": "Closure",
+   "middleware": [
+    "web",
+    "guest"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "register",
+   "name": "register",
+   "action": "App\\Http\\Controllers\\AuthController@register",
+   "middleware": [
+    "web",
+    "guest"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "register/verify",
+   "name": "register.verify.show",
+   "action": "App\\Http\\Controllers\\AuthController@showVerify",
+   "middleware": [
+    "web",
+    "guest"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "register/verify",
+   "name": "register.verify",
+   "action": "App\\Http\\Controllers\\AuthController@verify",
+   "middleware": [
+    "web",
+    "guest"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "storage/{path}",
+   "name": "storage.local",
+   "action": "Closure",
+   "middleware": []
+  },
+  {
+   "method": "PUT",
+   "uri": "storage/{path}",
+   "name": "storage.local.upload",
+   "action": "Closure",
+   "middleware": []
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "structured-formats",
+   "name": "structured-formats.index",
+   "action": "App\\Http\\Controllers\\Web\\StructuredFormatController@index",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "structured-stimuli",
+   "name": "structured-stimuli.index",
+   "action": "App\\Http\\Controllers\\Web\\StructuredStimulusController@index",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "structured-stimuli",
+   "name": "structured-stimuli.store",
+   "action": "App\\Http\\Controllers\\Web\\StructuredStimulusController@store",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "super-admin/payments",
+   "name": "super-admin.payments.index",
+   "action": "App\\Http\\Controllers\\Web\\WalletTopupController@adminHistory",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "super-admin/subscriptions",
+   "name": "super-admin.subscriptions.index",
+   "action": "App\\Http\\Controllers\\Web\\SubscriptionManagementController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "super-admin/subscriptions/activate",
+   "name": "super-admin.subscriptions.activate",
+   "action": "App\\Http\\Controllers\\Web\\SubscriptionManagementController@activateSubscription",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "super-admin/subscriptions/plans",
+   "name": "super-admin.subscriptions.plans.store",
+   "action": "App\\Http\\Controllers\\Web\\SubscriptionManagementController@storePlan",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "PUT",
+   "uri": "super-admin/subscriptions/plans/{plan}",
+   "name": "super-admin.subscriptions.plans.update",
+   "action": "App\\Http\\Controllers\\Web\\SubscriptionManagementController@updatePlan",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "super-admin/subscriptions/{subscription}/cancel",
+   "name": "super-admin.subscriptions.cancel",
+   "action": "App\\Http\\Controllers\\Web\\SubscriptionManagementController@cancelSubscription",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "super-admin/users",
+   "name": "super-admin.users.index",
+   "action": "App\\Http\\Controllers\\Web\\SuperAdminUserManagementController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:super-admin"
+   ]
+  },
+  {
+   "method": "PUT",
+   "uri": "super-admin/users/{user}",
+   "name": "super-admin.users.update",
+   "action": "App\\Http\\Controllers\\Web\\SuperAdminUserManagementController@update",
+   "middleware": [
+    "web",
+    "auth",
+    "role:super-admin"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "uri": "super-admin/users/{user}",
+   "name": "super-admin.users.destroy",
+   "action": "App\\Http\\Controllers\\Web\\SuperAdminUserManagementController@destroy",
+   "middleware": [
+    "web",
+    "auth",
+    "role:super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "super-admin/users/{user}/edit",
+   "name": "super-admin.users.edit",
+   "action": "App\\Http\\Controllers\\Web\\SuperAdminUserManagementController@edit",
+   "middleware": [
+    "web",
+    "auth",
+    "role:super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "super-admin/users/{user}/reset-password",
+   "name": "super-admin.users.reset-password",
+   "action": "App\\Http\\Controllers\\Web\\SuperAdminUserManagementController@resetPassword",
+   "middleware": [
+    "web",
+    "auth",
+    "role:super-admin"
+   ]
+  },
+  {
+   "method": "PATCH",
+   "uri": "super-admin/users/{user}/toggle-activity",
+   "name": "super-admin.users.toggle-activity",
+   "action": "App\\Http\\Controllers\\Web\\SuperAdminUserManagementController@toggleActivity",
+   "middleware": [
+    "web",
+    "auth",
+    "role:super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "super-admin/wallets",
+   "name": "super-admin.wallets.index",
+   "action": "App\\Http\\Controllers\\Web\\WalletManagementController@index",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "super-admin/wallets/adjust",
+   "name": "super-admin.wallets.adjust",
+   "action": "App\\Http\\Controllers\\Web\\WalletManagementController@adjust",
+   "middleware": [
+    "web",
+    "auth",
+    "role:admin,super-admin",
+    "role:super-admin"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "up",
+   "name": null,
+   "action": "Closure",
+   "middleware": []
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "wallet/topup",
+   "name": "wallet.topup.create",
+   "action": "App\\Http\\Controllers\\Web\\WalletTopupController@create",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "wallet/topup",
+   "name": "wallet.topup.store",
+   "action": "App\\Http\\Controllers\\Web\\WalletTopupController@store",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "wallet/topup/callback/{merchantReference}",
+   "name": "wallet.topup.callback",
+   "action": "App\\Http\\Controllers\\Web\\WalletTopupController@callback",
+   "middleware": [
+    "web"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "wallet/topup/history",
+   "name": "wallet.topup.history",
+   "action": "App\\Http\\Controllers\\Web\\WalletTopupController@history",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "wallet/topup/local-credit",
+   "name": "wallet.topup.local-credit",
+   "action": "App\\Http\\Controllers\\Web\\WalletTopupController@localCredit",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "GET|HEAD",
+   "uri": "wallet/topup/return/{merchantReference}",
+   "name": "wallet.topup.return",
+   "action": "App\\Http\\Controllers\\Web\\WalletTopupController@returnPage",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "wallet/topup/{merchantReference}/create-payment",
+   "name": "wallet.topup.create-payment",
+   "action": "App\\Http\\Controllers\\Web\\WalletTopupController@createPayment",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  },
+  {
+   "method": "POST",
+   "uri": "wallet/topup/{merchantReference}/execute",
+   "name": "wallet.topup.execute",
+   "action": "App\\Http\\Controllers\\Web\\WalletTopupController@executePayment",
+   "middleware": [
+    "web",
+    "auth"
+   ]
+  }
+ ]
+}

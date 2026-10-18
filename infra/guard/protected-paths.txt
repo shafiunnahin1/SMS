@@ -1,0 +1,26 @@
+# infra/guard/protected-paths.txt - paths the CODING AGENT must not change on its own (checked by agent_guard.py, check C1).
+# One glob per line. `**` crosses directories, `*` does not. A line starting with `!` re-allows a path. `[modify-only]` = adding NEW files is fine, changing/deleting existing ones is not.
+# To change a protected path legitimately: the OWNER first writes a decision (a new row in docs/LOCKED-DECISIONS.md, a human commit), then the change commit carries the trailer
+#     Change-Request: D<n>
+# (a decision that already exists on the base branch). Without it the guard fails the commit. CODEOWNERS adds the human approval (infra/CODEOWNERS.template).
+AGENTS.md
+CLAUDE.md
+.cursor/**
+.claude/**
+docs/**
+!docs/PROGRESS.md
+!docs/DECISIONS.md
+!docs/IDEAS.md
+!docs/BLOCKED.md
+infra/**
+.github/**
+# api/config/release.php is NOT here on purpose: check C12 governs it (a Release: trailer, the exact module list of the scope file, the previous release accepted)
+api/phpunit.xml
+api/.env.example [modify-only]
+frontend/scripts/**
+frontend/eslint.config.* 
+frontend/.eslintrc*
+**/Fixtures/** [modify-only]
+**/fixtures/** [modify-only]
+**/*golden* [modify-only]
+**/*Golden* [modify-only]

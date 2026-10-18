@@ -1,0 +1,19 @@
+# docker-compose.staging.yml - LOCAL staging on top of docker-compose.prod.yml (Step 9.1, D64): no Caddy/TLS/Cloudflare, Nginx published on
+# 127.0.0.1:8080, one replica each, and the React build made inside the stack (in production CI fills frontend_build).
+#   docker compose -f docker-compose.prod.yml -f docker-compose.staging.yml up -d --build
+#   open http://dhanmondi-school.lvh.me:8080  (APP_BASE_DOMAIN=lvh.me in api/.env.production for staging)
+services:
+  caddy:
+    profiles: [tls]                        # not started in staging
+  nginx:
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on: [api, frontend-build]
+  frontend-build:
+    image: node:20-alpine
+    working_dir: /src
+    volumes: [./frontend:/src:ro, frontend_build:/out]
+    command: sh -c "cp -r /src /build && cd /build && npm ci && npm run build && rm -rf /out/* && cp -r dist/. /out/"
+  api:
+    deploy: { replicas: 1 }
+  queue-worker:
+    deploy: { replicas: 1 }

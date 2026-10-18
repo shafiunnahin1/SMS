@@ -1,0 +1,23 @@
+# api/Dockerfile.prod - docs/ops/docker-setup.md "api/Dockerfile.prod" (Step 9.1, D64). One image for php-fpm, the queue worker and the scheduler.
+# Added to the spec's file: Chromium + Noto fonts (PDFs are rendered by headless Chromium, D50 - Bengali conjuncts need the font) and the
+# sockets extension (chrome-php/wrench needs it).
+FROM php:8.2-fpm
+RUN apt-get update && apt-get install -y --no-install-recommends git zip unzip libpng-dev libzip-dev libxml2-dev \
+        chromium fonts-noto-core fonts-noto-ui-core poppler-utils \
+    && docker-php-ext-install pdo_mysql zip gd xml bcmath pcntl opcache sockets \
+    && pecl install redis && docker-php-ext-enable redis \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/api
+COPY . .
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/private storage/app/public \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+ENV PDF_CHROME_BINARY=/usr/bin/chromium
+EXPOSE 9000
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["php-fpm"]

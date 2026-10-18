@@ -1,0 +1,7 @@
+{
+  "_comment": "Fill from your seeded perf tenant. Teachers: one entry per (teacher, batch) with the REAL student ids enrolled in that batch. Parents: one per child. Delete this key before use if your JSON reader is strict.",
+  "teachers":  [ { "identifier": "teacher1@example.com", "password": "CHANGE-ME", "batch_id": 33, "student_ids": [1201, 1202, 1203] } ],
+  "parents":   [ { "identifier": "01711000001", "password": "CHANGE-ME", "student_id": 1201 } ],
+  "accountant": { "identifier": "accountant@example.com", "password": "CHANGE-ME", "student_ids": [1201, 1202, 1203] },
+  "admin":      { "identifier": "admin@example.com", "password": "CHANGE-ME" }
+}
