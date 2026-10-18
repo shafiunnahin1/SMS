@@ -30,6 +30,7 @@ class RouteMiddlewareContractTest extends TestCase
         'GET api/v1/bootstrap' => 'theme, terms, enabled modules - allow-listed settings only',
         'GET api/v1/health' => 'status only',
         'POST api/v1/auth/login' => 'throttle:login', 'POST api/v1/auth/verify-otp' => 'throttle:otp',   // D68 (4)
+        'POST api/v1/auth/google' => 'throttle:login; R2.1.1/D111 Google sign-in of an existing verified-email account only',
         'POST api/v1/auth/forgot-password' => 'throttle:login', 'POST api/v1/auth/reset-password' => 'throttle:login',
         'GET api/v1/billing/bkash/callback' => 'central host; finds its own record by ref (D58), throttle 60/min',
         'GET api/v1/qb/student-orders/bkash/callback' => 'QB.9: central host; finds its own order by ref, throttle 60/min',

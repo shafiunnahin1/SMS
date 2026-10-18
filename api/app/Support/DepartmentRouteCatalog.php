@@ -480,6 +480,11 @@ final class DepartmentRouteCatalog
         ['method' => 'GET|HEAD', 'uri' => 'api/v1/donations/{id}/receipt.pdf', 'action' => 'App\\Http\\Controllers\\Donations\\DonationController@receipt', 'current_roles' => ['accountant', 'admin'], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:donations'], 'selector_variants' => [], 'resource_scope' => 'same tenant principal; D107 donor privacy, D32 append-only donations, D39 restricted-fund guard', 'approval' => 'D107', 'staff_mode' => 'principal_only', 'permission_options' => []],
     ];
 
+    /** D111: R2.1.1 Google sign-in, a login-type route outside the sealed D90 list (no token, no staff permission) */
+    public const D111 = [
+        ['method' => 'POST', 'uri' => 'api/v1/auth/google', 'action' => 'App\\Http\\Controllers\\Auth\\LoginController@google', 'current_roles' => [], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => [], 'selector_variants' => [], 'resource_scope' => 'existing host/auth/ownership contract; no staff permission', 'approval' => 'D111', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
+    ];
+
     /** D100: R3.9 store/inventory routes, principal_only (no staff.inventory.* keys yet); kept apart so the sealed D90 list and digest stay unchanged */
     public const D100 = [
         ['method' => 'GET|HEAD', 'uri' => 'api/v1/inventory/items', 'action' => 'App\\Http\\Controllers\\Inventory\\InventoryItemController@index', 'current_roles' => ['accountant', 'admin'], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:inventory'], 'selector_variants' => [], 'resource_scope' => 'same tenant principal; preserve current service, module, maker-checker and D33 restrictions', 'approval' => 'D100', 'staff_mode' => 'principal_only', 'permission_options' => []],

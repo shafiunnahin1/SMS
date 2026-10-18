@@ -25,6 +25,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/bootstrap',              [BootstrapController::class, 'show']);
         Route::post('/auth/login',            [LoginController::class, 'login'])->middleware('throttle:login');
         Route::post('/auth/verify-otp',       [LoginController::class, 'verifyOtp'])->middleware('throttle:otp');   // D68 (4)
+        Route::post('/auth/google',           [LoginController::class, 'google'])->middleware('throttle:login');   // R2.1.1 / D111 (3)
         Route::post('/auth/forgot-password',  [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:login');
         Route::post('/auth/reset-password',   [PasswordResetController::class, 'reset'])->middleware('throttle:login');
 

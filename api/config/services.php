@@ -64,4 +64,9 @@ return [
         'sid' => env('SMS_DEFAULT_SENDER', env('SSL_WIRELESS_SID')),
     ],
 
+    // R2.1.1 / D111: Google sign-in (an existing account with the same verified email only); empty = the button is hidden and the route answers 404
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+    ],
+
 ];

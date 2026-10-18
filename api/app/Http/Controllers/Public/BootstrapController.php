@@ -25,6 +25,7 @@ class BootstrapController extends Controller
                 'theme'      => $this->themes->defaultTheme(),
                 'locales'    => ['default' => 'bn', 'enabled' => InstitutionSettings::LOCALES, 'dir' => $this->dirs(InstitutionSettings::LOCALES)],
                 'release'    => ['id' => config('release.id')],
+                'google_client_id' => config('services.google.client_id') ?: null,   // R2.1.1 / D111: public OAuth client ID; null hides the button
             ]]);
         }
 
@@ -45,6 +46,7 @@ class BootstrapController extends Controller
             'plan'        => $plan ? ['name' => $plan->name, 'white_label' => $this->gate->feature($i, 'white_label'), 'features' => $plan->features ?? []] : null,
             'settings'    => $this->settings->publicSettings($i),
             'release'     => ['id' => config('release.id')],
+            'google_client_id' => config('services.google.client_id') ?: null,
             'is_central'  => false,
         ];
     }

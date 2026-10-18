@@ -9,6 +9,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\VerifyOtpRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\Auth\GoogleSignInService;
 use App\Services\Auth\LoginService;
 use App\Services\Auth\OtpService;
 use App\Services\Auth\TokenService;
@@ -43,6 +44,29 @@ class LoginController extends Controller
             return response()->json(['success' => true, 'data' => ['two_factor_required' => true, 'challenge' => $challenge]]);
         }
 
+        return $this->tokenResponse($user, $request);
+    }
+
+    /** R2.1.1 / D111 (3): POST /auth/google { credential } - the same checks as a password login after Google proves the email */
+    public function google(Request $request, GoogleSignInService $google)
+    {
+        abort_unless($google->enabled(), 404);
+        $data = $request->validate(['credential' => 'required|string|max:4096']);
+        $user = $google->user($data['credential']);
+        if (!$user || !$user->is_active || Tenancy::current()?->status === 'inactive' || ($user->locked_until && now()->lt($user->locked_until))) {
+            return response()->json(self::generic(), 401);
+        }
+        if (!in_array($user->role, config('release.roles', []), true)) {
+            return response()->json(['success' => false, 'error' => 'role_not_available', 'message' => __('errors.role_not_available')], 403);
+        }
+        $user->forceFill(['failed_login_attempts' => 0, 'last_login_at' => now()])->save();
+        if ($this->login->needsSecondFactor($user)) {
+            [$row, $code] = $this->otp->issue($user, OtpService::LOGIN);
+            $text = "আপনার লগইন কোড: {$code} (" . config('auth_policy.otp.minutes') . ' মিনিট)';
+            $user->phone ? $this->otp->sms($user->phone, $text) : $this->otp->deliver($user, 'Login code', $text);
+            $challenge = Crypt::encryptString(json_encode(['u' => $user->id, 'o' => $row->id, 't' => Tenancy::current()?->id]));
+            return response()->json(['success' => true, 'data' => ['two_factor_required' => true, 'challenge' => $challenge]]);
+        }
         return $this->tokenResponse($user, $request);
     }
 

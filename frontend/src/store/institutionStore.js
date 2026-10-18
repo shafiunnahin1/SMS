@@ -22,6 +22,7 @@ export const useInstitutionStore = create((set, get) => ({
   settings: {},
   locales: { default: 'bn', enabled: ['bn', 'en'] },
   release: { id: 'R1' },
+  googleClientId: null,   // R2.1.1 / D111
 
   loadBootstrap: async () => {
     const cached = readCachedBootstrap()
@@ -33,6 +34,7 @@ export const useInstitutionStore = create((set, get) => ({
         isCentral: Boolean(b.is_central), institution: b.institution ?? null, terms: b.terms ?? {},
         modules: b.modules ?? [], roles: b.roles ?? [], theme: b.theme, plan: b.plan ?? null,
         settings: b.settings ?? {}, locales: b.locales ?? { default: 'bn', enabled: ['bn', 'en'] }, release: b.release ?? { id: 'R1' },
+        googleClientId: b.google_client_id ?? null,
       }
       try { localStorage.setItem(cacheKey(), JSON.stringify(next)) } catch { /* storage blocked: no cache, still works */ }
       set({ ...next, ready: true, error: null })

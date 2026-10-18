@@ -9,6 +9,7 @@
         "php": "^8.2",
         "chrome-php/chrome": "^1.16",
         "endroid/qr-code": "^6.0",
+        "google/apiclient": "^2.19",
         "laravel/framework": "^12.61.1",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
