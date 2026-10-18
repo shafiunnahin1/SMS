@@ -48,4 +48,17 @@ class PfLedgerTest extends PayrollRunTestCase
         [,,,$accountant]=$this->withPf(['enabled'=>true,'employee_percent'=>'10','employer_percent'=>'0','base'=>'gross']);
         $this->assertSame('2800.00',collect($this->draft($accountant)->items->first()->breakdown)->firstWhere('source','pf')['amount'],'10% of gross 28,000');
     }
+
+    public function test_manual_entries_and_statement_pdf(): void
+    {
+        [$i,$admin,$staff,$accountant]=$this->withPf(['enabled'=>false]);$host=$this->hostOf($i);
+        ProvidentFundEntry::factory()->create(['payee_id'=>$staff->id,'amount'=>'1000.00']);
+        $this->api('POST',$host,'hr/pf/entries',$accountant,['payee_type'=>'staff','payee_id'=>$staff->id,'month'=>'2026-10','kind'=>'interest','amount'=>'50.00','note'=>'board-approved interest'])->assertCreated();
+        $this->api('POST',$host,'hr/pf/entries',$accountant,['payee_type'=>'staff','payee_id'=>$staff->id,'month'=>'2026-10','kind'=>'adjustment','amount'=>'-2000.00','note'=>'too much'])->assertStatus(422);
+        $this->api('POST',$host,'hr/pf/entries',$accountant,['payee_type'=>'staff','payee_id'=>$staff->id,'month'=>'2026-10','kind'=>'employer','amount'=>'9.00','note'=>'x'])->assertStatus(422);
+        $this->api('GET',$host,'hr/pf/entries?payee_type=staff&payee_id='.$staff->id,$accountant)->assertOk()->assertJsonCount(2,'data');
+        $pdf=$this->api('GET',$host,"hr/pf/staff/{$staff->id}/statement.pdf",$accountant)->assertOk()->assertHeader('content-type','application/pdf');
+        $this->assertStringStartsWith('%PDF-',$pdf->getContent());
+        $this->api('GET',$host,"hr/pf/staff/{$staff->id}/statement.pdf",$this->makeUser($i,'teacher'))->assertForbidden();
+    }
 }

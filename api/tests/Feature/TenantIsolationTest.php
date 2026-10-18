@@ -77,6 +77,8 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/hr/bonus-schemes/{id}/cancel' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\BonusScheme::factory()->create()->id),
             'POST api/v1/hr/adjustments/{id}/approve' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryAdjustment::factory()->create()->id),
             'POST api/v1/hr/adjustments/{id}/cancel' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryAdjustment::factory()->create()->id),
+            'POST api/v1/hr/final-settlement/{type}/{id}/start' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
+            'GET api/v1/hr/pf/{type}/{id}/statement.pdf' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\StaffMember::factory()->create()->id),
             'GET api/v1/hr/payroll-runs/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollRun::factory()->create()->id),
             'POST api/v1/hr/payroll-runs/{id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollRun::factory()->create()->id),
             'GET api/v1/hr/payroll-runs/{id}/{file}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollRun::factory()->create()->id),
@@ -349,6 +351,7 @@ class TenantIsolationTest extends TestCase
                 if (str_starts_with($uri, 'api/v1/hr/people/')) $path = str_replace('{type}', 'staff', $path);
                 if ($uri === 'POST api/v1/hr/advances/{id}/{action}') $path = str_replace('{action}', 'approve', $path);
                 if ($uri === 'POST api/v1/hr/payroll-runs/{id}/{action}') $path = str_replace('{action}', 'review', $path);
+                if (str_contains($uri, 'api/v1/hr/final-settlement/') || str_contains($uri, 'api/v1/hr/pf/')) $path = str_replace('{type}', 'staff', $path);
                 if ($uri === 'GET api/v1/hr/payroll-runs/{id}/{file}') $path = str_replace('{file}', 'disbursement.csv', $path);
                 $this->api($method, $this->hostOf($me['institution']), $path, $me['admin'])->assertNotFound();
             }

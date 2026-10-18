@@ -92,6 +92,8 @@ class RoleMatrixContractTest extends TestCase
             if ($uri === 'api/v1/hr/payroll-runs/{id}/{action}') $path = str_replace('dry-run', 'review', $path);
             if ($uri === 'api/v1/hr/payroll-runs/{id}/{file}') $path = 'hr/payroll-runs/999999/disbursement.csv';
             if ($uri === 'api/v1/hr/reports/{name}') $path = 'hr/reports/held';
+            if ($uri === 'api/v1/hr/final-settlement/{type}/{id}/start') $path = 'hr/final-settlement/staff/999999/start';
+            if ($uri === 'api/v1/hr/pf/{type}/{id}/statement.pdf') $path = 'hr/pf/staff/999999/statement.pdf';
             // D101: department staff hold per-report-type keys; use a reviewed financial type so the role assertion is not preempted.
             if ($uri === 'api/v1/accountant/reports/{type}') $path = 'accountant/reports/dues';
             if ($uri === 'api/v1/hr/people/{type}/{id}/salary') $path = 'hr/people/teacher/'.$salaryTeacher->id.'/salary';

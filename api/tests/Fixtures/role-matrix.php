@@ -344,4 +344,8 @@ return [
     'GET api/v1/teacher/salary/slips' => ['teacher'],
     'GET api/v1/teacher/salary/slips/{id}.pdf' => ['teacher'],
     'GET api/v1/teacher/salary/history' => ['teacher'],
+    'POST api/v1/hr/final-settlement/{type}/{id}/start' => ['accountant', 'admin'],
+    'GET api/v1/hr/pf/entries' => ['accountant', 'admin'],
+    'POST api/v1/hr/pf/entries' => ['accountant', 'admin'],
+    'GET api/v1/hr/pf/{type}/{id}/statement.pdf' => ['accountant', 'admin'],
 ];

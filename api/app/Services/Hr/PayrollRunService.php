@@ -4,7 +4,7 @@ namespace App\Services\Hr;
 
 use App\Exceptions\BusinessException;
 use App\Jobs\GeneratePayrollRun;
-use App\Models\{PayrollItem, PayrollRun, SalaryAdjustment, SalaryAdvance, SalaryComponent, SalaryPayAccount, SalaryStructure, SalaryStructureLine, StaffMember, Teacher, User};
+use App\Models\{PayrollItem, PayrollRun, ProvidentFundEntry, SalaryAdjustment, SalaryAdvance, SalaryComponent, SalaryPayAccount, SalaryStructure, SalaryStructureLine, StaffMember, Teacher, User};
 use App\Support\{Money, Tenancy};
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -39,6 +39,29 @@ class PayrollRunService
                 'settings_snapshot' => $settings, 'prepared_by' => $actor->id]);
             \Illuminate\Support\Facades\Bus::dispatchNow(new GeneratePayrollRun($run->id, $run->institution_id));   // in-request: the tenant is already bound
             $this->approval->audit($actor, $run, 'payroll.created', ['month' => $run->month, 'kind' => $kind]);
+            return $run->fresh('items');
+        });
+    }
+
+    /** §11: POST /hr/final-settlement/{type}/{id}/start - a one-payee `final` run for the leaving month (label "type:id") */
+    public function startFinal(User $actor, string $type, int $id, array $input = []): PayrollRun
+    {
+        if ($input) $this->invalid('payroll');
+        $payee = $this->access->payee($actor, $type, $id);
+        if (!$payee->leaving_date) $this->invalid('leaving_date');
+        $month = $payee->leaving_date->format('Y-m'); $label = $type.':'.$id; $settings = $this->settings();
+        return DB::transaction(function () use ($actor, $type, $id, $month, $label, $settings) {
+            $this->approval->lock($actor);
+            if ($existing = PayrollRun::where('kind', 'final')->where('label', $label)->where('month', $month)->first()) {
+                if ($existing->status === 'cancelled') $this->conflict();
+                return $existing->load('items');                                         // identical retry
+            }
+            // the leaving month must not already be settled for this payee in a regular run
+            if (PayrollItem::where('payee_type', $type)->where('payee_id', $id)
+                ->whereIn('run_id', PayrollRun::where('month', $month)->where('kind', 'regular')->where('status', '!=', 'cancelled')->select('id'))->exists()) $this->conflict();
+            $run = PayrollRun::create(['month' => $month, 'kind' => 'final', 'label' => $label, 'status' => 'draft', 'settings_snapshot' => $settings, 'prepared_by' => $actor->id]);
+            \Illuminate\Support\Facades\Bus::dispatchNow(new GeneratePayrollRun($run->id, $run->institution_id));
+            $this->approval->audit($actor, $run, 'payroll.final_started', ['payee_type' => $type, 'payee_id' => $id]);
             return $run->fresh('items');
         });
     }
@@ -109,6 +132,14 @@ class PayrollRunService
             $item->save();
         }
         $run->fill(['status' => 'approved', 'approved_by' => $actor->id, 'approved_at' => now(), 'self_approved' => $self])->save();
+        if ($run->kind === 'final') foreach ($run->items as $item) {
+            $payee = $item->payee_type === 'teacher' ? Teacher::findOrFail($item->payee_id) : StaffMember::findOrFail($item->payee_id);
+            $payee->status = 'inactive'; $payee->save();
+            // D86 service-period close: the open structure ends on the leaving date
+            SalaryStructure::where('payee_type', $item->payee_type)->where('payee_id', $item->payee_id)
+                ->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>', $payee->leaving_date->toDateString()))
+                ->where('effective_from', '<=', $payee->leaving_date->toDateString())->update(['effective_to' => $payee->leaving_date->toDateString()]);
+        }
         $this->approval->audit($actor, $run, 'payroll.approved', ['self_approved' => $self]);
         return $run->load('items');
     }
@@ -141,7 +172,7 @@ class PayrollRunService
     {
         $run->items()->get()->each->delete();
         $settings = $run->settings_snapshot; $totals = [0, 0, 0]; $count = 0;
-        foreach ($this->payees($run->month) as [$type, $payee]) {
+        foreach ($this->payees($run) as [$type, $payee]) {
             $item = $this->item($run, $type, $payee, $settings);
             if (!$item) continue;
             $count++; $totals[0] += Money::toPaisa($item->gross); $totals[1] += Money::toPaisa($item->total_deductions); $totals[2] += Money::toPaisa($item->net);
@@ -155,10 +186,11 @@ class PayrollRunService
         $structures = SalaryStructure::where('payee_type', $type)->where('payee_id', $payee->id)
             ->where('effective_from', '<=', $end->toDateString())
             ->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>=', $start->toDateString()))->orderBy('effective_from')->get();
-        $adjustments = SalaryAdjustment::where('payee_type', $type)->where('payee_id', $payee->id)->where('month', $run->month)
+        $adjustments = SalaryAdjustment::where('payee_type', $type)->where('payee_id', $payee->id)
+            ->where('month', $run->kind === 'final' ? '<=' : '=', $run->month)
             ->where('status', 'approved')->whereNull('payroll_item_id')
-            ->where('kind', $run->kind === 'bonus' ? '=' : '!=', 'bonus')->orderBy('id')->get();
-        $regular = $run->kind === 'regular';
+            ->when($run->kind !== 'final', fn ($q) => $q->where('kind', $run->kind === 'bonus' ? '=' : '!=', 'bonus'))->orderBy('id')->get();
+        $regular = in_array($run->kind, ['regular', 'final'], true);   // salary, attendance, PF, tax and advances
         if ($structures->isEmpty() && ($regular || $adjustments->isEmpty())) return null;
 
         $lines = SalaryStructureLine::whereIn('structure_id', $structures->pluck('id'))->orderBy('id')->get()->groupBy('structure_id');
@@ -212,11 +244,19 @@ class PayrollRunService
         }
         // §6 advance installments: never below min_net_after_recovery (D87 recovery rules incl. approved skips)
         if ($regular) foreach (SalaryAdvance::where('payee_type', $type)->where('payee_id', $payee->id)->where('status', 'active')->orderBy('id')->get() as $advance) {
-            $take = Money::toPaisa($this->advances->recovery($this->actor($run), $advance->id, $run->month, Money::format($net))['recovery']);
+            $take = $run->kind === 'final'
+                ? Money::toPaisa(app(AdvanceRecoveryCalculator::class)->calculate((string) $advance->amount, (string) $advance->recovered, (string) $advance->installment_amount,
+                    Money::format($net), (string) $settings['min_net_after_recovery'], false, true)['recovery'])
+                : Money::toPaisa($this->advances->recovery($this->actor($run), $advance->id, $run->month, Money::format($net))['recovery']);
             if ($take <= 0) continue;
             $net -= $take; $deductions += $take;
             $breakdown[] = ['code' => 'advance_recovery', 'name' => ['bn' => 'অগ্রিম-কিস্তি', 'en' => 'Advance installment', 'ar' => 'قسط السلفة'],
                 'type' => 'deduction', 'amount' => Money::format($take), 'source' => 'advance', 'ref_id' => $advance->id];
+        }
+        if ($run->kind === 'final' && ($balance = Money::toPaisa((string) ProvidentFundEntry::where('payee_type', $type)->where('payee_id', $payee->id)->sum('amount'))) > 0) {
+            $net += $balance;
+            $breakdown[] = ['code' => 'pf_withdrawal', 'name' => ['bn' => 'ভবিষ্য তহবিল উত্তোলন', 'en' => 'Provident fund withdrawal', 'ar' => 'سحب صندوق الادخار'],
+                'type' => 'earning', 'amount' => Money::format($balance), 'source' => 'pf_withdrawal', 'ref_id' => null];
         }
         if (($settings['rounding'] ?? 'none') === 'nearest_1' && ($diff = Money::ratio($net, 1, 100) * 100 - $net) !== 0) {
             $net += $diff;
@@ -235,14 +275,21 @@ class PayrollRunService
     }
 
     /** active payees with any service in the month; teacher and staff #7 are different payees */
-    private function payees(string $month): array
+    private function payees(PayrollRun $run): array
     {
+        if ($run->kind === 'final') {
+            [$type, $id] = explode(':', $run->label, 2);
+            return [[$type, $type === 'teacher' ? Teacher::findOrFail((int) $id) : StaffMember::findOrFail((int) $id)]];
+        }
+        $month = $run->month;
+        // a payee whose final settlement covers this month is paid only there
+        $final = PayrollRun::where('month', $month)->where('kind', 'final')->where('status', '!=', 'cancelled')->pluck('label')->flip();
         $start = $month.'-01'; $end = CarbonImmutable::parse($start)->endOfMonth()->toDateString(); $out = [];
         foreach (['teacher' => Teacher::class, 'staff' => StaffMember::class] as $type => $model) {
             $model::whereIn('status', ['active', 'on_leave'])
                 ->where(fn ($q) => $q->whereNull('joining_date')->orWhere('joining_date', '<=', $end))
                 ->where(fn ($q) => $q->whereNull('leaving_date')->orWhere('leaving_date', '>=', $start))
-                ->orderBy('id')->each(function ($payee) use ($type, &$out) { $out[] = [$type, $payee]; });
+                ->orderBy('id')->each(function ($payee) use ($type, $final, &$out) { if (!$final->has($type.':'.$payee->id)) $out[] = [$type, $payee]; });
         }
         return $out;
     }

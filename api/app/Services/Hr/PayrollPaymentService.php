@@ -116,6 +116,9 @@ class PayrollPaymentService
                 ProvidentFundEntry::create(['payee_type' => $item->payee_type, 'payee_id' => $item->payee_id, 'month' => $run->month, 'kind' => 'employer',
                     'amount' => Money::format($employer), 'payroll_item_id' => $item->id]);
         }
+        foreach ($item->breakdown as $line) if ($line['source'] === 'pf_withdrawal')
+            ProvidentFundEntry::create(['payee_type' => $item->payee_type, 'payee_id' => $item->payee_id, 'month' => $run->month, 'kind' => 'withdrawal',
+                'amount' => Money::format(-Money::toPaisa($line['amount'])), 'payroll_item_id' => $item->id, 'note' => 'final settlement']);
         foreach ($item->breakdown as $line) {
             if ($line['source'] === 'adjustment') {
                 $adjustment = SalaryAdjustment::lockForUpdate()->findOrFail($line['ref_id']);

@@ -297,6 +297,11 @@ Route::prefix('v1')->group(function () {
             Route::patch('/payroll-items/{id}',[\App\Http\Controllers\Hr\PayrollItemController::class,'update'])->whereNumber('id');
             Route::get('/payroll-items/{id}/slip.pdf',[\App\Http\Controllers\Hr\PayrollItemController::class,'slip'])->whereNumber('id');
             Route::get('/reports/{name}',[\App\Http\Controllers\Hr\PayrollReportController::class,'show'])->whereIn('name',['register','held','monthly-cost']);
+            // R3.8: PF ledger and final settlement (staff-payroll.md §10-§11)
+            Route::post('/final-settlement/{type}/{id}/start',[\App\Http\Controllers\Hr\FinalSettlementController::class,'start'])->whereIn('type',['teacher','staff'])->whereNumber('id');
+            Route::get('/pf/entries',[\App\Http\Controllers\Hr\ProvidentFundController::class,'index']);
+            Route::post('/pf/entries',[\App\Http\Controllers\Hr\ProvidentFundController::class,'store']);
+            Route::get('/pf/{type}/{id}/statement.pdf',[\App\Http\Controllers\Hr\ProvidentFundController::class,'statement'])->whereIn('type',['teacher','staff'])->whereNumber('id');
         });
         Route::middleware(['role:teacher','module:hr_payroll'])->prefix('teacher/salary')->group(function () {
             Route::get('/',[\App\Http\Controllers\Hr\TeacherSalaryController::class,'summary']);
