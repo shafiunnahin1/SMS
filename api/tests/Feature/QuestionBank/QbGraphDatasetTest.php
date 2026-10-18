@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 // R2.1.2 / D115 (3): qbank's graph-dataset API - qbank's response shape, a writer's own datasets only, moderators read and change
-// nothing, cells cleaned and limits kept, an edit from an older version refused, a dataset attached to a question kept.
+// nothing, cells cleaned and limits kept, an edit from an older version refused, a dataset used by a published question kept (D116).
 class QbGraphDatasetTest extends TestCase
 {
     use RefreshDatabase;
@@ -48,7 +48,6 @@ class QbGraphDatasetTest extends TestCase
         $this->api('GET', $this->central, "writer/graph-datasets/{$made['uuid']}", $other)->assertForbidden();
         $this->api('PUT', $this->central, "writer/graph-datasets/{$made['uuid']}", $other, $this->body())->assertForbidden();
         $this->api('DELETE', $this->central, "writer/graph-datasets/{$made['uuid']}", $other)->assertForbidden();
-        $this->api('GET', $this->central, 'writer/graph-datasets/capabilities', $writer)->assertOk()->assertJsonPath('limits.maxRows', 50000)->assertJsonPath('limits.maxColumns', 80);
     }
 
     public function test_moderators_read_and_change_nothing_and_old_edits_are_refused(): void
@@ -80,6 +79,10 @@ class QbGraphDatasetTest extends TestCase
         $type = QbQuestionType::create(['slug' => 'short', 'name_bn' => 'সংক্ষিপ্ত', 'name_en' => 'Short', 'family' => 'short'])->id;
         $q = QbQuestion::create(['qb_question_type_id' => $type, 'qb_subject_id' => QbSubject::create(['name_bn' => 'ভূগোল', 'name_en' => 'Geo'])->id, 'question_text' => 'Q', 'status' => 'draft', 'created_by' => $writer->id]);
         QbGraphDataset::where('uuid', $used)->update(['qb_question_id' => $q->id]);
+        $draftOnly = $this->api('POST', $this->central, 'writer/graph-datasets', $writer, $this->body())->json('dataset.uuid');
+        QbGraphDataset::where('uuid', $draftOnly)->update(['qb_question_id' => $q->id]);
+        $this->api('DELETE', $this->central, "writer/graph-datasets/{$draftOnly}", $writer)->assertOk();   // D116: only a published question's dataset is kept
+        $q->update(['status' => 'published']);
         $this->api('DELETE', $this->central, "writer/graph-datasets/{$used}", $writer)->assertStatus(409)->assertJsonPath('code', 'DATASET_IN_USE');
         $this->api('DELETE', $this->central, "writer/graph-datasets/{$free}", $writer)->assertOk()->assertJsonPath('deleted', $free);
         $this->assertSoftDeleted('qb_graph_datasets', ['uuid' => $free]);

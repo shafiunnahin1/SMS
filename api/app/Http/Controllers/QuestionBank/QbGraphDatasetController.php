@@ -12,18 +12,10 @@ use InvalidArgumentException;
 
 // D115 (R2.1.2): qbank's graph-dataset API, in qbank's own response shape (the copied graph tool's dataset client reads it unchanged).
 // A writer lists and changes only their own datasets; a moderator reads any (they review the question that uses it) and changes none;
-// the Super Admin does both. A dataset attached to a question cannot be deleted; an edit from an older version is a 409.
+// the Super Admin does both. A dataset used by a published question cannot be deleted (D116); an edit from an older version is a 409.
 class QbGraphDatasetController extends Controller
 {
     public function __construct(private QbGraphDatasetService $storage) {}
-
-    /** GET /writer/graph-datasets/capabilities */
-    public function capabilities(): JsonResponse
-    {
-        return response()->json(['ok' => true, 'version' => '2.2.1.1', 'ownership' => ['mode' => 'user', 'authenticationRequired' => true, 'browserScoped' => false],
-            'limits' => ['maxRows' => QbGraphDataset::MAX_ROWS, 'maxColumns' => QbGraphDataset::MAX_COLUMNS, 'maxCells' => QbGraphDataset::MAX_CELLS, 'maxCellLength' => QbGraphDataset::MAX_CELL_LENGTH],
-            'storage' => ['databaseRowLimit' => QbGraphDataset::MAX_ROWS, 'databaseByteLimit' => null, 'largeDatasetDriver' => 'database']]);
-    }
 
     /** GET /writer/graph-datasets?limit= */
     public function index(Request $request): JsonResponse
@@ -31,7 +23,7 @@ class QbGraphDatasetController extends Controller
         $limit = min(100, max(1, (int) $request->integer('limit', 40)));
         $rows = QbGraphDataset::query()->when($request->user()->role === 'content_writer', fn ($q) => $q->where('created_by', $request->user()->id))
             ->latest('updated_at')->limit($limit)->get();
-        return response()->json(['ok' => true, 'ownershipMode' => 'user', 'datasets' => $rows->map(fn ($d) => $this->metadata($d))->values()]);
+        return response()->json(['ok' => true, 'ownershipMode' => 'authenticated_user', 'datasets' => $rows->map(fn ($d) => $this->metadata($d))->values()]);
     }
 
     /** POST /writer/graph-datasets {name?, source_type?, headers, rows, metadata?} */
@@ -41,17 +33,17 @@ class QbGraphDatasetController extends Controller
         try { $d = $this->storage->create($request->user()->id, $in); }
         catch (InvalidArgumentException $e) { throw ValidationException::withMessages(['dataset' => $e->getMessage()]); }
         AuditLog::record('qb.graph_dataset.created', $d, ['rows' => $d->row_count, 'columns' => $d->column_count]);
-        return response()->json(['ok' => true, 'ownershipMode' => 'user', 'dataset' => $this->metadata($d)], 201);
+        return response()->json(['ok' => true, 'ownershipMode' => 'authenticated_user', 'dataset' => $this->metadata($d)], 201);
     }
 
-    /** GET /writer/graph-datasets/{uuid} */
+    /** GET /writer/graph-datasets/{id} */
     public function show(Request $request, string $uuid): JsonResponse
     {
         $d = $this->find($request, $uuid, false);
-        return response()->json(['ok' => true, 'ownershipMode' => 'user', 'dataset' => $this->metadata($d) + ['headers' => $d->headers, 'rows' => $this->storage->rows($d)]]);
+        return response()->json(['ok' => true, 'ownershipMode' => 'authenticated_user', 'dataset' => $this->metadata($d) + ['headers' => $d->headers, 'rows' => $this->storage->rows($d)]]);
     }
 
-    /** PUT /writer/graph-datasets/{uuid} {..., version} */
+    /** PUT /writer/graph-datasets/{id} {..., version} */
     public function update(Request $request, string $uuid): JsonResponse
     {
         $d = $this->find($request, $uuid, true);
@@ -59,14 +51,14 @@ class QbGraphDatasetController extends Controller
         catch (InvalidArgumentException $e) { throw ValidationException::withMessages(['dataset' => $e->getMessage()]); }
         if (!$fresh) return response()->json(['ok' => false, 'message' => __('errors.qb_dataset_version'), 'code' => 'DATASET_VERSION_CONFLICT', 'dataset' => $this->metadata($d->fresh())], 409);
         AuditLog::record('qb.graph_dataset.updated', $fresh, ['version' => $fresh->version]);
-        return response()->json(['ok' => true, 'ownershipMode' => 'user', 'dataset' => $this->metadata($fresh)]);
+        return response()->json(['ok' => true, 'ownershipMode' => 'authenticated_user', 'dataset' => $this->metadata($fresh)]);
     }
 
-    /** DELETE /writer/graph-datasets/{uuid} */
+    /** DELETE /writer/graph-datasets/{id} */
     public function destroy(Request $request, string $uuid): JsonResponse
     {
         $d = $this->find($request, $uuid, true);
-        if ($d->qb_question_id !== null) return response()->json(['ok' => false, 'message' => __('errors.qb_dataset_in_use'), 'code' => 'DATASET_IN_USE'], 409);
+        if ($d->qb_question_id !== null && \App\Models\QbQuestion::whereKey($d->qb_question_id)->where('status', 'published')->exists()) return response()->json(['ok' => false, 'message' => __('errors.qb_dataset_in_use'), 'code' => 'DATASET_IN_USE'], 409);
         $d->delete();
         AuditLog::record('qb.graph_dataset.deleted', $d, []);
         return response()->json(['ok' => true, 'deleted' => $uuid]);
@@ -100,6 +92,6 @@ class QbGraphDatasetController extends Controller
     {
         return ['uuid' => $d->uuid, 'name' => $d->name, 'sourceType' => $d->source_type, 'rowCount' => (int) $d->row_count, 'columnCount' => (int) $d->column_count,
             'checksum' => $d->checksum, 'version' => (int) $d->version, 'storageDriver' => 'database', 'questionId' => $d->qb_question_id,
-            'inUse' => $d->qb_question_id !== null, 'ownershipMode' => 'user', 'lastUsedAt' => null, 'updatedAt' => $d->updated_at?->toISOString()];
+            'inUse' => $d->qb_question_id !== null, 'ownershipMode' => 'authenticated_user', 'lastUsedAt' => null, 'updatedAt' => $d->updated_at?->toISOString()];
     }
 }

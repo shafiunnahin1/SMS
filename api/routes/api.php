@@ -122,13 +122,12 @@ Route::prefix('v1')->group(function () {
         Route::put('/questions/{id}',                 [QbQuestionController::class, 'update'])->whereNumber('id')->middleware('role:content_writer,super_admin');
         Route::get('/questions/{id}/revisions',       [QbQuestionController::class, 'revisions'])->whereNumber('id');
         Route::post('/media',                         [QbMediaController::class, 'store'])->middleware('role:content_writer,super_admin');
-        // R2.1.2 (D115): qbank's graph datasets - writers their own, moderators read, the Super Admin all
-        Route::get('/graph-datasets/capabilities',    [QbGraphDatasetController::class, 'capabilities']);
+        // R2.1.2 (D115, D116): qbank's graph datasets (the {id} is the dataset's uuid) - writers their own, moderators read, the Super Admin all
         Route::get('/graph-datasets',                 [QbGraphDatasetController::class, 'index']);
         Route::post('/graph-datasets',                [QbGraphDatasetController::class, 'store'])->middleware(['role:content_writer,super_admin', 'throttle:60,1']);
-        Route::get('/graph-datasets/{uuid}',          [QbGraphDatasetController::class, 'show'])->whereUuid('uuid');
-        Route::put('/graph-datasets/{uuid}',          [QbGraphDatasetController::class, 'update'])->whereUuid('uuid')->middleware('role:content_writer,super_admin');
-        Route::delete('/graph-datasets/{uuid}',       [QbGraphDatasetController::class, 'destroy'])->whereUuid('uuid')->middleware('role:content_writer,super_admin');
+        Route::get('/graph-datasets/{id}',            [QbGraphDatasetController::class, 'show'])->whereUuid('id');
+        Route::put('/graph-datasets/{id}',            [QbGraphDatasetController::class, 'update'])->whereUuid('id')->middleware('role:content_writer,super_admin');
+        Route::delete('/graph-datasets/{id}',         [QbGraphDatasetController::class, 'destroy'])->whereUuid('id')->middleware('role:content_writer,super_admin');
         Route::post('/questions/{id}/submit',         [QbQuestionController::class, 'submit'])->whereNumber('id')->middleware('role:content_writer,super_admin');
         Route::post('/questions/{id}/publish',        [QbQuestionController::class, 'publish'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
         Route::post('/questions/{id}/reject',         [QbQuestionController::class, 'reject'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
