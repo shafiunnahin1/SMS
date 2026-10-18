@@ -1,6 +1,6 @@
 # R2.1 — generated planning plan (D83)
 
-> PLANNING ONLY. Every task is blocked and non-executable. Runtime remains R3.
+> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle slice below. Runtime remains R3; no runtime switch is authorized.
 > Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.
 > Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.
 
@@ -11,6 +11,18 @@ Source access is read-only files: no DB, application commands, tests or benchmar
 
 Existing route anchors name source declarations in the destination route file, not proposed new URLs.
 The imported root proposal, including its complete feature inventory, remains the requirements catalogue.
+
+## Approved scoped implementation slice
+
+Task: R2.1.2-dataset-lifecycle (parent R2.1.2); decisions: D114, D115, D116, D117.
+Depends on: R2.1.1; status: executable slice, not accepted.
+Scope: QbGraphDataset lifecycle only: central writer API; a writer manages only their own datasets, moderators are read-only, and Super Admin may manage all; enforce D115 size limits, stale-version conflicts and published-question in-use deletion guard.
+Authorized table: qb_graph_datasets.
+Routes: GET|HEAD /writer/graph-datasets (content_writer, content_moderator, super_admin); POST /writer/graph-datasets (content_writer, super_admin); GET|HEAD /writer/graph-datasets/{id} (content_writer, content_moderator, super_admin); PUT /writer/graph-datasets/{id} (content_writer, super_admin); DELETE /writer/graph-datasets/{id} (content_writer, super_admin).
+Roles: content_writer, content_moderator, super_admin.
+Done when: Dataset CRUD is central-host-only. Writers manage only their own datasets; moderators can read but never write; Super Admin can manage all. Enforce 50,000 rows, 80 columns, 1,000,000 cells, 2,048 characters per cell, server checksum/version, stale-version conflicts and refusal to delete a dataset referenced by a published question. Parent R2.1.2 remains unchecked; visuals, full format parity and finder are deferred.
+Deferred from the parent task: full authoring-format and visual-mode parity matrix; graph/diagram editor and paper-renderer integration; question finder and calibrated ranking fixtures.
+The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
 
 ## R2.1.0 — Source/target inventory, fixtures and measured baseline
 
@@ -174,4 +186,4 @@ These commands supplement future feature fixtures; none establish source parity 
 `py -3.14 infra/spec-verify/test_r21_plan.py` tests missing gates, dependency/order, approval flags, provenance and coverage.
 `py -3.14 infra/spec-verify/gen_r21_plan.py . --check` rejects stale/invalid generated planning artifacts.
 Full `verify.py . --deep` and staged guard are required before the protected checkpoint.
-No feature checkoffs, runtime/module changes, migrations or source execution are authorized.
+No R2.1 runtime/module switch, source-repository writes or feature acceptance are authorized.

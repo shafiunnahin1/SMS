@@ -14,6 +14,25 @@ ENTRY_POINTS = ('AGENTS.md', 'README.md', 'AGENT-CONTINUITY.md',
 TASK_IDS = [f'R2.1.{n}' for n in range(10)]
 DEPENDENCIES = [['R3.A'], ['R2.1.0'], ['R2.1.1'], ['R2.1.2'], ['R2.1.2'],
                 ['R2.1.2'], ['R2.1.5'], ['R2.1.0'], TASK_IDS[3:8], TASK_IDS[:9]]
+APPROVED_EXECUTION_SLICES = [{
+    'id': 'R2.1.2-dataset-lifecycle', 'parent_task': 'R2.1.2',
+    'decisions': ['D114', 'D115', 'D116', 'D117'], 'depends_on': ['R2.1.1'],
+    'executable': True, 'accepted': False,
+    'scope': 'QbGraphDataset lifecycle only: central writer API; a writer manages only their own datasets, moderators are read-only, and Super Admin may manage all; enforce D115 size limits, stale-version conflicts and published-question in-use deletion guard.',
+    'tables': ['qb_graph_datasets'],
+    'routes': [
+        {'method': 'GET|HEAD', 'uri': '/writer/graph-datasets', 'roles': ['content_writer', 'content_moderator', 'super_admin']},
+        {'method': 'POST', 'uri': '/writer/graph-datasets', 'roles': ['content_writer', 'super_admin']},
+        {'method': 'GET|HEAD', 'uri': '/writer/graph-datasets/{id}', 'roles': ['content_writer', 'content_moderator', 'super_admin']},
+        {'method': 'PUT', 'uri': '/writer/graph-datasets/{id}', 'roles': ['content_writer', 'super_admin']},
+        {'method': 'DELETE', 'uri': '/writer/graph-datasets/{id}', 'roles': ['content_writer', 'super_admin']},
+    ],
+    'roles': ['content_writer', 'content_moderator', 'super_admin'],
+    'done_when': 'Dataset CRUD is central-host-only. Writers manage only their own datasets; moderators can read but never write; Super Admin can manage all. Enforce 50,000 rows, 80 columns, 1,000,000 cells, 2,048 characters per cell, server checksum/version, stale-version conflicts and refusal to delete a dataset referenced by a published question. Parent R2.1.2 remains unchecked; visuals, full format parity and finder are deferred.',
+    'deferred': ['full authoring-format and visual-mode parity matrix',
+                 'graph/diagram editor and paper-renderer integration',
+                 'question finder and calibrated ranking fixtures'],
+}]
 
 
 def load(root):
@@ -48,6 +67,14 @@ def validate(root, scope, gaps):
     require(scope.get('authorized_new_objects') == {'tables': [], 'routes': [], 'modules': [], 'packages': []},
             'planning must not authorize application objects')
     require(scope.get('source_policy') == 'read_only_files_no_db_no_execution', 'source access policy')
+    require(scope.get('approved_execution_slices') == APPROVED_EXECUTION_SLICES,
+            'approved execution slice must stay within D114-D117 dataset lifecycle')
+    decisions = (root / 'docs/LOCKED-DECISIONS.md').read_text(encoding='utf-8')
+    require(all(f'| D{number} |' in decisions for number in (114, 115, 116, 117)),
+            'approved slice decisions must precede execution')
+    progress = (root / 'docs/PROGRESS.md').read_text(encoding='utf-8')
+    require(re.search(r'^- \[x\] R2\.1\.1\b', progress, re.M) is not None,
+            'approved slice prerequisite R2.1.1 must be accepted')
     for entry in ENTRY_POINTS:
         text = (root / entry).read_text(encoding='utf-8')
         require(all(token in text for token in ('D83', 'R2.1', 'R3.A', 'R4', 'AGENT-PLAN-R2.1.md')),
@@ -113,9 +140,9 @@ def build(root):
     acceptance = requirements(root)
     plan = {**scope, 'generated_from': [SCOPE, GAPS, 'RELEASE-2.1.md'],
             'acceptance_catalogue': acceptance,
-            'evidence_note': 'Existing entities/routes are reuse anchors, not accepted parity. No new schema/API is approved.'}
+            'evidence_note': 'Only the explicit D114-D117 dataset-lifecycle slice is executable; the full R2.1.2 task and runtime switch remain blocked.'}
     lines = ['# R2.1 — generated planning plan (D83)', '',
-             '> PLANNING ONLY. Every task is blocked and non-executable. Runtime remains R3.',
+             '> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle slice below. Runtime remains R3; no runtime switch is authorized.',
              '> Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.',
              '> Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.',
              '', 'Placement: after R3.A, before R4/later; retain existing R1.1/R2 prerequisites.',
@@ -124,6 +151,18 @@ def build(root):
              'Source access is read-only files: no DB, application commands, tests or benchmarks.', '',
              'Existing route anchors name source declarations in the destination route file, not proposed new URLs.',
              'The imported root proposal, including its complete feature inventory, remains the requirements catalogue.', '']
+    for active in scope.get('approved_execution_slices', []):
+        routes = '; '.join(f"{r['method']} {r['uri']} ({', '.join(r['roles'])})" for r in active['routes'])
+        lines.extend(['## Approved scoped implementation slice', '',
+                      f"Task: {active['id']} (parent {active['parent_task']}); decisions: {', '.join(active['decisions'])}.",
+                      f"Depends on: {', '.join(active['depends_on'])}; status: executable slice, not accepted.",
+                      f"Scope: {active['scope']}",
+                      f"Authorized table: {', '.join(active['tables'])}.",
+                      f"Routes: {routes}.",
+                      f"Roles: {', '.join(active['roles'])}.",
+                      f"Done when: {active['done_when']}",
+                      f"Deferred from the parent task: {'; '.join(active['deferred'])}.",
+                      'The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.', ''])
     for t in scope['tasks']:
         lines.extend([f"## {t['id']} — {t['title']}", '',
                       f"Depends on: {', '.join(t['depends_on'])}. Status: BLOCKED / unaccepted / non-executable.",
@@ -145,7 +184,7 @@ def build(root):
                   '`py -3.14 infra/spec-verify/test_r21_plan.py` tests missing gates, dependency/order, approval flags, provenance and coverage.',
                   '`py -3.14 infra/spec-verify/gen_r21_plan.py . --check` rejects stale/invalid generated planning artifacts.',
                   'Full `verify.py . --deep` and staged guard are required before the protected checkpoint.',
-                  'No feature checkoffs, runtime/module changes, migrations or source execution are authorized.', ''])
+                  'No R2.1 runtime/module switch, source-repository writes or feature acceptance are authorized.', ''])
     return (json.dumps(plan, ensure_ascii=False, indent=2) + '\n', '\n'.join(lines))
 
 
@@ -167,7 +206,7 @@ def main():
         if stale:
             print('FAIL stale R2.1 planning artifacts: ' + ', '.join(stale))
             return 1
-        print('PASS R2.1 planning: 10 blocked tasks, all capability/acceptance mappings; ' +
+        print('PASS R2.1 planning: 10 blocked parent tasks plus the explicit D114-D117 dataset slice, all capability/acceptance mappings; ' +
               ('generated artifacts fresh' if args.check else 'generated artifacts written'))
         return 0
     except (ValueError, KeyError, TypeError, OSError, IndexError) as exc:
