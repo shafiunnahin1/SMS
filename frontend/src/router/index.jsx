@@ -13,6 +13,11 @@ import { MENU } from '../nav/menu'
 // slice's pages; every other menu path inside a role opens NotBuilt (never a 404).
 const Dashboard   = lazy(() => import('../pages/common/Dashboard'))
 const NotBuilt    = lazy(() => import('../pages/common/NotBuilt'))
+// R3.12: the R3 money pages (named exports of one file per area)
+const r3 = (file, name) => lazy(() => import(`../pages/r3/${file}.jsx`).then(m => ({ default: m[name] })))
+const AccVouchers = r3('Accounting', 'Vouchers'), AccAccounts = r3('Accounting', 'Accounts'), AccBudgets = r3('Accounting', 'Budgets'), AccBank = r3('Accounting', 'Bank'), AccReports = r3('Accounting', 'Reports')
+const DonDonors = r3('Donations', 'Donors'), DonFunds = r3('Donations', 'Funds'), DonCampaigns = r3('Donations', 'Campaigns'), DonList = r3('Donations', 'DonationList')
+const Expenses = r3('Money', 'Expenses'), Refunds = r3('Money', 'Refunds'), Inventory = r3('Money', 'Inventory'), CashBook = r3('Money', 'CashBook')
 const StudentList = lazy(() => import('../pages/admin/students/StudentList'))
 const StudentAdd  = lazy(() => import('../pages/admin/students/StudentAdd'))
 const FeeCollect  = lazy(() => import('../pages/admin/fees/FeeCollect'))
@@ -117,6 +122,10 @@ export const tenantRoutes = [
     { path: 'batches', element: S(BatchList) },
     { path: 'batches/:id', element: S(BatchDetail) },
     { path: 'teachers', element: S(TeacherList) },
+    { path: 'fees/cashbook', element: S(CashBook) }, { path: 'fees/refunds', element: S(Refunds) }, { path: 'expenses', element: S(Expenses) }, { path: 'inventory', element: S(Inventory) },
+    { path: 'accounting/vouchers', element: S(AccVouchers) }, { path: 'accounting/accounts', element: S(AccAccounts) }, { path: 'accounting/budgets', element: S(AccBudgets) },
+    { path: 'accounting/bank', element: S(AccBank) }, { path: 'accounting/reports', element: S(AccReports) },
+    { path: 'donations/donors', element: S(DonDonors) }, { path: 'donations/funds', element: S(DonFunds) }, { path: 'donations/campaigns', element: S(DonCampaigns) }, { path: 'donations', element: S(DonList) },
     // Step 3.4: the component gallery - development builds only (import.meta.env.DEV is false in `vite build`)
     ...(import.meta.env.DEV ? [{ path: 'dev/components', element: S(DevComponents) }] : []),
   ]),
@@ -125,6 +134,8 @@ export const tenantRoutes = [
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'reports', element: S(Reports) },
+    { path: 'cashbook', element: S(CashBook) }, { path: 'refunds', element: S(Refunds) }, { path: 'expenses', element: S(Expenses) }, { path: 'inventory', element: S(Inventory) },
+    { path: 'accounting', element: S(AccVouchers) }, { path: 'donations', element: S(DonList) },
   ]),
   area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }]),
   area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }]),   // QB.9 / QB.10: the student portal (other student screens: R1.1)
