@@ -6,7 +6,8 @@ import { login, tenantOf, watchConsole } from './helpers.js'
 test('4.1 programs, batches and teachers', async ({ page }, testInfo) => {
   const t = tenantOf(testInfo)
   const noErrors = watchConsole(page)
-  const stamp = Date.now().toString().slice(-6)
+  // the 6-digit stamp never contains "404": the panel smoke reads every page for "404" and these names are listed there
+  const stamp = Date.now().toString().slice(-6).replace(/404/g, '414')
   await login(page, ...t.admin)
   const modal = page.getByRole('dialog')
 
