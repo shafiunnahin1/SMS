@@ -483,6 +483,7 @@ final class DepartmentRouteCatalog
     /** D111: R2.1.1 Google sign-in, a login-type route outside the sealed D90 list (no token, no staff permission) */
     public const D111 = [
         ['method' => 'POST', 'uri' => 'api/v1/auth/google', 'action' => 'App\\Http\\Controllers\\Auth\\LoginController@google', 'current_roles' => [], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => [], 'selector_variants' => [], 'resource_scope' => 'existing host/auth/ownership contract; no staff permission', 'approval' => 'D111', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
+        ['method' => 'GET|HEAD', 'uri' => 'api/v1/writer/dashboard', 'action' => 'App\\Http\\Controllers\\QuestionBank\\QbWriterController@dashboard', 'current_roles' => ['content_moderator', 'content_writer', 'super_admin'], 'preserve_nonstaff_roles' => ['content_moderator', 'content_writer', 'super_admin'], 'current_module_feature_gates' => [], 'selector_variants' => [], 'resource_scope' => 'existing host/auth/ownership contract; no staff permission', 'approval' => 'D111', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
     ];
 
     /** D100: R3.9 store/inventory routes, principal_only (no staff.inventory.* keys yet); kept apart so the sealed D90 list and digest stay unchanged */

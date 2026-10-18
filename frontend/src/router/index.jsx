@@ -56,6 +56,7 @@ const PlatformSettings  = lazy(() => import('../pages/super/PlatformSettings'))
 const QbCurriculum      = lazy(() => import('../pages/super/QbCurriculum'))
 const QbWriters         = lazy(() => import('../pages/super/QbWriters'))
 const QbPricing         = lazy(() => import('../pages/super/QbPricing'))
+const QbDashboard       = lazy(() => import('../pages/writer/QbDashboard'))   // R2.1.1 (D110)
 const QbQuestions       = lazy(() => import('../pages/writer/QbQuestions'))
 const QbQuestionEdit    = lazy(() => import('../pages/writer/QbQuestionEdit'))
 const QbQuestionStart   = lazy(() => import('../pages/writer/QbQuestionStart'))   // D73
@@ -180,6 +181,7 @@ export const centralRoutes = [
   ]),
   // D65 QB.2: the question-bank writers' panel (writers, moderators and the Super Admin)
   area('/writer', ['content_writer', 'content_moderator', 'super_admin'], [
+    { path: 'dashboard', element: S(QbDashboard) },
     { path: 'questions', element: S(QbQuestions) },
     { path: 'questions/start', element: S(QbQuestionStart) },   // D73: qbank's new-question form, a draft first
     { path: 'questions/:id', element: S(QbQuestionEdit) },

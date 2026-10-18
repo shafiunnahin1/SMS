@@ -37,6 +37,13 @@ class QbPortalBoundaryTest extends TestCase
         $this->api('POST', $central, 'writer/withdrawals', $moderator, ['amount' => '10.00'])->assertForbidden();
         $this->api('POST', $central, "writer/questions/$id/publish", $moderator)->assertOk();
 
+        // D110: qbank's dashboard counters, plus the caller's own work (a writer) or everyone's (a moderator)
+        $this->api('POST', $central, 'writer/questions', $writer, $place + ['question_text' => 'Draft?', 'answer_text' => 'A'])->assertCreated();
+        $d = $this->api('GET', $central, 'writer/dashboard', $writer)->assertOk()->json('data');
+        $this->assertSame([1, 1, 1, 1], [$d['questions'], $d['subjects'], $d['chapters'], $d['topics']]);
+        $this->assertSame(['draft' => 1, 'review' => 0, 'rejected' => 0, 'published' => 1], $d['by_status']);
+        $this->assertSame(1, $this->api('GET', $central, 'writer/dashboard', $moderator)->assertOk()->json('data.by_status.draft'));
+
         $school = $this->makeInstitution('portal-school');
         foreach (['admin', 'teacher'] as $role) {
             $u = $this->makeUser($school, $role);

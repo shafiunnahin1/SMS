@@ -194,12 +194,14 @@ export const MENU = {
     it('reports','/accountant/reports','রিপোর্ট',{icon:'BarChart3',module:'reports',primary:true}),
   ],
   content_writer: [
+    it('dashboard','/writer/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard'}),
     it('questions','/writer/questions','প্রশ্ন',{icon:'FileText'}),
     it('concepts','/writer/concepts','কনসেপ্ট',{icon:'Sparkles'}),
     it('resources','/writer/resources','স্লাইড, বই ও PDF',{icon:'Folder'}),
     it('earnings','/writer/earnings','আয় ও টাকা তোলা',{icon:'Wallet'}),
   ],
   content_moderator: [
+    it('dashboard','/writer/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard'}),
     it('review','/writer/questions','প্রশ্ন যাচাই',{icon:'ClipboardCheck'}),
     it('review-concepts','/writer/concepts','কনসেপ্ট যাচাই',{icon:'Sparkles'}),
     it('review-resources','/writer/resources','স্লাইড, বই ও PDF যাচাই',{icon:'Folder'}),

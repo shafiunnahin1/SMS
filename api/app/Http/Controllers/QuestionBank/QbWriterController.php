@@ -5,7 +5,7 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\QuestionBank\QbWriterRequest;
-use App\Models\{AuditLog, QbQuestion, User};
+use App\Models\{AuditLog, QbChapter, QbQuestion, QbSubject, QbTopic, User};
 use Illuminate\Http\Request;
 
 // QB.2 (D65, docs/modules/question-bank.md §1): the platform's question-bank writers and moderators - users with institution_id
@@ -44,6 +44,20 @@ class QbWriterController extends Controller
         $user->update($in);
         AuditLog::record('qb.writer.updated', $user, ['changed' => array_keys($in)]);
         return response()->json(['success' => true, 'data' => $this->row($user->fresh()), 'message' => __('messages.saved')]);
+    }
+
+    /** GET /writer/dashboard (R2.1.1 / D110): qbank's dashboard counters - published questions, subjects, chapters, topics - plus the
+     *  caller's own questions by status (a writer) or the review queue (a moderator / Super Admin) */
+    public function dashboard(Request $request)
+    {
+        $user = $request->user();
+        $mine = QbQuestion::query()->when($user->role === 'content_writer', fn ($q) => $q->where('created_by', $user->id))
+            ->selectRaw('status, COUNT(*) AS n')->groupBy('status')->pluck('n', 'status')->map(fn ($n) => (int) $n);
+        return response()->json(['success' => true, 'data' => [
+            'questions' => QbQuestion::where('status', 'published')->count(), 'subjects' => QbSubject::count(),
+            'chapters' => QbChapter::count(), 'topics' => QbTopic::count(),
+            'by_status' => ['draft' => $mine['draft'] ?? 0, 'review' => $mine['review'] ?? 0, 'rejected' => $mine['rejected'] ?? 0, 'published' => $mine['published'] ?? 0],
+        ]]);
     }
 
     /** PATCH /writer/change-password: a writer's own password (first login, or any time) */
