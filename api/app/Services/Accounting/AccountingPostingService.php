@@ -3,7 +3,7 @@
 namespace App\Services\Accounting;
 
 use App\Exceptions\BusinessException;
-use App\Models\{Expense, FeeCategory, FeePayment, FeeRefund, InventoryItem, InventoryMovement, PayrollItem, PayrollRun, ProvidentFundEntry, SalaryAdvance, Voucher};
+use App\Models\{Donation, DonationFund, Expense, FeeCategory, FeePayment, FeeRefund, InventoryItem, InventoryMovement, PayrollItem, PayrollRun, ProvidentFundEntry, SalaryAdvance, Voucher};
 use App\Services\ModuleGate;
 use App\Support\{Money, Tenancy};
 use Illuminate\Support\Collection;
@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
  */
 class AccountingPostingService
 {
-    public const SOURCES = ['fee', 'refund', 'expense', 'payroll', 'advance', 'store'];
+    public const SOURCES = ['fee', 'refund', 'expense', 'payroll', 'advance', 'store', 'donation'];
     private const OWN_EXPENSE_SOURCES = ['refund', 'payroll', 'advance', 'store'];
 
     public function __construct(private AccountingService $accounting) {}
@@ -72,6 +72,7 @@ class AccountingPostingService
         foreach (PayrollRun::where('status', 'paid')->where('paid_at', '>=', $start)->get(['id', 'paid_at']) as $r) $rows[] = ['payroll', $r->id, $r->paid_at->toDateString()];
         foreach (SalaryAdvance::whereNotNull('expense_id')->where('disbursed_at', '>=', $start)->get(['id', 'disbursed_at']) as $r) $rows[] = ['advance', $r->id, $r->disbursed_at->toDateString()];
         foreach (InventoryMovement::whereIn('type', ['sale', 'return'])->where('created_at', '>=', $start)->get(['id', 'created_at']) as $r) $rows[] = ['store', $r->id, $r->created_at->toDateString()];
+        foreach (Donation::where('received_on', '>=', $start)->get(['id', 'received_on']) as $r) $rows[] = ['donation', $r->id, $r->received_on->toDateString()];
         return $rows;
     }
 
@@ -80,7 +81,7 @@ class AccountingPostingService
     {
         return match ($source) {
             'fee' => $this->fee($id), 'refund' => $this->refund($id), 'expense' => $this->expense($id),
-            'payroll' => $this->payroll($id), 'advance' => $this->advance($id), 'store' => $this->store($id),
+            'payroll' => $this->payroll($id), 'advance' => $this->advance($id), 'store' => $this->store($id), 'donation' => $this->donation($id),
         };
     }
 
@@ -179,6 +180,19 @@ class AccountingPostingService
         if ($price === 0 && $cost === 0) return null;
         return ['type' => $sale ? 'receipt' : 'payment', 'date' => $m->created_at->toDateString(), 'narration' => 'Store '.$m->type.' '.($m->receipt_no ?? '#'.$m->id),
             'lines' => array_values(array_filter($lines, fn ($l) => $l['debit'] !== '0.00' || $l['credit'] !== '0.00'))];
+    }
+
+    /** R3.11 donation: Dr money · Cr 4300.<fund_id>; a reversal row swaps the sides (accounting.md §3, donations.md §2.5) */
+    private function donation(int $id): ?array
+    {
+        $d = Donation::find($id);
+        if (!$d) return null;
+        $p = Money::toPaisa((string) $d->amount); $fund = '4300.'.$d->fund_id;
+        $this->accounting->account($fund, DonationFund::whereKey($d->fund_id)->value('name'));
+        $money = $this->accounting->moneyAccount($d->method)->code;
+        $received = $d->status === 'received';
+        return ['type' => $received ? 'receipt' : 'payment', 'date' => $d->received_on->toDateString(), 'narration' => 'Donation '.$d->receipt_no,
+            'lines' => $received ? [$this->line($money, $p, 0), $this->line($fund, 0, $p)] : [$this->line($fund, $p, 0), $this->line($money, 0, $p)]];
     }
 
     private function income(?int $categoryId): string

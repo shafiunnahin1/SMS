@@ -30,7 +30,7 @@ class ExpenseRequest extends FormRequest
             }], 'receipt' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'institution_id' => ['prohibited'], 'source' => ['prohibited'], 'added_by' => ['prohibited'],
             'receipt_path' => ['prohibited'], 'reversal_of_id' => ['prohibited'], 'replaces_expense_id' => ['prohibited'],
-            'payroll_run_id' => ['prohibited'], 'fund_id' => ['prohibited'],
+            'payroll_run_id' => ['prohibited'], 'fund_id' => ['sometimes', 'nullable', 'integer', 'min:1'],   // R3.11: spending from a donation fund (donations.md §2.3)
         ];
     }
 }

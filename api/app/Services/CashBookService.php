@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\BusinessException;
-use App\Models\{AuditLog, CashBookClosing, Expense, FeePayment, Institution};
+use App\Models\{AuditLog, CashBookClosing, Donation, Expense, FeePayment, Institution};
 use App\Support\{Money, Tenancy};
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -65,20 +65,24 @@ class CashBookService
         $expenses = Expense::where('expense_date', $date)->get();
         // R3.9: store sales come in and money-back returns go out under source = store (docs/modules/inventory.md §2.3, §2.8).
         [$sales, $returns] = InventoryService::cashRows($start, $end);
+        // R3.11: donations come in and their reversal rows go out (docs/modules/donations.md §3, D82 clause 4 deferred this here)
+        $donations = Donation::where('received_on', $date)->get();
+        $given = $donations->where('status', 'received'); $takenBack = $donations->where('status', 'reversed');
         $sum = fn ($rows, $field) => Money::format($rows->sum(fn ($row) => Money::toPaisa($row->$field)));
         $add = fn (string ...$amounts) => Money::format(array_sum(array_map([Money::class, 'toPaisa'], $amounts)));
-        $in = $add($sum($fees->where('payment_method', 'cash'), 'paid_amount'), $sum($sales->where('payment_method', 'cash'), 'total_amount'));
-        $out = $add($sum($expenses->where('payment_method', 'cash'), 'amount'), $sum($returns->where('payment_method', 'cash'), 'total_amount'));
+        $in = $add($sum($fees->where('payment_method', 'cash'), 'paid_amount'), $sum($sales->where('payment_method', 'cash'), 'total_amount'), $sum($given->where('method', 'cash'), 'amount'));
+        $out = $add($sum($expenses->where('payment_method', 'cash'), 'amount'), $sum($returns->where('payment_method', 'cash'), 'total_amount'), $sum($takenBack->where('method', 'cash'), 'amount'));
         $latest = $this->latest($date);
         $opening = Money::format(Money::toPaisa($this->opening($date, $manual)));
         $methods = $fees->pluck('payment_method')->merge($expenses->pluck('payment_method'))->merge($sales->pluck('payment_method'))
-            ->merge($returns->pluck('payment_method'))->unique()->sort()->values();
+            ->merge($returns->pluck('payment_method'))->merge($donations->pluck('method'))->unique()->sort()->values();
         return ['date' => $date, 'opening_cash' => $opening, 'cash_in' => $in, 'cash_out' => $out,
             ...self::calculate($opening, $in, $out), 'status' => $latest?->status ?? 'open',
             'methods' => $methods->map(fn ($method) => ['method' => $method,
-                'in' => $add($sum($fees->where('payment_method', $method), 'paid_amount'), $sum($sales->where('payment_method', $method), 'total_amount')),
-                'out' => $add($sum($expenses->where('payment_method', $method), 'amount'), $sum($returns->where('payment_method', $method), 'total_amount'))])->all(),
+                'in' => $add($sum($fees->where('payment_method', $method), 'paid_amount'), $sum($sales->where('payment_method', $method), 'total_amount'), $sum($given->where('method', $method), 'amount')),
+                'out' => $add($sum($expenses->where('payment_method', $method), 'amount'), $sum($returns->where('payment_method', $method), 'total_amount'), $sum($takenBack->where('method', $method), 'amount'))])->all(),
             'store' => ['sales' => $sum($sales, 'total_amount'), 'returns' => $sum($returns, 'total_amount')],
+            'donations' => ['received' => $sum($given, 'amount'), 'reversed' => $sum($takenBack, 'amount')],
             'income_categories' => $fees->groupBy('fee_category_id')->map(fn ($rows, $id) => ['fee_category_id' => $id, 'amount' => $sum($rows, 'paid_amount')])->values()->all(),
             'expense_categories' => $expenses->groupBy('category')->map(fn ($rows, $category) => ['category' => $category, 'amount' => $sum($rows, 'amount')])->values()->all(),
             'collectors' => $fees->groupBy('collected_by')->map(fn ($rows, $id) => ['collected_by' => $id ?: null, 'amount' => $sum($rows, 'paid_amount')])->values()->all(),

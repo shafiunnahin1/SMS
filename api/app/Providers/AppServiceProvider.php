@@ -38,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\PayrollRun::updated(function ($m) use ($post) { if ($m->status === 'paid' && $m->wasChanged('status')) $post('payroll', $m); });
         \App\Models\SalaryAdvance::updated(function ($m) use ($post) { if ($m->expense_id && $m->wasChanged('expense_id')) $post('advance', $m); });
         \App\Models\InventoryMovement::created(function ($m) use ($post) { if (in_array($m->type, ['sale', 'return'], true)) $post('store', $m); });
+        \App\Models\Donation::created(fn ($m) => $post('donation', $m));
 
         // Step 9.1 (D64): queue alerts - a backlog over QUEUE_ALERT_DEPTH (queue:monitor, scheduled) and a job that failed for good
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Queue\Events\QueueBusy::class, fn ($e) => app(\App\Services\Ops\AlertService::class)

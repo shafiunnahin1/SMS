@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 class ExpenseService
 {
     private array $newReceiptPaths = [];
-    private const INPUT_FIELDS = ['category', 'title', 'amount', 'expense_date', 'note', 'payment_method', 'receipt'];
+    private const INPUT_FIELDS = ['category', 'title', 'amount', 'expense_date', 'note', 'payment_method', 'receipt', 'fund_id'];
     private const FIELDS = ['category', 'title', 'amount', 'expense_date', 'note', 'receipt_path', 'payment_method', 'source', 'payroll_run_id', 'fund_id'];
 
     public function listing(array $filters)
@@ -59,6 +59,7 @@ class ExpenseService
             $cashbook = app(CashBookService::class);
             $cashbook->lockInstitution();
             $cashbook->assertCashWrite($data['expense_date'], $data['payment_method'] ?? 'cash');
+            $this->assertFund($data);
             $expense = $this->append($data + ['source' => 'manual', 'payment_method' => 'cash'], $by);
             AuditLog::record('expense.created', $expense);
             return $this->find($expense->id);
@@ -103,11 +104,21 @@ class ExpenseService
             $cashbook->assertCashWrite($values['expense_date'], $values['payment_method']);
             if ($replacement !== null) $cashbook->assertCashWrite($replacement['expense_date'] ?? $values['expense_date'], $replacement['payment_method'] ?? $values['payment_method']);
             $reversal = $this->append(array_replace($values, ['amount' => Money::format(-Money::toPaisa($original->amount)), 'reversal_of_id' => $original->id]), $by);
+            if ($replacement !== null) $this->assertFund(array_replace($values, $replacement));   // checked after the reversal gave the original's money back
             $result = $replacement === null ? $reversal : $this->append(array_replace($values, $replacement, ['replaces_expense_id' => $original->id]), $by);
             AuditLog::record($replacement === null ? 'expense.cancelled' : 'expense.corrected', $original,
                 ['reversal_id' => $reversal->id, 'replacement_id' => $replacement === null ? null : $result->id]);
             return $this->find($result->id);
         });
+    }
+
+    /** R3.11 (donations.md §2.3, D39): a fund expense needs the donations module and, for a restricted fund, enough balance */
+    private function assertFund(array $data): void
+    {
+        if (empty($data['fund_id'])) return;
+        if (!app(\App\Services\ModuleGate::class)->allows(\App\Support\Tenancy::current(), 'donations')) throw \Illuminate\Validation\ValidationException::withMessages(['fund_id' => __('donations.invalid')]);
+        \App\Models\DonationFund::findOrFail($data['fund_id']);
+        app(\App\Services\Donations\DonationService::class)->assertCovers((int) $data['fund_id'], Money::toPaisa((string) $data['amount']));
     }
 
     public function report(string $month): array
