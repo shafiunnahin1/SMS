@@ -381,6 +381,32 @@ Route::prefix('v1')->group(function () {
             Route::post('/inventory/{type}', [\App\Http\Controllers\Inventory\InventoryMovementController::class, 'store']);   // type checked in the controller, after the role gate (POST /inventory/items is matched first)
         });
 
+        // R3.11 / D107: donations, funds and campaigns (docs/modules/donations.md §4); opt-in module
+        Route::middleware(['role:admin,accountant','module:donations'])->group(function () {
+            $d = 'App\\Http\\Controllers\\Donations\\';
+            Route::get('/donors',[$d.'DonorController','index']);
+            Route::post('/donors',[$d.'DonorController','store']);
+            Route::get('/donors/{id}',[$d.'DonorController','show'])->whereNumber('id');
+            Route::put('/donors/{id}',[$d.'DonorController','update'])->whereNumber('id');
+            Route::delete('/donors/{id}',[$d.'DonorController','destroy'])->whereNumber('id');
+            Route::get('/donors/{id}/statement.pdf',[$d.'DonorController','statement'])->whereNumber('id');
+            Route::get('/donation-funds',[$d.'DonationFundController','index']);
+            Route::post('/donation-funds',[$d.'DonationFundController','store']);
+            Route::get('/donation-funds/{id}',[$d.'DonationFundController','show'])->whereNumber('id');
+            Route::put('/donation-funds/{id}',[$d.'DonationFundController','update'])->whereNumber('id');
+            Route::get('/donation-funds/{id}/statement',[$d.'DonationFundController','statement'])->whereNumber('id');
+            Route::get('/donation-campaigns',[$d.'DonationCampaignController','index']);
+            Route::post('/donation-campaigns',[$d.'DonationCampaignController','store']);
+            Route::get('/donation-campaigns/{id}',[$d.'DonationCampaignController','show'])->whereNumber('id');
+            Route::put('/donation-campaigns/{id}',[$d.'DonationCampaignController','update'])->whereNumber('id');
+            Route::get('/donation-campaigns/{id}/progress',[$d.'DonationCampaignController','progress'])->whereNumber('id');
+            Route::get('/donations',[$d.'DonationController','index']);
+            Route::post('/donations',[$d.'DonationController','store']);
+            Route::get('/donations/{id}',[$d.'DonationController','show'])->whereNumber('id');
+            Route::post('/donations/{id}/reverse',[$d.'DonationController','reverse'])->whereNumber('id');
+            Route::get('/donations/{id}/receipt.pdf',[$d.'DonationController','receipt'])->whereNumber('id');
+        });
+
         // R3.10 / D106: double-entry accounting (docs/modules/accounting.md §6)
         Route::middleware(['role:admin,accountant','module:accounting'])->prefix('accounting')->group(function () {
             $a = 'App\\Http\\Controllers\\Accounting\\';

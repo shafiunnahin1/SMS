@@ -103,6 +103,20 @@ class TenantIsolationTest extends TestCase
             'DELETE api/v1/inventory/items/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\InventoryItem::factory()->create()->id),
             'GET api/v1/inventory/items/{id}/ledger' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\InventoryItem::factory()->create()->id),
             'GET api/v1/inventory/reports/{name}' => null,
+            // R3.11 / D107 donation rows
+            'GET api/v1/donors/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Donor::factory()->create()->id),
+            'PUT api/v1/donors/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Donor::factory()->create()->id),
+            'DELETE api/v1/donors/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Donor::factory()->create()->id),
+            'GET api/v1/donors/{id}/statement.pdf' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Donor::factory()->create()->id),
+            'GET api/v1/donation-funds/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DonationFund::factory()->create()->id),
+            'PUT api/v1/donation-funds/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DonationFund::factory()->create()->id),
+            'GET api/v1/donation-funds/{id}/statement' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DonationFund::factory()->create()->id),
+            'GET api/v1/donation-campaigns/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DonationCampaign::factory()->create()->id),
+            'PUT api/v1/donation-campaigns/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DonationCampaign::factory()->create()->id),
+            'GET api/v1/donation-campaigns/{id}/progress' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DonationCampaign::factory()->create()->id),
+            'GET api/v1/donations/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Donation::factory()->create()->id),
+            'POST api/v1/donations/{id}/reverse' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Donation::factory()->create()->id),
+            'GET api/v1/donations/{id}/receipt.pdf' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Donation::factory()->create()->id),
             // R3.10 / D106 accounting rows
             'PUT api/v1/accounting/accounts/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\LedgerAccount::factory()->create()->id),
             'GET api/v1/accounting/vouchers/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Voucher::factory()->create()->id),
@@ -338,6 +352,8 @@ class TenantIsolationTest extends TestCase
         $this->assertSame([], array_keys(array_diff_key($byId, $this->foreignIds())), 'add these routes to foreignIds()');
 
         $me = $this->tenants['isoschoola'];
+        // D107: donations is opt-in; switch it on for the caller so the tenant boundary (404), not the module gate (403), answers
+        $me['institution']->forceFill(['settings' => array_replace($me['institution']->fresh()->settings ?? [], ['opt_in_modules' => ['donations']])])->save();
         foreach (array_filter($this->foreignIds()) as $key => $make) {
             [$method, $uri] = explode(' ', $key, 2);
             foreach ($this->tenants as $slug => $other) {
