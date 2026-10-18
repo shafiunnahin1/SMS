@@ -206,3 +206,6 @@ Owner-approved D101 is present in the synced `docs/LOCKED-DECISIONS.md`: append-
 - **Done so far:** every other acceptance item has test evidence (docs/PROGRESS.md, R3.A line); full suite 929 passed, MySQL smoke 33/0.
 - **Also still external (§চ):** the bank disbursement file format (OD-bank-format), the chart-of-accounts and report formats (accountant/auditor), cash vs accrual (default cash basis), PDF engine sign-off for payslips.
 - **What I need from the owner:** the reviewers' written result (what was checked, any rule to change). If they ask for changes, each becomes a decision row/task; if they approve, record it and R3.A can be marked accepted.
+
+## 2026-10-19 — R2.1.2 — G12 implementation-scope gate
+R3.A is accepted and D114/D115 approve parts of R2.1.2, but the protected `docs/release/r21-scope.json` still sets `implementation_authorized: false` and `R2.1.2.executable: false`, with `dataset_ownership`, `format_visual_mapping`, and `refined_scope` unresolved. The generated plan therefore remains explicitly non-executable; no R2.1.2 runtime code or migration was changed. Need the owner to either (a) authorize and refine this task in the canonical scope, resolving its gates and regenerating the plan under a separate Change-Request (recommended if implementation should start), or (b) keep R2.1 planning-only and defer coding.
