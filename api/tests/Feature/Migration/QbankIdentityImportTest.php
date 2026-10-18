@@ -24,7 +24,10 @@ class QbankIdentityImportTest extends TestCase
         $this->assertSame($before, User::platform()->count());
         $plan = json_decode(file_get_contents($report), true); @unlink($report);
         $roles = collect($plan['platform_accounts'])->pluck('role', 'email')->all();
-        $this->assertSame(['padmin@qbank.test' => 'content_moderator', 'mod@qbank.test' => 'content_moderator', 'writer@qbank.test' => 'content_writer'], $roles);
+        $this->assertSame(['padmin@qbank.test' => 'content_moderator', 'mod@qbank.test' => 'content_moderator', 'author@qbank.test' => 'content_writer'], $roles);
+        $batches = collect($plan['private_batches']);   // D112: a plain qbank user is planned as their own private batch's admin
+        $this->assertSame(['writer@qbank.test'], $batches->pluck('email')->all());
+        $this->assertSame(['admin', 'private_batch'], [$batches[0]['role'], $batches[0]['institution_type']]);
         $reasons = collect($plan['review'])->pluck('reason', 'email')->filter()->all();
         $this->assertSame('qbank super-admin is never created automatically', $reasons['root@qbank.test']);
         $this->assertSame('email not verified in qbank', $reasons['late@qbank.test']);
@@ -41,10 +44,11 @@ class QbankIdentityImportTest extends TestCase
 
     public function test_apply_creates_only_platform_accounts_once(): void
     {
-        $this->artisan('qbank:import-identities', ['file' => $this->fixture(), '--apply' => true])->expectsOutputToContain('created 4 platform accounts')->assertSuccessful();
+        $this->artisan('qbank:import-identities', ['file' => $this->fixture(), '--apply' => true])->expectsOutputToContain('created 3 platform accounts')->assertSuccessful();
         $mod = User::platform()->where('email', 'mod@qbank.test')->first();
         $this->assertSame(['content_moderator', true], [$mod->role, $mod->must_change_password]);
         $this->assertFalse(User::platform()->where('email', 'root@qbank.test')->exists());
+        $this->assertFalse(User::where('email', 'writer@qbank.test')->exists(), 'a private batch is not created by the import (D90)');
         $this->assertFalse(User::platform()->where('role', 'super_admin')->where('email', 'like', '%qbank.test')->exists());
         $this->assertSame(0, \App\Models\Institution::where('slug', 'adarsha')->count(), 'no school is created by the import');
         $this->artisan('qbank:import-identities', ['file' => $this->fixture(), '--apply' => true])->expectsOutputToContain('created 0 platform accounts')->assertSuccessful();   // a re-run finds them taken: review, never a second copy

@@ -20,10 +20,10 @@ class QbankImportIdentities extends Command
         $plan = $planner->plan($export);
         if ($path = $this->option('report')) file_put_contents($path, json_encode($plan, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         $s = $plan['summary'];
-        $this->info("qbank users {$s['qbank_users']} · platform accounts {$s['platform_accounts']} · schools {$s['schools']} · review {$s['review']}");
+        $this->info("qbank users {$s['qbank_users']} · platform accounts {$s['platform_accounts']} · private batches {$s['private_batches']} · schools {$s['schools']} · review {$s['review']}");
         if (!$this->option('apply')) { $this->line('dry run: nothing written'); return self::SUCCESS; }
         $r = $planner->apply($plan);
-        $this->info("created {$r['created']} platform accounts, skipped {$r['skipped']} (already present); schools are not created here (D90 provisioning)");
+        $this->info("created {$r['created']} platform accounts, skipped {$r['skipped']} (already present); private batches and schools are not created here (D90 provisioning)");
         return self::SUCCESS;
     }
 }
