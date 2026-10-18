@@ -200,3 +200,9 @@ Owner-approved D101 is present in the synced `docs/LOCKED-DECISIONS.md`: append-
 - What happened: the commit added four role-matrix rows for the four R3.8 plan routes (api/tests/Fixtures/role-matrix.php is protected). `agent_guard.py --staged` reported `C1 ... 1 failure`, but the agent piped it through `tail` without `pipefail`, so the commit and push ran anyway. No existing row or assertion was changed.
 - Fixed going forward: guard runs with `set -o pipefail`; a non-zero guard exit stops the commit.
 - Needs from owner: commit D105 (draft owner/decision-D105.md). History rewriting (amend / force-push) is forbidden for the agent (G13); a squash merge of PR #1 can carry `Change-Request: D105`.
+
+## 2026-10-18 · R3.A · payroll legal/accounting review (RELEASE-3.md §ঙ item 13, §চ)
+- **What blocks:** R3.A's Done-When needs "payroll-এর আইনি/হিসাব-যাচাই হয়েছে" — PF, tax at source, gratuity, leave encashment and deduction rules reviewed by an accountant and a lawyer. An agent cannot do or sign this.
+- **Done so far:** every other acceptance item has test evidence (docs/PROGRESS.md, R3.A line); full suite 929 passed, MySQL smoke 33/0.
+- **Also still external (§চ):** the bank disbursement file format (OD-bank-format), the chart-of-accounts and report formats (accountant/auditor), cash vs accrual (default cash basis), PDF engine sign-off for payslips.
+- **What I need from the owner:** the reviewers' written result (what was checked, any rule to change). If they ask for changes, each becomes a decision row/task; if they approve, record it and R3.A can be marked accepted.
