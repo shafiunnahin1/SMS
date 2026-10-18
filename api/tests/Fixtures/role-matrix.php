@@ -208,6 +208,12 @@ return [
     'PATCH api/v1/writer/change-password' => ['content_writer', 'content_moderator', 'super_admin'],       // QB.2: the writers' panel (central host)
     'GET api/v1/writer/curriculum' => ['content_writer', 'content_moderator', 'super_admin'],
     'GET api/v1/writer/question-types' => ['content_writer', 'content_moderator', 'super_admin'],
+    'GET api/v1/writer/graph-datasets/capabilities' => ['content_writer', 'content_moderator', 'super_admin'],   // R2.1.2 (D115)
+    'GET api/v1/writer/graph-datasets' => ['content_writer', 'content_moderator', 'super_admin'],
+    'POST api/v1/writer/graph-datasets' => ['content_writer', 'super_admin'],
+    'GET api/v1/writer/graph-datasets/{uuid}' => ['content_writer', 'content_moderator', 'super_admin'],
+    'PUT api/v1/writer/graph-datasets/{uuid}' => ['content_writer', 'super_admin'],
+    'DELETE api/v1/writer/graph-datasets/{uuid}' => ['content_writer', 'super_admin'],
     'GET api/v1/writer/dashboard' => ['content_writer', 'content_moderator', 'super_admin'],   // R2.1.1 (D110/D111)
     'GET api/v1/writer/questions' => ['content_writer', 'content_moderator', 'super_admin'],
     'POST api/v1/writer/questions' => ['content_writer', 'super_admin'],                                         // a moderator reviews, never writes

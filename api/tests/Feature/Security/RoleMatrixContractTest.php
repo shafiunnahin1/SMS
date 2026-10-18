@@ -18,7 +18,7 @@ class RoleMatrixContractTest extends TestCase
 
     private const ROLES = ['super_admin', 'admin', 'teacher', 'accountant', 'parent', 'student', 'content_writer', 'content_moderator'];
     private const PARAMS = ['{id}' => '999999', '{studentId}' => '999999', '{subjectId}' => '999999', '{institutionId}' => '999999',
-        '{type}' => 'students', '{kind}' => 'students', '{action}' => 'dry-run'];
+        '{type}' => 'students', '{kind}' => 'students', '{action}' => 'dry-run', '{uuid}' => '00000000-0000-4000-8000-000000000000'];   // R2.1.2 (D115): a well-formed uuid that matches no row
 
     private static function matrix(): array { return require base_path('tests/Fixtures/role-matrix.php'); }
 
