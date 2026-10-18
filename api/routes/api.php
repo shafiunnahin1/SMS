@@ -381,6 +381,31 @@ Route::prefix('v1')->group(function () {
             Route::post('/inventory/{type}', [\App\Http\Controllers\Inventory\InventoryMovementController::class, 'store']);   // type checked in the controller, after the role gate (POST /inventory/items is matched first)
         });
 
+        // R3.10 / D106: double-entry accounting (docs/modules/accounting.md §6)
+        Route::middleware(['role:admin,accountant','module:accounting'])->prefix('accounting')->group(function () {
+            $a = 'App\\Http\\Controllers\\Accounting\\';
+            Route::get('/accounts',[$a.'AccountController','index']);
+            Route::post('/accounts',[$a.'AccountController','store']);
+            Route::put('/accounts/{id}',[$a.'AccountController','update'])->whereNumber('id');
+            Route::get('/accounts/tree',[$a.'AccountController','tree']);
+            Route::get('/vouchers',[$a.'VoucherController','index']);
+            Route::post('/vouchers',[$a.'VoucherController','store']);
+            Route::get('/vouchers/{id}',[$a.'VoucherController','show'])->whereNumber('id');
+            Route::post('/vouchers/{id}/{action}',[$a.'VoucherController','transition'])->whereNumber('id')->whereIn('action',['post','reverse']);
+            Route::get('/budgets',[$a.'BudgetController','index']);
+            Route::post('/budgets',[$a.'BudgetController','store']);
+            Route::get('/budgets/{id}',[$a.'BudgetController','show'])->whereNumber('id');
+            Route::put('/budgets/{id}',[$a.'BudgetController','update'])->whereNumber('id');
+            Route::put('/budgets/{id}/lines',[$a.'BudgetController','lines'])->whereNumber('id');
+            Route::post('/budgets/{id}/approve',[$a.'BudgetController','approve'])->whereNumber('id');
+            Route::get('/reports/{name}',[$a.'AccountingReportController','show'])->whereIn('name',['trial-balance','ledger','income-expenditure','balance-sheet','budget-actual','unposted']);
+            Route::get('/bank-reconciliation/{account_id}',[$a.'BankReconciliationController','show'])->whereNumber('account_id');
+            Route::post('/bank-reconciliation/{account_id}/{action}',[$a.'BankReconciliationController','act'])->whereNumber('account_id')->whereIn('action',['import','match','unmatch']);
+            Route::post('/opening-balances',[$a.'AccountingSettingController','opening']);
+            Route::post('/repost',[$a.'AccountingSettingController','repost']);
+            Route::put('/settings',[$a.'AccountingSettingController','update']);
+        });
+
         Route::middleware('module:fees')->group(function () {
             Route::get('/fees/payments/student/{id}',     [FeeController::class, 'studentPayments'])->whereNumber('id')->middleware('role:admin,accountant,parent,institution_staff');   // parent: own child only (404)
             Route::middleware('role:admin,accountant,institution_staff')->group(function () {   // D101: staff request and process; approve/reject admin only (FeeRefundService)

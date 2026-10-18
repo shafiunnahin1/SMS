@@ -39,6 +39,7 @@ class CrossTenantRouteTest extends TestCase
         'GET api/v1/admin/reports/{type}', 'GET api/v1/accountant/reports/{type}',     // report name; ReportTest: a foreign program_id is 422
         'GET api/v1/hr/reports/{name}',                                                 // payroll report name; reads only the caller's runs (PayrollTenancyTest)
         'GET api/v1/inventory/reports/{name}', 'POST api/v1/inventory/{type}',             // report name / movement type; InventoryTenancyTest: a foreign item_id is 404
+        'GET api/v1/accounting/reports/{name}',                                         // report name; AccountingTenancyTest: a foreign account_id/budget_id is 404
         'GET api/v1/inventory/sales/{receipt_no}/receipt.pdf',                         // InventoryTenancyTest: another institution's STR- receipt is 404
         'GET api/v1/imports/templates/{kind}.xlsx',                                    // template name, no data
         'PUT api/v1/parent/consents/{type}',                                           // consent type of the caller's own children

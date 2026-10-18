@@ -103,6 +103,17 @@ class TenantIsolationTest extends TestCase
             'DELETE api/v1/inventory/items/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\InventoryItem::factory()->create()->id),
             'GET api/v1/inventory/items/{id}/ledger' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\InventoryItem::factory()->create()->id),
             'GET api/v1/inventory/reports/{name}' => null,
+            // R3.10 / D106 accounting rows
+            'PUT api/v1/accounting/accounts/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\LedgerAccount::factory()->create()->id),
+            'GET api/v1/accounting/vouchers/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Voucher::factory()->create()->id),
+            'POST api/v1/accounting/vouchers/{id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Voucher::factory()->create()->id),
+            'GET api/v1/accounting/budgets/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Budget::factory()->create()->id),
+            'PUT api/v1/accounting/budgets/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Budget::factory()->create()->id),
+            'PUT api/v1/accounting/budgets/{id}/lines' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Budget::factory()->create()->id),
+            'POST api/v1/accounting/budgets/{id}/approve' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Budget::factory()->create()->id),
+            'GET api/v1/accounting/reports/{name}' => null,   // ledger/budget ids in the query: AccountingTenancyTest
+            'GET api/v1/accounting/bank-reconciliation/{account_id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\LedgerAccount::factory()->create(['is_cash_or_bank' => true, 'type' => 'asset'])->id),
+            'POST api/v1/accounting/bank-reconciliation/{account_id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\LedgerAccount::factory()->create(['is_cash_or_bank' => true, 'type' => 'asset'])->id),
             'GET api/v1/inventory/sales/{receipt_no}/receipt.pdf' => null,   // receipt numbers: InventoryTenancyTest
             'POST api/v1/inventory/{type}' => null,   // item_id in the body: InventoryTenancyTest
             'POST api/v1/cashbook/{date}/close' => null,
@@ -353,6 +364,7 @@ class TenantIsolationTest extends TestCase
                 if ($uri === 'POST api/v1/hr/payroll-runs/{id}/{action}') $path = str_replace('{action}', 'review', $path);
                 if (str_contains($uri, 'api/v1/hr/final-settlement/') || str_contains($uri, 'api/v1/hr/pf/')) $path = str_replace('{type}', 'staff', $path);
                 if ($uri === 'GET api/v1/hr/payroll-runs/{id}/{file}') $path = str_replace('{file}', 'disbursement.csv', $path);
+                if (str_contains($uri, 'api/v1/accounting/')) $path = str_replace(['{account_id}', '{action}'], [(string) $id, str_contains($uri, 'vouchers') ? 'post' : 'match'], $path);
                 $this->api($method, $this->hostOf($me['institution']), $path, $me['admin'])->assertNotFound();
             }
         }
