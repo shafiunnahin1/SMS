@@ -3163,6 +3163,28 @@ CREATE TABLE qb_import_map (                                -- D69 (QB.11): whic
     created_at TIMESTAMP NULL,
     UNIQUE KEY unique_qb_import_map (source, source_table, source_id)
 );
+CREATE TABLE qb_graph_datasets (                            -- D115 (R2.1.2): qbank's graph datasets - a table of numbers a question's graph draws from
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    uuid CHAR(36) NOT NULL,
+    qb_question_id BIGINT UNSIGNED NULL,                     -- the question it belongs to (NULL while being written)
+    name VARCHAR(160) NOT NULL,
+    source_type VARCHAR(40) NOT NULL DEFAULT 'manual',
+    headers JSON NOT NULL,
+    row_count INT UNSIGNED NOT NULL DEFAULT 0,               -- at most 50,000 rows, 80 columns, 1,000,000 cells, 2,048 characters a cell
+    column_count SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    checksum VARCHAR(64) NOT NULL,
+    version INT UNSIGNED NOT NULL DEFAULT 1,                 -- an edit names the version it started from; an older one is refused
+    rows_json LONGTEXT NULL,
+    metadata JSON NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    deleted_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_graph_datasets_uuid (uuid),
+    INDEX idx_qb_graph_datasets_question (qb_question_id, deleted_at),
+    INDEX idx_qb_graph_datasets_checksum (created_by, checksum),
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
 
 -- D84: tenant-bound refund history/status and original-line cap checks.
 CREATE INDEX idx_fee_refunds_inst_status_created ON fee_refunds(institution_id, status, created_at, id);
