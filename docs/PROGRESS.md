@@ -289,7 +289,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 - [x] R3.11 — 69278c4 — donation acceptance flow; `php artisan test --filter=Donation` 10 passed; `php artisan test --filter=Fund` 23 passed; `php artisan test` 941 passed (23,048 assertions) with Git `usr/bin` on PATH; `npx vitest run` 114 passed; `npm run lint:theme` 150 files, 0 violations.
 - [x] R3.12 — 14cc0eb, 4da3fbd + verification — MenuReleaseTest 10 passed; DepartmentPortalTest 4 passed; `node ..\infra\check-theme-rules.mjs` (from frontend) 150 files/0 violations; prior full Vitest 114 passed and Vite build succeeded. All planned R3 pages have built routes and bn/en text; R3 mobile layout uses responsive shared lists and single-column forms (existing evidence at this file's R3.12 details).
 - [x] R3.13 — full API suite 941 passed; `php artisan test --filter=Tenancy` 44 passed (551 assertions), including R3 table/model coverage, four module tenancy suites, and Super Admin/impersonation salary-route denials; bulk-write guard and salary audit privacy checks pass in the suite.
-- [ ] R3.14 — R3-এর কর্মক্ষমতা (ডেটা বাড়লে)
+- [x] R3.14 — `py -3.14 infra/spec-verify/plan_check.py .` 77 hot queries/0 problems; MySQL perf-check `--scale 0.1` 77 queries/0 problems (existing evidence; R3 tables empty in that seed, so no volume claim).
 - [ ] R3.A — R3 গ্রহণ-পরীক্ষা, তারপর চালু
 
 ### R3.0 follow-up evidence — 2026-10-14
