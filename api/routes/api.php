@@ -107,6 +107,7 @@ Route::prefix('v1')->group(function () {
     // ─── 2b. Central host: the question-bank writers' panel (D65, QB.2) - platform content only, no tenant bound, no bypass ───
     Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:content_writer,content_moderator,super_admin', 'password.fresh'])->prefix('writer')->group(function () {
         Route::patch('/change-password',              [QbWriterController::class, 'changePassword']);
+        Route::get('/dashboard',                      [QbWriterController::class, 'dashboard']);   // R2.1.1 (D110)
         // QB.10b: the writer's own earnings and withdrawal requests
         Route::middleware('role:content_writer')->group(function () {
             Route::get('/earnings',                   [QbEarningController::class, 'summary']);

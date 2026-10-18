@@ -27,7 +27,10 @@ async function firstPassword(page, oldPass, newPass) {
   await f.nth(1).fill(newPass)
   await f.nth(2).fill(newPass)
   await page.locator('form button[type="submit"]').click()
-  await expect(page).toHaveURL(/\/writer\/questions/)
+  // R2.1.1 (D110): writers and moderators land on qbank's dashboard, then open the question list
+  await expect(page).toHaveURL(/\/writer\/dashboard/)
+  await expect(page.locator('[data-testid="qb-dashboard"]')).toBeVisible()
+  await page.goto('/writer/questions')
 }
 
 async function addPerson(page, name, role, phone) {

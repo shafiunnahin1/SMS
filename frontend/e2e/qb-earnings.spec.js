@@ -68,7 +68,8 @@ test('QB.10b a sale pays the writer, who withdraws it', async ({ page, browser }
   await pw.nth(1).fill('Writer-pass-2027')
   await pw.nth(2).fill('Writer-pass-2027')
   await writer.locator('form button[type="submit"]').click()
-  await expect(writer).toHaveURL(/\/writer\/questions/)
+  await expect(writer).toHaveURL(/\/writer\/dashboard/)   // R2.1.1 (D110): writers land on qbank's dashboard
+  await writer.goto('/writer/questions')
   await writer.locator('[data-action="new"]').click()
   const form = writer.locator('#qb-question-form')
   await form.locator('select[name="qb_question_type_id"]').selectOption({ label: 'সংক্ষিপ্ত প্রশ্ন' })

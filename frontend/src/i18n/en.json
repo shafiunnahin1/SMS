@@ -1255,6 +1255,11 @@
    "values": "Answers",
    "comma_hint": "Comma-separated, in the same order"
   },
+  "qbd": {
+   "total_questions": "Total questions",
+   "my_questions": "My questions",
+   "all_questions": "Questions by status"
+  },
   "qbn": {
    "intro": "Make the question's draft with the details below; write the question, answer and the rest in the editor.",
    "academic": "Academic information",
