@@ -197,13 +197,15 @@ class QbPaperController extends Controller
             })->all()];
         })->all();
         return $paper->only(['id', 'title', 'exam_name', 'duration_minutes', 'total_marks']) + ['instructions' => $paper->instructions_json['text'] ?? null,
-            'set' => $set, 'answers' => $answers, 'institution' => Tenancy::current()->name, 'sections' => $sections, 'media' => self::pictures($questions->keys()->all())];
+            'set' => $set, 'answers' => $answers, 'institution' => Tenancy::current()->name, 'sections' => $sections,
+            // R2.1.2: only the pictures the printed questions may show (the public shape already left out answer-only ones)
+            'media' => self::pictures($questions->keys()->all(), collect($sections)->flatMap(fn ($s) => collect($s['items'])->flatMap(fn ($it) => array_column($it['question']['media'], 'id')))->all())];
     }
 
     /** QB.14: the questions' own pictures as data: URIs for the PDF (only media linked to these questions; a large file is left out) */
-    private static function pictures(array $questionIds): array
+    private static function pictures(array $questionIds, array $allowed): array
     {
-        $ids = \App\Models\QbMediaLink::where('owner_type', 'question')->whereIn('owner_id', $questionIds)->pluck('qb_media_id')->unique();
+        $ids = \App\Models\QbMediaLink::where('owner_type', 'question')->whereIn('owner_id', $questionIds)->pluck('qb_media_id')->unique()->intersect($allowed);
         $out = [];
         foreach (\App\Models\QbMedia::whereIn('id', $ids)->get() as $m) {
             if (!str_starts_with((string) $m->mime, 'image/') || $m->size_bytes > 2_000_000 || !\Illuminate\Support\Facades\Storage::disk('private')->exists($m->path)) continue;

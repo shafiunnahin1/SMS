@@ -72,6 +72,20 @@ class QuestionAnswerNeverLeaksTest extends TestCase
         $this->assertSame([true, false], array_column($open['options'], 'is_correct'));
     }
 
+    /** R2.1.2 (D114 (1)): a picture used only in the answer or explanation is not in the locked shape; one in the question is */
+    public function test_an_answer_only_picture_stays_locked(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('private');
+        $q = $this->question();
+        $pic = fn (string $name) => \App\Models\QbMedia::create(['path' => "platform/qb/{$name}.png", 'mime' => 'image/png', 'size_bytes' => 10, 'uploaded_by' => 1]);
+        [$shown, $answerOnly, $explainOnly] = [$pic('q'), $pic('a'), $pic('e')];
+        $q->update(['question_text' => 'Look: <img data-qmx-media="' . $shown->id . '">', 'answer_text' => 'SECRET-ANSWER <img data-qmx-media="' . $answerOnly->id . '">',
+            'explanation_text' => 'SECRET-EXPLANATION <img data-qmx-media="' . $explainOnly->id . '">']);
+        $q->media()->sync([$shown->id, $answerOnly->id, $explainOnly->id]);
+        $this->assertSame([$shown->id], array_column(QbQuestionPublicResource::make($q->fresh(), unlocked: false)['media'], 'id'));
+        $this->assertEqualsCanonicalizing([$shown->id, $answerOnly->id, $explainOnly->id], array_column(QbQuestionPublicResource::make($q->fresh(), unlocked: true)['media'], 'id'));
+    }
+
     public function test_every_other_use_of_the_question_models_goes_through_the_public_resource(): void
     {
         $root = dirname(__DIR__, 3);

@@ -31,7 +31,7 @@ return [
         ],
         'guardian_sign' => 'অভিভাবকের নাম ও স্বাক্ষর', 'date' => 'তারিখ', 'draft' => 'এই লেখা খসড়া; প্রকাশের আগে আইনজীবী যাচাই করবেন।',
     ],
-    'qb_paper' => ['set' => 'সেট', 'time' => 'সময়', 'minutes' => 'মিনিট', 'full_marks' => 'পূর্ণমান', 'with_answers' => 'উত্তরসহ', 'answer' => 'উত্তর'],   // QB.8
+    'qb_paper' => ['set' => 'সেট', 'time' => 'সময়', 'minutes' => 'মিনিট', 'full_marks' => 'পূর্ণমান', 'with_answers' => 'উত্তরসহ', 'answer' => 'উত্তর', 'choices' => 'বিকল্পগুলো', 'true_false' => 'সত্য / মিথ্যা', 'true' => 'সত্য', 'false' => 'মিথ্যা'],   // QB.8
     'expenses' => ['title' => 'খরচের খতিয়ান', 'date' => 'তারিখ', 'category' => 'ধরন', 'item' => 'বিবরণ', 'method' => 'পদ্ধতি', 'amount' => 'অঙ্ক (টাকা)', 'total' => 'নিট খরচ'],
     'cashbook' => ['title' => 'দৈনিক ক্যাশবুক', 'section' => 'অংশ', 'item' => 'বিবরণ', 'income' => 'আয়', 'outflow' => 'ব্যয়', 'method' => 'পদ্ধতি', 'category' => 'খাত', 'collector' => 'সংগ্রাহক', 'summary' => 'সারাংশ', 'opening_cash' => 'প্রারম্ভিক নগদ', 'expected_closing' => 'প্রত্যাশিত সমাপনী', 'status' => 'অবস্থা', 'history' => 'সংস্করণ / গোনা নগদ / পার্থক্য', 'cash' => 'নগদ মোট'],
     'inventory' => ['receipt_title' => 'স্টোর বিক্রয়-রসিদ', 'item' => 'পণ্য', 'qty' => 'পরিমাণ', 'price' => 'একক দাম (টাকা)', 'amount' => 'টাকা', 'total' => 'মোট', 'stock' => 'স্টক রিপোর্ট', 'movements' => 'স্টকের আসা-যাওয়া', 'sales' => 'স্টোর বিক্রি', 'valuation' => 'স্টকের মূল্য', 'code' => 'কোড', 'type' => 'ধরন', 'date' => 'তারিখ', 'avg_cost' => 'গড় খরচ (টাকা)', 'value' => 'মূল্য (টাকা)', 'receipt' => 'রসিদ'],

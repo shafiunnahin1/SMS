@@ -143,4 +143,15 @@ class QbQuestionTypesTest extends TestCase
         $this->save('short', ['media_ids' => [$theirs]])->assertStatus(422)->assertJsonValidationErrors('media_ids');
         $this->assertSame(0, QbQuestion::count());
     }
+
+    /** R2.1.2 (D114 (1)): a picture is attached, replaced and removed; the link handed back is short-lived and on the private disk */
+    public function test_a_picture_is_attached_replaced_and_removed(): void
+    {
+        [$first, $second] = [$this->upload(), $this->upload()];
+        $id = $this->save('short', ['answer_text' => 'A', 'media_ids' => [$first]])->assertCreated()->assertJsonPath('data.media.0.id', $first)->json('data.id');
+        $this->assertStringContainsString('expiration=', $this->api('GET', $this->central, "writer/questions/{$id}", $this->writer)->json('data.media.0.url'));
+        $this->api('PUT', $this->central, "writer/questions/{$id}", $this->writer, ['media_ids' => [$second]])->assertOk()->assertJsonCount(1, 'data.media')->assertJsonPath('data.media.0.id', $second);
+        $this->api('PUT', $this->central, "writer/questions/{$id}", $this->writer, ['media_ids' => []])->assertOk()->assertJsonCount(0, 'data.media');
+        $this->api('PUT', $this->central, "writer/questions/{$id}", $this->writer, ['question_text' => 'kept'])->assertOk()->assertJsonCount(0, 'data.media');
+    }
 }
