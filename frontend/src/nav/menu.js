@@ -48,6 +48,10 @@ export const MENU = {
     it('leads',      '/admin/leads',      'ভর্তি-আবেদন', { icon: 'UserPlus', module: 'leads' }),
     it('admission',  '/admin/admission',  'ভর্তি-চক্র (পরীক্ষা/তালিকা/লটারি)', { icon: 'ClipboardList', module: 'admission_cycle' }),
     it('payouts',    '/admin/teacher-payouts', 'শিক্ষক পেমেন্ট', { icon: 'Banknote', module: 'teacher_payouts' }),
+    { key: 'staff-access', label: 'কর্মকর্তা ও বিভাগ', icon: 'Users', children: [
+      it('staff-accounts', '/admin/staff', 'কর্মকর্তা অ্যাকাউন্ট', { since: 'R3', department_admin: true }),
+      it('departments', '/admin/departments', 'বিভাগ ও দায়িত্ব', { since: 'R3', department_admin: true }),
+    ]},
     { key: 'hr', label: 'HR ও বেতন', icon: 'Briefcase', module: 'hr_payroll', children: [
       it('hr-staff',      '/admin/hr/staff',             'কর্মচারী'),
       it('hr-components', '/admin/hr/salary-components', 'বেতন-উপাদান'),
@@ -119,6 +123,10 @@ export const MENU = {
       it('support',  '/admin/support',           'সাপোর্ট', { icon: 'LifeBuoy', module: 'support' }),
       it('subscription','/admin/subscription',     'সাবস্ক্রিপশন'),
     ]},
+  ],
+  institution_staff: [
+    it('departments','/staff/departments','আমার বিভাগ',{since: 'R3',icon:'Building2',primary:true,staff_access:true}),
+    it('profile','/staff/profile','আমার তথ্য',{since: 'R3',icon:'UserRound',staff_access:true}),
   ],
   teacher: [
     it('dashboard','/teacher/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard',primary:true}),

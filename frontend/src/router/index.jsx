@@ -20,6 +20,7 @@ const DonDonors = r3('Donations', 'Donors'), DonFunds = r3('Donations', 'Funds')
 const hr = (name) => r3('Hr', name)
 const HrStaff = hr('Staff'), HrComponents = hr('Components'), HrRevisions = hr('Revisions'), HrIncrements = hr('Increments'), HrBonus = hr('Bonus'), HrAdjustments = hr('Adjustments')
 const HrAdvances = hr('Advances'), HrPayroll = hr('Payroll'), HrPf = hr('ProvidentFund'), HrLeave = hr('Leave'), HrAttendance = hr('StaffAttendance'), HrReports = hr('HrReports'), MySalary = hr('MySalary')
+const StaffAccounts = r3('Staff', 'StaffAccounts'), Departments = r3('Staff', 'Departments'), MyDepartments = r3('Staff', 'MyDepartments'), MyProfile = r3('Staff', 'MyProfile')
 const Expenses = r3('Money', 'Expenses'), Refunds = r3('Money', 'Refunds'), Inventory = r3('Money', 'Inventory'), CashBook = r3('Money', 'CashBook')
 const StudentList = lazy(() => import('../pages/admin/students/StudentList'))
 const StudentAdd  = lazy(() => import('../pages/admin/students/StudentAdd'))
@@ -91,7 +92,7 @@ const menuPaths = (role, prefix) => [].concat(role).flatMap(r => MENU[r] ?? []).
 const area = (path, role, children) => {
   const built = new Set(children.map(c => c.path))
   const placeholders = [...new Set(menuPaths(role, path))].map(p => p.slice(path.length + 1)).filter(p => !built.has(p))
-    .map(p => ({ path: p, element: S(NotBuilt) }))
+    .map(p => ({ path: p, element: S(NotBuilt), placeholder: true }))
   return {
     path, element: <ProtectedRoute role={role}><AppShell /></ProtectedRoute>,
     children: [...children, ...placeholders, { path: '*', element: S(NotBuilt) }],
@@ -131,6 +132,7 @@ export const tenantRoutes = [
     { path: 'hr/staff', element: S(HrStaff) }, { path: 'hr/salary-components', element: S(HrComponents) }, { path: 'hr/revisions', element: S(HrRevisions) },
     { path: 'hr/increments', element: S(HrIncrements) }, { path: 'hr/bonus', element: S(HrBonus) }, { path: 'hr/adjustments', element: S(HrAdjustments) }, { path: 'hr/advances', element: S(HrAdvances) },
     { path: 'hr/payroll', element: S(HrPayroll) }, { path: 'hr/pf', element: S(HrPf) }, { path: 'hr/leave', element: S(HrLeave) }, { path: 'hr/attendance', element: S(HrAttendance) }, { path: 'hr/reports', element: S(HrReports) },
+    { path: 'staff', element: S(StaffAccounts) }, { path: 'departments', element: S(Departments) },
     { path: 'donations/donors', element: S(DonDonors) }, { path: 'donations/funds', element: S(DonFunds) }, { path: 'donations/campaigns', element: S(DonCampaigns) }, { path: 'donations', element: S(DonList) },
     // Step 3.4: the component gallery - development builds only (import.meta.env.DEV is false in `vite build`)
     ...(import.meta.env.DEV ? [{ path: 'dev/components', element: S(DevComponents) }] : []),
@@ -145,6 +147,7 @@ export const tenantRoutes = [
     { path: 'hr/payroll', element: S(HrPayroll) }, { path: 'hr/advances', element: S(HrAdvances) }, { path: 'hr/adjustments', element: S(HrAdjustments) }, { path: 'hr/revisions', element: S(HrRevisions) },
   ]),
   area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }, { path: 'salary', element: S(MySalary) }]),
+  area('/staff', 'institution_staff', [{ path: 'departments', element: S(MyDepartments) }, { path: 'profile', element: S(MyProfile) }]),   // R3.12 / D88-D91
   area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }]),   // QB.9 / QB.10: the student portal (other student screens: R1.1)
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },
