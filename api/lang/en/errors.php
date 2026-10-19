@@ -55,6 +55,9 @@ return [
     'qb_import_too_many' => 'Too many questions in one import.',
     'qb_import_shape' => 'The file has no "questions" list.',
     'qb_import_version' => 'This schema_version is not supported.',
+    'qb_import_nothing_changed' => 'Nothing was changed.',
+    'qb_import_done' => 'This question is already imported.',
+    'qb_import_not_ready' => 'The import is still being read.',
     'qb_dataset_in_use'     => 'This dataset is used by a saved question and cannot be deleted.',
     'qb_needs_options'      => 'Give at least two options.',   // QB.3
     'qb_needs_correct'      => 'Mark the right option.',   // QB.3

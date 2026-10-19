@@ -221,6 +221,11 @@ return [
     'GET api/v1/writer/imports/{id}/records' => ['content_writer', 'super_admin'],
     'GET api/v1/writer/imports/{id}/errors.csv' => ['content_writer', 'super_admin'],
     'POST api/v1/writer/imports/{id}/resume' => ['content_writer', 'super_admin'],
+    'PATCH api/v1/writer/imports/{id}/records/{record}' => ['content_writer', 'super_admin'],
+    'POST api/v1/writer/imports/{id}/records/{record}/duplicate' => ['content_writer', 'super_admin'],
+    'POST api/v1/writer/imports/{id}/settings' => ['content_writer', 'super_admin'],
+    'POST api/v1/writer/imports/{id}/select' => ['content_writer', 'super_admin'],
+    'POST api/v1/writer/imports/{id}/finalize' => ['content_writer', 'super_admin'],
     'GET api/v1/writer/dashboard' => ['content_writer', 'content_moderator', 'super_admin'],   // R2.1.1 (D110/D111)
     'GET api/v1/writer/questions' => ['content_writer', 'content_moderator', 'super_admin'],
     'POST api/v1/writer/questions' => ['content_writer', 'super_admin'],                                         // a moderator reviews, never writes

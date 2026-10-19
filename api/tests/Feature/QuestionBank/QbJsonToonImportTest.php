@@ -123,4 +123,54 @@ class QbJsonToonImportTest extends TestCase
         $this->api('GET', $this->central, "writer/imports/{$uuid}", $mod)->assertForbidden();
         $this->api('GET', $this->central, "writer/imports/{$uuid}", $super)->assertOk();
     }
+
+    public function test_review_quick_edit_bulk_settings_duplicates_and_import_selected(): void
+    {
+        $data = $this->questions();
+        $data['questions'][] = ['question_type' => 'short', 'question_text' => 'Name a prime number.', 'answer_text' => '2'];   // no subject yet
+        $uuid = $this->upload($this->writer, 'q.json', json_encode($data, JSON_UNESCAPED_UNICODE))->json('data.id');
+        $rows = collect($this->api('GET', $this->central, "writer/imports/{$uuid}/records", $this->writer)->json('data'))->keyBy('record');
+        [$mcq, $riddle, $dupe, $noSubject] = [$rows[1]['id'], $rows[2]['id'], $rows[3]['id'], $rows[4]['id']];
+        $this->assertSame('subject', $rows[4]['errors'][0]['path']);
+
+        // quick edit: the unknown type becomes a real one; a bad subject is an error again
+        $this->api('PATCH', $this->central, "writer/imports/{$uuid}/records/{$riddle}", $this->writer, ['type' => 'short'])->assertOk()->assertJsonPath('data.errors', []);
+        $this->api('PATCH', $this->central, "writer/imports/{$uuid}/records/{$riddle}", $this->writer, ['subject' => 'Physics'])->assertOk()->assertJsonPath('data.errors.0.path', 'subject');
+        $this->api('PATCH', $this->central, "writer/imports/{$uuid}/records/{$riddle}", $this->writer, ['subject' => $this->subject])->assertOk()->assertJsonPath('data.errors', []);
+        // bulk settings on chosen rows
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/settings", $this->writer, ['record_ids' => [$noSubject], 'changes' => ['subject' => 'Mathematics', 'difficulty' => 4]])
+            ->assertOk()->assertJsonPath('data.counts.invalid', 0);
+        $this->assertSame(4, QbImportRecord::find($noSubject)->payload['difficulty']);
+
+        // select every valid one; the duplicate is not decided yet
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/select", $this->writer, ['all_valid' => true, 'selected' => true])->assertOk()->assertJsonPath('changed', 4);
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/select", $this->writer, ['record_ids' => [$noSubject], 'selected' => false])->assertOk();
+        $first = $this->api('POST', $this->central, "writer/imports/{$uuid}/finalize", $this->writer)->assertOk()->json('result');
+        $this->assertSame(['imported' => 2, 'invalid' => 0, 'duplicate_unresolved' => 1, 'skipped' => 0, 'failed' => 0], $first);
+        $this->assertNull(QbImportRecord::find($noSubject)->qb_question_id, 'an unselected record never enters the bank');
+
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/records/{$dupe}/duplicate", $this->writer, ['choice' => 'skip'])->assertOk();
+        $second = $this->api('POST', $this->central, "writer/imports/{$uuid}/finalize", $this->writer)->assertOk()->json('result');
+        $this->assertSame(['imported' => 0, 'invalid' => 0, 'duplicate_unresolved' => 0, 'skipped' => 1, 'failed' => 0], $second, 'nothing imported twice');
+
+        // the draft opens in the full editor with its content
+        $qid = QbImportRecord::find($mcq)->qb_question_id;
+        $open = $this->api('GET', $this->central, "writer/questions/{$qid}", $this->writer)->assertOk()->json('data');
+        $this->assertSame(['draft', $this->writer->id, 'en', 'If \(x^2 = 4\), x = ?'], [$open['status'], $open['created_by'], $open['language'], $open['question_text']]);
+        $this->assertSame([true, false], array_column($open['options'], 'is_correct'));
+        $this->api('PUT', $this->central, "writer/questions/{$qid}", $this->writer, ['question_text' => 'If \(x^2 = 9\), x = ?'])->assertOk();
+        $this->assertSame('If \(x^2 = 9\), x = ?', $this->api('GET', $this->central, "writer/questions/{$qid}", $this->writer)->json('data.question_text'));
+        $this->api('PATCH', $this->central, "writer/imports/{$uuid}/records/{$mcq}", $this->writer, ['question_text' => 'x'])->assertStatus(422);
+        $this->api('GET', $this->central, "writer/imports/{$uuid}", $this->writer)->assertJsonPath('data.counts.imported', 2);
+    }
+
+    public function test_an_invalid_record_cannot_be_selected_or_imported(): void
+    {
+        $uuid = $this->upload($this->writer, 'q.json', json_encode($this->questions()))->json('data.id');
+        $bad = QbImportRecord::whereNotNull('errors')->value('id');
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/select", $this->writer, ['record_ids' => [$bad], 'selected' => true])->assertJsonPath('changed', 0);
+        QbImportRecord::whereKey($bad)->update(['selected' => true]);       // even if it were selected
+        $this->assertSame(1, $this->api('POST', $this->central, "writer/imports/{$uuid}/finalize", $this->writer)->json('result.invalid'));
+        $this->assertSame(1, QbQuestion::count(), 'only the question that was there before');
+    }
 }

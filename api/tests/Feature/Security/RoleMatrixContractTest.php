@@ -95,7 +95,7 @@ class RoleMatrixContractTest extends TestCase
             // R2.1.2 (D116): a dataset's {id} is its uuid; a well-formed one that matches no row
             if ($uri === 'api/v1/writer/graph-datasets/{id}') $path = 'writer/graph-datasets/00000000-0000-4000-8000-000000000000';
             // R2.1.3 (D123): an import's {id} is its uuid too
-            if (str_starts_with($uri, 'api/v1/writer/imports/{id}')) $path = str_replace('{id}', '00000000-0000-4000-8000-000000000000', substr($uri, 7));
+            if (str_starts_with($uri, 'api/v1/writer/imports/{id}')) $path = str_replace(['{id}', '{record}'], ['00000000-0000-4000-8000-000000000000', '999999'], substr($uri, 7));
             if ($uri === 'api/v1/hr/final-settlement/{type}/{id}/start') $path = 'hr/final-settlement/staff/999999/start';
             if ($uri === 'api/v1/hr/pf/{type}/{id}/statement.pdf') $path = 'hr/pf/staff/999999/statement.pdf';
             // D106: valid accounting action/report names so route constraints do not preempt the role middleware

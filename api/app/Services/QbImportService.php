@@ -14,6 +14,7 @@ use App\Support\Toon\ToonException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 // D123 (R2.1.3): a JSON/TOON question import. The upload is stored and staged as a batch; queued chunks of 500 records
 // decode, normalize and stage each record by its position (so a re-run never doubles one); counters say exactly how many are
@@ -22,7 +23,7 @@ class QbImportService
 {
     public const SCHEMA_V5 = 'exam-management.universal-content-json.v5';
 
-    public function __construct(private QbImportNormalizer $normalizer) {}
+    public function __construct(private QbImportNormalizer $normalizer, private QbQuestionWriter $writer) {}
 
     /**
      * @param list<array{name:string, bytes:string}> $files pasted text arrives as one file named "pasted.json" / "pasted.toon"
@@ -129,6 +130,60 @@ class QbImportService
             'duplicate_records' => (clone $q)->where('duplicate_status', '!=', 'none')->count(),
             'imported_records' => (clone $q)->whereNotNull('qb_question_id')->count(),
             'status' => $batch->status === 'parsing' && $batch->total_records > 0 && $parsed >= $batch->total_records ? 'ready' : $batch->status]);
+    }
+
+    /** the fields a reviewer may change on a staged record (quick edit and bulk settings) */
+    public const EDITABLE = ['type', 'question_text', 'answer_text', 'explanation_text', 'language', 'difficulty', 'marks', 'subject', 'chapter', 'topic',
+        'class_levels', 'options', 'creative_parts', 'stimuli', 'items', 'occurrences'];
+
+    /** quick edit / bulk settings: change the staged record only, then check it again exactly as on upload */
+    public function edit(QbImportRecord $record, array $changes): QbImportRecord
+    {
+        if ($record->qb_question_id) throw new BusinessException('this record is already imported', 'qb_import_done', 422);
+        $payload = array_merge($record->payload ?? [], array_intersect_key($changes, array_flip(self::EDITABLE)));
+        if (array_key_exists('subject', $changes) && !array_key_exists('chapter', $changes)) unset($payload['chapter'], $payload['topic']);
+        if (array_key_exists('chapter', $changes) && !array_key_exists('topic', $changes)) unset($payload['topic']);
+        $n = $this->normalizer->normalize(array_filter($payload, fn ($v) => $v !== null));
+        $dupes = $this->duplicates([0 => $n]);
+        $dupe = $dupes[0] ?? null;
+        $status = $dupe === null ? 'none' : ($record->duplicate_question_id === $dupe && $record->duplicate_status !== 'none' ? $record->duplicate_status : 'possible');
+        $record->update(['type_slug' => $n['type_slug'], 'payload' => $n['payload'], 'errors' => $n['errors'] ?: null, 'warnings' => $n['warnings'] ?: null,
+            'has_math' => $n['has_math'], 'duplicate_status' => $status, 'duplicate_question_id' => $dupe, 'selected' => $record->selected && !$n['errors']]);
+        return $record;
+    }
+
+    /** "import selected": every selected, valid, not-yet-imported record whose duplicate question is resolved becomes a DRAFT of the
+     *  importing writer, saved through the editor's own steps; each in its own transaction, so one failure never undoes another */
+    public function finalize(QbImportBatch $batch, User $user): array
+    {
+        $result = ['imported' => 0, 'invalid' => 0, 'duplicate_unresolved' => 0, 'skipped' => 0, 'failed' => 0];
+        QbImportRecord::where('qb_import_batch_id', $batch->id)->where('selected', true)->whereNull('qb_question_id')->orderBy('id')
+            ->chunkById(200, function ($records) use ($user, &$result) {
+                foreach ($records as $r) {
+                    if ($r->errors) { $result['invalid']++; continue; }
+                    if ($r->duplicate_status === 'possible') { $result['duplicate_unresolved']++; continue; }
+                    if ($r->duplicate_status === 'skip') { $result['skipped']++; continue; }
+                    $errors = [];
+                    $body = $this->normalizer->editorBody($r->payload, function ($path, $message) use (&$errors) { $errors[] = ['path' => $path, 'message' => $message]; });
+                    if ($errors) { $r->update(['errors' => $errors, 'selected' => false]); $result['invalid']++; continue; }
+                    try {
+                        DB::transaction(function () use ($r, $body, $user) {
+                            $in = $this->writer->placed($body);
+                            $q = QbQuestion::create(collect($in)->except(QbQuestionWriter::CHILDREN)->all()
+                                + ['language' => $r->payload['language'] ?? 'und', 'content_mode' => 'mixed', 'status' => 'draft', 'created_by' => $user->id]);
+                            $this->writer->children($q, $in, $user);
+                            $this->writer->revision($q, $user);
+                            $r->update(['qb_question_id' => $q->id, 'selected' => false]);
+                        });
+                        $result['imported']++;
+                    } catch (ValidationException $e) {
+                        $r->update(['errors' => collect($e->errors())->map(fn ($m, $path) => ['path' => $path, 'message' => $m[0]])->values()->all(), 'selected' => false]);
+                        $result['failed']++;
+                    }
+                }
+            });
+        $this->recount($batch);
+        return $result;
     }
 
     /** the error report: one line per problem - file, record number, field path, message */
