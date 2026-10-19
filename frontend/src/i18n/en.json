@@ -1261,6 +1261,73 @@
    "values": "Answers",
    "comma_hint": "Comma-separated, in the same order"
   },
+  "qbi": {
+   "title": "JSON/TOON import",
+   "subtitle": "Import many questions at once - checked first, then the chosen ones go to the question bank as drafts",
+   "files": "Choose one or more .json/.toon/.txt files",
+   "files_hint": "Up to 20 MB a file, up to 10,000 questions at once",
+   "paste": "Or paste the text",
+   "format": "Format",
+   "check": "Check before importing",
+   "failed": "The import could not be read",
+   "schema": "Download schema",
+   "example_json": "JSON example",
+   "example_toon": "TOON example",
+   "recent": "Recent imports",
+   "none": "No imports yet",
+   "counts": "Total {{total}} · valid {{valid}} · errors {{invalid}} · imported {{imported}}",
+   "status": {
+    "parsing": "Reading",
+    "ready": "Checked",
+    "failed": "Failed",
+    "finalized": "Done"
+   },
+   "review_title": "Check before importing",
+   "back": "All imports",
+   "count": {
+    "total": "Total",
+    "parsed": "Read",
+    "valid": "Valid",
+    "invalid": "Errors",
+    "duplicate": "Possible duplicates",
+    "imported": "Imported"
+   },
+   "parsing": "Reading the file...",
+   "resume": "Resume",
+   "errors_csv": "Error list (CSV)",
+   "result": "Imported {{imported}} · errors {{invalid}} · duplicates to decide {{dupes}} · skipped {{skipped}}",
+   "bulk": "Bulk settings",
+   "bulk_hint": "Each question keeps its content; only the chosen settings become the same for all selected questions.",
+   "bulk_apply": "Apply to selected",
+   "difficulty": "Difficulty",
+   "mixed": "Mixed",
+   "select_valid": "Select all valid",
+   "select_none": "Clear selection",
+   "import_selected": "Import selected",
+   "import_confirm": "The selected valid questions go to the question bank as drafts. Unselected ones do not.",
+   "filter": {
+    "all": "All",
+    "valid": "Valid",
+    "invalid": "Errors",
+    "duplicate": "Possible duplicates",
+    "imported": "Imported"
+   },
+   "no_records": "No questions found",
+   "select": "Select",
+   "has_math": "Math/LaTeX",
+   "open_draft": "Open draft",
+   "duplicate": "Possible duplicate - a similar question exists",
+   "dup_skip": "Skip",
+   "dup_import": "Import anyway",
+   "quick_edit": "Quick edit",
+   "marks": "Marks",
+   "question": "Question",
+   "answer": "Answer",
+   "save": "Save",
+   "cancel": "Cancel",
+   "prev": "Previous",
+   "next": "Next"
+  },
   "qbf": {
    "step1": "1. Give the question's photo (or type the text below)",
    "step2": "2. Check the text read from it",
@@ -1400,6 +1467,8 @@
   "আয় ও টাকা তোলা": "Earnings and withdrawals",
   "প্রশ্নব্যাংক: লেখকের টাকা তোলা": "Question bank: writers' withdrawals",
   "প্রশ্ন খুঁজুন": "Find a question",
-  "প্রশ্নব্যাংক: প্রশ্ন খুঁজুন": "Question bank: find a question"
+  "প্রশ্নব্যাংক: প্রশ্ন খুঁজুন": "Question bank: find a question",
+  "JSON/TOON আমদানি": "JSON/TOON import",
+  "প্রশ্নব্যাংক: JSON/TOON আমদানি": "Question bank: JSON/TOON import"
  }
 }

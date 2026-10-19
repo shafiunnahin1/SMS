@@ -50,6 +50,14 @@ return [
     'qb_dataset_cells'      => 'ডেটাসেটে সর্বোচ্চ :max টি ঘর থাকতে পারে।',
     'qb_dataset_row'        => 'ডেটাসেটের :row নম্বর সারিটি সঠিক নয়।',
     'qb_dataset_version'    => 'অন্য একটি এডিটরে ডেটাসেটটি বদলানো হয়েছে। save করার আগে আবার খুলুন।',
+    'qb_import_empty' => 'আমদানির ফাইলে কোনো প্রশ্ন নেই।',
+    'qb_import_too_many_files' => 'একবারে :max-টির বেশি ফাইল দেওয়া যাবে না।',
+    'qb_import_too_many' => 'একবারে এত বেশি প্রশ্ন আমদানি করা যাবে না।',
+    'qb_import_shape' => 'ফাইলে "questions" তালিকা পাওয়া যায়নি।',
+    'qb_import_version' => 'এই schema_version সমর্থিত নয়।',
+    'qb_import_nothing_changed' => 'কিছুই বদলানো হয়নি।',
+    'qb_import_done' => 'এই প্রশ্নটি আগেই আমদানি হয়েছে।',
+    'qb_import_not_ready' => 'আমদানি এখনো পড়া চলছে।',
     'qb_dataset_in_use'     => 'ডেটাসেটটি একটি save করা প্রশ্নে ব্যবহৃত, তাই মোছা যাবে না।',
     'qb_needs_options'      => 'অন্তত দুটি বিকল্প দিন।',   // QB.3
     'qb_needs_correct'      => 'সঠিক বিকল্পটি চিহ্নিত করুন।',   // QB.3

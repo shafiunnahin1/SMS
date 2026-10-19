@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\{FeeController, FeeRefundController};
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbImportController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -130,6 +130,22 @@ Route::prefix('v1')->group(function () {
         Route::get('/graph-datasets/{id}',            [QbGraphDatasetController::class, 'show'])->whereUuid('id');
         Route::put('/graph-datasets/{id}',            [QbGraphDatasetController::class, 'update'])->whereUuid('id')->middleware('role:content_writer,super_admin');
         Route::delete('/graph-datasets/{id}',         [QbGraphDatasetController::class, 'destroy'])->whereUuid('id')->middleware('role:content_writer,super_admin');
+        // R2.1.3 (D123): JSON/TOON import into staging - writers and the Super Admin
+        Route::middleware('role:content_writer,super_admin')->group(function () {
+            Route::get('/imports',                    [QbImportController::class, 'index']);
+            Route::get('/imports/schema.json',        [QbImportController::class, 'schema']);
+            Route::get('/imports/example.{format}',   [QbImportController::class, 'example'])->whereIn('format', ['json', 'toon']);
+            Route::post('/imports',                   [QbImportController::class, 'store'])->middleware('throttle:10,1');
+            Route::get('/imports/{id}',               [QbImportController::class, 'show'])->whereUuid('id');
+            Route::get('/imports/{id}/records',       [QbImportController::class, 'records'])->whereUuid('id');
+            Route::get('/imports/{id}/errors.csv',    [QbImportController::class, 'errors'])->whereUuid('id');
+            Route::post('/imports/{id}/resume',       [QbImportController::class, 'resume'])->whereUuid('id');
+            Route::patch('/imports/{id}/records/{record}', [QbImportController::class, 'edit'])->whereUuid('id')->whereNumber('record');
+            Route::post('/imports/{id}/records/{record}/duplicate', [QbImportController::class, 'duplicate'])->whereUuid('id')->whereNumber('record');
+            Route::post('/imports/{id}/settings',     [QbImportController::class, 'settings'])->whereUuid('id');
+            Route::post('/imports/{id}/select',       [QbImportController::class, 'select'])->whereUuid('id');
+            Route::post('/imports/{id}/finalize',     [QbImportController::class, 'finalize'])->whereUuid('id')->middleware('throttle:10,1');
+        });
         Route::post('/questions/{id}/submit',         [QbQuestionController::class, 'submit'])->whereNumber('id')->middleware('role:content_writer,super_admin');
         Route::post('/questions/{id}/publish',        [QbQuestionController::class, 'publish'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
         Route::post('/questions/{id}/reject',         [QbQuestionController::class, 'reject'])->whereNumber('id')->middleware('role:content_moderator,super_admin');

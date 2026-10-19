@@ -3186,6 +3186,51 @@ CREATE TABLE qb_graph_datasets (                            -- D115 (R2.1.2): qb
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
 );
 
+CREATE TABLE qb_import_batches (                             -- D123 (R2.1.3): one JSON/TOON question import, staged before anything enters the bank
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    uuid CHAR(36) NOT NULL,
+    format VARCHAR(10) NOT NULL,                             -- json | toon
+    schema_version VARCHAR(80) NULL,
+    files JSON NOT NULL,                                     -- [{name, sha256, bytes}] in upload order
+    source_sha256 CHAR(64) NOT NULL,                         -- of all files together: the same upload by the same person reopens this batch
+    status VARCHAR(20) NOT NULL DEFAULT 'parsing',           -- parsing | ready | failed | finalized
+    total_records INT UNSIGNED NOT NULL DEFAULT 0,
+    parsed_records INT UNSIGNED NOT NULL DEFAULT 0,
+    valid_records INT UNSIGNED NOT NULL DEFAULT 0,
+    invalid_records INT UNSIGNED NOT NULL DEFAULT 0,
+    duplicate_records INT UNSIGNED NOT NULL DEFAULT 0,
+    imported_records INT UNSIGNED NOT NULL DEFAULT 0,
+    error VARCHAR(500) NULL,                                 -- a whole-file problem (unreadable JSON/TOON, too large)
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_import_batches_uuid (uuid),
+    INDEX idx_qb_import_batches_owner (created_by, source_sha256),
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE qb_import_records (                             -- D123: one staged question of a batch, edited here until finalized as a draft
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_import_batch_id BIGINT UNSIGNED NOT NULL,
+    file_index SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    record_index INT UNSIGNED NOT NULL,                      -- position in its file (0-based), so a chunk re-run never doubles a record
+    type_slug VARCHAR(80) NULL,
+    payload JSON NOT NULL,                                   -- the canonical record (same for JSON and TOON)
+    errors JSON NULL,                                        -- [{path, message}]
+    warnings JSON NULL,
+    has_math TINYINT(1) NOT NULL DEFAULT 0,
+    duplicate_status VARCHAR(20) NOT NULL DEFAULT 'none',    -- none | possible | skip | import
+    duplicate_question_id BIGINT UNSIGNED NULL,
+    selected TINYINT(1) NOT NULL DEFAULT 0,
+    qb_question_id BIGINT UNSIGNED NULL,                     -- the draft it became
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_import_records_position (qb_import_batch_id, file_index, record_index),
+    FOREIGN KEY (qb_import_batch_id) REFERENCES qb_import_batches(id) ON DELETE CASCADE,
+    FOREIGN KEY (duplicate_question_id) REFERENCES qb_questions(id),
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
+
 -- D84: tenant-bound refund history/status and original-line cap checks.
 CREATE INDEX idx_fee_refunds_inst_status_created ON fee_refunds(institution_id, status, created_at, id);
 CREATE INDEX idx_fee_refunds_inst_student_created ON fee_refunds(institution_id, student_id, created_at, id);
