@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\{FeeController, FeeRefundController};
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -123,6 +123,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/questions/{id}/revisions',       [QbQuestionController::class, 'revisions'])->whereNumber('id');
         Route::post('/media',                         [QbMediaController::class, 'store'])->middleware('role:content_writer,super_admin');
         // R2.1.2 (D115, D116): qbank's graph datasets (the {id} is the dataset's uuid) - writers their own, moderators read, the Super Admin all
+        Route::post('/question-finder',               [QbFinderController::class, 'search'])->middleware('throttle:10,1');   // R2.1.2 (D114 (3))
         Route::get('/graph-datasets/capabilities',    [QbGraphDatasetController::class, 'capabilities']);   // D118 (5)
         Route::get('/graph-datasets',                 [QbGraphDatasetController::class, 'index']);
         Route::post('/graph-datasets',                [QbGraphDatasetController::class, 'store'])->middleware(['role:content_writer,super_admin', 'throttle:60,1']);

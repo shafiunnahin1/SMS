@@ -38,7 +38,10 @@ services:
     environment:
       - "INTERNAL_IPS=127.0.0.1,::1,172.16.0.0/12"   # docker-setup.md: the compose network may call /api/internal/
       - "PDF_CHROME_NO_SANDBOX=true"                 # Chromium inside a container
-    volumes: [api_storage:/var/www/api/storage/app]
+      - "PDF_QBANK_TOOLS_PATH=/opt/qbank-tools"      # D118 (4): qbank's graph/diagram renderers for printed papers
+    volumes:
+      - api_storage:/var/www/api/storage/app
+      - ./frontend/public/vendor/qbank:/opt/qbank-tools:ro   # the manifest-pinned copy (D119), read-only
     depends_on: [mysql, redis]
     restart: unless-stopped
     deploy: { replicas: 2 }
@@ -48,7 +51,10 @@ services:
     env_file: ./api/.env.production
     environment:
       - "PDF_CHROME_NO_SANDBOX=true"
-    volumes: [api_storage:/var/www/api/storage/app]
+      - "PDF_QBANK_TOOLS_PATH=/opt/qbank-tools"
+    volumes:
+      - api_storage:/var/www/api/storage/app
+      - ./frontend/public/vendor/qbank:/opt/qbank-tools:ro
     command: php artisan queue:work redis --queue=default,sms,notifications --tries=3 --max-time=3600
     depends_on: [mysql, redis]
     restart: unless-stopped

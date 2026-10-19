@@ -31,6 +31,7 @@ class QuestionAnswerNeverLeaksTest extends TestCase
         'app/Services/QbQuizMarker.php' => "QB.10: marks a quiz answer on the server; returns marks, the right answer only for a submitted attempt (QbQuizService::review)",
         'app/Http/Controllers/QuestionBank/QbQuizController.php' => "QB.10: the Super Admin's quiz editor (central host) checks question ids are published and auto-marked; returns ids and question texts",
         'app/Http/Controllers/QuestionBank/QbGraphDatasetController.php' => "R2.1.2 (D116): asks only whether the dataset's question is published before a delete; returns nothing about the question",
+        'app/Services/QbQuestionFinderService.php' => "R2.1.2 (D114 (3)): the finder reads published question texts to score them; returns the question text, ids and names, never an answer",
         'app/Http/Controllers/QuestionBank/QbPublicQuizController.php' => "QB.10: the public page filters question ids to the quiz and to published ones; questions go out through QbQuizService::paper, marks only",
     ];
 
@@ -85,6 +86,22 @@ class QuestionAnswerNeverLeaksTest extends TestCase
         $q->media()->sync([$shown->id, $answerOnly->id, $explainOnly->id]);
         $this->assertSame([$shown->id], array_column(QbQuestionPublicResource::make($q->fresh(), unlocked: false)['media'], 'id'));
         $this->assertEqualsCanonicalizing([$shown->id, $answerOnly->id, $explainOnly->id], array_column(QbQuestionPublicResource::make($q->fresh(), unlocked: true)['media'], 'id'));
+    }
+
+    /** R2.1.2 (D118 (6)): a graph or diagram written only in the answer, explanation or a part's answer stays locked; one in the
+     *  question shows - they are qbank text tokens, so the locked shape leaves them out with the text that carries them */
+    public function test_an_answer_only_graph_or_diagram_stays_locked(): void
+    {
+        $q = $this->question();
+        $graph = '[[qmx-graph:QUESTIONGRAPHTOKEN]]';
+        $q->update(['question_text' => 'Plot: ' . $graph, 'answer_text' => 'SECRET-ANSWER [[qmx-graph:ANSWERGRAPHTOKEN]]',
+            'explanation_text' => 'SECRET-EXPLANATION [[qmx-diagram:EXPLAINDIAGRAMTOKEN]]']);
+        $q->creativeParts()->update(['answer_text' => 'SECRET-PART-ANSWER [[qmx-diagram:PARTDIAGRAMTOKEN]]']);
+        $locked = json_encode(QbQuestionPublicResource::make($q->fresh(), unlocked: false), JSON_UNESCAPED_UNICODE);
+        $this->assertStringContainsString($graph, $locked, 'the question\'s own graph is shown');
+        foreach (['ANSWERGRAPHTOKEN', 'EXPLAINDIAGRAMTOKEN', 'PARTDIAGRAMTOKEN'] as $hidden) $this->assertStringNotContainsString($hidden, $locked);
+        $open = json_encode(QbQuestionPublicResource::make($q->fresh(), unlocked: true), JSON_UNESCAPED_UNICODE);
+        foreach (['ANSWERGRAPHTOKEN', 'EXPLAINDIAGRAMTOKEN', 'PARTDIAGRAMTOKEN'] as $shown) $this->assertStringContainsString($shown, $open);
     }
 
     public function test_every_other_use_of_the_question_models_goes_through_the_public_resource(): void
