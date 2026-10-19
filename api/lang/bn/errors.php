@@ -55,6 +55,7 @@ return [
     'qb_import_too_many' => 'একবারে এত বেশি প্রশ্ন আমদানি করা যাবে না।',
     'qb_import_shape' => 'ফাইলে "questions" তালিকা পাওয়া যায়নি।',
     'qb_import_version' => 'এই schema_version সমর্থিত নয়।',
+    'qb_import_too_many_pages' => 'একবারে :max পৃষ্ঠার বেশি পড়া যাবে না।',
     'qb_import_nothing_changed' => 'কিছুই বদলানো হয়নি।',
     'qb_import_done' => 'এই প্রশ্নটি আগেই আমদানি হয়েছে।',
     'qb_import_not_ready' => 'আমদানি এখনো পড়া চলছে।',

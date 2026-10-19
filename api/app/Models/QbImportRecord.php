@@ -15,7 +15,7 @@ class QbImportRecord extends Model
 
     protected $table = 'qb_import_records';
 
-    protected $fillable = ['qb_import_batch_id', 'file_index', 'record_index', 'type_slug', 'payload', 'errors', 'warnings', 'has_math',
+    protected $fillable = ['qb_import_batch_id', 'file_index', 'record_index', 'page_number', 'type_slug', 'payload', 'errors', 'warnings', 'has_math',
         'duplicate_status', 'duplicate_question_id', 'selected', 'qb_question_id'];
 
     protected $casts = ['payload' => 'array', 'errors' => 'array', 'warnings' => 'array', 'has_math' => 'boolean', 'selected' => 'boolean'];

@@ -16,9 +16,9 @@ class QbImportBatch extends Model
     protected $table = 'qb_import_batches';
 
     protected $fillable = ['uuid', 'format', 'schema_version', 'files', 'source_sha256', 'status', 'total_records', 'parsed_records', 'valid_records',
-        'invalid_records', 'duplicate_records', 'imported_records', 'error', 'created_by'];
+        'invalid_records', 'duplicate_records', 'imported_records', 'error', 'page_from', 'page_to', 'document_kind', 'unreadable_pages', 'created_by'];
 
-    protected $casts = ['files' => 'array'];
+    protected $casts = ['files' => 'array', 'unreadable_pages' => 'array'];
 
     public function records(): HasMany
     {

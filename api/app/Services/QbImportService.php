@@ -9,6 +9,8 @@ use App\Models\QbImportBatch;
 use App\Models\QbImportRecord;
 use App\Models\QbQuestion;
 use App\Models\User;
+use App\Support\Pdf\PdfQuestionSplitter;
+use App\Support\Pdf\PdfTextExtractor;
 use App\Support\Toon\ToonDecoder;
 use App\Support\Toon\ToonException;
 use Illuminate\Support\Facades\DB;
@@ -28,20 +30,20 @@ class QbImportService
     /**
      * @param list<array{name:string, bytes:string}> $files pasted text arrives as one file named "pasted.json" / "pasted.toon"
      */
-    public function create(User $user, array $files, ?string $format = null): array
+    public function create(User $user, array $files, ?string $format = null, ?int $pageFrom = null, ?int $pageTo = null): array
     {
         if ($files === []) throw new BusinessException('nothing to import', 'qb_import_empty', 422);
         $max = (int) config('qb_import.max_files');
         if (count($files) > $max) throw new BusinessException("at most {$max} files", 'qb_import_too_many_files', 422, ['max' => $max]);
         $format ??= $this->format($files[0]['name'], $files[0]['bytes']);
         $list = array_map(fn ($f) => ['name' => mb_substr($f['name'], 0, 200), 'sha256' => hash('sha256', $f['bytes']), 'bytes' => strlen($f['bytes'])], $files);
-        $source = hash('sha256', $format . '|' . implode('|', array_column($list, 'sha256')));
+        $source = hash('sha256', $format . '|' . implode('|', array_column($list, 'sha256')) . ($format === 'pdf' ? "|{$pageFrom}-{$pageTo}" : ''));
 
         $existing = QbImportBatch::where('created_by', $user->id)->where('source_sha256', $source)->where('status', '!=', 'failed')->latest('id')->first();
         if ($existing) return [$existing, false];                       // the same upload again: the batch already made from it
 
         $batch = QbImportBatch::create(['uuid' => (string) Str::uuid(), 'format' => $format, 'files' => $list, 'source_sha256' => $source,
-            'status' => 'parsing', 'created_by' => $user->id]);
+            'status' => 'parsing', 'created_by' => $user->id] + ($format === 'pdf' ? ['page_from' => $pageFrom, 'page_to' => $pageTo] : []));
         foreach ($files as $i => $f) Storage::disk('private')->put($this->path($batch, $i), $f['bytes']);
         ParseQbImportBatch::dispatch($batch->id);
         return [$batch->fresh(), true];
@@ -54,6 +56,7 @@ class QbImportService
         $version = null;
         $chunks = [];
         try {
+            if ($batch->format === 'pdf' && !$this->extractPdf($batch)) return;
             foreach ($batch->files as $i => $f) {
                 [$records, $document, $v] = $this->read($batch, $i);
                 $version ??= $v;
@@ -62,7 +65,7 @@ class QbImportService
             }
             if ($total === 0) throw new BusinessException('no questions in the file', 'qb_import_empty', 422);
             if ($total > (int) config('qb_import.max_records')) throw new BusinessException('more than ' . config('qb_import.max_records') . ' questions in one import', 'qb_import_too_many', 422);
-        } catch (BusinessException|ToonException|\JsonException $e) {
+        } catch (BusinessException|ToonException|\JsonException|\RuntimeException $e) {
             $batch->update(['status' => 'failed', 'error' => mb_substr($e->getMessage(), 0, 500)]);
             return;
         }
@@ -82,13 +85,14 @@ class QbImportService
             if ($have->has($index)) continue;
             $n = is_array($raw) ? $this->normalizer->normalize($raw, $document)
                 : ['payload' => [], 'errors' => [['path' => '', 'message' => 'a question must be an object']], 'warnings' => [], 'type_slug' => null, 'has_math' => false];
-            $rows[$index] = $n;
+            if ($batch->format === 'pdf') $n = $this->pdfNotes($batch, is_array($raw) ? $raw : [], $n);
+            $rows[$index] = $n + ['page_number' => is_array($raw) && is_int($raw['page_number'] ?? null) ? $raw['page_number'] : null];
         }
         $dupes = $this->duplicates($rows);
         DB::transaction(function () use ($batch, $fileIndex, $rows, $dupes) {
             foreach ($rows as $index => $n) {
                 QbImportRecord::firstOrCreate(['qb_import_batch_id' => $batch->id, 'file_index' => $fileIndex, 'record_index' => $index], [
-                    'type_slug' => $n['type_slug'], 'payload' => $n['payload'], 'errors' => $n['errors'] ?: null, 'warnings' => $n['warnings'] ?: null,
+                    'page_number' => $n['page_number'], 'type_slug' => $n['type_slug'], 'payload' => $n['payload'], 'errors' => $n['errors'] ?: null, 'warnings' => $n['warnings'] ?: null,
                     'has_math' => $n['has_math'], 'duplicate_status' => isset($dupes[$index]) ? 'possible' : 'none', 'duplicate_question_id' => $dupes[$index] ?? null]);
             }
         });
@@ -152,6 +156,20 @@ class QbImportService
         return $record;
     }
 
+    /** D124: rejecting marks the record with a "rejected" error (so it can never be selected or imported); un-rejecting checks it again */
+    public function reject(QbImportRecord $record, bool $rejected): void
+    {
+        if ($rejected) { $record->update(['errors' => [['path' => '', 'message' => self::REJECTED]], 'selected' => false]); return; }
+        if (($record->errors[0]['message'] ?? null) === self::REJECTED) $this->edit($record, ['question_text' => $record->payload['question_text'] ?? '']);
+    }
+
+    public const REJECTED = 'rejected by the reviewer';
+
+    public function sourceBytes(QbImportBatch $batch): string
+    {
+        return Storage::disk('private')->get($this->path($batch, 0)) ?? '';
+    }
+
     /** "import selected": every selected, valid, not-yet-imported record whose duplicate question is resolved becomes a DRAFT of the
      *  importing writer, saved through the editor's own steps; each in its own transaction, so one failure never undoes another */
     public function finalize(QbImportBatch $batch, User $user): array
@@ -203,6 +221,10 @@ class QbImportService
     /** a stored file -> [records, document, schema version]; the question list is `questions` or the root list */
     public function read(QbImportBatch $batch, int $fileIndex): array
     {
+        if ($batch->format === 'pdf') {                                  // D124: the questions split from the PDF when it was read
+            $records = json_decode(Storage::disk('private')->get($this->path($batch, $fileIndex) . '.records.json') ?? '[]', true) ?? [];
+            return [$records, [], 'pdf'];
+        }
         $bytes = Storage::disk('private')->get($this->path($batch, $fileIndex)) ?? '';
         $data = $batch->format === 'toon' ? ToonDecoder::decode($bytes) : json_decode(preg_replace('/^\xEF\xBB\xBF/', '', $bytes), true, 64, JSON_THROW_ON_ERROR);
         if (!is_array($data)) throw new BusinessException('the file is not a question list', 'qb_import_shape', 422);
@@ -236,9 +258,39 @@ class QbImportService
         return $found;
     }
 
+    /** D124: read the PDF's pages once, keep the questions split from them next to the file; a PDF with no readable page stops here */
+    private function extractPdf(QbImportBatch $batch): bool
+    {
+        $pdf = Storage::disk('private')->get($this->path($batch, 0)) ?? '';
+        $read = (new PdfTextExtractor)->extract($pdf, $batch->page_from, $batch->page_to);
+        if ($read['page_to'] - $read['page_from'] + 1 > (int) config('qb_import.max_pdf_pages')) {
+            throw new BusinessException('more than ' . config('qb_import.max_pdf_pages') . ' pages in one import', 'qb_import_too_many_pages', 422, ['max' => config('qb_import.max_pdf_pages')]);
+        }
+        $records = (new PdfQuestionSplitter)->split($read['pages']);
+        foreach ($records as &$r) $r['legacy_bijoy'] = $read['legacy_bijoy'];
+        unset($r);
+        Storage::disk('private')->put($this->path($batch, 0) . '.records.json', json_encode($records, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $batch->update(['page_from' => $read['page_from'], 'page_to' => $read['page_to'], 'document_kind' => $read['document_kind'], 'unreadable_pages' => $read['unreadable_pages']]);
+        if ($read['document_kind'] === 'scanned') {
+            $batch->update(['status' => 'needs_ocr', 'error' => 'no page of this PDF has readable text (a scanned PDF): make a searchable PDF and upload it again']);
+            return false;
+        }
+        return true;
+    }
+
+    /** D124: what the reviewer should know about a question from a PDF - its type was not clear, math or a legacy font on the page */
+    private function pdfNotes(QbImportBatch $batch, array $raw, array $n): array
+    {
+        if (!isset($raw['question_type'])) $n['warnings'][] = 'the question type could not be told from the PDF - choose it';
+        if (preg_match('/[√²³¹⁴π∫∑≤≥≠÷×∞θαβ°]/u', json_encode($raw, JSON_UNESCAPED_UNICODE))) { $n['has_math'] = true; $n['warnings'][] = 'math symbols in the PDF text - check and write them as LaTeX'; }
+        if (!empty($raw['legacy_bijoy'])) $n['warnings'][] = 'the PDF uses a legacy Bijoy font - the Bangla text may be garbled';
+        return $n;
+    }
+
     private function format(string $name, string $bytes): string
     {
         $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        if ($ext === 'pdf' || str_starts_with($bytes, '%PDF-')) return 'pdf';
         if ($ext === 'toon') return 'toon';
         if ($ext === 'json') return 'json';
         return in_array(ltrim($bytes, " \t\r\n\xEF\xBB\xBF")[0] ?? '', ['{', '['], true) ? 'json' : 'toon';
