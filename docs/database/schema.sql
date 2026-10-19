@@ -3125,6 +3125,32 @@ CREATE TABLE qb_omr_forms (                                   -- D127: one versi
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
 );
+CREATE TABLE qb_omr_scans (                                   -- D127: reviewable answers retain the form layout version used to read them
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    qb_omr_form_id BIGINT UNSIGNED NOT NULL,
+    layout_version INT UNSIGNED NOT NULL,
+    set_code VARCHAR(10) NULL,
+    roll VARCHAR(12) NULL,
+    matched_student_id BIGINT UNSIGNED NULL,
+    answers_json JSON NULL,
+    answered_count SMALLINT UNSIGNED NULL,
+    correct_count SMALLINT UNSIGNED NULL,
+    obtained_marks DECIMAL(8,2) NULL,
+    status VARCHAR(30) NOT NULL,
+    comparison_json JSON NULL,
+    image_path VARCHAR(255) NULL,
+    source VARCHAR(10) NOT NULL,
+    reviewed_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qb_omr_scans_review (institution_id, qb_omr_form_id, status, id),
+    INDEX idx_qb_omr_scans_form_roll (institution_id, qb_omr_form_id, roll),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_omr_form_id) REFERENCES qb_omr_forms(id),
+    FOREIGN KEY (matched_student_id) REFERENCES students(id),
+    FOREIGN KEY (reviewed_by) REFERENCES users(id)
+);
 
 CREATE TABLE qb_blueprints (                                 -- D126 (3) (R2.1.5): qbank's assessment blueprints - a platform plan a paper is built from
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
