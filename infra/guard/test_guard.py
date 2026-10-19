@@ -51,6 +51,15 @@ add('clean scaffold commit (code + its own PROGRESS line)', {'api/app/Foo.php': 
 add('clean: new migration for an R1 table, new test, TenantBulk call', {'api/database/migrations/2026_02_01_000000_create_students_table.php': MIG % 'students', 'api/app/Services/Bulk.php': "<?php\nTenantBulk::upsert(Attendance::class, $rows, ['a'], ['b']);\n", 'docs/PROGRESS.md': check_off(TASK0)}, ok_msg, expect_pass=True)
 add('clean: guard:allow turns a forbidden pattern into a warning only', {'api/app/Services/D.php': "<?php\ndd($x); // guard:allow(debug)\n", 'docs/PROGRESS.md': check_off(TASK0)}, ok_msg, expect_pass=True)
 # ---------- C1 protected ----------
+# D119: the pinned qbank copy - C7/C11 skip it, but it moves only with a matching manifest under a Change-Request
+import hashlib as _h
+_V = 'frontend/public/vendor/qbank/'
+_vjs = "console.log('qbank');\n" + "var x = 1;\n" * 4100
+_man = lambda body: f"{_h.sha256(body.encode()).hexdigest()}  js/tool.js\n"
+add('D119 a qbank copy with its manifest skips C7/C11', {_V + 'js/tool.js': _vjs, _V + 'MANIFEST.sha256': _man(_vjs), 'docs/PROGRESS.md': check_off(TASK0)}, ok_msg + '\nChange-Request: D2', expect_pass=True)
+add('D119 a qbank file without the manifest', {_V + 'js/tool.js': "var x = 1;\n", 'docs/PROGRESS.md': check_off(TASK0)}, ok_msg + '\nChange-Request: D2', {'C1'})
+add('D119 a qbank file that differs from its manifest', {_V + 'js/tool.js': "var x = 2;\n", _V + 'MANIFEST.sha256': _man("var x = 1;\n"), 'docs/PROGRESS.md': check_off(TASK0)}, ok_msg + '\nChange-Request: D2', {'C1'})
+add('D119 a qbank copy without a Change-Request', {_V + 'js/tool.js': "var x = 1;\n", _V + 'MANIFEST.sha256': _man("var x = 1;\n"), 'docs/PROGRESS.md': check_off(TASK0)}, ok_msg, {'C1'})
 add('C1 a spec document is edited without a Change-Request', {'docs/modules/x.md': '# spec CHANGED\n'}, 'docs: tweak spec', {'C1'})
 add('C1 a spec edit with a valid Change-Request (decision D2 exists) passes', {'docs/modules/x.md': '# spec CHANGED\n'}, 'docs: owner-approved change\n\nChange-Request: D2', expect_pass=True)
 add('C1 a Change-Request naming a decision that does not exist', {'docs/modules/x.md': '# spec CHANGED\n'}, 'docs: x\n\nChange-Request: D99', {'C1'})

@@ -23,7 +23,7 @@ Checks (the ids are cited by docs/ops/agent-guardrails.md and verified by verify
 Exit 0 = clean (warnings allowed), 1 = at least one failure, 2 = the guard itself could not run.
 A justified exception on one line: append `guard:allow(<rule>)` - it is reported as a WARNING for the human reviewer.
 """
-import os, re, sys, json, subprocess, fnmatch, argparse
+import os, re, sys, json, hashlib, subprocess, fnmatch, argparse
 
 CHECKS = ['C1', 'C2', 'C3', 'C4', 'C5', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C14']
 FRAMEWORK_TABLES = {'migrations', 'jobs', 'job_batches', 'failed_jobs', 'personal_access_tokens', 'password_reset_tokens', 'sessions', 'cache', 'cache_locks', 'notifications'}
@@ -45,6 +45,9 @@ def empty_tree(root):
 
 # D111 clause 7: R2.1 tasks whose refined scope a locked decision approved -> (decision, dependencies); all other R2.1 tasks stay blocked
 R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1'])}
+# D119: qbank's tool files copied unchanged (D118); C7 and C11 skip them, a sha256 manifest pins them instead
+QBANK_VENDOR = 'frontend/public/vendor/qbank/'
+QBANK_MANIFEST = QBANK_VENDOR + 'MANIFEST.sha256'
 # D115: the one new table an approved R2.1 task may create, with the decision that approved it
 R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}}
 
@@ -224,7 +227,7 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
         for ln in a:
             for rx, what in SECRETS:
                 if re.search(rx, ln) and not allow(ln, 'secret') and not p.endswith(('.example', '.md')): rep.fail('C8', commit, f'{what} in {p}: {ln.strip()[:50]}...')
-        if is_code(p):
+        if is_code(p) and not p.startswith(QBANK_VENDOR):
             for what, rx, applies, sev, *lf in FORBIDDEN:
                 if not applies(p): continue
                 for ln in a:
@@ -275,8 +278,27 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
                 rep.fail('C10', commit, 'D83 planning cannot check off R2.1 feature tasks, even in a documentation-only commit')
             if task and any(x != task for x in newly): rep.fail('C10', commit, f'PROGRESS: this commit is `Task: {task}` but also checks off {[x for x in newly if x != task]}')
             if newly and not task: rep.fail('C10', commit, 'PROGRESS: a task was checked off in a commit without a `Task:` trailer')
+    # ---- D119: the qbank copy changes only together with its manifest, and the manifest matches the files
+    vendor = [(s, p) for s, p in files if p.startswith(QBANK_VENDOR)]
+    if vendor:
+        if not any(p == QBANK_MANIFEST for s, p in vendor): rep.fail('C1', commit, f'{len(vendor)} file(s) under {QBANK_VENDOR} changed without {QBANK_MANIFEST} (D119)')
+        elif not cr_ok: rep.fail('C1', commit, f'{QBANK_VENDOR} changed without a valid `Change-Request: D<n>` trailer (D119)')
+        else:
+            manifest = show(root, commit, QBANK_MANIFEST) or ''
+            listed = {}
+            for line in manifest.splitlines():
+                m = re.match(r'^([0-9a-f]{64})\s+(\S.*)$', line)
+                if m: listed[m.group(2)] = m.group(1)
+            tree = [x for x in git(root, 'ls-tree', '-r', '--name-only', commit, QBANK_VENDOR).split('\n') if x and x != QBANK_MANIFEST]
+            rel = lambda x: x[len(QBANK_VENDOR):]
+            missing = sorted(set(map(rel, tree)) - set(listed)); extra = sorted(set(listed) - set(map(rel, tree)))
+            if missing or extra: rep.fail('C1', commit, f'{QBANK_MANIFEST} does not list the folder exactly (unlisted: {missing[:3]}, gone: {extra[:3]})')
+            for x in tree:
+                body = subprocess.run(['git', '-C', root, 'show', f'{commit}:{x}'], capture_output=True).stdout
+                if listed.get(rel(x)) and hashlib.sha256(body).hexdigest() != listed[rel(x)]: rep.fail('C1', commit, f'{x} differs from its sha256 in {QBANK_MANIFEST}')
     # ---- C11 size
     ns2 = git(root, 'diff', '--numstat', '--no-renames', parent, commit).strip().split('\n')
+    ns2 = [x for x in ns2 if x.strip() and not x.split('\t')[-1].startswith(QBANK_VENDOR)]   # D119: the pinned qbank copy is not counted
     nfiles = len([x for x in ns2 if x.strip()]); nlines = sum(int(x.split('\t')[0]) + int(x.split('\t')[1]) for x in ns2 if x.strip() and x.split('\t')[0].isdigit() and x.split('\t')[1].isdigit())
     if touches_code:
         if nfiles > FAIL_FILES or nlines > FAIL_LINES: rep.fail('C11', commit, f'commit too large ({nfiles} files, {nlines} lines): split the task')
