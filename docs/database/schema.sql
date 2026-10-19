@@ -3110,6 +3110,22 @@ CREATE TABLE qb_paper_items (
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
 );
 
+CREATE TABLE qb_omr_forms (                                   -- D127: one versioned OMR layout per final paper
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    qb_paper_id BIGINT UNSIGNED NOT NULL,
+    code VARCHAR(10) NOT NULL,
+    settings_json JSON NOT NULL,
+    layout_version INT UNSIGNED NOT NULL DEFAULT 1,
+    locked_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_omr_forms_paper (institution_id, qb_paper_id),
+    UNIQUE KEY unique_qb_omr_forms_code (institution_id, code),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
+);
+
 CREATE TABLE qb_blueprints (                                 -- D126 (3) (R2.1.5): qbank's assessment blueprints - a platform plan a paper is built from
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name_bn VARCHAR(200) NOT NULL,
