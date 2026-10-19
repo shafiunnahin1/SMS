@@ -123,6 +123,64 @@ export function projectPoint(homography, u, v) {
     ((homography[3] * u) + (homography[4] * v) + homography[5]) / denominator]
 }
 
+const percentile = (values, fraction) => {
+  const ordered = values.filter(Number.isFinite).sort((left, right) => left - right)
+  return ordered.length ? ordered[Math.min(ordered.length - 1, Math.floor(ordered.length * fraction))] : 245
+}
+
+const samplePageLuminance = (imageData, homography, normalizedX, normalizedY) => {
+  const [sourceX, sourceY] = projectPoint(homography, normalizedX, normalizedY)
+  const pixelX = clamp(Math.round(sourceX), 0, imageData.width - 1)
+  const pixelY = clamp(Math.round(sourceY), 0, imageData.height - 1)
+  return luminance(imageData, pixelX, pixelY)
+}
+
+export function scoreBubble(imageData, homography, bubble) {
+  const centerX = bubble.left + (bubble.width / 2)
+  const centerY = bubble.top + (bubble.height / 2)
+  const radiusX = Math.max(1e-5, bubble.width / 2)
+  const radiusY = Math.max(1e-5, bubble.height / 2)
+  const backgroundSamples = []
+  const sectors = Array.from({ length: 12 }, () => [])
+
+  for (let gridY = -9; gridY <= 9; gridY++) {
+    for (let gridX = -9; gridX <= 9; gridX++) {
+      const normalizedX = gridX * 0.15
+      const normalizedY = gridY * 0.15
+      const radius = Math.sqrt((normalizedX * normalizedX) + (normalizedY * normalizedY))
+      if (radius < 0.42 || radius > 1.3) continue
+      const value = samplePageLuminance(imageData, homography, centerX + (normalizedX * radiusX), centerY + (normalizedY * radiusY))
+      if (radius >= 1.08) backgroundSamples.push(value)
+      else if (radius <= 0.78) {
+        const angle = (Math.atan2(normalizedY, normalizedX) + (Math.PI * 2)) % (Math.PI * 2)
+        sectors[Math.floor((angle / (Math.PI * 2)) * sectors.length)].push(value)
+      }
+    }
+  }
+
+  const samples = sectors.flat()
+  if (samples.length < 4) return 0
+  const paperBrightness = percentile(backgroundSamples, 0.75)
+  const paperFloor = clamp(paperBrightness - 35, 120, 225)
+  const darkness = value => clamp((paperBrightness - value) / Math.max(25, paperBrightness - paperFloor), 0, 1)
+  const sectorRatios = sectors.map(values => values.length
+    ? values.filter(value => darkness(value) >= 0.28).length / values.length
+    : 0)
+  const darkValues = samples.map(darkness)
+  const darkRatio = darkValues.filter(value => value >= 0.28).length / darkValues.length
+  const meanDarkness = darkValues.reduce((sum, value) => sum + value, 0) / darkValues.length
+  const coveredSectorRatio = sectorRatios.filter(ratio => ratio >= 0.20).length / sectors.length
+  const coverageSupport = darkRatio >= 0.20 ? coveredSectorRatio * 0.10 : 0
+  return clamp((darkRatio * 0.68) + (meanDarkness * 0.22) + coverageSupport, 0, 1)
+}
+
+export function readBubbleRows(imageData, homography, rows) {
+  return rows.map(row => {
+    const scores = row.map(cell => scoreBubble(imageData, homography, cell.bubble ?? cell))
+    return { ...classifyBubbleScores(scores), scores }
+  })
+}
+
 export function classifyBubbleScores(scores) {
   const finite = scores.map(Number).map(score => Number.isFinite(score) ? score : 0)
   const ordered = [...finite].sort((left, right) => left - right)

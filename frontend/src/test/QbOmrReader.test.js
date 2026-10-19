@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { classifyBubbleScores, findRegistrationMarkers, homographyFromMarkers, projectPoint } from '../features/qb/omrReader'
+import { classifyBubbleScores, findRegistrationMarkers, homographyFromMarkers, projectPoint, readBubbleRows } from '../features/qb/omrReader'
 
 const sheetImage = (missingCorner = null) => {
   const width = 400
@@ -26,6 +26,23 @@ const sheetImage = (missingCorner = null) => {
   return { width, height, data }
 }
 
+const bubbleImage = () => {
+  const width = 400
+  const height = 560
+  const data = new Uint8ClampedArray(width * height * 4)
+  for (let index = 0; index < data.length; index += 4) data.set([255, 255, 255, 255], index)
+  const centerX = 200
+  const centerY = 280
+  for (let y = centerY - 8; y <= centerY + 8; y++) {
+    for (let x = centerX - 8; x <= centerX + 8; x++) {
+      if ((((x - centerX) / 8) ** 2) + (((y - centerY) / 8) ** 2) > 0.95 ** 2) continue
+      const offset = ((y * width) + x) * 4
+      data.set([0, 0, 0, 255], offset)
+    }
+  }
+  return { width, height, data }
+}
+
 describe('OMR reader geometry', () => {
   it('finds all four printed registration markers and maps normalized page points', () => {
     const image = sheetImage()
@@ -45,5 +62,15 @@ describe('OMR reader geometry', () => {
     expect(classifyBubbleScores([0.01, 0.03, 0.04, 0.02]).status).toBe('blank')
     expect(classifyBubbleScores([0.01, 0.84, 0.03, 0.04])).toMatchObject({ status: 'marked', selected: [1] })
     expect(classifyBubbleScores([0.01, 0.73, 0.69, 0.04])).toMatchObject({ status: 'ambiguous', selected: [1, 2] })
+  })
+
+  it('scores filled answer bubbles from pixels against the local paper baseline', () => {
+    const bubble = { left: 0.475, top: 0.48, width: 0.05, height: 0.04 }
+    const blank = { left: 0.525, top: 0.48, width: 0.05, height: 0.04 }
+    const result = readBubbleRows(bubbleImage(), [400, 0, 0, 0, 560, 0, 0, 0, 1], [[bubble, blank]])[0]
+    expect(result.status).toBe('marked')
+    expect(result.selected).toEqual([0])
+    expect(result.scores[0]).toBeGreaterThan(0.16)
+    expect(result.scores[1]).toBeLessThan(0.16)
   })
 })
