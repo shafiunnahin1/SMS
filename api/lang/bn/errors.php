@@ -57,6 +57,8 @@ return [
     'qb_import_version' => 'এই schema_version সমর্থিত নয়।',
     'qb_folder_cycle' => 'ফোল্ডারকে তার নিজের ভেতরে বা নিজের উপ-ফোল্ডারে সরানো যায় না।',
     'qb_folder_not_empty' => 'শুধু ফাঁকা ফোল্ডার মোছা যায়।',
+    'qb_sets_capacity' => 'এই পদ্ধতিতে সর্বোচ্চ :maxটি সেট তৈরি করা সম্ভব।',
+    'qb_no_such_set' => 'এই প্রশ্নপত্রে এমন কোনো সেট নেই।',
     'qb_import_too_many_pages' => 'একবারে :max পৃষ্ঠার বেশি পড়া যাবে না।',
     'qb_import_nothing_changed' => 'কিছুই বদলানো হয়নি।',
     'qb_import_done' => 'এই প্রশ্নটি আগেই আমদানি হয়েছে।',

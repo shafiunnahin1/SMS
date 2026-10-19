@@ -3074,6 +3074,20 @@ CREATE TABLE qb_paper_folders (                              -- D126 (R2.1.5): q
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (parent_id) REFERENCES qb_paper_folders(id)
 );
+CREATE TABLE qb_paper_variants (                             -- D126 (2): a final paper's sets, frozen - a later edit never changes a printed set
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    qb_paper_id BIGINT UNSIGNED NOT NULL,
+    variant_number TINYINT UNSIGNED NOT NULL,                -- 1 = as built
+    code VARCHAR(10) NOT NULL,                               -- what the header prints: A-Z or ক-ঞ...
+    strategy VARCHAR(10) NOT NULL,                           -- options | serial | both (qbank's)
+    layout_json JSON NOT NULL,                               -- per section: question order, each question's option order and its correct labels
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_paper_variants_number (qb_paper_id, variant_number),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
+);
 CREATE TABLE qb_paper_sections (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,

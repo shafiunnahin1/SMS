@@ -57,6 +57,8 @@ return [
     'qb_import_version' => 'This schema_version is not supported.',
     'qb_folder_cycle' => 'A folder cannot move into itself or its own sub-folder.',
     'qb_folder_not_empty' => 'Only an empty folder can be deleted.',
+    'qb_sets_capacity' => 'At most :max sets are possible with this method.',
+    'qb_no_such_set' => 'This paper has no such set.',
     'qb_import_too_many_pages' => 'At most :max pages can be read at once.',
     'qb_import_nothing_changed' => 'Nothing was changed.',
     'qb_import_done' => 'This question is already imported.',

@@ -5,8 +5,8 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\QbQuestionPublicResource;
-use App\Models\{AuditLog, QbPaper, QbPaperItem, QbPaperSection, QbQuestion, QbUnlock, User};
-use App\Services\{PdfService, QbPricingService};
+use App\Models\{AuditLog, QbPaper, QbPaperItem, QbPaperSection, QbPaperVariant, QbQuestion, QbUnlock, User};
+use App\Services\{PdfService, QbPaperSets, QbPricingService};
 use App\Support\{Money, Tenancy};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -84,14 +84,19 @@ class QbPaperController extends Controller
         return response()->json(['success' => true, 'message' => __('messages.deleted')]);
     }
 
-    /** POST /question-bank/papers/{id}/finalize: a paper with at least one question becomes final (printed, no longer edited) */
-    public function finalize(Request $request, int $id)
+    /** POST /question-bank/papers/{id}/finalize {strategy?, set_names?}: a paper with at least one question becomes final (printed,
+     *  no longer edited); D126 (2): its sets are frozen then - strategy options|serial|both (default both), names latin|bangla */
+    public function finalize(Request $request, int $id, QbPaperSets $sets)
     {
         $this->staffGate($request);
         $paper = $this->find($request->user(), $id);
+        $in = $request->validate(['strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES), 'set_names' => 'nullable|in:latin,bangla']);
         if ($paper->status !== 'draft') throw new BusinessException('already final', 'qb_paper_final', 422);
         if ($this->items($paper)->isEmpty()) throw new BusinessException('a paper needs at least one question', 'qb_paper_empty', 422);
-        $paper->update(['status' => 'final']);
+        DB::transaction(function () use ($paper, $sets, $in) {
+            $sets->freeze($paper, $this->sectionList($paper), (int) $paper->sets_count, $in['strategy'] ?? 'both', $in['set_names'] ?? 'latin');
+            $paper->update(['status' => 'final']);
+        });
         AuditLog::record('qb.paper.finalized', $paper, ['total_marks' => $paper->total_marks]);
         return response()->json(['success' => true, 'data' => $this->row($paper->fresh()), 'message' => __('messages.saved')]);
     }
@@ -100,9 +105,12 @@ class QbPaperController extends Controller
     public function pdf(Request $request, int $id, PdfService $pdf)
     {
         $this->staffGate($request);
-        $f = $request->validate(['set' => 'nullable|in:A,B', 'answers' => 'nullable|boolean', 'format' => 'nullable|in:json']);
+        $f = $request->validate(['set' => 'nullable|in:' . implode(',', QbPaperSets::LATIN), 'answers' => 'nullable|boolean', 'format' => 'nullable|in:json',
+            'strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES)]);
         $paper = $this->find($request->user(), $id);
-        $data = $this->printable($paper, $f['set'] ?? 'A', (bool) ($f['answers'] ?? false));
+        $number = array_search($f['set'] ?? 'A', QbPaperSets::LATIN, true) + 1;
+        if ($number > max(1, (int) $paper->sets_count)) throw new BusinessException('this paper has no such set', 'qb_no_such_set', 422);
+        $data = $this->printable($paper, $number, (bool) ($f['answers'] ?? false), $f['strategy'] ?? 'both');
         if (($f['format'] ?? null) === 'json') return response()->json(['success' => true, 'data' => $data]);
         $bytes = $pdf->render('pdf.qb-paper', ['paper' => $data], qbankFigures: true);   // D118 (4): graphs and diagrams drawn
         return response($bytes, 200, ['Content-Type' => 'application/pdf',
@@ -115,7 +123,7 @@ class QbPaperController extends Controller
         $in = $request->validate([
             'title' => 'required|string|max:200', 'exam_name' => 'nullable|string|max:200', 'program_id' => 'nullable|integer|exists:programs,id',
             'qb_subject_id' => 'nullable|integer', 'duration_minutes' => 'nullable|integer|min:1|max:600', 'instructions_json' => 'nullable|array',
-            'instructions_json.text' => 'nullable|string|max:2000', 'sets_count' => 'nullable|integer|in:1,2',
+            'instructions_json.text' => 'nullable|string|max:2000', 'sets_count' => 'nullable|integer|min:1|max:' . QbPaperSets::MAX,   // D126 (2)
             'sections' => 'required|array|min:1|max:20', 'sections.*.title' => 'required|string|max:200', 'sections.*.instruction' => 'nullable|string|max:500',
             'sections.*.items' => 'present|array|max:100', 'sections.*.items.*.qb_question_id' => 'required|integer',
             'sections.*.items.*.marks' => ['required', 'regex:/^\d{1,3}(\.\d{1,2})?$/'],
@@ -173,33 +181,46 @@ class QbPaperController extends Controller
                    'items' => ($items[$s->id] ?? collect())->sortBy('sort_order')->map(fn ($i) => ['qb_question_id' => (int) $i->qb_question_id, 'marks' => $i->marks])->values()])->values()];
     }
 
-    /** The paper as printed: set B shuffles questions inside each section and MCQ options, seeded by the paper (the same every time) */
-    private function printable(QbPaper $paper, string $set, bool $answers): array
+    /** The paper as printed (D126 (2)): a final paper prints its frozen set; a draft previews the set computed the same way */
+    private function printable(QbPaper $paper, int $number, bool $answers, string $strategy): array
     {
         $row = $this->row($paper);
+        $frozen = $paper->status === 'final' ? QbPaperVariant::where('qb_paper_id', $paper->id)->where('variant_number', $number)->first() : null;
+        $sets = app(QbPaperSets::class);
+        $list = $this->sectionList($paper);
+        $layout = $frozen?->layout_json ?? $sets->layout($paper, $list, $number, $strategy, $sets->optionCounts($list));
         $questions = QbQuestion::whereIn('id', collect($row['sections'])->flatMap(fn ($s) => collect($s['items'])->pluck('qb_question_id')))->get()->keyBy('id');
         $open = QbUnlock::where('item_type', 'question')->whereIn('item_id', $questions->keys())->pluck('item_id')->map(fn ($v) => (int) $v)->all();
-        $shuffle = function (array $list, string $salt) use ($set, $paper) {
-            if ($set === 'A' || count($list) < 2) return $list;
-            mt_srand(crc32("qb-paper:{$paper->id}:{$set}:{$salt}"));
-            for ($i = count($list) - 1; $i > 0; $i--) { $j = mt_rand(0, $i); [$list[$i], $list[$j]] = [$list[$j], $list[$i]]; }
-            mt_srand();
-            return $list;
-        };
+        $marks = collect($row['sections'])->flatMap(fn ($s) => collect($s['items'])->mapWithKeys(fn ($it) => [$it['qb_question_id'] => $it['marks']]));
+        $bySection = collect($row['sections'])->keyBy('id');
         $n = 0;
-        $sections = collect($row['sections'])->map(function ($s) use ($questions, $open, $answers, $shuffle, &$n) {
-            $items = $shuffle($s['items']->all(), "s{$s['id']}");
-            return ['title' => $s['title'], 'instruction' => $s['instruction'], 'items' => collect($items)->map(function ($it) use ($questions, $open, $answers, $shuffle, &$n) {
+        $key = [];
+        $sections = collect($layout)->map(function ($ls) use ($questions, $open, $answers, $marks, $bySection, &$n, &$key) {
+            $s = $bySection[$ls['section_id']] ?? ['title' => '', 'instruction' => null];
+            return ['title' => $s['title'], 'instruction' => $s['instruction'], 'items' => collect($ls['items'])->filter(fn ($it) => isset($questions[$it['qb_question_id']]))->map(function ($it) use ($questions, $open, $answers, $marks, &$n, &$key) {
                 $q = QbQuestionPublicResource::make($questions[$it['qb_question_id']], $answers && in_array($it['qb_question_id'], $open, true));
-                $opts = $shuffle($q['options'], "q{$q['id']}");
+                $opts = $it['options'] === [] ? $q['options'] : array_values(array_filter(array_map(fn ($k) => $q['options'][$k] ?? null, $it['options'])));
                 foreach ($opts as $k => &$o) $o['label'] = self::LABELS[$k] ?? (string) ($k + 1);   // relabelled by position
-                return ['no' => ++$n, 'marks' => $it['marks'], 'question' => ['options' => $opts] + $q];
-            })->all()];
+                unset($o);
+                $no = ++$n;
+                if (!empty($it['correct']) && $answers && in_array($it['qb_question_id'], $open, true)) $key[] = ['no' => $no, 'correct' => $it['correct']];   // bought only, like the answers
+                return ['no' => $no, 'marks' => $marks[$it['qb_question_id']] ?? $it['marks'], 'question' => ['options' => $opts] + $q];
+            })->values()->all()];
         })->all();
         return $paper->only(['id', 'title', 'exam_name', 'duration_minutes', 'total_marks']) + ['instructions' => $paper->instructions_json['text'] ?? null,
-            'set' => $set, 'answers' => $answers, 'institution' => Tenancy::current()->name, 'sections' => $sections,
+            'set' => QbPaperSets::LATIN[$number - 1], 'set_code' => $frozen?->code ?? QbPaperSets::LATIN[$number - 1], 'sets_count' => (int) $paper->sets_count,
+            'answers' => $answers, 'institution' => Tenancy::current()->name, 'sections' => $sections,
+            'answer_key' => $answers ? $key : [],   // D126 (4): the set's own key (frozen sets only), with the answers copy
             // R2.1.2: only the pictures the printed questions may show (the public shape already left out answer-only ones)
             'media' => self::pictures($questions->keys()->all(), collect($sections)->flatMap(fn ($s) => collect($s['items'])->flatMap(fn ($it) => array_column($it['question']['media'], 'id')))->all())];
+    }
+
+    /** the paper's sections with their items in the order built (the input of every set) */
+    private function sectionList(QbPaper $paper): array
+    {
+        $items = $this->items($paper)->groupBy('qb_paper_section_id');
+        return QbPaperSection::where('qb_paper_id', $paper->id)->orderBy('sort_order')->orderBy('id')->get()->map(fn ($s) => ['id' => $s->id,
+            'items' => ($items[$s->id] ?? collect())->sortBy('sort_order')->map(fn ($i) => ['qb_question_id' => (int) $i->qb_question_id, 'marks' => $i->marks])->values()->all()])->all();
     }
 
     /** QB.14: the questions' own pictures as data: URIs for the PDF (only media linked to these questions; a large file is left out) */
