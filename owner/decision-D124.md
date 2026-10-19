@@ -1,0 +1,17 @@
+# D124 — draft for the owner (copy the row below into docs/LOCKED-DECISIONS.md right after the D123 row)
+
+| D124 | R2.1.4 scope: PDF question extraction into the same staging review | Owner approved (2026-10-19). R2.1.4 may be built, after R2.1.3, with this refined scope; screens keep qbank's look and order (D110: upload with page range, then the staging review). (1) Extraction is local, as in qbank: text is read from the PDF on the server with `smalot/pdfparser` v2.12.x (LGPL-3.0, pure PHP, qbank's own version) - the one new composer package, added only in the R2.1.4 implementation commit (G7 exception for this package only); no outside AI/OCR service, no network. Legacy Bijoy-encoded Bangla text is converted to Unicode as qbank does. (2) Splitting follows qbank's rules: numbered questions (১. / 1. / প্রশ্ন ১ / Q1), options ক-ঘ / A-H (also inline), answer and explanation lines, creative ক-ঘ parts, section headings (বহুনির্বাচনী / সৃজনশীল / MCQ / Creative), trailing marks; anything else stays as plain text of a short question; a guess is never a silent type change - an uncertain split is marked for review. (3) Pages: the uploader may choose a page range; a page with fewer than 25 meaningful characters is unreadable; a PDF with none readable is `needs_ocr` (shown plainly, nothing imported), one with some is `hybrid` and the unreadable pages are listed by number - never reported as imported. OCR of scanned PDFs is not part of R2.1.4. (4) Staging reuses D123's tables and review: `qb_import_batches.format` gains `pdf`; a new migration adds `page_from`, `page_to`, `document_kind` (text/hybrid/scanned) and `unreadable_pages` (JSON) to `qb_import_batches` and `page_number` to `qb_import_records` (provenance: each staged question shows its source page, and the reviewer can open the PDF at that page); schema.sql updated in the same commit. Quick edit, bulk settings, duplicate choice, error report and "import selected" (drafts only, never published) are the D123 ones; a reviewer may also reject a staged question (kept, greyed, never imported). Math found in the text is flagged for a LaTeX check, never rewritten. Figures are not cut out of the PDF: a "picture here" mark is kept on the staged record and the writer adds the image in the editor. (5) Limits in config: 50 MB per PDF (qbank's), 300 pages, the same 10,000-question batch cap; parsing runs in the queue. (6) Roles: content writers and the Super Admin, as D123. (7) Acceptance: text, hybrid and scanned fixture PDFs (Bangla and English, MCQ + creative + short, a Bijoy page, math) give the expected questions, page numbers, unreadable-page list and statuses; selected-only finalize; drafts reopen in the editor. Implementation commits carry `Change-Request: D124`; the guard map gains `R2.1.4 -> D124` in a separate guard commit merged to main first (as D123). |
+
+## How to add it (Windows PowerShell, one command per line)
+
+    cd "E:\Projects\School Management"
+    git checkout claude/elegant-cori-gw2mw5
+    git pull --no-rebase origin claude/elegant-cori-gw2mw5
+    notepad owner\decision-D124.md
+    notepad docs\LOCKED-DECISIONS.md
+    # Ctrl+F "| D123 |", press End, Enter, Ctrl+V the row, Ctrl+S, close
+    git status
+    # must show only: modified: docs/LOCKED-DECISIONS.md
+    git add docs/LOCKED-DECISIONS.md
+    git commit -m "decision: D124 R2.1.4 PDF extraction scope" -m "Change-Request: D124"
+    git push origin claude/elegant-cori-gw2mw5
