@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { loadMathlive, UNSAFE_LATEX } from './mathlive'
 import { parseRich } from './richText'
+import { graphImage } from './qbankTools'
 
 // Question text with inline maths ($...$ or qbank's \( ... \)) and, since D72 (QB.12), qbank's formatting vocabulary. The text is
 // read into allowlisted nodes (richText.js) and built as React elements - plain text stays React text (escaped); each maths piece
@@ -24,8 +26,28 @@ function Maths({ text, ready }) {
   })
 }
 
+// D118: qbank's graph token, drawn by qbank's own renderer into an <img> (an SVG image runs no script)
+function Graph({ token }) {
+  const { t } = useTranslation()
+  const [src, setSrc] = useState(null)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    let on = true
+    graphImage(token).then((u) => { if (!on) return; if (u) setSrc(u); else setFailed(true) }).catch(() => on && setFailed(true))
+    return () => { on = false }
+  }, [token])
+  if (failed) return <span className="text-content-muted" data-qb-graph="unreadable">[{t('qbed.graph_unreadable')}]</span>
+  if (!src) return <span className="text-content-muted" data-qb-graph="loading">…</span>
+  return <img src={src} alt={t('qbed.graph')} data-qb-graph="drawn" className="my-2 block max-w-full" />
+}
+
+function Text({ text, ready }) {
+  const parts = String(text).split(/(\[\[qmx-graph:[A-Za-z0-9_-]{10,60000}\]\])/g).filter(Boolean)
+  return parts.map((p, i) => p.startsWith('[[qmx-graph:') ? <Graph key={i} token={p} /> : <Maths key={i} text={p} ready={ready} />)
+}
+
 function Node({ n, ready, media }) {
-  if (n.text !== undefined) return <Maths text={n.text} ready={ready} />
+  if (n.text !== undefined) return <Text text={n.text} ready={ready} />
   const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} media={media} />)
   const a = n.attrs
   switch (n.tag) {

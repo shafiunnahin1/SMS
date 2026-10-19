@@ -1129,6 +1129,9 @@
    "note": "Note / reason"
   },
   "qbed": {
+   "graph": "Graph",
+   "graph_unreadable": "graph could not be drawn",
+   "graph_failed": "The graph tool could not open.",
    "ribbon": "Editor toolbar",
    "bold": "Bold",
    "italic": "Italic",
