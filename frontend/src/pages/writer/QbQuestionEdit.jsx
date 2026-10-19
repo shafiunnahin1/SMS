@@ -20,7 +20,7 @@ import QbStatus from '../../features/qb/QbStatus'
 import MathText from '../../features/qb/MathText'
 import Ribbon from '../../features/qb/Ribbon'
 import { insertAt, insertPicture, pushValueHistory, stepValueHistory } from '../../features/qb/formatting'
-import { pickGraph } from '../../features/qb/qbankTools'
+import { openDiagramPicker, pickGraph } from '../../features/qb/qbankTools'
 import { transformImageFile } from '../../features/qb/imageTransforms'
 import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } from '../../features/qb/questionMeta'
 import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
@@ -142,6 +142,12 @@ export default function QbQuestionEdit() {
       const token = await pickGraph(a.el)
       if (token) run(insertAt, `\n${token}\n`)
     } catch { useUiStore.getState().addToast(t('qbed.graph_failed'), 'error') }
+  }
+  // D118: qbank's diagram picker; the chosen editor writes its token into the field (setRangeText + an input event the form reads)
+  const insertDiagram = async () => {
+    const a = active.current
+    if (!a) { useUiStore.getState().addToast(t('qbed.pick_field'), 'error'); return }
+    try { await openDiagramPicker(a.el) } catch { useUiStore.getState().addToast(t('qbed.diagram_failed'), 'error') }
   }
   const readActive = () => {
     const field = document.activeElement
@@ -272,7 +278,7 @@ export default function QbQuestionEdit() {
         </nav>
 
         <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane" onDragOver={allowImageDrop} onDrop={dropImage}>
-          {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} onGraph={insertGraph} imageTransform={pictureTransform} onImageTransformChange={setPictureTransform}
+          {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} onGraph={insertGraph} onDiagram={insertDiagram} imageTransform={pictureTransform} onImageTransformChange={setPictureTransform}
             onUndo={() => applyHistory('undo')} onRedo={() => applyHistory('redo')}
             canUndo={history.undo.some(entry => entry.name === activeField)} canRedo={history.redo.some(entry => entry.name === activeField)}
             onReset={() => { reset(); setHistory({ undo: [], redo: [] }); valueSnapshots.current.clear(); active.current = null; setActiveField(null) }} disabled={!canEdit} saving={isSubmitting} />}

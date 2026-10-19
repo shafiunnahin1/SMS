@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Baseline, Bold, CaseLower, CaseSensitive, CaseUpper, Highlighter, ImagePlus, IndentIncrease,
-  Italic, List, ListOrdered, LineChart, ListTree, PaintBucket, RemoveFormatting, RotateCcw, Save, Strikethrough, Subscript, Superscript, Table, Underline } from 'lucide-react'
+  Italic, List, ListOrdered, LineChart, ListTree, Shapes, PaintBucket, RemoveFormatting, RotateCcw, Save, Strikethrough, Subscript, Superscript, Table, Underline } from 'lucide-react'
 import Button from '../../components/Button'
 import DirIcon from '../../components/DirIcon'
 import Modal from '../../ui/variants/Modal'
@@ -24,7 +24,7 @@ const Sep = () => <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
 
 // D72 (QB.12): qbank's editor ribbon. Every action works on the text field the writer was last in (run(fn, ...args) on the page
 // applies it to that field's value and selection); maths, pictures, save and reset are the page's own actions.
-export default function Ribbon({ run, readActive, onImage, onGraph, imageTransform, onImageTransformChange, onReset, onUndo, onRedo, canUndo, canRedo, disabled, saving }) {
+export default function Ribbon({ run, readActive, onImage, onGraph, onDiagram, imageTransform, onImageTransformChange, onReset, onUndo, onRedo, canUndo, canRedo, disabled, saving }) {
   const { t } = useTranslation()
   const [ul, setUl] = useState(LIST_STYLES.ul[0])
   const [ol, setOl] = useState(LIST_STYLES.ol[0])
@@ -102,6 +102,7 @@ export default function Ribbon({ run, readActive, onImage, onGraph, imageTransfo
         <Sep />
         <Tool label={t('qbed.table')} onClick={openTable} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
         {onGraph && <Tool label={t('qbed.graph')} onClick={onGraph} data-action="graph"><LineChart aria-hidden="true" className="h-4 w-4" /></Tool>}
+        {onDiagram && <Tool label={t('qbed.diagram')} onClick={onDiagram} data-action="diagram"><Shapes aria-hidden="true" className="h-4 w-4" /></Tool>}
         <label className="inline-flex h-9 cursor-pointer items-center rounded-token px-2 hover:bg-primary-soft" title={t('qbed.image')}>
           <ImagePlus aria-hidden="true" className="h-4 w-4" /><span className="sr-only">{t('qbed.image')}</span>
           <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={e => onImage(e, { width: Number(pictureWidth), align: pictureAlign, position: picturePosition, paragraph: Number(pictureParagraph) })} name="picture" className="sr-only" />

@@ -1129,6 +1129,9 @@
    "note": "Note / reason"
   },
   "qbed": {
+   "diagram": "Diagram",
+   "diagram_unreadable": "diagram could not be drawn",
+   "diagram_failed": "The diagram tools could not open.",
    "graph": "Graph",
    "graph_unreadable": "graph could not be drawn",
    "graph_failed": "The graph tool could not open.",

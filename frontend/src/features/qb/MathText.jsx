@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { loadMathlive, UNSAFE_LATEX } from './mathlive'
 import { parseRich } from './richText'
-import { graphImage } from './qbankTools'
+import { diagramImage, graphImage } from './qbankTools'
 
 // Question text with inline maths ($...$ or qbank's \( ... \)) and, since D72 (QB.12), qbank's formatting vocabulary. The text is
 // read into allowlisted nodes (richText.js) and built as React elements - plain text stays React text (escaped); each maths piece
@@ -26,24 +26,26 @@ function Maths({ text, ready }) {
   })
 }
 
-// D118: qbank's graph token, drawn by qbank's own renderer into an <img> (an SVG image runs no script)
+// D118: qbank's graph or diagram token, drawn by qbank's own renderer into an <img> (an SVG image runs no script)
 function Graph({ token }) {
   const { t } = useTranslation()
   const [src, setSrc] = useState(null)
   const [failed, setFailed] = useState(false)
+  const diagram = token.startsWith('[[qmx-diagram:')
   useEffect(() => {
     let on = true
-    graphImage(token).then((u) => { if (!on) return; if (u) setSrc(u); else setFailed(true) }).catch(() => on && setFailed(true))
+    ;(diagram ? diagramImage(token) : graphImage(token)).then((u) => { if (!on) return; if (u) setSrc(u); else setFailed(true) }).catch(() => on && setFailed(true))
     return () => { on = false }
-  }, [token])
-  if (failed) return <span className="text-content-muted" data-qb-graph="unreadable">[{t('qbed.graph_unreadable')}]</span>
-  if (!src) return <span className="text-content-muted" data-qb-graph="loading">…</span>
-  return <img src={src} alt={t('qbed.graph')} data-qb-graph="drawn" className="my-2 block max-w-full" />
+  }, [token, diagram])
+  const kind = diagram ? 'diagram' : 'graph'
+  if (failed) return <span className="text-content-muted" data-qb-graph="unreadable" data-kind={kind}>[{t(`qbed.${kind}_unreadable`)}]</span>
+  if (!src) return <span className="text-content-muted" data-qb-graph="loading" data-kind={kind}>…</span>
+  return <img src={src} alt={t(`qbed.${kind}`)} data-qb-graph="drawn" data-kind={kind} className="my-2 block max-w-full" />
 }
 
 function Text({ text, ready }) {
-  const parts = String(text).split(/(\[\[qmx-graph:[A-Za-z0-9_-]{10,60000}\]\])/g).filter(Boolean)
-  return parts.map((p, i) => p.startsWith('[[qmx-graph:') ? <Graph key={i} token={p} /> : <Maths key={i} text={p} ready={ready} />)
+  const parts = String(text).split(/(\[\[qmx-graph:[A-Za-z0-9_-]{10,60000}\]\]|\[\[qmx-diagram:[A-Za-z0-9_-]{10,200000}\]\])/g).filter(Boolean)
+  return parts.map((p, i) => /^\[\[qmx-(graph|diagram):/.test(p) ? <Graph key={i} token={p} /> : <Maths key={i} text={p} ready={ready} />)
 }
 
 function Node({ n, ready, media }) {
