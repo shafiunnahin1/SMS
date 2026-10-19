@@ -8,7 +8,7 @@ import Card from '../../components/Card'
 import Button from '../../components/Button'
 import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
-import { Select, Textarea } from '../../components/FormField'
+import { Input, Select, Textarea } from '../../components/FormField'
 import { fmtNumber as formatNumber } from '../../i18n/format'
 import { multipart } from '../../features/students/formData'
 
@@ -21,9 +21,18 @@ export default function QbImports() {
   const [files, setFiles] = useState([])
   const [text, setText] = useState('')
   const [format, setFormat] = useState('json')
+  const [range, setRange] = useState({ from: '', to: '' })
+  const isPdf = files.length === 1 && /\.pdf$/i.test(files[0].name)
   const list = useQuery({ queryKey: ['writer', 'imports'], queryFn: () => api.get('/writer/imports').then(r => r.data.data) })
   const send = useMutation({
     mutationFn: () => {
+      if (isPdf) {                                       // D124: one PDF, with an optional page range
+        const fd = new FormData()
+        fd.append('pdf', files[0])
+        if (range.from) fd.append('page_from', range.from)
+        if (range.to) fd.append('page_to', range.to)
+        return api.post('/writer/imports', fd, multipart).then(r => r.data.data)
+      }
       if (files.length) {
         const fd = new FormData()
         files.forEach(f => fd.append('files[]', f))
@@ -49,9 +58,15 @@ export default function QbImports() {
         <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); send.mutate() }}>
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium">{t('qbi.files')}</span>
-            <input type="file" name="files" multiple accept=".json,.toon,.txt,application/json,text/plain" onChange={e => setFiles([...e.target.files])} />
+            <input type="file" name="files" multiple accept=".json,.toon,.txt,.pdf,application/json,text/plain,application/pdf" onChange={e => setFiles([...e.target.files])} />
             <span className="text-xs text-content-muted">{t('qbi.files_hint')}</span>
           </label>
+          {isPdf && (
+            <div className="grid max-w-md gap-3 sm:grid-cols-2" data-testid="qbi-range">
+              <Input label={t('qbi.page_from')} name="page_from" type="number" min="1" ltr value={range.from} onChange={e => setRange({ ...range, from: e.target.value })} />
+              <Input label={t('qbi.page_to')} name="page_to" type="number" min="1" ltr value={range.to} onChange={e => setRange({ ...range, to: e.target.value })} />
+            </div>
+          )}
           {files.length === 0 && (
             <>
               <Textarea label={t('qbi.paste')} name="text" rows={6} dir="ltr" value={text} onChange={e => setText(e.target.value)} />

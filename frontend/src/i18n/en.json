@@ -1262,6 +1262,20 @@
    "comma_hint": "Comma-separated, in the same order"
   },
   "qbi": {
+   "page_from": "First page",
+   "page_to": "Last page",
+   "needs_ocr": "No page of this PDF has readable text (a scanned PDF). Make a searchable PDF and upload it again. Nothing was imported.",
+   "pdf_pages": "Pages {{from}}–{{to}}",
+   "kind": {
+    "text": "text PDF",
+    "hybrid": "some pages could not be read",
+    "scanned": "scanned PDF"
+   },
+   "unreadable": "Unreadable: page {{pages}}",
+   "open_pdf": "Open the PDF",
+   "page": "Page {{page}}",
+   "reject": "Reject",
+   "unreject": "Undo reject",
    "title": "JSON/TOON import",
    "subtitle": "Import many questions at once - checked first, then the chosen ones go to the question bank as drafts",
    "files": "Choose one or more .json/.toon/.txt files",
@@ -1280,7 +1294,8 @@
     "parsing": "Reading",
     "ready": "Checked",
     "failed": "Failed",
-    "finalized": "Done"
+    "finalized": "Done",
+    "needs_ocr": "Scanned PDF - needs OCR"
    },
    "review_title": "Check before importing",
    "back": "All imports",

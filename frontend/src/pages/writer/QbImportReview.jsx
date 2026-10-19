@@ -57,6 +57,11 @@ export default function QbImportReview() {
     a.click()
     URL.revokeObjectURL(a.href)
   }
+  const openSource = async (page) => {                 // D124: the uploaded PDF at the question's page
+    const blob = (await api.get(`/writer/imports/${id}/source.pdf`, { responseType: 'blob' })).data
+    window.open(`${URL.createObjectURL(blob)}#page=${page}`, '_blank', 'noopener')
+  }
+  const rejected = (r) => r.errors.length === 1 && r.errors[0].message === 'rejected by the reviewer'
   const finalize = () => openConfirm({ title: t('qbi.import_selected'), description: t('qbi.import_confirm'), onConfirm: async () => {
     const r = await act.mutateAsync({ url: '/finalize' })
     setResult(r.result)
@@ -84,6 +89,14 @@ export default function QbImportReview() {
         </dl>
         {b.status === 'parsing' && <p className="mt-2 text-sm">{t('qbi.parsing')} <Button variant="ghost" onClick={() => act.mutate({ url: '/resume' })}>{t('qbi.resume')}</Button></p>}
         {b.status === 'failed' && <p className="mt-2 text-sm text-red-600" role="alert">{t('qbi.status.failed')}: <span dir="ltr">{b.error}</span></p>}
+        {b.status === 'needs_ocr' && <p className="mt-2 text-sm text-red-600" role="alert" data-testid="qbi-needs-ocr">{t('qbi.needs_ocr')}</p>}
+        {b.pdf && (
+          <p className="mt-2 text-sm" data-testid="qbi-pdf" data-kind={b.pdf.document_kind}>
+            {t('qbi.pdf_pages', { from: n(b.pdf.page_from ?? 1), to: n(b.pdf.page_to ?? 1) })} · {t(`qbi.kind.${b.pdf.document_kind ?? 'text'}`)}
+            {b.pdf.unreadable_pages.length > 0 && <> · {t('qbi.unreadable', { pages: b.pdf.unreadable_pages.map(n).join(', ') })}</>}
+            {' '}<Button variant="ghost" onClick={() => openSource(1)}>{t('qbi.open_pdf')}</Button>
+          </p>
+        )}
         {b.counts.invalid > 0 && <Button variant="ghost" className="mt-2" onClick={download}>{t('qbi.errors_csv')}</Button>}
         {result && <p className="mt-2 text-sm" data-testid="qbi-result">{t('qbi.result', { imported: n(result.imported), invalid: n(result.invalid), dupes: n(result.duplicate_unresolved), skipped: n(result.skipped) })}</p>}
       </Card>
@@ -125,11 +138,13 @@ export default function QbImportReview() {
             {records.isPending ? <Loader type="list" /> : records.isError ? <ErrorState onRetry={records.refetch} /> : records.data.data.length === 0 ? <EmptyState title={t('qbi.no_records')} /> : (
               <ol className="flex flex-col gap-2">
                 {records.data.data.map(r => (
-                  <li key={r.id} data-record={r.record} data-valid={r.errors.length === 0 ? '1' : '0'} className="flex flex-col gap-2 rounded-token [border:1px_solid_var(--line)] p-3">
+                  <li key={r.id} data-record={r.record} data-valid={r.errors.length === 0 ? '1' : '0'} data-rejected={rejected(r) ? '1' : '0'}
+                    className={`flex flex-col gap-2 rounded-token [border:1px_solid_var(--line)] p-3 ${rejected(r) ? 'opacity-60' : ''}`}>
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <input type="checkbox" aria-label={t('qbi.select')} checked={r.selected} disabled={r.errors.length > 0 || Boolean(r.qb_question_id)}
                         onChange={e => act.mutate({ url: '/select', body: { record_ids: [r.id], selected: e.target.checked } })} />
                       <span className="font-semibold" dir="ltr">#{n(r.record)}</span>
+                      {r.page && <button type="button" className="text-primary-fg underline" onClick={() => openSource(r.page)} data-testid="qbi-page">{t('qbi.page', { page: n(r.page) })}</button>}
                       <span>{typeName(r.type)}</span>
                       <span className="text-content-muted">{name(subjectOf(r.payload.subject)) || r.payload.subject?.name || ''}</span>
                       {r.has_math && <span className="rounded-token bg-surface-muted px-2">{t('qbi.has_math')}</span>}
@@ -153,7 +168,12 @@ export default function QbImportReview() {
                       <QuickEdit record={r} types={types.data} tree={tree.data} name={name} t={t} saving={act.isPending}
                         onCancel={() => setEditing(null)}
                         onSave={async (changes) => { await act.mutateAsync({ method: 'patch', url: `/records/${r.id}`, body: changes }); setEditing(null) }} />
-                    ) : <div><Button variant="ghost" onClick={() => setEditing(r)} data-testid="qbi-edit">{t('qbi.quick_edit')}</Button></div>)}
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {!rejected(r) && <Button variant="ghost" onClick={() => setEditing(r)} data-testid="qbi-edit">{t('qbi.quick_edit')}</Button>}
+                        {b.format === 'pdf' && <Button variant="ghost" data-testid="qbi-reject" onClick={() => act.mutate({ url: `/records/${r.id}/reject`, body: { rejected: !rejected(r) } })}>{rejected(r) ? t('qbi.unreject') : t('qbi.reject')}</Button>}
+                      </div>
+                    ))}
                   </li>
                 ))}
               </ol>
