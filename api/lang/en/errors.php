@@ -89,6 +89,10 @@ return [
     'wallet_balance_too_low' => 'The institution wallet does not have enough taka - recharge it first.',   // QB.7
     'qb_paper_unbought'     => 'Some questions are not bought yet - buy them to use them in a paper.',   // QB.8
     'qb_paper_final'        => 'A final paper cannot be changed or deleted.',   // QB.8
+    'qb_omr_paper_not_final' => 'An OMR form can only be configured for a final paper.',
+    'qb_omr_no_mcq' => 'This paper has no multiple-choice questions for an OMR form.',
+    'qb_omr_option_mismatch' => 'Every multiple-choice question must have the selected number of options.',
+    'qb_omr_locked' => 'This OMR layout is generated and locked. Unlock it to create a new layout version.',
     'qb_paper_empty'        => 'Add at least one question first.',   // QB.8
     'qb_paper_duplicate'    => 'A question appears twice in the paper.',   // QB.8
     'qb_quiz_questions'     => 'A quiz takes only published, auto-marked questions (MCQ, true/false, fill in the gap, matching). :ids',   // QB.10

@@ -95,6 +95,25 @@ class DepartmentRouteInventoryTest extends TestCase
         $this->assertNull($resolver->resolve(Request::create('/api/v1/programs')));
     }
 
+    public function test_d127_omr_form_routes_are_principal_only_and_match_live_routes(): void
+    {
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        $this->assertCount(4, DepartmentRouteCatalog::D127);
+
+        foreach (DepartmentRouteCatalog::D127 as $entry) {
+            $this->assertSame(['D127', 'preserve_nonstaff_boundary', [], ['admin', 'teacher']], [
+                $entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles'],
+            ]);
+            foreach (array_diff(explode('|', $entry['method']), ['HEAD']) as $method) {
+                $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+                    ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array($method, $candidate->methods(), true));
+                $this->assertNotNull($route, $method . ' ' . $entry['uri']);
+                $this->assertSame($entry['action'], ltrim($route->getActionName(), '\\'));
+                $this->assertSame('preserve_nonstaff_boundary', $resolver->resolve($this->request($route, $method))['resolved_mode']);
+            }
+        }
+    }
+
     public function test_d100_inventory_routes_match_live_routes_and_stay_principal_only(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);

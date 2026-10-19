@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\{FeeController, FeeRefundController};
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbBlueprintController, QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbImportController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbPaperController, QbPaperFolderController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbBlueprintController, QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbImportController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbOmrFormController, QbPaperController, QbPaperFolderController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -514,6 +514,12 @@ Route::prefix('v1')->group(function () {
             Route::delete('/papers/{id}',                 [QbPaperController::class, 'destroy'])->whereNumber('id');
             Route::post('/papers/{id}/finalize',          [QbPaperController::class, 'finalize'])->whereNumber('id');
             Route::get('/papers/{id}/pdf',                [QbPaperController::class, 'pdf'])->whereNumber('id');
+            Route::middleware('role:admin,teacher')->group(function () {   // D127: admin and teachers manage OMR forms, not department staff
+                Route::get('/papers/{id}/omr-form', [QbOmrFormController::class, 'show'])->whereNumber('id');
+                Route::put('/papers/{id}/omr-form', [QbOmrFormController::class, 'save'])->whereNumber('id');
+                Route::post('/papers/{id}/omr-form/generate', [QbOmrFormController::class, 'generate'])->whereNumber('id');
+                Route::post('/papers/{id}/omr-form/unlock', [QbOmrFormController::class, 'unlock'])->whereNumber('id');
+            });
             // R2.1.5 (D126 (1)): qbank's folders for papers - the head teacher and teachers (not a D90 staff duty)
             Route::middleware('role:admin,teacher')->group(function () {
                 Route::get('/paper-folders',              [QbPaperFolderController::class, 'index']);
