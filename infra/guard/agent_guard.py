@@ -44,7 +44,7 @@ def empty_tree(root):
     return EMPTY_TREE
 
 # D111 clause 7: R2.1 tasks whose refined scope a locked decision approved -> (decision, dependencies); all other R2.1 tasks stay blocked
-R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1'])}
+R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1']), 'R2.1.3': ('D123', ['R2.1.2'])}
 # D119: qbank's tool files copied unchanged (D118); C7 and C11 skip them, a sha256 manifest pins them instead
 QBANK_VENDOR = 'frontend/public/vendor/qbank/'
 QBANK_MANIFEST = QBANK_VENDOR + 'MANIFEST.sha256'
@@ -52,7 +52,7 @@ QBANK_MANIFEST = QBANK_VENDOR + 'MANIFEST.sha256'
 TESS_VENDOR = 'frontend/public/vendor/tesseract/'
 PINNED = {QBANK_VENDOR: 'D119', TESS_VENDOR: 'D122'}
 # D115: the one new table an approved R2.1 task may create, with the decision that approved it
-R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}}
+R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}, 'R2.1.3': {'qb_import_batches': 'D123', 'qb_import_records': 'D123'}}
 
 def show(root, rev, path):
     r = subprocess.run(['git', '-C', root, 'show', f'{rev}:{path}'], capture_output=True, text=True, encoding='utf-8', errors='replace')
