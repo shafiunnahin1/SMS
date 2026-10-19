@@ -56,6 +56,7 @@ const PlatformSettings  = lazy(() => import('../pages/super/PlatformSettings'))
 const QbCurriculum      = lazy(() => import('../pages/super/QbCurriculum'))
 const QbWriters         = lazy(() => import('../pages/super/QbWriters'))
 const QbPricing         = lazy(() => import('../pages/super/QbPricing'))
+const QbBlueprints      = lazy(() => import('../pages/super/QbBlueprints'))   // R2.1.5 (D126 (3))
 const QbDashboard       = lazy(() => import('../pages/writer/QbDashboard'))   // R2.1.1 (D110)
 const QbFinder          = lazy(() => import('../pages/writer/QbFinder'))   // R2.1.2 (D114 (3))
 const QbImports         = lazy(() => import('../pages/writer/QbImports'))   // R2.1.3 (D123)
@@ -179,6 +180,7 @@ export const centralRoutes = [
     { path: 'qb/curriculum', element: S(QbCurriculum) },
     { path: 'qb/writers', element: S(QbWriters) },
     { path: 'qb/pricing', element: S(QbPricing) },   // QB.6
+    { path: 'qb/blueprints', element: S(QbBlueprints) },   // R2.1.5 (D126)
     { path: 'qb/quizzes', element: S(QbQuizAdmin) },   // QB.10
     { path: 'qb/withdrawals', element: S(QbWithdrawals) },   // QB.10b
   ]),

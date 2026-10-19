@@ -962,6 +962,20 @@
    }
   },
   "qbpp": {
+   "n_sets": "{{n}} sets",
+   "from_blueprint": "Start from a blueprint",
+   "no_blueprint": "Without a blueprint",
+   "short": "{{title}}: {{wanted}} needed, {{found}} eligible found",
+   "swap": "Swap",
+   "no_other": "No other eligible question for this rule",
+   "strategy": "How sets are made",
+   "strategies": {
+    "both": "Shuffle questions and options",
+    "options": "Shuffle options only",
+    "serial": "Shuffle question order only"
+   },
+   "set_names": "Set names",
+   "two_columns": "Two columns",
    "papers": "Question papers",
    "new": "New question paper",
    "none": "No question papers yet.",
@@ -1261,6 +1275,30 @@
    "values": "Answers",
    "comma_hint": "Comma-separated, in the same order"
   },
+  "qbpf": {
+   "folders": "Folders",
+   "all": "All papers",
+   "top": "Not in a folder",
+   "folder": "Folder",
+   "move": "Put in a folder",
+   "new": "New folder",
+   "new_inside": "New folder inside this one"
+  },
+  "qbbp": {
+   "title": "Blueprints",
+   "subtitle": "Paper plans: how many questions of which type in each section, and their marks",
+   "new": "New blueprint",
+   "name_bn": "Name (Bangla)",
+   "name_en": "Name (English)",
+   "active": "Active",
+   "rules": "Rules",
+   "count": "Number of questions",
+   "marks_each": "Marks each",
+   "add_rule": "Add a rule",
+   "none": "No blueprints yet",
+   "summary": "{{rules}} rules",
+   "inactive": "inactive"
+  },
   "qbi": {
    "page_from": "First page",
    "page_to": "Last page",
@@ -1484,6 +1522,7 @@
   "প্রশ্ন খুঁজুন": "Find a question",
   "প্রশ্নব্যাংক: প্রশ্ন খুঁজুন": "Question bank: find a question",
   "JSON/TOON আমদানি": "JSON/TOON import",
-  "প্রশ্নব্যাংক: JSON/TOON আমদানি": "Question bank: JSON/TOON import"
+  "প্রশ্নব্যাংক: JSON/TOON আমদানি": "Question bank: JSON/TOON import",
+  "প্রশ্নব্যাংক: ব্লুপ্রিন্ট": "Question bank: blueprints"
  }
 }

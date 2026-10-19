@@ -32,6 +32,10 @@ export default function QbPaperEdit() {
   const [search, setSearch] = useState('')
   const [target, setTarget] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [finalOpts, setFinalOpts] = useState({ strategy: 'both', set_names: 'latin' })   // D126 (2)
+  const [columns, setColumns] = useState(false)
+  const [planInfo, setPlanInfo] = useState(null)       // D126 (3): the blueprint a new paper started from, and what it was short of
+  const blueprints = useQuery({ queryKey: ['qb-blueprints'], queryFn: () => api.get('/question-bank/blueprints').then(r => r.data.data), enabled: isNew })
   const found = useQuery({ queryKey: ['qb-library', 'questions', 'paper', search], queryFn: () => api.get('/question-bank/questions', { params: { q: search || undefined, per_page: 10 } }).then(r => r.data.data) })
   useEffect(() => {
     if (!paper.data) return
@@ -72,9 +76,29 @@ export default function QbPaperEdit() {
     } finally { setBusy(false) }
   }
   const finalize = async () => {
-    try { await api.post(`/question-bank/papers/${id}/finalize`); toast(t('common.saved')); paper.refetch(); qc.invalidateQueries({ queryKey: ['qb-papers'] }) }
+    try { await api.post(`/question-bank/papers/${id}/finalize`, finalOpts); toast(t('common.saved')); paper.refetch(); qc.invalidateQueries({ queryKey: ['qb-papers'] }) }
     catch (e) { toast(e.response?.data?.message, 'error') }
   }
+  const fromBlueprint = async (bpId, exclude = []) => {   // D126 (3): the plan becomes the paper's sections; short rules are shown
+    if (!bpId) return
+    try {
+      const { data } = await api.post(`/question-bank/blueprints/${bpId}/plan`, { exclude_ids: exclude })
+      const bp = data.data.blueprint
+      setV(x => ({ ...x, title: x.title || bp.name_bn, duration_minutes: bp.duration_minutes ? String(bp.duration_minutes) : x.duration_minutes,
+        sections: data.data.sections.map(s => ({ title: s.title, instruction: '', items: s.items.map(i => ({ qb_question_id: i.qb_question_id, marks: String(i.marks), rule: i.rule })) })) }))
+      setPlanInfo({ id: bpId, short: data.data.short, rules: data.data.sections.flatMap(s => s.rules.map(r => ({ ...r, title: s.title }))) })
+      data.data.sections.flatMap(s => s.items).forEach(i => api.get(`/question-bank/questions/${i.qb_question_id}`).then(r => setTexts(x => ({ ...x, [i.qb_question_id]: r.data.data.question_text }))).catch(() => {}))
+    } catch (e) { toast(e.response?.data?.message ?? t('common.error'), 'error') }
+  }
+  const swap = async (si, k) => {                       // another eligible question for the same rule
+    const it = v.sections[si].items[k]
+    const { data } = await api.get(`/question-bank/blueprints/${planInfo.id}/candidates`, { params: { rule: it.rule, used: [...used] } })
+    const next = data.data[0]
+    if (!next) { toast(t('qbpp.no_other'), 'error'); return }
+    setTexts(x => ({ ...x, [next.id]: next.question_text }))
+    section(si, { items: v.sections[si].items.map((x, j) => (j === k ? { ...x, qb_question_id: next.id } : x)) })
+  }
+  const setLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 
   return (
     <div className="flex flex-col gap-4" data-testid="qb-paper-edit">
@@ -84,10 +108,21 @@ export default function QbPaperEdit() {
           <Input label={t('qbpp.title')} value={v.title} onChange={e => set({ title: e.target.value })} name="title" />
           <Input label={t('qbpp.exam_name')} value={v.exam_name} onChange={e => set({ exam_name: e.target.value })} name="exam_name" />
           <Input label={t('qbpp.duration')} ltr inputMode="numeric" value={v.duration_minutes} onChange={e => set({ duration_minutes: e.target.value })} name="duration_minutes" />
-          <Select label={t('qbpp.sets')} options={[{ value: '1', label: t('qbpp.one_set') }, { value: '2', label: t('qbpp.two_sets') }]} value={v.sets_count} onChange={e => set({ sets_count: e.target.value })} name="sets_count" />
+          <Select label={t('qbpp.sets')} options={setLetters.map((_, k) => ({ value: String(k + 1), label: t('qbpp.n_sets', { n: k + 1 }) }))} value={v.sets_count} onChange={e => set({ sets_count: e.target.value })} name="sets_count" />
           <Textarea className="sm:col-span-2" label={t('qbpp.instructions')} rows={2} value={v.instructions} onChange={e => set({ instructions: e.target.value })} name="instructions" />
         </fieldset>
       </Card>
+      {isNew && (blueprints.data ?? []).length > 0 && (
+        <Card className="flex flex-col gap-2" data-testid="paper-blueprint">
+          <Select label={t('qbpp.from_blueprint')} name="blueprint" value={planInfo ? String(planInfo.id) : ''} placeholder={t('qbpp.no_blueprint')}
+            onChange={e => fromBlueprint(e.target.value)} options={blueprints.data.map(b => ({ value: String(b.id), label: `${b.name_bn} (${b.total_marks})` }))} />
+          {planInfo?.short > 0 && (
+            <ul className="text-sm text-red-600" role="alert" data-testid="paper-short">
+              {planInfo.rules.filter(r => r.short > 0).map(r => <li key={r.rule}>{t('qbpp.short', { title: r.title, wanted: r.wanted, found: r.found })}</li>)}
+            </ul>
+          )}
+        </Card>
+      )}
       <div className="grid gap-4 xl:grid-cols-2">
         <div className="flex flex-col gap-3">
           {v.sections.map((s, i) => (
@@ -105,6 +140,7 @@ export default function QbPaperEdit() {
                       <span className="flex-1 min-w-40 line-clamp-2"><MathText text={texts[it.qb_question_id] ?? `#${it.qb_question_id}`} /></span>
                       <Input className="w-20" ltr inputMode="decimal" aria-label={t('qbpp.marks')} value={it.marks} name={`marks-${it.qb_question_id}`}
                         onChange={e => section(i, { items: s.items.map((x, j) => (j === k ? { ...x, marks: e.target.value } : x)) })} />
+                      {planInfo && it.rule !== undefined && <Button variant="ghost" onClick={() => swap(i, k)} data-action="swap">{t('qbpp.swap')}</Button>}
                       <Button variant="secondary" onClick={() => section(i, { items: s.items.filter((_, j) => j !== k) })} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
                     </li>
                   ))}
@@ -115,10 +151,21 @@ export default function QbPaperEdit() {
           {!final && <div><Button variant="secondary" onClick={() => set({ sections: [...v.sections, { title: '', instruction: '', items: [] }] })} data-action="add-section"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.add_section')}</Button></div>}
           <div className="flex flex-wrap justify-end gap-2">
             {!final && <Button onClick={save} loading={busy} data-action="save">{t('common.save')}</Button>}
+            {!isNew && !final && Number(v.sets_count) > 1 && (
+              <div className="flex flex-wrap gap-2" data-testid="paper-set-options">
+                <Select label={t('qbpp.strategy')} name="strategy" value={finalOpts.strategy} onChange={e => setFinalOpts({ ...finalOpts, strategy: e.target.value })}
+                  options={['both', 'options', 'serial'].map(x => ({ value: x, label: t(`qbpp.strategies.${x}`) }))} />
+                <Select label={t('qbpp.set_names')} name="set_names" value={finalOpts.set_names} onChange={e => setFinalOpts({ ...finalOpts, set_names: e.target.value })}
+                  options={[{ value: 'latin', label: 'A, B, C…' }, { value: 'bangla', label: 'ক, খ, গ…' }]} />
+              </div>
+            )}
             {!isNew && !final && <Button variant="secondary" onClick={finalize} data-action="finalize">{t('qbpp.finalize')}</Button>}
-            {!isNew && final && ['A', ...(v.sets_count === '2' ? ['B'] : [])].flatMap(set => [
-              <PrintButton key={set} url={`/question-bank/papers/${id}/pdf`} params={{ set }} filename={`paper-${id}-${set}.pdf`} label={t('qbpp.print_set', { set })} />,
-              <PrintButton key={`${set}a`} url={`/question-bank/papers/${id}/pdf`} params={{ set, answers: 1 }} filename={`paper-${id}-${set}-answers.pdf`} label={t('qbpp.print_answers', { set })} />,
+            {!isNew && final && (
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="columns" checked={columns} onChange={e => setColumns(e.target.checked)} />{t('qbpp.two_columns')}</label>
+            )}
+            {!isNew && final && setLetters.slice(0, Number(v.sets_count) || 1).flatMap(set => [
+              <PrintButton key={set} url={`/question-bank/papers/${id}/pdf`} params={{ set, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}.pdf`} label={t('qbpp.print_set', { set })} />,
+              <PrintButton key={`${set}a`} url={`/question-bank/papers/${id}/pdf`} params={{ set, answers: 1, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}-answers.pdf`} label={t('qbpp.print_answers', { set })} />,
             ])}
           </div>
         </div>

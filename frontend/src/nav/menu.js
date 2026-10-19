@@ -232,6 +232,7 @@ export const MENU = {
     it('qb-concepts','/writer/concepts','প্রশ্নব্যাংক: কনসেপ্ট',{icon:'Sparkles'}),
     it('qb-resources','/writer/resources','প্রশ্নব্যাংক: স্লাইড, বই ও PDF',{icon:'Folder'}),
     it('qb-pricing','/super-admin/qb/pricing','প্রশ্নব্যাংক: দাম ও নিয়ম',{icon:'Tags'}),
+    it('qb-blueprints','/super-admin/qb/blueprints','প্রশ্নব্যাংক: ব্লুপ্রিন্ট',{icon:'ListChecks'}),
     it('qb-quizzes','/super-admin/qb/quizzes','প্রশ্নব্যাংক: কুইজ ও প্যাকেজ',{icon:'ClipboardCheck'}),
     it('qb-withdrawals','/super-admin/qb/withdrawals','প্রশ্নব্যাংক: লেখকের টাকা তোলা',{icon:'Wallet'}),
     it('settings','/super-admin/settings','সেটিংস',{icon:'Settings'}),

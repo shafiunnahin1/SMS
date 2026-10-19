@@ -28,7 +28,7 @@ class QbPaperController extends Controller
         $f = $request->validate(['status' => 'nullable|in:draft,final']);
         $rows = $this->visible($request->user())->when($f['status'] ?? null, fn ($q, $s) => $q->where('status', $s))->orderByDesc('updated_at')->limit(200)->get();
         $authors = User::whereIn('id', $rows->pluck('created_by')->unique())->pluck('name', 'id');
-        return response()->json(['success' => true, 'data' => $rows->map(fn ($p) => $p->only(['id', 'title', 'exam_name', 'total_marks', 'status', 'sets_count', 'created_by'])
+        return response()->json(['success' => true, 'data' => $rows->map(fn ($p) => $p->only(['id', 'title', 'exam_name', 'total_marks', 'status', 'sets_count', 'created_by', 'qb_paper_folder_id'])
             + ['author' => $authors[$p->created_by] ?? null, 'updated_at' => $p->updated_at?->toIso8601String()])->values()]);
     }
 
