@@ -48,6 +48,9 @@ R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R
 # D119: qbank's tool files copied unchanged (D118); C7 and C11 skip them, a sha256 manifest pins them instead
 QBANK_VENDOR = 'frontend/public/vendor/qbank/'
 QBANK_MANIFEST = QBANK_VENDOR + 'MANIFEST.sha256'
+# D122: the local OCR copy (D121) follows the same rule; its wasm files' base64 also trips the AWS-key pattern, so C8's text scan skips it
+TESS_VENDOR = 'frontend/public/vendor/tesseract/'
+PINNED = {QBANK_VENDOR: 'D119', TESS_VENDOR: 'D122'}
 # D115: the one new table an approved R2.1 task may create, with the decision that approved it
 R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}}
 
@@ -222,12 +225,12 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
         if s == 'D': continue
         if re.search(r'(^|/)\.env(\.[\w]+)?$', p) and not p.endswith('.example'): rep.fail('C8', commit, f'environment file committed: {p}')
         if re.search(r'\.(pem|key|p12|pfx)$', p): rep.fail('C8', commit, f'key/certificate file committed: {p}')
-        if not re.search(r'\.(php|jsx?|tsx?|vue|json|ya?ml|env|md|sh|py)$', p): continue
+        if not re.search(r'\.(php|jsx?|tsx?|vue|json|ya?ml|env|md|sh|py)$', p) or p.startswith(TESS_VENDOR): continue
         a, _ = added_lines(root, parent, commit, p)
         for ln in a:
             for rx, what in SECRETS:
                 if re.search(rx, ln) and not allow(ln, 'secret') and not p.endswith(('.example', '.md')): rep.fail('C8', commit, f'{what} in {p}: {ln.strip()[:50]}...')
-        if is_code(p) and not p.startswith(QBANK_VENDOR):
+        if is_code(p) and not p.startswith(tuple(PINNED)):
             for what, rx, applies, sev, *lf in FORBIDDEN:
                 if not applies(p): continue
                 for ln in a:
@@ -278,27 +281,27 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
                 rep.fail('C10', commit, 'D83 planning cannot check off R2.1 feature tasks, even in a documentation-only commit')
             if task and any(x != task for x in newly): rep.fail('C10', commit, f'PROGRESS: this commit is `Task: {task}` but also checks off {[x for x in newly if x != task]}')
             if newly and not task: rep.fail('C10', commit, 'PROGRESS: a task was checked off in a commit without a `Task:` trailer')
-    # ---- D119: the qbank copy changes only together with its manifest, and the manifest matches the files
-    vendor = [(s, p) for s, p in files if p.startswith(QBANK_VENDOR)]
-    if vendor:
-        if not any(p == QBANK_MANIFEST for s, p in vendor): rep.fail('C1', commit, f'{len(vendor)} file(s) under {QBANK_VENDOR} changed without {QBANK_MANIFEST} (D119)')
-        elif not cr_ok: rep.fail('C1', commit, f'{QBANK_VENDOR} changed without a valid `Change-Request: D<n>` trailer (D119)')
-        else:
-            manifest = show(root, commit, QBANK_MANIFEST) or ''
-            listed = {}
-            for line in manifest.splitlines():
-                m = re.match(r'^([0-9a-f]{64})\s+(\S.*)$', line)
-                if m: listed[m.group(2)] = m.group(1)
-            tree = [x for x in git(root, 'ls-tree', '-r', '--name-only', commit, QBANK_VENDOR).split('\n') if x and x != QBANK_MANIFEST]
-            rel = lambda x: x[len(QBANK_VENDOR):]
-            missing = sorted(set(map(rel, tree)) - set(listed)); extra = sorted(set(listed) - set(map(rel, tree)))
-            if missing or extra: rep.fail('C1', commit, f'{QBANK_MANIFEST} does not list the folder exactly (unlisted: {missing[:3]}, gone: {extra[:3]})')
-            for x in tree:
-                body = subprocess.run(['git', '-C', root, 'show', f'{commit}:{x}'], capture_output=True).stdout
-                if listed.get(rel(x)) and hashlib.sha256(body).hexdigest() != listed[rel(x)]: rep.fail('C1', commit, f'{x} differs from its sha256 in {QBANK_MANIFEST}')
+    # ---- D119/D122: a pinned vendor copy changes only together with its manifest, and the manifest matches the files
+    for base, dn in PINNED.items():
+        man = base + 'MANIFEST.sha256'
+        vendor = [(s, p) for s, p in files if p.startswith(base)]
+        if not vendor: continue
+        if not any(p == man for s, p in vendor): rep.fail('C1', commit, f'{len(vendor)} file(s) under {base} changed without {man} ({dn})'); continue
+        if not cr_ok: rep.fail('C1', commit, f'{base} changed without a valid `Change-Request: D<n>` trailer ({dn})'); continue
+        listed = {}
+        for line in (show(root, commit, man) or '').splitlines():
+            m = re.match(r'^([0-9a-f]{64})\s+(\S.*)$', line)
+            if m: listed[m.group(2)] = m.group(1)
+        tree = [x for x in git(root, 'ls-tree', '-r', '--name-only', commit, base).split('\n') if x and x != man]
+        rel = lambda x, b=base: x[len(b):]
+        missing = sorted(set(map(rel, tree)) - set(listed)); extra = sorted(set(listed) - set(map(rel, tree)))
+        if missing or extra: rep.fail('C1', commit, f'{man} does not list the folder exactly (unlisted: {missing[:3]}, gone: {extra[:3]})')
+        for x in tree:
+            body = subprocess.run(['git', '-C', root, 'show', f'{commit}:{x}'], capture_output=True).stdout
+            if listed.get(rel(x)) and hashlib.sha256(body).hexdigest() != listed[rel(x)]: rep.fail('C1', commit, f'{x} differs from its sha256 in {man}')
     # ---- C11 size
     ns2 = git(root, 'diff', '--numstat', '--no-renames', parent, commit).strip().split('\n')
-    ns2 = [x for x in ns2 if x.strip() and not x.split('\t')[-1].startswith(QBANK_VENDOR)]   # D119: the pinned qbank copy is not counted
+    ns2 = [x for x in ns2 if x.strip() and not x.split('\t')[-1].startswith(tuple(PINNED))]   # D119/D122: the pinned vendor copies are not counted
     nfiles = len([x for x in ns2 if x.strip()]); nlines = sum(int(x.split('\t')[0]) + int(x.split('\t')[1]) for x in ns2 if x.strip() and x.split('\t')[0].isdigit() and x.split('\t')[1].isdigit())
     if touches_code:
         if nfiles > FAIL_FILES or nlines > FAIL_LINES: rep.fail('C11', commit, f'commit too large ({nfiles} files, {nlines} lines): split the task')
