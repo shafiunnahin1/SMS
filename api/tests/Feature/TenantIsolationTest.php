@@ -85,6 +85,8 @@ class TenantIsolationTest extends TestCase
             'PATCH api/v1/hr/payroll-items/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollItem::factory()->create()->id),
             'GET api/v1/hr/payroll-items/{id}/slip.pdf' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollItem::factory()->create()->id),
             'GET api/v1/hr/reports/{name}' => null,
+            'POST api/v1/question-bank/blueprints/{id}/plan' => null,       // D126: a platform blueprint id, the same for every institution
+            'GET api/v1/question-bank/blueprints/{id}/candidates' => null,
             'GET api/v1/teacher/salary/slips/{id}.pdf' => null,
             'GET api/v1/hr/advances/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryAdvance::factory()->create()->id),
             'POST api/v1/hr/advances/{id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryAdvance::factory()->create()->id),
@@ -214,6 +216,9 @@ class TenantIsolationTest extends TestCase
             'DELETE api/v1/question-bank/papers/{id}'      => fn (array $other) => $this->seedPaper($other),
             'POST api/v1/question-bank/papers/{id}/finalize' => fn (array $other) => $this->seedPaper($other),
             'GET api/v1/question-bank/papers/{id}/pdf'     => fn (array $other) => $this->seedPaper($other),
+            'PUT api/v1/question-bank/papers/{id}/folder'  => fn (array $other) => $this->seedPaper($other),            // R2.1.5 (D126)
+            'PUT api/v1/question-bank/paper-folders/{id}'  => fn (array $other) => $this->seedPaperFolder($other),
+            'DELETE api/v1/question-bank/paper-folders/{id}' => fn (array $other) => $this->seedPaperFolder($other),
         ];
     }
 
@@ -287,6 +292,12 @@ class TenantIsolationTest extends TestCase
     {
         return Tenancy::as($t['institution'], fn () => \App\Models\QbPaper::value('id')
             ?? \App\Models\QbPaper::create(['created_by' => $t['admin']->id, 'title' => 'Paper', 'status' => 'draft'])->id);
+    }
+
+    private function seedPaperFolder(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\QbPaperFolder::value('id')
+            ?? \App\Models\QbPaperFolder::create(['created_by' => $t['admin']->id, 'name' => 'Folder'])->id);
     }
 
     private function seedImport(array $t): int

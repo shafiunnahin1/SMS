@@ -3055,11 +3055,38 @@ CREATE TABLE qb_papers (
     instructions_json JSON NULL,
     status ENUM('draft','final') NOT NULL DEFAULT 'draft',
     sets_count TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    qb_paper_folder_id BIGINT UNSIGNED NULL,                 -- D126: the folder it sits in (none = the top level)
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     INDEX idx_qb_papers_owner (institution_id, created_by),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
+);
+CREATE TABLE qb_paper_folders (                              -- D126 (R2.1.5): qbank's question-set folders, for an institution's papers
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    parent_id BIGINT UNSIGNED NULL,                          -- folders nest; a move into itself or its own sub-folder is refused
+    name VARCHAR(150) NOT NULL,
+    created_by BIGINT UNSIGNED NOT NULL,                     -- a person's own folders (the papers they can see go in them)
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qb_paper_folders_owner (institution_id, created_by, parent_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (parent_id) REFERENCES qb_paper_folders(id)
+);
+CREATE TABLE qb_paper_variants (                             -- D126 (2): a final paper's sets, frozen - a later edit never changes a printed set
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    qb_paper_id BIGINT UNSIGNED NOT NULL,
+    variant_number TINYINT UNSIGNED NOT NULL,                -- 1 = as built
+    code VARCHAR(10) NOT NULL,                               -- what the header prints: A-Z or ক-ঞ...
+    strategy VARCHAR(10) NOT NULL,                           -- options | serial | both (qbank's)
+    layout_json JSON NOT NULL,                               -- per section: question order, each question's option order and its correct labels
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_paper_variants_number (qb_paper_id, variant_number),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
 );
 CREATE TABLE qb_paper_sections (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -3081,6 +3108,41 @@ CREATE TABLE qb_paper_items (
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_paper_section_id) REFERENCES qb_paper_sections(id),
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
+
+CREATE TABLE qb_blueprints (                                 -- D126 (3) (R2.1.5): qbank's assessment blueprints - a platform plan a paper is built from
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name_bn VARCHAR(200) NOT NULL,
+    name_en VARCHAR(200) NULL,
+    qb_class_level_id BIGINT UNSIGNED NULL,
+    qb_subject_id BIGINT UNSIGNED NOT NULL,
+    exam_type VARCHAR(50) NULL,
+    total_marks DECIMAL(6,2) NOT NULL DEFAULT 0,             -- the sum of its items (count x marks each), kept by the server
+    duration_minutes SMALLINT UNSIGNED NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qb_blueprints_subject (qb_subject_id, is_active),
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
+);
+
+CREATE TABLE qb_blueprint_items (                            -- D126 (3): one rule of a blueprint - this many questions of this type (and chapter/topic/difficulty)
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_blueprint_id BIGINT UNSIGNED NOT NULL,
+    section_title VARCHAR(200) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    qb_question_type_id BIGINT UNSIGNED NOT NULL,
+    question_count SMALLINT UNSIGNED NOT NULL,
+    marks_each DECIMAL(5,2) NOT NULL,
+    qb_chapter_id BIGINT UNSIGNED NULL,
+    qb_topic_id BIGINT UNSIGNED NULL,
+    difficulty TINYINT UNSIGNED NULL,
+    FOREIGN KEY (qb_blueprint_id) REFERENCES qb_blueprints(id) ON DELETE CASCADE,
+    FOREIGN KEY (qb_question_type_id) REFERENCES qb_question_types(id),
+    FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id),
+    FOREIGN KEY (qb_topic_id) REFERENCES qb_topics(id)
 );
 
 CREATE TABLE qb_quiz_packages (

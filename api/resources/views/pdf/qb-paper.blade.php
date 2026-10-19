@@ -25,6 +25,8 @@
   .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; padding-inline-start: 22px; font-size: 12px; }
   .parts { padding-inline-start: 22px; } .ans { padding-inline-start: 22px; font-size: 11px; color: #333333; border-inline-start: 2px solid {{ $theme['primary_color'] }}; margin-top: 2px; }
   .text { white-space: pre-wrap; }
+  .cols-2 { column-count: 2; column-gap: 18px; } .cols-2 .q { break-inside: avoid; }   {{-- D126 (4): qbank's two columns --}}
+  .key { page-break-before: always; } .key table { border-collapse: collapse; } .key td, .key th { border: 1px solid #999999; padding: 2px 8px; font-size: 12px; }
   .qmx-align-center { text-align: center; } .qmx-align-right { text-align: right; } .qmx-align-justify { text-align: justify; }
   table.qmx-table { border-collapse: collapse; } table.qmx-table th, table.qmx-table td { border: 1px solid #999; padding: 2px 6px; }   {{-- D72 --}}
 </style>
@@ -33,12 +35,13 @@
   @if ($paper['exam_name'])<div>{{ $paper['exam_name'] }}</div>@endif
 </div>
 <div class="meta">
-  <span>{{ __('pdf.qb_paper.set') }}: {{ $paper['set'] }}</span>
+  <span>{{ __('pdf.qb_paper.set') }}: {{ $paper['set_code'] ?? $paper['set'] }}</span>
   @if ($paper['duration_minutes'])<span>{{ __('pdf.qb_paper.time') }}: {{ $paper['duration_minutes'] }} {{ __('pdf.qb_paper.minutes') }}</span>@endif
   <span>{{ __('pdf.qb_paper.full_marks') }}: {{ $n($paper['total_marks']) }}</span>
   @if ($paper['answers'])<span><strong>{{ __('pdf.qb_paper.with_answers') }}</strong></span>@endif
 </div>
 @if ($paper['instructions'])<div class="ins text">{{ $paper['instructions'] }}</div>@endif
+<div class="{{ ($paper['columns'] ?? 1) === 2 ? 'cols-2' : '' }}">
 @foreach ($paper['sections'] as $s)
   <div class="section">
     <h3>{{ $s['title'] }}</h3>
@@ -108,4 +111,14 @@
     @endforeach
   </div>
 @endforeach
+</div>
+{{-- D126 (4): the set's own answer key (with the answers copy of a final paper) --}}
+@if (!empty($paper['answer_key']))
+  <div class="key">
+    <h3>{{ __('pdf.qb_paper.answer_key') }} — {{ __('pdf.qb_paper.set') }} {{ $paper['set_code'] ?? $paper['set'] }}</h3>
+    <table><tr><th>{{ __('pdf.qb_paper.question_no') }}</th><th>{{ __('pdf.qb_paper.answer') }}</th></tr>
+      @foreach ($paper['answer_key'] as $k)<tr><td>{{ $k['no'] }}</td><td>{{ implode(', ', $k['correct']) }}</td></tr>@endforeach
+    </table>
+  </div>
+@endif
 @endsection

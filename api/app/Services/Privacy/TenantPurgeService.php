@@ -19,7 +19,7 @@ class TenantPurgeService
     public const ORDER = [
         'account_activation_requests', 'institution_registrations',
         'department_duty_assignments', 'department_memberships', 'department_duties', 'institution_departments',
-        'qb_paper_items', 'qb_paper_sections', 'qb_papers', 'qb_quiz_attempts', 'qb_student_package_access', 'qb_student_unlocks',   // D65 question bank
+        'qb_paper_items', 'qb_paper_sections', 'qb_paper_variants', 'qb_papers', 'qb_paper_folders', 'qb_quiz_attempts', 'qb_student_package_access', 'qb_student_unlocks',   // D65 question bank
         'qb_student_orders', 'qb_unlocks',
         'salary_adjustments', 'salary_advances', 'donations', 'donation_campaigns', 'donation_funds', 'donors', 'budget_lines', 'budgets', 'voucher_lines', 'vouchers', 'ledger_accounts', 'provident_fund_entries', 'payroll_items', 'payroll_runs', 'salary_structure_lines', 'salary_structures', 'salary_revisions', 'salary_components', 'salary_pay_accounts', 'bonus_schemes',
         'leave_applications', 'leave_types', 'staff_mapping_reviews', 'staff_attendances', 'teacher_attendances', 'staff_members',
@@ -74,6 +74,7 @@ class TenantPurgeService
             foreach (self::ORDER as $t) {
                 if ($t === 'account_activation_requests') continue;
                 if ($t === 'users') DB::table('institutions')->where('id', $i->id)->update(['switched_by' => null]);
+                if ($t === 'qb_paper_folders') DB::table($t)->where('institution_id', $i->id)->update(['parent_id' => null]);   // D126: folders point at folders
                 if ($t === 'expenses') {
                     // D27 approved full-tenant purge: immutable expense ledger children precede their parents.
                     $counts[$t] = 0;

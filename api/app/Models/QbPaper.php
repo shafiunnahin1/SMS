@@ -10,6 +10,6 @@ class QbPaper extends Model
 {
     use BelongsToInstitution;
 
-    protected $fillable = ['institution_id', 'created_by', 'title', 'program_id', 'qb_subject_id', 'exam_name', 'duration_minutes', 'total_marks', 'instructions_json', 'status', 'sets_count'];
+    protected $fillable = ['institution_id', 'created_by', 'title', 'program_id', 'qb_subject_id', 'exam_name', 'duration_minutes', 'total_marks', 'instructions_json', 'status', 'sets_count', 'qb_paper_folder_id'];
     protected $casts = ['total_marks' => 'decimal:2', 'instructions_json' => 'array'];
 }
