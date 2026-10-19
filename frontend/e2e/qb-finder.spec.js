@@ -37,3 +37,23 @@ test('R2.1.2 a published question is found from its text', async ({ page }) => {
   await expect(top.locator('[data-testid="qbf-recommended"]')).toBeVisible()
   await expect(results).not.toContainText('অক্সিজেন')
 })
+
+// D121: step 1 - a question photo is read in the browser with SMS's own tesseract.js copy; the text lands in step 2 for checking,
+// and nothing is fetched from another host (no CDN, no language-data server).
+test('R2.1.2 a question photo is read locally into the text box', async ({ page, browser }) => {
+  const shot = await (await browser.newContext({ viewport: { width: 900, height: 160 } })).newPage()
+  await shot.setContent('<body style="margin:0;background:#fff"><p style="font:48px Arial;color:#000;padding:30px">Which gas is released in photosynthesis?</p></body>')
+  const photo = await shot.screenshot()
+  const outside = []   // the theme's Google Fonts are D52's; anything else from another host would break D121
+  const fonts = /^(fonts\.googleapis\.com|fonts\.gstatic\.com)$/
+  page.on('request', (req) => {
+    const url = new URL(req.url())
+    if (/^https?:$/.test(url.protocol) && !url.hostname.endsWith(BASE.split(':')[0]) && !fonts.test(url.hostname)) outside.push(req.url())
+  })
+  await loginSuper(page)
+  await page.goto('/writer/finder')
+  await page.locator('[data-testid="qbf-photo"] input[type="file"]').setInputFiles({ name: 'q.png', mimeType: 'image/png', buffer: photo })
+  await expect(page.locator('textarea[name="text"]')).toHaveValue(/photosynthesis/i, { timeout: 90_000 })
+  await expect(page.locator('[data-testid="qbf-search"]')).toBeEnabled()
+  expect(outside).toEqual([])
+})

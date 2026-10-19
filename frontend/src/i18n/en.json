@@ -1262,6 +1262,20 @@
    "comma_hint": "Comma-separated, in the same order"
   },
   "qbf": {
+   "step1": "1. Give the question's photo (or type the text below)",
+   "step2": "2. Check the text read from it",
+   "photo_type": "Only image files can be used.",
+   "photo_size": "The photo cannot be larger than 12 MB.",
+   "photo_empty": "No text was found in the photo.",
+   "photo_failed": "The photo could not be read. Try again.",
+   "ocr": {
+    "0": "Loading the OCR engine...",
+    "1": "Starting the OCR engine...",
+    "2": "Loading Bangla and English language data...",
+    "3": "Getting OCR ready...",
+    "4": "Reading the photo's text...",
+    "busy": "OCR is working..."
+   },
    "title": "Find a question",
    "subtitle": "Paste a question's text and match it against published questions",
    "text": "Question text",
