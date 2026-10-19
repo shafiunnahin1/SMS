@@ -17,6 +17,14 @@ class QbGraphDatasetController extends Controller
 {
     public function __construct(private QbGraphDatasetService $storage) {}
 
+    /** GET /writer/graph-datasets/capabilities (D118 (5)): the copied graph tool reads this before it lists saved datasets */
+    public function capabilities(): JsonResponse
+    {
+        return response()->json(['ok' => true, 'version' => '2.2.1.1', 'ownership' => ['mode' => 'authenticated_user', 'authenticationRequired' => true, 'browserScoped' => false],
+            'limits' => ['maxRows' => QbGraphDataset::MAX_ROWS, 'maxColumns' => QbGraphDataset::MAX_COLUMNS, 'maxCells' => QbGraphDataset::MAX_CELLS, 'maxCellLength' => QbGraphDataset::MAX_CELL_LENGTH],
+            'storage' => ['databaseRowLimit' => QbGraphDataset::MAX_ROWS, 'databaseByteLimit' => null, 'largeDatasetDriver' => 'database']]);
+    }
+
     /** GET /writer/graph-datasets?limit= */
     public function index(Request $request): JsonResponse
     {

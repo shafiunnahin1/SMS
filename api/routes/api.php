@@ -123,6 +123,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/questions/{id}/revisions',       [QbQuestionController::class, 'revisions'])->whereNumber('id');
         Route::post('/media',                         [QbMediaController::class, 'store'])->middleware('role:content_writer,super_admin');
         // R2.1.2 (D115, D116): qbank's graph datasets (the {id} is the dataset's uuid) - writers their own, moderators read, the Super Admin all
+        Route::get('/graph-datasets/capabilities',    [QbGraphDatasetController::class, 'capabilities']);   // D118 (5)
         Route::get('/graph-datasets',                 [QbGraphDatasetController::class, 'index']);
         Route::post('/graph-datasets',                [QbGraphDatasetController::class, 'store'])->middleware(['role:content_writer,super_admin', 'throttle:60,1']);
         Route::get('/graph-datasets/{id}',            [QbGraphDatasetController::class, 'show'])->whereUuid('id');

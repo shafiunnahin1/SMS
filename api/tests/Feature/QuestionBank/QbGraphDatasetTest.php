@@ -48,6 +48,8 @@ class QbGraphDatasetTest extends TestCase
         $this->api('GET', $this->central, "writer/graph-datasets/{$made['uuid']}", $other)->assertForbidden();
         $this->api('PUT', $this->central, "writer/graph-datasets/{$made['uuid']}", $other, $this->body())->assertForbidden();
         $this->api('DELETE', $this->central, "writer/graph-datasets/{$made['uuid']}", $other)->assertForbidden();
+        $this->api('GET', $this->central, 'writer/graph-datasets/capabilities', $writer)->assertOk()->assertJsonPath('ownership.mode', 'authenticated_user')
+            ->assertJsonPath('limits.maxRows', 50000)->assertJsonPath('limits.maxColumns', 80);   // D118 (5)
     }
 
     public function test_moderators_read_and_change_nothing_and_old_edits_are_refused(): void
