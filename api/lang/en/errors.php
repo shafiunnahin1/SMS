@@ -55,6 +55,7 @@ return [
     'qb_import_too_many' => 'Too many questions in one import.',
     'qb_import_shape' => 'The file has no "questions" list.',
     'qb_import_version' => 'This schema_version is not supported.',
+    'qb_import_too_many_pages' => 'At most :max pages can be read at once.',
     'qb_import_nothing_changed' => 'Nothing was changed.',
     'qb_import_done' => 'This question is already imported.',
     'qb_import_not_ready' => 'The import is still being read.',

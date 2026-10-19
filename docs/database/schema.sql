@@ -3189,7 +3189,7 @@ CREATE TABLE qb_graph_datasets (                            -- D115 (R2.1.2): qb
 CREATE TABLE qb_import_batches (                             -- D123 (R2.1.3): one JSON/TOON question import, staged before anything enters the bank
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     uuid CHAR(36) NOT NULL,
-    format VARCHAR(10) NOT NULL,                             -- json | toon
+    format VARCHAR(10) NOT NULL,                             -- json | toon | pdf (D124)
     schema_version VARCHAR(80) NULL,
     files JSON NOT NULL,                                     -- [{name, sha256, bytes}] in upload order
     source_sha256 CHAR(64) NOT NULL,                         -- of all files together: the same upload by the same person reopens this batch
@@ -3201,6 +3201,10 @@ CREATE TABLE qb_import_batches (                             -- D123 (R2.1.3): o
     duplicate_records INT UNSIGNED NOT NULL DEFAULT 0,
     imported_records INT UNSIGNED NOT NULL DEFAULT 0,
     error VARCHAR(500) NULL,                                 -- a whole-file problem (unreadable JSON/TOON, too large)
+    page_from SMALLINT UNSIGNED NULL,                        -- D124 (R2.1.4): a PDF's chosen page range
+    page_to SMALLINT UNSIGNED NULL,
+    document_kind VARCHAR(10) NULL,                          -- D124: text | hybrid | scanned (a PDF)
+    unreadable_pages JSON NULL,                              -- D124: page numbers with too little text to read, never reported as imported
     created_by BIGINT UNSIGNED NOT NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
@@ -3214,6 +3218,7 @@ CREATE TABLE qb_import_records (                             -- D123: one staged
     qb_import_batch_id BIGINT UNSIGNED NOT NULL,
     file_index SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     record_index INT UNSIGNED NOT NULL,                      -- position in its file (0-based), so a chunk re-run never doubles a record
+    page_number SMALLINT UNSIGNED NULL,                      -- D124: the PDF page the question came from
     type_slug VARCHAR(80) NULL,
     payload JSON NOT NULL,                                   -- the canonical record (same for JSON and TOON)
     errors JSON NULL,                                        -- [{path, message}]

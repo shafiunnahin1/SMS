@@ -29,16 +29,25 @@ class QbImportController extends Controller
     public function store(Request $request): JsonResponse
     {
         $kb = (int) config('qb_import.max_file_kb');
-        $in = $request->validate([
+        $pdf = $request->hasFile('pdf');
+        $in = $request->validate($pdf ? [                               // D124: one PDF a batch, with an optional page range
+            'pdf' => ['required', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:' . (int) config('qb_import.max_pdf_kb')],
+            'page_from' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'page_to' => ['nullable', 'integer', 'min:1', 'max:65535', 'gte:page_from'],
+        ] : [
             'files' => ['required_without:text', 'array', 'max:' . (int) config('qb_import.max_files')],
             'files.*' => ['file', 'max:' . $kb, 'mimetypes:application/json,text/plain,application/octet-stream'],
             'text' => ['required_without:files', 'nullable', 'string', 'max:' . ($kb * 1024)],
             'format' => ['nullable', 'in:json,toon'],
         ]);
-        $files = isset($in['files'])
-            ? array_map(fn ($f) => ['name' => $f->getClientOriginalName(), 'bytes' => (string) file_get_contents($f->getRealPath())], $in['files'])
-            : [['name' => 'pasted.' . ($in['format'] ?? 'json'), 'bytes' => $in['text']]];
-        [$batch, $new] = $this->imports->create($request->user(), $files, $in['format'] ?? null);
+        if ($pdf && !str_starts_with((string) file_get_contents($in['pdf']->getRealPath(), false, null, 0, 5), '%PDF-')) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['pdf' => __('validation.mimes', ['attribute' => 'pdf', 'values' => 'pdf'])]);
+        }
+        $files = $pdf ? [['name' => $in['pdf']->getClientOriginalName(), 'bytes' => (string) file_get_contents($in['pdf']->getRealPath())]]
+            : (isset($in['files'])
+                ? array_map(fn ($f) => ['name' => $f->getClientOriginalName(), 'bytes' => (string) file_get_contents($f->getRealPath())], $in['files'])
+                : [['name' => 'pasted.' . ($in['format'] ?? 'json'), 'bytes' => $in['text']]]);
+        [$batch, $new] = $this->imports->create($request->user(), $files, $pdf ? 'pdf' : ($in['format'] ?? null), $in['page_from'] ?? null, $in['page_to'] ?? null);
         if ($new) AuditLog::record('qb.import.created', $batch, ['format' => $batch->format, 'files' => count($batch->files)]);
         return response()->json(['success' => true, 'data' => $this->view($batch->fresh()), 'reused' => !$new], $new ? 201 : 200);
     }
@@ -151,6 +160,26 @@ class QbImportController extends Controller
         return response()->json(['success' => true, 'data' => $this->view($batch->fresh()), 'result' => $result]);
     }
 
+    /** POST /writer/imports/{id}/records/{record}/reject {rejected}: D124 - a staged question the reviewer throws out stays listed, greyed, and can never be imported */
+    public function reject(Request $request, string $uuid, int $record): JsonResponse
+    {
+        $batch = $this->find($request, $uuid);
+        $in = $request->validate(['rejected' => 'required|boolean']);
+        $r = QbImportRecord::where('qb_import_batch_id', $batch->id)->whereNull('qb_question_id')->findOrFail($record);
+        $this->imports->reject($r, $in['rejected']);
+        $this->imports->recount($batch);
+        return response()->json(['success' => true, 'data' => $this->record($batch, $r->fresh())]);
+    }
+
+    /** GET /writer/imports/{id}/source.pdf: D124 - the uploaded PDF, so the reviewer can compare a question with its page */
+    public function source(Request $request, string $uuid): Response
+    {
+        $batch = $this->find($request, $uuid);
+        abort_unless($batch->format === 'pdf', 404);
+        return response($this->imports->sourceBytes($batch), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="source.pdf"',
+            'X-Content-Type-Options' => 'nosniff']);
+    }
+
     /** the editable fields of a staged record, shape-checked (the normalizer checks the content as on upload) */
     private function changes(Request $request, string $prefix = ''): array
     {
@@ -179,7 +208,7 @@ class QbImportController extends Controller
 
     private function record(QbImportBatch $batch, QbImportRecord $r): array
     {
-        return ['id' => $r->id, 'file' => $batch->files[$r->file_index]['name'] ?? '', 'record' => $r->record_index + 1,
+        return ['id' => $r->id, 'file' => $batch->files[$r->file_index]['name'] ?? '', 'record' => $r->record_index + 1, 'page' => $r->page_number,
             'type' => $r->type_slug, 'payload' => $r->payload, 'errors' => $r->errors ?? [], 'warnings' => $r->warnings ?? [], 'has_math' => $r->has_math,
             'duplicate_status' => $r->duplicate_status, 'duplicate_question_id' => $r->duplicate_question_id, 'selected' => $r->selected,
             'qb_question_id' => $r->qb_question_id];
@@ -200,6 +229,7 @@ class QbImportController extends Controller
         return ['id' => $b->uuid, 'format' => $b->format, 'schema_version' => $b->schema_version, 'files' => $b->files, 'status' => $b->status, 'error' => $b->error,
             'counts' => ['total' => $b->total_records, 'parsed' => $b->parsed_records, 'valid' => $b->valid_records, 'invalid' => $b->invalid_records,
                 'duplicate' => $b->duplicate_records, 'imported' => $b->imported_records],
+            'pdf' => $b->format === 'pdf' ? ['page_from' => $b->page_from, 'page_to' => $b->page_to, 'document_kind' => $b->document_kind, 'unreadable_pages' => $b->unreadable_pages ?? []] : null,
             'created_at' => $b->created_at?->toIso8601String()];
     }
 }

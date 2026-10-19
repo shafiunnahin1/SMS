@@ -52,7 +52,7 @@ QBANK_MANIFEST = QBANK_VENDOR + 'MANIFEST.sha256'
 TESS_VENDOR = 'frontend/public/vendor/tesseract/'
 PINNED = {QBANK_VENDOR: 'D119', TESS_VENDOR: 'D122'}
 # D115: the one new table an approved R2.1 task may create, with the decision that approved it
-R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}, 'R2.1.3': {'qb_import_batches': 'D123', 'qb_import_records': 'D123'}}
+R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}, 'R2.1.3': {'qb_import_batches': 'D123', 'qb_import_records': 'D123'}, 'R2.1.4': {'qb_import_batches': 'D124', 'qb_import_records': 'D124'}}
 
 def show(root, rev, path):
     r = subprocess.run(['git', '-C', root, 'show', f'{rev}:{path}'], capture_output=True, text=True, encoding='utf-8', errors='replace')

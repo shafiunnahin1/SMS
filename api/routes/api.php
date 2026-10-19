@@ -142,6 +142,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/imports/{id}/resume',       [QbImportController::class, 'resume'])->whereUuid('id');
             Route::patch('/imports/{id}/records/{record}', [QbImportController::class, 'edit'])->whereUuid('id')->whereNumber('record');
             Route::post('/imports/{id}/records/{record}/duplicate', [QbImportController::class, 'duplicate'])->whereUuid('id')->whereNumber('record');
+            Route::post('/imports/{id}/records/{record}/reject', [QbImportController::class, 'reject'])->whereUuid('id')->whereNumber('record');   // D124
+            Route::get('/imports/{id}/source.pdf',    [QbImportController::class, 'source'])->whereUuid('id');
             Route::post('/imports/{id}/settings',     [QbImportController::class, 'settings'])->whereUuid('id');
             Route::post('/imports/{id}/select',       [QbImportController::class, 'select'])->whereUuid('id');
             Route::post('/imports/{id}/finalize',     [QbImportController::class, 'finalize'])->whereUuid('id')->middleware('throttle:10,1');
