@@ -196,6 +196,7 @@ export const MENU = {
   content_writer: [
     it('dashboard','/writer/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard'}),
     it('questions','/writer/questions','প্রশ্ন',{icon:'FileText'}),
+    it('finder','/writer/finder','প্রশ্ন খুঁজুন',{icon:'Search'}),
     it('concepts','/writer/concepts','কনসেপ্ট',{icon:'Sparkles'}),
     it('resources','/writer/resources','স্লাইড, বই ও PDF',{icon:'Folder'}),
     it('earnings','/writer/earnings','আয় ও টাকা তোলা',{icon:'Wallet'}),
@@ -203,6 +204,7 @@ export const MENU = {
   content_moderator: [
     it('dashboard','/writer/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard'}),
     it('review','/writer/questions','প্রশ্ন যাচাই',{icon:'ClipboardCheck'}),
+    it('finder','/writer/finder','প্রশ্ন খুঁজুন',{icon:'Search'}),
     it('review-concepts','/writer/concepts','কনসেপ্ট যাচাই',{icon:'Sparkles'}),
     it('review-resources','/writer/resources','স্লাইড, বই ও PDF যাচাই',{icon:'Folder'}),
   ],
@@ -224,6 +226,7 @@ export const MENU = {
     it('qb-curriculum','/super-admin/qb/curriculum','প্রশ্নব্যাংক: পাঠ্যক্রম',{icon:'BookOpen'}),
     it('qb-writers','/super-admin/qb/writers','প্রশ্নব্যাংক: লেখক',{icon:'Users'}),
     it('qb-questions','/writer/questions','প্রশ্নব্যাংক: প্রশ্ন',{icon:'FileText'}),
+    it('qb-finder','/writer/finder','প্রশ্নব্যাংক: প্রশ্ন খুঁজুন',{icon:'Search'}),
     it('qb-concepts','/writer/concepts','প্রশ্নব্যাংক: কনসেপ্ট',{icon:'Sparkles'}),
     it('qb-resources','/writer/resources','প্রশ্নব্যাংক: স্লাইড, বই ও PDF',{icon:'Folder'}),
     it('qb-pricing','/super-admin/qb/pricing','প্রশ্নব্যাংক: দাম ও নিয়ম',{icon:'Tags'}),

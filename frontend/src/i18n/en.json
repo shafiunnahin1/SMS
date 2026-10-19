@@ -1261,6 +1261,32 @@
    "values": "Answers",
    "comma_hint": "Comma-separated, in the same order"
   },
+  "qbf": {
+   "title": "Find a question",
+   "subtitle": "Paste a question's text and match it against published questions",
+   "text": "Question text",
+   "too_short": "The question text must be at least 5 characters.",
+   "any": "Any",
+   "language": "Language",
+   "lang_bn": "Bangla",
+   "lang_en": "English",
+   "search": "Search the question bank",
+   "results": "Possible questions",
+   "none": "No match found.",
+   "recommended": "Recommended question",
+   "open": "Open the question",
+   "conf": {
+    "high": "High match",
+    "medium": "Medium match",
+    "low": "Low match"
+   },
+   "decision": {
+    "recommended": "{{count}} questions checked - one clearly matches",
+    "manual_selection": "{{count}} questions checked - review the results and pick the right one",
+    "low_confidence": "{{count}} questions checked - weak matches, check carefully",
+    "no_match": "{{count}} questions checked - no match"
+   }
+  },
   "qbd": {
    "total_questions": "Total questions",
    "my_questions": "My questions",
@@ -1358,6 +1384,8 @@
   "কুইজ": "Quizzes",
   "প্রশ্নব্যাংক: কুইজ ও প্যাকেজ": "Question bank: quizzes and packages",
   "আয় ও টাকা তোলা": "Earnings and withdrawals",
-  "প্রশ্নব্যাংক: লেখকের টাকা তোলা": "Question bank: writers' withdrawals"
+  "প্রশ্নব্যাংক: লেখকের টাকা তোলা": "Question bank: writers' withdrawals",
+  "প্রশ্ন খুঁজুন": "Find a question",
+  "প্রশ্নব্যাংক: প্রশ্ন খুঁজুন": "Question bank: find a question"
  }
 }

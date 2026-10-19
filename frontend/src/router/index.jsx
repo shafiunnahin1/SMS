@@ -57,6 +57,7 @@ const QbCurriculum      = lazy(() => import('../pages/super/QbCurriculum'))
 const QbWriters         = lazy(() => import('../pages/super/QbWriters'))
 const QbPricing         = lazy(() => import('../pages/super/QbPricing'))
 const QbDashboard       = lazy(() => import('../pages/writer/QbDashboard'))   // R2.1.1 (D110)
+const QbFinder          = lazy(() => import('../pages/writer/QbFinder'))   // R2.1.2 (D114 (3))
 const QbQuestions       = lazy(() => import('../pages/writer/QbQuestions'))
 const QbQuestionEdit    = lazy(() => import('../pages/writer/QbQuestionEdit'))
 const QbQuestionStart   = lazy(() => import('../pages/writer/QbQuestionStart'))   // D73
@@ -183,6 +184,7 @@ export const centralRoutes = [
   area('/writer', ['content_writer', 'content_moderator', 'super_admin'], [
     { path: 'dashboard', element: S(QbDashboard) },
     { path: 'questions', element: S(QbQuestions) },
+    { path: 'finder', element: S(QbFinder) },
     { path: 'questions/start', element: S(QbQuestionStart) },   // D73: qbank's new-question form, a draft first
     { path: 'questions/:id', element: S(QbQuestionEdit) },
     { path: 'concepts', element: <Suspense fallback={<Loader type="page" />}><QbContentList kind="concepts" /></Suspense> },   // QB.5
