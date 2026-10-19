@@ -18,11 +18,11 @@ class ModelInventoryTest extends TestCase
     private const PLATFORM_CATALOGUE = ['QbClassLevel', 'QbSubject', 'QbClassLevelSubject', 'QbChapter', 'QbChapterClassLevel', 'QbTopic', 'QbQuestionType',
         'QbQuestion', 'QbQuestionOption', 'QbCreativePart', 'QbQuestionStimulus', 'QbQuestionItem', 'QbQuestionClassLevel', 'QbQuestionOccurrence',
         'QbQuestionRevision', 'QbMedia', 'QbMediaLink', 'QbConcept', 'QbResource', 'QbPrice', 'QbPriceRule', 'QbWriterEarning', 'QbWriterWallet',
-        'QbWriterWalletTxn', 'QbWithdrawalRequest', 'QbQuizPackage', 'QbQuiz', 'QbQuizQuestion', 'QbImportMap'];   // QbImportMap: D69
+        'QbWriterWalletTxn', 'QbWithdrawalRequest', 'QbQuizPackage', 'QbQuiz', 'QbQuizQuestion', 'QbImportMap', 'QbImportBatch', 'QbImportRecord'];   // QbImportMap: D69; QbImport*: D123
 
     /** content an institution may read only once published; platform-private rows it may not read at all */
     private const CATALOGUE_PUBLISHED = ['QbQuestion', 'QbConcept', 'QbResource'];
-    private const CATALOGUE_HIDDEN = ['QbQuestionRevision', 'QbWriterEarning', 'QbWriterWallet', 'QbWriterWalletTxn', 'QbWithdrawalRequest', 'QbImportMap'];
+    private const CATALOGUE_HIDDEN = ['QbQuestionRevision', 'QbWriterEarning', 'QbWriterWallet', 'QbWriterWalletTxn', 'QbWithdrawalRequest', 'QbImportMap', 'QbImportBatch', 'QbImportRecord'];
 
     /** institution_id may be NULL: own rules (docs/architecture/tenancy.md) */
     private const OWN_RULES = ['User', 'AuditLog'];
