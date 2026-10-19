@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\QuestionBank;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\QuestionBank\StoreQbOmrScanBatchRequest;
 use App\Http\Resources\QbOmrFormResource;
 use App\Services\QuestionBank\QbOmrGeometryService;
 use App\Services\QuestionBank\QbOmrFormService;
+use App\Services\QuestionBank\QbOmrScanService;
 use App\Services\PdfService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class QbOmrFormController extends Controller
@@ -65,5 +68,10 @@ class QbOmrFormController extends Controller
             'Content-Length' => (string) strlen($bytes),
             'Content-Disposition' => 'inline; filename="omr-' . $sheet['form']->code . '-' . $sheet['variant']->code . '.pdf"',
         ]);
+    }
+
+    public function storeScans(StoreQbOmrScanBatchRequest $request, int $id, QbOmrScanService $service): JsonResponse
+    {
+        return response()->json(['data' => $service->storeBatch($request->user(), $id, $request->all()['scans'] ?? null)]);
     }
 }

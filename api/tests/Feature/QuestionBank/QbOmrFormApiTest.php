@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{QbPaper, QbPaperItem, QbPaperSection, QbPaperVariant, QbQuestion, QbQuestionOption, QbQuestionType, QbSubject, User};
+use App\Models\{QbOmrScan, QbPaper, QbPaperItem, QbPaperSection, QbPaperVariant, QbQuestion, QbQuestionOption, QbQuestionType, QbSubject, User};
 use App\Services\PdfService;
 use App\Support\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class QbOmrFormApiTest extends TestCase
@@ -59,6 +62,13 @@ class QbOmrFormApiTest extends TestCase
             'negative_mark' => '0.25',
             'multiple_answer_policy' => 'wrong',
         ], $overrides);
+    }
+
+    private function multipartApi(string $host, string $path, User $as, array $data): TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+        return $this->withHeaders(['Authorization' => 'Bearer ' . $as->createToken('omr-batch')->plainTextToken])
+            ->post("http://{$host}/api/v1/" . ltrim($path, '/'), $data);
     }
 
     public function test_teacher_owns_form_and_generate_locks_until_unlock_creates_a_new_version(): void
@@ -135,5 +145,53 @@ class QbOmrFormApiTest extends TestCase
             ->assertSee('%PDF-OMR', false);
         $this->assertStringStartsWith('inline; filename="omr-', $response->headers->get('Content-Disposition'));
         $this->assertStringEndsWith('-A.pdf"', $response->headers->get('Content-Disposition'));
+    }
+
+    public function test_batch_scan_upload_saves_valid_sheets_privately_and_keeps_duplicates_for_review(): void
+    {
+        Storage::fake('private');
+        $institution = $this->makeInstitution('omr-scan-batch');
+        $teacher = $this->makeUser($institution, 'teacher');
+        $paperId = $this->paper($institution, $teacher);
+        Tenancy::as($institution, fn () => QbPaperVariant::create([
+            'institution_id' => $institution->id,
+            'qb_paper_id' => $paperId,
+            'variant_number' => 1,
+            'code' => 'A',
+            'strategy' => 'serial',
+            'layout_json' => ['question_order' => [$this->mcq->id], 'option_order' => []],
+        ]));
+        $baseUrl = "question-bank/papers/{$paperId}/omr-form";
+        $this->api('PUT', $this->hostOf($institution), $baseUrl, $teacher, ['settings' => $this->settings()])->assertOk();
+        $this->api('POST', $this->hostOf($institution), "{$baseUrl}/generate", $teacher)->assertOk();
+        $validScan = fn (string $clientId) => [
+            'client_id' => $clientId,
+            'source' => 'upload',
+            'set_code' => 'A',
+            'roll' => '001234',
+            'answers' => [['selected' => [0]]],
+            'image' => UploadedFile::fake()->image("{$clientId}.png", 64, 64),
+        ];
+
+        $response = $this->multipartApi($this->hostOf($institution), "{$baseUrl}/scans", $teacher, [
+            'scans' => [$validScan('sheet-1'), $validScan('sheet-2'), [
+                'client_id' => 'sheet-bad',
+                'source' => 'upload',
+                'set_code' => 'A',
+                'roll' => '009999',
+                'answers' => [],
+                'image' => UploadedFile::fake()->image('sheet-bad.png', 64, 64),
+            ]],
+        ])->assertOk()
+            ->assertJsonPath('data.summary', ['requested' => 3, 'saved' => 2, 'failed' => 1])
+            ->assertJsonPath('data.results.0.status', 'saved')
+            ->assertJsonPath('data.results.0.scan.status', 'needs_review')
+            ->assertJsonPath('data.results.0.scan.answered_count', 1)
+            ->assertJsonPath('data.results.1.scan.comparison.requires_manual_review', true)
+            ->assertJsonPath('data.results.1.scan.comparison.reason_codes.1', 'duplicate_roll')
+            ->assertJsonPath('data.results.2.status', 'failed');
+
+        $this->assertSame(2, Tenancy::as($institution, fn () => QbOmrScan::whereHas('form', fn ($query) => $query->where('qb_paper_id', $paperId))->count()));
+        $this->assertCount(2, Storage::disk('private')->allFiles("institutions/{$institution->id}/question-bank/omr"));
     }
 }

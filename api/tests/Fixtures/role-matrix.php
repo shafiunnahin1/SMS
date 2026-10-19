@@ -283,6 +283,7 @@ return [
     'POST api/v1/question-bank/papers/{id}/omr-form/generate' => ['admin', 'teacher'],
     'POST api/v1/question-bank/papers/{id}/omr-form/unlock' => ['admin', 'teacher'],
     'GET api/v1/question-bank/papers/{id}/omr-form/pdf' => ['admin', 'teacher'],
+    'POST api/v1/question-bank/papers/{id}/omr-form/scans' => ['admin', 'teacher'],
     'GET api/v1/question-bank/paper-folders' => ['admin', 'teacher'],   // R2.1.5 (D126)
     'POST api/v1/question-bank/paper-folders' => ['admin', 'teacher'],
     'PUT api/v1/question-bank/paper-folders/{id}' => ['admin', 'teacher'],

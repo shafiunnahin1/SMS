@@ -520,6 +520,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('/papers/{id}/omr-form/generate', [QbOmrFormController::class, 'generate'])->whereNumber('id');
                 Route::post('/papers/{id}/omr-form/unlock', [QbOmrFormController::class, 'unlock'])->whereNumber('id');
                 Route::get('/papers/{id}/omr-form/pdf', [QbOmrFormController::class, 'pdf'])->whereNumber('id');
+                Route::post('/papers/{id}/omr-form/scans', [QbOmrFormController::class, 'storeScans'])->whereNumber('id');
             });
             // R2.1.5 (D126 (1)): qbank's folders for papers - the head teacher and teachers (not a D90 staff duty)
             Route::middleware('role:admin,teacher')->group(function () {
