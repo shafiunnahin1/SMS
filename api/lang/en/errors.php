@@ -45,6 +45,12 @@ return [
     'qb_topic_mismatch'     => 'This topic is not in that chapter.',   // QB.2
     'qb_chapter_mismatch'   => 'This chapter is not in that subject.',   // QB.2
     'qb_media_not_yours'    => 'This picture was not uploaded by you.',   // QB.3
+    'qb_dataset_columns'    => 'A dataset needs 1 to :max columns.',   // D115
+    'qb_dataset_rows'       => 'A dataset can have at most :max rows.',
+    'qb_dataset_cells'      => 'A dataset can have at most :max cells.',
+    'qb_dataset_row'        => 'Dataset row :row is not valid.',
+    'qb_dataset_version'    => 'This dataset was changed in another editor. Reload it before saving.',
+    'qb_dataset_in_use'     => 'This dataset is used by a saved question and cannot be deleted.',
     'qb_needs_options'      => 'Give at least two options.',   // QB.3
     'qb_needs_correct'      => 'Mark the right option.',   // QB.3
     'qb_true_false'         => 'A true / false question needs exactly two options, one of them right.',   // QB.3

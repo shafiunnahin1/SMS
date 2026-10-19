@@ -19,7 +19,8 @@ import Check from '../../features/academic/Check'
 import QbStatus from '../../features/qb/QbStatus'
 import MathText from '../../features/qb/MathText'
 import Ribbon from '../../features/qb/Ribbon'
-import { insertPicture, pushValueHistory, stepValueHistory } from '../../features/qb/formatting'
+import { insertAt, insertPicture, pushValueHistory, stepValueHistory } from '../../features/qb/formatting'
+import { pickGraph } from '../../features/qb/qbankTools'
 import { transformImageFile } from '../../features/qb/imageTransforms'
 import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } from '../../features/qb/questionMeta'
 import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
@@ -132,6 +133,15 @@ export default function QbQuestionEdit() {
     setValue(a.name, step.entry.value, { shouldDirty: true })
     active.current = { ...a, start: step.entry.start, end: step.entry.end }
     requestAnimationFrame(() => { a.el.focus(); a.el.setSelectionRange(step.entry.start, step.entry.end) })
+  }
+  // D118: qbank's graph tool opens on the field the writer was last in; its token goes in through run(), like every ribbon action
+  const insertGraph = async () => {
+    const a = active.current
+    if (!a) { useUiStore.getState().addToast(t('qbed.pick_field'), 'error'); return }
+    try {
+      const token = await pickGraph(a.el)
+      if (token) run(insertAt, `\n${token}\n`)
+    } catch { useUiStore.getState().addToast(t('qbed.graph_failed'), 'error') }
   }
   const readActive = () => {
     const field = document.activeElement
@@ -262,7 +272,7 @@ export default function QbQuestionEdit() {
         </nav>
 
         <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane" onDragOver={allowImageDrop} onDrop={dropImage}>
-          {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} imageTransform={pictureTransform} onImageTransformChange={setPictureTransform}
+          {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} onGraph={insertGraph} imageTransform={pictureTransform} onImageTransformChange={setPictureTransform}
             onUndo={() => applyHistory('undo')} onRedo={() => applyHistory('redo')}
             canUndo={history.undo.some(entry => entry.name === activeField)} canRedo={history.redo.some(entry => entry.name === activeField)}
             onReset={() => { reset(); setHistory({ undo: [], redo: [] }); valueSnapshots.current.clear(); active.current = null; setActiveField(null) }} disabled={!canEdit} saving={isSubmitting} />}

@@ -33,6 +33,20 @@ class R21PlanningTests(unittest.TestCase):
     def test_implementation_flag_cannot_activate_work(self):
         self.reject(lambda s, g: s.update(implementation_authorized=True), 'implementation authorization')
 
+    def test_only_the_d114_d117_dataset_slice_is_executable(self):
+        slice_ = self.scope['approved_execution_slices'][0]
+        self.assertEqual('R2.1.2', slice_['parent_task'])
+        self.assertEqual(['R2.1.1'], slice_['depends_on'])
+        self.assertEqual(['qb_graph_datasets'], slice_['tables'])
+        self.assertFalse(slice_['accepted'])
+        self.assertFalse(self.scope['runtime_switch']['authorized'])
+        self.assertTrue(all(not task['executable'] for task in self.scope['tasks']))
+
+    def test_approved_slice_cannot_gain_objects_or_scope(self):
+        self.scope['approved_execution_slices'][0]['tables'].append('invented')
+        errors = G.validate(ROOT, self.scope, self.gaps)
+        self.assertTrue(any('approved execution slice' in e for e in errors), errors)
+
     def test_runtime_switch_remains_unapproved_even_after_acceptance(self):
         self.reject(lambda s, g: s['runtime_switch'].update(authorized=True), 'runtime switch')
 
@@ -101,7 +115,7 @@ class R21PlanningTests(unittest.TestCase):
     def test_check_mode_rejects_stale_output_without_writing(self):
         with tempfile.TemporaryDirectory(prefix='r21plan_') as tmp:
             root = Path(tmp)
-            paths = {G.SCOPE, G.GAPS, 'RELEASE-2.1.md', *G.OUTPUTS, *G.ENTRY_POINTS,
+            paths = {G.SCOPE, G.GAPS, 'RELEASE-2.1.md', 'docs/LOCKED-DECISIONS.md', 'docs/PROGRESS.md', *G.OUTPUTS, *G.ENTRY_POINTS,
                      'api/config/release.php', 'docs/release/r3-scope.json'}
             paths.update(p for t in self.scope['tasks'] for p in t['existing_entities'])
             paths.update(a.split('::')[0] for t in self.scope['tasks'] for a in t['existing_route_anchors'])
