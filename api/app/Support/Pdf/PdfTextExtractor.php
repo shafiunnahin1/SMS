@@ -8,7 +8,7 @@ use Throwable;
 
 // D124 (R2.1.4): qbank's PdfTextExtractionService - the text of each page of a PDF, read locally with smalot/pdfparser (no outside
 // service). A page with fewer than 25 meaningful characters is unreadable; no readable page = "scanned", some = "hybrid". A PDF
-// made with a legacy Bijoy font (SutonnyMJ etc.) is detected and reported; converting it needs its own decision (BLOCKED.md).
+// may mix Bijoy (legacy SutonnyMJ etc.) and Unicode Bangla: Bijoy lines are converted one by one (D125, BijoyConverter).
 class PdfTextExtractor
 {
     public const MIN_PAGE_CHARACTERS = 25;
@@ -28,20 +28,28 @@ class PdfTextExtractor
         if ($from > $total) throw new RuntimeException("the first page is after the last page of the PDF ({$total})");
         if ($to < $from) throw new RuntimeException('the last page must not be before the first page');
 
+        $font = (bool) preg_match('/(?:Sutonny(?:MJ)?|Bijoy|Boishakhi|Bangsee|Proshika|TonnyBangla|Sulekha|Mitra)/i', $bytes);
         $out = [];
         $unreadable = [];
         for ($n = $from; $n <= $to; $n++) {
             try { $raw = (string) $pages[$n - 1]->getText(); } catch (Throwable) { $raw = ''; }
             $text = self::normalise($raw);
+            $converted = [];                                         // D125: Bijoy lines -> Unicode, every other line untouched
+            $lines = explode("\n", $text);
+            foreach ($lines as $k => $line) {
+                [$fixed, $changed] = BijoyConverter::convert($line, $font);
+                if ($changed) { $lines[$k] = $fixed; $converted[] = trim($fixed); }
+            }
+            if ($converted) $text = implode("\n", $lines);
             $readable = self::meaningful($text) >= self::MIN_PAGE_CHARACTERS;
             if (!$readable) $unreadable[] = $n;
-            $out[] = ['page_number' => $n, 'text' => $text, 'readable' => $readable];
+            $out[] = ['page_number' => $n, 'text' => $text, 'readable' => $readable, 'converted_lines' => $converted];
         }
         $readableCount = count($out) - count($unreadable);
         return ['total_pages' => $total, 'page_from' => $from, 'page_to' => $to,
             'document_kind' => $readableCount === 0 ? 'scanned' : ($unreadable ? 'hybrid' : 'text'),
             'unreadable_pages' => $unreadable,
-            'legacy_bijoy' => (bool) preg_match('/(?:Sutonny(?:MJ)?|Bijoy|Boishakhi|Bangsee|Proshika|TonnyBangla|Sulekha|Mitra)/i', $bytes),
+            'legacy_bijoy' => $font,
             'pages' => $out];
     }
 
