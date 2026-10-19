@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 // Arabic shaping). This class is the one place that knows the engine. The page gets no network: images arrive as data URIs.
 class PdfService
 {
-    private const PAPER = ['a4' => [8.27, 11.69], 'a5' => [5.83, 8.27], 'letter' => [8.5, 11.0]];   // inches (Chromium's unit)
+    private const PAPER = ['a4' => [8.27, 11.69], 'a5' => [5.83, 8.27], 'letter' => [8.5, 11.0], 'legal' => [8.5, 14.0]];   // inches (Chromium's unit)
 
     /** Render a Blade view to PDF bytes; every view gets the theme, the logo (data URI), the locale and its direction */
     public function render(string $view, array $data = [], string $paper = 'a4', string $orientation = 'portrait', bool $qbankFigures = false): string
@@ -28,6 +28,21 @@ class PdfService
         $html = view($view, $data + $shared)->render();
         if ($qbankFigures && preg_match(self::FIGURE, $html)) return $this->printWithFigures($html, $paper, $orientation);
         return $this->print($html, $paper, $orientation);
+    }
+
+    /** D127 OMR: a full-bleed page keeps persisted normalized scan geometry aligned with printed coordinates. */
+    public function renderOmr(string $view, array $data = [], string $paper = 'a4', string $orientation = 'portrait'): string
+    {
+        $institution = Tenancy::current();
+        $locale = app()->getLocale();
+        $shared = [
+            'institution' => $institution,
+            'theme' => $institution ? app(ThemeService::class)->getTheme($institution) : app(ThemeService::class)->defaultTheme(),
+            'logo' => $this->logoDataUri($institution?->logo_path),
+            'locale' => $locale,
+            'dir' => $locale === 'ar' ? 'rtl' : 'ltr',
+        ];
+        return $this->print(view($view, $data + $shared)->render(), $paper, $orientation, 0);
     }
 
     /** D118 (4): qbank's graph and diagram tokens in a printed page */
@@ -139,7 +154,7 @@ JS;
         return $path;
     }
 
-    private function print(string $html, string $paper, string $orientation): string
+    private function print(string $html, string $paper, string $orientation, float $margin = 0.4): string
     {
         [$w, $h] = self::PAPER[$paper] ?? self::PAPER['a4'];
         $timeout = (int) config('pdf.timeout_ms');
@@ -156,7 +171,7 @@ JS;
                 'printBackground' => true,
                 'landscape' => $orientation === 'landscape',
                 'paperWidth' => $w, 'paperHeight' => $h,
-                'marginTop' => 0.4, 'marginBottom' => 0.4, 'marginLeft' => 0.4, 'marginRight' => 0.4,
+                'marginTop' => $margin, 'marginBottom' => $margin, 'marginLeft' => $margin, 'marginRight' => $margin,
             ])->getBase64($timeout));
         } finally {
             $browser->close();

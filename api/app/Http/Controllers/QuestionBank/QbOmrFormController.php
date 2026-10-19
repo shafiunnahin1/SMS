@@ -4,7 +4,9 @@ namespace App\Http\Controllers\QuestionBank;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\QbOmrFormResource;
+use App\Services\QuestionBank\QbOmrGeometryService;
 use App\Services\QuestionBank\QbOmrFormService;
+use App\Services\PdfService;
 use Illuminate\Http\Request;
 
 class QbOmrFormController extends Controller
@@ -41,13 +43,27 @@ class QbOmrFormController extends Controller
         return new QbOmrFormResource($service->save($paper, $validated['settings']));
     }
 
-    public function generate(Request $request, int $id, QbOmrFormService $service): QbOmrFormResource
+    public function generate(Request $request, int $id, QbOmrFormService $service, QbOmrGeometryService $geometry): QbOmrFormResource
     {
-        return new QbOmrFormResource($service->generate($request->user(), $id));
+        return new QbOmrFormResource($service->generate($request->user(), $id, $geometry));
     }
 
     public function unlock(Request $request, int $id, QbOmrFormService $service): QbOmrFormResource
     {
         return new QbOmrFormResource($service->unlock($request->user(), $id));
+    }
+
+    public function pdf(Request $request, int $id, QbOmrFormService $service, PdfService $pdf)
+    {
+        $validated = $request->validate(['set' => 'nullable|string|max:10']);
+        $sheet = $service->printData($request->user(), $id, $validated['set'] ?? null);
+        $settings = $sheet['settings'];
+        $bytes = $pdf->renderOmr('pdf.qb-omr-sheet', $sheet, $settings['page_size'], $settings['page_orientation']);
+
+        return response($bytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Length' => (string) strlen($bytes),
+            'Content-Disposition' => 'inline; filename="omr-' . $sheet['form']->code . '-' . $sheet['variant']->code . '.pdf"',
+        ]);
     }
 }

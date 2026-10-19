@@ -220,6 +220,7 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/question-bank/papers/{id}/omr-form' => fn (array $other) => $this->seedPaper($other),
             'POST api/v1/question-bank/papers/{id}/omr-form/generate' => fn (array $other) => $this->seedPaper($other),
             'POST api/v1/question-bank/papers/{id}/omr-form/unlock' => fn (array $other) => $this->seedPaper($other),
+            'GET api/v1/question-bank/papers/{id}/omr-form/pdf' => fn (array $other) => $this->seedPaper($other),
             'PUT api/v1/question-bank/papers/{id}/folder'  => fn (array $other) => $this->seedPaper($other),            // R2.1.5 (D126)
             'PUT api/v1/question-bank/paper-folders/{id}'  => fn (array $other) => $this->seedPaperFolder($other),
             'DELETE api/v1/question-bank/paper-folders/{id}' => fn (array $other) => $this->seedPaperFolder($other),

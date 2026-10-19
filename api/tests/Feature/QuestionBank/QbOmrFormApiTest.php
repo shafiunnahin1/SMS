@@ -2,7 +2,8 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{QbPaper, QbPaperItem, QbPaperSection, QbQuestion, QbQuestionOption, QbQuestionType, QbSubject, User};
+use App\Models\{QbPaper, QbPaperItem, QbPaperSection, QbPaperVariant, QbQuestion, QbQuestionOption, QbQuestionType, QbSubject, User};
+use App\Services\PdfService;
 use App\Support\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -70,14 +71,21 @@ class QbOmrFormApiTest extends TestCase
         $url = "question-bank/papers/{$paperId}/omr-form";
 
         $this->api('PUT', $this->hostOf($institution), $url, $teacher, ['settings' => $this->settings()])
-            ->assertOk()->assertJsonPath('data.layout_version', 1)->assertJsonPath('data.settings.option_labels.0', 'ক');
+            ->assertJsonPath('data.layout_version', 1)->assertJsonPath('data.settings.option_labels.0', 'ক');
         $this->api('GET', $this->hostOf($institution), $url, $otherTeacher)->assertNotFound();
         $this->api('GET', $this->hostOf($institution), $url, $admin)->assertOk();
 
-        $this->api('POST', $this->hostOf($institution), "{$url}/generate", $teacher)->assertOk();
+        $this->api('POST', $this->hostOf($institution), "{$url}/generate", $teacher)->assertOk()
+            ->assertJsonPath('data.settings.is_generated', true)
+            ->assertJsonPath('data.settings.geometry.version', 2)
+            ->assertJsonPath('data.settings.geometry.coordinate_space', 'omr-page-normalized')
+            ->assertJsonPath('data.settings.geometry.code.bits.27.width', fn ($width) => $width > 0)
+            ->assertJsonPath('data.settings.geometry.roll.rows.9.5.bubble.width', fn ($width) => $width > 0)
+            ->assertJsonPath('data.settings.geometry.answers.column_count', 1);
         $this->api('PUT', $this->hostOf($institution), $url, $teacher, ['settings' => $this->settings(['title' => 'Changed'])])->assertStatus(422);
         $this->api('POST', $this->hostOf($institution), "{$url}/unlock", $teacher)
-            ->assertOk()->assertJsonPath('data.layout_version', 2)->assertJsonPath('data.locked_at', null);
+            ->assertOk()->assertJsonPath('data.layout_version', 2)->assertJsonPath('data.locked_at', null)
+            ->assertJsonPath('data.settings.is_generated', false)->assertJsonPath('data.settings.geometry', null);
         $this->api('PUT', $this->hostOf($institution), $url, $teacher, ['settings' => $this->settings(['title' => 'New layout'])])
             ->assertOk()->assertJsonPath('data.settings.title', 'New layout');
     }
@@ -93,5 +101,39 @@ class QbOmrFormApiTest extends TestCase
         $finalId = $this->paper($institution, $teacher);
         $this->api('PUT', $this->hostOf($institution), "question-bank/papers/{$finalId}/omr-form", $teacher,
             ['settings' => $this->settings(['option_count' => 5])])->assertStatus(422)->assertJsonPath('error', 'qb_omr_option_mismatch');
+    }
+
+    public function test_generated_sheet_is_printed_for_the_selected_final_paper_variant(): void
+    {
+        $institution = $this->makeInstitution('omr-form-pdf');
+        $teacher = $this->makeUser($institution, 'teacher');
+        $paperId = $this->paper($institution, $teacher);
+        Tenancy::as($institution, fn () => QbPaperVariant::create([
+            'institution_id' => $institution->id,
+            'qb_paper_id' => $paperId,
+            'variant_number' => 1,
+            'code' => 'A',
+            'strategy' => 'serial',
+            'layout_json' => ['question_order' => [$this->mcq->id], 'option_order' => []],
+        ]));
+        $baseUrl = "question-bank/papers/{$paperId}/omr-form";
+        $this->api('PUT', $this->hostOf($institution), $baseUrl, $teacher, ['settings' => $this->settings()])->assertOk();
+        $this->api('POST', $this->hostOf($institution), "{$baseUrl}/generate", $teacher)->assertOk();
+
+        $renderer = $this->mock(PdfService::class);
+        $renderer->shouldReceive('renderOmr')->once()->withArgs(fn ($view, $data, $size, $orientation) =>
+            $view === 'pdf.qb-omr-sheet'
+            && $data['variant']->code === 'A'
+            && $data['settings']['geometry']['version'] === 2
+            && $size === 'a4'
+            && $orientation === 'portrait'
+        )->andReturn('%PDF-OMR');
+
+        $response = $this->api('GET', $this->hostOf($institution), "{$baseUrl}/pdf?set=A", $teacher)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-OMR', false);
+        $this->assertStringStartsWith('inline; filename="omr-', $response->headers->get('Content-Disposition'));
+        $this->assertStringEndsWith('-A.pdf"', $response->headers->get('Content-Disposition'));
     }
 }

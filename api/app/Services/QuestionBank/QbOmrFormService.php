@@ -3,7 +3,7 @@
 namespace App\Services\QuestionBank;
 
 use App\Exceptions\BusinessException;
-use App\Models\{QbOmrForm, QbPaper, QbPaperItem, User};
+use App\Models\{QbOmrForm, QbPaper, QbPaperItem, QbPaperVariant, User};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -55,7 +55,7 @@ class QbOmrFormService
                     'class' => ['visible' => (bool) $input['info_boxes']['class'], 'digits' => 2],
                     'roll' => ['visible' => (bool) $input['info_boxes']['roll'], 'digits' => $rollDigits],
                     'subject' => ['visible' => (bool) $input['info_boxes']['subject'], 'digits' => 3],
-                    'set' => ['visible' => (bool) $input['info_boxes']['set'], 'digits' => max(1, (int) ceil(log10(max(10, (int) $lockedPaper->sets_count * 10))))],
+                    'set' => ['visible' => (bool) $input['info_boxes']['set'], 'digits' => $this->setDigits((int) $lockedPaper->sets_count)],
                 ],
                 'marking' => [
                     'question_mark' => (string) $input['question_mark'],
@@ -80,12 +80,17 @@ class QbOmrFormService
         });
     }
 
-    public function generate(User $actor, int $paperId): QbOmrForm
+    public function generate(User $actor, int $paperId, QbOmrGeometryService $geometryBuilder): QbOmrForm
     {
-        return DB::transaction(function () use ($actor, $paperId) {
+        return DB::transaction(function () use ($actor, $paperId, $geometryBuilder) {
             $paper = $this->paper($actor, $paperId, true);
             $form = QbOmrForm::where('qb_paper_id', $paper->id)->lockForUpdate()->firstOrFail();
             if ($form->locked_at === null) {
+                $settings = is_array($form->settings_json) ? $form->settings_json : [];
+                $settings['geometry'] = $geometryBuilder->build($paper->id, $settings);
+                $settings['is_generated'] = true;
+                $settings['generated_at'] = now()->toIso8601String();
+                $form->settings_json = $settings;
                 $form->locked_at = now();
                 $form->save();
             }
@@ -101,10 +106,40 @@ class QbOmrFormService
             if ($form->locked_at !== null) {
                 $form->layout_version++;
                 $form->locked_at = null;
+                $settings = $form->settings_json;
+                unset($settings['geometry']);
+                $settings['is_generated'] = false;
+                $settings['generated_at'] = null;
+                $form->settings_json = $settings;
                 $form->save();
             }
             return $form->fresh();
         });
+    }
+
+    public function printData(User $actor, int $paperId, ?string $setCode = null): array
+    {
+        $paper = $this->paper($actor, $paperId);
+        $form = $this->form($paper);
+        $settings = $form->settings_json;
+        if ($form->locked_at === null || !is_array($settings['geometry'] ?? null)) {
+            throw new BusinessException(__('errors.qb_omr_not_generated'), 'qb_omr_not_generated', 422);
+        }
+
+        $variants = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number');
+        $variant = $setCode === null ? $variants->first() : $variants->where('code', $setCode)->first();
+        if (!$variant) throw new BusinessException(__('errors.qb_no_such_set'), 'qb_no_such_set', 422);
+        $firstCode = (string) QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->value('code');
+        $symbols = preg_match('/^[A-Z]/', $firstCode) ? range('A', 'J') : ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ', 'ঞ'];
+
+        return ['paper' => $paper, 'form' => $form, 'variant' => $variant, 'settings' => $settings, 'set_symbols' => $symbols];
+    }
+
+    private function setDigits(int $setCount): int
+    {
+        $digits = 1;
+        while ($setCount > (10 ** $digits)) $digits++;
+        return $digits;
     }
 
     private function mcqIds(QbPaper $paper): array
