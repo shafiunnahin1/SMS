@@ -267,8 +267,6 @@ class QbImportService
             throw new BusinessException('more than ' . config('qb_import.max_pdf_pages') . ' pages in one import', 'qb_import_too_many_pages', 422, ['max' => config('qb_import.max_pdf_pages')]);
         }
         $records = (new PdfQuestionSplitter)->split($read['pages']);
-        foreach ($records as &$r) $r['legacy_bijoy'] = $read['legacy_bijoy'];
-        unset($r);
         Storage::disk('private')->put($this->path($batch, 0) . '.records.json', json_encode($records, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $batch->update(['page_from' => $read['page_from'], 'page_to' => $read['page_to'], 'document_kind' => $read['document_kind'], 'unreadable_pages' => $read['unreadable_pages']]);
         if ($read['document_kind'] === 'scanned') {
@@ -283,7 +281,7 @@ class QbImportService
     {
         if (!isset($raw['question_type'])) $n['warnings'][] = 'the question type could not be told from the PDF - choose it';
         if (preg_match('/[√²³¹⁴π∫∑≤≥≠÷×∞θαβ°]/u', json_encode($raw, JSON_UNESCAPED_UNICODE))) { $n['has_math'] = true; $n['warnings'][] = 'math symbols in the PDF text - check and write them as LaTeX'; }
-        if (!empty($raw['legacy_bijoy'])) $n['warnings'][] = 'the PDF uses a legacy Bijoy font - the Bangla text may be garbled';
+        if (!empty($raw['bijoy_converted'])) $n['warnings'][] = 'converted from Bijoy to Unicode - check the spelling';   // D125
         return $n;
     }
 

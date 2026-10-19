@@ -22,7 +22,9 @@ class PdfQuestionSplitter
             if (!$page['readable'] || trim($page['text']) === '') continue;
             foreach ($this->blocks($page['text']) as $block) {
                 $r = $this->parse($block);
-                if ($r !== null) $records[] = $r + ['page_number' => $page['page_number']];
+                if ($r === null) continue;
+                $converted = array_filter($page['converted_lines'] ?? [], fn ($l) => $l !== '' && str_contains($block, $l));
+                $records[] = $r + ['page_number' => $page['page_number']] + ($converted ? ['bijoy_converted' => count($converted)] : []);
             }
         }
         return $records;

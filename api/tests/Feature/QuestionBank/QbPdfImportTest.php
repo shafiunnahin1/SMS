@@ -111,4 +111,25 @@ class QbPdfImportTest extends TestCase
         $this->assertSame('failed', $made['status']);
         $this->assertStringContainsString('after the last page', $made['error']);
     }
+
+    public function test_a_page_mixing_bijoy_and_unicode_converts_only_the_bijoy_lines(): void   // D125
+    {
+        $bytes = $this->pdf(['<p>১. evsjv‡`‡ki ivRavbx †KvbwU? Avgv‡`i †`k</p><p>ক. ঢাকা খ. খুলনা</p><p>উত্তর: ক</p><p>2. What is the capital of France?</p><p>Answer: Paris</p>']);
+        $read = (new PdfTextExtractor)->extract($bytes);
+        $this->assertStringContainsString('বাংলাদেশের রাজধানী কোনটি? আমাদের দেশ', $read['pages'][0]['text']);
+        $this->assertStringContainsString("ক. ঢাকা খ. খুলনা\nউত্তর: ক\n2. What is the capital of France?\nAnswer: Paris", $read['pages'][0]['text'], 'Unicode and English lines unchanged');
+        $q = (new PdfQuestionSplitter)->split($read['pages']);
+        $this->assertSame(['mcq', 1], [$q[0]['question_type'], $q[0]['bijoy_converted']]);
+        $this->assertArrayNotHasKey('bijoy_converted', $q[1]);
+
+        $made = $this->api('POST', $this->central, 'writer/imports', $this->writer, ['pdf' => UploadedFile::fake()->createWithContent('mixed.pdf', $bytes)])->json('data');
+        $rows = collect($this->api('GET', $this->central, "writer/imports/{$made['id']}/records", $this->writer)->json('data'))->keyBy('record');
+        $this->assertContains('converted from Bijoy to Unicode - check the spelling', $rows[1]['warnings']);
+        $this->assertNotContains('converted from Bijoy to Unicode - check the spelling', $rows[2]['warnings']);
+
+        $unicode = (new PdfTextExtractor)->extract($this->pdf([self::PAGE_1]));
+        $raw = PdfTextExtractor::normalise((new \Smalot\PdfParser\Parser)->parseContent($this->pdf([self::PAGE_1]))->getPages()[0]->getText());
+        $this->assertSame($raw, $unicode['pages'][0]['text'], 'an all-Unicode PDF is not changed at all');
+        $this->assertSame([], $unicode['pages'][0]['converted_lines']);
+    }
 }
