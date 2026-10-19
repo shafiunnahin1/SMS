@@ -31,6 +31,7 @@ class QuestionAnswerNeverLeaksTest extends TestCase
         'app/Services/QbQuizMarker.php' => "QB.10: marks a quiz answer on the server; returns marks, the right answer only for a submitted attempt (QbQuizService::review)",
         'app/Http/Controllers/QuestionBank/QbQuizController.php' => "QB.10: the Super Admin's quiz editor (central host) checks question ids are published and auto-marked; returns ids and question texts",
         'app/Http/Controllers/QuestionBank/QbGraphDatasetController.php' => "R2.1.2 (D116): asks only whether the dataset's question is published before a delete; returns nothing about the question",
+        'app/Services/QbImportService.php' => "R2.1.3 (D123): duplicate check reads existing question texts of the same subject and type; staged records keep only the import's own content",
         'app/Services/QbQuestionFinderService.php' => "R2.1.2 (D114 (3)): the finder reads published question texts to score them; returns the question text, ids and names, never an answer",
         'app/Http/Controllers/QuestionBank/QbPublicQuizController.php' => "QB.10: the public page filters question ids to the quiz and to published ones; questions go out through QbQuizService::paper, marks only",
     ];

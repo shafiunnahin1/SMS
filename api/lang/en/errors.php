@@ -50,6 +50,11 @@ return [
     'qb_dataset_cells'      => 'A dataset can have at most :max cells.',
     'qb_dataset_row'        => 'Dataset row :row is not valid.',
     'qb_dataset_version'    => 'This dataset was changed in another editor. Reload it before saving.',
+    'qb_import_empty' => 'There are no questions in the import.',
+    'qb_import_too_many_files' => 'At most :max files can be imported at once.',
+    'qb_import_too_many' => 'Too many questions in one import.',
+    'qb_import_shape' => 'The file has no "questions" list.',
+    'qb_import_version' => 'This schema_version is not supported.',
     'qb_dataset_in_use'     => 'This dataset is used by a saved question and cannot be deleted.',
     'qb_needs_options'      => 'Give at least two options.',   // QB.3
     'qb_needs_correct'      => 'Mark the right option.',   // QB.3
