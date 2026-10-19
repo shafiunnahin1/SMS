@@ -119,7 +119,7 @@ class FeeCollectionTest extends TestCase
         $controller = app(\App\Http\Controllers\Fees\FeeController::class);
         $fake = new class extends \App\Services\PdfService {         // captures the HTML the real PdfService would print
             public ?string $html = null;
-            public function render(string $view, array $data = [], string $paper = 'a4', string $orientation = 'portrait'): string
+            public function render(string $view, array $data = [], string $paper = 'a4', string $orientation = 'portrait', bool $qbankFigures = false): string
             {
                 $theme = app(\App\Services\ThemeService::class)->getTheme(Tenancy::current());
                 $this->html = view($view, $data + ['institution' => Tenancy::current(), 'theme' => $theme, 'locale' => 'bn', 'dir' => 'ltr',

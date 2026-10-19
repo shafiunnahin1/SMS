@@ -50,7 +50,7 @@ class QbPaperTest extends TestCase
         $this->actingAs($as);
         $fake = new class extends PdfService {
             public ?string $html = null;
-            public function render(string $view, array $data = [], string $paper = 'a4', string $orientation = 'portrait'): string
+            public function render(string $view, array $data = [], string $paper = 'a4', string $orientation = 'portrait', bool $qbankFigures = false): string
             {
                 $this->html = view($view, $data + ['institution' => Tenancy::current(), 'theme' => app(\App\Services\ThemeService::class)->getTheme(Tenancy::current()),
                     'locale' => 'bn', 'dir' => 'ltr', 'logo' => null])->render();
