@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\{FeeController, FeeRefundController};
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -122,6 +122,12 @@ Route::prefix('v1')->group(function () {
         Route::put('/questions/{id}',                 [QbQuestionController::class, 'update'])->whereNumber('id')->middleware('role:content_writer,super_admin');
         Route::get('/questions/{id}/revisions',       [QbQuestionController::class, 'revisions'])->whereNumber('id');
         Route::post('/media',                         [QbMediaController::class, 'store'])->middleware('role:content_writer,super_admin');
+        // R2.1.2 (D115, D116): qbank's graph datasets (the {id} is the dataset's uuid) - writers their own, moderators read, the Super Admin all
+        Route::get('/graph-datasets',                 [QbGraphDatasetController::class, 'index']);
+        Route::post('/graph-datasets',                [QbGraphDatasetController::class, 'store'])->middleware(['role:content_writer,super_admin', 'throttle:60,1']);
+        Route::get('/graph-datasets/{id}',            [QbGraphDatasetController::class, 'show'])->whereUuid('id');
+        Route::put('/graph-datasets/{id}',            [QbGraphDatasetController::class, 'update'])->whereUuid('id')->middleware('role:content_writer,super_admin');
+        Route::delete('/graph-datasets/{id}',         [QbGraphDatasetController::class, 'destroy'])->whereUuid('id')->middleware('role:content_writer,super_admin');
         Route::post('/questions/{id}/submit',         [QbQuestionController::class, 'submit'])->whereNumber('id')->middleware('role:content_writer,super_admin');
         Route::post('/questions/{id}/publish',        [QbQuestionController::class, 'publish'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
         Route::post('/questions/{id}/reject',         [QbQuestionController::class, 'reject'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
