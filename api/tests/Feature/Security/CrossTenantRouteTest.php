@@ -42,6 +42,7 @@ class CrossTenantRouteTest extends TestCase
         'GET api/v1/accounting/reports/{name}',                                         // report name; AccountingTenancyTest: a foreign account_id/budget_id is 404
         'GET api/v1/inventory/sales/{receipt_no}/receipt.pdf',                         // InventoryTenancyTest: another institution's STR- receipt is 404
         'GET api/v1/imports/templates/{kind}.xlsx',                                    // template name, no data
+        'POST api/v1/question-bank/blueprints/{id}/plan', 'GET api/v1/question-bank/blueprints/{id}/candidates',   // D126: platform blueprint ids; picks only this institution's own unlocks (QbBlueprintTest)
         'PUT api/v1/parent/consents/{type}',                                           // consent type of the caller's own children
         'GET api/v1/question-bank/concepts/{id}', 'GET api/v1/question-bank/resources/{id}', 'GET api/v1/question-bank/questions/{id}',
         'GET api/v1/student/qb/questions/{id}', 'GET api/v1/student/qb/concepts/{id}', 'GET api/v1/student/qb/orders/{ref}',

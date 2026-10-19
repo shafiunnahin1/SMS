@@ -3110,6 +3110,41 @@ CREATE TABLE qb_paper_items (
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
 );
 
+CREATE TABLE qb_blueprints (                                 -- D126 (3) (R2.1.5): qbank's assessment blueprints - a platform plan a paper is built from
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name_bn VARCHAR(200) NOT NULL,
+    name_en VARCHAR(200) NULL,
+    qb_class_level_id BIGINT UNSIGNED NULL,
+    qb_subject_id BIGINT UNSIGNED NOT NULL,
+    exam_type VARCHAR(50) NULL,
+    total_marks DECIMAL(6,2) NOT NULL DEFAULT 0,             -- the sum of its items (count x marks each), kept by the server
+    duration_minutes SMALLINT UNSIGNED NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qb_blueprints_subject (qb_subject_id, is_active),
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
+);
+
+CREATE TABLE qb_blueprint_items (                            -- D126 (3): one rule of a blueprint - this many questions of this type (and chapter/topic/difficulty)
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_blueprint_id BIGINT UNSIGNED NOT NULL,
+    section_title VARCHAR(200) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    qb_question_type_id BIGINT UNSIGNED NOT NULL,
+    question_count SMALLINT UNSIGNED NOT NULL,
+    marks_each DECIMAL(5,2) NOT NULL,
+    qb_chapter_id BIGINT UNSIGNED NULL,
+    qb_topic_id BIGINT UNSIGNED NULL,
+    difficulty TINYINT UNSIGNED NULL,
+    FOREIGN KEY (qb_blueprint_id) REFERENCES qb_blueprints(id) ON DELETE CASCADE,
+    FOREIGN KEY (qb_question_type_id) REFERENCES qb_question_types(id),
+    FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id),
+    FOREIGN KEY (qb_topic_id) REFERENCES qb_topics(id)
+);
+
 CREATE TABLE qb_quiz_packages (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(200) NOT NULL,

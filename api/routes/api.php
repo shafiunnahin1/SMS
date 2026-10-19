@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\{FeeController, FeeRefundController};
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbImportController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbPaperController, QbPaperFolderController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbBlueprintController, QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbImportController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbPaperController, QbPaperFolderController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -99,6 +99,11 @@ Route::prefix('v1')->group(function () {
         Route::put('/qb/price-rules/{id}',            [QbPricingController::class, 'updateRule'])->whereNumber('id');
         // QB.1 (D65): the question-bank curriculum class → subject → chapter → topic
         Route::get('/qb/curriculum',                  [QbCurriculumController::class, 'tree']);
+        // R2.1.5 (D126 (3)): qbank's assessment blueprints (before the {kind} routes so "blueprints" is not read as a kind)
+        Route::get('/qb/blueprints',                  [QbBlueprintController::class, 'index']);
+        Route::post('/qb/blueprints',                 [QbBlueprintController::class, 'store']);
+        Route::put('/qb/blueprints/{id}',             [QbBlueprintController::class, 'update'])->whereNumber('id');
+        Route::delete('/qb/blueprints/{id}',          [QbBlueprintController::class, 'destroy'])->whereNumber('id');
         Route::post('/qb/{kind}',                     [QbCurriculumController::class, 'store']);
         Route::put('/qb/{kind}/{id}',                 [QbCurriculumController::class, 'update'])->whereNumber('id');
         Route::delete('/qb/{kind}/{id}',              [QbCurriculumController::class, 'destroy'])->whereNumber('id');
@@ -516,6 +521,9 @@ Route::prefix('v1')->group(function () {
                 Route::put('/paper-folders/{id}',         [QbPaperFolderController::class, 'update'])->whereNumber('id');
                 Route::delete('/paper-folders/{id}',      [QbPaperFolderController::class, 'destroy'])->whereNumber('id');
                 Route::put('/papers/{id}/folder',         [QbPaperFolderController::class, 'movePaper'])->whereNumber('id');
+                Route::get('/blueprints',                 [QbBlueprintController::class, 'available']);   // D126 (3)
+                Route::post('/blueprints/{id}/plan',      [QbBlueprintController::class, 'plan'])->whereNumber('id');
+                Route::get('/blueprints/{id}/candidates', [QbBlueprintController::class, 'candidates'])->whereNumber('id');
             });
         });
         // ── Question bank (D65, QB.9): the student portal - own unlocks, bKash orders to the platform merchant ──

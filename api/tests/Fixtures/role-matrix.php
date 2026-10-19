@@ -199,6 +199,10 @@ return [
     'GET api/v1/super/qb/writer-settings' => ['super_admin'],   // QB.10b
     'PUT api/v1/super/qb/writer-settings' => ['super_admin'],
     'GET api/v1/super/qb/withdrawals' => ['super_admin'],
+    'GET api/v1/super/qb/blueprints' => ['super_admin'],
+    'POST api/v1/super/qb/blueprints' => ['super_admin'],
+    'PUT api/v1/super/qb/blueprints/{id}' => ['super_admin'],
+    'DELETE api/v1/super/qb/blueprints/{id}' => ['super_admin'],
     'POST api/v1/super/qb/withdrawals/{id}/pay' => ['super_admin'],
     'POST api/v1/super/qb/withdrawals/{id}/reject' => ['super_admin'],
     'GET api/v1/writer/earnings' => ['content_writer'],   // QB.10b: the writer's own money
@@ -279,6 +283,9 @@ return [
     'PUT api/v1/question-bank/paper-folders/{id}' => ['admin', 'teacher'],
     'DELETE api/v1/question-bank/paper-folders/{id}' => ['admin', 'teacher'],
     'PUT api/v1/question-bank/papers/{id}/folder' => ['admin', 'teacher'],
+    'GET api/v1/question-bank/blueprints' => ['admin', 'teacher'],
+    'POST api/v1/question-bank/blueprints/{id}/plan' => ['admin', 'teacher'],
+    'GET api/v1/question-bank/blueprints/{id}/candidates' => ['admin', 'teacher'],
     'GET api/v1/student/qb/curriculum' => ['student'],   // QB.9: the student portal
     'GET api/v1/student/qb/questions' => ['student'],
     'GET api/v1/student/qb/questions/{id}' => ['student'],

@@ -85,6 +85,8 @@ class TenantIsolationTest extends TestCase
             'PATCH api/v1/hr/payroll-items/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollItem::factory()->create()->id),
             'GET api/v1/hr/payroll-items/{id}/slip.pdf' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\PayrollItem::factory()->create()->id),
             'GET api/v1/hr/reports/{name}' => null,
+            'POST api/v1/question-bank/blueprints/{id}/plan' => null,       // D126: a platform blueprint id, the same for every institution
+            'GET api/v1/question-bank/blueprints/{id}/candidates' => null,
             'GET api/v1/teacher/salary/slips/{id}.pdf' => null,
             'GET api/v1/hr/advances/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryAdvance::factory()->create()->id),
             'POST api/v1/hr/advances/{id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\SalaryAdvance::factory()->create()->id),
