@@ -214,6 +214,9 @@ class TenantIsolationTest extends TestCase
             'DELETE api/v1/question-bank/papers/{id}'      => fn (array $other) => $this->seedPaper($other),
             'POST api/v1/question-bank/papers/{id}/finalize' => fn (array $other) => $this->seedPaper($other),
             'GET api/v1/question-bank/papers/{id}/pdf'     => fn (array $other) => $this->seedPaper($other),
+            'PUT api/v1/question-bank/papers/{id}/folder'  => fn (array $other) => $this->seedPaper($other),            // R2.1.5 (D126)
+            'PUT api/v1/question-bank/paper-folders/{id}'  => fn (array $other) => $this->seedPaperFolder($other),
+            'DELETE api/v1/question-bank/paper-folders/{id}' => fn (array $other) => $this->seedPaperFolder($other),
         ];
     }
 
@@ -287,6 +290,12 @@ class TenantIsolationTest extends TestCase
     {
         return Tenancy::as($t['institution'], fn () => \App\Models\QbPaper::value('id')
             ?? \App\Models\QbPaper::create(['created_by' => $t['admin']->id, 'title' => 'Paper', 'status' => 'draft'])->id);
+    }
+
+    private function seedPaperFolder(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\QbPaperFolder::value('id')
+            ?? \App\Models\QbPaperFolder::create(['created_by' => $t['admin']->id, 'name' => 'Folder'])->id);
     }
 
     private function seedImport(array $t): int

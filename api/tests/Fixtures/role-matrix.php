@@ -274,6 +274,11 @@ return [
     'DELETE api/v1/question-bank/papers/{id}' => ['admin', 'institution_staff', 'teacher'],
     'POST api/v1/question-bank/papers/{id}/finalize' => ['admin', 'institution_staff', 'teacher'],
     'GET api/v1/question-bank/papers/{id}/pdf' => ['admin', 'institution_staff', 'teacher'],
+    'GET api/v1/question-bank/paper-folders' => ['admin', 'teacher'],   // R2.1.5 (D126)
+    'POST api/v1/question-bank/paper-folders' => ['admin', 'teacher'],
+    'PUT api/v1/question-bank/paper-folders/{id}' => ['admin', 'teacher'],
+    'DELETE api/v1/question-bank/paper-folders/{id}' => ['admin', 'teacher'],
+    'PUT api/v1/question-bank/papers/{id}/folder' => ['admin', 'teacher'],
     'GET api/v1/student/qb/curriculum' => ['student'],   // QB.9: the student portal
     'GET api/v1/student/qb/questions' => ['student'],
     'GET api/v1/student/qb/questions/{id}' => ['student'],

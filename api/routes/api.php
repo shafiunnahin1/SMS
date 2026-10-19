@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\{FeeController, FeeRefundController};
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbImportController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbPaperController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbImportController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbPaperController, QbPaperFolderController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -509,6 +509,14 @@ Route::prefix('v1')->group(function () {
             Route::delete('/papers/{id}',                 [QbPaperController::class, 'destroy'])->whereNumber('id');
             Route::post('/papers/{id}/finalize',          [QbPaperController::class, 'finalize'])->whereNumber('id');
             Route::get('/papers/{id}/pdf',                [QbPaperController::class, 'pdf'])->whereNumber('id');
+            // R2.1.5 (D126 (1)): qbank's folders for papers - the head teacher and teachers (not a D90 staff duty)
+            Route::middleware('role:admin,teacher')->group(function () {
+                Route::get('/paper-folders',              [QbPaperFolderController::class, 'index']);
+                Route::post('/paper-folders',             [QbPaperFolderController::class, 'store']);
+                Route::put('/paper-folders/{id}',         [QbPaperFolderController::class, 'update'])->whereNumber('id');
+                Route::delete('/paper-folders/{id}',      [QbPaperFolderController::class, 'destroy'])->whereNumber('id');
+                Route::put('/papers/{id}/folder',         [QbPaperFolderController::class, 'movePaper'])->whereNumber('id');
+            });
         });
         // ── Question bank (D65, QB.9): the student portal - own unlocks, bKash orders to the platform merchant ──
         Route::middleware(['role:student', 'module:question_bank'])->prefix('student/qb')->group(function () {

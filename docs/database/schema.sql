@@ -3055,11 +3055,24 @@ CREATE TABLE qb_papers (
     instructions_json JSON NULL,
     status ENUM('draft','final') NOT NULL DEFAULT 'draft',
     sets_count TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    qb_paper_folder_id BIGINT UNSIGNED NULL,                 -- D126: the folder it sits in (none = the top level)
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     INDEX idx_qb_papers_owner (institution_id, created_by),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
+);
+CREATE TABLE qb_paper_folders (                              -- D126 (R2.1.5): qbank's question-set folders, for an institution's papers
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    parent_id BIGINT UNSIGNED NULL,                          -- folders nest; a move into itself or its own sub-folder is refused
+    name VARCHAR(150) NOT NULL,
+    created_by BIGINT UNSIGNED NOT NULL,                     -- a person's own folders (the papers they can see go in them)
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qb_paper_folders_owner (institution_id, created_by, parent_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (parent_id) REFERENCES qb_paper_folders(id)
 );
 CREATE TABLE qb_paper_sections (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
