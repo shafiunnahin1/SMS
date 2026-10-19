@@ -216,6 +216,8 @@ return [
     'PUT api/v1/writer/graph-datasets/{id}' => ['content_writer', 'super_admin'],
     'DELETE api/v1/writer/graph-datasets/{id}' => ['content_writer', 'super_admin'],
     'GET api/v1/writer/imports' => ['content_writer', 'super_admin'],   // R2.1.3 (D123)
+    'GET api/v1/writer/imports/schema.json' => ['content_writer', 'super_admin'],
+    'GET api/v1/writer/imports/example.{format}' => ['content_writer', 'super_admin'],
     'POST api/v1/writer/imports' => ['content_writer', 'super_admin'],
     'GET api/v1/writer/imports/{id}' => ['content_writer', 'super_admin'],
     'GET api/v1/writer/imports/{id}/records' => ['content_writer', 'super_admin'],

@@ -173,4 +173,21 @@ class QbJsonToonImportTest extends TestCase
         $this->assertSame(1, $this->api('POST', $this->central, "writer/imports/{$uuid}/finalize", $this->writer)->json('result.invalid'));
         $this->assertSame(1, QbQuestion::count(), 'only the question that was there before');
     }
+
+    public function test_the_downloadable_example_imports_cleanly_as_json_and_toon(): void
+    {
+        \App\Models\QbChapter::create(['qb_subject_id' => $this->subject, 'name_bn' => 'বীজগণিত', 'name_en' => 'Algebra']);
+        QbSubject::create(['name_bn' => 'ইংরেজি', 'name_en' => 'English']);
+        \App\Models\QbClassLevel::create(['name_bn' => 'নবম', 'name_en' => 'Class 9', 'education_level' => 'secondary', 'sort_order' => 9]);
+        $json = $this->api('GET', $this->central, 'writer/imports/example.json', $this->writer)->assertOk()->getContent();
+        $toon = $this->api('GET', $this->central, 'writer/imports/example.toon', $this->writer)->assertOk()->getContent();
+        $schema = $this->api('GET', $this->central, 'writer/imports/schema.json', $this->writer)->assertOk()->json();
+        $this->assertContains('fill_in_the_blank', $schema['$defs']['question']['properties']['question_type']['enum']);
+        $a = $this->upload($this->writer, 'example.json', $json)->assertCreated()->json('data');
+        $b = $this->upload($this->writer, 'example.toon', $toon)->assertCreated()->json('data');
+        foreach ([$a, $b] as $batch) $this->assertSame(['ready', 6, 6, 0], [$batch['status'], $batch['counts']['total'], $batch['counts']['valid'], $batch['counts']['invalid']], json_encode(QbImportRecord::whereNotNull('errors')->pluck('errors')));
+        $records = fn ($uuid) => QbImportRecord::whereHas('batch', fn ($q) => $q->where('uuid', $uuid))->orderBy('record_index')->pluck('payload')->all();
+        $this->assertSame($records($a['id']), $records($b['id']));
+        $this->api('GET', $this->central, 'writer/imports/example.json', User::create(['institution_id' => null, 'name' => 'm', 'role' => 'content_moderator', 'phone' => '01822222222', 'password' => 'Writer-pass-26', 'is_active' => true]))->assertForbidden();
+    }
 }

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Http\Controllers\Controller;
 use App\Models\{AuditLog, QbImportBatch, QbImportRecord};
 use App\Services\QbImportService;
+use App\Support\QbImportExamples;
+use App\Support\Toon\ToonEncoder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -39,6 +41,21 @@ class QbImportController extends Controller
         [$batch, $new] = $this->imports->create($request->user(), $files, $in['format'] ?? null);
         if ($new) AuditLog::record('qb.import.created', $batch, ['format' => $batch->format, 'files' => count($batch->files)]);
         return response()->json(['success' => true, 'data' => $this->view($batch->fresh()), 'reused' => !$new], $new ? 201 : 200);
+    }
+
+    /** GET /writer/imports/schema.json: SMS's import schema (qbank's v5 keys plus every type of qb_question_types) */
+    public function schema(): JsonResponse
+    {
+        return response()->json(QbImportExamples::schema(), 200, [], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    /** GET /writer/imports/example.json | example.toon: the same questions in both encodings */
+    public function example(string $format): Response
+    {
+        $data = QbImportExamples::example();
+        return $format === 'toon'
+            ? response(ToonEncoder::encode($data), 200, ['Content-Type' => 'text/plain; charset=UTF-8'])
+            : response(json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), 200, ['Content-Type' => 'application/json; charset=UTF-8']);
     }
 
     /** GET /writer/imports/{id} */

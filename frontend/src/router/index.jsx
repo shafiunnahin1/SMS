@@ -58,6 +58,8 @@ const QbWriters         = lazy(() => import('../pages/super/QbWriters'))
 const QbPricing         = lazy(() => import('../pages/super/QbPricing'))
 const QbDashboard       = lazy(() => import('../pages/writer/QbDashboard'))   // R2.1.1 (D110)
 const QbFinder          = lazy(() => import('../pages/writer/QbFinder'))   // R2.1.2 (D114 (3))
+const QbImports         = lazy(() => import('../pages/writer/QbImports'))   // R2.1.3 (D123)
+const QbImportReview    = lazy(() => import('../pages/writer/QbImportReview'))
 const QbQuestions       = lazy(() => import('../pages/writer/QbQuestions'))
 const QbQuestionEdit    = lazy(() => import('../pages/writer/QbQuestionEdit'))
 const QbQuestionStart   = lazy(() => import('../pages/writer/QbQuestionStart'))   // D73
@@ -185,6 +187,8 @@ export const centralRoutes = [
     { path: 'dashboard', element: S(QbDashboard) },
     { path: 'questions', element: S(QbQuestions) },
     { path: 'finder', element: S(QbFinder) },
+    { path: 'imports', element: S(QbImports) },
+    { path: 'imports/:id', element: S(QbImportReview) },
     { path: 'questions/start', element: S(QbQuestionStart) },   // D73: qbank's new-question form, a draft first
     { path: 'questions/:id', element: S(QbQuestionEdit) },
     { path: 'concepts', element: <Suspense fallback={<Loader type="page" />}><QbContentList kind="concepts" /></Suspense> },   // QB.5

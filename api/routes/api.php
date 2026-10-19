@@ -133,6 +133,8 @@ Route::prefix('v1')->group(function () {
         // R2.1.3 (D123): JSON/TOON import into staging - writers and the Super Admin
         Route::middleware('role:content_writer,super_admin')->group(function () {
             Route::get('/imports',                    [QbImportController::class, 'index']);
+            Route::get('/imports/schema.json',        [QbImportController::class, 'schema']);
+            Route::get('/imports/example.{format}',   [QbImportController::class, 'example'])->whereIn('format', ['json', 'toon']);
             Route::post('/imports',                   [QbImportController::class, 'store'])->middleware('throttle:10,1');
             Route::get('/imports/{id}',               [QbImportController::class, 'show'])->whereUuid('id');
             Route::get('/imports/{id}/records',       [QbImportController::class, 'records'])->whereUuid('id');
