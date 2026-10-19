@@ -87,6 +87,22 @@ class QuestionAnswerNeverLeaksTest extends TestCase
         $this->assertEqualsCanonicalizing([$shown->id, $answerOnly->id, $explainOnly->id], array_column(QbQuestionPublicResource::make($q->fresh(), unlocked: true)['media'], 'id'));
     }
 
+    /** R2.1.2 (D118 (6)): a graph or diagram written only in the answer, explanation or a part's answer stays locked; one in the
+     *  question shows - they are qbank text tokens, so the locked shape leaves them out with the text that carries them */
+    public function test_an_answer_only_graph_or_diagram_stays_locked(): void
+    {
+        $q = $this->question();
+        $graph = '[[qmx-graph:QUESTIONGRAPHTOKEN]]';
+        $q->update(['question_text' => 'Plot: ' . $graph, 'answer_text' => 'SECRET-ANSWER [[qmx-graph:ANSWERGRAPHTOKEN]]',
+            'explanation_text' => 'SECRET-EXPLANATION [[qmx-diagram:EXPLAINDIAGRAMTOKEN]]']);
+        $q->creativeParts()->update(['answer_text' => 'SECRET-PART-ANSWER [[qmx-diagram:PARTDIAGRAMTOKEN]]']);
+        $locked = json_encode(QbQuestionPublicResource::make($q->fresh(), unlocked: false), JSON_UNESCAPED_UNICODE);
+        $this->assertStringContainsString($graph, $locked, 'the question\'s own graph is shown');
+        foreach (['ANSWERGRAPHTOKEN', 'EXPLAINDIAGRAMTOKEN', 'PARTDIAGRAMTOKEN'] as $hidden) $this->assertStringNotContainsString($hidden, $locked);
+        $open = json_encode(QbQuestionPublicResource::make($q->fresh(), unlocked: true), JSON_UNESCAPED_UNICODE);
+        foreach (['ANSWERGRAPHTOKEN', 'EXPLAINDIAGRAMTOKEN', 'PARTDIAGRAMTOKEN'] as $shown) $this->assertStringContainsString($shown, $open);
+    }
+
     public function test_every_other_use_of_the_question_models_goes_through_the_public_resource(): void
     {
         $root = dirname(__DIR__, 3);
