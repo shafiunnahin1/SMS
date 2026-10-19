@@ -1,6 +1,7 @@
 # D118/D119: qbank revision 40f769c, public/js/math, public/js/diagram and public/js/question-graph-renderer-v1.js, copied unchanged
 # except the loading path in js/diagram/diagram-editor-lazy-loader-v1.js ('/js/diagram/...' -> '/vendor/qbank/js/diagram/...').
 # Every file under this folder (except this one) with its sha256; the guard and QbankVendorManifest.test.js check it.
+# D120: plus qbank's own vendor/sweetalert2/sweetalert2.all.min.js (v11.26.25, MIT), unchanged.
 8e3db37999cf7c5ae9fb6a1dc5e653f15e58b8742dad9f20643f32c2b7a5cec4  js/diagram/astronomy-diagram-editor-v1.js
 833b871cfbea7fedc2ca6256e648d1d27040fda2c470db146e107f23467bc801  js/diagram/astronomy-diagram-registry-v1.js
 72e014c9e559e7a4d93456043d57d3faa43cb1fc0c8cdfb25c384a34cb21f9a5  js/diagram/biological-cell-editor-v1.js
@@ -115,3 +116,4 @@ c260834148dc9ff5c31228fc7f8d1d3214d6dd096435aee18f2739ac27981dca  js/math/tools/
 29f712787925ff1d095bf12ea4e5f69a3ee6fe620937cd8f4e48541a222ed2fb  js/math/tools/vector/vector-tool.js
 538f0396598aea8578d4ff1b134a294b568509b354abf79a90412e926ae09f38  js/math/vector/vector.js
 c4012722c3124ff179ee7608d062ca9f918483029f90dce65da234a02fdf607c  js/question-graph-renderer-v1.js
+4e86f0e22e4771b5b8aac24c613c661806a678b1afa284d03cf6ad03d3e21a0a  vendor/sweetalert2/sweetalert2.all.min.js

@@ -12,11 +12,25 @@ function configureDatasets() {
   window.QmxGraphDatasetConfig = { ...(window.QmxGraphDatasetConfig ?? {}), baseUrl: '/api/v1/writer/graph-datasets' }
 }
 
+let swalLoading = null
+/** D120: qbank's own SweetAlert2 copy (its dialogs are built on window.Swal), from this site, before the tools */
+function loadSwal() {
+  if (window.Swal) return Promise.resolve()
+  if (!swalLoading) swalLoading = new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = '/vendor/qbank/vendor/sweetalert2/sweetalert2.all.min.js'
+    script.onload = () => resolve()
+    script.onerror = () => { swalLoading = null; reject(new Error('SweetAlert2 did not load')) }
+    document.head.appendChild(script)
+  })
+  return swalLoading
+}
+
 export function loadQbankMath() {
   if (window.MathEditor?.getTool?.('graph')) return Promise.resolve(window.MathEditor)
   if (mathLoading) return mathLoading
   configureDatasets()
-  mathLoading = new Promise((resolve, reject) => {
+  mathLoading = loadSwal().then(() => new Promise((resolve, reject) => {
     const script = document.createElement('script')
     script.type = 'module'
     script.src = `${BASE}/math/core/index.js`
@@ -29,7 +43,8 @@ export function loadQbankMath() {
       else setTimeout(wait, 50)
     }
     wait()
-  })
+  }))
+  mathLoading.catch(() => { mathLoading = null })
   return mathLoading
 }
 
