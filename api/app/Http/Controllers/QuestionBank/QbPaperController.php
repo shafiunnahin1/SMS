@@ -106,11 +106,11 @@ class QbPaperController extends Controller
     {
         $this->staffGate($request);
         $f = $request->validate(['set' => 'nullable|in:' . implode(',', QbPaperSets::LATIN), 'answers' => 'nullable|boolean', 'format' => 'nullable|in:json',
-            'strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES)]);
+            'strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES), 'columns' => 'nullable|integer|in:1,2']);
         $paper = $this->find($request->user(), $id);
         $number = array_search($f['set'] ?? 'A', QbPaperSets::LATIN, true) + 1;
         if ($number > max(1, (int) $paper->sets_count)) throw new BusinessException('this paper has no such set', 'qb_no_such_set', 422);
-        $data = $this->printable($paper, $number, (bool) ($f['answers'] ?? false), $f['strategy'] ?? 'both');
+        $data = $this->printable($paper, $number, (bool) ($f['answers'] ?? false), $f['strategy'] ?? 'both') + ['columns' => (int) ($f['columns'] ?? 1)];
         if (($f['format'] ?? null) === 'json') return response()->json(['success' => true, 'data' => $data]);
         $bytes = $pdf->render('pdf.qb-paper', ['paper' => $data], qbankFigures: true);   // D118 (4): graphs and diagrams drawn
         return response($bytes, 200, ['Content-Type' => 'application/pdf',

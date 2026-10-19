@@ -105,4 +105,35 @@ class QbPaperSetsTest extends TestCase
         $c = $this->printed($host, $admin, $id, 'C')['sections'][0]['items'];
         $this->assertSame(['২ + ২ = ?', '৩ × ৩ = ?'], array_column(array_column($c, 'question'), 'question_text'), 'options: the questions stay in place');
     }
+
+    /** D126 (4): the printed set carries its code, two columns on request, and its own answer key on the answers copy */
+    public function test_the_print_shows_the_set_code_columns_and_the_answer_key(): void
+    {
+        [$host, $admin, $id, $i] = $this->paper(2);
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['set_names' => 'bangla'])->assertOk();
+        $this->bindTenant($i);
+        $this->actingAs($admin);
+        $fake = new class extends \App\Services\PdfService {
+            public ?string $html = null;
+            public function render(string $view, array $data = [], string $paper = 'a4', string $orientation = 'portrait', bool $qbankFigures = false): string
+            {
+                $this->html = view($view, $data + ['institution' => Tenancy::current(), 'theme' => app(\App\Services\ThemeService::class)->getTheme(Tenancy::current()),
+                    'locale' => 'bn', 'dir' => 'ltr', 'logo' => null])->render();
+                return '%PDF';
+            }
+        };
+        $print = function (array $q) use ($fake, $admin, $id) {
+            $request = \Illuminate\Http\Request::create('/', 'GET', $q);
+            $request->setUserResolver(fn () => $admin);
+            app(\App\Http\Controllers\QuestionBank\QbPaperController::class)->pdf($request, $id, $fake);
+            return $fake->html;
+        };
+        $plain = $print(['set' => 'B', 'columns' => '2']);
+        $this->assertStringContainsString('সেট: খ', $plain);
+        $this->assertStringContainsString('class="cols-2"', $plain);
+        $this->assertStringNotContainsString('উত্তরমালা', $plain);
+        $withKey = $print(['set' => 'B', 'answers' => '1']);
+        $this->assertStringContainsString('উত্তরমালা — সেট খ', $withKey);
+        $this->assertStringNotContainsString('class="cols-2"', $withKey);
+    }
 }
