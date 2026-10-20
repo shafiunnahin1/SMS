@@ -143,7 +143,7 @@ export function rotate90(imageData, clockwise = true) {
 }
 
 /** centre a found corner mark on the centroid of its dark pixels (the coarse search moves in 1% steps; a tilted photo needs better) */
-function refineMarkers(imageData, markers) {
+export function refineMarkers(imageData, markers) {
   const points = {}
   const half = Math.max(6, Math.round(Math.min(imageData.width, imageData.height) * 0.03))
   for (const [corner, [xr, yr]] of Object.entries(markers.points)) {
@@ -167,16 +167,90 @@ function refineMarkers(imageData, markers) {
 
 const rotate180 = (img) => rotate90(rotate90(img, true), true)
 
+/**
+ * The sheet often fills only part of a photo (a desk, a screen, a hand around it). Find the bright paper - the longest run of rows
+ * and of columns that are mostly brighter than Otsu's threshold - and cut the photo to it with a small margin, so the corner marks
+ * are looked for on the page and not on dark things beside it. Returns null when the paper already fills the photo.
+ */
+export function cropToPaper(imageData) {
+  const { width, height, data } = imageData
+  const lum = (x, y) => { const p = (y * width + x) * 4; return data[p] * 0.2126 + data[p + 1] * 0.7152 + data[p + 2] * 0.0722 }
+  const hist = new Array(256).fill(0)
+  const step = Math.max(1, Math.round(Math.min(width, height) / 400))
+  for (let y = 0; y < height; y += step) for (let x = 0; x < width; x += step) hist[Math.min(255, Math.round(lum(x, y)))]++
+  const total = hist.reduce((a, b) => a + b, 0)
+  let sumAll = 0
+  hist.forEach((n, v) => { sumAll += n * v })
+  let wB = 0
+  let sumB = 0
+  let best = 0
+  let threshold = 128
+  for (let v = 0; v < 256; v++) {                                  // Otsu
+    wB += hist[v]
+    if (!wB || wB === total) continue
+    sumB += v * hist[v]
+    const mB = sumB / wB
+    const mF = (sumAll - sumB) / (total - wB)
+    const between = wB * (total - wB) * (mB - mF) ** 2
+    if (between > best) { best = between; threshold = v }
+  }
+  const longestRun = (flags) => {
+    let start = -1
+    let run = [0, -1]
+    flags.forEach((on, i) => {
+      if (on && start < 0) start = i
+      if ((!on || i === flags.length - 1) && start >= 0) {
+        const end = on ? i : i - 1
+        if (end - start > run[1] - run[0]) run = [start, end]
+        start = -1
+      }
+    })
+    return run
+  }
+  const rowFlags = []
+  for (let y = 0; y < height; y += step) {
+    let bright = 0
+    let n = 0
+    for (let x = 0; x < width; x += step) { if (lum(x, y) > threshold) bright++; n++ }
+    rowFlags.push(bright / n > 0.35)
+  }
+  const [r0, r1] = longestRun(rowFlags).map(i => i * step)
+  const colFlags = []
+  for (let x = 0; x < width; x += step) {
+    let bright = 0
+    let n = 0
+    for (let y = r0; y <= r1; y += step) { if (lum(x, y) > threshold) bright++; n++ }
+    colFlags.push(n > 0 && bright / n > 0.5)
+  }
+  const [c0, c1] = longestRun(colFlags).map(i => i * step)
+  const w = c1 - c0
+  const h = r1 - r0
+  if (w < width * 0.2 || h < height * 0.2 || (w > width * 0.92 && h > height * 0.92)) return null
+  const mx = Math.round(w * 0.01)
+  const my = Math.round(h * 0.01)
+  const left = Math.max(0, c0 - mx)
+  const top = Math.max(0, r0 - my)
+  const cw = Math.min(width, c1 + mx + 1) - left
+  const ch = Math.min(height, r1 + my + 1) - top
+  const out = new Uint8ClampedArray(cw * ch * 4)
+  for (let y = 0; y < ch; y++) out.set(data.subarray(((top + y) * width + left) * 4, ((top + y) * width + left + cw) * 4), y * cw * 4)
+  return { width: cw, height: ch, data: out }
+}
+
 /** every way the page may lie whose four corner marks are found: as it is, enhanced, upside down, a quarter turn either way */
 function candidates(imageData) {
-  const base = enhance(imageData)
-  const ways = [() => imageData, () => base, () => rotate180(base)]
-  if (imageData.width > imageData.height) ways.push(() => enhance(rotate90(imageData, true)), () => enhance(rotate90(imageData, false)))
   const found = []
-  for (const make of ways) {
-    const img = make()
-    const markers = findRegistrationMarkers(img)
-    if (markers.valid) found.push({ img: img === imageData ? base : img, markers: refineMarkers(img === imageData ? base : img, markers) })
+  const paper = cropToPaper(imageData)
+  for (const source of paper ? [paper, imageData] : [imageData]) {   // the paper alone first, then the whole photo
+    const base = enhance(source)
+    const ways = [() => source, () => base, () => rotate180(base)]
+    if (source.width > source.height) ways.push(() => enhance(rotate90(source, true)), () => enhance(rotate90(source, false)))
+    for (const make of ways) {
+      const img = make()
+      const markers = findRegistrationMarkers(img)
+      const on = img === source ? base : img
+      if (markers.valid) found.push({ img: on, markers: refineMarkers(on, markers) })
+    }
   }
   return found
 }

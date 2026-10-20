@@ -108,6 +108,23 @@ describe('readSheet (D127)', () => {
     expect(r.answers.map(a => a.selected)).toEqual([[0], [2]])
   })
 
+  it('finds the sheet when it fills only part of a photo with dark things beside it', () => {
+    const fills = [geometry.roll.rows[3][0].bubble, geometry.roll.rows[6][1].bubble, geometry.set.rows[0][0].bubble,
+      geometry.answers.columns[1].rows[0].options[3].bubble, geometry.answers.columns[0].rows[0].options[1].bubble]
+    const page = photo(image(fills), { angle: 2, dim: 0.9, shadow: 0.1, shrink: 0.6 })
+    const fw = page.width * 2
+    const fh = Math.round(page.height * 1.6)
+    const data = new Uint8ClampedArray(fw * fh * 4)
+    for (let i = 0; i < data.length; i += 4) data.set([25, 25, 25, 255], i)       // a dark desk / screen frame
+    for (let k = 0; k < 6; k++) for (let y = 0; y < 40; y++) for (let x = 0; x < 40; x++) data.set([0, 0, 0, 255], ((20 + y + k * 90) * fw + 15 + x) * 4)   // dark toolbar blocks
+    const ox = Math.round(page.width * 0.6)
+    const oy = Math.round(page.height * 0.25)
+    for (let y = 0; y < page.height; y++) data.set(page.data.subarray(y * page.width * 4, (y + 1) * page.width * 4), ((oy + y) * fw + ox) * 4)
+    const r = readSheet({ width: fw, height: fh, data }, { geometry, info_boxes: { set: { visible: true } } }, ['A', 'B'])
+    expect([r.ok, r.roll, r.set_code]).toEqual([true, '36', 'A'])
+    expect(r.answers.map(a => a.selected)).toEqual([[3], [1]])
+  })
+
   it('finds a sheet photographed sideways', () => {
     const fills = [geometry.roll.rows[2][0].bubble, geometry.roll.rows[5][1].bubble, geometry.answers.columns[1].rows[0].options[0].bubble, geometry.answers.columns[0].rows[0].options[2].bubble]
     const src = image(fills)
