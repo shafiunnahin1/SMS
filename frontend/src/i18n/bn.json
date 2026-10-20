@@ -1110,6 +1110,10 @@
    "no_choices": "বাছাইয়ের কিছু নেই"
   },
   "qbpp": {
+   "question_set": "প্রশ্নপত্র",
+   "question_count": "{{count}}টি প্রশ্ন",
+   "answer": "উত্তর",
+   "solution": "সমাধান",
    "n_sets": "{{n}} সেট",
    "from_blueprint": "ব্লুপ্রিন্ট থেকে শুরু করুন",
    "no_blueprint": "ব্লুপ্রিন্ট ছাড়া",

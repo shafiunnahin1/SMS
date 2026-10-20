@@ -5,11 +5,12 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
-import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
 import Loader from '../../components/Loader'
 import PrintButton from '../../components/PrintButton'
+import DirIcon from '../../components/DirIcon'
+import Ltr from '../../components/bidi/Ltr'
 import { ErrorState } from '../../components/StateViews'
 import { Input, Select, Textarea } from '../../components/FormField'
 import MathText from '../../features/qb/MathText'
@@ -27,8 +28,11 @@ export default function QbPaperEdit() {
   const base = useLocation().pathname.replace(/\/[^/]+$/, '')
   const qc = useQueryClient()
   const paper = useQuery({ queryKey: ['qb-paper', id], queryFn: () => api.get(`/question-bank/papers/${id}`).then(r => r.data.data), enabled: !isNew })
+  const curriculum = useQuery({ queryKey: ['qb-library', 'curriculum'], queryFn: () => api.get('/question-bank/curriculum').then(r => r.data.data) })
+  const questionTypes = useQuery({ queryKey: ['qb-question-types'], queryFn: () => api.get('/question-bank/question-types').then(r => r.data.data) })
   const [v, setV] = useState(EMPTY)
   const [texts, setTexts] = useState({})              // question id -> text, for the questions shown in the sections
+  const [details, setDetails] = useState({})           // only the question-bank public shape; answers are present only when bought
   const [search, setSearch] = useState('')
   const [target, setTarget] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -42,7 +46,10 @@ export default function QbPaperEdit() {
     const p = paper.data
     setV({ title: p.title, exam_name: p.exam_name ?? '', duration_minutes: p.duration_minutes ? String(p.duration_minutes) : '', sets_count: String(p.sets_count),
       instructions: p.instructions_json?.text ?? '', group: !!p.instructions_json?.group_by_subject, order: (p.subjects ?? []).map(x => x.id), sections: p.sections.map(s => ({ title: s.title, instruction: s.instruction ?? '', items: s.items.map(i => ({ ...i, marks: String(i.marks) })) })) })
-    p.sections.flatMap(s => s.items).forEach(i => api.get(`/question-bank/questions/${i.qb_question_id}`).then(r => setTexts(x => ({ ...x, [i.qb_question_id]: r.data.data.question_text }))).catch(() => {}))
+    p.sections.flatMap(s => s.items).forEach(i => api.get(`/question-bank/questions/${i.qb_question_id}`).then(r => {
+      setTexts(x => ({ ...x, [i.qb_question_id]: r.data.data.question_text }))
+      setDetails(x => ({ ...x, [i.qb_question_id]: r.data.data }))
+    }).catch(() => {}))
   }, [paper.data])
 
   if (!isNew && paper.isPending) return <Loader type="page" />
@@ -53,6 +60,7 @@ export default function QbPaperEdit() {
   const used = new Set(v.sections.flatMap(s => s.items.map(i => i.qb_question_id)))
   const add = (q) => {
     setTexts(x => ({ ...x, [q.id]: q.question_text }))
+    setDetails(x => ({ ...x, [q.id]: q }))
     section(target, { items: [...v.sections[target].items, { qb_question_id: q.id, marks: String(Number(q.marks) || 1) }] })
   }
   const body = () => ({ title: v.title, exam_name: v.exam_name || null, duration_minutes: v.duration_minutes ? Number(v.duration_minutes) : null, sets_count: Number(v.sets_count),
@@ -87,7 +95,10 @@ export default function QbPaperEdit() {
       setV(x => ({ ...x, title: x.title || bp.name_bn, duration_minutes: bp.duration_minutes ? String(bp.duration_minutes) : x.duration_minutes,
         sections: data.data.sections.map(s => ({ title: s.title, instruction: '', items: s.items.map(i => ({ qb_question_id: i.qb_question_id, marks: String(i.marks), rule: i.rule })) })) }))
       setPlanInfo({ id: bpId, short: data.data.short, rules: data.data.sections.flatMap(s => s.rules.map(r => ({ ...r, title: s.title }))) })
-      data.data.sections.flatMap(s => s.items).forEach(i => api.get(`/question-bank/questions/${i.qb_question_id}`).then(r => setTexts(x => ({ ...x, [i.qb_question_id]: r.data.data.question_text }))).catch(() => {}))
+      data.data.sections.flatMap(s => s.items).forEach(i => api.get(`/question-bank/questions/${i.qb_question_id}`).then(r => {
+        setTexts(x => ({ ...x, [i.qb_question_id]: r.data.data.question_text }))
+        setDetails(x => ({ ...x, [i.qb_question_id]: r.data.data }))
+      }).catch(() => {}))
     } catch (e) { toast(e.response?.data?.message ?? t('common.error'), 'error') }
   }
   const swap = async (si, k) => {                       // another eligible question for the same rule
@@ -99,14 +110,42 @@ export default function QbPaperEdit() {
     section(si, { items: v.sections[si].items.map((x, j) => (j === k ? { ...x, qb_question_id: next.id } : x)) })
   }
   const subjects = (paper.data?.subjects ?? []).filter(x => x.id)          // D128: the saved paper's subjects
+  const subjectCatalog = curriculum.data?.subjects ?? []
+  const typeCatalog = questionTypes.data ?? []
+  const questionCode = (questionId) => {
+    const q = details[questionId]
+    const subject = subjectCatalog.find(x => x.id === q?.qb_subject_id)
+    const type = typeCatalog.find(x => x.id === q?.qb_question_type_id)
+    return [subject?.code || 'Q', (type?.slug || 'q').toUpperCase(), String(questionId).padStart(6, '0')].join('-')
+  }
   const ordered = [...v.order.map(sid => subjects.find(x => x.id === sid)).filter(Boolean), ...subjects.filter(x => !v.order.includes(x.id))]
   const move = (k, d) => { const ids = ordered.map(x => x.id); [ids[k], ids[k + d]] = [ids[k + d], ids[k]]; set({ order: ids }) }
   const setLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 
   return (
-    <div className="flex flex-col gap-4" data-testid="qb-paper-edit">
-      <PageHeader title={isNew ? t('qbpp.new') : v.title} actions={!isNew && <span data-status={paper.data.status} className="text-sm">{t(`qbpp.status.${paper.data.status}`)}</span>} />
-      <Card className="grid gap-3 sm:grid-cols-2">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4" data-testid="qb-paper-edit">
+      {!isNew && <button type="button" onClick={() => navigate(base)} className="flex w-fit items-center gap-2 text-sm font-medium text-content-muted hover:text-primary-fg" data-action="back-to-papers"><DirIcon icon="back" className="h-4 w-4" />{t('qbpp.papers')}</button>}
+      <Card className="overflow-hidden border-s-4 border-primary bg-gradient-to-br from-primary-soft via-surface to-surface p-0 shadow-card">
+        <div className="flex flex-col gap-5 p-5 sm:p-7 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 flex-col gap-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary-fg">{t('qbpp.question_set')}</p>
+            <h1 className="text-2xl font-bold text-content" dir="auto">{isNew ? t('qbpp.new') : v.title}</h1>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-content-muted">
+              <span>{t('qbpp.question_count', { count: v.sections.reduce((n, s) => n + s.items.length, 0) })}</span>
+              {!isNew && <span data-status={paper.data.status} className="rounded-token bg-surface px-2 py-1">{t(`qbpp.status.${paper.data.status}`)}</span>}
+              {!isNew && <span>{t('qbpp.total_marks')}: {paper.data.total_marks}</span>}
+            </div>
+          </div>
+          {!isNew && <div className="flex flex-wrap gap-2" data-testid="paper-primary-actions">
+            {final && setLetters.slice(0, Number(v.sets_count) || 1).map(set => <PrintButton key={set} url={`/question-bank/papers/${id}/pdf`} params={{ set, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}.pdf`} label={t('qbpp.print_set', { set })} />)}
+            {final && <Button variant="secondary" onClick={() => navigate(`${base}/${id}/omr`)} data-action="omr">{t('qbomr.title')}</Button>}
+            {!final && <Button variant="secondary" onClick={() => document.querySelector('[data-testid="paper-picker"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} data-action="add-questions-shortcut"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.add_questions')}</Button>}
+            {!final && <Button onClick={finalize} data-action="finalize">{t('qbpp.finalize')}</Button>}
+            {final && setLetters.slice(0, Number(v.sets_count) || 1).map(set => <PrintButton key={`${set}a`} url={`/question-bank/papers/${id}/pdf`} params={{ set, answers: 1, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}-answers.pdf`} label={t('qbpp.print_answers', { set })} />)}
+          </div>}
+        </div>
+      </Card>
+      <Card className="grid gap-3 sm:grid-cols-2" data-testid="paper-settings">
         <fieldset disabled={final} className="contents">
           <Input label={t('qbpp.title')} value={v.title} onChange={e => set({ title: e.target.value })} name="title" />
           <Input label={t('qbpp.exam_name')} value={v.exam_name} onChange={e => set({ exam_name: e.target.value })} name="exam_name" />
@@ -140,29 +179,52 @@ export default function QbPaperEdit() {
           )}
         </Card>
       )}
-      <div className="grid gap-4 xl:grid-cols-2">
-        <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           {v.sections.map((s, i) => (
-            <Card key={i} className="flex flex-col gap-2" data-testid={`paper-section-${i}`}>
+            <Card key={i} className="flex flex-col gap-3 p-0" data-testid={`paper-section-${i}`}>
+              <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle bg-surface-muted/40 px-5 py-4">
+                <div><p className="text-xs font-semibold uppercase tracking-wide text-primary-fg">{t('qbpp.section_n', { n: i + 1 })}</p><h2 className="font-semibold" dir="auto">{s.title || t('qbpp.section_title')}</h2></div>
+                {v.sections.length > 1 && !final && <Button variant="secondary" onClick={() => set({ sections: v.sections.filter((_, k) => k !== i) })} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>}
+              </header>
+              <div className="flex flex-col gap-3 px-5 pb-5">
               <fieldset disabled={final} className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-end gap-2">
                   <Input className="flex-1 min-w-48" label={t('qbpp.section_title')} value={s.title} onChange={e => section(i, { title: e.target.value })} name={`section-${i}-title`} />
-                  {v.sections.length > 1 && <Button variant="secondary" onClick={() => set({ sections: v.sections.filter((_, k) => k !== i) })} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>}
                 </div>
                 <Input label={t('qbpp.section_instruction')} value={s.instruction} onChange={e => section(i, { instruction: e.target.value })} />
-                <ol className="flex flex-col gap-1">
+              </fieldset>
+                <ol className="flex flex-col gap-3">
                   {s.items.map((it, k) => (
-                    <li key={it.qb_question_id} className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="font-medium">{k + 1}.</span>
-                      <span className="flex-1 min-w-40 line-clamp-2"><MathText text={texts[it.qb_question_id] ?? `#${it.qb_question_id}`} /></span>
-                      <Input className="w-20" ltr inputMode="decimal" aria-label={t('qbpp.marks')} value={it.marks} name={`marks-${it.qb_question_id}`}
-                        onChange={e => section(i, { items: s.items.map((x, j) => (j === k ? { ...x, marks: e.target.value } : x)) })} />
-                      {planInfo && it.rule !== undefined && <Button variant="ghost" onClick={() => swap(i, k)} data-action="swap">{t('qbpp.swap')}</Button>}
-                      <Button variant="secondary" onClick={() => section(i, { items: s.items.filter((_, j) => j !== k) })} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
+                    <li key={it.qb_question_id} className="overflow-hidden rounded-token border border-border-subtle bg-surface" data-question-id={it.qb_question_id}>
+                      <header className="flex flex-wrap items-center gap-3 border-b border-border-subtle bg-surface-muted/40 px-4 py-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-token bg-primary font-semibold text-on-primary">{k + 1}</span>
+                        <div className="min-w-0 flex-1"><p className="text-sm font-semibold"><Ltr>{questionCode(it.qb_question_id)}</Ltr></p><p className="text-xs text-content-muted" dir="auto">{s.title || t('qbpp.section_title')}</p></div>
+                        {!final && <Button variant="secondary" onClick={() => section(i, { items: s.items.filter((_, j) => j !== k) })} aria-label={t('common.delete')} data-action="remove-question"><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>}
+                      </header>
+                      <div className="flex flex-col gap-3 px-4 py-4">
+                        <div className="text-base leading-8" dir="auto"><MathText text={texts[it.qb_question_id] ?? `#${it.qb_question_id}`} /></div>
+                        {(details[it.qb_question_id]?.options ?? []).length > 0 && <ol className="grid gap-2 sm:grid-cols-2">
+                          {details[it.qb_question_id].options.map((option, optionIndex) => <li key={optionIndex} className={`flex min-h-12 items-center gap-3 rounded-token border border-border-subtle bg-surface-muted/30 px-3 py-2 ${option.is_correct ? 'bg-primary-soft' : ''}`}>
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs">{option.label || optionIndex + 1}</span><MathText text={option.content_text} />
+                          </li>)}
+                        </ol>}
+                        {details[it.qb_question_id]?.unlocked && (details[it.qb_question_id]?.answer_text || details[it.qb_question_id]?.explanation_text || details[it.qb_question_id]?.options?.some(o => o.is_correct)) && (
+                          <div className="grid gap-2 sm:grid-cols-2" data-testid={`paper-answer-${it.qb_question_id}`}>
+                            {(details[it.qb_question_id].answer_text || details[it.qb_question_id].options?.some(o => o.is_correct)) && <div className="rounded-token border border-primary/30 bg-primary-soft p-3 text-sm"><p className="mb-1 font-semibold">{t('qbpp.answer')}</p>{details[it.qb_question_id].options.some(o => o.is_correct) && <span className="me-2">{details[it.qb_question_id].options.filter(o => o.is_correct).map(o => o.label).join(', ')}</span>}<MathText text={details[it.qb_question_id].answer_text || details[it.qb_question_id].options.filter(o => o.is_correct).map(o => o.content_text).join(' · ')} /></div>}
+                            {details[it.qb_question_id].explanation_text && <div className="rounded-token border border-primary/30 bg-primary-soft p-3 text-sm"><p className="mb-1 font-semibold">{t('qbpp.solution')}</p><MathText text={details[it.qb_question_id].explanation_text} /></div>}
+                          </div>
+                        )}
+                        {!final && <div className="flex flex-wrap items-end gap-2">
+                          <Input className="w-24" ltr inputMode="decimal" aria-label={t('qbpp.marks')} value={it.marks} name={`marks-${it.qb_question_id}`}
+                            onChange={e => section(i, { items: s.items.map((x, j) => (j === k ? { ...x, marks: e.target.value } : x)) })} />
+                          {planInfo && it.rule !== undefined && <Button variant="ghost" onClick={() => swap(i, k)} data-action="swap">{t('qbpp.swap')}</Button>}
+                        </div>}
+                      </div>
                     </li>
                   ))}
                 </ol>
-              </fieldset>
+              </div>
             </Card>
           ))}
           {!final && <div><Button variant="secondary" onClick={() => set({ sections: [...v.sections, { title: '', instruction: '', items: [] }] })} data-action="add-section"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.add_section')}</Button></div>}
@@ -176,15 +238,9 @@ export default function QbPaperEdit() {
                   options={[{ value: 'latin', label: 'A, B, C…' }, { value: 'bangla', label: 'ক, খ, গ…' }]} />
               </div>
             )}
-            {!isNew && !final && <Button variant="secondary" onClick={finalize} data-action="finalize">{t('qbpp.finalize')}</Button>}
             {!isNew && final && (
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="columns" checked={columns} onChange={e => setColumns(e.target.checked)} />{t('qbpp.two_columns')}</label>
             )}
-            {!isNew && final && <Button variant="secondary" onClick={() => navigate(`${base}/${id}/omr`)} data-action="omr">{t('qbomr.title')}</Button>}
-            {!isNew && final && setLetters.slice(0, Number(v.sets_count) || 1).flatMap(set => [
-              <PrintButton key={set} url={`/question-bank/papers/${id}/pdf`} params={{ set, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}.pdf`} label={t('qbpp.print_set', { set })} />,
-              <PrintButton key={`${set}a`} url={`/question-bank/papers/${id}/pdf`} params={{ set, answers: 1, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}-answers.pdf`} label={t('qbpp.print_answers', { set })} />,
-            ])}
           </div>
         </div>
         {!final && (

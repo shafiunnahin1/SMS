@@ -1110,6 +1110,10 @@
    "no_choices": "Nothing to choose"
   },
   "qbpp": {
+   "question_set": "Question set",
+   "question_count": "{{count}} questions",
+   "answer": "Answer",
+   "solution": "Solution",
    "n_sets": "{{n}} sets",
    "from_blueprint": "Start from a blueprint",
    "no_blueprint": "Without a blueprint",
