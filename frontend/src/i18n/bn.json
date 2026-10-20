@@ -1025,6 +1025,8 @@
     "verified": "যাচাইকৃত"
    },
    "reason": {
+    "roll_unconfirmed": "রোল পড়া হয়েছে - নিশ্চিত করুন",
+    "set_code_unconfirmed": "সেট পড়া হয়েছে - নিশ্চিত করুন",
     "roll_unreadable": "রোল পড়া যায়নি",
     "set_code_missing": "সেট নেই",
     "set_code_unknown": "অচেনা সেট",
@@ -1044,6 +1046,7 @@
     "keep_both": "দুটিই রাখুন"
    },
    "answer": {
+    "uncertain": "অনিশ্চিত - দেখুন",
     "blank": "ফাঁকা",
     "ambiguous": "একাধিক দাগ"
    },

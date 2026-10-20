@@ -26,10 +26,12 @@ class QbOmrReviewService
         $c = $scan->comparison_json ?? [];
         $reasons = [];
         if (!preg_match('/^\d+$/', (string) $scan->roll)) $reasons[] = 'roll_unreadable';
+        elseif (!empty($c['roll_uncertain'])) $reasons[] = 'roll_unconfirmed';   // D131: read, but a person confirms it
         $codes = QbPaperVariant::where('qb_paper_id', $paper->id)->pluck('code')->map(fn ($v) => (string) $v)->all();
         if (($c['set_resolution'] ?? null) !== 'main') {
             if (!filled($scan->set_code)) $reasons[] = 'set_code_missing';
             elseif (!in_array($scan->set_code, $codes, true)) $reasons[] = 'set_code_unknown';
+            elseif (!empty($c['set_uncertain'])) $reasons[] = 'set_code_unconfirmed';
         }
         foreach ($scan->answers_json ?? [] as $a) {
             if (($a['status'] ?? null) !== 'marked' && empty($a['confirmed'])) { $reasons[] = 'answers_need_review'; break; }
@@ -57,9 +59,14 @@ class QbOmrReviewService
             [$paper, $form, $scan] = $this->find($actor, $scanId, true);
             if (!in_array($scan->status, self::OPEN, true)) throw new BusinessException(__('errors.qb_omr_scan_closed'), 'qb_omr_scan_closed', 422);
             $c = $scan->comparison_json ?? [];
-            if (array_key_exists('roll', $in)) { $scan->roll = $in['roll']; $scan->matched_student_id = null; $this->match($paper, $scan); $c = $scan->comparison_json; }
-            if (array_key_exists('set_code', $in)) { $scan->set_code = $in['set_code']; unset($c['set_resolution']); }
-            if (($in['set_resolution'] ?? null) === 'main') $c['set_resolution'] = 'main';
+            if (array_key_exists('roll', $in)) {                // a person's roll is confirmed, even when it is the one read (D131)
+                $sameRoll = (string) $in['roll'] === (string) $scan->roll;
+                $scan->roll = $in['roll'];
+                if (!$sameRoll || !$scan->matched_student_id) { $scan->matched_student_id = null; $this->match($paper, $scan); $c = $scan->comparison_json; }
+                unset($c['roll_uncertain']);
+            }
+            if (array_key_exists('set_code', $in)) { $scan->set_code = $in['set_code']; unset($c['set_resolution'], $c['set_uncertain']); }
+            if (($in['set_resolution'] ?? null) === 'main') { $c['set_resolution'] = 'main'; unset($c['set_uncertain']); }
             if (array_key_exists('student_id', $in)) {
                 $ok = $in['student_id'] === null || ($paper->program_id
                     ? Enrollment::where('program_id', $paper->program_id)->where('student_id', $in['student_id'])->where('status', 'active')->exists()

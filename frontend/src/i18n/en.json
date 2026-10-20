@@ -1025,6 +1025,8 @@
     "verified": "Verified"
    },
    "reason": {
+    "roll_unconfirmed": "Roll read - confirm it",
+    "set_code_unconfirmed": "Set read - confirm it",
     "roll_unreadable": "Roll unreadable",
     "set_code_missing": "Set missing",
     "set_code_unknown": "Unknown set",
@@ -1044,6 +1046,7 @@
     "keep_both": "Keep both"
    },
    "answer": {
+    "uncertain": "unsure - check",
     "blank": "blank",
     "ambiguous": "several marks"
    },

@@ -1,16 +1,46 @@
-import { findRegistrationMarkers, homographyFromMarkers, readBubbleRows } from './omrReader'
+import { classifyBubbleScores, findRegistrationMarkers, homographyFromMarkers, readBubbleRows, scoreBubble } from './omrReader'
 
 // D127 (3): one scanned page read with the form's own persisted geometry (the same numbers the printed sheet was drawn from).
 // Nothing is decided here: an unreadable digit becomes "?", blanks and multiple marks keep their status, and the server keeps
 // every sheet in review until a person approves it.
 
-/** a numeric grid (roll, set): each column's ten bubbles give one digit; anything but exactly one mark is unreadable */
+// D131: a bubble is a mark when it scores >= 0.70 and >= the row's lower-half mean + 0.22 (printed labels, dim light, blur and
+// screen photos leave empty bubbles at 0.4-0.6, where qbank's +0.10 rule misreads). qbank's rule still runs: where the two
+// disagree the row is "uncertain" and goes to a person; it is never scored silently.
+export const MARK_MIN = 0.70
+export const MARK_GAP = 0.22
+
+export function adaptiveMarks(scores) {
+  const ordered = scores.map(Number).map(v => (Number.isFinite(v) ? v : 0)).sort((a, b) => a - b)
+  const k = Math.max(1, Math.floor(ordered.length / 2))
+  const base = ordered.slice(0, k).reduce((a, b) => a + b, 0) / k
+  return scores.map((v, i) => [v, i]).filter(([v]) => v >= MARK_MIN && v >= base + MARK_GAP).map(([, i]) => i)
+}
+
+/** one row of bubbles: the adaptive reading, flagged when qbank's rule reads it differently */
+export function judgeRow(scores) {
+  const selected = adaptiveMarks(scores)
+  const qbank = classifyBubbleScores(scores).selected
+  const agree = selected.length === qbank.length && selected.every((v, i) => v === qbank[i])
+  const status = !agree ? 'uncertain' : selected.length === 0 ? 'blank' : selected.length === 1 ? 'marked' : 'ambiguous'
+  return { status, selected, qbank }
+}
+
+const rowScores = (imageData, homography, cells) => cells.map(cell => scoreBubble(imageData, homography, cell.bubble ?? cell))
+
+/**
+ * a numeric grid (roll, set): each column's ten bubbles give one digit (null when not exactly one clear mark). `uncertain` is
+ * true when qbank's rule reads any column differently - the digits are still offered, but a person must confirm them (D131).
+ */
 export function readDigits(imageData, homography, grid) {
   const columns = Array.from({ length: grid.digit_count }, (_, c) => grid.rows.map(row => row[c]))
-  return columns.map(cells => {
-    const [read] = readBubbleRows(imageData, homography, [cells])
-    return read.status === 'marked' ? read.selected[0] : null
+  let uncertain = false
+  const digits = columns.map(cells => {
+    const read = judgeRow(rowScores(imageData, homography, cells))
+    if (read.status === 'uncertain') uncertain = true
+    return read.selected.length === 1 ? read.selected[0] : null
   })
+  return Object.assign(digits, { uncertain })
 }
 
 /** the answer rows in question order (row n = the n-th MCQ, D127/D129) */
@@ -260,7 +290,7 @@ function readWith(img, markers, settings, setSymbols) {
   const h = homographyFromMarkers(markers, img.width, img.height)
   const rollDigits = readDigits(img, h, g.roll)
   const setDigits = settings.info_boxes?.set?.visible === false ? [] : readDigits(img, h, g.set)
-  const answers = readBubbleRows(img, h, answerRows(g).map(r => r.options)).map(a => ({ status: a.status, selected: a.selected }))
+  const answers = answerRows(g).map(r => judgeRow(rowScores(img, h, r.options))).map(a => ({ status: a.status, selected: a.selected }))
   // which way up: the printed form code matches (when the geometry has it), else the reading with the most clean single marks
   let fit = [...rollDigits, ...setDigits].filter(d => d !== null).length + answers.filter(a => a.status === 'marked').length
   if (g.code?.bits?.length) {
@@ -273,6 +303,8 @@ function readWith(img, markers, settings, setSymbols) {
       ok: true,
       roll: rollDigits.map(d => (d === null ? '?' : String(d))).join(''),
       set_code: setDigits.length === 0 || setDigits.includes(null) ? null : setDigits.map(d => setSymbols[d] ?? String(d)).join(''),
+      roll_uncertain: !!rollDigits.uncertain,
+      set_uncertain: !!setDigits.uncertain,
       answers,
     },
   }

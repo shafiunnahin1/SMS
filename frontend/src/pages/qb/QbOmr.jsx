@@ -105,7 +105,7 @@ function ScanTab({ id, form }) {
   const read = (imageData, name, blob, source) => {
     const r = readSheet(imageData, s, symbols)
     // an unreadable page is kept with every answer blank, so a person reads it from the image (never silently dropped)
-    push({ key: `${Date.now()}-${Math.random()}`, name, blob, source, quality: r.quality, error: r.ok ? null : r.error, roll: r.ok ? r.roll : null, set_code: r.ok ? r.set_code : null, answers: r.ok ? r.answers : blank(), result: null })
+    push({ key: `${Date.now()}-${Math.random()}`, name, blob, source, quality: r.quality, error: r.ok ? null : r.error, roll: r.ok ? r.roll : null, set_code: r.ok ? r.set_code : null, roll_uncertain: !!r.roll_uncertain, set_uncertain: !!r.set_uncertain, answers: r.ok ? r.answers : blank(), result: null })
   }
   const add = async (files, source) => {
     setBusy(true)
@@ -140,7 +140,13 @@ function ScanTab({ id, form }) {
         fd.append(`scans[${i}][source]`, x.source)
         if (x.roll) fd.append(`scans[${i}][roll]`, x.roll)
         if (x.set_code) fd.append(`scans[${i}][set_code]`, x.set_code)
-        x.answers.forEach((a, q) => { if (a.selected.length === 0) fd.append(`scans[${i}][answers][${q}][selected]`, ''); a.selected.forEach((o, j) => fd.append(`scans[${i}][answers][${q}][selected][${j}]`, String(o))) })
+        if (x.roll_uncertain) fd.append(`scans[${i}][roll_uncertain]`, '1')   // D131: offered, a person confirms
+        if (x.set_uncertain) fd.append(`scans[${i}][set_uncertain]`, '1')
+        x.answers.forEach((a, q) => {
+          if (a.selected.length === 0) fd.append(`scans[${i}][answers][${q}][selected]`, '')
+          a.selected.forEach((o, j) => fd.append(`scans[${i}][answers][${q}][selected][${j}]`, String(o)))
+          if (a.status === 'uncertain') fd.append(`scans[${i}][answers][${q}][uncertain]`, '1')   // D131: the two rules disagreed
+        })
         fd.append(`scans[${i}][image]`, x.blob, x.blob.name ?? `${x.key}.jpg`)
       })
       try {

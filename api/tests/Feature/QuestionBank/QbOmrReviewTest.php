@@ -141,4 +141,35 @@ class QbOmrReviewTest extends TestCase
         $b = $r->json('data.results.1.scan.id');
         $this->api('POST', $host, "question-bank/omr-scans/{$b}/cancel", $teacher)->assertOk()->assertJsonPath('data.status', 'cancelled')->assertJsonPath('data.obtained_marks', '0.00');
     }
+
+    public function test_a_row_the_two_mark_rules_disagree_on_is_never_scored_unchecked(): void   // D131
+    {
+        Storage::fake('private');
+        $institution = $this->makeInstitution('omr-uncertain');
+        $teacher = $this->makeUser($institution, 'teacher');
+        [$paperId] = $this->setup_paper($institution, $teacher);
+        $host = $this->hostOf($institution);
+        $base = "question-bank/papers/{$paperId}/omr-form";
+        $this->api('PUT', $host, $base, $teacher, ['settings' => [
+            'title' => 'OMR', 'roll_digits' => 4, 'option_count' => 4, 'option_language' => 'bangla',
+            'info_boxes' => ['class' => true, 'roll' => true, 'subject' => true, 'set' => true], 'page_size' => 'a4', 'page_orientation' => 'portrait',
+            'answer_columns' => 'auto', 'question_mark' => '1.00', 'negative_mark_enabled' => false, 'negative_mark' => '0.00', 'multiple_answer_policy' => 'wrong',
+        ]])->assertOk();
+        $this->api('POST', $host, "{$base}/generate", $teacher)->assertOk();
+        $sheet = $this->sheet('u', '0007', 'A', [[0], [1]]);
+        $sheet['answers'][1]['uncertain'] = '1';
+        $sheet['roll_uncertain'] = '1';
+        $r = $this->upload($institution, $teacher, $paperId, [$sheet])->assertOk()
+            ->assertJsonPath('data.results.0.scan.answers.1.status', 'uncertain')
+            ->assertJsonPath('data.results.0.scan.answered_count', 1)
+            ->assertJsonPath('data.results.0.scan.matched_student_id', fn ($v) => $v !== null)   // the read roll still finds the student
+            ->assertJsonPath('data.results.0.scan.comparison.reason_codes', ['roll_unconfirmed', 'answers_need_review']);
+        $id = $r->json('data.results.0.scan.id');
+        $this->api('PUT', $host, "question-bank/omr-scans/{$id}", $teacher, ['roll' => '0007'])->assertOk()   // confirmed as read
+            ->assertJsonPath('data.comparison.reason_codes', ['answers_need_review']);
+        $this->api('POST', $host, "question-bank/omr-scans/{$id}/approve", $teacher)->assertStatus(422)->assertJsonPath('error', 'qb_omr_unresolved');
+        $this->api('PUT', $host, "question-bank/omr-scans/{$id}", $teacher, ['answers' => ['2' => ['selected' => [1], 'confirmed' => true]]])->assertOk()
+            ->assertJsonPath('data.comparison.reason_codes', []);
+        $this->api('POST', $host, "question-bank/omr-scans/{$id}/approve", $teacher)->assertOk()->assertJsonPath('data.correct_count', 2);
+    }
 }

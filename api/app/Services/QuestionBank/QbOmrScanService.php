@@ -41,10 +41,13 @@ class QbOmrScanService
                 'source' => ['required', 'in:upload,camera'],
                 'set_code' => ['nullable', 'string', 'max:10'],
                 'roll' => ['nullable', 'string', 'max:12'],
+                'roll_uncertain' => ['sometimes', 'boolean'],        // D131: the roll/set digits are offered, a person confirms them
+                'set_uncertain' => ['sometimes', 'boolean'],
                 'answers' => ['required', 'array', 'size:' . $questionCount],
                 'answers.*' => ['required', 'array'],
                 'answers.*.selected' => ['present', 'array', 'max:' . $optionCount],
                 'answers.*.selected.*' => ['integer', 'min:0', 'max:' . max(0, $optionCount - 1)],
+                'answers.*.uncertain' => ['sometimes', 'boolean'],   // D131: the browser's two mark rules disagreed on this row
                 'image' => ['required', 'image', 'max:10240'],
             ];
             if (is_array($scan) && is_array($scan['answers'] ?? null)) {   // multipart cannot send []: a missing or empty selection is a blank row
@@ -70,7 +73,8 @@ class QbOmrScanService
                 $selected = array_values(array_unique(array_map('intval', $answer['selected'])));
                 sort($selected);
                 return [
-                    'status' => count($selected) === 0 ? 'blank' : (count($selected) === 1 ? 'marked' : 'ambiguous'),
+                    'status' => filter_var($answer['uncertain'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 'uncertain'   // D131: a person checks it
+                        : (count($selected) === 0 ? 'blank' : (count($selected) === 1 ? 'marked' : 'ambiguous')),
                     'selected' => $selected,
                 ];
             }, $scan['answers']);
@@ -96,7 +100,8 @@ class QbOmrScanService
                         'answers_json' => $answers,
                         'answered_count' => count(array_filter($answers, fn ($answer) => $answer['status'] === 'marked')),
                         'status' => 'needs_review',
-                        'comparison_json' => ['unresolved_question_numbers' => $unresolvedQuestions],
+                        'comparison_json' => ['unresolved_question_numbers' => $unresolvedQuestions]
+                            + array_filter(['roll_uncertain' => filter_var($scan['roll_uncertain'] ?? false, FILTER_VALIDATE_BOOLEAN), 'set_uncertain' => filter_var($scan['set_uncertain'] ?? false, FILTER_VALIDATE_BOOLEAN)]),
                         'image_path' => $imagePath,
                         'source' => $scan['source'],
                     ]);
