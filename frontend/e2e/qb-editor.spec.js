@@ -225,7 +225,7 @@ test('QB.12 ribbon: formatting is drawn, saved and kept safe', async ({ page, br
 
   const school = await (await browser.newContext({ baseURL: `http://${TENANTS.school.slug}.${BASE}` })).newPage()
   await login(school, ...TENANTS.school.admin)
-  await school.goto('/admin/question-bank?view=library')
+  await school.goto('/admin/study-materials')
   const library = school.locator('[data-testid="qb-library-list"]')
   const libraryEntry = library.getByRole('button').filter({ hasText: tag })
   await expect(libraryEntry).toHaveCount(1)

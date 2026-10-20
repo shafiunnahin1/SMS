@@ -31,6 +31,12 @@ describe('MenuReleaseTest', () => {
     expect(keys('R1')).not.toContain('exports')       // since R1.1
     expect(keys('R1.1')).toContain('exports')
   })
+
+  it('routes admin and teacher study materials separately from Question Bank', () => {
+    expect(routePaths).toContain('/admin/study-materials')
+    expect(routePaths).toContain('/teacher/materials')
+    expect(routePaths).toContain('/admin/question-bank')
+  })
 })
 
 // R3.12 (docs/AGENT-PLAN-R3.md): every R3 page of the plan's list is in the R3 menu and has a built page (not the NotBuilt placeholder);

@@ -124,8 +124,7 @@ export default function QbAllQuestions() {
   if (tree.isError) return <ErrorState onRetry={tree.refetch} />
   return (
     <div className="flex flex-col gap-4" data-testid="qb-all-questions">
-      <PageHeader title={paper.data ? t('qbaq.add_to', { title: paper.data.title }) : t('qbaq.title')}
-        actions={!paper.data && <Button variant="secondary" onClick={() => navigate(`${area}/question-bank?view=library`)}>{t('qb.library')}</Button>} />
+      <PageHeader title={paper.data ? t('qbaq.add_to', { title: paper.data.title }) : t('qbaq.title')} />
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]">
         <section className="flex min-w-0 flex-col gap-4">
           <Card className="flex min-h-20 flex-wrap items-center gap-3 px-5 py-4 shadow-sm">

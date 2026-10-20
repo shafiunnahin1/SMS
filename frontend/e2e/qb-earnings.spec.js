@@ -87,11 +87,13 @@ test('QB.10b a sale pays the writer, who withdraws it', async ({ page, browser }
 
   const school = await (await browser.newContext({ baseURL: `http://${TENANTS.school.slug}.${BASE}` })).newPage()
   await login(school, ...TENANTS.school.admin)
-  await school.goto('/admin/question-bank?view=library')
-  await school.locator('[data-testid="qb-library-list"]').getByText(tag).first().click()
-  await school.locator('[data-testid="qb-question-view"] [data-action="buy"]').click()
+  await school.goto('/admin/question-bank')
+  await school.locator('[data-testid="qb-filter"] input[name="q"]').fill(tag)
+  const question = school.locator('[data-question]').filter({ hasText: tag }).first()
+  await question.locator('[data-action="buy"]').click()
   await school.getByRole('alertdialog').getByRole('button').last().click()
-  await expect(school.locator('[data-testid="qb-answer"]')).toContainText(tag)
+  await question.locator('[data-action="toggle-answer"]').click()
+  await expect(question.locator('[data-testid="qb-answer"]')).toContainText(tag)
 
   await writer.goto('/writer/earnings')
   await expect(writer.locator('[data-testid="earnings-balance"]')).toHaveText('৳0.50')
