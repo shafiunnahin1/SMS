@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { login, loginSuper } from './helpers.js'
 import { TENANTS } from '../playwright.config.js'
 
-// R2.1.6 (D127): the Super Admin publishes an MCQ; the head teacher puts it in a final paper, sets up and locks its OMR form, sees
+// R2.1.6 (D127): the Super Admin publishes an MCQ and prices MCQs; the head teacher puts it in a final paper, sets up and locks its OMR form, sees
 // the print button for the set, uploads a photo with no corner marks (kept for a person, never dropped), finds it in review with its
 // reasons, cannot approve it, cancels it, and sees the results tab with its CSV. Runs once: playwright.config's testIgnore keeps it to
 // school-desktop.
@@ -32,6 +32,13 @@ test('R2.1.6 an OMR form for a final paper: lock, print, scan, review, results',
   await page.locator('[data-action="submit"]').click()
   await page.locator('[data-action="publish"]').click()
   await expect(page.locator('[data-status]').first()).toHaveAttribute('data-status', 'published')
+  await page.goto('/super-admin/qb/pricing')                                   // a fresh database sells no MCQ until it has a price
+  await page.locator('[data-action="new-price"]').click()
+  const price = page.locator('[data-testid="new-price"]')
+  await price.locator('select[name="qb_question_type_id"]').selectOption({ label: 'বহুনির্বাচনী প্রশ্ন' })
+  await price.locator('input[name="amount"]').fill('0.50')
+  await price.locator('button[type="submit"]').click()
+  await expect(price).toHaveCount(0)
 
   const school = await (await browser.newContext({ baseURL: `http://${TENANTS.school.slug}.${BASE}` })).newPage()
   await login(school, ...TENANTS.school.admin)
