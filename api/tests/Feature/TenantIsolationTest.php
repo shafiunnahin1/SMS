@@ -222,6 +222,12 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/question-bank/papers/{id}/omr-form/unlock' => fn (array $other) => $this->seedPaper($other),
             'GET api/v1/question-bank/papers/{id}/omr-form/pdf' => fn (array $other) => $this->seedPaper($other),
             'POST api/v1/question-bank/papers/{id}/omr-form/scans' => fn (array $other) => $this->seedPaper($other),
+            'GET api/v1/question-bank/papers/{id}/omr-form/scans' => fn (array $other) => $this->seedPaper($other),
+            'PUT api/v1/question-bank/omr-scans/{id}' => fn (array $other) => $this->seedOmrScan($other),
+            'POST api/v1/question-bank/omr-scans/{id}/approve' => fn (array $other) => $this->seedOmrScan($other),
+            'POST api/v1/question-bank/omr-scans/{id}/cancel' => fn (array $other) => $this->seedOmrScan($other),
+            'GET api/v1/question-bank/omr-scans/{id}/image' => fn (array $other) => $this->seedOmrScan($other),
+            'GET api/v1/question-bank/papers/{id}/omr-form/results.csv' => fn (array $other) => $this->seedPaper($other),
             'PUT api/v1/question-bank/papers/{id}/folder'  => fn (array $other) => $this->seedPaper($other),            // R2.1.5 (D126)
             'PUT api/v1/question-bank/paper-folders/{id}'  => fn (array $other) => $this->seedPaperFolder($other),
             'DELETE api/v1/question-bank/paper-folders/{id}' => fn (array $other) => $this->seedPaperFolder($other),
@@ -298,6 +304,15 @@ class TenantIsolationTest extends TestCase
     {
         return Tenancy::as($t['institution'], fn () => \App\Models\QbPaper::value('id')
             ?? \App\Models\QbPaper::create(['created_by' => $t['admin']->id, 'title' => 'Paper', 'status' => 'draft'])->id);
+    }
+
+    private function seedOmrScan(array $t): int   // D127
+    {
+        return Tenancy::as($t['institution'], function () use ($t) {
+            $paper = $this->seedPaper($t);
+            $form = \App\Models\QbOmrForm::firstOrCreate(['qb_paper_id' => $paper], ['code' => 'ISO' . $t['institution']->id, 'settings_json' => []]);
+            return \App\Models\QbOmrScan::create(['qb_omr_form_id' => $form->id, 'layout_version' => 1, 'answers_json' => [], 'answered_count' => 0, 'status' => 'needs_review', 'source' => 'upload'])->id;
+        });
     }
 
     private function seedPaperFolder(array $t): int

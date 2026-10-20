@@ -521,6 +521,12 @@ Route::prefix('v1')->group(function () {
                 Route::post('/papers/{id}/omr-form/unlock', [QbOmrFormController::class, 'unlock'])->whereNumber('id');
                 Route::get('/papers/{id}/omr-form/pdf', [QbOmrFormController::class, 'pdf'])->whereNumber('id');
                 Route::post('/papers/{id}/omr-form/scans', [QbOmrFormController::class, 'storeScans'])->whereNumber('id');
+                Route::get('/papers/{id}/omr-form/scans', [QbOmrFormController::class, 'scans'])->whereNumber('id');
+                Route::put('/omr-scans/{id}', [QbOmrFormController::class, 'updateScan'])->whereNumber('id');
+                Route::post('/omr-scans/{id}/approve', [QbOmrFormController::class, 'approveScan'])->whereNumber('id');
+                Route::post('/omr-scans/{id}/cancel', [QbOmrFormController::class, 'cancelScan'])->whereNumber('id');
+                Route::get('/omr-scans/{id}/image', [QbOmrFormController::class, 'scanImage'])->whereNumber('id');
+                Route::get('/papers/{id}/omr-form/results.csv', [QbOmrFormController::class, 'resultsCsv'])->whereNumber('id');
             });
             // R2.1.5 (D126 (1)): qbank's folders for papers - the head teacher and teachers (not a D90 staff duty)
             Route::middleware('role:admin,teacher')->group(function () {

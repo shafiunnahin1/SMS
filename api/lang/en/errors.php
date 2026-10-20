@@ -93,6 +93,10 @@ return [
     'qb_omr_no_mcq' => 'This paper has no multiple-choice questions for an OMR form.',
     'qb_omr_option_mismatch' => 'Every multiple-choice question must have the selected number of options.',
     'qb_omr_locked' => 'This OMR layout is generated and locked. Unlock it to create a new layout version.',
+    'qb_omr_not_generated' => 'Generate the OMR layout first.',   // D127
+    'qb_omr_scan_closed' => 'This sheet is already decided.',   // D127
+    'qb_omr_unresolved' => 'Resolve every flagged item on the sheet first: :reasons',   // D127
+    'qb_omr_student_outside' => 'This student is not enrolled in the program of this paper.',   // D127
     'qb_paper_empty'        => 'Add at least one question first.',   // QB.8
     'qb_paper_duplicate'    => 'A question appears twice in the paper.',   // QB.8
     'qb_quiz_questions'     => 'A quiz takes only published, auto-marked questions (MCQ, true/false, fill in the gap, matching). :ids',   // QB.10

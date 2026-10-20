@@ -98,7 +98,7 @@ class DepartmentRouteInventoryTest extends TestCase
     public function test_d127_omr_form_routes_are_principal_only_and_match_live_routes(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);
-        $this->assertCount(6, DepartmentRouteCatalog::D127);
+        $this->assertCount(12, DepartmentRouteCatalog::D127);
 
         foreach (DepartmentRouteCatalog::D127 as $entry) {
             $this->assertSame(['D127', 'preserve_nonstaff_boundary', [], ['admin', 'teacher']], [

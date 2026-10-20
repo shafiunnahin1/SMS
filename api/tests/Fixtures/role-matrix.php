@@ -284,6 +284,12 @@ return [
     'POST api/v1/question-bank/papers/{id}/omr-form/unlock' => ['admin', 'teacher'],
     'GET api/v1/question-bank/papers/{id}/omr-form/pdf' => ['admin', 'teacher'],
     'POST api/v1/question-bank/papers/{id}/omr-form/scans' => ['admin', 'teacher'],
+    'GET api/v1/question-bank/papers/{id}/omr-form/scans' => ['admin', 'teacher'],
+    'PUT api/v1/question-bank/omr-scans/{id}' => ['admin', 'teacher'],
+    'POST api/v1/question-bank/omr-scans/{id}/approve' => ['admin', 'teacher'],
+    'POST api/v1/question-bank/omr-scans/{id}/cancel' => ['admin', 'teacher'],
+    'GET api/v1/question-bank/omr-scans/{id}/image' => ['admin', 'teacher'],
+    'GET api/v1/question-bank/papers/{id}/omr-form/results.csv' => ['admin', 'teacher'],
     'GET api/v1/question-bank/paper-folders' => ['admin', 'teacher'],   // R2.1.5 (D126)
     'POST api/v1/question-bank/paper-folders' => ['admin', 'teacher'],
     'PUT api/v1/question-bank/paper-folders/{id}' => ['admin', 'teacher'],

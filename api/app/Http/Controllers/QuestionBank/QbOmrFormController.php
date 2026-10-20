@@ -8,6 +8,10 @@ use App\Http\Resources\QbOmrFormResource;
 use App\Services\QuestionBank\QbOmrGeometryService;
 use App\Services\QuestionBank\QbOmrFormService;
 use App\Services\QuestionBank\QbOmrScanService;
+use App\Services\QuestionBank\QbOmrReviewService;
+use App\Http\Resources\QbOmrScanResource;
+use App\Models\QbOmrScan;
+use Illuminate\Support\Facades\Storage;
 use App\Services\PdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -73,5 +77,60 @@ class QbOmrFormController extends Controller
     public function storeScans(StoreQbOmrScanBatchRequest $request, int $id, QbOmrScanService $service): JsonResponse
     {
         return response()->json(['data' => $service->storeBatch($request->user(), $id, $request->all()['scans'] ?? null)]);
+    }
+
+    // D127 (4)/(5): the review queue of a form; every sheet stays reviewable until a person approves or cancels it
+    public function scans(Request $request, int $id, QbOmrFormService $forms)
+    {
+        $paper = $forms->paper($request->user(), $id);
+        $form = $forms->form($paper);
+        $rows = QbOmrScan::with('matchedStudent.user:id,name')->where('qb_omr_form_id', $form->id)->orderBy('id')->paginate(50);
+        return QbOmrScanResource::collection($rows);
+    }
+
+    public function updateScan(Request $request, int $id, QbOmrReviewService $review): QbOmrScanResource
+    {
+        $review->find($request->user(), $id);               // another tenant's or person's sheet is 404 before validation
+        $in = $request->validate([
+            'roll' => 'sometimes|nullable|string|max:12',
+            'set_code' => 'sometimes|nullable|string|max:10',
+            'set_resolution' => 'sometimes|in:main',
+            'student_id' => 'sometimes|nullable|integer',
+            'answers' => 'sometimes|array|max:500',
+            'answers.*.selected' => 'sometimes|array|max:8',
+            'answers.*.selected.*' => 'integer|min:0|max:7',
+            'answers.*.confirmed' => 'sometimes|boolean',
+            'duplicate_decision' => 'sometimes|in:update,keep_both',
+        ]);
+        return new QbOmrScanResource($review->update($request->user(), $id, $in)->load('matchedStudent.user:id,name'));
+    }
+
+    public function approveScan(Request $request, int $id, QbOmrReviewService $review): QbOmrScanResource
+    {
+        return new QbOmrScanResource($review->approve($request->user(), $id));
+    }
+
+    public function cancelScan(Request $request, int $id, QbOmrReviewService $review): QbOmrScanResource
+    {
+        return new QbOmrScanResource($review->cancel($request->user(), $id));
+    }
+
+    // the scanned image stays on the private disk; only the paper's own reviewer can see it
+    public function scanImage(Request $request, int $id, QbOmrReviewService $review)
+    {
+        [, , $row] = $review->find($request->user(), $id);
+        abort_unless($row->image_path && Storage::disk('private')->exists($row->image_path), 404);
+        return response(Storage::disk('private')->get($row->image_path), 200, [
+            'Content-Type' => Storage::disk('private')->mimeType($row->image_path) ?: 'application/octet-stream',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
+    public function resultsCsv(Request $request, int $id, QbOmrReviewService $review)
+    {
+        return response($review->csv($request->user(), $id), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="omr-results-' . $id . '.csv"',
+        ]);
     }
 }
