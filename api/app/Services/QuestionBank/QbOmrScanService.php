@@ -47,6 +47,13 @@ class QbOmrScanService
                 'answers.*.selected.*' => ['integer', 'min:0', 'max:' . max(0, $optionCount - 1)],
                 'image' => ['required', 'image', 'max:10240'],
             ];
+            if (is_array($scan) && is_array($scan['answers'] ?? null)) {   // multipart cannot send []: a missing or empty selection is a blank row
+                foreach ($scan['answers'] as $k => $answer) {
+                    if (!is_array($answer)) $answer = [];
+                    if (!isset($answer['selected']) || $answer['selected'] === '') $answer['selected'] = [];
+                    $scan['answers'][$k] = $answer;
+                }
+            }
             $validator = Validator::make(is_array($scan) ? $scan : [], $rules);
 
             if ($validator->fails()) {

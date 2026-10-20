@@ -16,6 +16,7 @@ class QbOmrFormResource extends JsonResource
             'settings' => $this->settings_json,
             'layout_version' => $this->layout_version,
             'locked_at' => $this->locked_at?->toIso8601String(),
+            'set_codes' => \App\Models\QbPaperVariant::where('qb_paper_id', $this->qb_paper_id)->orderBy('variant_number')->pluck('code')->all(),   // D127: the scanner maps set bubbles to codes
         ];
     }
 }

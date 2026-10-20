@@ -961,6 +961,98 @@
     "resource": "resource"
    }
   },
+  "qbomr": {
+   "title": "OMR sheets",
+   "tabs": {
+    "form": "Form",
+    "scan": "Scan",
+    "review": "Review",
+    "results": "Results"
+   },
+   "generate_first": "Save and generate the OMR form first.",
+   "form_title": "Sheet title",
+   "roll_digits": "Roll digits",
+   "option_count": "Options per question",
+   "option_language": "Option labels",
+   "page_size": "Page size",
+   "orientation": "Orientation",
+   "portrait": "Portrait",
+   "landscape": "Landscape",
+   "columns": "Answer columns",
+   "auto": "Automatic",
+   "question_mark": "Marks per question",
+   "negative": "Negative marking",
+   "negative_mark": "Negative mark",
+   "multiple": "Several bubbles filled",
+   "policy": {
+    "wrong": "Count as wrong",
+    "correct_if_any": "Correct if one is right"
+   },
+   "box": {
+    "class": "Class",
+    "roll": "Roll",
+    "subject": "Subject",
+    "set": "Set"
+   },
+   "generate": "Generate and lock",
+   "unlock": "Unlock (new version)",
+   "print_set": "Print sheet - set {{set}}",
+   "locked_hint": "Layout version {{version}} is locked; scans are read with it.",
+   "scan_hint": "Photos (JPEG, PNG, WebP, up to 10 MB) or a PDF of scanned sheets, at most {{n}} sheets per batch. Sheets are read in this browser; nothing is sent to another service.",
+   "upload": "Upload photos or PDF",
+   "camera": "Take a photo",
+   "send": "Send {{n}} for review",
+   "no_sheets": "No sheets added yet.",
+   "too_many": "At most {{n}} sheets per batch.",
+   "heic": "HEIC photos are not supported yet - send the photo as JPEG.",
+   "too_big": "{{name}} is larger than 10 MB.",
+   "unreadable_file": "A file could not be read.",
+   "roll": "Roll",
+   "set": "Set",
+   "flagged": "{{n}} to check",
+   "markers": "Corner marks not found - read it by hand in review",
+   "saved": "Saved for review",
+   "no_scans": "No scanned sheets yet.",
+   "status": {
+    "needs_review": "Needs review",
+    "graded": "Graded",
+    "cancelled": "Cancelled",
+    "superseded": "Replaced",
+    "verified": "Verified"
+   },
+   "reason": {
+    "roll_unreadable": "Roll unreadable",
+    "set_code_missing": "Set missing",
+    "set_code_unknown": "Unknown set",
+    "answers_need_review": "Answers to check",
+    "student_unmatched": "No student with this roll",
+    "student_ambiguous": "Several students with this roll",
+    "duplicate_roll": "Roll on another sheet",
+    "student_match_required": "Student to match"
+   },
+   "sheet_image": "Scanned sheet",
+   "no_image": "No image",
+   "use_main": "Use the main set",
+   "student_id": "Student (record number)",
+   "duplicate": "Roll already on another sheet",
+   "dup": {
+    "update": "Replace the older sheet",
+    "keep_both": "Keep both"
+   },
+   "answer": {
+    "blank": "blank",
+    "ambiguous": "several marks"
+   },
+   "confirm": "Checked",
+   "graded": "{{correct}} correct, {{marks}} marks",
+   "approve": "Approve and grade",
+   "cancel": "Cancel sheet",
+   "csv": "Results CSV",
+   "no_results": "No graded sheets yet.",
+   "student": "Student",
+   "correct": "Correct",
+   "marks": "Marks"
+  },
   "qbpp": {
    "n_sets": "{{n}} sets",
    "from_blueprint": "Start from a blueprint",

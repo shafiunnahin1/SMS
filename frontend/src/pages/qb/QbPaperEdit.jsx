@@ -180,6 +180,7 @@ export default function QbPaperEdit() {
             {!isNew && final && (
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="columns" checked={columns} onChange={e => setColumns(e.target.checked)} />{t('qbpp.two_columns')}</label>
             )}
+            {!isNew && final && <Button variant="secondary" onClick={() => navigate(`${base}/${id}/omr`)} data-action="omr">{t('qbomr.title')}</Button>}
             {!isNew && final && setLetters.slice(0, Number(v.sets_count) || 1).flatMap(set => [
               <PrintButton key={set} url={`/question-bank/papers/${id}/pdf`} params={{ set, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}.pdf`} label={t('qbpp.print_set', { set })} />,
               <PrintButton key={`${set}a`} url={`/question-bank/papers/${id}/pdf`} params={{ set, answers: 1, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}-answers.pdf`} label={t('qbpp.print_answers', { set })} />,
