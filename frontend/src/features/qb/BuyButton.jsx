@@ -25,6 +25,7 @@ export default function BuyButton({ type, id, label }) {
             const r = await api.post('/question-bank/buy', { item_type: type, item_id: id })
             toast(r.data.data.already_owned ? t('qbb.already') : t('qbb.bought', { price: r.data.data.charged }))
             qc.invalidateQueries({ queryKey: ['qb-library'] })
+            qc.invalidateQueries({ queryKey: ['qb-all-questions'] })
           } catch (e) {
             toast(e.response?.data?.message ?? t('qbb.failed'), 'error')
           }

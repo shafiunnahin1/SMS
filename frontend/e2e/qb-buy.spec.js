@@ -41,13 +41,15 @@ test('QB.7 a school buys an answer from its wallet', async ({ page, browser }) =
 
   const school = await (await browser.newContext({ baseURL: `http://${TENANTS.school.slug}.${BASE}` })).newPage()
   await login(school, ...TENANTS.school.admin)
-  await school.goto('/admin/question-bank?view=library')
-  await school.locator('[data-testid="qb-library-list"]').getByText(tag).first().click()
-  const view = school.locator('[data-testid="qb-question-view"]')
+  await school.goto('/admin/question-bank')
+  await school.locator('input[name="q"]').fill(tag)
+  const view = school.locator('[data-question]').filter({ hasText: tag })
+  await expect(view).toHaveCount(1)
   await expect(view).not.toContainText('মিটার/সেকেন্ড')
   await view.locator('[data-action="buy"]').click()
   await expect(school.getByRole('alertdialog')).toContainText('0.50')
   await school.getByRole('alertdialog').getByRole('button').last().click()
+  await view.getByRole('button', { name: 'উত্তর ও সমাধান দেখুন' }).click()
   await expect(view.locator('[data-testid="qb-answer"]')).toContainText(`মিটার/সেকেন্ড ${tag}`)
 
   await school.goto('/admin/question-bank/spending')

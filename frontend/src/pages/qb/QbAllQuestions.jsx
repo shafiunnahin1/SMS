@@ -14,6 +14,7 @@ import Ltr from '../../components/bidi/Ltr'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input } from '../../components/FormField'
 import MathText from '../../features/qb/MathText'
+import BuyButton from '../../features/qb/BuyButton'
 
 // R2.1.5 / D133 (D110) /admin|teacher/question-bank/all-questions: qbank's All Questions - the question cards beside qbank's
 // "Search questions" filter (search, class, subject, chapter, topic, question type, source, year; many at a time, each narrowing
@@ -154,10 +155,11 @@ export default function QbAllQuestions() {
                   </ol>
                 )}
                 {(q.creative_parts ?? []).length > 0 && <ol className="flex flex-col gap-1">{q.creative_parts.map(p => <li key={p.part_label}><span className="font-medium">{p.part_label}.</span> <MathText text={p.question_text} /></li>)}</ol>}
-                <div>
+                <div className="flex flex-wrap items-center gap-2">
                   <Button variant="secondary" onClick={() => setShown(s => { const n = new Set(s); n.has(q.id) ? n.delete(q.id) : n.add(q.id); return n })} aria-expanded={shown.has(q.id)} data-action="toggle-answer">
                     {shown.has(q.id) ? t('qbaq.hide_answer') : t('qbaq.show_answer')}<ChevronDown aria-hidden="true" className="h-4 w-4" />
                   </Button>
+                  {!q.unlocked && <BuyButton type="question" id={q.id} />}
                 </div>
                 {shown.has(q.id) && (q.unlocked ? (
                   <div className="flex flex-col gap-2 rounded-token bg-primary-soft p-3 text-sm" data-testid="qb-answer">
