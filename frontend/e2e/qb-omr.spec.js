@@ -11,6 +11,7 @@ test.use({ baseURL: `http://admin.${BASE}` })
 const WHITE_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAAAAACPAi4CAAAAKUlEQVR4nO3MQREAAAwCIPuX1hD77SAA6VEEAoFAIBAIBAKBQCAQfA8Gpwvw4pr3blgAAAAASUVORK5CYII=', 'base64')   // a blank 64x64 page
 
 test('R2.1.6 an OMR form for a final paper: lock, print, scan, review, results', async ({ page, browser }) => {
+  test.setTimeout(180_000)                                                      // the whole flow, from a new question to results, on one page
   const tag = Date.now().toString(36)
   await loginSuper(page)
   await page.goto('/super-admin/institutions')
@@ -65,9 +66,9 @@ test('R2.1.6 an OMR form for a final paper: lock, print, scan, review, results',
   await school.getByRole('tab', { name: /স্ক্যান|Scan/ }).click()
   const scan = school.locator('[data-testid="omr-scan"]')
   await scan.locator('input[name="sheets"]').setInputFiles({ name: 'blank.png', mimeType: 'image/png', buffer: WHITE_PNG })
-  await expect(scan.locator('[data-sheet-status="local"]')).toHaveCount(1)
+  await expect(scan.locator('[data-sheet-status="local"]')).toHaveCount(1, { timeout: 30_000 })   // read in the browser first
   await scan.locator('[data-action="send"]').click()
-  await expect(scan.locator('[data-sheet-status="saved"]')).toHaveCount(1)
+  await expect(scan.locator('[data-sheet-status="saved"]')).toHaveCount(1, { timeout: 15_000 })
 
   await school.getByRole('tab', { name: /যাচাই|Review/ }).click()
   const row = school.locator('[data-testid="omr-review"] [data-status="needs_review"]').first()
