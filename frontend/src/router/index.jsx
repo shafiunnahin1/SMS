@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useSearchParams } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import AppShell from '../layouts/AppShell'
 import Login from '../pages/auth/Login'
@@ -73,6 +73,10 @@ const QbPapers          = lazy(() => import('../pages/qb/QbPapers'))
 const QbPaperEdit       = lazy(() => import('../pages/qb/QbPaperEdit'))
 const QbOmr             = lazy(() => import('../pages/qb/QbOmr'))
 const QbAllQuestions    = lazy(() => import('../pages/qb/QbAllQuestions'))
+function QbHomeRoute() {
+  const [params] = useSearchParams()
+  return params.get('view') === 'library' ? <QbLibrary /> : <QbAllQuestions />
+}
 const QbStudy           = lazy(() => import('../pages/student/QbStudy'))
 const QbStudentQuizzes  = lazy(() => import('../pages/student/QbQuizzes'))
 const QbQuizAttempt     = lazy(() => import('../pages/student/QbQuizAttempt'))
@@ -109,7 +113,7 @@ const area = (path, role, children) => {
 export const tenantRoutes = [
   ...authRoutes,
   area('/admin', 'admin', [
-    { path: 'question-bank', element: S(QbLibrary) },   // QB.5 (D65): concepts and resources
+    { path: 'question-bank', element: S(QbHomeRoute) },   // D133: the question bank opens on All Questions; ?view=library keeps concepts/resources reachable
     { path: 'question-bank/spending', element: S(QbSpending) },   // QB.7
     { path: 'question-bank/papers', element: S(QbPapers) },   // QB.8
     { path: 'question-bank/all-questions', element: S(QbAllQuestions) },   // D133: qbank's All Questions
@@ -155,7 +159,7 @@ export const tenantRoutes = [
     { path: 'accounting', element: S(AccVouchers) }, { path: 'donations', element: S(DonList) },
     { path: 'hr/payroll', element: S(HrPayroll) }, { path: 'hr/advances', element: S(HrAdvances) }, { path: 'hr/adjustments', element: S(HrAdjustments) }, { path: 'hr/revisions', element: S(HrRevisions) },
   ]),
-  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/all-questions', element: S(QbAllQuestions) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }, { path: 'question-bank/papers/:id/omr', element: S(QbOmr) }, { path: 'salary', element: S(MySalary) }]),
+  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbHomeRoute) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/all-questions', element: S(QbAllQuestions) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }, { path: 'question-bank/papers/:id/omr', element: S(QbOmr) }, { path: 'salary', element: S(MySalary) }]),
   area('/staff', 'institution_staff', [{ path: 'departments', element: S(MyDepartments) }, { path: 'profile', element: S(MyProfile) }]),   // R3.12 / D88-D91
   area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }]),   // QB.9 / QB.10: the student portal (other student screens: R1.1)
   area('/parent', 'parent', [

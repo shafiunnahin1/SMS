@@ -41,7 +41,7 @@ test('QB.7 a school buys an answer from its wallet', async ({ page, browser }) =
 
   const school = await (await browser.newContext({ baseURL: `http://${TENANTS.school.slug}.${BASE}` })).newPage()
   await login(school, ...TENANTS.school.admin)
-  await school.goto('/admin/question-bank')
+  await school.goto('/admin/question-bank?view=library')
   await school.locator('[data-testid="qb-library-list"]').getByText(tag).first().click()
   const view = school.locator('[data-testid="qb-question-view"]')
   await expect(view).not.toContainText('মিটার/সেকেন্ড')

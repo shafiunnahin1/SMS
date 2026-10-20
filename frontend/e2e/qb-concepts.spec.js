@@ -84,7 +84,7 @@ test('QB.5 a concept and a PDF go through review and show locked in the library'
   // the school's head teacher: both are there, locked
   const school = await (await browser.newContext({ baseURL: `http://${TENANTS.school.slug}.${BASE}` })).newPage()
   await login(school, ...TENANTS.school.admin)
-  await school.goto('/admin/question-bank')
+  await school.goto('/admin/question-bank?view=library')
   await school.locator('select[name="subject"]').selectOption({ label: `বিষয়-${tag}` })
   await school.locator('select[name="chapter"]').selectOption({ label: `অধ্যায়-${tag}` })
   await school.locator('select[name="topic"]').selectOption({ label: `টপিক-${tag}` })

@@ -87,7 +87,7 @@ test('QB.10b a sale pays the writer, who withdraws it', async ({ page, browser }
 
   const school = await (await browser.newContext({ baseURL: `http://${TENANTS.school.slug}.${BASE}` })).newPage()
   await login(school, ...TENANTS.school.admin)
-  await school.goto('/admin/question-bank')
+  await school.goto('/admin/question-bank?view=library')
   await school.locator('[data-testid="qb-library-list"]').getByText(tag).first().click()
   await school.locator('[data-testid="qb-question-view"] [data-action="buy"]').click()
   await school.getByRole('alertdialog').getByRole('button').last().click()

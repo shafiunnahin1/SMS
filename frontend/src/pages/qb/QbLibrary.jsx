@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Lock } from 'lucide-react'
 import api from '../../api/axios'
 import { useLocale } from '../../ui/I18nProvider'
 import PageHeader from '../../components/PageHeader'
+import Button from '../../components/Button'
 import Card from '../../components/Card'
 import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
@@ -18,6 +20,8 @@ import BuyButton from '../../features/qb/BuyButton'
 // title, and for a resource its page count and preview pages. Buying comes with QB.7.
 export default function QbLibrary() {
   const { t } = useTranslation()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { locale } = useLocale()
   const [tab, setTab] = useState('questions')
   const [place, setPlace] = useState({ subject: '', chapter: '', topic: '' })
@@ -41,7 +45,7 @@ export default function QbLibrary() {
 
   return (
     <div className="flex flex-col gap-4" data-testid="qb-library">
-      <PageHeader title={t('qb.library')} />
+      <PageHeader title={t('qb.library')} actions={<Button variant="secondary" onClick={() => navigate(location.pathname)}>{t('qbaq.title')}</Button>} />
       <Card className="grid gap-3 sm:grid-cols-3">
         <Select label={t('qb.subject')} placeholder={t('qb.pick')} value={place.subject} name="subject"
           options={tree.data.subjects.map(s => ({ value: String(s.id), label: name(s) }))} onChange={e => pick({ subject: e.target.value, chapter: '', topic: '' })} />
