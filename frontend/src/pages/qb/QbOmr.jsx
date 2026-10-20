@@ -15,7 +15,7 @@ import Ltr from '../../components/bidi/Ltr'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select } from '../../components/FormField'
 import Tabs from '../../ui/variants/Tabs'
-import { MAX_BYTES, MAX_SHEETS, bitmapToImageData, canvasToBlob, pdfPages, readSheet } from '../../features/qb/omrSheet'
+import { MAX_BYTES, MAX_SHEETS, bitmapToImageData, canvasToBlob, heicToJpeg, isHeic, pdfPages, readSheet } from '../../features/qb/omrSheet'
 
 // R2.1.6 (D127/D128/D129) /admin|teacher/question-bank/papers/:id/omr: qbank's OMR screens in its order - form settings, sheet
 // print, scan, batch review, results. Sheets are read in this browser with the form's own geometry; photos and PDFs never go to
@@ -112,7 +112,13 @@ function ScanTab({ id, form }) {
     try {
       for (const file of files) {
         if (sheets.length >= MAX_SHEETS) { toast(t('qbomr.too_many', { n: MAX_SHEETS }), 'error'); break }
-        if (/\.hei[cf]$/i.test(file.name) || /hei[cf]/i.test(file.type)) { toast(t('qbomr.heic'), 'error'); continue }
+        if (isHeic(file)) {                                         // D130: converted here, then read like any photo
+          if (file.size > MAX_BYTES) { toast(t('qbomr.too_big', { name: file.name }), 'error'); continue }
+          let jpeg
+          try { jpeg = await heicToJpeg(file) } catch { toast(t('qbomr.heic'), 'error'); continue }
+          read(bitmapToImageData(await createImageBitmap(jpeg)).imageData, file.name, new File([jpeg], file.name.replace(/\.hei[cf]$/i, '.jpg'), { type: 'image/jpeg' }), source)
+          continue
+        }
         if (file.type === 'application/pdf') {
           await pdfPages(file, async (canvas, n) => { const blob = await canvasToBlob(canvas); read(bitmapToImageData(canvas).imageData, `${file.name} #${n}`, blob, source) })
           continue
@@ -155,7 +161,7 @@ function ScanTab({ id, form }) {
       <p className="text-sm text-content-muted">{t('qbomr.photo_tips')}</p>
       <div className="flex flex-wrap gap-2">
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-token border px-3 py-2 text-sm"><Upload aria-hidden="true" className="h-4 w-4" />{t('qbomr.upload')}
-          <input type="file" className="sr-only" multiple accept="image/jpeg,image/png,image/webp,application/pdf" name="sheets" onChange={e => { add([...e.target.files], 'upload'); e.target.value = '' }} /></label>
+          <input type="file" className="sr-only" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf" name="sheets" onChange={e => { add([...e.target.files], 'upload'); e.target.value = '' }} /></label>
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-token border px-3 py-2 text-sm"><Camera aria-hidden="true" className="h-4 w-4" />{t('qbomr.camera')}
           <input type="file" className="sr-only" accept="image/*" capture="environment" name="camera" onChange={e => { add([...e.target.files], 'camera'); e.target.value = '' }} /></label>
         <Button onClick={send} loading={busy} disabled={sheets.length === 0 || saved === sheets.length} data-action="send">{t('qbomr.send', { n: sheets.length - saved })}</Button>

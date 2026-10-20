@@ -264,4 +264,17 @@ export async function pdfPages(file, onPage) {
   }
 }
 
+let heic = null
+export const isHeic = (file) => /\.hei[cf]$/i.test(file.name) || /hei[cf]/i.test(file.type)
+
+/** D130: a HEIC/HEIF phone photo -> JPEG in this browser, with the local heic2any 0.0.4 copy (never an outside service) */
+export async function heicToJpeg(file) {
+  if (!heic) {
+    await loadScript('/vendor/heic2any/heic2any.min.js')
+    heic = window.heic2any
+  }
+  const out = await heic({ blob: file, toType: 'image/jpeg', quality: 0.92 })
+  return Array.isArray(out) ? out[0] : out
+}
+
 export const canvasToBlob = (canvas) => new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9))
