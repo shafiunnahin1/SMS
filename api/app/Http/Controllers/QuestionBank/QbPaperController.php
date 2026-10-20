@@ -196,20 +196,21 @@ class QbPaperController extends Controller
         $open = QbUnlock::where('item_type', 'question')->whereIn('item_id', $questions->keys())->pluck('item_id')->map(fn ($v) => (int) $v)->all();
         $marks = collect($row['sections'])->flatMap(fn ($s) => collect($s['items'])->mapWithKeys(fn ($it) => [$it['qb_question_id'] => $it['marks']]));
         $bySection = collect($row['sections'])->keyBy('id');
-        $n = 0;
+        $n = ['mcq' => 0, 'other' => 0];                          // D129: MCQs and written questions have separate serials
+        $mcq = QbQuestion::whereIn('id', $questions->keys())->whereHas('type', fn ($t) => $t->where('slug', 'mcq'))->pluck('id')->map(fn ($v) => (int) $v)->flip();
         $key = [];
         $subjectNames = collect($row['subjects'])->pluck('name', 'id');
-        $sections = collect($layout)->map(function ($ls) use ($questions, $open, $answers, $marks, $bySection, $subjectNames, &$n, &$key) {
+        $sections = collect($layout)->map(function ($ls) use ($questions, $open, $answers, $marks, $bySection, $subjectNames, $mcq, &$n, &$key) {
             $s = $bySection[$ls['section_id']] ?? ['title' => '', 'instruction' => null];
             $prev = null;
-            return ['title' => $s['title'], 'instruction' => $s['instruction'], 'items' => collect($ls['items'])->filter(fn ($it) => isset($questions[$it['qb_question_id']]))->map(function ($it) use ($questions, $open, $answers, $marks, $subjectNames, &$n, &$key, &$prev) {
+            return ['title' => $s['title'], 'instruction' => $s['instruction'], 'items' => collect($ls['items'])->filter(fn ($it) => isset($questions[$it['qb_question_id']]))->map(function ($it) use ($questions, $open, $answers, $marks, $subjectNames, $mcq, &$n, &$key, &$prev) {
                 $heading = null;                                 // D128: a subject block's heading over its first question
                 if (isset($it['qb_subject_id']) && $it['qb_subject_id'] !== $prev) { $prev = $it['qb_subject_id']; $heading = $subjectNames[$it['qb_subject_id']] ?? ''; }
                 $q = QbQuestionPublicResource::make($questions[$it['qb_question_id']], $answers && in_array($it['qb_question_id'], $open, true));
                 $opts = $it['options'] === [] ? $q['options'] : array_values(array_filter(array_map(fn ($k) => $q['options'][$k] ?? null, $it['options'])));
                 foreach ($opts as $k => &$o) $o['label'] = self::LABELS[$k] ?? (string) ($k + 1);   // relabelled by position
                 unset($o);
-                $no = ++$n;
+                $no = ++$n[isset($mcq[(int) $it['qb_question_id']]) ? 'mcq' : 'other'];
                 if (!empty($it['correct']) && $answers && in_array($it['qb_question_id'], $open, true)) $key[] = ['no' => $no, 'correct' => $it['correct']];   // bought only, like the answers
                 return ['no' => $no, 'marks' => $marks[$it['qb_question_id']] ?? $it['marks'], 'subject' => $heading, 'question' => ['options' => $opts] + $q];
             })->values()->all()];

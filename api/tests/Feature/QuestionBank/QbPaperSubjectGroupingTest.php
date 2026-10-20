@@ -94,4 +94,26 @@ class QbPaperSubjectGroupingTest extends TestCase
         $printed = $this->api('GET', $host, "question-bank/papers/{$id}/pdf?set=A&format=json", $admin)->assertOk()->json('data.sections.0.items');
         $this->assertSame(array_fill(0, 8, null), array_column($printed, 'subject'));
     }
+
+    public function test_mcq_and_written_questions_have_separate_serials(): void   // D129
+    {
+        $i = $this->makeInstitution('serials');
+        $admin = $this->makeUser($i, 'admin');
+        $super = User::where('role', 'super_admin')->first();
+        $cq = QbQuestionType::create(['slug' => 'creative', 'name_bn' => 'সৃজনশীল', 'name_en' => 'Creative', 'family' => 'creative'])->id;
+        $written = array_map(fn ($n) => QbQuestion::create(['qb_question_type_id' => $cq, 'qb_subject_id' => $this->subjects[0], 'question_text' => "W{$n}", 'status' => 'published', 'created_by' => $super->id]), [0, 1]);
+        Tenancy::as($i, function () use ($admin, $written) {
+            foreach ([...$this->q, ...$written] as $q) QbUnlock::create(['item_type' => 'question', 'item_id' => $q->id, 'unlocked_by' => $admin->id, 'price' => '0.00', 'reason' => 'free']);
+        });
+        $host = $this->hostOf($i);
+        $mixed = [$this->q[0], $written[0], $this->q[1], $this->q[2], $written[1], $this->q[3]];
+        $id = $this->api('POST', $host, 'question-bank/papers', $admin, ['title' => 'মিশ্র', 'sets_count' => 1,
+            'sections' => [['title' => 'ক', 'items' => array_map(fn ($q) => ['qb_question_id' => $q->id, 'marks' => '1'], array_slice($mixed, 0, 3))],
+                           ['title' => 'খ', 'items' => array_map(fn ($q) => ['qb_question_id' => $q->id, 'marks' => '1'], array_slice($mixed, 3))]]])->assertCreated()->json('data.id');
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin)->assertOk();
+        $d = $this->api('GET', $host, "question-bank/papers/{$id}/pdf?set=A&answers=1&format=json", $admin)->assertOk()->json('data');
+        $nos = collect($d['sections'])->flatMap(fn ($s) => array_map(fn ($it) => [$it['question']['question_text'], $it['no']], $s['items']))->all();
+        $this->assertSame([['Q0', 1], ['W0', 1], ['Q1', 2], ['Q2', 3], ['W1', 2], ['Q3', 4]], $nos, 'each serial runs on across sections');
+        $this->assertSame([1, 2, 3, 4], array_column($d['answer_key'], 'no'), 'the key uses the MCQ serial = OMR rows');
+    }
 }
