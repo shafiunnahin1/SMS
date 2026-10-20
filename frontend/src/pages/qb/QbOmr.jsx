@@ -15,6 +15,7 @@ import Ltr from '../../components/bidi/Ltr'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select } from '../../components/FormField'
 import Tabs from '../../ui/variants/Tabs'
+import { multipart } from '../../features/students/formData'
 import { MAX_BYTES, MAX_SHEETS, bitmapToImageData, canvasToBlob, heicToJpeg, isHeic, pdfPages, readSheet } from '../../features/qb/omrSheet'
 
 // R2.1.6 (D127/D128/D129) /admin|teacher/question-bank/papers/:id/omr: qbank's OMR screens in its order - form settings, sheet
@@ -150,7 +151,7 @@ function ScanTab({ id, form }) {
         fd.append(`scans[${i}][image]`, x.blob, x.blob.name ?? `${x.key}.jpg`)
       })
       try {
-        const { data } = await api.post(`/question-bank/papers/${id}/omr-form/scans`, fd)
+        const { data } = await api.post(`/question-bank/papers/${id}/omr-form/scans`, fd, multipart)   // the client's default is JSON
         const byKey = Object.fromEntries(data.data.results.map(r => [r.client_id, r]))
         setSheets(all => all.map(x => (byKey[x.key] ? { ...x, result: byKey[x.key] } : x)))
       } catch (e) {
