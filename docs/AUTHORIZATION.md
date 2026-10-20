@@ -193,6 +193,7 @@ export const MENU = {
     it('period-att', '/admin/attendance/periods', 'Period হাজিরা', { icon: 'ListChecks', module: 'period_attendance' }),
     it('exams',      '/admin/exams',      'পরীক্ষা ও ফলাফল', { icon: 'FileText', module: 'exams' }),
     it('question-bank','/admin/question-bank','প্রশ্নব্যাংক', { icon: 'Library', module: 'question_bank' }),
+    it('study-materials','/admin/study-materials','শিক্ষা-উপকরণ', { icon: 'Folder', module: 'question_bank' }),
     it('qb-spending','/admin/question-bank/spending','প্রশ্নব্যাংকের খরচ', { icon: 'Wallet', module: 'question_bank' }),
     it('qb-papers','/admin/question-bank/papers','প্রশ্নপত্র', { icon: 'FileText', module: 'question_bank' }),
     it('admit-cards','/admin/exams/admit-cards','প্রবেশপত্র', { icon: 'IdCard', module: 'admit_card' }),
