@@ -75,10 +75,18 @@ export default function QbAllQuestions() {
 
   const rows = list.data?.data ?? []
   const meta = list.data?.meta
-  const allOnPage = rows.length > 0 && rows.every(q => picked.has(q.id))
-  const someOnPage = rows.some(q => picked.has(q.id))
-  const toggle = (q) => setPicked(m => { const n = new Map(m); n.has(q.id) ? n.delete(q.id) : n.set(q.id, q); return n })
-  const toggleAll = () => setPicked(m => { const n = new Map(m); rows.forEach(q => (allOnPage ? n.delete(q.id) : n.set(q.id, q))); return n })
+  const selectable = rows.filter(q => q.unlocked)
+  const allOnPage = selectable.length > 0 && selectable.every(q => picked.has(q.id))
+  const someOnPage = selectable.some(q => picked.has(q.id))
+  const toggle = (q) => {
+    if (!q.unlocked) return
+    setPicked(m => { const n = new Map(m); n.has(q.id) ? n.delete(q.id) : n.set(q.id, q); return n })
+  }
+  const toggleAll = () => setPicked(m => {
+    const n = new Map(m)
+    selectable.forEach(q => (allOnPage ? n.delete(q.id) : n.set(q.id, q)))
+    return n
+  })
   const code = (q) => [allSubjects[q.qb_subject_id]?.code || 'Q', (types[q.qb_question_type_id]?.slug || 'q').toUpperCase(), String(q.id).padStart(6, '0')].join('-')
 
   // the paper's sections are the question types, in the order first picked (qbank prints one heading per type)
@@ -126,13 +134,13 @@ export default function QbAllQuestions() {
               {meta && meta.total > 0 && <p className="text-sm text-content-muted"><Ltr>{(meta.current_page - 1) * meta.per_page + 1}–{(meta.current_page - 1) * meta.per_page + rows.length}</Ltr> {t('qbaq.displayed')}</p>}
             </div>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="select_all" checked={allOnPage} ref={el => { if (el) el.indeterminate = !allOnPage && someOnPage }} onChange={toggleAll} />{t('qbaq.select_all')}
+              <input type="checkbox" name="select_all" checked={allOnPage} disabled={selectable.length === 0} ref={el => { if (el) el.indeterminate = !allOnPage && someOnPage }} onChange={toggleAll} />{t('qbaq.select_all')}
             </label>
           </Card>
           {list.isPending ? <Loader /> : list.isError ? <ErrorState onRetry={list.refetch} /> : rows.length === 0 ? <EmptyState title={t('qbaq.none')} /> : rows.map((q, i) => (
             <Card key={q.id} className="flex flex-col gap-0 overflow-hidden p-0 shadow-sm" data-question={q.id}>
               <header className="flex flex-wrap items-start gap-3 bg-surface-muted/40 px-5 py-4">
-                <input type="checkbox" aria-label={t('qbaq.select_q', { n: code(q) })} checked={picked.has(q.id)} onChange={() => toggle(q)} className="mt-2 h-5 w-5" name={`q-${q.id}`} />
+                <input type="checkbox" aria-label={t('qbaq.select_q', { n: code(q) })} title={!q.unlocked ? t('qbaq.buy_to_select') : undefined} checked={picked.has(q.id)} disabled={!q.unlocked} onChange={() => toggle(q)} className="mt-2 h-5 w-5" name={`q-${q.id}`} />
                 <span className="flex h-9 w-9 items-center justify-center rounded-token bg-primary font-semibold text-on-primary"><Ltr>{(meta.current_page - 1) * meta.per_page + i + 1}</Ltr></span>
                 <div className="flex flex-col gap-1">
                   <Ltr className="font-semibold">{code(q)}</Ltr>

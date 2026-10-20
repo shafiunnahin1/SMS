@@ -17,11 +17,11 @@ describe('question bank all questions design', () => {
   beforeEach(() => {
     api.get.mockImplementation(path => Promise.resolve({ data: path.endsWith('/curriculum')
       ? { data: { class_levels: [{ id: 1, name_bn: 'অষ্টম শ্রেণি', name_en: 'Class 8' }], subjects: [] } }
-      : { data: [{ id: 5, qb_subject_id: 1, qb_question_type_id: 2, marks: '1.00', question_text: 'প্রশ্নটি কী?', options: [], creative_parts: [], media: [], class_level_ids: [1], difficulty: 3, sources: [], unlocked: false }], meta: { total: 1, current_page: 1, per_page: 16, last_page: 1, facets: { question_types: [], source_types: [], years: [] } } } }))
+      : { data: [5, 4].map((id, index) => ({ id, qb_subject_id: 1, qb_question_type_id: 2, marks: '1.00', question_text: `প্রশ্ন ${id}?`, options: [], creative_parts: [], media: [], class_level_ids: [1], difficulty: 3, sources: [], unlocked: index === 0 })), meta: { total: 2, current_page: 1, per_page: 16, last_page: 1, facets: { question_types: [], source_types: [], years: [] } } } }))
   })
   afterEach(() => vi.clearAllMocks())
 
-  it('places the question list beside the searchable filter, keeps the create action floating and offers buying locked questions', async () => {
+  it('offers buying locked questions and only allows purchased questions to be selected', async () => {
     renderPage()
     await waitFor(() => expect(screen.getByTestId('qb-filter')).toBeInTheDocument())
     expect(screen.getByTestId('qb-all-questions').querySelector(':scope > .grid')).toBeInTheDocument()
@@ -29,5 +29,10 @@ describe('question bank all questions design', () => {
     expect(screen.getByTestId('qb-create-paper')).toHaveClass('fixed')
     expect(screen.getByTestId('qb-create-paper')).toHaveTextContent('প্রশ্নপত্র তৈরি')
     expect(screen.getByRole('button', { name: 'কিনুন' })).toHaveAttribute('data-action', 'buy')
+    const [selectAll, purchased, locked] = screen.getAllByRole('checkbox')
+    expect(purchased).toBeEnabled()
+    expect(locked).toBeDisabled()
+    selectAll.click()
+    expect(screen.getByTestId('qb-create-paper')).toHaveTextContent('1')
   })
 })

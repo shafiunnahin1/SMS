@@ -1067,6 +1067,7 @@
    "displayed": "displayed",
    "select_all": "Select all",
    "select_q": "Select {{n}}",
+   "buy_to_select": "Buy this question before selecting it",
    "none": "No questions match.",
    "chapter_n": "Chapter {{n}} — {{name}}",
    "show_answer": "Show answer & solution",
