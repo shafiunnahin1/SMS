@@ -105,7 +105,7 @@ function ScanTab({ id, form }) {
   const read = (imageData, name, blob, source) => {
     const r = readSheet(imageData, s, symbols)
     // an unreadable page is kept with every answer blank, so a person reads it from the image (never silently dropped)
-    push({ key: `${Date.now()}-${Math.random()}`, name, blob, source, error: r.ok ? null : r.error, roll: r.ok ? r.roll : null, set_code: r.ok ? r.set_code : null, answers: r.ok ? r.answers : blank(), result: null })
+    push({ key: `${Date.now()}-${Math.random()}`, name, blob, source, quality: r.quality, error: r.ok ? null : r.error, roll: r.ok ? r.roll : null, set_code: r.ok ? r.set_code : null, answers: r.ok ? r.answers : blank(), result: null })
   }
   const add = async (files, source) => {
     setBusy(true)
@@ -152,6 +152,7 @@ function ScanTab({ id, form }) {
   return (
     <Card className="flex flex-col gap-3" data-testid="omr-scan">
       <p className="text-sm text-content-muted">{t('qbomr.scan_hint', { n: MAX_SHEETS })}</p>
+      <p className="text-sm text-content-muted">{t('qbomr.photo_tips')}</p>
       <div className="flex flex-wrap gap-2">
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-token border px-3 py-2 text-sm"><Upload aria-hidden="true" className="h-4 w-4" />{t('qbomr.upload')}
           <input type="file" className="sr-only" multiple accept="image/jpeg,image/png,image/webp,application/pdf" name="sheets" onChange={e => { add([...e.target.files], 'upload'); e.target.value = '' }} /></label>
@@ -169,6 +170,7 @@ function ScanTab({ id, form }) {
               <span>{t('qbomr.set')}: {x.set_code ?? '—'}</span>
               <span>{t('qbomr.flagged', { n: x.answers.filter(a => a.status !== 'marked').length })}</span>
               {x.error && <span className="text-red-600">{t('qbomr.markers')}</span>}
+              {(x.quality?.dark || x.quality?.blurry) && <span className="text-red-600" data-quality="low">{t(x.quality.dark ? 'qbomr.retake_dark' : 'qbomr.retake_blurry')}</span>}
               {x.result?.status === 'saved' && <span className="text-green-700">{t('qbomr.saved')}</span>}
               {x.result?.status === 'failed' && <span className="text-red-600">{Object.values(x.result.errors ?? {}).flat()[0]}</span>}
               {x.result?.status !== 'saved' && <Button variant="ghost" aria-label={t('common.delete')} onClick={() => setSheets(all => all.filter(y => y.key !== x.key))}><X aria-hidden="true" className="h-4 w-4" /></Button>}

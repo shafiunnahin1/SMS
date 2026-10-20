@@ -51,6 +51,71 @@ describe('readSheet (D127)', () => {
   })
 
   it('refuses a page without its four markers', () => {
-    expect(readSheet({ width: W, height: H, data: new Uint8ClampedArray(W * H * 4).fill(255) }, { geometry })).toEqual({ ok: false, error: 'markers' })
+    const r = readSheet({ width: W, height: H, data: new Uint8ClampedArray(W * H * 4).fill(255) }, { geometry })
+    expect([r.ok, r.error]).toEqual([false, 'markers'])
+  })
+
+  // a phone photo: turned 3 degrees, a shadow across the page, dim light and a quarter of the resolution
+  const photo = (src, { angle = 3, dim = 0.35, shadow = 0.35, shrink = 0.5, blur = 0 } = {}) => {
+    const w = Math.round(W * shrink)
+    const h = Math.round(H * shrink)
+    const data = new Uint8ClampedArray(w * h * 4)
+    const a = angle * Math.PI / 180
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const u = x / w - 0.5
+      const v = y / h - 0.5
+      const sx = Math.round(((u * Math.cos(a) - v * Math.sin(a)) * 1.08 + 0.5) * W)   // a little margin round the turned page
+      const sy = Math.round(((u * Math.sin(a) + v * Math.cos(a)) * 1.08 + 0.5) * H)
+      const inside = sx >= 0 && sy >= 0 && sx < W && sy < H
+      const value = inside ? src.data[(sy * W + sx) * 4] : 200
+      const light = dim * (1 - shadow * (x / w))                  // darker towards one side
+      const g = Math.round(value * light + 12)
+      data.set([g, g, g, 255], (y * w + x) * 4)
+    }
+    if (!blur) return { width: w, height: h, data }
+    const soft = new Uint8ClampedArray(data.length)                // out of focus: a box blur
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let sum = 0
+      let n = 0
+      for (let dy = -blur; dy <= blur; dy++) for (let dx = -blur; dx <= blur; dx++) {
+        const yy = Math.min(h - 1, Math.max(0, y + dy))
+        const xx = Math.min(w - 1, Math.max(0, x + dx))
+        sum += data[(yy * w + xx) * 4]
+        n++
+      }
+      const g = Math.round(sum / n)
+      soft.set([g, g, g, 255], (y * w + x) * 4)
+    }
+    return { width: w, height: h, data: soft }
+  }
+
+  it('reads a slightly turned, dim, low-resolution photo after enhancement', () => {
+    const fills = [geometry.roll.rows[4][0].bubble, geometry.roll.rows[7][1].bubble, geometry.set.rows[0][0].bubble,
+      geometry.answers.columns[1].rows[0].options[1].bubble, geometry.answers.columns[0].rows[0].options[3].bubble]
+    const r = readSheet(photo(image(fills)), { geometry, info_boxes: { set: { visible: true } } }, ['A', 'B'])
+    expect(r.ok).toBe(true)
+    expect(r.roll).toBe('47')
+    expect(r.set_code).toBe('A')
+    expect(r.answers).toEqual([{ status: 'marked', selected: [1] }, { status: 'marked', selected: [3] }])
+    expect(r.quality.dark).toBe(true)
+  })
+
+  it('reads a blurry, more turned, smaller photo', () => {
+    const fills = [geometry.roll.rows[9][0].bubble, geometry.roll.rows[0][1].bubble, geometry.set.rows[1][0].bubble,
+      geometry.answers.columns[1].rows[0].options[0].bubble, geometry.answers.columns[0].rows[0].options[2].bubble]
+    const r = readSheet(photo(image(fills), { angle: -6, shrink: 0.4, blur: 1 }), { geometry, info_boxes: { set: { visible: true } } }, ['A', 'B'])
+    expect([r.ok, r.roll, r.set_code]).toEqual([true, '90', 'B'])
+    expect(r.answers.map(a => a.selected)).toEqual([[0], [2]])
+  })
+
+  it('finds a sheet photographed sideways', () => {
+    const fills = [geometry.roll.rows[2][0].bubble, geometry.roll.rows[5][1].bubble, geometry.answers.columns[1].rows[0].options[0].bubble, geometry.answers.columns[0].rows[0].options[2].bubble]
+    const src = image(fills)
+    const side = { width: H, height: W, data: new Uint8ClampedArray(src.data.length) }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) side.data.set(src.data.subarray((y * W + x) * 4, (y * W + x) * 4 + 4), (x * H + (H - 1 - y)) * 4)
+    const r = readSheet(side, { geometry, info_boxes: { set: { visible: false } } })
+    expect(r.ok).toBe(true)
+    expect(r.roll).toBe('25')
+    expect(r.answers.map(a => a.selected)).toEqual([[0], [2]])
   })
 })
