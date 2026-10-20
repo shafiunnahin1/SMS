@@ -116,9 +116,9 @@ export default function QbAllQuestions() {
   return (
     <div className="flex flex-col gap-4" data-testid="qb-all-questions">
       <PageHeader title={paper.data ? t('qbaq.add_to', { title: paper.data.title }) : t('qbaq.title')} />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <section className="flex flex-col gap-3 min-w-0">
-          <Card className="flex flex-wrap items-center gap-3">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]">
+        <section className="flex min-w-0 flex-col gap-4">
+          <Card className="flex min-h-20 flex-wrap items-center gap-3 px-5 py-4 shadow-sm">
             <div className="flex-1">
               <p className="font-semibold"><Ltr>{meta?.total ?? 0}</Ltr> {t('qbaq.questions')}</p>
               {meta && meta.total > 0 && <p className="text-sm text-content-muted"><Ltr>{(meta.current_page - 1) * meta.per_page + 1}–{(meta.current_page - 1) * meta.per_page + rows.length}</Ltr> {t('qbaq.displayed')}</p>}
@@ -128,24 +128,24 @@ export default function QbAllQuestions() {
             </label>
           </Card>
           {list.isPending ? <Loader /> : list.isError ? <ErrorState onRetry={list.refetch} /> : rows.length === 0 ? <EmptyState title={t('qbaq.none')} /> : rows.map((q, i) => (
-            <Card key={q.id} className="flex flex-col gap-3 p-0" data-question={q.id}>
-              <header className="flex flex-wrap items-start gap-3 px-4 pt-4">
+            <Card key={q.id} className="flex flex-col gap-0 overflow-hidden p-0 shadow-sm" data-question={q.id}>
+              <header className="flex flex-wrap items-start gap-3 bg-surface-muted/40 px-5 py-4">
                 <input type="checkbox" aria-label={t('qbaq.select_q', { n: code(q) })} checked={picked.has(q.id)} onChange={() => toggle(q)} className="mt-2 h-5 w-5" name={`q-${q.id}`} />
                 <span className="flex h-9 w-9 items-center justify-center rounded-token bg-primary font-semibold text-on-primary"><Ltr>{(meta.current_page - 1) * meta.per_page + i + 1}</Ltr></span>
                 <div className="flex flex-col gap-1">
                   <Ltr className="font-semibold">{code(q)}</Ltr>
-                  <div className="flex flex-wrap gap-1 text-xs">
+                  <div className="flex flex-wrap gap-1.5 text-xs">
                     {[nm(types[q.qb_question_type_id]), nm(allSubjects[q.qb_subject_id]), allChapters[q.qb_chapter_id] && t('qbaq.chapter_n', { n: allChapters[q.qb_chapter_id].number ?? '', name: nm(allChapters[q.qb_chapter_id]) }), nm(allTopics[q.qb_topic_id])]
                       .filter(Boolean).map(x => <span key={x} className="rounded-token bg-primary-soft px-2 py-0.5" dir="auto">{x}</span>)}
                   </div>
                 </div>
               </header>
-              <div className="flex flex-col gap-3 border-t px-4 pt-3">
-                <MathText text={q.question_text} media={q.media ?? []} />
+              <div className="flex flex-col gap-3 border-t border-border-subtle px-5 py-4">
+                <div className="text-base leading-8"><MathText text={q.question_text} media={q.media ?? []} /></div>
                 {q.options.length > 0 && (
                   <ol className="grid gap-2 sm:grid-cols-2">
                     {q.options.map((o, k) => (
-                      <li key={k} className={`flex items-center gap-3 rounded-token border px-3 py-2 ${shown.has(q.id) && o.is_correct ? 'bg-primary-soft' : ''}`}>
+                      <li key={k} className={`flex min-h-12 items-center gap-3 rounded-token border border-border-subtle bg-surface-muted/30 px-3 py-2 ${shown.has(q.id) && o.is_correct ? 'bg-primary-soft' : ''}`}>
                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs">{LABELS[k] ?? k + 1}</span>
                         <MathText text={o.content_text} />
                       </li>
@@ -166,7 +166,7 @@ export default function QbAllQuestions() {
                   </div>
                 ) : <p className="text-sm text-content-muted" role="status">{t('qbaq.locked')}</p>)}
               </div>
-              <footer className="flex flex-wrap items-center gap-3 border-t px-4 py-2 text-xs text-content-muted">
+              <footer className="flex flex-wrap items-center gap-3 border-t border-border-subtle bg-surface-muted/50 px-5 py-3 text-xs text-content-muted">
                 <span>{t('qbaq.class')}: {q.class_level_ids.slice(0, 3).map(id => nm(classes[id])).filter(Boolean).join(', ') || '—'}</span>
                 <span>{t('qbaq.marks')}: <Ltr>{q.marks}</Ltr></span>
                 <span>{t('qbaq.difficulty')}: {t(`qbaq.level.${q.difficulty}`)}</span>
@@ -186,8 +186,8 @@ export default function QbAllQuestions() {
           )}
         </section>
 
-        <aside className="flex flex-col gap-3 lg:sticky lg:top-4 lg:self-start" data-testid="qb-filter">
-          <Card className="flex flex-col gap-3">
+        <aside className="flex flex-col gap-3 xl:sticky xl:top-4 xl:self-start" data-testid="qb-filter">
+          <Card className="flex max-h-[calc(100vh-2rem)] flex-col gap-3 overflow-y-auto p-4 shadow-sm">
             <div className="flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-token bg-primary text-on-primary"><Search aria-hidden="true" className="h-4 w-4" /></span>
               <div className="flex-1"><p className="text-xs font-semibold uppercase text-primary-fg">{t('qbaq.filter')}</p><h2 className="font-semibold">{t('qbaq.search_questions')}</h2></div>
@@ -206,7 +206,7 @@ export default function QbAllQuestions() {
         </aside>
       </div>
 
-      <div className="sticky bottom-4 z-10 flex flex-col items-center gap-2" data-testid="qb-create-paper">
+      <div className="fixed inset-x-0 bottom-6 z-20 flex flex-col items-center gap-2 px-4" data-testid="qb-create-paper">
         {naming && !paper.data && (
           <Card className="flex w-full max-w-md items-end gap-2 shadow-lg">
             <Input className="flex-1" label={t('qbaq.paper_name')} name="paper_name" value={name} maxLength={200} placeholder={t('qbaq.paper_name_hint')} onChange={e => setName(e.target.value)} autoFocus />
