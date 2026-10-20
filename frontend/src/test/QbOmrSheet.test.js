@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { adaptiveMarks, answerRows, judgeRow, readSheet } from '../features/qb/omrSheet'
+import { answerRows, judgeSheet, pageThreshold, readSheet } from '../features/qb/omrSheet'
+import photos from './fixtures/omr-photos.json'
 
 // D127 (3): a whole sheet read with the persisted geometry - roll, set and answers; unreadable digits become "?"
 const W = 800
@@ -137,26 +138,53 @@ describe('readSheet (D127)', () => {
   })
 })
 
-// D131: rows measured on the owner's phone photo of a sheet on a monitor (2026-10-20). Empty bubbles score 0.4-0.6 there, so qbank's
-// +0.10 rule misreads; the adaptive rule reads what is on the sheet, and every row where the two disagree goes to a person.
-describe('adaptive marks with the qbank cross-check (D131)', () => {
-  const rows = [
-    [[0.49, 1.00, 0.54, 0.56], [1], 'marked'],
-    [[0.51, 0.42, 1.00, 0.59], [2], 'uncertain'],        // qbank also took the 0.59 bubble
-    [[0.42, 0.64, 1.00, 1.00], [2, 3], 'uncertain'],     // qbank: three marks
-    [[0.62, 0.71, 1.00, 1.00], [2, 3], 'ambiguous'],     // both rules: two marks
-    [[0.43, 0.41, 0.45, 0.54], [], 'uncertain'],         // empty: qbank read a confident mark here
-    [[0.57, 0.51, 0.73, 0.47], [2], 'marked'],           // a half-filled bubble
-    [[0.81, 0.49, 0.49, 0.60], [0], 'uncertain'],
-    [[0.51, 0.56, 0.54, 0.50], [], 'blank'],
-  ]
-  it.each(rows)('%j -> %j (%s)', (scores, selected, status) => {
-    const r = judgeRow(scores)
-    expect(r.selected).toEqual(selected)
-    expect(r.status).toBe(status)
+// D132: whole sheets measured on the owner's phone photos (fixtures/omr-photos.json): one threshold per photo, and every reading that
+// is not certain is flagged for a person - checked against what the owner filled in (roll and set) and what the photos show.
+describe('per-photo threshold on real photos (D132)', () => {
+  const SYM = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ', 'ঞ']
+  const sel = (r, q) => r.answers[q - 1].selected
+  const sure = (r, q) => r.answers[q - 1].status !== 'uncertain'
+  // the safety rule: a reading the reader is sure of is never wrong (checked on the rows we know); and enough rows are sure to help
+  const expectSure = (r, rows, atLeast) => {
+    for (const [q, want] of rows) if (sure(r, q)) expect(sel(r, q), `q${q}`).toEqual(want)
+    expect(rows.filter(([q]) => sure(r, q)).length).toBeGreaterThanOrEqual(atLeast)
+  }
+
+  it('every photo matches its printed form code the right way up', () => {
+    for (const n of ['screen', 'shadow', 'clean', 'sideways']) expect(photos[n].code, n).toBeGreaterThan(0.5)
   })
-  it('reads a roll column from that photo', () => {
-    expect(adaptiveMarks([0.30, 0.27, 0.95, 0.42, 0.35, 0.37, 0.37, 0.36, 0.48, 0.37])).toEqual([2])
-    expect(adaptiveMarks([0.46, 0.44, 0.50, 0.54, 0.57, 0.52, 0.47, 1.00, 0.48, 0.49])).toEqual([7])
+
+  it('a clean photo with light pen marks: roll 300099 offered with one digit to check, set গ, sure answers right', () => {
+    const r = judgeSheet(photos.clean, SYM)
+    expect(r.threshold).toBeLessThan(0.5)                     // light marks: a low threshold for this photo
+    expect([r.roll, r.roll_uncertain, r.set_code]).toEqual(['30?099', true, 'গ'])
+    expectSure(r, [[6, [1]], [8, [2]], [11, [1]], [14, [1]], [15, [3]]], 3)
+    expect(r.answers[15].status).not.toBe('marked')           // empty on paper, read as a mark: sent to a person, never scored silently
+  })
+
+  it('a shadowed photo: roll 303132, the set (ঘ) left for a person', () => {
+    const r = judgeSheet(photos.shadow, SYM)
+    expect([r.roll, r.set_code, r.set_uncertain]).toEqual(['303132', null, true])
+    expectSure(r, [[1, [2]], [2, [1]], [3, [2]], [5, [1]], [9, [1, 3]], [13, [1, 3]], [18, [2]]], 4)
+    expect(r.answers[10].status).not.toBe('marked')           // খ filled, two bubbles grey: several marks, so a person checks it
+  })
+
+  it('a sideways photo: roll 2?1377 (the empty column stays unread), set খ', () => {
+    const r = judgeSheet(photos.sideways, SYM)
+    expect([r.roll, r.set_code]).toEqual(['2?1377', 'খ'])
+  })
+
+  it('a photo of a screen: roll 242478 and set ক offered; the empty row 12 is flagged, not marked', () => {
+    const r = judgeSheet(photos.screen, SYM)
+    expect(r.threshold).toBeGreaterThan(0.6)                  // empty bubbles are grey there: a high threshold
+    expect([r.roll, r.set_code]).toEqual(['242478', 'ক'])
+    expect(sel(r, 12)).toEqual([])
+    expectSure(r, [[1, [1]], [3, [3]], [4, [1]], [5, [0]], [11, [1]], [13, [3]], [14, [1]], [15, [3]], [20, [3]]], 6)
+  })
+
+  it('pageThreshold splits two groups; an all-empty page marks nothing', () => {
+    expect(pageThreshold([0.02, 0.05, 0.03, 0.5, 0.55])).toBeGreaterThan(0.05)
+    expect(pageThreshold([0.02, 0.05, 0.03, 0.5, 0.55])).toBeLessThan(0.5)
+    expect(pageThreshold([0, 0, 0, 0])).toBeGreaterThan(0)
   })
 })

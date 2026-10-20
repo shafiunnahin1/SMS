@@ -1,46 +1,78 @@
-import { classifyBubbleScores, findRegistrationMarkers, homographyFromMarkers, readBubbleRows, scoreBubble } from './omrReader'
+import { classifyBubbleScores, findRegistrationMarkers, homographyFromMarkers, scoreBubble } from './omrReader'
 
 // D127 (3): one scanned page read with the form's own persisted geometry (the same numbers the printed sheet was drawn from).
 // Nothing is decided here: an unreadable digit becomes "?", blanks and multiple marks keep their status, and the server keeps
 // every sheet in review until a person approves it.
 
-// D131: a bubble is a mark when it scores >= 0.70 and >= the row's lower-half mean + 0.22 (printed labels, dim light, blur and
-// screen photos leave empty bubbles at 0.4-0.6, where qbank's +0.10 rule misreads). qbank's rule still runs: where the two
-// disagree the row is "uncertain" and goes to a person; it is never scored silently.
-export const MARK_MIN = 0.70
-export const MARK_GAP = 0.22
+// D132 (amends D131's fixed numbers): one mark threshold per photo - Otsu over all of that sheet's bubbles (roll, set, answers),
+// clamped to 0.15-0.85 - because a light pen mark on a clean photo (0.45-0.65) and an empty bubble on a screen photo (0.4-0.6)
+// overlap no fixed number. A row with a score within UNSURE of the threshold, or where qbank's rule reads it differently, is
+// "uncertain": it goes to a person and is never scored silently.
+export const UNSURE = 0.06
 
-export function adaptiveMarks(scores) {
-  const ordered = scores.map(Number).map(v => (Number.isFinite(v) ? v : 0)).sort((a, b) => a - b)
-  const k = Math.max(1, Math.floor(ordered.length / 2))
-  const base = ordered.slice(0, k).reduce((a, b) => a + b, 0) / k
-  return scores.map((v, i) => [v, i]).filter(([v]) => v >= MARK_MIN && v >= base + MARK_GAP).map(([, i]) => i)
+export function pageThreshold(scores) {
+  const vals = scores.map(Number).filter(Number.isFinite)
+  let best = -1
+  let t = 0.5
+  for (let c = 0.05; c < 0.951; c += 0.01) {
+    let na = 0, sa = 0, nb = 0, sb = 0
+    for (const v of vals) { if (v < c) { na++; sa += v } else { nb++; sb += v } }
+    if (!na || !nb) continue
+    const between = na * nb * ((sa / na) - (sb / nb)) ** 2
+    if (between > best) { best = between; t = c }
+  }
+  return Math.min(0.85, Math.max(0.15, t))
 }
 
-/** one row of bubbles: the adaptive reading, flagged when qbank's rule reads it differently */
-export function judgeRow(scores) {
-  const selected = adaptiveMarks(scores)
+/** one row of bubbles against the page threshold, cross-checked with qbank's own rule */
+export function judgeRow(scores, threshold) {
+  const selected = scores.map((v, i) => [v, i]).filter(([v]) => v >= threshold).map(([, i]) => i)
   const qbank = classifyBubbleScores(scores).selected
   const agree = selected.length === qbank.length && selected.every((v, i) => v === qbank[i])
-  const status = !agree ? 'uncertain' : selected.length === 0 ? 'blank' : selected.length === 1 ? 'marked' : 'ambiguous'
+  const near = scores.some(v => Math.abs(v - threshold) < UNSURE)
+  const status = !agree || near ? 'uncertain' : selected.length === 0 ? 'blank' : selected.length === 1 ? 'marked' : 'ambiguous'
   return { status, selected, qbank }
 }
 
 const rowScores = (imageData, homography, cells) => cells.map(cell => scoreBubble(imageData, homography, cell.bubble ?? cell))
 
 /**
- * a numeric grid (roll, set): each column's ten bubbles give one digit (null when not exactly one clear mark). `uncertain` is
- * true when qbank's rule reads any column differently - the digits are still offered, but a person must confirm them (D131).
+ * a numeric grid (roll, set) from its columns' scores: one digit per column (null unless exactly one mark). `uncertain` is true when
+ * any column is uncertain - the digits are still offered, but a person must confirm them (D131).
  */
-export function readDigits(imageData, homography, grid) {
-  const columns = Array.from({ length: grid.digit_count }, (_, c) => grid.rows.map(row => row[c]))
+export function digitsFrom(columns, threshold) {
   let uncertain = false
-  const digits = columns.map(cells => {
-    const read = judgeRow(rowScores(imageData, homography, cells))
+  const digits = columns.map(scores => {
+    const read = judgeRow(scores, threshold)
     if (read.status === 'uncertain') uncertain = true
     return read.selected.length === 1 ? read.selected[0] : null
   })
   return Object.assign(digits, { uncertain })
+}
+
+/** the code bits' correlation with the printed form code: the way up of the page (D132) */
+export function codeMatch(bitScores, value) {
+  const exp = value.split('').map(Number)
+  const mb = bitScores.reduce((a, b) => a + b, 0) / bitScores.length
+  const me = exp.reduce((a, b) => a + b, 0) / exp.length
+  let num = 0, da = 0, db = 0
+  bitScores.forEach((v, i) => { num += (v - mb) * (exp[i] - me); da += (v - mb) ** 2; db += (exp[i] - me) ** 2 })
+  return da && db ? num / Math.sqrt(da * db) : 0
+}
+
+/** a whole sheet from its bubble scores (separated from the image so real photos' measurements can be kept as tests) */
+export function judgeSheet({ roll, set, answers }, setSymbols = []) {
+  const threshold = pageThreshold([...roll.flat(), ...set.flat(), ...answers.flat()])
+  const rollDigits = digitsFrom(roll, threshold)
+  const setDigits = digitsFrom(set, threshold)
+  return {
+    threshold,
+    roll: rollDigits.map(d => (d === null ? '?' : String(d))).join(''),
+    set_code: setDigits.length === 0 || setDigits.includes(null) ? null : setDigits.map(d => setSymbols[d] ?? String(d)).join(''),
+    roll_uncertain: rollDigits.uncertain,
+    set_uncertain: setDigits.uncertain,
+    answers: answers.map(r => judgeRow(r, threshold)).map(a => ({ status: a.status, selected: a.selected })),
+  }
 }
 
 /** the answer rows in question order (row n = the n-th MCQ, D127/D129) */
@@ -268,7 +300,7 @@ export function cropToPaper(imageData) {
 }
 
 /** every way the page may lie whose four corner marks are found: as it is, enhanced, upside down, a quarter turn either way */
-function candidates(imageData) {
+export function candidates(imageData) {
   const found = []
   const paper = cropToPaper(imageData)
   for (const source of paper ? [paper, imageData] : [imageData]) {   // the paper alone first, then the whole photo
@@ -285,42 +317,39 @@ function candidates(imageData) {
   return found
 }
 
-function readWith(img, markers, settings, setSymbols) {
+export function scoresWith(img, markers, settings) {
   const g = settings.geometry
   const h = homographyFromMarkers(markers, img.width, img.height)
-  const rollDigits = readDigits(img, h, g.roll)
-  const setDigits = settings.info_boxes?.set?.visible === false ? [] : readDigits(img, h, g.set)
-  const answers = answerRows(g).map(r => judgeRow(rowScores(img, h, r.options))).map(a => ({ status: a.status, selected: a.selected }))
-  // which way up: the printed form code matches (when the geometry has it), else the reading with the most clean single marks
-  let fit = [...rollDigits, ...setDigits].filter(d => d !== null).length + answers.filter(a => a.status === 'marked').length
-  if (g.code?.bits?.length) {
-    const bits = readBubbleRows(img, h, g.code.bits.map(b => [b]))
-    fit += 100 * bits.filter((b, i) => (b.status === 'marked') === (g.code.value[i] === '1')).length
+  const grid = (gr) => Array.from({ length: gr.digit_count }, (_, c) => rowScores(img, h, gr.rows.map(row => row[c])))
+  const scores = {
+    roll: grid(g.roll),
+    set: settings.info_boxes?.set?.visible === false ? [] : grid(g.set),
+    answers: answerRows(g).map(r => rowScores(img, h, r.options)),
   }
-  return {
-    fit,
-    sheet: {
-      ok: true,
-      roll: rollDigits.map(d => (d === null ? '?' : String(d))).join(''),
-      set_code: setDigits.length === 0 || setDigits.includes(null) ? null : setDigits.map(d => setSymbols[d] ?? String(d)).join(''),
-      roll_uncertain: !!rollDigits.uncertain,
-      set_uncertain: !!setDigits.uncertain,
-      answers,
-    },
-  }
+  const code = g.code?.bits?.length ? codeMatch(rowScores(img, h, g.code.bits), g.code.value) : null
+  return { scores, code }
 }
 
 /**
- * D127 (3): one page read with the form's geometry. Photos are enhanced first (uneven light, dim, soft or small: see enhance),
- * a turned or perspective photo is straightened by the four corner marks, and a sideways or upside-down page is tried each way.
- * The bubbles are judged by qbank's thresholds unchanged; `quality` tells the scanner when a retake would help.
+ * D127 (3): one page read with the form's geometry. Photos are enhanced first (uneven light, dim, soft or small: see enhance), the
+ * paper is cut out of a larger photo, a turned or perspective photo is straightened by the four corner marks, and a sideways or
+ * upside-down page is tried each way; the printed form code decides the way up (D132), and a page whose code does not match is
+ * unreadable (sent with blank answers for a person). `quality` tells the scanner when a retake would help.
  */
 export function readSheet(imageData, settings, setSymbols = []) {
   const quality_ = quality(imageData)
-  const found = candidates(imageData)
+  const found = candidates(imageData).map(f => ({ ...scoresWith(f.img, f.markers, settings) }))
   if (found.length === 0) return { ok: false, error: 'markers', quality: quality_ }
-  const best = found.map(f => readWith(f.img, f.markers, settings, setSymbols)).sort((x, y) => y.fit - x.fit)[0]
-  return { ...best.sheet, quality: quality_ }
+  const withCode = found.filter(f => f.code !== null)
+  let best
+  if (withCode.length) {
+    best = withCode.sort((x, y) => y.code - x.code)[0]
+    if (best.code < 0.5) return { ok: false, error: 'markers', quality: quality_ }
+  } else {                                           // a geometry without a printed code: the reading with the most clean marks
+    best = found.map(f => ({ f, n: judgeSheet(f.scores, setSymbols).answers.filter(a => a.status === 'marked').length })).sort((x, y) => y.n - x.n)[0].f
+  }
+  const { threshold, ...sheet } = judgeSheet(best.scores, setSymbols)
+  return { ok: true, ...sheet, threshold, quality: quality_ }
 }
 
 export const MAX_BYTES = 10 * 1024 * 1024
