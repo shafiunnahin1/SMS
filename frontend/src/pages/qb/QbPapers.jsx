@@ -53,7 +53,7 @@ export default function QbPapers() {
 
   return (
     <div className="flex flex-col gap-4" data-testid="qb-papers">
-      <PageHeader title={t('qbpp.papers')} actions={<Button onClick={() => navigate(`${base}/new`)} data-action="new"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.new')}</Button>} />
+      <PageHeader title={t('qbpp.papers')} actions={<Button onClick={() => navigate(base.replace(/\/papers$/, '/all-questions'))} data-action="new"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.new')}</Button>} />
       <div className="grid gap-4 lg:grid-cols-4">
         <Card className="flex flex-col gap-2" data-testid="qb-folders">
           <h2 className="font-semibold">{t('qbpf.folders')}</h2>

@@ -16,24 +16,48 @@ class QbPurchaseController extends Controller
 {
     public function __construct(private QbPurchaseService $purchases) {}
 
-    /** GET /question-bank/questions?qb_subject_id=&qb_chapter_id=&qb_topic_id=&qb_question_type_id=&difficulty=&q=&page= */
+    /**
+     * GET /question-bank/questions: qbank's All Questions list (D110/D133). Filters as qbank's sidebar, each one or many:
+     * q, class_level_ids[], subject_ids[], chapter_ids[], topic_ids[], question_type_ids[], source_types[] (the occurrence's
+     * exam type), years[] (the occurrence's year); the single qb_*_id keys still work. ?facets=1 adds the filter choices
+     * (question types, source types, years). Each row carries its classes and sources; the answer only once bought.
+     */
     public function questions(Request $request)
     {
         $this->staffGate($request);
+        $ids = fn () => ['nullable', 'array', 'max:100'];
         $f = $request->validate(['qb_subject_id' => 'nullable|integer', 'qb_chapter_id' => 'nullable|integer', 'qb_topic_id' => 'nullable|integer',
-            'qb_question_type_id' => 'nullable|integer', 'difficulty' => 'nullable|integer|min:1|max:5', 'q' => 'nullable|string|max:100', 'per_page' => 'nullable|integer|min:1|max:50']);
+            'qb_question_type_id' => 'nullable|integer', 'difficulty' => 'nullable|integer|min:1|max:5', 'q' => 'nullable|string|max:100', 'per_page' => 'nullable|integer|min:1|max:50',
+            'class_level_ids' => $ids(), 'class_level_ids.*' => 'integer', 'subject_ids' => $ids(), 'subject_ids.*' => 'integer',
+            'chapter_ids' => $ids(), 'chapter_ids.*' => 'integer', 'topic_ids' => $ids(), 'topic_ids.*' => 'integer',
+            'question_type_ids' => $ids(), 'question_type_ids.*' => 'integer', 'source_types' => $ids(), 'source_types.*' => 'string|max:50',
+            'years' => $ids(), 'years.*' => 'integer|min:1900|max:2100', 'facets' => 'nullable|boolean']);
+        $many = fn (string $list, ?string $one) => array_values(array_unique(array_merge($f[$list] ?? [], isset($one, $f[$one]) ? [$f[$one]] : [])));
         $page = QbQuestion::query()
-            ->when($f['qb_subject_id'] ?? null, fn ($q, $v) => $q->where('qb_subject_id', $v))
-            ->when($f['qb_chapter_id'] ?? null, fn ($q, $v) => $q->where('qb_chapter_id', $v))
-            ->when($f['qb_topic_id'] ?? null, fn ($q, $v) => $q->where('qb_topic_id', $v))
-            ->when($f['qb_question_type_id'] ?? null, fn ($q, $v) => $q->where('qb_question_type_id', $v))
+            ->when($many('subject_ids', 'qb_subject_id'), fn ($q, $v) => $q->whereIn('qb_subject_id', $v))
+            ->when($many('chapter_ids', 'qb_chapter_id'), fn ($q, $v) => $q->whereIn('qb_chapter_id', $v))
+            ->when($many('topic_ids', 'qb_topic_id'), fn ($q, $v) => $q->whereIn('qb_topic_id', $v))
+            ->when($many('question_type_ids', 'qb_question_type_id'), fn ($q, $v) => $q->whereIn('qb_question_type_id', $v))
+            ->when($f['class_level_ids'] ?? null, fn ($q, $v) => $q->whereHas('classLevels', fn ($c) => $c->whereIn('qb_class_levels.id', $v)))
+            ->when($f['source_types'] ?? null, fn ($q, $v) => $q->whereHas('occurrences', fn ($o) => $o->whereIn('exam_type', $v)))
+            ->when($f['years'] ?? null, fn ($q, $v) => $q->whereHas('occurrences', fn ($o) => $o->whereIn('year', $v)))
             ->when($f['difficulty'] ?? null, fn ($q, $v) => $q->where('difficulty', $v))
             ->when($f['q'] ?? null, fn ($q, $s) => $q->where('question_text', 'like', '%' . addcslashes($s, '%_\\') . '%'))
+            ->with(['classLevels:id', 'occurrences'])
             ->orderByDesc('published_at')->orderByDesc('id')->paginate($f['per_page'] ?? 20);
         $open = QbUnlock::where('item_type', 'question')->whereIn('item_id', collect($page->items())->pluck('id'))->pluck('item_id')->map(fn ($v) => (int) $v)->all();
+        $meta = ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(), 'per_page' => $page->perPage()];
+        if (!empty($f['facets'])) $meta['facets'] = [
+            'question_types' => \App\Models\QbQuestionType::orderBy('id')->get(['id', 'slug', 'name_bn', 'name_en']),
+            'source_types' => \App\Models\QbQuestionOccurrence::whereNotNull('exam_type')->distinct()->orderBy('exam_type')->pluck('exam_type')->values(),
+            'years' => \App\Models\QbQuestionOccurrence::whereNotNull('year')->distinct()->orderByDesc('year')->pluck('year')->values(),
+        ];
         return response()->json(['success' => true,
-            'data' => collect($page->items())->map(fn ($q) => QbQuestionPublicResource::make($q, in_array($q->id, $open, true)))->values(),
-            'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(), 'per_page' => $page->perPage()]]);
+            'data' => collect($page->items())->map(fn ($q) => QbQuestionPublicResource::make($q, in_array($q->id, $open, true)) + [
+                'class_level_ids' => $q->classLevels->pluck('id')->values()->all(),
+                'sources' => $q->occurrences->map(fn ($o) => $o->only(['board', 'institution_name', 'exam_type', 'year']))->values()->all(),
+            ])->values(),
+            'meta' => $meta]);
     }
 
     /** GET /question-bank/questions/{id}: the question, its answer only once bought, and the price */
