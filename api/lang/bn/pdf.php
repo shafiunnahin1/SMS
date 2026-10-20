@@ -31,6 +31,7 @@ return [
         ],
         'guardian_sign' => 'অভিভাবকের নাম ও স্বাক্ষর', 'date' => 'তারিখ', 'draft' => 'এই লেখা খসড়া; প্রকাশের আগে আইনজীবী যাচাই করবেন।',
     ],
+    'qb_omr' => ['form_code' => 'ফর্ম কোড', 'set' => 'সেট', 'class' => 'শ্রেণি', 'roll' => 'রোল', 'subject' => 'বিষয় কোড', 'answers' => 'উত্তর'],   // D127
     'qb_paper' => ['set' => 'সেট', 'time' => 'সময়', 'minutes' => 'মিনিট', 'full_marks' => 'পূর্ণমান', 'with_answers' => 'উত্তরসহ', 'answer' => 'উত্তর', 'choices' => 'বিকল্পগুলো', 'true_false' => 'সত্য / মিথ্যা', 'true' => 'সত্য', 'false' => 'মিথ্যা', 'figure_missing' => 'চিত্রটি ছাপা যায়নি', 'answer_key' => 'উত্তরমালা', 'question_no' => 'প্রশ্ন নং'],   // QB.8
     'expenses' => ['title' => 'খরচের খতিয়ান', 'date' => 'তারিখ', 'category' => 'ধরন', 'item' => 'বিবরণ', 'method' => 'পদ্ধতি', 'amount' => 'অঙ্ক (টাকা)', 'total' => 'নিট খরচ'],
     'cashbook' => ['title' => 'দৈনিক ক্যাশবুক', 'section' => 'অংশ', 'item' => 'বিবরণ', 'income' => 'আয়', 'outflow' => 'ব্যয়', 'method' => 'পদ্ধতি', 'category' => 'খাত', 'collector' => 'সংগ্রাহক', 'summary' => 'সারাংশ', 'opening_cash' => 'প্রারম্ভিক নগদ', 'expected_closing' => 'প্রত্যাশিত সমাপনী', 'status' => 'অবস্থা', 'history' => 'সংস্করণ / গোনা নগদ / পার্থক্য', 'cash' => 'নগদ মোট'],
