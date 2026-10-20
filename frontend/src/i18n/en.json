@@ -962,6 +962,7 @@
    }
   },
   "qbomr": {
+   "total_graded": "{{n}} graded sheets",
    "photo_tips": "For photos: lay the sheet flat, keep all four corner squares in view, avoid shadows, and hold the phone steady. Slight tilt, dim light and soft focus are corrected automatically.",
    "retake_dark": "Dark photo - check the answers or take it again",
    "retake_blurry": "Blurry photo - check the answers or take it again",

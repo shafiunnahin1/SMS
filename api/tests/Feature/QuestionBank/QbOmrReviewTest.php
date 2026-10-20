@@ -100,6 +100,7 @@ class QbOmrReviewTest extends TestCase
         $this->api('PUT', $host, "question-bank/omr-scans/{$second}", $teacher, ['roll' => '8'])->assertStatus(422)->assertJsonPath('error', 'qb_omr_scan_closed');
 
         $this->api('GET', $host, "{$base}/scans", $teacher)->assertOk()->assertJsonCount(2, 'data');
+        $this->api('GET', $host, "{$base}/scans?status=graded", $teacher)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $second)->assertJsonPath('meta.total', 1);
         $this->api('GET', $host, "question-bank/omr-scans/{$second}/image", $teacher)->assertOk()->assertHeader('Cache-Control', 'no-store, private');
         $csv = $this->api('GET', $host, "{$base}/results.csv", $teacher)->assertOk()->getContent();
         $this->assertStringContainsString("graded,1,1,1.00", $csv);

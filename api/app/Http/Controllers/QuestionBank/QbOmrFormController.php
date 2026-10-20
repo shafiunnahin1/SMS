@@ -84,7 +84,9 @@ class QbOmrFormController extends Controller
     {
         $paper = $forms->paper($request->user(), $id);
         $form = $forms->form($paper);
-        $rows = QbOmrScan::with('matchedStudent.user:id,name')->where('qb_omr_form_id', $form->id)->orderBy('id')->paginate(50);
+        $f = $request->validate(['status' => 'nullable|in:needs_review,graded,cancelled,superseded']);   // results: ?status=graded, any number of sheets, 50 a page
+        $rows = QbOmrScan::with('matchedStudent.user:id,name')->where('qb_omr_form_id', $form->id)
+            ->when($f['status'] ?? null, fn ($q, $st) => $q->where('status', $st))->orderBy('id')->paginate(50);
         return QbOmrScanResource::collection($rows);
     }
 

@@ -288,18 +288,31 @@ function ScanDetail({ scan, form, onDone }) {
 function ResultsTab({ id }) {
   const { t } = useTranslation()
   const { download, loading } = usePrint()
-  const list = useQuery({ queryKey: ['qb-omr-results', id], queryFn: () => api.get(`/question-bank/papers/${id}/omr-form/scans`, { params: { per_page: 50 } }).then(r => r.data.data) })
+  const [page, setPage] = useState(1)
+  // every graded sheet, 50 a page (a national quiz may have thousands); the CSV always holds all of them
+  const list = useQuery({ queryKey: ['qb-omr-results', id, page], queryFn: () => api.get(`/question-bank/papers/${id}/omr-form/scans`, { params: { status: 'graded', page } }).then(r => r.data) })
   if (list.isPending) return <Loader />
   if (list.isError) return <ErrorState onRetry={list.refetch} />
-  const graded = list.data.filter(r => r.status === 'graded')
+  const graded = list.data.data
+  const last = list.data.meta?.last_page ?? 1
   return (
     <Card className="flex flex-col gap-3" data-testid="omr-results">
-      <div><Button variant="secondary" loading={loading} onClick={() => download(`/question-bank/papers/${id}/omr-form/results.csv`, `omr-results-${id}.csv`)} data-action="csv"><Download aria-hidden="true" className="h-4 w-4" />{t('qbomr.csv')}</Button></div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="secondary" loading={loading} onClick={() => download(`/question-bank/papers/${id}/omr-form/results.csv`, `omr-results-${id}.csv`)} data-action="csv"><Download aria-hidden="true" className="h-4 w-4" />{t('qbomr.csv')}</Button>
+        <span className="text-sm text-content-muted" data-total={list.data.meta?.total ?? graded.length}>{t('qbomr.total_graded', { n: list.data.meta?.total ?? graded.length })}</span>
+      </div>
       {graded.length === 0 ? <EmptyState title={t('qbomr.no_results')} /> : (
         <table className="w-full text-sm">
-          <thead><tr className="text-start"><th className="text-start">{t('qbomr.roll')}</th><th className="text-start">{t('qbomr.student')}</th><th className="text-start">{t('qbomr.set')}</th><th className="text-start">{t('qbomr.correct')}</th><th className="text-start">{t('qbomr.marks')}</th></tr></thead>
+          <thead><tr><th className="text-start">{t('qbomr.roll')}</th><th className="text-start">{t('qbomr.student')}</th><th className="text-start">{t('qbomr.set')}</th><th className="text-start">{t('qbomr.correct')}</th><th className="text-start">{t('qbomr.marks')}</th></tr></thead>
           <tbody>{graded.map(r => <tr key={r.id}><td><Ltr>{r.roll}</Ltr></td><td dir="auto">{r.student_name ?? '—'}</td><td>{r.comparison?.graded_set ?? r.set_code}</td><td><Ltr>{r.correct_count}</Ltr></td><td><Ltr>{r.obtained_marks}</Ltr></td></tr>)}</tbody>
         </table>
+      )}
+      {last > 1 && (
+        <div className="flex items-center gap-2 text-sm">
+          <Button variant="secondary" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{t('common.previous')}</Button>
+          <Ltr>{page} / {last}</Ltr>
+          <Button variant="secondary" disabled={page >= last} onClick={() => setPage(p => p + 1)}>{t('common.next')}</Button>
+        </div>
       )}
     </Card>
   )
