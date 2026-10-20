@@ -31,6 +31,7 @@
         .bubble { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid #111111; border-radius: 50%; font-size: 6.5pt; line-height: 1; }
         .answers-title { position: absolute; top: 45.5%; left: 8%; width: 84%; text-align: center; font-size: 10pt; font-weight: 700; }
         .question-number { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: 700; }
+        .subject-heading { position: absolute; display: flex; align-items: flex-end; font-size: 7.5pt; font-weight: 700; border-bottom: .2mm solid #111111; overflow: hidden; white-space: nowrap; }
         .answer-bubble { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid #111111; border-radius: 50%; font-size: 6pt; line-height: 1; }
     </style>
 </head>
@@ -63,6 +64,9 @@
 
     <div class="answers-title">{{ __('pdf.qb_omr.answers') }} · {{ $settings['question_count'] }}</div>
     @foreach ($geometry['answers']['columns'] as $column)
+        @foreach ($column['headings'] ?? [] as $heading)
+            <span class="subject-heading" style="{{ $rectStyle($heading['rect']) }}">{{ $heading['label'] }}</span>
+        @endforeach
         @foreach ($column['rows'] as $row)
             <span class="question-number" style="{{ $rectStyle($row['number']) }}">{{ $toBangla($row['question_index'] + 1) }}</span>
             @foreach ($row['options'] as $optionIndex => $option)

@@ -7,7 +7,8 @@ use App\Models\{QbPaper, QbPaperVariant, QbQuestionOption};
 
 // D126 (2), R2.1.5: qbank's subsets for SMS papers. Set 1 (A / ক) is the paper as built; every other set shuffles by qbank's
 // strategy - "options" (each MCQ's options), "serial" (the questions inside each section) or "both" - with a seed fixed by the
-// paper and the set (the QB.8 seed, so a set always prints the same), and never repeats an earlier set's order. No more sets
+// paper and the set (the QB.8 seed, so a set always prints the same), and never repeats an earlier set's order. D128: a paper
+// grouped by subject shuffles only inside each subject block, and the frozen layout keeps each item's subject. No more sets
 // than distinct orders exist (qbank's capacity check). On final, each set's order and its correct labels are frozen in
 // qb_paper_variants, so a later edit of a question never changes a printed set.
 class QbPaperSets
@@ -40,7 +41,7 @@ class QbPaperSets
         $fact = function (int $n) { $f = 1; for ($i = 2; $i <= $n; $i++) { $f *= $i; if ($f > 10000) return 10000; } return $f; };
         $total = 1;
         foreach ($sections as $s) {
-            if ($strategy !== 'options') $total = min(10000, $total * $fact(count($s['items'])));
+            if ($strategy !== 'options') foreach (empty($s['grouped']) ? [$s['items']] : self::blocks($s['items']) as $block) $total = min(10000, $total * $fact(count($block)));   // D128: per subject block
             if ($strategy !== 'serial') foreach ($s['items'] as $it) $total = min(10000, $total * $fact($optionCounts[(int) $it['qb_question_id']] ?? 0));
         }
         return $total;
@@ -67,6 +68,17 @@ class QbPaperSets
         }
     }
 
+    /** D128: the consecutive runs of one subject inside a section (the section list is already in subject order) */
+    public static function blocks(array $items): array
+    {
+        $blocks = [];
+        foreach (array_values($items) as $it) {
+            $last = array_key_last($blocks);
+            if ($last !== null && $blocks[$last][0]['qb_subject_id'] === $it['qb_subject_id']) $blocks[$last][] = $it; else $blocks[] = [$it];
+        }
+        return $blocks;
+    }
+
     public function optionCounts(array $sections): array
     {
         return QbQuestionOption::whereIn('qb_question_id', $this->ids($sections))->selectRaw('qb_question_id, count(*) as n')->groupBy('qb_question_id')
@@ -91,13 +103,16 @@ class QbPaperSets
         };
         return array_map(function ($s) use ($shuffle, $strategy, $optionCounts) {
             $items = array_values($s['items']);
-            if ($strategy !== 'options') $items = $shuffle($items, "s{$s['id']}");
+            if ($strategy !== 'options') {
+                $items = empty($s['grouped']) ? $shuffle($items, "s{$s['id']}")
+                    : array_merge(...array_map(fn ($block) => $shuffle($block, "s{$s['id']}:g{$block[0]['qb_subject_id']}"), self::blocks($items) ?: [[]]));   // D128
+            }
             return ['section_id' => $s['id'], 'items' => array_map(function ($it) use ($shuffle, $strategy, $optionCounts) {
                 $q = (int) $it['qb_question_id'];
                 $order = range(0, max(0, ($optionCounts[$q] ?? 0) - 1));
                 if (($optionCounts[$q] ?? 0) === 0) $order = [];
                 if ($strategy !== 'serial') $order = $shuffle($order, "q{$q}");
-                return ['qb_question_id' => $q, 'marks' => $it['marks'] ?? null, 'options' => $order];
+                return ['qb_question_id' => $q, 'marks' => $it['marks'] ?? null, 'options' => $order] + (isset($it['qb_subject_id']) ? ['qb_subject_id' => (int) $it['qb_subject_id']] : []);
             }, $items)];
         }, $sections);
     }

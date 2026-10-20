@@ -25,7 +25,7 @@ class QbOmrGeometryService
         $codeTotalWidth = (28 * $codeWidth) + (27 * $codeGap);
         $codeBits = array_map(fn (int $index): array => $this->rect(0.5 - ($codeTotalWidth / 2) + ($index * ($codeWidth + $codeGap)), 0.095, $codeWidth, 2.2 / $pageHeight), range(0, 27));
         $answerColumns = $this->answerColumns($questionCount, $optionCount, $settings['answer_columns'] ?? 'auto');
-        $answerGeometry = $this->answerGeometry($questionCount, $optionCount, $answerColumns, $pageWidth, $pageHeight);
+        $answerGeometry = $this->answerGeometry($questionCount, $optionCount, $answerColumns, $pageWidth, $pageHeight, $settings['subject_blocks'] ?? []);
 
         return [
             'version' => 2,
@@ -57,26 +57,39 @@ class QbOmrGeometryService
         return $questionCount <= 3 ? max(1, $questionCount) : min(4, max(1, (int) ceil(sqrt($questionCount))));
     }
 
-    private function answerGeometry(int $questionCount, int $optionCount, int $columnCount, float $pageWidth, float $pageHeight): array
+    /** D128: a grouped paper gets one heading slot (a row's height) before each subject block; question rows keep their index */
+    private function answerGeometry(int $questionCount, int $optionCount, int $columnCount, float $pageWidth, float $pageHeight, array $subjectBlocks = []): array
     {
+        $starts = array_column($subjectBlocks, 'name', 'start');
+        $slots = [];
+        foreach (range(0, $questionCount - 1) as $q) {
+            if (array_key_exists($q, $starts)) $slots[] = ['heading' => (string) $starts[$q]];
+            $slots[] = ['question' => $q];
+        }
         $left = 0.08;
         $top = 0.50;
         $width = 0.84;
-        $rowsPerColumn = (int) ceil($questionCount / $columnCount);
+        $rowsPerColumn = (int) ceil(count($slots) / $columnCount) + ($subjectBlocks ? 1 : 0);   // room for a heading moved down
         $height = min(0.36, (7 * $rowsPerColumn) / $pageHeight);
         $columnWidth = $width / $columnCount;
         $numberWidth = $columnWidth * 0.24;
         $bubbleWidth = $columnWidth - $numberWidth;
         $rowHeight = $height / $rowsPerColumn;
-        $groups = array_chunk(range(0, $questionCount - 1), $rowsPerColumn);
+        $groups = array_chunk($slots, max(1, $rowsPerColumn - ($subjectBlocks ? 1 : 0)));
+        for ($g = 0; $g < count($groups) - 1; $g++) {             // a heading never ends a column: it moves to the top of the next one
+            if (isset(end($groups[$g])['heading'])) array_unshift($groups[$g + 1], array_pop($groups[$g]));
+        }
         $columns = [];
 
         foreach ($groups as $columnIndex => $questionIndexes) {
             $columnLeft = $left + ($columnIndex * $columnWidth);
             $bubbleLeft = $columnLeft + $numberWidth;
             $columnRows = [];
-            foreach ($questionIndexes as $rowIndex => $questionIndex) {
+            $headings = [];
+            foreach ($questionIndexes as $rowIndex => $slot) {
                 $rowTop = $top + ($rowIndex * $rowHeight);
+                if (isset($slot['heading'])) { $headings[] = ['label' => $slot['heading'], 'rect' => $this->rect($columnLeft, $rowTop, $columnWidth, $rowHeight)]; continue; }
+                $questionIndex = $slot['question'];
                 $cells = [];
                 for ($optionIndex = 0; $optionIndex < $optionCount; $optionIndex++) {
                     $cell = $this->rect($bubbleLeft + ($optionIndex * $bubbleWidth / $optionCount), $rowTop, $bubbleWidth / $optionCount, $rowHeight);
@@ -85,7 +98,7 @@ class QbOmrGeometryService
                 $columnRows[] = ['question_index' => $questionIndex, 'number' => $this->rect($columnLeft, $rowTop, $numberWidth, $rowHeight), 'options' => $cells];
             }
             $columnBounds = $this->rect($bubbleLeft, $top, $bubbleWidth, count($questionIndexes) * $rowHeight);
-            $columns[] = $columnBounds + ['bubbles' => $columnBounds, 'rows' => $columnRows];
+            $columns[] = $columnBounds + ['bubbles' => $columnBounds, 'rows' => $columnRows] + ($headings ? ['headings' => $headings] : []);
         }
 
         $first = $columns[0];

@@ -51,6 +51,7 @@ class QbOmrFormService
                 'page_orientation' => $input['page_orientation'],
                 'answer_columns' => (string) $input['answer_columns'],
                 'question_count' => count($mcqIds),
+                'subject_blocks' => $this->subjectBlocks($lockedPaper),   // D128: [] unless the paper is grouped by subject
                 'info_boxes' => [
                     'class' => ['visible' => (bool) $input['info_boxes']['class'], 'digits' => 2],
                     'roll' => ['visible' => (bool) $input['info_boxes']['roll'], 'digits' => $rollDigits],
@@ -133,6 +134,26 @@ class QbOmrFormService
         $symbols = preg_match('/^[A-Z]/', $firstCode) ? range('A', 'J') : ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ', 'ঞ'];
 
         return ['paper' => $paper, 'form' => $form, 'variant' => $variant, 'settings' => $settings, 'set_symbols' => $symbols];
+    }
+
+    /** D128: the MCQ rows of each subject block (the same in every set: sets shuffle only inside a block), from set 1's frozen order */
+    private function subjectBlocks(QbPaper $paper): array
+    {
+        $layout = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->value('layout_json') ?? [];
+        $mcq = array_flip($this->mcqIds($paper));
+        $blocks = [];
+        $row = 0;
+        foreach ($layout as $section) foreach ($section['items'] ?? [] as $it) {
+            if (!isset($mcq[(int) $it['qb_question_id']])) continue;
+            if (!isset($it['qb_subject_id'])) return [];
+            $last = array_key_last($blocks);
+            if ($last !== null && $blocks[$last]['subject_id'] === (int) $it['qb_subject_id']) $blocks[$last]['count']++;
+            else $blocks[] = ['subject_id' => (int) $it['qb_subject_id'], 'start' => $row, 'count' => 1];
+            $row++;
+        }
+        if ($blocks === []) return [];
+        $names = \App\Models\QbSubject::whereIn('id', array_column($blocks, 'subject_id'))->get()->keyBy('id');
+        return array_map(fn ($b) => $b + ['name' => $names->get($b['subject_id'])?->name_bn ?? $names->get($b['subject_id'])?->name_en ?? ''], $blocks);
     }
 
     private function setDigits(int $setCount): int

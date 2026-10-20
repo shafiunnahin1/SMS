@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
 import PageHeader from '../../components/PageHeader'
@@ -14,7 +14,7 @@ import { ErrorState } from '../../components/StateViews'
 import { Input, Select, Textarea } from '../../components/FormField'
 import MathText from '../../features/qb/MathText'
 
-const EMPTY = { title: '', exam_name: '', duration_minutes: '', sets_count: '1', instructions: '', sections: [{ title: '', instruction: '', items: [] }] }
+const EMPTY = { title: '', exam_name: '', duration_minutes: '', sets_count: '1', instructions: '', group: false, order: [], sections: [{ title: '', instruction: '', items: [] }] }
 
 // QB.8 /admin|teacher/question-bank/papers/:id and /new (D66, question-bank.md §5): sections, questions searched from the bank with
 // their marks, saved as a draft. Not-yet-bought questions: the server answers with their ids and total; the page asks once and buys
@@ -41,7 +41,7 @@ export default function QbPaperEdit() {
     if (!paper.data) return
     const p = paper.data
     setV({ title: p.title, exam_name: p.exam_name ?? '', duration_minutes: p.duration_minutes ? String(p.duration_minutes) : '', sets_count: String(p.sets_count),
-      instructions: p.instructions_json?.text ?? '', sections: p.sections.map(s => ({ title: s.title, instruction: s.instruction ?? '', items: s.items.map(i => ({ ...i, marks: String(i.marks) })) })) })
+      instructions: p.instructions_json?.text ?? '', group: !!p.instructions_json?.group_by_subject, order: (p.subjects ?? []).map(x => x.id), sections: p.sections.map(s => ({ title: s.title, instruction: s.instruction ?? '', items: s.items.map(i => ({ ...i, marks: String(i.marks) })) })) })
     p.sections.flatMap(s => s.items).forEach(i => api.get(`/question-bank/questions/${i.qb_question_id}`).then(r => setTexts(x => ({ ...x, [i.qb_question_id]: r.data.data.question_text }))).catch(() => {}))
   }, [paper.data])
 
@@ -56,7 +56,7 @@ export default function QbPaperEdit() {
     section(target, { items: [...v.sections[target].items, { qb_question_id: q.id, marks: String(Number(q.marks) || 1) }] })
   }
   const body = () => ({ title: v.title, exam_name: v.exam_name || null, duration_minutes: v.duration_minutes ? Number(v.duration_minutes) : null, sets_count: Number(v.sets_count),
-    instructions_json: v.instructions ? { text: v.instructions } : null, sections: v.sections.map(s => ({ title: s.title, instruction: s.instruction || null, items: s.items.map(i => ({ qb_question_id: i.qb_question_id, marks: i.marks })) })) })
+    instructions_json: (v.instructions || v.group) ? { text: v.instructions || null, group_by_subject: v.group, subject_order: v.order } : null, sections: v.sections.map(s => ({ title: s.title, instruction: s.instruction || null, items: s.items.map(i => ({ qb_question_id: i.qb_question_id, marks: i.marks })) })) })
   const toast = (m, k) => useUiStore.getState().addToast(m, k)
   const save = async () => {
     setBusy(true)
@@ -98,6 +98,9 @@ export default function QbPaperEdit() {
     setTexts(x => ({ ...x, [next.id]: next.question_text }))
     section(si, { items: v.sections[si].items.map((x, j) => (j === k ? { ...x, qb_question_id: next.id } : x)) })
   }
+  const subjects = (paper.data?.subjects ?? []).filter(x => x.id)          // D128: the saved paper's subjects
+  const ordered = [...v.order.map(sid => subjects.find(x => x.id === sid)).filter(Boolean), ...subjects.filter(x => !v.order.includes(x.id))]
+  const move = (k, d) => { const ids = ordered.map(x => x.id); [ids[k], ids[k + d]] = [ids[k + d], ids[k]]; set({ order: ids }) }
   const setLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 
   return (
@@ -110,6 +113,20 @@ export default function QbPaperEdit() {
           <Input label={t('qbpp.duration')} ltr inputMode="numeric" value={v.duration_minutes} onChange={e => set({ duration_minutes: e.target.value })} name="duration_minutes" />
           <Select label={t('qbpp.sets')} options={setLetters.map((_, k) => ({ value: String(k + 1), label: t('qbpp.n_sets', { n: k + 1 }) }))} value={v.sets_count} onChange={e => set({ sets_count: e.target.value })} name="sets_count" />
           <Textarea className="sm:col-span-2" label={t('qbpp.instructions')} rows={2} value={v.instructions} onChange={e => set({ instructions: e.target.value })} name="instructions" />
+          <div className="flex flex-col gap-2 sm:col-span-2" data-testid="paper-subject-group">
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="group_by_subject" checked={v.group} onChange={e => set({ group: e.target.checked })} />{t('qbpp.group_by_subject')}</label>
+            {v.group && (ordered.length === 0 ? <p className="text-sm text-content-muted">{t('qbpp.group_save_first')}</p> : (
+              <ol className="flex flex-col gap-1 text-sm">
+                {ordered.map((x, k) => (
+                  <li key={x.id} className="flex items-center gap-2" data-subject={x.id}>
+                    <span className="flex-1" dir="auto">{k + 1}. {x.name}</span>
+                    <Button variant="ghost" disabled={k === 0} onClick={() => move(k, -1)} aria-label={t('qbpp.move_up')}><ChevronUp aria-hidden="true" className="h-4 w-4" /></Button>
+                    <Button variant="ghost" disabled={k === ordered.length - 1} onClick={() => move(k, 1)} aria-label={t('qbpp.move_down')}><ChevronDown aria-hidden="true" className="h-4 w-4" /></Button>
+                  </li>
+                ))}
+              </ol>
+            ))}
+          </div>
         </fieldset>
       </Card>
       {isNew && (blueprints.data ?? []).length > 0 && (

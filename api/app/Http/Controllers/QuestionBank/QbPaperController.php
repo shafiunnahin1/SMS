@@ -123,7 +123,9 @@ class QbPaperController extends Controller
         $in = $request->validate([
             'title' => 'required|string|max:200', 'exam_name' => 'nullable|string|max:200', 'program_id' => 'nullable|integer|exists:programs,id',
             'qb_subject_id' => 'nullable|integer', 'duration_minutes' => 'nullable|integer|min:1|max:600', 'instructions_json' => 'nullable|array',
-            'instructions_json.text' => 'nullable|string|max:2000', 'sets_count' => 'nullable|integer|min:1|max:' . QbPaperSets::MAX,   // D126 (2)
+            'instructions_json.text' => 'nullable|string|max:2000',
+            'instructions_json.group_by_subject' => 'nullable|boolean', 'instructions_json.subject_order' => 'nullable|array|max:50',   // D128
+            'instructions_json.subject_order.*' => 'integer', 'sets_count' => 'nullable|integer|min:1|max:' . QbPaperSets::MAX,   // D126 (2)
             'sections' => 'required|array|min:1|max:20', 'sections.*.title' => 'required|string|max:200', 'sections.*.instruction' => 'nullable|string|max:500',
             'sections.*.items' => 'present|array|max:100', 'sections.*.items.*.qb_question_id' => 'required|integer',
             'sections.*.items.*.marks' => ['required', 'regex:/^\d{1,3}(\.\d{1,2})?$/'],
@@ -177,6 +179,7 @@ class QbPaperController extends Controller
         $items = $this->items($p)->groupBy('qb_paper_section_id');
         return $p->only(['id', 'title', 'exam_name', 'program_id', 'qb_subject_id', 'duration_minutes', 'total_marks', 'instructions_json', 'status', 'sets_count', 'created_by'])
             + ['updated_at' => $p->updated_at?->toIso8601String(),
+               'subjects' => $this->subjects($p),   // D128: the paper's subjects, in the order the paper groups them
                'sections' => QbPaperSection::where('qb_paper_id', $p->id)->orderBy('sort_order')->get()->map(fn ($s) => ['id' => $s->id, 'title' => $s->title, 'instruction' => $s->instruction,
                    'items' => ($items[$s->id] ?? collect())->sortBy('sort_order')->map(fn ($i) => ['qb_question_id' => (int) $i->qb_question_id, 'marks' => $i->marks])->values()])->values()];
     }
@@ -195,16 +198,20 @@ class QbPaperController extends Controller
         $bySection = collect($row['sections'])->keyBy('id');
         $n = 0;
         $key = [];
-        $sections = collect($layout)->map(function ($ls) use ($questions, $open, $answers, $marks, $bySection, &$n, &$key) {
+        $subjectNames = collect($row['subjects'])->pluck('name', 'id');
+        $sections = collect($layout)->map(function ($ls) use ($questions, $open, $answers, $marks, $bySection, $subjectNames, &$n, &$key) {
             $s = $bySection[$ls['section_id']] ?? ['title' => '', 'instruction' => null];
-            return ['title' => $s['title'], 'instruction' => $s['instruction'], 'items' => collect($ls['items'])->filter(fn ($it) => isset($questions[$it['qb_question_id']]))->map(function ($it) use ($questions, $open, $answers, $marks, &$n, &$key) {
+            $prev = null;
+            return ['title' => $s['title'], 'instruction' => $s['instruction'], 'items' => collect($ls['items'])->filter(fn ($it) => isset($questions[$it['qb_question_id']]))->map(function ($it) use ($questions, $open, $answers, $marks, $subjectNames, &$n, &$key, &$prev) {
+                $heading = null;                                 // D128: a subject block's heading over its first question
+                if (isset($it['qb_subject_id']) && $it['qb_subject_id'] !== $prev) { $prev = $it['qb_subject_id']; $heading = $subjectNames[$it['qb_subject_id']] ?? ''; }
                 $q = QbQuestionPublicResource::make($questions[$it['qb_question_id']], $answers && in_array($it['qb_question_id'], $open, true));
                 $opts = $it['options'] === [] ? $q['options'] : array_values(array_filter(array_map(fn ($k) => $q['options'][$k] ?? null, $it['options'])));
                 foreach ($opts as $k => &$o) $o['label'] = self::LABELS[$k] ?? (string) ($k + 1);   // relabelled by position
                 unset($o);
                 $no = ++$n;
                 if (!empty($it['correct']) && $answers && in_array($it['qb_question_id'], $open, true)) $key[] = ['no' => $no, 'correct' => $it['correct']];   // bought only, like the answers
-                return ['no' => $no, 'marks' => $marks[$it['qb_question_id']] ?? $it['marks'], 'question' => ['options' => $opts] + $q];
+                return ['no' => $no, 'marks' => $marks[$it['qb_question_id']] ?? $it['marks'], 'subject' => $heading, 'question' => ['options' => $opts] + $q];
             })->values()->all()];
         })->all();
         return $paper->only(['id', 'title', 'exam_name', 'duration_minutes', 'total_marks']) + ['instructions' => $paper->instructions_json['text'] ?? null,
@@ -219,8 +226,38 @@ class QbPaperController extends Controller
     private function sectionList(QbPaper $paper): array
     {
         $items = $this->items($paper)->groupBy('qb_paper_section_id');
-        return QbPaperSection::where('qb_paper_id', $paper->id)->orderBy('sort_order')->orderBy('id')->get()->map(fn ($s) => ['id' => $s->id,
+        $list = QbPaperSection::where('qb_paper_id', $paper->id)->orderBy('sort_order')->orderBy('id')->get()->map(fn ($s) => ['id' => $s->id,
             'items' => ($items[$s->id] ?? collect())->sortBy('sort_order')->map(fn ($i) => ['qb_question_id' => (int) $i->qb_question_id, 'marks' => $i->marks])->values()->all()])->all();
+        if (empty($paper->instructions_json['group_by_subject'])) return $list;
+        // D128: inside each section, subject blocks in the teacher's order (a subject not in the order follows, as first met); the
+        // order inside a block is the order built, and sets shuffle only inside a block (QbPaperSets)
+        $subjectOf = QbQuestion::whereIn('id', $this->items($paper)->pluck('qb_question_id'))->pluck('qb_subject_id', 'id')->map(fn ($v) => (int) $v);
+        $rank = array_flip($this->subjectOrder($paper, $subjectOf));
+        foreach ($list as &$sec) {
+            $sec['grouped'] = true;
+            foreach ($sec['items'] as $k => &$it) { $it['qb_subject_id'] = $subjectOf[$it['qb_question_id']] ?? 0; $it['_k'] = $k; }
+            unset($it);
+            usort($sec['items'], fn ($a, $b) => [$rank[$a['qb_subject_id']] ?? PHP_INT_MAX, $a['_k']] <=> [$rank[$b['qb_subject_id']] ?? PHP_INT_MAX, $b['_k']]);
+            $sec['items'] = array_map(fn ($it) => array_diff_key($it, ['_k' => 1]), $sec['items']);
+        }
+        unset($sec);
+        return $list;
+    }
+
+    /** D128: the teacher's subject order, then any other subject of the paper in the order first met */
+    private function subjectOrder(QbPaper $paper, $subjectOf): array
+    {
+        $seen = $this->items($paper)->sortBy(['qb_paper_section_id', 'sort_order'])->map(fn ($i) => $subjectOf[(int) $i->qb_question_id] ?? 0)->unique()->values()->all();
+        $order = array_values(array_intersect(array_map('intval', $paper->instructions_json['subject_order'] ?? []), $seen));
+        return array_values(array_unique(array_merge($order, $seen)));
+    }
+
+    /** D128: the paper's subjects with names, in grouping order */
+    private function subjects(QbPaper $paper): array
+    {
+        $subjectOf = QbQuestion::whereIn('id', $this->items($paper)->pluck('qb_question_id'))->pluck('qb_subject_id', 'id')->map(fn ($v) => (int) $v);
+        $names = \App\Models\QbSubject::whereIn('id', $subjectOf->unique())->get()->keyBy('id');
+        return array_map(fn ($id) => ['id' => $id, 'name' => $names->get($id)?->name_bn ?? $names->get($id)?->name_en], $this->subjectOrder($paper, $subjectOf));
     }
 
     /** QB.14: the questions' own pictures as data: URIs for the PDF (only media linked to these questions; a large file is left out) */

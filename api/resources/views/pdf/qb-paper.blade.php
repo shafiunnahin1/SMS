@@ -20,7 +20,7 @@
 <style>
   .head { text-align: center; margin-bottom: 8px; } .head h2 { margin: 2px 0; font-size: 15px; }
   .meta { display: flex; justify-content: space-between; font-size: 11px; border-bottom: 1px solid #999999; padding-bottom: 4px; margin-bottom: 8px; }
-  .section h3 { font-size: 13px; margin: 10px 0 2px; } .section .ins { font-size: 11px; font-style: italic; margin-bottom: 4px; }
+  .section h3 { font-size: 13px; margin: 10px 0 2px; } .section h4.subject { font-size: 12px; margin: 8px 0 2px; text-decoration: underline; } .section .ins { font-size: 11px; font-style: italic; margin-bottom: 4px; }
   .q { margin: 6px 0; page-break-inside: avoid; } .q .row { display: flex; gap: 6px; } .q .mk { margin-inline-start: auto; font-size: 11px; white-space: nowrap; }
   .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; padding-inline-start: 22px; font-size: 12px; }
   .parts { padding-inline-start: 22px; } .ans { padding-inline-start: 22px; font-size: 11px; color: #333333; border-inline-start: 2px solid {{ $theme['primary_color'] }}; margin-top: 2px; }
@@ -47,6 +47,7 @@
     <h3>{{ $s['title'] }}</h3>
     @if ($s['instruction'])<div class="ins">{{ $s['instruction'] }}</div>@endif
     @foreach ($s['items'] as $it)
+      @if (!empty($it['subject']))<h4 class="subject">{{ $it['subject'] }}</h4>@endif
       @php($q = $it['question'])
       <div class="q">
         <div class="row"><strong>{{ $it['no'] }}.</strong><span class="text">{!! \App\Support\QbRichText::html($q['question_text'], $paper['media'] ?? []) !!}</span><span class="mk">[{{ $n($it['marks']) }}]</span></div>
