@@ -18,7 +18,7 @@ export function flattenCurriculum(versions, name) {
   const rows = []
   const walk = (nodes, parents, version) => (nodes ?? []).forEach(node => {
     const path = [...parents, name(node)]
-    rows.push({ id: node.id, kind: node.kind, path, label: path.join(' › '), version: name(version) || version.version_key, depth: parents.length })
+    rows.push({ id: node.id, kind: node.kind, path, label: path.join(' › '), version: name(version) || version.version_key, version_id: version.id, parent_id: node.parent_id ?? null, sort_order: node.sort_order ?? 0, depth: parents.length })
     walk(node.children, path, version)
   })
   for (const version of versions ?? []) walk(version.nodes, [], version)

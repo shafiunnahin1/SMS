@@ -211,6 +211,7 @@ return [
     'PUT api/v1/super/qb/price-rules/{id}' => ['super_admin'],
     'PATCH api/v1/writer/change-password' => ['content_writer', 'content_moderator', 'super_admin'],       // QB.2: the writers' panel (central host)
     'GET api/v1/writer/curriculum' => ['content_writer', 'content_moderator', 'super_admin'],
+    'POST api/v1/writer/qb/{kind}' => ['content_writer', 'super_admin'], // D141: create only; update/delete remain Super Admin-only
     'GET api/v1/writer/question-types' => ['content_writer', 'content_moderator', 'super_admin'],
     'POST api/v1/writer/question-finder' => ['content_writer', 'content_moderator', 'super_admin'],   // R2.1.2 (D114 (3))
     'GET api/v1/writer/graph-datasets/capabilities' => ['content_writer', 'content_moderator', 'super_admin'],   // D118 (5)

@@ -25,6 +25,8 @@ import { openDiagramPicker, pickGraph } from '../../features/qb/qbankTools'
 import { transformImageFile } from '../../features/qb/imageTransforms'
 import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } from '../../features/qb/questionMeta'
 import CurriculumPicker from '../../features/qb/CurriculumPicker'
+import WriterFieldHelp, { WriterFieldHelpButton } from '../../features/qb/WriterFieldHelp'
+import AddCurriculumItemModal from '../../features/qb/AddCurriculumItemModal'
 import { flattenCurriculum, sourceLabel, subjectsForClasses, versionsForSubject } from '../../features/qb/curriculum'
 import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
 
@@ -82,6 +84,9 @@ export default function QbQuestionEdit() {
   const [activeField, setActiveField] = useState(null)
   const valueSnapshots = useRef(new Map())
   const [section, setSection] = useState('meta')
+  const [sourcesOpen, setSourcesOpen] = useState(true)
+  const [helpTopic, setHelpTopic] = useState(null)
+  const [addItem, setAddItem] = useState(null)
   const [pane, setPane] = useState('editor')                    // below xl: the editor or the preview, as qbank's mobile switch
   const active = useRef(null)                                   // the text field the ribbon works on, and its selection
   useEffect(() => {
@@ -100,6 +105,7 @@ export default function QbQuestionEdit() {
 
   const status = isNew ? 'draft' : q.data.status
   const canEdit = role === 'super_admin' || (role === 'content_writer' && EDITABLE.includes(status))
+  const canCreateCurriculum = role === 'super_admin' || role === 'content_writer'
   const canSubmit = !isNew && role !== 'content_moderator' && EDITABLE.includes(status)
   const canReview = !isNew && role !== 'content_writer' && status === 'review'
   const name = (n) => (locale === 'bn' ? n.name_bn : n.name_en) || n.name_en
@@ -120,6 +126,26 @@ export default function QbQuestionEdit() {
   const family = picked?.family
   const structure = picked?.structure ?? null                    // QB.4: gap / match / order / passage / passage_mcq
   const optionsFor = ['mcq', 'true_false'].includes(family) && !structure
+  const addCreatedItem = row => {
+    if (addItem?.mode === 'subject') {
+      setValue('qb_subject_id', String(row.id), { shouldDirty: true })
+      setValue('qb_chapter_id', '')
+      setValue('qb_topic_id', '')
+      setValue('curriculum_node_ids', [])
+    } else if (addItem?.mode === 'chapter') {
+      setValue('qb_chapter_id', String(row.id), { shouldDirty: true })
+      setValue('qb_topic_id', '')
+    } else if (addItem?.mode === 'topic') setValue('qb_topic_id', String(row.id), { shouldDirty: true })
+    else if (addItem?.mode === 'curriculum-node') {
+      const selected = (getValues('curriculum_node_ids') ?? []).map(String)
+      setValue('curriculum_node_ids', [...new Set([...selected, String(row.id)])], { shouldDirty: true })
+    }
+    setAddItem(null)
+  }
+  const addOccurrence = () => {
+    occurrences.append({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })
+    setSourcesOpen(true)
+  }
   const num = (v) => (v === '' || v == null ? null : Number(v))
   const track = (e) => {                                        // D72: remember the field and selection the ribbon acts on
     const el = e.target
@@ -339,7 +365,7 @@ export default function QbQuestionEdit() {
               {/* 1 - classes: wrapping chips, no inner scroll; the count shows how many are picked */}
               <fieldset className="flex min-w-0 flex-col gap-2" data-testid="qb-classes">
                 <legend className="mb-2 flex w-full items-center justify-between gap-2 text-sm font-semibold">
-                  <span className="flex items-center gap-2"><MetaStep n={1} />{t('qbn.classes')}</span>
+                  <span className="flex items-center gap-2"><MetaStep n={1} />{t('qbn.classes')}<WriterFieldHelpButton onClick={() => setHelpTopic('classes')} /></span>
                   {(watch('class_level_ids') ?? []).length > 0 && <span className="rounded-token bg-primary-soft px-2 text-xs font-medium text-primary-fg">{t('qbed.classes_picked', { count: (watch('class_level_ids') ?? []).length })}</span>}
                 </legend>
                 <div className="flex min-w-0 flex-wrap gap-1.5">{tree.data.class_levels.map(c => (
@@ -351,34 +377,46 @@ export default function QbQuestionEdit() {
               {/* 2 - subject, then where it sits: the syllabus path (language papers) or chapter -> topic */}
               <div className="border-t border-line pt-3"><fieldset className="flex min-w-0 flex-col gap-3">
                 <legend className="mb-3 flex items-center gap-2 text-sm font-semibold"><MetaStep n={2} />{t('qbed.group_place')}</legend>
-                <Select label={t('qb.subject')} placeholder={classSubjects.length ? t('qb.pick') : t('qbed.no_subject_for_class')} error={errors.qb_subject_id?.message}
+                <div className="flex items-end gap-2"><Select className="min-w-0 flex-1" label={t('qb.subject')} onHelp={() => setHelpTopic('subject')} placeholder={classSubjects.length ? t('qb.pick') : t('qbed.no_subject_for_class')} error={errors.qb_subject_id?.message}
                   options={classSubjects.map(x => ({ value: String(x.id), label: name(x) }))}
                   {...register('qb_subject_id', { required: t('super.required'), onChange: () => { setValue('qb_chapter_id', ''); setValue('qb_topic_id', ''); setValue('curriculum_node_ids', []) } })} />
+                  {canCreateCurriculum && <Button variant="secondary" className="shrink-0" onClick={() => setAddItem({ mode: 'subject', defaultSortOrder: Math.max(0, ...tree.data.subjects.map(item => Number(item.sort_order) || 0)) + 1 })} aria-label={t('qbed.add_item.subject.button')}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add')}</Button>}</div>
                 {usesCurriculum ? (
-                  <CurriculumPicker label={t('qbed.curriculum_path')} note={t('qbed.type_not_path')} rows={curriculumOptions} value={(watch('curriculum_node_ids') ?? []).map(String)}
+                  <CurriculumPicker label={t('qbed.curriculum_path')} onHelp={() => setHelpTopic('curriculum')}
+                    onAdd={canCreateCurriculum ? () => {
+                      const selectedNode = (watch('curriculum_node_ids') ?? []).map(String).at(-1)
+                      const parent = curriculumOptions.find(node => String(node.id) === selectedNode)
+                      const versionId = parent?.version_id ?? curriculumVersions[0]?.id ?? ''
+                      const parentId = parent?.id ?? ''
+                      const siblings = curriculumOptions.filter(node => String(node.version_id) === String(versionId) && String(node.parent_id ?? '') === String(parentId))
+                      setAddItem({ mode: 'curriculum-node', defaultVersionId: versionId, defaultParentId: parentId, defaultSortOrder: Math.max(0, ...siblings.map(node => Number(node.sort_order) || 0)) + 1 })
+                    } : undefined} note={t('qbed.type_not_path')} rows={curriculumOptions} value={(watch('curriculum_node_ids') ?? []).map(String)}
                     onChange={ids => setValue('curriculum_node_ids', ids, { shouldDirty: true })} disabled={!canEdit} />
                 ) : <>
-                  <Select label={t('qb.chapter')} placeholder={t('qb.none_option')} error={errors.qb_chapter_id?.message}
+                  <div className="flex items-end gap-2"><Select className="min-w-0 flex-1" label={t('qb.chapter')} onHelp={() => setHelpTopic('chapter')} placeholder={t('qb.none_option')} error={errors.qb_chapter_id?.message}
                     options={(subject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} {...register('qb_chapter_id', { onChange: () => setValue('qb_topic_id', '') })} />
-                  <Select label={t('qb.topic')} placeholder={t('qb.none_option')} error={errors.qb_topic_id?.message}
+                    {canCreateCurriculum && subject && <Button variant="secondary" className="shrink-0" onClick={() => setAddItem({ mode: 'chapter', defaultSortOrder: Math.max(0, ...(subject.chapters ?? []).map(item => Number(item.sort_order) || 0)) + 1 })} aria-label={t('qbed.add_item.chapter.button')}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add')}</Button>}</div>
+                  <div className="flex items-end gap-2"><Select className="min-w-0 flex-1" label={t('qb.topic')} onHelp={() => setHelpTopic('topic')} placeholder={t('qb.none_option')} error={errors.qb_topic_id?.message}
                     options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} {...register('qb_topic_id')} />
+                    {canCreateCurriculum && chapter && <Button variant="secondary" className="shrink-0" onClick={() => setAddItem({ mode: 'topic', defaultSortOrder: Math.max(0, ...(chapter.topics ?? []).map(item => Number(item.sort_order) || 0)) + 1 })} aria-label={t('qbed.add_item.topic.button')}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add')}</Button>}</div>
                 </>}
               </fieldset></div>
               {/* 3 - what kind of question and how much it is worth */}
               <div className="border-t border-line pt-3"><fieldset className="flex min-w-0 flex-col gap-3">
                 <legend className="mb-3 flex items-center gap-2 text-sm font-semibold"><MetaStep n={3} />{t('qbed.group_type')}</legend>
-                <Select label={t('qbed.question_type_exam_part')} placeholder={t('qb.pick')} error={errors.qb_question_type_id?.message}
+                <Select label={t('qbed.question_type_exam_part')} onHelp={() => setHelpTopic('type')} placeholder={t('qb.pick')} error={errors.qb_question_type_id?.message}
                   options={types.data.map(ty => ({ value: String(ty.id), label: name(ty) }))} {...register('qb_question_type_id', { required: t('super.required'), onChange: pickType })} />
                 <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_6rem] gap-3">
-                  <Select label={t('qb.difficulty')} options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: t(`qb.difficulty_level.${d}`) }))} {...register('difficulty')} />
-                  <Input label={t('qb.marks')} ltr inputMode="decimal" error={errors.marks?.message} {...register('marks')} />
+                  <Select label={t('qb.difficulty')} onHelp={() => setHelpTopic('difficulty')} options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: t(`qb.difficulty_level.${d}`) }))} {...register('difficulty')} />
+                  <Input label={t('qb.marks')} onHelp={() => setHelpTopic('marks')} ltr inputMode="decimal" error={errors.marks?.message} {...register('marks')} />
                 </div>
               </fieldset></div>
             </fieldset>
           </Card>
-          <details className="group rounded-token bg-surface [border:1px_solid_var(--line)]" open={occurrences.fields.length > 0}>
+          <details className="group rounded-token bg-surface [border:1px_solid_var(--line)]" open={sourcesOpen}
+            onToggle={e => { const next = e.currentTarget.open; setSourcesOpen(current => current === next ? current : next) }}>
             <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
-              <span className="flex items-center gap-2">{t('qbn.sources')}{occurrences.fields.length > 0 && <span className="rounded-token bg-surface-muted px-2 text-xs font-medium">{occurrences.fields.length}</span>}</span>
+              <span className="flex items-center gap-2">{t('qbn.sources')}{occurrences.fields.length > 0 && <span className="rounded-token bg-surface-muted px-2 text-xs font-medium">{occurrences.fields.length}</span>}<WriterFieldHelpButton onClick={e => { e.preventDefault(); e.stopPropagation(); setHelpTopic('sources') }} /></span>
               <ChevronDown aria-hidden="true" className="h-4 w-4 text-content-muted transition group-open:rotate-180" />
             </summary>
             <div className="min-w-0 border-t border-line p-3">
@@ -401,7 +439,7 @@ export default function QbQuestionEdit() {
                       <Input label={t('qbed.page_reference')} {...register(`occurrences.${i}.page_reference`)} />
                     </div>
                   ))}
-                  <div><Button variant="secondary" onClick={() => occurrences.append({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add_occurrence')}</Button></div>
+                  <div><Button variant="secondary" onClick={addOccurrence}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add_occurrence')}</Button></div>
                 </fieldset>
               </Section>
               </fieldset>
@@ -491,7 +529,8 @@ export default function QbQuestionEdit() {
               </fieldset>
             </div>
             {canSubmit && (
-              <div className="flex flex-wrap justify-end gap-2 pt-3">
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-3">
+                <WriterFieldHelpButton onClick={() => setHelpTopic('workflow')} />
                 <Button variant="secondary" onClick={() => act('submit')} loading={busy === 'submit'} data-action="submit">{t('qb.submit')}</Button>
               </div>
             )}
@@ -532,10 +571,14 @@ export default function QbQuestionEdit() {
         </Card>
       </div>
       <PictureDialog open={Boolean(pictureDialog)} initial={pictureDialog} onClose={() => setPictureDialog(null)} onSave={savePicture} onDelete={deletePicture} saving={pictureSaving} />
+      {helpTopic && <WriterFieldHelp topic={helpTopic} onClose={() => setHelpTopic(null)} />}
+      {addItem && <AddCurriculumItemModal {...addItem} classes={tree.data.class_levels} classLevelIds={watch('class_level_ids') ?? []}
+        subjectId={subject?.id} chapterId={chapter?.id} versions={curriculumVersions} nodes={curriculumOptions}
+        onClose={() => setAddItem(null)} onCreated={addCreatedItem} />}
 
       {canReview && (
         <Card className="flex flex-col gap-3" data-testid="review-actions">
-          <h2 className="font-semibold">{t('qb.review')}</h2>
+          <div className="flex items-center gap-2"><h2 className="font-semibold">{t('qb.review')}</h2><WriterFieldHelpButton onClick={() => setHelpTopic('workflow')} /></div>
           <Textarea label={t('qb.reason')} hint={t('qb.reason_hint')} rows={2} value={reason} onChange={e => setReason(e.target.value)} name="reason" />
           <div className="flex flex-wrap justify-end gap-2">
             <Button variant="secondary" onClick={() => act('reject', { reason })} loading={busy === 'reject'} data-action="reject">{t('qb.reject')}</Button>

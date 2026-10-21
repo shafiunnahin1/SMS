@@ -16,6 +16,7 @@ import { Input, Select } from '../../components/FormField'
 import Modal from '../../ui/variants/Modal'
 import Check from '../../features/academic/Check'
 import RowActions from '../../features/academic/RowActions'
+import CurriculumNodeHelp, { CurriculumNodeHelpButton } from '../../features/qb/CurriculumNodeHelp'
 
 const KEY = ['super', 'qb-curriculum']
 
@@ -157,6 +158,7 @@ function Row({ label, active, onSelect, actions, badge, muted }) {
 function NodeForm({ kind, row, classLevels, levels, subjects = [], versions = [], parentNodes = [], name, onClose, onSaved }) {
   const { t } = useTranslation()
   const isNew = !row.id
+  const [nodeHelpOpen, setNodeHelpOpen] = useState(false)
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm({
     defaultValues: { name_bn: row.name_bn ?? '', name_en: row.name_en ?? '', education_level: row.education_level ?? 'other', code: row.code ?? '',
       number: row.number ?? '', qb_subject_id: row.qb_subject_id ?? '', version_key: row.version_key ?? '', parent_id: row.parent_id ?? '', kind: row.kind ?? 'Part',
@@ -183,6 +185,7 @@ function NodeForm({ kind, row, classLevels, levels, subjects = [], versions = []
   }
   const req = { required: t('super.required') }
   return (
+    <>
     <Modal open onClose={onClose} title={t(isNew ? 'qb.add_kind' : 'qb.edit_kind', { kind: t(`qb.kind.${kind}`) })}>
       <form onSubmit={handleSubmit(submit)} className="grid gap-3 sm:grid-cols-2" noValidate data-testid="qb-node-form">
         <Input label={t('qb.name_bn')} error={errors.name_bn?.message} {...register('name_bn', req)} />
@@ -191,7 +194,7 @@ function NodeForm({ kind, row, classLevels, levels, subjects = [], versions = []
         {kind === 'subjects' && <Input label={t('qb.code')} ltr error={errors.code?.message} {...register('code')} />}
         {kind === 'chapters' && <Input label={t('qb.number')} ltr inputMode="numeric" error={errors.number?.message} {...register('number')} />}
         {kind === 'curriculum-versions' && <Input label={t('qbed.version_key')} ltr error={errors.version_key?.message} {...register('version_key', req)} />}
-        {kind === 'curriculum-nodes' && <><Select label={t('qbed.node_kind')} options={['Part', 'Unit', 'Lesson', 'Text', 'Topic', 'Other'].map(k => ({ value: k, label: t(`qbed.node_kinds.${k}`) }))} {...register('kind', req)} />
+        {kind === 'curriculum-nodes' && <><div className="flex items-end gap-2"><div className="min-w-0 flex-1"><Select label={t('qbed.node_kind')} options={['Part', 'Unit', 'Lesson', 'Text', 'Topic', 'Other'].map(k => ({ value: k, label: t(`qbed.node_kinds.${k}`) }))} {...register('kind', req)} /></div><CurriculumNodeHelpButton onClick={() => setNodeHelpOpen(true)} /></div>
           <Select label={t('qbed.parent_node')} options={[{ value: '', label: t('qb.none_option') }, ...parentNodes.filter(n => n.version_id === row.qb_curriculum_version_id).map(n => ({ value: String(n.id), label: n.label }))].filter(o => o.value === '' || Number(o.value) !== Number(row.id))} {...register('parent_id')} />
           <Select label={t('qbed.legacy_chapter')} options={[{ value: '', label: t('qb.none_option') }, ...subjects.flatMap(s => s.chapters.map(c => ({ value: String(c.id), label: `${name(s)} / ${name(c)}` })))]} {...register('legacy_qb_chapter_id')} />
           <Input label={t('qbed.legacy_topic_id')} ltr inputMode="numeric" {...register('legacy_qb_topic_id')} /></>}
@@ -212,6 +215,8 @@ function NodeForm({ kind, row, classLevels, levels, subjects = [], versions = []
         </div>
       </form>
     </Modal>
+    {nodeHelpOpen && <CurriculumNodeHelp onClose={() => setNodeHelpOpen(false)} />}
+    </>
   )
 }
 
