@@ -38,7 +38,7 @@ export default function QbCurriculum() {
   const subjects = cls ? d.subjects.filter(s => s.class_level_ids.includes(cls)) : d.subjects
   const subject = d.subjects.find(s => s.id === subj) ?? null
   const chapter = subject?.chapters.find(c => c.id === chap) ?? null
-  const flexibleVersions = (d.curriculum_versions ?? []).filter(v => d.subjects.some(s => s.id === v.qb_subject_id && /বাংলা|Bangla|ইংরেজি|English/i.test(`${s.name_bn} ${s.name_en}`)))
+  const flexibleVersions = (d.curriculum_versions ?? []).filter(v => v.qb_subject_id === subject?.id && d.subjects.some(s => s.id === v.qb_subject_id && /বাংলা|Bangla|ইংরেজি|English/i.test(`${s.name_bn} ${s.name_en}`)))
   const allParentNodes = (d.curriculum_versions ?? []).flatMap(v => flattenCurriculum(v.nodes, [], name, v.id))
 
   const remove = (kind, row, after) => useUiStore.getState().openConfirm({
@@ -124,7 +124,7 @@ function VersionNode({ node, depth, name, onAdd, onEdit, onDelete }) {
       <Button variant="secondary" onClick={() => onAdd(node.id)} aria-label={t('qbed.add_child')}><Plus aria-hidden="true" className="h-4 w-4" /></Button>
       <RowActions name={name(node)} onEdit={() => onEdit(node)} onDelete={() => onDelete(node)} />
     </div>
-    {(node.children ?? []).map(child => <VersionNode key={child.id} node={child} depth={depth + 1} name={name} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} />)}
+    {(node.children ?? []).length > 0 && <ul className="flex flex-col gap-1">{(node.children ?? []).map(child => <VersionNode key={child.id} node={child} depth={depth + 1} name={name} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} />)}</ul>}
   </li>
 }
 

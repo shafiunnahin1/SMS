@@ -137,7 +137,7 @@ export default function QbQuestions() {
                 <span>{t('qbaq.class')}: <bdi>{(subjectById[row.qb_subject_id]?.class_level_ids ?? []).map(id => localizedName(classById[id])).filter(Boolean).slice(0, 3).join(', ') || '—'}</bdi></span>
                 {row.marks != null && <span>{t('qbaq.marks')}: <bdi>{row.marks}</bdi></span>}
                 {row.difficulty != null && <span>{t('qbaq.difficulty')}: {t(`qbaq.level.${row.difficulty}`, { defaultValue: row.difficulty })}</span>}
-                {(row.curriculum_breadcrumbs ?? []).map((crumb, i) => <span key={`${crumb.node_id}-${i}`} dir="auto" className="break-words" data-testid="row-curriculum">{breadcrumbLabel(crumb, locale)}</span>)}
+                {(row.curriculum_breadcrumbs ?? []).map((crumb, i) => <span key={`${crumb.node_id}-${i}`} dir="auto" className="break-words" data-testid="row-curriculum">{breadcrumbLabel(crumb, i18n.language)}</span>)}
                 <span className="rounded-token bg-surface-muted px-2 py-0.5" dir="auto">{row.occurrences?.[0] ? sourceLabel(row.occurrences[0], t) : t('qbaq.no_source')}</span>
               </footer>
             </Card>
