@@ -1,6 +1,6 @@
 # R2.1 — generated planning plan (D83)
 
-> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle, D138-D145 language-curriculum, and D142 gap-authoring slices below. Runtime remains R3; no runtime switch is authorized.
+> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle, D138-D145 language-curriculum, D142 gap-authoring, and D146 graph-tool viewport slices below. Runtime remains R3; no runtime switch is authorized.
 > Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.
 > Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.
 
@@ -46,6 +46,18 @@ Routes: .
 Roles: content_writer, super_admin.
 Done when: Supported structured gap questions create, save, reopen, edit and preview inline blanks in stable passage order; existing gap questions remain readable and editable; answer-leak, bilingual/RTL, persistence and focused editor regression checks pass. Record exact evidence in docs/PROGRESS.md.
 Deferred from the parent task: R2.1 runtime switch; all unrelated R2.1 tasks.
+The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
+
+## Approved scoped implementation slice — R2.1.2-graph-tool-viewport
+
+Task: R2.1.2-graph-tool-viewport (parent R2.1.2); decisions: D146.
+Depends on: R2.1.2; status: executable slice, not accepted.
+Scope: CSS-only graph-builder viewport layout: keep the builder shell visible, scroll long controls independently, bound the preview height, and tune those bounds for narrow viewports. Preserve graph logic, controls, data, APIs, rendering and qbank assets.
+Authorized table: .
+Routes: .
+Roles: content_writer, super_admin.
+Done when: The generated plan is fresh; the pinned vendor manifest exactly matches the graph tool; desktop and narrow viewports show the preview while long controls scroll independently. Record exact evidence in docs/PROGRESS.md.
+Deferred from the parent task: graph behavior or API changes; R2.1 runtime switch; all unrelated R2.1 tasks.
 The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
 
 ## R2.1.0 — Source/target inventory, fixtures and measured baseline

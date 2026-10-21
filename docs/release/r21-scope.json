@@ -86,6 +86,20 @@
       "roles": ["content_writer", "super_admin"],
       "done_when": "Supported structured gap questions create, save, reopen, edit and preview inline blanks in stable passage order; existing gap questions remain readable and editable; answer-leak, bilingual/RTL, persistence and focused editor regression checks pass. Record exact evidence in docs/PROGRESS.md.",
       "deferred": ["R2.1 runtime switch", "all unrelated R2.1 tasks"]
+    },
+    {
+      "id": "R2.1.2-graph-tool-viewport",
+      "parent_task": "R2.1.2",
+      "decisions": ["D146"],
+      "depends_on": ["R2.1.2"],
+      "executable": true,
+      "accepted": false,
+      "scope": "CSS-only graph-builder viewport layout: keep the builder shell visible, scroll long controls independently, bound the preview height, and tune those bounds for narrow viewports. Preserve graph logic, controls, data, APIs, rendering and qbank assets.",
+      "tables": [],
+      "routes": [],
+      "roles": ["content_writer", "super_admin"],
+      "done_when": "The generated plan is fresh; the pinned vendor manifest exactly matches the graph tool; desktop and narrow viewports show the preview while long controls scroll independently. Record exact evidence in docs/PROGRESS.md.",
+      "deferred": ["graph behavior or API changes", "R2.1 runtime switch", "all unrelated R2.1 tasks"]
     }
   ],
   "regression_commands": [

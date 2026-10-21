@@ -173,6 +173,22 @@ def d142_probe():
     shutil.rmtree(d, ignore_errors=True)
     return code, out
 
+def d146_probe():
+    d = make_base()
+    decisions = DECISIONS + '| D146 | Graph tool viewport | approved |\n'
+    progress = PROGRESS + '\n- [x] R2.1.2 — accepted D114 scope\n'
+    write(d, 'docs/LOCKED-DECISIONS.md', decisions)
+    write(d, 'docs/PROGRESS.md', progress)
+    git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'owner: approved D146 base')
+    git(d, 'tag', 'd146base')
+    write(d, 'frontend/src/GraphViewport.jsx', 'export const graphViewport = true\n')
+    write(d, 'docs/PROGRESS.md', progress + '- [ ] R2.1.2-graph-tool-viewport — in progress\n')
+    git(d, 'add', '-A')
+    git(d, 'commit', '-q', '-m', 'feat: D146 graph viewport\n\nTask: R2.1.2-graph-tool-viewport\nChange-Request: D146')
+    code, out = run_guard(d, 'd146base', 'HEAD')
+    shutil.rmtree(d, ignore_errors=True)
+    return code, out
+
 def main():
     if subprocess.run(['git', '--version'], capture_output=True).returncode != 0: print('git is not installed - cannot run the guard self-test'); return 2
     base_dir = make_base(); bad = 0; n = 0
@@ -203,6 +219,11 @@ def main():
     code, out = d142_probe()
     good = code == 0
     print(('ok    ' if good else 'WRONG ') + 'D142 custom task, accepted dependency and zero-new-object allowlist' + ('' if good else f' (exit {code})\n' + out[-500:]))
+    bad += 0 if good else 1
+    n += 1
+    code, out = d146_probe()
+    good = code == 0
+    print(('ok    ' if good else 'WRONG ') + 'D146 custom task, accepted dependency and zero-new-object allowlist' + ('' if good else f' (exit {code})\n' + out[-500:]))
     bad += 0 if good else 1
     # stage two: a done line exists, then someone un-checks it
     git(base_dir, 'checkout', '-q', '-b', 'stage2', 'base'); write(base_dir, 'api/app/Foo.php', "<?php\nclass Foo {}\n"); write(base_dir, 'docs/PROGRESS.md', check_off(TASK0)); git(base_dir, 'add', '-A'); git(base_dir, 'commit', '-q', '-m', ok_msg)

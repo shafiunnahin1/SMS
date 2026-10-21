@@ -44,7 +44,7 @@ def empty_tree(root):
     return EMPTY_TREE
 
 # D111 clause 7 / D139: R2.1 tasks whose refined scope a locked decision approved -> (decision, dependencies); all other R2.1 tasks stay blocked
-R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1']), 'R2.1.2-language-curriculum': ('D145', ['R2.1.2']), 'R2.1.2-gap-fill-authoring': ('D142', ['R2.1.2']), 'R2.1.3': ('D123', ['R2.1.2']), 'R2.1.4': ('D124', ['R2.1.3']), 'R2.1.5': ('D126', ['R2.1.4']), 'R2.1.6': ('D127', ['R2.1.5'])}
+R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1']), 'R2.1.2-language-curriculum': ('D145', ['R2.1.2']), 'R2.1.2-gap-fill-authoring': ('D142', ['R2.1.2']), 'R2.1.2-graph-tool-viewport': ('D146', ['R2.1.2']), 'R2.1.3': ('D123', ['R2.1.2']), 'R2.1.4': ('D124', ['R2.1.3']), 'R2.1.5': ('D126', ['R2.1.4']), 'R2.1.6': ('D127', ['R2.1.5'])}
 # D119: qbank's tool files copied unchanged (D118); C7 and C11 skip them, a sha256 manifest pins them instead
 QBANK_VENDOR = 'frontend/public/vendor/qbank/'
 QBANK_MANIFEST = QBANK_VENDOR + 'MANIFEST.sha256'
@@ -53,7 +53,7 @@ TESS_VENDOR = 'frontend/public/vendor/tesseract/'
 # D127: the local pdf.js and heic2any copies for reading scanned OMR sheets, pinned the same way
 PINNED = {QBANK_VENDOR: 'D119', TESS_VENDOR: 'D122', 'frontend/public/vendor/pdfjs/': 'D127', 'frontend/public/vendor/heic2any/': 'D127'}
 # D115/D139: each explicitly approved R2.1 task's new tables and approving decision
-R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}, 'R2.1.2-language-curriculum': {'qb_curriculum_versions': 'D139', 'qb_curriculum_nodes': 'D139', 'qb_question_curriculum_nodes': 'D139', 'qb_curriculum_version_class_level': 'D145'}, 'R2.1.3': {'qb_import_batches': 'D123', 'qb_import_records': 'D123'}, 'R2.1.4': {'qb_import_batches': 'D124', 'qb_import_records': 'D124'}, 'R2.1.5': {'qb_paper_folders': 'D126', 'qb_paper_variants': 'D126', 'qb_blueprints': 'D126', 'qb_blueprint_items': 'D126', 'qb_papers': 'D126'}, 'R2.1.6': {'qb_omr_forms': 'D127', 'qb_omr_scans': 'D127'}}
+R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}, 'R2.1.2-language-curriculum': {'qb_curriculum_versions': 'D139', 'qb_curriculum_nodes': 'D139', 'qb_question_curriculum_nodes': 'D139', 'qb_curriculum_version_class_level': 'D145'}, 'R2.1.2-graph-tool-viewport': {}, 'R2.1.3': {'qb_import_batches': 'D123', 'qb_import_records': 'D123'}, 'R2.1.4': {'qb_import_batches': 'D124', 'qb_import_records': 'D124'}, 'R2.1.5': {'qb_paper_folders': 'D126', 'qb_paper_variants': 'D126', 'qb_blueprints': 'D126', 'qb_blueprint_items': 'D126', 'qb_papers': 'D126'}, 'R2.1.6': {'qb_omr_forms': 'D127', 'qb_omr_scans': 'D127'}}
 
 def show(root, rev, path):
     r = subprocess.run(['git', '-C', root, 'show', f'{rev}:{path}'], capture_output=True, text=True, encoding='utf-8', errors='replace')

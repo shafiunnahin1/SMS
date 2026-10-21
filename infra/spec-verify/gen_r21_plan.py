@@ -58,6 +58,15 @@ APPROVED_EXECUTION_SLICES = [{
     'roles': ['content_writer', 'super_admin'],
     'done_when': 'Supported structured gap questions create, save, reopen, edit and preview inline blanks in stable passage order; existing gap questions remain readable and editable; answer-leak, bilingual/RTL, persistence and focused editor regression checks pass. Record exact evidence in docs/PROGRESS.md.',
     'deferred': ['R2.1 runtime switch', 'all unrelated R2.1 tasks'],
+}, {
+    'id': 'R2.1.2-graph-tool-viewport', 'parent_task': 'R2.1.2',
+    'decisions': ['D146'], 'depends_on': ['R2.1.2'],
+    'executable': True, 'accepted': False,
+    'scope': 'CSS-only graph-builder viewport layout: keep the builder shell visible, scroll long controls independently, bound the preview height, and tune those bounds for narrow viewports. Preserve graph logic, controls, data, APIs, rendering and qbank assets.',
+    'tables': [], 'routes': [],
+    'roles': ['content_writer', 'super_admin'],
+    'done_when': 'The generated plan is fresh; the pinned vendor manifest exactly matches the graph tool; desktop and narrow viewports show the preview while long controls scroll independently. Record exact evidence in docs/PROGRESS.md.',
+    'deferred': ['graph behavior or API changes', 'R2.1 runtime switch', 'all unrelated R2.1 tasks'],
 }]
 
 
@@ -100,7 +109,7 @@ def validate(root, scope, gaps):
         'modules': [], 'packages': [],
     }
     require(scope.get('authorized_new_objects') == expected_objects,
-            'only D139/D145 curriculum tables may be authorized; D142 adds no new objects')
+            'only D139/D145 curriculum tables may be authorized; D142/D146 add no new objects')
     require(scope.get('source_policy') == 'read_only_files_no_db_no_execution', 'source access policy')
     require(scope.get('approved_execution_slices') == APPROVED_EXECUTION_SLICES,
             'approved execution slices must match their owner-approved contracts')
@@ -178,9 +187,9 @@ def build(root):
     acceptance = requirements(root)
     plan = {**scope, 'generated_from': [SCOPE, GAPS, 'RELEASE-2.1.md'],
             'acceptance_catalogue': acceptance,
-            'evidence_note': 'Only the explicit D114-D117 dataset-lifecycle, D138-D145 language-curriculum, and D142 gap-authoring slices are executable; the full imported task scope and runtime switch remain governed by their existing acceptance gates.'}
+            'evidence_note': 'Only the explicit D114-D117 dataset-lifecycle, D138-D145 language-curriculum, D142 gap-authoring, and D146 graph-tool viewport slices are executable; the full imported task scope and runtime switch remain governed by their existing acceptance gates.'}
     lines = ['# R2.1 — generated planning plan (D83)', '',
-             '> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle, D138-D145 language-curriculum, and D142 gap-authoring slices below. Runtime remains R3; no runtime switch is authorized.',
+             '> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle, D138-D145 language-curriculum, D142 gap-authoring, and D146 graph-tool viewport slices below. Runtime remains R3; no runtime switch is authorized.',
              '> Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.',
              '> Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.',
              '', 'Placement: after R3.A, before R4/later; retain existing R1.1/R2 prerequisites.',

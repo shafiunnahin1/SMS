@@ -57,6 +57,17 @@ class R21PlanningTests(unittest.TestCase):
                          self.scope['authorized_new_objects']['tables'])
         self.assertFalse(self.scope['runtime_switch']['authorized'])
 
+    def test_d146_graph_tool_viewport_is_css_only_and_separate(self):
+        slice_ = next(s for s in self.scope['approved_execution_slices']
+                      if s['id'] == 'R2.1.2-graph-tool-viewport')
+        self.assertEqual(['D146'], slice_['decisions'])
+        self.assertEqual(['R2.1.2'], slice_['depends_on'])
+        self.assertEqual([], slice_['tables'])
+        self.assertEqual([], slice_['routes'])
+        self.assertIn('CSS-only graph-builder viewport layout', slice_['scope'])
+        self.assertFalse(slice_['accepted'])
+        self.assertFalse(self.scope['runtime_switch']['authorized'])
+
     def test_approved_slice_cannot_gain_objects_or_scope(self):
         self.scope['approved_execution_slices'][0]['tables'].append('invented')
         errors = G.validate(ROOT, self.scope, self.gaps)

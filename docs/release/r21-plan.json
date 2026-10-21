@@ -211,6 +211,31 @@
         "R2.1 runtime switch",
         "all unrelated R2.1 tasks"
       ]
+    },
+    {
+      "id": "R2.1.2-graph-tool-viewport",
+      "parent_task": "R2.1.2",
+      "decisions": [
+        "D146"
+      ],
+      "depends_on": [
+        "R2.1.2"
+      ],
+      "executable": true,
+      "accepted": false,
+      "scope": "CSS-only graph-builder viewport layout: keep the builder shell visible, scroll long controls independently, bound the preview height, and tune those bounds for narrow viewports. Preserve graph logic, controls, data, APIs, rendering and qbank assets.",
+      "tables": [],
+      "routes": [],
+      "roles": [
+        "content_writer",
+        "super_admin"
+      ],
+      "done_when": "The generated plan is fresh; the pinned vendor manifest exactly matches the graph tool; desktop and narrow viewports show the preview while long controls scroll independently. Record exact evidence in docs/PROGRESS.md.",
+      "deferred": [
+        "graph behavior or API changes",
+        "R2.1 runtime switch",
+        "all unrelated R2.1 tasks"
+      ]
     }
   ],
   "regression_commands": [
@@ -709,5 +734,5 @@
     "AC25": "Responsive UI tests cover 360px mobile and desktop, keyboard access, loading/empty/error/progress states, both applicable UI packs, English/Bangla and RTL-safe behavior.",
     "AC26": "Required backend/frontend suites, module/route authorization tests, import-scale tests, OMR fixture suite and E2E tests pass before release activation."
   },
-  "evidence_note": "Only the explicit D114-D117 dataset-lifecycle, D138-D145 language-curriculum, and D142 gap-authoring slices are executable; the full imported task scope and runtime switch remain governed by their existing acceptance gates."
+  "evidence_note": "Only the explicit D114-D117 dataset-lifecycle, D138-D145 language-curriculum, D142 gap-authoring, and D146 graph-tool viewport slices are executable; the full imported task scope and runtime switch remain governed by their existing acceptance gates."
 }
