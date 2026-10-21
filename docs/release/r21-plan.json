@@ -183,6 +183,30 @@
         "R2.1 runtime switch",
         "all unrelated R2.1 tasks"
       ]
+    },
+    {
+      "id": "R2.1.2-gap-fill-authoring",
+      "parent_task": "R2.1.2",
+      "decisions": [
+        "D142"
+      ],
+      "depends_on": [
+        "R2.1.2"
+      ],
+      "executable": true,
+      "accepted": false,
+      "scope": "Inline structured gap authoring: one continuous question passage, cursor insertion of labeled blanks, and stable per-gap answer, hint and marks mapping through save, reopen and writer preview. Reuse question_text, qb_question_items and existing answer JSON; preserve existing question permissions, student answer isolation and all non-gap behavior.",
+      "tables": [],
+      "routes": [],
+      "roles": [
+        "content_writer",
+        "super_admin"
+      ],
+      "done_when": "Supported structured gap questions create, save, reopen, edit and preview inline blanks in stable passage order; existing gap questions remain readable and editable; answer-leak, bilingual/RTL, persistence and focused editor regression checks pass. Record exact evidence in docs/PROGRESS.md.",
+      "deferred": [
+        "R2.1 runtime switch",
+        "all unrelated R2.1 tasks"
+      ]
     }
   ],
   "regression_commands": [

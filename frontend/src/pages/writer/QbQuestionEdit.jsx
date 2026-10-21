@@ -47,6 +47,16 @@ const LEVELS = ['knowledge', 'understanding', 'application', 'higher_order']
 const CREATIVE = LEVELS.map((level, i) => ({ part_label: BN_LABELS[i], cognitive_level: level, marks: String(i + 1), question_text: '', answer_text: '' }))
 const PICTURE_DEFAULTS = { width: 100, align: 'center', position: 'cursor', paragraph: 1, rotation: 0, transparentBackground: false }
 
+function tableRange(value, index) {
+  const pattern = /<table\b[\s\S]*?<\/table\s*>/gi
+  let match
+  let current = 0
+  while ((match = pattern.exec(String(value ?? ''))) !== null) {
+    if (current++ === index) return { start: match.index, end: match.index + match[0].length }
+  }
+  return null
+}
+
 function hasPictureReference(value, mediaId) {
   if (typeof value === 'string') return Boolean(pictureRange(value, mediaId))
   if (Array.isArray(value)) return value.some(item => hasPictureReference(item, mediaId))
@@ -82,6 +92,7 @@ export default function QbQuestionEdit() {
   const [pictureDialog, setPictureDialog] = useState(null)
   const [pictureSaving, setPictureSaving] = useState(false)
   const [activeField, setActiveField] = useState(null)
+  const [tableRequest, setTableRequest] = useState(0)
   const valueSnapshots = useRef(new Map())
   const [section, setSection] = useState('meta')
   const [sourcesOpen, setSourcesOpen] = useState(true)
@@ -248,6 +259,16 @@ export default function QbQuestionEdit() {
     }
     setPictureDialog({ mode: range ? 'edit' : 'attach', mediaId: String(attrs.media), sourceUrl,
       settings: { ...PICTURE_DEFAULTS, width: attrs.width ?? 100, align: attrs.align ?? 'center' } })
+  }
+  const editPreviewTable = (fieldName, index) => {
+    const field = document.getElementById('qb-question-form')?.elements.namedItem(fieldName)
+    const value = String(getValues(fieldName) ?? '')
+    const range = tableRange(value, index)
+    if (!field || !range) return
+    active.current = { name: fieldName, el: field, ...range }
+    setActiveField(fieldName)
+    field.setSelectionRange(range.start, range.end)
+    setTableRequest(request => request + 1)
   }
   const savePicture = async ({ file, settings }) => {
     const target = pictureDialog
@@ -448,17 +469,17 @@ export default function QbQuestionEdit() {
         </nav>
 
         <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane" onDragOver={allowImageDrop} onDrop={dropImage}>
-          {canEdit && <Ribbon run={run} readActive={readActive} onImage={openPictureDialog} onGraph={insertGraph} onDiagram={insertDiagram}
+          {canEdit && <Ribbon run={run} readActive={readActive} onImage={openPictureDialog} onGraph={insertGraph} onDiagram={insertDiagram} tableRequest={tableRequest}
             onUndo={() => applyHistory('undo')} onRedo={() => applyHistory('redo')}
             canUndo={history.undo.some(entry => entry.name === activeField)} canRedo={history.redo.some(entry => entry.name === activeField)}
             onReset={() => { reset(); setHistory({ undo: [], redo: [] }); valueSnapshots.current.clear(); active.current = null; setActiveField(null) }} disabled={!canEdit} saving={isSubmitting} />}
           <Card>
             <div className="grid gap-3 sm:grid-cols-2">
               <fieldset disabled={!canEdit} className="contents">
-                <Section id="question" current={section} onEnter={setSection}>
+                {structure !== 'gap' && <Section id="question" current={section} onEnter={setSection}>
                   <Textarea className="sm:col-span-2 [&_textarea]:font-mono" label={family === 'creative' ? t('qb.stem') : t('qb.question')} rows={12}
                     hint={family === 'fill_gap' ? t('qb.blank_hint') : t('qbed.hint')} error={errors.question_text?.message} {...register('question_text', { required: t('super.required') })} />
-                </Section>
+                </Section>}
 
                 {optionsFor && (
                   <Section id="options" current={section} onEnter={setSection}>
@@ -500,7 +521,7 @@ export default function QbQuestionEdit() {
                   </Section>
                 )}
 
-                {structure && <Section id="structured" current={section} onEnter={setSection}><StructuredEditor structure={structure} register={register} control={control} error={errors.items?.message} /></Section>}
+                {structure && <Section id="structured" current={section} onEnter={setSection}><StructuredEditor structure={structure} register={register} control={control} getValues={getValues} setValue={setValue} onFieldFocus={track} error={errors.items?.message ?? errors.question_text?.message} /></Section>}
 
                 {answerHere && (
                   <Section id="answer" current={section} onEnter={setSection}>
@@ -551,11 +572,13 @@ export default function QbQuestionEdit() {
               : <span dir="auto">{[name(chapter ?? {}), name(chapter?.topics?.find(tp => String(tp.id) === String(v.qb_topic_id)) ?? {})].filter(Boolean).join(' › ')}</span>}
             {(v.occurrences ?? []).map((o, i) => { const line = sourceLabel(sourceToOccurrence(o), t); return line && <span key={i} dir="auto">{line}</span> })}
           </div>
-          <div className="text-base"><MathText text={v.question_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage('question_text', attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} /></div>
+          {structure !== 'gap' && <div className="text-base"><MathText text={v.question_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage('question_text', attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined}
+            onTableClick={canEdit ? index => editPreviewTable('question_text', index) : undefined} /></div>}
           {previewGallery.map(m => canEdit
             ? <button key={m.id} type="button" onClick={() => editPreviewImage('question_text', { media: String(m.id), width: 100, align: 'center' }, m.url)} className="max-h-48 w-fit self-start rounded-token focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-fg" aria-label={t('qb.picture_n', { id: m.id })}><img src={m.url} alt="" className="max-h-48 w-auto" /></button>
             : <img key={m.id} src={m.url} alt={t('qb.picture_n', { id: m.id })} className="max-h-48 w-auto self-start" />)}
-          <StructuredPreview structure={structure} s={v.structured} media={v.media} onImageClick={canEdit ? (fieldName, attrs, url) => editPreviewImage(fieldName, attrs, url) : undefined} />
+          <StructuredPreview structure={structure} s={v.structured} questionText={v.question_text} media={v.media} onImageClick={canEdit ? (fieldName, attrs, url) => editPreviewImage(fieldName, attrs, url) : undefined}
+            onTableClick={canEdit ? (fieldName, index) => editPreviewTable(fieldName, index) : undefined} />
           {optionsFor && (
             <ol className="flex flex-col gap-1">
               {v.options.map((o, i) => <li key={i} className="flex gap-2"><span className="font-medium">{o.label}.</span><MathText text={o.content_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage(`options.${i}.content_text`, attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} />{o.is_correct && <span className="text-xs text-content-muted">({t('qb.correct')})</span>}</li>)}

@@ -60,4 +60,26 @@ describe('writer question list cards', () => {
       params: expect.objectContaining({ class_level_ids: [1], q: 'বেগ' }),
     })))
   })
+
+  it('shows gap-fill answers as readable accepted words instead of raw JSON', async () => {
+    const defaultGet = api.get.getMockImplementation()
+    api.get.mockImplementation(url => defaultGet(url).then(response => {
+      if (url === '/writer/questions') {
+        response.data.data[0].question_text = '<p>শূন্যস্থান (a) _____ পূরণ</p>'
+        response.data.data[0].stimuli = [{ label: 'word_box', content_text: '<table><tbody><tr><th>শব্দ ১</th><th>শব্দ ২</th></tr></tbody></table>' }]
+        response.data.data[0].items = [{ item_type: 'gap', prompt_json: { hint: 'মূল শব্দ' }, answer_json: { answers: ['জল', 'পানি'] } }]
+      }
+      return response
+    }))
+    renderPage()
+
+    const questionList = screen.getByTestId('qb-questions')
+    await waitFor(() => expect(questionList).toHaveTextContent('(a) ━━━━ (মূল শব্দ)'))
+    const cardText = questionList.querySelector('[data-question="7"]').parentElement.textContent
+    expect(cardText.indexOf('শব্দ ১')).toBeLessThan(cardText.indexOf('শূন্যস্থান'))
+    fireEvent.click(await screen.findByRole('button', { name: 'উত্তর ও সমাধান দেখুন' }))
+    const answer = await screen.findByTestId('qb-answer')
+    expect(answer).toHaveTextContent('(a) জল, পানি')
+    expect(answer).not.toHaveTextContent('{"answers"')
+  })
 })

@@ -50,6 +50,15 @@ APPROVED_EXECUTION_SLICES = [{
     'roles': ['content_writer', 'content_moderator', 'super_admin'],
     'done_when': 'Additive migrations and canonical schema parity; authorized version/node management with same-subject parent validation, arbitrary depth, cycle prevention, bilingual labels and stable ordering; searchable localized writer breadcrumbs; question create/edit/reopen/preview/list/finder round trips for zero, one and multiple curriculum links; optional source occurrence metadata round trip; old chapter/topic endpoints and records remain compatible; bn/en, role/module/tenant, no-answer-leak, migration rollback and focused regression checks pass. Do not seed unverified textbook content. Record exact evidence in docs/PROGRESS.md.',
     'deferred': ['textbook content seeding', 'R2.1 runtime switch', 'all unrelated R2.1 tasks'],
+}, {
+    'id': 'R2.1.2-gap-fill-authoring', 'parent_task': 'R2.1.2',
+    'decisions': ['D142'], 'depends_on': ['R2.1.2'],
+    'executable': True, 'accepted': False,
+    'scope': 'Inline structured gap authoring: one continuous question passage, cursor insertion of labeled blanks, and stable per-gap answer, hint and marks mapping through save, reopen and writer preview. Reuse question_text, qb_question_items and existing answer JSON; preserve existing question permissions, student answer isolation and all non-gap behavior.',
+    'tables': [], 'routes': [],
+    'roles': ['content_writer', 'super_admin'],
+    'done_when': 'Supported structured gap questions create, save, reopen, edit and preview inline blanks in stable passage order; existing gap questions remain readable and editable; answer-leak, bilingual/RTL, persistence and focused editor regression checks pass. Record exact evidence in docs/PROGRESS.md.',
+    'deferred': ['R2.1 runtime switch', 'all unrelated R2.1 tasks'],
 }]
 
 
@@ -84,13 +93,15 @@ def validate(root, scope, gaps):
             'first_executable_task': 'R2.1.0', 'runtime_switch_authorized': False}, 'placement/prerequisites')
     language_slice = next((s for s in APPROVED_EXECUTION_SLICES
                            if s['id'] == 'R2.1.2-language-curriculum'), None)
+    gap_slice = next((s for s in APPROVED_EXECUTION_SLICES
+                      if s['id'] == 'R2.1.2-gap-fill-authoring'), None)
     expected_objects = {
-        'tables': language_slice['tables'] if language_slice else [],
-        'routes': [f"{r['method']} {r['uri']}" for r in language_slice['routes'][:5]] if language_slice else [],
+        'tables': (language_slice['tables'] if language_slice else []) + (gap_slice['tables'] if gap_slice else []),
+        'routes': [],
         'modules': [], 'packages': [],
     }
     require(scope.get('authorized_new_objects') == expected_objects,
-            'only the D139 language-curriculum tables and routes may be authorized')
+            'only the D139 curriculum tables may be authorized; D142 adds no new objects')
     require(scope.get('source_policy') == 'read_only_files_no_db_no_execution', 'source access policy')
     require(scope.get('approved_execution_slices') == APPROVED_EXECUTION_SLICES,
             'approved execution slices must match their owner-approved contracts')

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useFieldArray, useWatch } from 'react-hook-form'
-import { Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
 import Button from '../../components/Button'
 import { Input, Select, Textarea } from '../../components/FormField'
 import MathText from './MathText'
@@ -24,6 +24,9 @@ const EMPTY_ROW = {
 const LETTERS = ['ক', 'খ', 'গ', 'ঘ']
 const csv = (v) => String(v ?? '').split(',').map(a => a.trim()).filter(Boolean)
 const num = (v) => (v === '' || v == null ? undefined : Number(v))
+const gapLabel = (index) => String.fromCharCode(97 + index)
+const gapToken = (index) => `(${gapLabel(index)}) —`
+const GAP_TOKEN_PATTERN = /\([a-z]+\)\s*(?:_+|—)/gi
 
 /** A table typed as lines of cells split by "|"; a cell in [brackets] is one to fill, its answers inside (comma-separated) */
 export function parseTable(columns, rows) {
@@ -69,7 +72,7 @@ export function toPayload(structure, s) {
   const build = {
     mcqs: (q) => ({ item_type: 'sub_mcq', stimulus_index: at, prompt_text: q.prompt, prompt_json: { options: q.options.filter(o => o.trim()) }, answer_json: { correct: Number(q.correct) } }),
     subs: (q) => ({ item_type: 'sub_question', stimulus_index: at, prompt_text: q.prompt, answer_json: { answer_text: q.answer } }),
-    gaps: (g) => ({ item_type: 'gap', stimulus_index: at, prompt_text: g.prompt, prompt_json: g.hint?.trim() ? { hint: g.hint.trim() } : null, answer_json: { answers: csv(g.answers) } }),
+    gaps: (g) => ({ item_type: 'gap', stimulus_index: at, prompt_text: g.prompt || null, prompt_json: g.hint?.trim() ? { hint: g.hint.trim() } : null, answer_json: { answers: csv(g.answers) } }),
     tfs: (x) => ({ item_type: 'true_false', stimulus_index: at, prompt_text: x.prompt, answer_json: { value: x.value === 'true', correction: x.correction || null } }),
     tables: (x) => { const p = parseTable(x.columns, x.rows); return { item_type: 'table_fill', stimulus_index: at, prompt_text: null, prompt_json: { table: p.table }, answer_json: { cells: p.cells } } },
     triples: (x) => ({ item_type: 'match_triple', prompt_text: x.left, answer_json: { middle: x.middle, right: x.right } }),
@@ -100,12 +103,15 @@ function Rows({ name, control, empty, render, addLabel, testid, register }) {
 }
 
 /** The editor section for a structured type: the type's own part first, any other kind added with "Add a part" */
-export function StructuredEditor({ structure, register, control, error }) {
+export function StructuredEditor({ structure, register, control, error, getValues, setValue, onFieldFocus }) {
   const { t } = useTranslation()
   const s = useWatch({ control, name: 'structured' }) ?? STRUCTURED_EMPTY
+  const gapArray = useFieldArray({ control, name: 'structured.gaps' })
   const [extra, setExtra] = useState([])
+  const passageRef = useRef(null)
   if (!structure) return null
   const boxLabel = { gap: t('qb.word_box'), passage: t('qb.passage'), passage_mcq: t('qb.stimulus') }[structure] ?? t('qb.stimulus')
+  const passageField = structure === 'gap' ? register('question_text', { required: t('super.required') }) : {}
   const shown = KINDS.map(([l]) => l).filter(l => l === DEFAULT_LIST[structure] || (s[l]?.length ?? 0) > 0 || extra.includes(l))
   const rows = (list, render, testid) => (
     <section key={list} className="flex flex-col gap-1" data-part={list}>
@@ -114,11 +120,52 @@ export function StructuredEditor({ structure, register, control, error }) {
     </section>
   )
   const part = {
-    gaps: () => rows('gaps', i => <>
-      <Input className="flex-1 min-w-48" label={t('qb.gap_sentence')} hint={t('qb.blank_hint')} {...register(`structured.gaps.${i}.prompt`)} />
-      <Input className="w-32" label={t('qbx.hint')} {...register(`structured.gaps.${i}.hint`)} />
-      <Input className="flex-1 min-w-40" label={t('qb.gap_answers')} hint={t('qb.gap_answers_hint')} {...register(`structured.gaps.${i}.answers`)} />
-    </>, 'qb-gaps'),
+    gaps: () => <div key="gaps" className="flex flex-col gap-2" data-testid="qb-gaps">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label className="text-sm font-medium" htmlFor="qb-gap-passage">{t('qb.question')}</label>
+        <Button type="button" variant="secondary" data-action="add-gap-blank" onClick={() => {
+          const area = passageRef.current
+          const text = getValues('question_text') ?? ''
+          const start = area?.selectionStart ?? text.length
+          const end = area?.selectionEnd ?? start
+          const token = `${start > 0 && !/\s$/.test(text.slice(0, start)) ? ' ' : ''}${gapToken(s.gaps.length)}${end < text.length && !/^\s/.test(text.slice(end)) ? ' ' : ''}`
+          const next = `${text.slice(0, start)}${token}${text.slice(end)}`
+          setValue('question_text', next, { shouldDirty: true })
+          gapArray.append({ ...EMPTY_ROW.gaps })
+          requestAnimationFrame(() => { area?.focus(); area?.setSelectionRange(start + token.length, start + token.length) })
+        }}><Plus aria-hidden="true" className="h-4 w-4" />{t('qbx.add.gaps')}</Button>
+      </div>
+      <Textarea id="qb-gap-passage" rows={5} dir="auto" {...passageField} onFocus={onFieldFocus} onSelect={onFieldFocus} ref={el => { passageRef.current = el; passageField.ref(el) }} />
+      <div className="flex flex-col gap-2">
+        {s.gaps.map((g, i) => <div key={i} className="grid gap-2 rounded-token [border:1px_solid_var(--line)] p-2 sm:grid-cols-2" data-gap-index={i}>
+          <strong className="text-sm">({gapLabel(i)}) —</strong>
+          {g.prompt && <Input className="sm:col-span-2" label={t('qb.gap_sentence')} hint={t('qb.blank_hint')} {...register(`structured.gaps.${i}.prompt`)} />}
+          <Input label={t('qb.gap_answers')} hint={t('qb.gap_answers_hint')} {...register(`structured.gaps.${i}.answers`)} />
+          <Input label={t('qbx.hint')} {...register(`structured.gaps.${i}.hint`)} />
+          <Input label={t('qb.marks')} ltr inputMode="decimal" {...register(`structured.gaps.${i}.marks`)} />
+          <div className="flex gap-1">
+            <Button type="button" variant="secondary" disabled={i === 0} aria-label={`Move blank ${i + 1} up`} onClick={() => {
+              gapArray.move(i, i - 1)
+              let index = 0
+              setValue('question_text', getValues('question_text').replace(GAP_TOKEN_PATTERN, () => gapToken(index++)), { shouldDirty: true })
+            }}><ArrowUp aria-hidden="true" className="h-4 w-4" /></Button>
+            <Button type="button" variant="secondary" disabled={i === s.gaps.length - 1} aria-label={`Move blank ${i + 1} down`} onClick={() => {
+              gapArray.move(i, i + 1)
+              let index = 0
+              setValue('question_text', getValues('question_text').replace(GAP_TOKEN_PATTERN, () => gapToken(index++)), { shouldDirty: true })
+            }}><ArrowDown aria-hidden="true" className="h-4 w-4" /></Button>
+          </div>
+          <Button type="button" variant="secondary" aria-label={t('common.delete')} onClick={() => {
+            const pattern = GAP_TOKEN_PATTERN
+            let current = 0
+            let next = 0
+            const updated = getValues('question_text').replace(pattern, () => current++ === i ? '' : gapToken(next++))
+            setValue('question_text', updated, { shouldDirty: true })
+            gapArray.remove(i)
+          }}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
+        </div>)}
+      </div>
+    </div>,
     pairs: () => rows('pairs', i => <>
       <Input className="flex-1 min-w-32" label={t('qb.left')} {...register(`structured.pairs.${i}.left`)} />
       <Input className="flex-1 min-w-32" label={t('qb.right')} {...register(`structured.pairs.${i}.right`)} />
@@ -158,7 +205,8 @@ export function StructuredEditor({ structure, register, control, error }) {
   return (
     <fieldset className="sm:col-span-2 flex flex-col gap-3" data-testid="qb-structured">
       <legend className="font-semibold mb-1">{t(`qb.structure.${structure}`)}</legend>
-      <Textarea label={boxLabel} rows={structure === 'gap' ? 2 : 5} hint={structure === 'gap' ? t('qb.word_box_hint') : undefined} {...register('structured.box')} />
+      <Textarea label={boxLabel} rows={structure === 'gap' ? 2 : 5} hint={structure === 'gap' ? t('qb.word_box_hint') : undefined} {...register('structured.box')}
+        onFocus={onFieldFocus} onSelect={onFieldFocus} />
       {shown.map(l => part[l]())}
       {addable.length > 0 && (
         <Select label={t('qbx.add_part')} value="" data-action="add-part" onChange={e => e.target.value && setExtra([...extra, e.target.value])}
@@ -170,20 +218,41 @@ export function StructuredEditor({ structure, register, control, error }) {
 }
 
 /** The preview of a structured type (the writer sees the answers) */
-export function StructuredPreview({ structure, s, media = [], onImageClick }) {
+export function StructuredPreview({ structure, s, questionText = '', media = [], onImageClick, onTableClick }) {
   const { t } = useTranslation()
   if (!structure) return null
   const muted = 'text-xs text-content-muted'
   const head = (l) => <h4 className="text-sm font-semibold">{t(`qbx.kinds.${l}`)}</h4>
   const has = (l) => (s[l]?.length ?? 0) > 0
-  const rich = (text, field) => <MathText text={text} media={media} onImageClick={onImageClick ? attrs => onImageClick(field, attrs, media.find(item => String(item.id) === attrs.media)?.url) : undefined} />
+  const rich = (text, field) => <MathText text={text} media={media} onImageClick={onImageClick ? attrs => onImageClick(field, attrs, media.find(item => String(item.id) === attrs.media)?.url) : undefined}
+    onTableClick={onTableClick ? index => onTableClick(field, index) : undefined} />
+  const inlineGapPassage = () => {
+    const nodes = []
+    const pattern = GAP_TOKEN_PATTERN
+    let cursor = 0
+    let index = 0
+    let match
+    while ((match = pattern.exec(questionText)) !== null) {
+      if (match.index > cursor) nodes.push(<span key={`text-${index}`}>{rich(questionText.slice(cursor, match.index), 'question_text')}</span>)
+      const hint = s.gaps[index]?.hint?.trim()
+      nodes.push(<span key={`blank-${index}`}><strong>{match[0].replace(/_+/g, ' ').trim()} <span className="inline-block w-16 border-b-2 border-current align-baseline" aria-label="blank" /></strong>{hint && <span className="text-content-muted"> ({hint})</span>}</span>)
+      cursor = match.index + match[0].length
+      index += 1
+    }
+    if (cursor < questionText.length) nodes.push(<span key="text-tail">{rich(questionText.slice(cursor), 'question_text')}</span>)
+    return nodes
+  }
   return (
     <div className="flex flex-col gap-2" data-testid="qb-structured-preview">
       {s.box && <div className="rounded-token bg-surface-muted p-2 text-sm">{rich(s.box, 'structured.box')}</div>}
+      {structure === 'gap' && questionText && <div className="text-base" data-testid="qb-gap-passage-preview">{inlineGapPassage()}</div>}
       {has('mcqs') && <div>{structure !== 'passage_mcq' && head('mcqs')}<ol className="flex flex-col gap-2">{s.mcqs.map((q, i) => <li key={i}>{i + 1}. {rich(q.prompt, `structured.mcqs.${i}.prompt`)}
         <ul className="flex flex-col gap-1 px-4">{q.options.filter(Boolean).map((o, k) => <li key={k}>{LETTERS[k]}. {rich(o, `structured.mcqs.${i}.options.${k}`)}{String(k) === String(q.correct) && <span className={muted}> ({t('qb.correct')})</span>}</li>)}</ul></li>)}</ol></div>}
       {has('subs') && <div>{structure !== 'passage' && head('subs')}<ol className="flex flex-col gap-1">{s.subs.map((q, i) => <li key={i}>{i + 1}. {rich(q.prompt, `structured.subs.${i}.prompt`)} <span className={muted}>— {rich(q.answer, `structured.subs.${i}.answer`)}</span></li>)}</ol></div>}
-      {has('gaps') && <div>{structure !== 'gap' && head('gaps')}<ol className="flex flex-col gap-1">{s.gaps.map((g, i) => <li key={i}>{rich(g.prompt, `structured.gaps.${i}.prompt`)}{g.hint && <span> ({g.hint})</span>} <span className={muted}>[{g.answers}]</span></li>)}</ol></div>}
+      {has('gaps') && <div>{structure === 'gap' ? <h4 className="text-sm font-semibold">{t('qb.answer')}</h4> : head('gaps')}<ol className="flex flex-col gap-1">{s.gaps.map((g, i) => <li key={i}>
+        {structure === 'gap' ? <><strong>({gapLabel(i)}) <span className="inline-block w-16 border-b-2 border-current align-baseline" aria-label="blank" /></strong>{g.prompt && <> {rich(g.prompt, `structured.gaps.${i}.prompt`)}</>}</> : rich(g.prompt, `structured.gaps.${i}.prompt`)}
+        <span className={muted}>[{g.answers || '—'}{g.marks ? ` · ${g.marks} ${t('qb.marks')}` : ''}]</span>
+      </li>)}</ol></div>}
       {has('tfs') && <div>{head('tfs')}<ol className="flex flex-col gap-1">{s.tfs.map((x, i) => <li key={i}>{i + 1}. {rich(x.prompt, `structured.tfs.${i}.prompt`)} <span className={muted}>— {t(x.value === 'true' ? 'qb.true' : 'qb.false')}{x.correction ? `: ${x.correction}` : ''}</span></li>)}</ol></div>}
       {has('tables') && <div>{head('tables')}{s.tables.map((x, i) => { const p = parseTable(x.columns, x.rows); return (
         <table key={i} className="my-1 border-collapse text-sm"><tbody>

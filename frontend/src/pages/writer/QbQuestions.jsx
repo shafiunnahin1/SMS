@@ -22,6 +22,16 @@ const LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
 
 const STATUSES = ['all', 'draft', 'review', 'rejected', 'published']
 
+function questionTextWithGapHints(text, items = []) {
+  const gaps = items.filter(item => item.item_type === 'gap')
+  let index = 0
+  return String(text ?? '').replace(/\([a-z]+\)\s*(?:_+|—)/gi, blank => {
+    const hint = gaps[index++]?.prompt_json?.hint?.trim()
+    const token = `${blank.match(/^\([a-z]+\)/i)?.[0] ?? blank} ━━━━`
+    return hint ? `${token} (${hint})` : token
+  })
+}
+
 // QB.2 /writer/questions (D65): a writer's own questions, a moderator's and the Super Admin's view of everyone's - by status. A
 // moderator lands on the review tab (?status=review). Opening a row goes to the editor / review page.
 export default function QbQuestions() {
@@ -110,15 +120,16 @@ export default function QbQuestions() {
                 </button>
               </header>
               <div className="flex flex-col gap-3 border-t border-border-subtle px-5 py-4">
+                {(row.stimuli ?? []).filter(stimulus => stimulus.label === 'word_box' && stimulus.content_text).map((stimulus, k) => <div key={stimulus.id ?? `word-box-${k}`} className="rounded-token bg-surface-muted/40 p-3"><MathText text={stimulus.content_text} media={row.media ?? []} /></div>)}
                 <button type="button" onClick={() => navigate(`/writer/questions/${row.id}`)} className="text-start text-base leading-8" dir="auto">
-                  <span className="line-clamp-3 whitespace-normal [overflow-wrap:anywhere]"><MathText text={row.question_text} media={row.media ?? []} /></span>
+                  <span className="line-clamp-3 whitespace-normal [overflow-wrap:anywhere]"><MathText text={questionTextWithGapHints(row.question_text, row.items)} media={row.media ?? []} /></span>
                 </button>
                 {(row.options ?? []).length > 0 && <ol className="grid gap-2 sm:grid-cols-2">{row.options.map((option, k) => (
                   <li key={option.id ?? k} className={`flex min-h-12 items-center gap-3 rounded-token border border-border-subtle bg-surface-muted/30 px-3 py-2 ${shown.has(row.id) && option.is_correct ? 'bg-primary-soft' : ''}`}>
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs">{LABELS[k] ?? k + 1}</span><MathText text={option.content_text} media={row.media ?? []} />
                   </li>))}</ol>}
                 {(row.creative_parts ?? []).length > 0 && <ol className="flex flex-col gap-1">{row.creative_parts.map((part, k) => <li key={part.part_label ?? k}><span className="font-medium">{part.part_label}.</span> <MathText text={part.question_text} /></li>)}</ol>}
-                {(row.stimuli ?? []).map((stimulus, k) => stimulus.content_text && <div key={stimulus.id ?? k} className="rounded-token bg-surface-muted/40 p-3"><MathText text={stimulus.content_text} media={row.media ?? []} /></div>)}
+                {(row.stimuli ?? []).map((stimulus, k) => stimulus.label !== 'word_box' && stimulus.content_text && <div key={stimulus.id ?? k} className="rounded-token bg-surface-muted/40 p-3"><MathText text={stimulus.content_text} media={row.media ?? []} /></div>)}
                 {(row.items ?? []).length > 0 && <ol className="flex flex-col gap-1">{row.items.map((item, k) => <li key={k}><MathText text={item.prompt_text} media={row.media ?? []} /></li>)}</ol>}
                 <div className="flex flex-wrap items-center gap-2">
                   <Button variant="secondary" onClick={() => setShown(old => { const next = new Set(old); next.has(row.id) ? next.delete(row.id) : next.add(row.id); return next })} aria-expanded={shown.has(row.id)} data-action="toggle-answer">
@@ -130,7 +141,9 @@ export default function QbQuestions() {
                   {row.answer_text && <div><p className="font-semibold">{t('qb.answer')}</p><MathText text={row.answer_text} media={row.media ?? []} /></div>}
                   {row.explanation_text && <div><p className="font-semibold">{t('qbaq.explanation')}</p><MathText text={row.explanation_text} media={row.media ?? []} /></div>}
                   {(row.creative_parts ?? []).some(part => part.answer_text) && row.creative_parts.filter(part => part.answer_text).map((part, k) => <div key={k}><p className="font-semibold">{part.part_label}. {t('qb.answer')}</p><MathText text={part.answer_text} media={row.media ?? []} /></div>)}
-                  {(row.items ?? []).some(item => item.answer_json != null) && row.items.filter(item => item.answer_json != null).map((item, k) => <div key={k}><p className="font-semibold">{t('qb.answer')}</p><pre className="whitespace-pre-wrap font-sans">{typeof item.answer_json === 'string' ? item.answer_json : JSON.stringify(item.answer_json)}</pre></div>)}
+                  {(row.items ?? []).some(item => item.answer_json != null) && row.items.filter(item => item.answer_json != null).map((item, k) => <div key={k}><p className="font-semibold">{t('qb.answer')}</p>{item.item_type === 'gap' && Array.isArray(item.answer_json?.answers)
+                    ? <p>({String.fromCharCode(97 + k)}) {item.answer_json.answers.filter(Boolean).join(', ')}</p>
+                    : <pre className="whitespace-pre-wrap font-sans">{typeof item.answer_json === 'string' ? item.answer_json : JSON.stringify(item.answer_json)}</pre>}</div>)}
                 </div>}
               </div>
               <footer className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-subtle bg-surface-muted/30 px-5 py-3 text-xs text-content-muted">

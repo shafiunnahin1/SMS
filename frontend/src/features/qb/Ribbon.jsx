@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Baseline, Bold, CaseLower, CaseSensitive, CaseUpper, Highlighter, ImagePlus, IndentIncrease,
   Italic, List, ListOrdered, LineChart, ListTree, Shapes, PaintBucket, RemoveFormatting, RotateCcw, Save, Strikethrough, Subscript, Superscript, Table, Underline } from 'lucide-react'
@@ -24,7 +24,7 @@ const Sep = () => <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
 
 // D72 (QB.12): qbank's editor ribbon. Every action works on the text field the writer was last in (run(fn, ...args) on the page
 // applies it to that field's value and selection); maths, pictures, save and reset are the page's own actions.
-export default function Ribbon({ run, readActive, onImage, onGraph, onDiagram, onReset, onUndo, onRedo, canUndo, canRedo, disabled, saving }) {
+export default function Ribbon({ run, readActive, onImage, onGraph, onDiagram, onReset, onUndo, onRedo, canUndo, canRedo, disabled, saving, tableRequest }) {
   const { t } = useTranslation()
   const [ul, setUl] = useState(LIST_STYLES.ul[0])
   const [ol, setOl] = useState(LIST_STYLES.ol[0])
@@ -50,6 +50,7 @@ export default function Ribbon({ run, readActive, onImage, onGraph, onDiagram, o
     const existing = active ? parseTableSelection(active.value, active.start, active.end) : null
     setTable(existing ?? { rows: '3', cols: '2', header: true, headerColumn: false, striped: false, style: 'grid', width: '100', align: 'center', spacing: 'normal', caption: '', cells: createTableCells(3, 2), selected: [] })
   }
+  useEffect(() => { if (tableRequest) openTable() }, [tableRequest])
   return (
     <div role="toolbar" aria-label={t('qbed.ribbon')} data-testid="qb-ribbon"
       className="sticky top-0 z-10 flex flex-wrap items-center gap-1 rounded-token bg-surface p-2 shadow-card [border:1px_solid_var(--line)]">

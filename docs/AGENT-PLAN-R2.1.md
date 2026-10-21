@@ -36,6 +36,18 @@ Done when: Additive migrations and canonical schema parity; authorized version/n
 Deferred from the parent task: textbook content seeding; R2.1 runtime switch; all unrelated R2.1 tasks.
 The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
 
+## Approved scoped implementation slice — R2.1.2-gap-fill-authoring
+
+Task: R2.1.2-gap-fill-authoring (parent R2.1.2); decisions: D142.
+Depends on: R2.1.2; status: executable slice, not accepted.
+Scope: Inline structured gap authoring: one continuous question passage, cursor insertion of labeled blanks, and stable per-gap answer, hint and marks mapping through save, reopen and writer preview. Reuse question_text, qb_question_items and existing answer JSON; preserve existing question permissions, student answer isolation and all non-gap behavior.
+Authorized table: .
+Routes: .
+Roles: content_writer, super_admin.
+Done when: Supported structured gap questions create, save, reopen, edit and preview inline blanks in stable passage order; existing gap questions remain readable and editable; answer-leak, bilingual/RTL, persistence and focused editor regression checks pass. Record exact evidence in docs/PROGRESS.md.
+Deferred from the parent task: R2.1 runtime switch; all unrelated R2.1 tasks.
+The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
+
 ## R2.1.0 — Source/target inventory, fixtures and measured baseline
 
 Depends on: R3.A. Status: BLOCKED / unaccepted / non-executable.

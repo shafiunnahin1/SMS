@@ -48,10 +48,10 @@ function Text({ text, ready }) {
   return parts.map((p, i) => /^\[\[qmx-(graph|diagram):/.test(p) ? <Graph key={i} token={p} /> : <Maths key={i} text={p} ready={ready} />)
 }
 
-function Node({ n, ready, media, onImageClick }) {
+function Node({ n, ready, media, onImageClick, onTableClick }) {
   const { t } = useTranslation()
   if (n.text !== undefined) return <Text text={n.text} ready={ready} />
-  const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} media={media} onImageClick={onImageClick} />)
+  const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} media={media} onImageClick={onImageClick} onTableClick={onTableClick} />)
   const a = n.attrs
   switch (n.tag) {
     case 'img': {
@@ -75,7 +75,14 @@ function Node({ n, ready, media, onImageClick }) {
     case 'mark': return <mark className="bg-secondary-soft text-content">{kids}</mark>
     case 'table': {
       const margin = { left: { marginInlineEnd: 'auto' }, center: { marginInline: 'auto' }, right: { marginInlineStart: 'auto' } }[a.align] ?? { marginInline: 'auto' }
-      return <table className={`my-1 border-collapse ${a.striped ? '[&_tbody_tr:nth-child(even)]:bg-surface-muted' : ''}`} style={{ width: TABLE_WIDTH[a.width] ?? '100%', ...margin }}>{kids}</table>
+      const editTable = onTableClick ? event => {
+        const root = event.currentTarget.closest('[data-qb-rich-text]')
+        const index = [...(root?.querySelectorAll('table') ?? [])].indexOf(event.currentTarget)
+        onTableClick(index)
+      } : undefined
+      return <table onClick={editTable} onKeyDown={onTableClick ? event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); editTable(event) } } : undefined}
+        tabIndex={onTableClick ? 0 : undefined} aria-label={onTableClick ? t('qbed.table') : undefined}
+        className={`my-1 border-collapse ${onTableClick ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-primary' : ''} ${a.striped ? '[&_tbody_tr:nth-child(even)]:bg-surface-muted' : ''}`} style={{ width: TABLE_WIDTH[a.width] ?? '100%', ...margin }}>{kids}</table>
     }
     case 'caption': return <caption className="caption-top p-2 text-start text-sm font-semibold">{kids}</caption>
     case 'th': return <th dir={a.dir} colSpan={a.colspan} rowSpan={a.rowspan} className={`${CELL} ${CELL_SPACING[a.spacing] ?? CELL_SPACING.normal} font-semibold`}>{kids}</th>
@@ -87,13 +94,13 @@ function Node({ n, ready, media, onImageClick }) {
   }
 }
 
-export default function MathText({ text, className = '', media = [], onImageClick }) {
+export default function MathText({ text, className = '', media = [], onImageClick, onTableClick }) {
   const [ready, setReady] = useState(false)
   const mediaById = new Map(media.filter((item) => item?.id != null && typeof item.url === 'string').map((item) => [String(item.id), item.url]))
   useEffect(() => { let on = true; loadMathlive().then(() => on && setReady(true)).catch(() => {}); return () => { on = false } }, [])
   return (
-    <span dir="auto" className={`whitespace-pre-wrap ${className}`}>
-      {parseRich(text).map((n, i) => <Node key={i} n={n} ready={ready} media={mediaById} onImageClick={onImageClick} />)}
+    <span dir="auto" data-qb-rich-text className={`whitespace-pre-wrap ${className}`}>
+      {parseRich(text).map((n, i) => <Node key={i} n={n} ready={ready} media={mediaById} onImageClick={onImageClick} onTableClick={onTableClick} />)}
     </span>
   )
 }
