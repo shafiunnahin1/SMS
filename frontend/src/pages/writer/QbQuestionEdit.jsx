@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useFieldArray, useForm } from 'react-hook-form'
-import { ChevronDown, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, Plus, X } from 'lucide-react'
 import api from '../../api/axios'
 import { multipart } from '../../features/students/formData'
 import { useAuthStore } from '../../store/authStore'
@@ -28,7 +28,7 @@ import CurriculumPicker from '../../features/qb/CurriculumPicker'
 import WriterFieldHelp, { WriterFieldHelpButton } from '../../features/qb/WriterFieldHelp'
 import AddCurriculumItemModal from '../../features/qb/AddCurriculumItemModal'
 import { flattenCurriculum, isLanguagePaperSubject, sourceLabel, subjectsForClasses, versionsForSubject } from '../../features/qb/curriculum'
-import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
+import { STRUCTURED_EMPTY, StructuredAnswers, StructuredEditor, StructuredPreview, fromQuestion, isFlowChartTable, toPayload } from '../../features/qb/Structured'
 
 const EDITABLE = ['draft', 'rejected']
 
@@ -447,7 +447,7 @@ export default function QbQuestionEdit() {
                     <div key={f.id} className="grid min-w-0 grid-cols-2 gap-2 rounded-token bg-surface-muted p-2" data-testid={`source-${i}`}>
                       <div className="col-span-2 flex items-end gap-2">
                         <div className="min-w-0 flex-1"><Select label={t('qbn.source_type')} placeholder={t('qb.pick')} options={SOURCE_TYPES.map(x => ({ value: x, label: t(`qbn.source_types.${x}`) }))} {...register(`occurrences.${i}.type`)} /></div>
-                        <Button variant="secondary" onClick={() => occurrences.remove(i)} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
+                        <Button variant="secondary" title={t('common.delete')} onClick={() => occurrences.remove(i)} aria-label={t('common.delete')}><X aria-hidden="true" className="h-4 w-4" /></Button>
                       </div>
                       <div className="col-span-2"><Input label={t('qbn.source_full')} {...register(`occurrences.${i}.full`)} /></div>
                       <Input label={t('qbn.source_short')} {...register(`occurrences.${i}.short`)} />
@@ -486,10 +486,10 @@ export default function QbQuestionEdit() {
                       {options.fields.map((f, i) => (
                         <div key={f.id} className="flex flex-wrap items-end gap-2">
                           <Input className="w-16" label={t('qb.label')} {...register(`options.${i}.label`)} readOnly={family === 'true_false'} />
-                          <Input className="flex-1 min-w-40" label={t('qb.option_text')} {...register(`options.${i}.content_text`)} readOnly={family === 'true_false'} />
+                          <Textarea className="flex-1 min-w-40" rows={2} label={t('qb.option_text')} {...register(`options.${i}.content_text`)} readOnly={family === 'true_false'} />
                           <Check label={t('qb.correct')} {...register(`options.${i}.is_correct`, family === 'true_false'
                             ? { onChange: (e) => { if (e.target.checked) options.fields.forEach((_, j) => j !== i && setValue(`options.${j}.is_correct`, false)) } } : {})} />
-                          {family === 'mcq' && <Button variant="secondary" onClick={() => options.remove(i)} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>}
+                          {family === 'mcq' && <Button variant="secondary" title={t('common.delete')} onClick={() => options.remove(i)} aria-label={t('common.delete')}><X aria-hidden="true" className="h-4 w-4" /></Button>}
                         </div>
                       ))}
                       {family === 'mcq' && options.fields.length < 8 && (
@@ -577,6 +577,9 @@ export default function QbQuestionEdit() {
             : <img key={m.id} src={m.url} alt={t('qb.picture_n', { id: m.id })} className="max-h-48 w-auto self-start" />)}
           <StructuredPreview structure={structure} s={v.structured} questionText={v.question_text} media={v.media} onImageClick={canEdit ? (fieldName, attrs, url) => editPreviewImage(fieldName, attrs, url) : undefined}
             onTableClick={canEdit ? (fieldName, index) => editPreviewTable(fieldName, index) : undefined} />
+          {structure === 'passage' && v.structured.tables.some(isFlowChartTable) && <div className="rounded-token bg-primary-soft p-3 text-sm" data-testid="qb-flow-chart-answer">
+            <StructuredAnswers s={{ ...STRUCTURED_EMPTY, tables: v.structured.tables.filter(isFlowChartTable) }} media={v.media} />
+          </div>}
           {optionsFor && (
             <ol className="flex flex-col gap-1">
               {v.options.map((o, i) => <li key={i} className="flex gap-2"><span className="font-medium">{o.label}.</span><MathText text={o.content_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage(`options.${i}.content_text`, attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} />{o.is_correct && <span className="text-xs text-content-muted">({t('qb.correct')})</span>}</li>)}
