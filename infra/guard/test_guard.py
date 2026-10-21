@@ -189,6 +189,31 @@ def d146_probe():
     shutil.rmtree(d, ignore_errors=True)
     return code, out
 
+def d148_probe():
+    results = []
+    for path, expected in [
+        ('api/database/migrations/2026_10_22_000001_create_qb_curriculum_version_class_level.php', None),
+        ('api/database/migrations/2026_01_01_000000_create_users_table.php', 'C2'),
+    ]:
+        d = make_base()
+        decisions = DECISIONS + '| D145 | Class-scoped curriculum version mapping | approved |\n| D148 | D145 mapping migration MySQL identifier fix | approved |\n'
+        progress = PROGRESS + '\n- [x] R2.1.2 — accepted D114 scope\n- [ ] R2.1.2-language-curriculum — in progress\n'
+        write(d, 'docs/LOCKED-DECISIONS.md', decisions)
+        write(d, 'docs/PROGRESS.md', progress)
+        write(d, 'api/database/migrations/2026_10_22_000001_create_qb_curriculum_version_class_level.php', MIG % 'qb_curriculum_version_class_level')
+        git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'owner: approved D145/D148 base')
+        git(d, 'tag', 'd148base')
+        write(d, path, (MIG % ('qb_curriculum_version_class_level' if expected is None else 'users')) + '// explicit FK names\n')
+        write(d, 'docs/PROGRESS.md', progress + '- 2026-10-22 · D148 MySQL migration fix verification\n')
+        git(d, 'add', '-A')
+        git(d, 'commit', '-q', '-m', 'fix: D148 MySQL migration identifier\n\nTask: R2.1.2-language-curriculum\nChange-Request: D145\nChange-Request: D148')
+        code, out = run_guard(d, 'd148base', 'HEAD')
+        good = code == 0 if expected is None else code == 1 and expected in out
+        results.append((good, path, code, out))
+        shutil.rmtree(d, ignore_errors=True)
+    details = '\n'.join(f'{path}: exit={code}\n{out}' for good, path, code, out in results if not good)
+    return (0 if all(good for good, _, _, _ in results) else 1), details or 'D148 exact migration path is exempt; other migration edits remain blocked'
+
 def main():
     if subprocess.run(['git', '--version'], capture_output=True).returncode != 0: print('git is not installed - cannot run the guard self-test'); return 2
     base_dir = make_base(); bad = 0; n = 0
@@ -224,6 +249,11 @@ def main():
     code, out = d146_probe()
     good = code == 0
     print(('ok    ' if good else 'WRONG ') + 'D146 custom task, accepted dependency and zero-new-object allowlist' + ('' if good else f' (exit {code})\n' + out[-500:]))
+    bad += 0 if good else 1
+    n += 1
+    code, out = d148_probe()
+    good = code == 0
+    print(('ok    ' if good else 'WRONG ') + 'D148 permits only the named D145 MySQL migration correction' + ('' if good else f' (exit {code})\n' + out[-500:]))
     bad += 0 if good else 1
     # stage two: a done line exists, then someone un-checks it
     git(base_dir, 'checkout', '-q', '-b', 'stage2', 'base'); write(base_dir, 'api/app/Foo.php', "<?php\nclass Foo {}\n"); write(base_dir, 'docs/PROGRESS.md', check_off(TASK0)); git(base_dir, 'add', '-A'); git(base_dir, 'commit', '-q', '-m', ok_msg)

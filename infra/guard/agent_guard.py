@@ -54,6 +54,7 @@ TESS_VENDOR = 'frontend/public/vendor/tesseract/'
 PINNED = {QBANK_VENDOR: 'D119', TESS_VENDOR: 'D122', 'frontend/public/vendor/pdfjs/': 'D127', 'frontend/public/vendor/heic2any/': 'D127'}
 # D115/D139: each explicitly approved R2.1 task's new tables and approving decision
 R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}, 'R2.1.2-language-curriculum': {'qb_curriculum_versions': 'D139', 'qb_curriculum_nodes': 'D139', 'qb_question_curriculum_nodes': 'D139', 'qb_curriculum_version_class_level': 'D145'}, 'R2.1.2-graph-tool-viewport': {}, 'R2.1.3': {'qb_import_batches': 'D123', 'qb_import_records': 'D123'}, 'R2.1.4': {'qb_import_batches': 'D124', 'qb_import_records': 'D124'}, 'R2.1.5': {'qb_paper_folders': 'D126', 'qb_paper_variants': 'D126', 'qb_blueprints': 'D126', 'qb_blueprint_items': 'D126', 'qb_papers': 'D126'}, 'R2.1.6': {'qb_omr_forms': 'D127', 'qb_omr_scans': 'D127'}}
+D148_MIGRATION_FIX = 'api/database/migrations/2026_10_22_000001_create_qb_curriculum_version_class_level.php'
 
 def show(root, rev, path):
     r = subprocess.run(['git', '-C', root, 'show', f'{rev}:{path}'], capture_output=True, text=True, encoding='utf-8', errors='replace')
@@ -195,7 +196,12 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
     # ---- C2 / C3 migrations
     mig = [(s, p) for s, p in files if re.match(r'api/database/migrations/.*\.php$', p)]
     for s, p in mig:
-        if s in ('M', 'D'): rep.fail('C2', commit, f'migrations are append-only - {"deleted" if s == "D" else "edited"}: {p} (add a NEW migration instead)')
+        d148_fix = (s == 'M' and p == D148_MIGRATION_FIX and (tr.get('task') or [''])[0] == 'R2.1.2-language-curriculum'
+                    and cr_ok and {'D145', 'D148'}.issubset(set(crs)))
+        if s in ('M', 'D') and d148_fix:
+            rep.warn('C2', commit, f'D148 permits only the MySQL identifier correction in {p}')
+        elif s in ('M', 'D'):
+            rep.fail('C2', commit, f'migrations are append-only - {"deleted" if s == "D" else "edited"}: {p} (add a NEW migration instead)')
         if s == 'A':
             body = show(root, commit, p) or ''
             for tb in set(re.findall(r"Schema::(?:create|table|drop|dropIfExists|rename)\(\s*['\"](\w+)['\"]", body)):
