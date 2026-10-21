@@ -188,6 +188,7 @@ export default function QbQuestionEdit() {
     return { value: String(getValues(a.name) ?? ''), start: a.start ?? 0, end: a.end ?? 0 }
   }
   const v = watch()
+  const previewGallery = (v.media ?? []).filter(media => !hasPictureReference(v, media.id))
 
   const pickType = (e) => {                    // a type's own part starts filled in, so the writer only types the content
     const fam = types.data.find(ty => String(ty.id) === e.target.value)?.family
@@ -512,7 +513,7 @@ export default function QbQuestionEdit() {
             {(v.occurrences ?? []).map((o, i) => { const line = sourceLabel(sourceToOccurrence(o), t); return line && <span key={i} dir="auto">{line}</span> })}
           </div>
           <div className="text-base"><MathText text={v.question_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage('question_text', attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} /></div>
-          {v.media.map(m => canEdit
+          {previewGallery.map(m => canEdit
             ? <button key={m.id} type="button" onClick={() => editPreviewImage('question_text', { media: String(m.id), width: 100, align: 'center' }, m.url)} className="max-h-48 w-fit self-start rounded-token focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-fg" aria-label={t('qb.picture_n', { id: m.id })}><img src={m.url} alt="" className="max-h-48 w-auto" /></button>
             : <img key={m.id} src={m.url} alt={t('qb.picture_n', { id: m.id })} className="max-h-48 w-auto self-start" />)}
           <StructuredPreview structure={structure} s={v.structured} media={v.media} onImageClick={canEdit ? (fieldName, attrs, url) => editPreviewImage(fieldName, attrs, url) : undefined} />
