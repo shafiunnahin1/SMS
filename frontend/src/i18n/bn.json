@@ -1309,6 +1309,9 @@
    "note": "মন্তব্য / কারণ"
   },
   "qbed": {
+   "group_place": "বিষয় ও সিলেবাসে অবস্থান",
+   "group_type": "ধরন, কাঠিন্য ও নম্বর",
+   "classes_picked": "{{count}}টি বাছাই",
    "page_reference_short": "পৃ. {{n}}",
    "set_label_short": "সেট {{n}}",
    "question_number_short": "প্রশ্ন {{n}}",

@@ -1309,6 +1309,9 @@
    "note": "Note / reason"
   },
   "qbed": {
+   "group_place": "Subject & place in syllabus",
+   "group_type": "Type, difficulty & marks",
+   "classes_picked": "{{count}} picked",
    "page_reference_short": "p. {{n}}",
    "set_label_short": "Set {{n}}",
    "question_number_short": "Q {{n}}",

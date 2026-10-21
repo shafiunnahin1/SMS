@@ -31,6 +31,9 @@ import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, to
 const EDITABLE = ['draft', 'rejected']
 
 // D72: one part of the question; defined outside the page so its fields are never remounted (their typed values would be lost)
+// the numbered step mark of the metadata panel (1 classes, 2 subject & place, 3 type & marks)
+const MetaStep = ({ n }) => <span aria-hidden="true" className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-on-primary">{n}</span>
+
 function Section({ id: key, current, onEnter, children }) {
   return (
     <section id={`qbs-${key}`} data-section={key} onFocusCapture={() => onEnter(key)}
@@ -326,18 +329,27 @@ export default function QbQuestionEdit() {
             className={`flex-1 rounded-token px-3 py-2 text-sm font-medium ${pane === k ? 'bg-primary text-on-primary' : 'bg-surface [border:1px_solid_var(--line)]'}`}>{t(`qbed.${k}`)}</button>
         ))}
       </div>
-      <div className="grid gap-4 xl:h-[calc(100vh-9rem)] xl:grid-cols-[20rem_minmax(0,1.15fr)_minmax(0,1fr)] 2xl:grid-cols-[22rem_minmax(0,1.15fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 xl:h-[calc(100vh-9rem)] xl:grid-cols-[21rem_minmax(0,1.15fr)_minmax(0,1fr)] 2xl:grid-cols-[23rem_minmax(0,1.15fr)_minmax(0,1fr)]">
         <form id="qb-question-form" onSubmit={handleSubmit(save)} className="contents" noValidate
           onFocusCapture={track} onSelectCapture={track} onKeyUpCapture={track} onMouseUpCapture={track} onInputCapture={recordInput} onPasteCapture={pasteImage}>
         <nav aria-label={t('qbed.sec.meta')} className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 overflow-x-hidden xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-sections">
           <Card className="min-w-0 p-3">
-            <fieldset disabled={!canEdit} className="grid min-w-0 gap-4">
-              <fieldset className="grid min-w-0 gap-3" data-testid="qb-classes">
-                <legend className="text-sm font-semibold">{t('qbn.classes')}</legend>
-                <div className="grid max-h-44 grid-cols-2 gap-x-3 gap-y-2 overflow-y-auto pe-1">{tree.data.class_levels.map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids', { onChange: pickClasses })} />)}</div>
+            <fieldset disabled={!canEdit} className="flex min-w-0 flex-col gap-4">
+              {/* 1 - classes: wrapping chips, no inner scroll; the count shows how many are picked */}
+              <fieldset className="flex min-w-0 flex-col gap-2" data-testid="qb-classes">
+                <legend className="mb-2 flex w-full items-center justify-between gap-2 text-sm font-semibold">
+                  <span className="flex items-center gap-2"><MetaStep n={1} />{t('qbn.classes')}</span>
+                  {(watch('class_level_ids') ?? []).length > 0 && <span className="rounded-token bg-primary-soft px-2 text-xs font-medium text-primary-fg">{t('qbed.classes_picked', { count: (watch('class_level_ids') ?? []).length })}</span>}
+                </legend>
+                <div className="flex min-w-0 flex-wrap gap-1.5">{tree.data.class_levels.map(c => (
+                  <label key={c.id} className="inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-token px-2 py-1 text-sm [border:1px_solid_var(--line)] has-[:checked]:bg-primary-soft has-[:checked]:text-primary-fg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-fg">
+                    <input type="checkbox" className="h-3.5 w-3.5 shrink-0 accent-[var(--color-primary)]" value={String(c.id)} {...register('class_level_ids', { onChange: pickClasses })} />
+                    <span className="min-w-0 break-words" dir="auto">{name(c)}</span>
+                  </label>))}</div>
               </fieldset>
-              <fieldset className="grid min-w-0 gap-3 border-t border-line pt-3">
-                <legend className="text-sm font-semibold">{t('qbed.curriculum_path')}</legend>
+              {/* 2 - subject, then where it sits: the syllabus path (language papers) or chapter -> topic */}
+              <div className="border-t border-line pt-3"><fieldset className="flex min-w-0 flex-col gap-3">
+                <legend className="mb-3 flex items-center gap-2 text-sm font-semibold"><MetaStep n={2} />{t('qbed.group_place')}</legend>
                 <Select label={t('qb.subject')} placeholder={classSubjects.length ? t('qb.pick') : t('qbed.no_subject_for_class')} error={errors.qb_subject_id?.message}
                   options={classSubjects.map(x => ({ value: String(x.id), label: name(x) }))}
                   {...register('qb_subject_id', { required: t('super.required'), onChange: () => { setValue('qb_chapter_id', ''); setValue('qb_topic_id', ''); setValue('curriculum_node_ids', []) } })} />
@@ -350,43 +362,49 @@ export default function QbQuestionEdit() {
                   <Select label={t('qb.topic')} placeholder={t('qb.none_option')} error={errors.qb_topic_id?.message}
                     options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} {...register('qb_topic_id')} />
                 </>}
-              </fieldset>
-              <fieldset className="grid min-w-0 gap-3 border-t border-line pt-3">
-                <legend className="text-sm font-semibold">{t('qbed.question_type_exam_part')}</legend>
+              </fieldset></div>
+              {/* 3 - what kind of question and how much it is worth */}
+              <div className="border-t border-line pt-3"><fieldset className="flex min-w-0 flex-col gap-3">
+                <legend className="mb-3 flex items-center gap-2 text-sm font-semibold"><MetaStep n={3} />{t('qbed.group_type')}</legend>
                 <Select label={t('qbed.question_type_exam_part')} placeholder={t('qb.pick')} error={errors.qb_question_type_id?.message}
                   options={types.data.map(ty => ({ value: String(ty.id), label: name(ty) }))} {...register('qb_question_type_id', { required: t('super.required'), onChange: pickType })} />
-                <div className="grid min-w-0 grid-cols-2 gap-3">
+                <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_6rem] gap-3">
                   <Select label={t('qb.difficulty')} options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: t(`qb.difficulty_level.${d}`) }))} {...register('difficulty')} />
                   <Input label={t('qb.marks')} ltr inputMode="decimal" error={errors.marks?.message} {...register('marks')} />
                 </div>
-              </fieldset>
+              </fieldset></div>
             </fieldset>
           </Card>
           <details className="group rounded-token bg-surface [border:1px_solid_var(--line)]" open={occurrences.fields.length > 0}>
-            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 font-semibold [&::-webkit-details-marker]:hidden">{t('qbn.sources')}<ChevronDown aria-hidden="true" className="h-4 w-4 text-content-muted transition group-open:rotate-180" /></summary>
-            <Card className="min-w-0 border-0 border-t border-line p-3 shadow-none">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-2">{t('qbn.sources')}{occurrences.fields.length > 0 && <span className="rounded-token bg-surface-muted px-2 text-xs font-medium">{occurrences.fields.length}</span>}</span>
+              <ChevronDown aria-hidden="true" className="h-4 w-4 text-content-muted transition group-open:rotate-180" />
+            </summary>
+            <div className="min-w-0 border-t border-line p-3">
               <fieldset disabled={!canEdit} className="min-w-0">
               <Section id="occurrences" current={section} onEnter={setSection} className="grid min-w-0 gap-3">
-                <fieldset className="flex min-w-0 flex-col gap-2">
-                  <legend className="font-semibold mb-1">{t('qbn.sources')}</legend>
+                <fieldset className="flex min-w-0 flex-col gap-3 sm:col-span-2">
+                  <legend className="sr-only">{t('qbn.sources')}</legend>
                   {occurrences.fields.map((f, i) => (
-                    <div key={f.id} className="flex min-w-0 flex-col gap-2 rounded-token [border:1px_solid_var(--line)] p-2" data-testid={`source-${i}`}>
-                      <Select label={t('qbn.source_type')} placeholder={t('qb.pick')} options={SOURCE_TYPES.map(x => ({ value: x, label: t(`qbn.source_types.${x}`) }))} {...register(`occurrences.${i}.type`)} />
-                      <Input label={t('qbn.source_full')} {...register(`occurrences.${i}.full`)} />
+                    <div key={f.id} className="grid min-w-0 grid-cols-2 gap-2 rounded-token bg-surface-muted p-2" data-testid={`source-${i}`}>
+                      <div className="col-span-2 flex items-end gap-2">
+                        <div className="min-w-0 flex-1"><Select label={t('qbn.source_type')} placeholder={t('qb.pick')} options={SOURCE_TYPES.map(x => ({ value: x, label: t(`qbn.source_types.${x}`) }))} {...register(`occurrences.${i}.type`)} /></div>
+                        <Button variant="secondary" onClick={() => occurrences.remove(i)} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
+                      </div>
+                      <div className="col-span-2"><Input label={t('qbn.source_full')} {...register(`occurrences.${i}.full`)} /></div>
                       <Input label={t('qbn.source_short')} {...register(`occurrences.${i}.short`)} />
                       <Input label={t('qbn.exam_type')} {...register(`occurrences.${i}.exam_type`)} />
                       <Input label={t('qb.year')} ltr inputMode="numeric" {...register(`occurrences.${i}.year`)} />
                       <Input label={t('qbed.question_number')} {...register(`occurrences.${i}.question_number`)} />
                       <Input label={t('qbed.set_label')} {...register(`occurrences.${i}.set_label`)} />
                       <Input label={t('qbed.page_reference')} {...register(`occurrences.${i}.page_reference`)} />
-                      <Button variant="secondary" className="self-start" onClick={() => occurrences.remove(i)} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
                     </div>
                   ))}
                   <div><Button variant="secondary" onClick={() => occurrences.append({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add_occurrence')}</Button></div>
                 </fieldset>
               </Section>
               </fieldset>
-            </Card>
+            </div>
           </details>
         </nav>
 
