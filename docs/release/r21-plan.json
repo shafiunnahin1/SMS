@@ -26,13 +26,7 @@
       "qb_curriculum_nodes",
       "qb_question_curriculum_nodes"
     ],
-    "routes": [
-      "GET|POST /super/qb/curriculum-versions",
-      "GET|PUT|DELETE /super/qb/curriculum-versions/{versionId}",
-      "GET|POST /super/qb/curriculum-versions/{versionId}/nodes",
-      "PUT|DELETE /super/qb/curriculum-nodes/{nodeId}",
-      "GET /writer/curriculum/nodes"
-    ],
+    "routes": [],
     "modules": [],
     "packages": []
   },
@@ -131,36 +125,29 @@
       ],
       "routes": [
         {
-          "method": "GET|POST",
-          "uri": "/super/qb/curriculum-versions",
+          "method": "GET",
+          "uri": "/super/qb/curriculum",
           "roles": [
             "super_admin"
           ]
         },
         {
-          "method": "GET|PUT|DELETE",
-          "uri": "/super/qb/curriculum-versions/{versionId}",
-          "roles": [
-            "super_admin"
-          ]
-        },
-        {
-          "method": "GET|POST",
-          "uri": "/super/qb/curriculum-versions/{versionId}/nodes",
+          "method": "POST",
+          "uri": "/super/qb/{kind}",
           "roles": [
             "super_admin"
           ]
         },
         {
           "method": "PUT|DELETE",
-          "uri": "/super/qb/curriculum-nodes/{nodeId}",
+          "uri": "/super/qb/{kind}/{id}",
           "roles": [
             "super_admin"
           ]
         },
         {
           "method": "GET",
-          "uri": "/writer/curriculum/nodes",
+          "uri": "/writer/curriculum",
           "roles": [
             "content_writer",
             "content_moderator",

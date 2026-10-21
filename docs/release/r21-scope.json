@@ -26,13 +26,7 @@
       "qb_curriculum_nodes",
       "qb_question_curriculum_nodes"
     ],
-    "routes": [
-      "GET|POST /super/qb/curriculum-versions",
-      "GET|PUT|DELETE /super/qb/curriculum-versions/{versionId}",
-      "GET|POST /super/qb/curriculum-versions/{versionId}/nodes",
-      "PUT|DELETE /super/qb/curriculum-nodes/{nodeId}",
-      "GET /writer/curriculum/nodes"
-    ],
+    "routes": [],
     "modules": [],
     "packages": []
   },
@@ -67,11 +61,10 @@
       "scope": "Versioned arbitrary-depth curriculum for Bangla 1st/2nd and English 1st/2nd papers; separate syllabus locations from question type/exam part; preserve legacy chapter/topic APIs; allow zero or multiple node links; add optional source question number, set and page/reference; Super Admin tree management and searchable writer breadcrumbs across authoring, preview, list and finder.",
       "tables": ["qb_curriculum_versions", "qb_curriculum_nodes", "qb_question_curriculum_nodes"],
       "routes": [
-        {"method": "GET|POST", "uri": "/super/qb/curriculum-versions", "roles": ["super_admin"]},
-        {"method": "GET|PUT|DELETE", "uri": "/super/qb/curriculum-versions/{versionId}", "roles": ["super_admin"]},
-        {"method": "GET|POST", "uri": "/super/qb/curriculum-versions/{versionId}/nodes", "roles": ["super_admin"]},
-        {"method": "PUT|DELETE", "uri": "/super/qb/curriculum-nodes/{nodeId}", "roles": ["super_admin"]},
-        {"method": "GET", "uri": "/writer/curriculum/nodes", "roles": ["content_writer", "content_moderator", "super_admin"]},
+        {"method": "GET", "uri": "/super/qb/curriculum", "roles": ["super_admin"]},
+        {"method": "POST", "uri": "/super/qb/{kind}", "roles": ["super_admin"]},
+        {"method": "PUT|DELETE", "uri": "/super/qb/{kind}/{id}", "roles": ["super_admin"]},
+        {"method": "GET", "uri": "/writer/curriculum", "roles": ["content_writer", "content_moderator", "super_admin"]},
         {"method": "POST|PUT", "uri": "/writer/questions[/{id}]", "roles": ["content_writer", "super_admin"]},
         {"method": "GET", "uri": "/writer/questions[/{id}]", "roles": ["content_writer", "content_moderator", "super_admin"]}
       ],
