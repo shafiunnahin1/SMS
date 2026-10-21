@@ -99,7 +99,7 @@ e4cda8b2b550348f63164cba1dc31d3cd65df5ed34e0f6f69171bb36a8b3dbab  js/math/tools/
 82fc6916f76519694c466f096d4ee3412b7e0c8e93e9b968f050f69772a560ed  js/math/tools/graph/graph-dataset-client.js
 281cc802e5901b2292edd29f5be45093c302c60409f937b2e6b7a70cc762354b  js/math/tools/graph/graph-registry.js
 3b88c05ff937f4da8bb12869c9bd35819a9a63eb4490bb9c74c46e351e95add5  js/math/tools/graph/graph-textbook-input.js
-4383e78664580dc4f3871a8f88742d9d4ab0efcd52d62120b3914b3c0ac5d1d3  js/math/tools/graph/graph-tool.js
+b181b9dff08bd40966029869ef4239e4c71d8313070d356be587f75742bd16be  js/math/tools/graph/graph-tool.js
 506ff1cb3b3a6e2d448bae3432647c244df57a1dfeb9001ef766f780891ec25b  js/math/tools/graph/graph-utils.js
 41e696a8b00fd2f242eb59c3fe19a9bdeacc1940404d979526b2917511cac76d  js/math/tools/graph/graph-ux-v2.js
 386d62ffcfa6e4a0f83f4786b3bcfec4323ce42887ac668d44f3e614eff5aac5  js/math/tools/graph/plugins/builtin-plugins.js
