@@ -21,7 +21,7 @@ const STATUSES = ['all', 'draft', 'review', 'rejected', 'published']
 // QB.2 /writer/questions (D65): a writer's own questions, a moderator's and the Super Admin's view of everyone's - by status. A
 // moderator lands on the review tab (?status=review). Opening a row goes to the editor / review page.
 export default function QbQuestions() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const role = useAuthStore(s => s.user?.role)
   const [params, setParams] = useSearchParams()
@@ -34,6 +34,23 @@ export default function QbQuestions() {
   })
   const rows = q.data?.data ?? []
   const meta = q.data?.meta
+  const curriculum = useQuery({
+    queryKey: ['writer', 'curriculum'],
+    queryFn: () => api.get('/writer/curriculum').then(r => r.data.data),
+    enabled: rows.length > 0,
+  })
+  const questionTypes = useQuery({
+    queryKey: ['writer', 'question-types'],
+    queryFn: () => api.get('/writer/question-types').then(r => r.data.data),
+    enabled: rows.length > 0,
+  })
+  const localizedName = item => i18n.language?.startsWith('en') ? item?.name_en || item?.name_bn : item?.name_bn || item?.name_en
+  const subjects = curriculum.data?.subjects ?? []
+  const subjectById = Object.fromEntries(subjects.map(item => [item.id, item]))
+  const chapterById = Object.fromEntries(subjects.flatMap(item => item.chapters ?? []).map(item => [item.id, item]))
+  const topicById = Object.fromEntries(subjects.flatMap(item => item.chapters ?? []).flatMap(chapter => chapter.topics ?? []).map(item => [item.id, item]))
+  const classById = Object.fromEntries((curriculum.data?.class_levels ?? []).map(item => [item.id, item]))
+  const typeById = Object.fromEntries((questionTypes.data ?? []).map(item => [item.id, item]))
   return (
     <div className="flex flex-col gap-4" data-testid="qb-questions">
       <PageHeader title={t('qb.questions')} actions={role !== 'content_moderator' &&
@@ -52,20 +69,33 @@ export default function QbQuestions() {
             </div>
           </Card>
           {q.isPending ? <Loader /> : q.isError ? <ErrorState onRetry={q.refetch} /> : rows.length === 0 ? <EmptyState title={t('qb.no_questions')} /> : rows.map((row, index) => (
-            <Card key={row.id} className="flex flex-col gap-0 overflow-hidden p-0 shadow-sm" data-question={row.id}>
-              <header className="flex flex-wrap items-start gap-3 bg-surface-muted/40 px-5 py-4">
+            <Card key={row.id} className="group flex flex-col gap-0 overflow-hidden p-0 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md" data-question={row.id}>
+              <header className="flex flex-wrap items-start gap-3 border-b border-border-subtle bg-surface-muted/30 px-5 py-4">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-token bg-primary font-semibold text-on-primary"><bdi>{(meta.current_page - 1) * meta.per_page + index + 1}</bdi></span>
                 <button type="button" onClick={() => navigate(`/writer/questions/${row.id}`)} className="flex min-w-0 flex-1 flex-col gap-2 text-start" aria-label={t('qb.question_no', { id: row.id })}>
-                  <span className="font-semibold">{t('qb.question_no', { id: row.id })}</span>
+                  <span className="font-semibold text-primary-fg group-hover:text-primary">{t('qb.question_no', { id: row.id })}</span>
                   <span className="flex flex-wrap gap-1.5 text-xs">
+                    {[
+                      ['type', localizedName(typeById[row.qb_question_type_id])],
+                      ['subject', localizedName(subjectById[row.qb_subject_id])],
+                      ['chapter', chapterById[row.qb_chapter_id] && t('qbaq.chapter_n', { n: chapterById[row.qb_chapter_id].number ?? '', name: localizedName(chapterById[row.qb_chapter_id]) })],
+                      ['topic', localizedName(topicById[row.qb_topic_id])],
+                    ].filter(([, label]) => label).map(([key, label]) => (
+                      <span key={key} className="rounded-token bg-primary-soft px-2 py-0.5" dir="auto">{label}</span>
+                    ))}
                     {role !== 'content_writer' && row.author && <span className="rounded-token bg-primary-soft px-2 py-0.5" dir="auto">{row.author}</span>}
                     <span className="rounded-token bg-primary-soft px-2 py-0.5"><QbStatus status={row.status} /></span>
                   </span>
                 </button>
               </header>
-              <button type="button" onClick={() => navigate(`/writer/questions/${row.id}`)} className="border-t border-border-subtle px-5 py-5 text-start text-base leading-8" dir="auto">
+              <button type="button" onClick={() => navigate(`/writer/questions/${row.id}`)} className="px-5 py-5 text-start text-base leading-8" dir="auto">
                 <span className="line-clamp-3 whitespace-normal [overflow-wrap:anywhere]">{plainText(row.question_text)}</span>
               </button>
+              <footer className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-subtle bg-surface-muted/30 px-5 py-3 text-xs text-content-muted">
+                <span>{t('qbaq.class')}: <bdi>{(subjectById[row.qb_subject_id]?.class_level_ids ?? []).map(id => localizedName(classById[id])).filter(Boolean).slice(0, 3).join(', ') || '—'}</bdi></span>
+                {row.marks != null && <span>{t('qbaq.marks')}: <bdi>{row.marks}</bdi></span>}
+                {row.difficulty != null && <span>{t('qbaq.difficulty')}: {t(`qbaq.level.${row.difficulty}`, { defaultValue: row.difficulty })}</span>}
+              </footer>
             </Card>
           ))}
           {meta && meta.last_page > 1 && (

@@ -17,10 +17,17 @@ function renderPage() {
 describe('writer question list cards', () => {
   beforeEach(() => {
     useAuthStore.setState({ user: { role: 'content_writer' }, role: 'content_writer' })
-    api.get.mockResolvedValue({ data: {
-      data: [{ id: 7, question_text: '<p>বেগের একক কী?</p>', status: 'draft', author: 'লেখক' }],
-      meta: { current_page: 1, last_page: 1, total: 1, per_page: 16 },
-    } })
+    api.get.mockImplementation((url) => Promise.resolve({ data:
+      url === '/writer/curriculum' ? {
+        data: {
+          class_levels: [{ id: 1, name_bn: 'নবম শ্রেণি' }],
+          subjects: [{ id: 3, name_bn: 'পদার্থবিজ্ঞান', class_level_ids: [1], chapters: [{ id: 4, name_bn: 'গতি', number: 2, topics: [{ id: 5, name_bn: 'বেগ' }] }] }],
+        },
+      } : url === '/writer/question-types' ? { data: [{ id: 2, name_bn: 'বহুনির্বাচনি' }] } : {
+        data: [{ id: 7, qb_question_type_id: 2, qb_subject_id: 3, qb_chapter_id: 4, qb_topic_id: 5, marks: '1.00', difficulty: 2, question_text: '<p>বেগের একক কী?</p>', status: 'draft', author: 'লেখক' }],
+        meta: { current_page: 1, last_page: 1, total: 1, per_page: 16 },
+      },
+    }))
   })
   afterEach(() => vi.clearAllMocks())
 
@@ -33,6 +40,11 @@ describe('writer question list cards', () => {
     expect(screen.getByTestId('qb-questions').querySelector('[data-question="7"]')).toBeInTheDocument()
     expect(screen.getByTestId('qb-questions')).toHaveTextContent('বেগের একক কী?')
     expect(screen.getByTestId('qb-questions')).toHaveTextContent('প্রশ্ন #7')
+    expect(await screen.findByText('বহুনির্বাচনি')).toBeInTheDocument()
+    expect(screen.getByTestId('qb-questions')).toHaveTextContent('পদার্থবিজ্ঞান')
+    expect(screen.getByTestId('qb-questions')).toHaveTextContent('অধ্যায় 2 — গতি')
+    expect(screen.getByTestId('qb-questions')).toHaveTextContent('শ্রেণি: নবম শ্রেণি')
+    expect(screen.getByTestId('qb-questions')).toHaveTextContent('নম্বর: 1.00')
 
     fireEvent.change(screen.getByRole('textbox', { name: 'খুঁজুন' }), { target: { value: 'বেগ' } })
     await waitFor(() => expect(api.get).toHaveBeenLastCalledWith('/writer/questions', expect.objectContaining({
