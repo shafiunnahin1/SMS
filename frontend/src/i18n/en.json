@@ -1309,7 +1309,16 @@
    "note": "Note / reason"
   },
   "qbed": {
-   "curriculum_path": "Curriculum sections",
+   "page_reference_short": "p. {{n}}",
+   "set_label_short": "Set {{n}}",
+   "question_number_short": "Q {{n}}",
+   "curriculum_optional": "Optional: a question may have no syllabus place (e.g. an unseen passage), one, or several.",
+   "curriculum_none": "Nothing matches",
+   "curriculum_search": "Search the syllabus (part, unit, lesson, text, topic)",
+   "no_subject_for_class": "No subject for the chosen class",
+   "type_not_path": "Grammar, Seen/Unseen, MCQ and other exam parts are chosen as the question type, not as a syllabus place.",
+   "question_type_exam_part": "Question type / exam part",
+   "curriculum_path": "Syllabus path",
    "language_curriculum": "Language subject curriculum",
    "language_curriculum_hint": "Arrange the multi-level syllabus for Bangla and English papers.",
    "no_language_curriculum": "No curriculum has been created for this subject yet.",

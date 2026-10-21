@@ -11,6 +11,7 @@ import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
 import { Select, Textarea } from '../../components/FormField'
 import MathText from '../../features/qb/MathText'
+import { breadcrumbLabel, flattenCurriculum, versionsForSubject } from '../../features/qb/curriculum'
 import { fmtNumber as formatNumber } from '../../i18n/format'
 import { MAX_PHOTO_BYTES, readPhoto } from '../../features/qb/ocr'
 
@@ -42,8 +43,7 @@ export default function QbFinder() {
   const n = (v) => formatNumber(v, i18n.language)
   const subject = tree.data.subjects.find(s => String(s.id) === f.qb_subject_id)
   const chapter = subject?.chapters.find(c => String(c.id) === f.qb_chapter_id)
-  const curriculumVersions = (tree.data.curriculum_versions ?? []).filter(v => String(v.qb_subject_id) === f.qb_subject_id)
-  const curriculumOptions = curriculumVersions.flatMap(v => flattenNodes(v.nodes, [], name))
+  const curriculumOptions = flattenCurriculum(versionsForSubject(tree.data.curriculum_versions, f.qb_subject_id), name)
   const set = (k, v) => setF(p => ({ ...p, [k]: v, ...(k === 'qb_subject_id' ? { qb_chapter_id: '', qb_topic_id: '', curriculum_node_id: '' } : {}), ...(k === 'qb_chapter_id' ? { qb_topic_id: '' } : {}) }))
   const short = text.trim().length < MIN
   const r = find.data
@@ -87,12 +87,15 @@ export default function QbFinder() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <Select label={t('qb.subject')} name="qb_subject_id" value={f.qb_subject_id} placeholder={t('qbf.any')} onChange={e => set('qb_subject_id', e.target.value)}
               options={tree.data.subjects.map(s => ({ value: String(s.id), label: name(s) }))} />
-            <Select label={t('qb.chapter')} name="qb_chapter_id" value={f.qb_chapter_id} placeholder={t('qbf.any')} onChange={e => set('qb_chapter_id', e.target.value)}
-              options={(subject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} />
-            <Select label={t('qb.topic')} name="qb_topic_id" value={f.qb_topic_id} placeholder={t('qbf.any')} onChange={e => set('qb_topic_id', e.target.value)}
-              options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} />
-            {curriculumOptions.length > 0 && <Select label={t('qbed.curriculum_path')} name="curriculum_node_id" value={f.curriculum_node_id} placeholder={t('qbf.any')} onChange={e => set('curriculum_node_id', e.target.value)} options={curriculumOptions.map(x => ({ value: String(x.id), label: x.label }))} />}
-            <Select label={t('qb.type')} name="qb_question_type_id" value={f.qb_question_type_id} placeholder={t('qbf.any')} onChange={e => set('qb_question_type_id', e.target.value)}
+            {curriculumOptions.length > 0
+              ? <Select className="lg:col-span-2" label={t('qbed.curriculum_path')} name="curriculum_node_id" value={f.curriculum_node_id} placeholder={t('qbf.any')} onChange={e => set('curriculum_node_id', e.target.value)} options={curriculumOptions.map(x => ({ value: String(x.id), label: x.label }))} />
+              : <>
+                <Select label={t('qb.chapter')} name="qb_chapter_id" value={f.qb_chapter_id} placeholder={t('qbf.any')} onChange={e => set('qb_chapter_id', e.target.value)}
+                  options={(subject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} />
+                <Select label={t('qb.topic')} name="qb_topic_id" value={f.qb_topic_id} placeholder={t('qbf.any')} onChange={e => set('qb_topic_id', e.target.value)}
+                  options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} />
+              </>}
+            <Select label={t('qbed.question_type_exam_part')} name="qb_question_type_id" value={f.qb_question_type_id} placeholder={t('qbf.any')} onChange={e => set('qb_question_type_id', e.target.value)}
               options={types.data.map(ty => ({ value: String(ty.id), label: name(ty) }))} />
             <Select label={t('qbf.language')} name="language" value={f.language} placeholder={t('qbf.any')} onChange={e => set('language', e.target.value)}
               options={[{ value: 'bn', label: t('qbf.lang_bn') }, { value: 'en', label: t('qbf.lang_en') }]} />
@@ -117,7 +120,7 @@ export default function QbFinder() {
                   </div>
                   <span dir="auto"><MathText text={x.question_text} /></span>
                   <span className="text-sm text-content-muted">{[name(x.subject), name(x.chapter), name(x.topic), name(x.question_type)].filter(Boolean).join(' › ')}</span>
-                  {(x.curriculum_breadcrumbs ?? []).map((crumb, i) => <span key={i} className="text-sm text-content-muted" dir="auto">{[locale === 'bn' ? crumb.subject_name_bn : crumb.subject_name_en, ...crumb.path.map(part => locale === 'bn' ? part.name_bn : part.name_en)].filter(Boolean).join(' › ')}</span>)}
+                  {(x.curriculum_breadcrumbs ?? []).map((crumb, i) => <span key={i} className="text-sm text-content-muted break-words" dir="auto" data-testid="finder-curriculum">{breadcrumbLabel(crumb, locale)}</span>)}
                   <Link to={`/writer/questions/${x.question_id}`} className="text-sm text-primary-fg underline">{t('qbf.open')}</Link>
                 </li>
               ))}
@@ -127,11 +130,4 @@ export default function QbFinder() {
       )}
     </div>
   )
-}
-
-function flattenNodes(nodes, parents, name) {
-  return (nodes ?? []).flatMap(node => {
-    const path = [...parents, name(node)]
-    return [{ id: node.id, label: path.join(' / ') }, ...flattenNodes(node.children, path, name)]
-  })
 }

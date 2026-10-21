@@ -15,6 +15,7 @@ import { Input } from '../../components/FormField'
 import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
 import MathText from '../../features/qb/MathText'
+import { breadcrumbLabel, sourceLabel } from '../../features/qb/curriculum'
 
 const PER_PAGE = 16
 const LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
@@ -52,7 +53,7 @@ export default function QbQuestions() {
   const subjects = curriculum.data?.subjects ?? []
   const setFilter = (key, value) => { setPage(1); setFilters(old => {
     const next = { ...old, [key]: value }
-    if (key === 'class_level_ids') { next.subject_ids = []; next.chapter_ids = []; next.topic_ids = [] }
+    if (key === 'class_level_ids') { next.subject_ids = []; next.chapter_ids = []; next.topic_ids = []; next.curriculum_node_ids = [] }
     if (key === 'subject_ids') { next.chapter_ids = []; next.topic_ids = []; next.curriculum_node_ids = [] }
     if (key === 'chapter_ids') next.topic_ids = []
     return next
@@ -136,8 +137,8 @@ export default function QbQuestions() {
                 <span>{t('qbaq.class')}: <bdi>{(subjectById[row.qb_subject_id]?.class_level_ids ?? []).map(id => localizedName(classById[id])).filter(Boolean).slice(0, 3).join(', ') || '—'}</bdi></span>
                 {row.marks != null && <span>{t('qbaq.marks')}: <bdi>{row.marks}</bdi></span>}
                 {row.difficulty != null && <span>{t('qbaq.difficulty')}: {t(`qbaq.level.${row.difficulty}`, { defaultValue: row.difficulty })}</span>}
-                {(row.curriculum_breadcrumbs ?? []).map((crumb, i) => <span key={`${crumb.node_id}-${i}`} dir="auto">{[locale === 'bn' ? crumb.subject_name_bn : crumb.subject_name_en, ...crumb.path.map(part => locale === 'bn' ? part.name_bn : part.name_en)].filter(Boolean).join(' › ')}</span>)}
-                <span className="rounded-token bg-surface-muted px-2 py-0.5" dir="auto">{row.occurrences?.[0] ? [row.occurrences[0].board, row.occurrences[0].institution_name, row.occurrences[0].exam_type, row.occurrences[0].year].filter(Boolean).join(' · ') : t('qbaq.no_source')}</span>
+                {(row.curriculum_breadcrumbs ?? []).map((crumb, i) => <span key={`${crumb.node_id}-${i}`} dir="auto" className="break-words" data-testid="row-curriculum">{breadcrumbLabel(crumb, locale)}</span>)}
+                <span className="rounded-token bg-surface-muted px-2 py-0.5" dir="auto">{row.occurrences?.[0] ? sourceLabel(row.occurrences[0], t) : t('qbaq.no_source')}</span>
               </footer>
             </Card>
           ))}

@@ -1309,7 +1309,16 @@
    "note": "মন্তব্য / কারণ"
   },
   "qbed": {
-   "curriculum_path": "পাঠ্যক্রমের অংশ",
+   "page_reference_short": "পৃ. {{n}}",
+   "set_label_short": "সেট {{n}}",
+   "question_number_short": "প্রশ্ন {{n}}",
+   "curriculum_optional": "ঐচ্ছিক: প্রশ্নের সিলেবাস-অবস্থান না-ও থাকতে পারে (যেমন unseen passage), একটি বা একাধিক থাকতে পারে।",
+   "curriculum_none": "কিছু মেলেনি",
+   "curriculum_search": "সিলেবাসে খুঁজুন (অংশ, ইউনিট, পাঠ, রচনা, টপিক)",
+   "no_subject_for_class": "বাছাই করা শ্রেণির কোনো বিষয় নেই",
+   "type_not_path": "ব্যাকরণ, Seen/Unseen, বহুনির্বাচনী ইত্যাদি পরীক্ষার অংশ প্রশ্নের ধরন হিসেবে বাছাই হয়, সিলেবাসের অবস্থান হিসেবে নয়।",
+   "question_type_exam_part": "প্রশ্নের ধরন / পরীক্ষার অংশ",
+   "curriculum_path": "সিলেবাসে অবস্থান",
    "language_curriculum": "ভাষা বিষয়ের পাঠ্যক্রম",
    "language_curriculum_hint": "বাংলা ও ইংরেজি পত্রের জন্য বহু-স্তরের পাঠ্যক্রম সাজান।",
    "no_language_curriculum": "এই বিষয়ের জন্য এখনো পাঠ্যক্রম তৈরি হয়নি।",

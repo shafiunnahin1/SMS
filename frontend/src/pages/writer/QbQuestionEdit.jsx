@@ -24,6 +24,8 @@ import { insertAt, insertPicture, pictureRange, pushValueHistory, stepValueHisto
 import { openDiagramPicker, pickGraph } from '../../features/qb/qbankTools'
 import { transformImageFile } from '../../features/qb/imageTransforms'
 import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } from '../../features/qb/questionMeta'
+import CurriculumPicker from '../../features/qb/CurriculumPicker'
+import { flattenCurriculum, sourceLabel, subjectsForClasses, versionsForSubject } from '../../features/qb/curriculum'
 import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
 
 const EDITABLE = ['draft', 'rejected']
@@ -99,14 +101,18 @@ export default function QbQuestionEdit() {
   const canReview = !isNew && role !== 'content_writer' && status === 'review'
   const name = (n) => (locale === 'bn' ? n.name_bn : n.name_en) || n.name_en
   const subject = tree.data.subjects.find(s => String(s.id) === String(watch('qb_subject_id')))
-  const curriculumVersions = (tree.data.curriculum_versions ?? []).filter(v => String(v.qb_subject_id) === String(watch('qb_subject_id')))
-  const flattenNodes = (nodes, parents = []) => (nodes ?? []).flatMap(node => {
-    const path = [...parents, name(node)]
-    return [{ id: node.id, label: path.join(' / ') }, ...flattenNodes(node.children, path)]
-  })
-  const curriculumOptions = curriculumVersions.flatMap(version => flattenNodes(version.nodes))
+  // D139: class first, then the subjects of those classes; a subject with a curriculum version is placed by its syllabus path,
+  // any other subject by chapter → topic. The question type is chosen separately and is never a path node.
+  const classSubjects = subjectsForClasses(tree.data.subjects, watch('class_level_ids'))
+  const curriculumVersions = versionsForSubject(tree.data.curriculum_versions, watch('qb_subject_id'))
+  const curriculumOptions = flattenCurriculum(curriculumVersions, name)
+  const usesCurriculum = curriculumVersions.length > 0
   const chapter = subject?.chapters.find(c => String(c.id) === String(watch('qb_chapter_id')))
   const curriculumBreadcrumbs = curriculumOptions.filter(node => (watch('curriculum_node_ids') ?? []).includes(String(node.id)))
+  const pickClasses = () => {                                     // a subject outside the chosen classes is cleared with its place
+    const ok = subjectsForClasses(tree.data.subjects, getValues('class_level_ids')).some(x => String(x.id) === String(getValues('qb_subject_id')))
+    if (!ok && getValues('qb_subject_id')) { setValue('qb_subject_id', ''); setValue('qb_chapter_id', ''); setValue('qb_topic_id', ''); setValue('curriculum_node_ids', []) }
+  }
   const picked = types.data.find(ty => String(ty.id) === String(watch('qb_question_type_id')))
   const family = picked?.family
   const structure = picked?.structure ?? null                    // QB.4: gap / match / order / passage / passage_mcq
@@ -261,6 +267,7 @@ export default function QbQuestionEdit() {
   const save = async (f) => {
     const body = { qb_question_type_id: num(f.qb_question_type_id), qb_subject_id: num(f.qb_subject_id), qb_chapter_id: num(f.qb_chapter_id), qb_topic_id: num(f.qb_topic_id),
       difficulty: Number(f.difficulty), marks: f.marks, class_level_ids: f.class_level_ids.map(Number),
+      curriculum_node_ids: usesCurriculum ? (f.curriculum_node_ids ?? []).map(Number) : [],
       question_text: f.question_text, answer_text: f.answer_text || null, explanation_text: f.explanation_text || null,
       options: optionsFor ? f.options.map(o => ({ label: o.label, content_text: o.content_text, is_correct: Boolean(o.is_correct) })) : [],
       creative_parts: family === 'creative' ? f.creative_parts.map(p => ({ ...p, answer_text: p.answer_text || null })) : [],
@@ -338,26 +345,26 @@ export default function QbQuestionEdit() {
               onFocusCapture={track} onSelectCapture={track} onKeyUpCapture={track} onMouseUpCapture={track} onInputCapture={recordInput} onPasteCapture={pasteImage}>
               <fieldset disabled={!canEdit} className="contents">
                 <Section id="meta" current={section} onEnter={setSection}>
-                  <Select label={t('qb.type')} placeholder={t('qb.pick')} error={errors.qb_question_type_id?.message}
+                  <fieldset className="sm:col-span-2 flex flex-col gap-1" data-testid="qb-classes">
+                    <legend className="text-sm font-medium mb-1">{t('qbn.classes')}</legend>
+                    <div className="flex flex-wrap gap-3">{tree.data.class_levels.map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids', { onChange: pickClasses })} />)}</div>
+                  </fieldset>
+                  <Select label={t('qb.subject')} placeholder={classSubjects.length ? t('qb.pick') : t('qbed.no_subject_for_class')} error={errors.qb_subject_id?.message}
+                    options={classSubjects.map(x => ({ value: String(x.id), label: name(x) }))}
+                    {...register('qb_subject_id', { required: t('super.required'), onChange: () => { setValue('qb_chapter_id', ''); setValue('qb_topic_id', ''); setValue('curriculum_node_ids', []) } })} />
+                  {usesCurriculum ? (
+                    <CurriculumPicker label={t('qbed.curriculum_path')} note={t('qbed.type_not_path')} rows={curriculumOptions} value={(watch('curriculum_node_ids') ?? []).map(String)}
+                      onChange={ids => setValue('curriculum_node_ids', ids, { shouldDirty: true })} disabled={!canEdit} />
+                  ) : <>
+                    <Select label={t('qb.chapter')} placeholder={t('qb.none_option')} error={errors.qb_chapter_id?.message}
+                      options={(subject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} {...register('qb_chapter_id', { onChange: () => setValue('qb_topic_id', '') })} />
+                    <Select label={t('qb.topic')} placeholder={t('qb.none_option')} error={errors.qb_topic_id?.message}
+                      options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} {...register('qb_topic_id')} />
+                  </>}
+                  <Select label={t('qbed.question_type_exam_part')} placeholder={t('qb.pick')} error={errors.qb_question_type_id?.message}
                     options={types.data.map(ty => ({ value: String(ty.id), label: name(ty) }))} {...register('qb_question_type_id', { required: t('super.required'), onChange: pickType })} />
-                  <Select label={t('qb.subject')} placeholder={t('qb.pick')} error={errors.qb_subject_id?.message}
-                    options={tree.data.subjects.map(s => ({ value: String(s.id), label: name(s) }))}
-                    {...register('qb_subject_id', { required: t('super.required'), onChange: () => { setValue('qb_chapter_id', ''); setValue('qb_topic_id', '') } })} />
-                  <Select label={t('qb.chapter')} placeholder={t('qb.none_option')} error={errors.qb_chapter_id?.message}
-                    options={(subject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} {...register('qb_chapter_id', { onChange: () => setValue('qb_topic_id', '') })} />
-                  <Select label={t('qb.topic')} placeholder={t('qb.none_option')} error={errors.qb_topic_id?.message}
-                    options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} {...register('qb_topic_id')} />
-                  {curriculumOptions.length > 0 && <fieldset className="sm:col-span-2 flex flex-col gap-2">
-                    <legend className="text-sm font-medium mb-1">{t('qbed.curriculum_path')}</legend>
-                    {curriculumOptions.map(node => <Check key={node.id} label={node.label} value={String(node.id)} {...register('curriculum_node_ids')} />)}
-                    {curriculumBreadcrumbs.length > 0 && <p className="text-xs text-content-muted" data-testid="curriculum-breadcrumb">{curriculumBreadcrumbs.map(node => node.label).join(' / ')}</p>}
-                  </fieldset>}
                   <Select label={t('qb.difficulty')} options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: t(`qb.difficulty_level.${d}`) }))} {...register('difficulty')} />
                   <Input label={t('qb.marks')} ltr inputMode="decimal" error={errors.marks?.message} {...register('marks')} />
-                  <fieldset className="sm:col-span-2 flex flex-col gap-1">
-                    <legend className="text-sm font-medium mb-1">{t('qbn.classes')}</legend>
-                    <div className="flex flex-wrap gap-3">{tree.data.class_levels.map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids')} />)}</div>
-                  </fieldset>
                 </Section>
 
                 <Section id="question" current={section} onEnter={setSection}>
@@ -436,19 +443,19 @@ export default function QbQuestionEdit() {
                   <fieldset className="sm:col-span-2 flex flex-col gap-2">
                     <legend className="font-semibold mb-1">{t('qbn.sources')}</legend>
                     {occurrences.fields.map((f, i) => (
-                        <Input className="w-24" label={t('qbed.question_number')} {...register(`occurrences.${i}.question_number`)} />
-                        <Input className="w-24" label={t('qbed.set_label')} {...register(`occurrences.${i}.set_label`)} />
-                        <Input className="w-28" label={t('qbed.page_reference')} {...register(`occurrences.${i}.page_reference`)} />
-                      <div key={f.id} className="flex flex-wrap items-end gap-2">
+                      <div key={f.id} className="flex flex-wrap items-end gap-2" data-testid={`source-${i}`}>
                         <Select className="w-36" label={t('qbn.source_type')} placeholder={t('qb.pick')} options={SOURCE_TYPES.map(x => ({ value: x, label: t(`qbn.source_types.${x}`) }))} {...register(`occurrences.${i}.type`)} />
                         <Input className="flex-1 min-w-40" label={t('qbn.source_full')} {...register(`occurrences.${i}.full`)} />
                         <Input className="w-28" label={t('qbn.source_short')} {...register(`occurrences.${i}.short`)} />
                         <Input className="w-28" label={t('qbn.exam_type')} {...register(`occurrences.${i}.exam_type`)} />
                         <Input className="w-24" label={t('qb.year')} ltr inputMode="numeric" {...register(`occurrences.${i}.year`)} />
+                        <Input className="w-24" label={t('qbed.question_number')} {...register(`occurrences.${i}.question_number`)} />
+                        <Input className="w-24" label={t('qbed.set_label')} {...register(`occurrences.${i}.set_label`)} />
+                        <Input className="w-32" label={t('qbed.page_reference')} {...register(`occurrences.${i}.page_reference`)} />
                         <Button variant="secondary" onClick={() => occurrences.remove(i)} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
                       </div>
                     ))}
-                    <div><Button variant="secondary" onClick={() => occurrences.append({ type: '', full: '', short: '', exam_type: '', year: '' })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add_occurrence')}</Button></div>
+                    <div><Button variant="secondary" onClick={() => occurrences.append({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add_occurrence')}</Button></div>
                   </fieldset>
                 </Section>
               </fieldset>
@@ -465,6 +472,14 @@ export default function QbQuestionEdit() {
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-semibold">{t('qb.preview')}</h2>
             <span className="inline-flex items-center gap-1 text-xs text-content-muted"><span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary" />{t('qbed.live')}</span>
+          </div>
+          <div className="flex flex-col gap-1 text-xs text-content-muted" data-testid="qb-preview-meta">
+            {[name(tree.data.subjects.find(x => String(x.id) === String(v.qb_subject_id)) ?? {}), name(types.data.find(ty => String(ty.id) === String(v.qb_question_type_id)) ?? {})].filter(Boolean).length > 0 && (
+              <span dir="auto">{[name(tree.data.subjects.find(x => String(x.id) === String(v.qb_subject_id)) ?? {}), name(types.data.find(ty => String(ty.id) === String(v.qb_question_type_id)) ?? {})].filter(Boolean).join(' · ')}</span>)}
+            {usesCurriculum
+              ? curriculumBreadcrumbs.map(node => <span key={node.id} dir="auto" className="break-words">{node.label}</span>)
+              : <span dir="auto">{[name(chapter ?? {}), name(chapter?.topics?.find(tp => String(tp.id) === String(v.qb_topic_id)) ?? {})].filter(Boolean).join(' › ')}</span>}
+            {(v.occurrences ?? []).map((o, i) => { const line = sourceLabel(sourceToOccurrence(o), t); return line && <span key={i} dir="auto">{line}</span> })}
           </div>
           <div className="text-base"><MathText text={v.question_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage('question_text', attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} /></div>
           {v.media.map(m => canEdit
