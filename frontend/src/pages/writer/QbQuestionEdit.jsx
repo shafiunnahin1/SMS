@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useFieldArray, useForm } from 'react-hook-form'
-import { ImagePlus, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ImagePlus, Plus, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import { multipart } from '../../features/students/formData'
 import { useAuthStore } from '../../store/authStore'
@@ -20,7 +20,7 @@ import QbStatus from '../../features/qb/QbStatus'
 import MathText from '../../features/qb/MathText'
 import Ribbon from '../../features/qb/Ribbon'
 import PictureDialog from '../../features/qb/PictureDialog'
-import { insertAt, insertPicture, pictureRange, pushValueHistory, stepValueHistory, updatePicture } from '../../features/qb/formatting'
+import { insertAt, insertPicture, pictureRange, pushValueHistory, removePicture, stepValueHistory, updatePicture } from '../../features/qb/formatting'
 import { openDiagramPicker, pickGraph } from '../../features/qb/qbankTools'
 import { transformImageFile } from '../../features/qb/imageTransforms'
 import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } from '../../features/qb/questionMeta'
@@ -184,7 +184,6 @@ export default function QbQuestionEdit() {
     if (!a) return null
     return { value: String(getValues(a.name) ?? ''), start: a.start ?? 0, end: a.end ?? 0 }
   }
-  const go = (key) => { setSection(key); setPane('editor'); document.getElementById(`qbs-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
   const v = watch()
 
   const pickType = (e) => {                    // a type's own part starts filled in, so the writer only types the content
@@ -226,9 +225,13 @@ export default function QbQuestionEdit() {
     setPictureSaving(true)
     try {
       let mediaId = target.mediaId
-      if (file) {
+      if (file || (target.mode === 'edit' && settings.rotation !== 0)) {
         const form = new FormData()
-        form.append('file', await transformImageFile(file, { rotation: settings.rotation, transparentBackground: settings.transparentBackground }))
+        const source = file ?? await fetch(target.sourceUrl).then(response => {
+          if (!response.ok) throw new Error('qbed.picture_transform_failed')
+          return response.blob()
+        }).then(blob => new File([blob], `picture-${target.mediaId}.png`, { type: blob.type || 'image/png' }))
+        form.append('file', await transformImageFile(source, { rotation: settings.rotation, transparentBackground: settings.transparentBackground }))
         const { data } = await api.post('/writer/media', form, multipart)
         mediaId = String(data.data.id)
         const media = getValues('media') ?? []
@@ -244,6 +247,15 @@ export default function QbQuestionEdit() {
       const message = err.message?.startsWith('qbed.') ? t(err.message) : err.response?.data?.errors?.file?.[0] ?? err.response?.data?.message ?? t('common.error')
       useUiStore.getState().addToast(message, 'error')
     } finally { setPictureSaving(false) }
+  }
+  const deletePicture = () => {
+    const target = pictureDialog
+    if (!target || target.mode !== 'edit') return
+    run(removePicture, target.mediaId)
+    if (!hasPictureReference(getValues(), target.mediaId)) {
+      setValue('media', (getValues('media') ?? []).filter(item => String(item.id) !== target.mediaId), { shouldDirty: true })
+    }
+    setPictureDialog(null)
   }
   const pasteImage = (e) => {
     const item = Array.from(e.clipboardData?.items ?? []).find(x => x.kind === 'file' && x.type.startsWith('image/'))
@@ -295,17 +307,6 @@ export default function QbQuestionEdit() {
   }
 
   const answerHere = !['mcq', 'true_false', 'creative'].includes(family) && !structure
-  const sections = [
-    ['meta', t('qbed.sec.meta')],
-    ['question', family === 'creative' ? t('qb.stem') : t('qb.question')],
-    optionsFor && ['options', t('qb.options')],
-    family === 'creative' && ['parts', t('qb.parts')],
-    structure && ['structured', t('qbed.sec.structured')],
-    answerHere && ['answer', t('qb.answer')],
-    ['explanation', t('qb.explanation')],
-    ['pictures', t('qb.pictures')],
-    ['occurrences', t('qb.occurrences')],
-  ].filter(Boolean)
   // D72 (QB.12): qbank's editor layout - the parts on the side, the text fields under one ribbon in the middle, the live preview
   // beside them (the active part or the whole question). Below xl a switch shows the editor or the preview, as qbank's mobile view.
   return (
@@ -325,14 +326,68 @@ export default function QbQuestionEdit() {
             className={`flex-1 rounded-token px-3 py-2 text-sm font-medium ${pane === k ? 'bg-primary text-on-primary' : 'bg-surface [border:1px_solid_var(--line)]'}`}>{t(`qbed.${k}`)}</button>
         ))}
       </div>
-      <div className="grid gap-4 xl:h-[calc(100vh-9rem)] xl:grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)]">
-        <nav aria-label={t('qbed.parts_nav')} className={`${pane === 'editor' ? 'flex' : 'hidden'} flex-col gap-1 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-sections">
-          <Card className="flex flex-row flex-wrap gap-1 p-2 xl:flex-col">
-            {sections.map(([key, label]) => (
-              <button key={key} type="button" onClick={() => go(key)} aria-current={section === key ? 'true' : undefined}
-                className={`rounded-token px-3 py-2 text-start text-sm ${section === key ? 'bg-primary-soft font-semibold text-primary-fg' : 'hover:bg-surface-muted'}`}>{label}</button>
-            ))}
+      <div className="grid gap-4 xl:h-[calc(100vh-9rem)] xl:grid-cols-[20rem_minmax(0,1.15fr)_minmax(0,1fr)] 2xl:grid-cols-[22rem_minmax(0,1.15fr)_minmax(0,1fr)]">
+        <form id="qb-question-form" onSubmit={handleSubmit(save)} className="contents" noValidate
+          onFocusCapture={track} onSelectCapture={track} onKeyUpCapture={track} onMouseUpCapture={track} onInputCapture={recordInput} onPasteCapture={pasteImage}>
+        <nav aria-label={t('qbed.sec.meta')} className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 overflow-x-hidden xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-sections">
+          <Card className="min-w-0 p-3">
+            <fieldset disabled={!canEdit} className="grid min-w-0 gap-4">
+              <fieldset className="grid min-w-0 gap-3" data-testid="qb-classes">
+                <legend className="text-sm font-semibold">{t('qbn.classes')}</legend>
+                <div className="grid max-h-44 grid-cols-2 gap-x-3 gap-y-2 overflow-y-auto pe-1">{tree.data.class_levels.map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids', { onChange: pickClasses })} />)}</div>
+              </fieldset>
+              <fieldset className="grid min-w-0 gap-3 border-t border-line pt-3">
+                <legend className="text-sm font-semibold">{t('qbed.curriculum_path')}</legend>
+                <Select label={t('qb.subject')} placeholder={classSubjects.length ? t('qb.pick') : t('qbed.no_subject_for_class')} error={errors.qb_subject_id?.message}
+                  options={classSubjects.map(x => ({ value: String(x.id), label: name(x) }))}
+                  {...register('qb_subject_id', { required: t('super.required'), onChange: () => { setValue('qb_chapter_id', ''); setValue('qb_topic_id', ''); setValue('curriculum_node_ids', []) } })} />
+                {usesCurriculum ? (
+                  <CurriculumPicker label={t('qbed.curriculum_path')} note={t('qbed.type_not_path')} rows={curriculumOptions} value={(watch('curriculum_node_ids') ?? []).map(String)}
+                    onChange={ids => setValue('curriculum_node_ids', ids, { shouldDirty: true })} disabled={!canEdit} />
+                ) : <>
+                  <Select label={t('qb.chapter')} placeholder={t('qb.none_option')} error={errors.qb_chapter_id?.message}
+                    options={(subject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} {...register('qb_chapter_id', { onChange: () => setValue('qb_topic_id', '') })} />
+                  <Select label={t('qb.topic')} placeholder={t('qb.none_option')} error={errors.qb_topic_id?.message}
+                    options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} {...register('qb_topic_id')} />
+                </>}
+              </fieldset>
+              <fieldset className="grid min-w-0 gap-3 border-t border-line pt-3">
+                <legend className="text-sm font-semibold">{t('qbed.question_type_exam_part')}</legend>
+                <Select label={t('qbed.question_type_exam_part')} placeholder={t('qb.pick')} error={errors.qb_question_type_id?.message}
+                  options={types.data.map(ty => ({ value: String(ty.id), label: name(ty) }))} {...register('qb_question_type_id', { required: t('super.required'), onChange: pickType })} />
+                <div className="grid min-w-0 grid-cols-2 gap-3">
+                  <Select label={t('qb.difficulty')} options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: t(`qb.difficulty_level.${d}`) }))} {...register('difficulty')} />
+                  <Input label={t('qb.marks')} ltr inputMode="decimal" error={errors.marks?.message} {...register('marks')} />
+                </div>
+              </fieldset>
+            </fieldset>
           </Card>
+          <details className="group rounded-token bg-surface [border:1px_solid_var(--line)]" open={occurrences.fields.length > 0}>
+            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 font-semibold [&::-webkit-details-marker]:hidden">{t('qbn.sources')}<ChevronDown aria-hidden="true" className="h-4 w-4 text-content-muted transition group-open:rotate-180" /></summary>
+            <Card className="min-w-0 border-0 border-t border-line p-3 shadow-none">
+              <fieldset disabled={!canEdit} className="min-w-0">
+              <Section id="occurrences" current={section} onEnter={setSection} className="grid min-w-0 gap-3">
+                <fieldset className="flex min-w-0 flex-col gap-2">
+                  <legend className="font-semibold mb-1">{t('qbn.sources')}</legend>
+                  {occurrences.fields.map((f, i) => (
+                    <div key={f.id} className="flex min-w-0 flex-col gap-2 rounded-token [border:1px_solid_var(--line)] p-2" data-testid={`source-${i}`}>
+                      <Select label={t('qbn.source_type')} placeholder={t('qb.pick')} options={SOURCE_TYPES.map(x => ({ value: x, label: t(`qbn.source_types.${x}`) }))} {...register(`occurrences.${i}.type`)} />
+                      <Input label={t('qbn.source_full')} {...register(`occurrences.${i}.full`)} />
+                      <Input label={t('qbn.source_short')} {...register(`occurrences.${i}.short`)} />
+                      <Input label={t('qbn.exam_type')} {...register(`occurrences.${i}.exam_type`)} />
+                      <Input label={t('qb.year')} ltr inputMode="numeric" {...register(`occurrences.${i}.year`)} />
+                      <Input label={t('qbed.question_number')} {...register(`occurrences.${i}.question_number`)} />
+                      <Input label={t('qbed.set_label')} {...register(`occurrences.${i}.set_label`)} />
+                      <Input label={t('qbed.page_reference')} {...register(`occurrences.${i}.page_reference`)} />
+                      <Button variant="secondary" className="self-start" onClick={() => occurrences.remove(i)} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
+                    </div>
+                  ))}
+                  <div><Button variant="secondary" onClick={() => occurrences.append({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add_occurrence')}</Button></div>
+                </fieldset>
+              </Section>
+              </fieldset>
+            </Card>
+          </details>
         </nav>
 
         <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane" onDragOver={allowImageDrop} onDrop={dropImage}>
@@ -341,34 +396,10 @@ export default function QbQuestionEdit() {
             canUndo={history.undo.some(entry => entry.name === activeField)} canRedo={history.redo.some(entry => entry.name === activeField)}
             onReset={() => { reset(); setHistory({ undo: [], redo: [] }); valueSnapshots.current.clear(); active.current = null; setActiveField(null) }} disabled={!canEdit} saving={isSubmitting} />}
           <Card>
-            <form id="qb-question-form" onSubmit={handleSubmit(save)} className="grid gap-3 sm:grid-cols-2" noValidate
-              onFocusCapture={track} onSelectCapture={track} onKeyUpCapture={track} onMouseUpCapture={track} onInputCapture={recordInput} onPasteCapture={pasteImage}>
+            <div className="grid gap-3 sm:grid-cols-2">
               <fieldset disabled={!canEdit} className="contents">
-                <Section id="meta" current={section} onEnter={setSection}>
-                  <fieldset className="sm:col-span-2 flex flex-col gap-1" data-testid="qb-classes">
-                    <legend className="text-sm font-medium mb-1">{t('qbn.classes')}</legend>
-                    <div className="flex flex-wrap gap-3">{tree.data.class_levels.map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids', { onChange: pickClasses })} />)}</div>
-                  </fieldset>
-                  <Select label={t('qb.subject')} placeholder={classSubjects.length ? t('qb.pick') : t('qbed.no_subject_for_class')} error={errors.qb_subject_id?.message}
-                    options={classSubjects.map(x => ({ value: String(x.id), label: name(x) }))}
-                    {...register('qb_subject_id', { required: t('super.required'), onChange: () => { setValue('qb_chapter_id', ''); setValue('qb_topic_id', ''); setValue('curriculum_node_ids', []) } })} />
-                  {usesCurriculum ? (
-                    <CurriculumPicker label={t('qbed.curriculum_path')} note={t('qbed.type_not_path')} rows={curriculumOptions} value={(watch('curriculum_node_ids') ?? []).map(String)}
-                      onChange={ids => setValue('curriculum_node_ids', ids, { shouldDirty: true })} disabled={!canEdit} />
-                  ) : <>
-                    <Select label={t('qb.chapter')} placeholder={t('qb.none_option')} error={errors.qb_chapter_id?.message}
-                      options={(subject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} {...register('qb_chapter_id', { onChange: () => setValue('qb_topic_id', '') })} />
-                    <Select label={t('qb.topic')} placeholder={t('qb.none_option')} error={errors.qb_topic_id?.message}
-                      options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} {...register('qb_topic_id')} />
-                  </>}
-                  <Select label={t('qbed.question_type_exam_part')} placeholder={t('qb.pick')} error={errors.qb_question_type_id?.message}
-                    options={types.data.map(ty => ({ value: String(ty.id), label: name(ty) }))} {...register('qb_question_type_id', { required: t('super.required'), onChange: pickType })} />
-                  <Select label={t('qb.difficulty')} options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: t(`qb.difficulty_level.${d}`) }))} {...register('difficulty')} />
-                  <Input label={t('qb.marks')} ltr inputMode="decimal" error={errors.marks?.message} {...register('marks')} />
-                </Section>
-
                 <Section id="question" current={section} onEnter={setSection}>
-                  <Textarea className="sm:col-span-2 [&_textarea]:font-mono" label={family === 'creative' ? t('qb.stem') : t('qb.question')} rows={8}
+                  <Textarea className="sm:col-span-2 [&_textarea]:font-mono" label={family === 'creative' ? t('qb.stem') : t('qb.question')} rows={12}
                     hint={family === 'fill_gap' ? t('qb.blank_hint') : t('qbed.hint')} error={errors.question_text?.message} {...register('question_text', { required: t('super.required') })} />
                 </Section>
 
@@ -416,7 +447,7 @@ export default function QbQuestionEdit() {
 
                 {answerHere && (
                   <Section id="answer" current={section} onEnter={setSection}>
-                    <Textarea className="sm:col-span-2" label={t('qb.answer')} rows={4} error={errors.answer_text?.message} {...register('answer_text')} />
+                  <Textarea className="sm:col-span-2" label={t('qb.answer')} rows={8} error={errors.answer_text?.message} {...register('answer_text')} />
                   </Section>
                 )}
                 <Section id="explanation" current={section} onEnter={setSection}>
@@ -439,27 +470,8 @@ export default function QbQuestionEdit() {
                   </fieldset>
                 </Section>
 
-                <Section id="occurrences" current={section} onEnter={setSection}>
-                  <fieldset className="sm:col-span-2 flex flex-col gap-2">
-                    <legend className="font-semibold mb-1">{t('qbn.sources')}</legend>
-                    {occurrences.fields.map((f, i) => (
-                      <div key={f.id} className="flex flex-wrap items-end gap-2" data-testid={`source-${i}`}>
-                        <Select className="w-36" label={t('qbn.source_type')} placeholder={t('qb.pick')} options={SOURCE_TYPES.map(x => ({ value: x, label: t(`qbn.source_types.${x}`) }))} {...register(`occurrences.${i}.type`)} />
-                        <Input className="flex-1 min-w-40" label={t('qbn.source_full')} {...register(`occurrences.${i}.full`)} />
-                        <Input className="w-28" label={t('qbn.source_short')} {...register(`occurrences.${i}.short`)} />
-                        <Input className="w-28" label={t('qbn.exam_type')} {...register(`occurrences.${i}.exam_type`)} />
-                        <Input className="w-24" label={t('qb.year')} ltr inputMode="numeric" {...register(`occurrences.${i}.year`)} />
-                        <Input className="w-24" label={t('qbed.question_number')} {...register(`occurrences.${i}.question_number`)} />
-                        <Input className="w-24" label={t('qbed.set_label')} {...register(`occurrences.${i}.set_label`)} />
-                        <Input className="w-32" label={t('qbed.page_reference')} {...register(`occurrences.${i}.page_reference`)} />
-                        <Button variant="secondary" onClick={() => occurrences.remove(i)} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
-                      </div>
-                    ))}
-                    <div><Button variant="secondary" onClick={() => occurrences.append({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add_occurrence')}</Button></div>
-                  </fieldset>
-                </Section>
               </fieldset>
-            </form>
+            </div>
             {canSubmit && (
               <div className="flex flex-wrap justify-end gap-2 pt-3">
                 <Button variant="secondary" onClick={() => act('submit')} loading={busy === 'submit'} data-action="submit">{t('qb.submit')}</Button>
@@ -467,6 +479,7 @@ export default function QbQuestionEdit() {
             )}
           </Card>
         </div>
+        </form>
 
         <Card className={`${pane === 'preview' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-preview" aria-live="polite">
           <div className="flex items-center justify-between gap-2">
@@ -500,7 +513,7 @@ export default function QbQuestionEdit() {
           {v.explanation_text && <div className="text-sm text-content-muted"><MathText text={v.explanation_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage('explanation_text', attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} /></div>}
         </Card>
       </div>
-      <PictureDialog open={Boolean(pictureDialog)} initial={pictureDialog} onClose={() => setPictureDialog(null)} onSave={savePicture} saving={pictureSaving} />
+      <PictureDialog open={Boolean(pictureDialog)} initial={pictureDialog} onClose={() => setPictureDialog(null)} onSave={savePicture} onDelete={deletePicture} saving={pictureSaving} />
 
       {canReview && (
         <Card className="flex flex-col gap-3" data-testid="review-actions">
