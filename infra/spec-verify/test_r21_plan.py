@@ -45,7 +45,7 @@ class R21PlanningTests(unittest.TestCase):
     def test_d139_language_curriculum_is_a_separate_approved_slice(self):
         slice_ = self.scope['approved_execution_slices'][1]
         self.assertEqual('R2.1.2-language-curriculum', slice_['id'])
-        self.assertEqual(['D138', 'D139', 'D144', 'D145'], slice_['decisions'])
+        self.assertEqual(['D138', 'D139', 'D144', 'D145', 'D149'], slice_['decisions'])
         self.assertEqual(['R2.1.2'], slice_['depends_on'])
         self.assertEqual(['qb_curriculum_versions', 'qb_curriculum_nodes',
                           'qb_question_curriculum_nodes',

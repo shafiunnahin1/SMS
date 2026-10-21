@@ -43,7 +43,7 @@ class QbCurriculumSeeder extends Seeder
         ['বাংলা ১ম পত্র', 'Bangla 1st Paper', ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12']],
         ['বাংলা ২য় পত্র', 'Bangla 2nd Paper', ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12']],
         ['ইংরেজি', 'English', ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5']],
-        ['ইংরেজি ১ম পত্র', 'English 1st Paper', ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12']],
+        ['ইংরেজি ১ম পত্র', 'English 1st Paper', ['Play', 'Nursery', 'KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12']],
         ['ইংরেজি ২য় পত্র', 'English 2nd Paper', ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12']],
         ['গণিত', 'Mathematics', ['Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10']],
         ['সাধারণ বিজ্ঞান', 'General Science', ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10']],

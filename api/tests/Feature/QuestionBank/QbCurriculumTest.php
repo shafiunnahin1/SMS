@@ -6,6 +6,7 @@ use App\Models\{AuditLog, Program, QbChapter, QbClassLevel, QbCurriculumNode, Qb
 use App\Support\Tenancy;
 use Database\Seeders\QbCurriculumSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 // QB.1 (D65, docs/modules/question-bank.md §3ক): the Super Admin builds the platform curriculum class → subject → chapter →
@@ -296,5 +297,52 @@ class QbCurriculumTest extends TestCase
         $this->assertContains('Physics', $nine->subjects->pluck('name_en')->all());
         $this->assertNotContains('Physics', QbClassLevel::where('name_en', 'Class 5')->first()->subjects->pluck('name_en')->all());
         $this->assertSame('other', QbClassLevel::where('name_en', 'Play')->first()->education_level);
+        $englishFirstPaper = QbSubject::where('name_en', 'English 1st Paper')->firstOrFail();
+        $expectedEnglishClasses = ['Play', 'Nursery', 'KG', ...array_map(fn ($grade) => "Class {$grade}", range(1, 12))];
+        $this->assertEqualsCanonicalizing(
+            $expectedEnglishClasses,
+            $englishFirstPaper->classLevels()->orderBy('sort_order')->pluck('name_en')->all(),
+        );
+        $tree = $this->api('GET', $this->central, 'super/qb/curriculum', $this->super)->assertOk()->json('data');
+        $englishSubject = collect($tree['subjects'])->firstWhere('name_en', 'English 1st Paper');
+        $englishClassIds = QbClassLevel::whereIn('name_en', $expectedEnglishClasses)->pluck('id')->all();
+        $this->assertEqualsCanonicalizing($englishClassIds, $englishSubject['class_level_ids']);
+    }
+
+    public function test_d149_data_migration_links_existing_english_first_paper_to_play_through_class_12(): void
+    {
+        foreach ([
+            ['Play', 'প্লে', 'other'], ['Nursery', 'নার্সারি', 'other'], ['KG', 'কেজি', 'other'],
+            ...array_map(fn ($grade) => ["Class {$grade}", "শ্রেণী {$grade}", $grade < 6 ? 'primary' : ($grade < 11 ? 'secondary' : 'higher_secondary')], range(1, 12)),
+        ] as $i => [$name, $bn, $level]) {
+            QbClassLevel::create(['name_en' => $name, 'name_bn' => $bn, 'education_level' => $level, 'sort_order' => $i + 1]);
+        }
+        $subject = QbSubject::create(['name_en' => 'English 1st Paper', 'name_bn' => 'ইংরেজি ১ম পত্র']);
+        $subject->classLevels()->sync(QbClassLevel::whereIn('name_en', array_map(fn ($grade) => "Class {$grade}", range(6, 12)))->pluck('id'));
+        $version = QbCurriculumVersion::create([
+            'qb_subject_id' => $subject->id, 'version_key' => 'current', 'name_bn' => 'বর্তমান', 'name_en' => 'Current',
+        ]);
+        $classSix = QbClassLevel::where('name_en', 'Class 6')->firstOrFail();
+        $version->classLevels()->sync([$classSix->id]);
+
+        $migration = require database_path('migrations/2026_10_22_000002_link_english_first_paper_to_play_through_class_12.php');
+        $migration->up();
+        $migration->up();
+
+        $this->assertEqualsCanonicalizing(
+            ['Play', 'Nursery', 'KG', ...array_map(fn ($grade) => "Class {$grade}", range(1, 12))],
+            $subject->fresh()->classLevels()->orderBy('sort_order')->pluck('name_en')->all(),
+        );
+        $this->assertSame([$classSix->id], $version->fresh()->classLevels()->pluck('qb_class_levels.id')->all());
+        $this->assertSame(0, DB::table('qb_question_curriculum_nodes')->count());
+
+        $migration->down();
+        $this->assertEqualsCanonicalizing(
+            array_map(fn ($grade) => "Class {$grade}", range(6, 12)),
+            $subject->fresh()->classLevels()->orderBy('sort_order')->pluck('name_en')->all(),
+        );
+        $this->assertSame([$classSix->id], $version->fresh()->classLevels()->pluck('qb_class_levels.id')->all());
+        $migration->up();
+        $this->assertCount(15, $subject->fresh()->classLevels);
     }
 }
