@@ -140,6 +140,23 @@ def run_guard(d, base, head):
     r = subprocess.run([sys.executable, GUARD, '--root', d, '--base', base, '--head', head], capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, r.stdout + r.stderr
 
+def d139_probe():
+    d = make_base()
+    decisions = DECISIONS + '| D138 | Flexible curriculum | approved |\n| D139 | Language curriculum task | approved |\n'
+    progress = PROGRESS + '\n- [x] R2.1.2 — accepted D114 scope\n'
+    write(d, 'docs/LOCKED-DECISIONS.md', decisions)
+    write(d, 'docs/PROGRESS.md', progress)
+    git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'owner: approved D139 base')
+    git(d, 'tag', 'd139base')
+    write(d, 'api/app/Services/Curriculum.php', "<?php\nclass Curriculum {}\n")
+    write(d, 'api/database/migrations/2026_10_21_000001_create_qb_curriculum_versions.php', MIG % 'qb_curriculum_versions')
+    write(d, 'docs/PROGRESS.md', progress + '- [ ] R2.1.2-language-curriculum — in progress\n')
+    git(d, 'add', '-A')
+    git(d, 'commit', '-q', '-m', 'feat: D139 curriculum slice\n\nTask: R2.1.2-language-curriculum\nChange-Request: D139')
+    code, out = run_guard(d, 'd139base', 'HEAD')
+    shutil.rmtree(d, ignore_errors=True)
+    return code, out
+
 def main():
     if subprocess.run(['git', '--version'], capture_output=True).returncode != 0: print('git is not installed - cannot run the guard self-test'); return 2
     base_dir = make_base(); bad = 0; n = 0
@@ -161,6 +178,11 @@ def main():
         print(('ok    ' if good else 'WRONG ') + sc.name + ('' if good else f'  (exit {code}, fails {sorted(fails)}, expected {sorted(sc.expect_fail) or "pass"})\n' + out[-400:]))
         bad += 0 if good else 1
         git(base_dir, 'checkout', '-q', 'main')
+    n += 1
+    code, out = d139_probe()
+    good = code == 0
+    print(('ok    ' if good else 'WRONG ') + 'D139 custom task, dependency and new-table allowlist' + ('' if good else f' (exit {code})\n' + out[-500:]))
+    bad += 0 if good else 1
     # stage two: a done line exists, then someone un-checks it
     git(base_dir, 'checkout', '-q', '-b', 'stage2', 'base'); write(base_dir, 'api/app/Foo.php', "<?php\nclass Foo {}\n"); write(base_dir, 'docs/PROGRESS.md', check_off(TASK0)); git(base_dir, 'add', '-A'); git(base_dir, 'commit', '-q', '-m', ok_msg)
     git(base_dir, 'tag', 'base2'); n += 1

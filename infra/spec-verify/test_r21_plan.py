@@ -33,7 +33,7 @@ class R21PlanningTests(unittest.TestCase):
     def test_implementation_flag_cannot_activate_work(self):
         self.reject(lambda s, g: s.update(implementation_authorized=True), 'implementation authorization')
 
-    def test_only_the_d114_d117_dataset_slice_is_executable(self):
+    def test_d114_d117_dataset_slice_contract_is_preserved(self):
         slice_ = self.scope['approved_execution_slices'][0]
         self.assertEqual('R2.1.2', slice_['parent_task'])
         self.assertEqual(['R2.1.1'], slice_['depends_on'])
@@ -41,6 +41,19 @@ class R21PlanningTests(unittest.TestCase):
         self.assertFalse(slice_['accepted'])
         self.assertFalse(self.scope['runtime_switch']['authorized'])
         self.assertTrue(all(not task['executable'] for task in self.scope['tasks']))
+
+    def test_d139_language_curriculum_is_a_separate_approved_slice(self):
+        slice_ = self.scope['approved_execution_slices'][1]
+        self.assertEqual('R2.1.2-language-curriculum', slice_['id'])
+        self.assertEqual(['D138', 'D139'], slice_['decisions'])
+        self.assertEqual(['R2.1.2'], slice_['depends_on'])
+        self.assertEqual(['qb_curriculum_versions', 'qb_curriculum_nodes',
+                          'qb_question_curriculum_nodes'], slice_['tables'])
+        self.assertFalse(slice_['accepted'])
+        self.assertEqual(['qb_curriculum_versions', 'qb_curriculum_nodes',
+                          'qb_question_curriculum_nodes'],
+                         self.scope['authorized_new_objects']['tables'])
+        self.assertFalse(self.scope['runtime_switch']['authorized'])
 
     def test_approved_slice_cannot_gain_objects_or_scope(self):
         self.scope['approved_execution_slices'][0]['tables'].append('invented')
@@ -89,7 +102,7 @@ class R21PlanningTests(unittest.TestCase):
         self.reject(lambda s, g: s.update(source_policy='execute_tests'), 'source access policy')
 
     def test_new_objects_and_fake_existing_route_are_rejected(self):
-        self.reject(lambda s, g: s['authorized_new_objects']['tables'].append('new_table'), 'application objects')
+        self.reject(lambda s, g: s['authorized_new_objects']['tables'].append('new_table'), 'only the D139')
         self.scope, self.gaps = G.load(ROOT)
         self.reject(lambda s, g: s['tasks'][1]['existing_route_anchors'].append(
             'api/routes/api.php::InventedController::publish'), 'existing route')

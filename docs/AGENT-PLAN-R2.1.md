@@ -1,18 +1,18 @@
 # R2.1 — generated planning plan (D83)
 
-> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle slice below. Runtime remains R3; no runtime switch is authorized.
+> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle and D138-D139 language-curriculum slices below. Runtime remains R3; no runtime switch is authorized.
 > Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.
 > Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.
 
 Placement: after R3.A, before R4/later; retain existing R1.1/R2 prerequisites.
 R2.1.0 requires R3.A. Executable task/schema/API scope and the runtime-switch task require owner refinement.
 R2.1.9 is proposed acceptance, not an authorized release switch. R3.A and R2.1.9 alone do not authorize switching.
-Source access is read-only files: no DB, application commands, tests or benchmarks.
+The upstream qbank repository remains read-only under D109. Target-repository commands/tests are limited to an executable slice and its acceptance checks.
 
 Existing route anchors name source declarations in the destination route file, not proposed new URLs.
 The imported root proposal, including its complete feature inventory, remains the requirements catalogue.
 
-## Approved scoped implementation slice
+## Approved scoped implementation slice — R2.1.2-dataset-lifecycle
 
 Task: R2.1.2-dataset-lifecycle (parent R2.1.2); decisions: D114, D115, D116, D117.
 Depends on: R2.1.1; status: executable slice, not accepted.
@@ -22,6 +22,18 @@ Routes: GET|HEAD /writer/graph-datasets (content_writer, content_moderator, supe
 Roles: content_writer, content_moderator, super_admin.
 Done when: Dataset CRUD is central-host-only. Writers manage only their own datasets; moderators can read but never write; Super Admin can manage all. Enforce 50,000 rows, 80 columns, 1,000,000 cells, 2,048 characters per cell, server checksum/version, stale-version conflicts and refusal to delete a dataset referenced by a published question. Parent R2.1.2 remains unchecked; visuals, full format parity and finder are deferred.
 Deferred from the parent task: full authoring-format and visual-mode parity matrix; graph/diagram editor and paper-renderer integration; question finder and calibrated ranking fixtures.
+The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
+
+## Approved scoped implementation slice — R2.1.2-language-curriculum
+
+Task: R2.1.2-language-curriculum (parent R2.1.2); decisions: D138, D139.
+Depends on: R2.1.2; status: executable slice, not accepted.
+Scope: Versioned arbitrary-depth curriculum for Bangla 1st/2nd and English 1st/2nd papers; separate syllabus locations from question type/exam part; preserve legacy chapter/topic APIs; allow zero or multiple node links; add optional source question number, set and page/reference; Super Admin tree management and searchable writer breadcrumbs across authoring, preview, list and finder.
+Authorized table: qb_curriculum_versions, qb_curriculum_nodes, qb_question_curriculum_nodes.
+Routes: GET|POST /super/qb/curriculum-versions (super_admin); GET|PUT|DELETE /super/qb/curriculum-versions/{versionId} (super_admin); GET|POST /super/qb/curriculum-versions/{versionId}/nodes (super_admin); PUT|DELETE /super/qb/curriculum-nodes/{nodeId} (super_admin); GET /writer/curriculum/nodes (content_writer, content_moderator, super_admin); POST|PUT /writer/questions[/{id}] (content_writer, super_admin); GET /writer/questions[/{id}] (content_writer, content_moderator, super_admin).
+Roles: content_writer, content_moderator, super_admin.
+Done when: Additive migrations and canonical schema parity; authorized version/node management with same-subject parent validation, arbitrary depth, cycle prevention, bilingual labels and stable ordering; searchable localized writer breadcrumbs; question create/edit/reopen/preview/list/finder round trips for zero, one and multiple curriculum links; optional source occurrence metadata round trip; old chapter/topic endpoints and records remain compatible; bn/en, role/module/tenant, no-answer-leak, migration rollback and focused regression checks pass. Do not seed unverified textbook content. Record exact evidence in docs/PROGRESS.md.
+Deferred from the parent task: textbook content seeding; R2.1 runtime switch; all unrelated R2.1 tasks.
 The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
 
 ## R2.1.0 — Source/target inventory, fixtures and measured baseline

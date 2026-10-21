@@ -21,8 +21,18 @@
     "requires_owner_refinement": true
   },
   "authorized_new_objects": {
-    "tables": [],
-    "routes": [],
+    "tables": [
+      "qb_curriculum_versions",
+      "qb_curriculum_nodes",
+      "qb_question_curriculum_nodes"
+    ],
+    "routes": [
+      "GET|POST /super/qb/curriculum-versions",
+      "GET|PUT|DELETE /super/qb/curriculum-versions/{versionId}",
+      "GET|POST /super/qb/curriculum-versions/{versionId}/nodes",
+      "PUT|DELETE /super/qb/curriculum-nodes/{nodeId}",
+      "GET /writer/curriculum/nodes"
+    ],
     "modules": [],
     "packages": []
   },
@@ -46,6 +56,28 @@
       "roles": ["content_writer", "content_moderator", "super_admin"],
       "done_when": "Dataset CRUD is central-host-only. Writers manage only their own datasets; moderators can read but never write; Super Admin can manage all. Enforce 50,000 rows, 80 columns, 1,000,000 cells, 2,048 characters per cell, server checksum/version, stale-version conflicts and refusal to delete a dataset referenced by a published question. Parent R2.1.2 remains unchecked; visuals, full format parity and finder are deferred.",
       "deferred": ["full authoring-format and visual-mode parity matrix", "graph/diagram editor and paper-renderer integration", "question finder and calibrated ranking fixtures"]
+    },
+    {
+      "id": "R2.1.2-language-curriculum",
+      "parent_task": "R2.1.2",
+      "decisions": ["D138", "D139"],
+      "depends_on": ["R2.1.2"],
+      "executable": true,
+      "accepted": false,
+      "scope": "Versioned arbitrary-depth curriculum for Bangla 1st/2nd and English 1st/2nd papers; separate syllabus locations from question type/exam part; preserve legacy chapter/topic APIs; allow zero or multiple node links; add optional source question number, set and page/reference; Super Admin tree management and searchable writer breadcrumbs across authoring, preview, list and finder.",
+      "tables": ["qb_curriculum_versions", "qb_curriculum_nodes", "qb_question_curriculum_nodes"],
+      "routes": [
+        {"method": "GET|POST", "uri": "/super/qb/curriculum-versions", "roles": ["super_admin"]},
+        {"method": "GET|PUT|DELETE", "uri": "/super/qb/curriculum-versions/{versionId}", "roles": ["super_admin"]},
+        {"method": "GET|POST", "uri": "/super/qb/curriculum-versions/{versionId}/nodes", "roles": ["super_admin"]},
+        {"method": "PUT|DELETE", "uri": "/super/qb/curriculum-nodes/{nodeId}", "roles": ["super_admin"]},
+        {"method": "GET", "uri": "/writer/curriculum/nodes", "roles": ["content_writer", "content_moderator", "super_admin"]},
+        {"method": "POST|PUT", "uri": "/writer/questions[/{id}]", "roles": ["content_writer", "super_admin"]},
+        {"method": "GET", "uri": "/writer/questions[/{id}]", "roles": ["content_writer", "content_moderator", "super_admin"]}
+      ],
+      "roles": ["content_writer", "content_moderator", "super_admin"],
+      "done_when": "Additive migrations and canonical schema parity; authorized version/node management with same-subject parent validation, arbitrary depth, cycle prevention, bilingual labels and stable ordering; searchable localized writer breadcrumbs; question create/edit/reopen/preview/list/finder round trips for zero, one and multiple curriculum links; optional source occurrence metadata round trip; old chapter/topic endpoints and records remain compatible; bn/en, role/module/tenant, no-answer-leak, migration rollback and focused regression checks pass. Do not seed unverified textbook content. Record exact evidence in docs/PROGRESS.md.",
+      "deferred": ["textbook content seeding", "R2.1 runtime switch", "all unrelated R2.1 tasks"]
     }
   ],
   "regression_commands": [

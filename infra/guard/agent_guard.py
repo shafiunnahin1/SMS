@@ -43,8 +43,8 @@ def empty_tree(root):
     if not EMPTY_TREE: EMPTY_TREE = git(root, 'hash-object', '-t', 'tree', '/dev/null').strip()
     return EMPTY_TREE
 
-# D111 clause 7: R2.1 tasks whose refined scope a locked decision approved -> (decision, dependencies); all other R2.1 tasks stay blocked
-R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1']), 'R2.1.3': ('D123', ['R2.1.2']), 'R2.1.4': ('D124', ['R2.1.3']), 'R2.1.5': ('D126', ['R2.1.4']), 'R2.1.6': ('D127', ['R2.1.5'])}
+# D111 clause 7 / D139: R2.1 tasks whose refined scope a locked decision approved -> (decision, dependencies); all other R2.1 tasks stay blocked
+R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1']), 'R2.1.2-language-curriculum': ('D139', ['R2.1.2']), 'R2.1.3': ('D123', ['R2.1.2']), 'R2.1.4': ('D124', ['R2.1.3']), 'R2.1.5': ('D126', ['R2.1.4']), 'R2.1.6': ('D127', ['R2.1.5'])}
 # D119: qbank's tool files copied unchanged (D118); C7 and C11 skip them, a sha256 manifest pins them instead
 QBANK_VENDOR = 'frontend/public/vendor/qbank/'
 QBANK_MANIFEST = QBANK_VENDOR + 'MANIFEST.sha256'
@@ -52,8 +52,8 @@ QBANK_MANIFEST = QBANK_VENDOR + 'MANIFEST.sha256'
 TESS_VENDOR = 'frontend/public/vendor/tesseract/'
 # D127: the local pdf.js and heic2any copies for reading scanned OMR sheets, pinned the same way
 PINNED = {QBANK_VENDOR: 'D119', TESS_VENDOR: 'D122', 'frontend/public/vendor/pdfjs/': 'D127', 'frontend/public/vendor/heic2any/': 'D127'}
-# D115: the one new table an approved R2.1 task may create, with the decision that approved it
-R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}, 'R2.1.3': {'qb_import_batches': 'D123', 'qb_import_records': 'D123'}, 'R2.1.4': {'qb_import_batches': 'D124', 'qb_import_records': 'D124'}, 'R2.1.5': {'qb_paper_folders': 'D126', 'qb_paper_variants': 'D126', 'qb_blueprints': 'D126', 'qb_blueprint_items': 'D126', 'qb_papers': 'D126'}, 'R2.1.6': {'qb_omr_forms': 'D127', 'qb_omr_scans': 'D127'}}
+# D115/D139: each explicitly approved R2.1 task's new tables and approving decision
+R21_TABLES = {'R2.1.2': {'qb_graph_datasets': 'D115'}, 'R2.1.2-language-curriculum': {'qb_curriculum_versions': 'D139', 'qb_curriculum_nodes': 'D139', 'qb_question_curriculum_nodes': 'D139'}, 'R2.1.3': {'qb_import_batches': 'D123', 'qb_import_records': 'D123'}, 'R2.1.4': {'qb_import_batches': 'D124', 'qb_import_records': 'D124'}, 'R2.1.5': {'qb_paper_folders': 'D126', 'qb_paper_variants': 'D126', 'qb_blueprints': 'D126', 'qb_blueprint_items': 'D126', 'qb_papers': 'D126'}, 'R2.1.6': {'qb_omr_forms': 'D127', 'qb_omr_scans': 'D127'}}
 
 def show(root, rev, path):
     r = subprocess.run(['git', '-C', root, 'show', f'{rev}:{path}'], capture_output=True, text=True, encoding='utf-8', errors='replace')
@@ -140,7 +140,7 @@ def norm_deps(v):
     return re.findall(r'[\w.]+', v) if isinstance(v, str) else list(v)
 
 def progress_done(text):
-    return set(re.findall(r'^\s*[-*]\s*\[[xX]\]\s*([\w.]+)\b', text or '', re.M))
+    return set(re.findall(r'^\s*[-*]\s*\[[xX]\]\s*([\w.-]+)\b', text or '', re.M))
 
 def is_test(path): return bool(re.search(r'(^|/)(tests?|__tests__)/', path) or re.search(r'\.(test|spec)\.[jt]sx?$', path) or path.endswith('Test.php'))
 def is_code(path): return path.startswith(CODE_DIRS) and re.search(r'\.(php|jsx?|tsx?|vue)$', path) is not None
@@ -256,7 +256,7 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
     decisions_before = show(root, parent, 'docs/LOCKED-DECISIONS.md') or ''
     r21_ok = lambda t: t in R21_APPROVED and f'| {R21_APPROVED[t][0]} |' in decisions_before
     if touches_code:
-        if task and re.fullmatch(r'R2\.1\.\d+', task):
+        if task and (re.fullmatch(r'R2\.1\.\d+', task) or task in R21_APPROVED):
             if not r21_ok(task):
                 rep.fail('C9', commit, 'D83 permits R2.1 planning only; executable scope needs owner approval and R3.A acceptance')
             else:
@@ -274,9 +274,9 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
     for s, p in files:
         if p == 'docs/PROGRESS.md' and s != 'D':
             a, r = added_lines(root, parent, commit, p)
-            un = [x for x in r if re.match(r'\s*[-*]\s*\[[xX]\]', x) and not any(re.match(r'\s*[-*]\s*\[[xX]\]\s*' + re.escape(re.search(r'\]\s*([\w.]+)', x).group(1)), y) for y in a)]
+            un = [x for x in r if re.match(r'\s*[-*]\s*\[[xX]\]', x) and not any(re.match(r'\s*[-*]\s*\[[xX]\]\s*' + re.escape(re.search(r'\]\s*([\w.-]+)', x).group(1)), y) for y in a)]
             if un: rep.fail('C10', commit, f'PROGRESS: a done line was removed or un-checked: {un[0].strip()[:60]}')
-            newly = [re.search(r'\]\s*([\w.]+)', x).group(1) for x in a if re.match(r'\s*[-*]\s*\[[xX]\]\s*[\w.]+', x)]
+            newly = [re.search(r'\]\s*([\w.-]+)', x).group(1) for x in a if re.match(r'\s*[-*]\s*\[[xX]\]\s*[\w.-]+', x)]
             newly = [x for x in newly if x not in done_before]
             if any(re.fullmatch(r'R2\.1\.\d+', x) and not (x == task and r21_ok(x)) for x in newly):
                 rep.fail('C10', commit, 'D83 planning cannot check off R2.1 feature tasks, even in a documentation-only commit')

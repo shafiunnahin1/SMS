@@ -32,6 +32,24 @@ APPROVED_EXECUTION_SLICES = [{
     'deferred': ['full authoring-format and visual-mode parity matrix',
                  'graph/diagram editor and paper-renderer integration',
                  'question finder and calibrated ranking fixtures'],
+}, {
+    'id': 'R2.1.2-language-curriculum', 'parent_task': 'R2.1.2',
+    'decisions': ['D138', 'D139'], 'depends_on': ['R2.1.2'],
+    'executable': True, 'accepted': False,
+    'scope': 'Versioned arbitrary-depth curriculum for Bangla 1st/2nd and English 1st/2nd papers; separate syllabus locations from question type/exam part; preserve legacy chapter/topic APIs; allow zero or multiple node links; add optional source question number, set and page/reference; Super Admin tree management and searchable writer breadcrumbs across authoring, preview, list and finder.',
+    'tables': ['qb_curriculum_versions', 'qb_curriculum_nodes', 'qb_question_curriculum_nodes'],
+    'routes': [
+        {'method': 'GET|POST', 'uri': '/super/qb/curriculum-versions', 'roles': ['super_admin']},
+        {'method': 'GET|PUT|DELETE', 'uri': '/super/qb/curriculum-versions/{versionId}', 'roles': ['super_admin']},
+        {'method': 'GET|POST', 'uri': '/super/qb/curriculum-versions/{versionId}/nodes', 'roles': ['super_admin']},
+        {'method': 'PUT|DELETE', 'uri': '/super/qb/curriculum-nodes/{nodeId}', 'roles': ['super_admin']},
+        {'method': 'GET', 'uri': '/writer/curriculum/nodes', 'roles': ['content_writer', 'content_moderator', 'super_admin']},
+        {'method': 'POST|PUT', 'uri': '/writer/questions[/{id}]', 'roles': ['content_writer', 'super_admin']},
+        {'method': 'GET', 'uri': '/writer/questions[/{id}]', 'roles': ['content_writer', 'content_moderator', 'super_admin']},
+    ],
+    'roles': ['content_writer', 'content_moderator', 'super_admin'],
+    'done_when': 'Additive migrations and canonical schema parity; authorized version/node management with same-subject parent validation, arbitrary depth, cycle prevention, bilingual labels and stable ordering; searchable localized writer breadcrumbs; question create/edit/reopen/preview/list/finder round trips for zero, one and multiple curriculum links; optional source occurrence metadata round trip; old chapter/topic endpoints and records remain compatible; bn/en, role/module/tenant, no-answer-leak, migration rollback and focused regression checks pass. Do not seed unverified textbook content. Record exact evidence in docs/PROGRESS.md.',
+    'deferred': ['textbook content seeding', 'R2.1 runtime switch', 'all unrelated R2.1 tasks'],
 }]
 
 
@@ -64,17 +82,27 @@ def validate(root, scope, gaps):
     require(scope.get('placement') == gaps.get('placement'), 'placement differs from D83 gap map')
     require(scope.get('placement') == {'after': 'R3.A', 'before': 'R4',
             'first_executable_task': 'R2.1.0', 'runtime_switch_authorized': False}, 'placement/prerequisites')
-    require(scope.get('authorized_new_objects') == {'tables': [], 'routes': [], 'modules': [], 'packages': []},
-            'planning must not authorize application objects')
+    language_slice = next((s for s in APPROVED_EXECUTION_SLICES
+                           if s['id'] == 'R2.1.2-language-curriculum'), None)
+    expected_objects = {
+        'tables': language_slice['tables'] if language_slice else [],
+        'routes': [f"{r['method']} {r['uri']}" for r in language_slice['routes'][:5]] if language_slice else [],
+        'modules': [], 'packages': [],
+    }
+    require(scope.get('authorized_new_objects') == expected_objects,
+            'only the D139 language-curriculum tables and routes may be authorized')
     require(scope.get('source_policy') == 'read_only_files_no_db_no_execution', 'source access policy')
     require(scope.get('approved_execution_slices') == APPROVED_EXECUTION_SLICES,
-            'approved execution slice must stay within D114-D117 dataset lifecycle')
+            'approved execution slices must match their owner-approved contracts')
     decisions = (root / 'docs/LOCKED-DECISIONS.md').read_text(encoding='utf-8')
-    require(all(f'| D{number} |' in decisions for number in (114, 115, 116, 117)),
+    require(all(f'| {decision} |' in decisions for active in APPROVED_EXECUTION_SLICES
+                for decision in active['decisions']),
             'approved slice decisions must precede execution')
     progress = (root / 'docs/PROGRESS.md').read_text(encoding='utf-8')
     require(re.search(r'^- \[x\] R2\.1\.1\b', progress, re.M) is not None,
-            'approved slice prerequisite R2.1.1 must be accepted')
+            'D114-D117 slice prerequisite R2.1.1 must be accepted')
+    require(re.search(r'^- \[x\] R2\.1\.2\b', progress, re.M) is not None,
+            'D139 language-curriculum prerequisite R2.1.2 must be accepted')
     for entry in ENTRY_POINTS:
         text = (root / entry).read_text(encoding='utf-8')
         require(all(token in text for token in ('D83', 'R2.1', 'R3.A', 'R4', 'AGENT-PLAN-R2.1.md')),
@@ -140,20 +168,20 @@ def build(root):
     acceptance = requirements(root)
     plan = {**scope, 'generated_from': [SCOPE, GAPS, 'RELEASE-2.1.md'],
             'acceptance_catalogue': acceptance,
-            'evidence_note': 'Only the explicit D114-D117 dataset-lifecycle slice is executable; the full R2.1.2 task and runtime switch remain blocked.'}
+            'evidence_note': 'Only the explicit D114-D117 dataset-lifecycle and D138-D139 language-curriculum slices are executable; the full imported task scope and runtime switch remain governed by their existing acceptance gates.'}
     lines = ['# R2.1 — generated planning plan (D83)', '',
-             '> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle slice below. Runtime remains R3; no runtime switch is authorized.',
+             '> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle and D138-D139 language-curriculum slices below. Runtime remains R3; no runtime switch is authorized.',
              '> Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.',
              '> Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.',
              '', 'Placement: after R3.A, before R4/later; retain existing R1.1/R2 prerequisites.',
              'R2.1.0 requires R3.A. Executable task/schema/API scope and the runtime-switch task require owner refinement.',
              'R2.1.9 is proposed acceptance, not an authorized release switch. R3.A and R2.1.9 alone do not authorize switching.',
-             'Source access is read-only files: no DB, application commands, tests or benchmarks.', '',
+             'The upstream qbank repository remains read-only under D109. Target-repository commands/tests are limited to an executable slice and its acceptance checks.', '',
              'Existing route anchors name source declarations in the destination route file, not proposed new URLs.',
              'The imported root proposal, including its complete feature inventory, remains the requirements catalogue.', '']
     for active in scope.get('approved_execution_slices', []):
         routes = '; '.join(f"{r['method']} {r['uri']} ({', '.join(r['roles'])})" for r in active['routes'])
-        lines.extend(['## Approved scoped implementation slice', '',
+        lines.extend([f"## Approved scoped implementation slice — {active['id']}", '',
                       f"Task: {active['id']} (parent {active['parent_task']}); decisions: {', '.join(active['decisions'])}.",
                       f"Depends on: {', '.join(active['depends_on'])}; status: executable slice, not accepted.",
                       f"Scope: {active['scope']}",
@@ -206,7 +234,7 @@ def main():
         if stale:
             print('FAIL stale R2.1 planning artifacts: ' + ', '.join(stale))
             return 1
-        print('PASS R2.1 planning: 10 blocked parent tasks plus the explicit D114-D117 dataset slice, all capability/acceptance mappings; ' +
+        print(f"PASS R2.1 planning: 10 blocked parent tasks plus {len(load(args.root)[0]['approved_execution_slices'])} owner-approved scoped slices, all capability/acceptance mappings; " +
               ('generated artifacts fresh' if args.check else 'generated artifacts written'))
         return 0
     except (ValueError, KeyError, TypeError, OSError, IndexError) as exc:
