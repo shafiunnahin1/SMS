@@ -46,4 +46,19 @@ describe('writer question picture editor', () => {
     expect(screen.getByRole('slider', { name: 'ছবির প্রস্থ' })).toHaveValue('55')
     expect(screen.getByRole('combobox', { name: 'ছবির সারিবদ্ধতা' })).toHaveValue('right')
   })
+
+  it('marks the question classes without deriving a separate class from its subject', async () => {
+    api.get.mockImplementation(url => Promise.resolve({ data: url === '/writer/curriculum'
+      ? { data: { class_levels: [
+        { id: 1, name_bn: 'প্লে' }, { id: 2, name_bn: 'নার্সারি' }, { id: 3, name_bn: 'কেজি' }, { id: 4, name_bn: 'অষ্টম শ্রেণি' },
+      ], subjects: [{ id: 1, name_bn: 'আমার বই', class_level_ids: [1, 2, 3], chapters: [] }] } }
+      : url === '/writer/question-types'
+        ? { data: [{ id: 1, slug: 'short', name_bn: 'সংক্ষিপ্ত প্রশ্ন', name_en: 'Short', family: 'short', structure: null }] }
+        : url === '/writer/questions/6/revisions' ? { data: [] } : { data: { ...question, class_level_ids: [4] } } }))
+    renderPage()
+    expect(await screen.findByTestId('qb-sections')).toBeInTheDocument()
+    expect(screen.queryByTestId('qb-primary-class')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('অষ্টম শ্রেণি')).toBeChecked()
+    expect(screen.getByTestId('qb-sections').querySelector('input[name="class_level_ids"][value="1"]')).not.toBeChecked()
+  })
 })

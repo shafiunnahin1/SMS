@@ -6,7 +6,7 @@ import Modal from '../../ui/variants/Modal'
 
 const DEFAULTS = { width: 100, align: 'center', position: 'cursor', paragraph: 1, rotation: 0, transparentBackground: false }
 
-export default function PictureDialog({ open, initial, onClose, onSave, saving = false }) {
+export default function PictureDialog({ open, initial, onClose, onSave, onDelete, saving = false }) {
   const { t } = useTranslation()
   const [file, setFile] = useState(null)
   const [settings, setSettings] = useState(DEFAULTS)
@@ -34,6 +34,7 @@ export default function PictureDialog({ open, initial, onClose, onSave, saving =
     <Modal open={open} onClose={onClose} title={t('qbed.image')} actions={(
       <>
         <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+        {edit && onDelete && <Button variant="danger" onClick={onDelete} disabled={saving} data-action="picture-delete">{t('common.delete')}</Button>}
         <Button onClick={() => onSave({ file, settings })} disabled={saving || (!hasTarget && !file)} loading={saving} data-action="picture-save">
           {edit ? t('common.save') : t('qb.insert')}
         </Button>

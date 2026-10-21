@@ -302,6 +302,11 @@ export function updatePicture(value, start, end, mediaId, replacementId = mediaI
   return insertPicture(without, 0, 0, id, { width: size, align: side, position, paragraph })
 }
 
+export function removePicture(value, start, end, mediaId) {
+  const range = pictureRange(value, mediaId)
+  return range ? splice(value, range.start, range.end, '') : result(value, start, end)
+}
+
 export function transformImagePixels(data, width, height, { rotation = 0, transparentBackground = false, threshold = 245 } = {}) {
   if (!Number.isInteger(width) || width < 1 || !Number.isInteger(height) || height < 1 || data.length !== width * height * 4) {
     throw new RangeError('Image pixel dimensions do not match the data')
