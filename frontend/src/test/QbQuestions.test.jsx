@@ -20,11 +20,11 @@ describe('writer question list cards', () => {
     api.get.mockImplementation((url) => Promise.resolve({ data:
       url === '/writer/curriculum' ? {
         data: {
-          class_levels: [{ id: 1, name_bn: 'নবম শ্রেণি' }],
+          class_levels: [{ id: 1, name_bn: 'নবম শ্রেণি' }, { id: 4, name_bn: 'অষ্টম শ্রেণি' }],
           subjects: [{ id: 3, name_bn: 'পদার্থবিজ্ঞান', class_level_ids: [1], chapters: [{ id: 4, name_bn: 'গতি', number: 2, topics: [{ id: 5, name_bn: 'বেগ' }] }] }],
         },
       } : url === '/writer/question-types' ? { data: [{ id: 2, name_bn: 'বহুনির্বাচনি' }] } : {
-        data: [{ id: 7, qb_question_type_id: 2, qb_subject_id: 3, qb_chapter_id: 4, qb_topic_id: 5, class_level_ids: [1], marks: '1.00', difficulty: 2, question_text: '<p>বেগের একক কী?</p>', answer_text: 'দূরত্ব ÷ সময়', explanation_text: 'এককটি মিটার/সেকেন্ড।', options: [{ label: 'ক', content_text: 'মিটার', is_correct: false }, { label: 'খ', content_text: 'মিটার/সেকেন্ড', is_correct: true }], creative_parts: [], items: [], occurrences: [], media: [], status: 'draft', author: 'লেখক' }],
+        data: [{ id: 7, qb_question_type_id: 2, qb_subject_id: 3, qb_chapter_id: 4, qb_topic_id: 5, class_level_ids: [4], marks: '1.00', difficulty: 2, question_text: '<p>বেগের একক কী?</p>', answer_text: 'দূরত্ব ÷ সময়', explanation_text: 'এককটি মিটার/সেকেন্ড।', options: [{ label: 'ক', content_text: 'মিটার', is_correct: false }, { label: 'খ', content_text: 'মিটার/সেকেন্ড', is_correct: true }], creative_parts: [], items: [], occurrences: [], media: [], status: 'draft', author: 'লেখক' }],
         meta: { current_page: 1, last_page: 1, total: 1, per_page: 16, facets: { question_types: [{ id: 2, name_bn: 'বহুনির্বাচনি' }], source_types: ['board'], years: [2024] } },
       },
     }))
@@ -43,7 +43,7 @@ describe('writer question list cards', () => {
     expect(await screen.findByText('বহুনির্বাচনি')).toBeInTheDocument()
     expect(screen.getByTestId('qb-questions')).toHaveTextContent('পদার্থবিজ্ঞান')
     expect(screen.getByTestId('qb-questions')).toHaveTextContent('অধ্যায় 2 — গতি')
-    expect(screen.getByTestId('qb-questions')).toHaveTextContent('শ্রেণি: নবম শ্রেণি')
+    expect(screen.getByTestId('qb-questions')).toHaveTextContent('শ্রেণি: অষ্টম শ্রেণি')
     expect(screen.getByTestId('qb-questions')).toHaveTextContent('নম্বর: 1.00')
     expect(screen.getByTestId('qb-questions')).toHaveTextContent('মিটার/সেকেন্ড')
     fireEvent.click(screen.getByRole('button', { name: 'উত্তর ও সমাধান দেখুন' }))
@@ -81,5 +81,83 @@ describe('writer question list cards', () => {
     const answer = await screen.findByTestId('qb-answer')
     expect(answer).toHaveTextContent('(a) জল, পানি')
     expect(answer).not.toHaveTextContent('{"answers"')
+  })
+
+  it('groups a seen passage and every structured item type, then reveals readable answers', async () => {
+    const passageQuestion = {
+      id: 24, qb_question_type_id: 9, qb_subject_id: 3, qb_chapter_id: null, qb_topic_id: null,
+      class_level_ids: [1], marks: '12.00', difficulty: 3, status: 'draft', author: 'লেখক',
+      question_text: 'Read the passage and answer Sections A and B.', answer_text: null, explanation_text: null,
+      creative_parts: [], options: [], media: [], occurrences: [], curriculum_breadcrumbs: [],
+      stimuli: [{ label: 'passage', content_text: 'Behula was devoted and brave.' }],
+      items: [
+        { item_type: 'sub_mcq', prompt_text: 'Who was Behula?', prompt_json: { options: ['A queen', 'A heroine'] }, answer_json: { correct: 1 }, marks: '1.00' },
+        { item_type: 'sub_question', prompt_text: 'Why was she brave?', answer_json: { answer_text: 'She endured a dangerous journey.' }, marks: '2.00' },
+        { item_type: 'gap', prompt_text: 'Behula was (a) _____.', prompt_json: { hint: 'courage' }, answer_json: { answers: ['brave'] }, marks: '1.00' },
+        { item_type: 'true_false', prompt_text: 'Behula gave up her journey.', answer_json: { value: false, correction: 'She continued her journey.' }, marks: '1.00' },
+        { item_type: 'table_fill', prompt_json: { table: { columns: ['Person', 'Quality'], rows: [['Behula', null]] } }, answer_json: { cells: { '0-1': ['devotion'] } }, marks: '1.00' },
+        { item_type: 'match_pair', prompt_text: 'Behula', answer_json: { right: 'brave heroine' }, marks: '1.00' },
+        { item_type: 'match_triple', prompt_text: 'Behula', answer_json: { middle: 'showed', right: 'devotion' }, marks: '1.00' },
+        { item_type: 'multi_field', prompt_text: 'Explain', prompt_json: { fields: ['quality'] }, answer_json: { values: ['devotion'] }, marks: '1.00' },
+        { item_type: 'order_step', prompt_text: 'Reached the gods', answer_json: { position: 2 }, marks: '1.00' },
+        { item_type: 'order_step', prompt_text: 'Began the journey', answer_json: { position: 1 }, marks: '1.00' },
+      ],
+    }
+    const genericSubjectQuestion = { ...passageQuestion, id: 25, qb_subject_id: 4, question_text: 'A Bangla passage question.', items: passageQuestion.items.slice(0, 2) }
+    const genericTypeQuestion = { ...passageQuestion, id: 26, qb_question_type_id: 10, question_text: 'An English reading question.', items: passageQuestion.items.slice(0, 2) }
+    api.get.mockImplementation(url => url === '/writer/curriculum'
+      ? Promise.resolve({ data: { data: { class_levels: [], subjects: [
+        { id: 3, name_bn: 'ইংরেজি ১ম পত্র', name_en: 'English 1st Paper', class_level_ids: [], chapters: [] },
+        { id: 4, name_bn: 'বাংলা ১ম পত্র', name_en: 'Bangla 1st Paper', class_level_ids: [], chapters: [] },
+      ], curriculum_versions: [] } } })
+      : url === '/writer/question-types'
+        ? Promise.resolve({ data: { data: [
+          { id: 9, slug: 'seen_passage', name_bn: 'সিন প্যাসেজ', name_en: 'Seen Passage', structure: 'passage' },
+          { id: 10, slug: 'reading_passage', name_bn: 'প্যাসেজ', name_en: 'Passage', structure: 'passage' },
+        ] } })
+        : Promise.resolve({ data: { data: [passageQuestion, genericSubjectQuestion, genericTypeQuestion], meta: { current_page: 1, last_page: 1, total: 3, per_page: 16, facets: { question_types: [], source_types: [], years: [] } } } }))
+    renderPage()
+
+    await screen.findByText('Read the passage and answer Sections A and B.')
+    const card = document.querySelector('[data-question="24"]')
+    const genericSubjectCard = document.querySelector('[data-question="25"]')
+    const genericTypeCard = document.querySelector('[data-question="26"]')
+    expect(card).toHaveTextContent('A. Choose the correct answer from the alternatives:')
+    expect(card).toHaveTextContent('B. Answer the following questions:')
+    for (const genericCard of [genericSubjectCard, genericTypeCard]) {
+      expect(genericCard).toHaveTextContent('A. বহুনির্বাচনী (MCQ)')
+      expect(genericCard).toHaveTextContent('B. প্রশ্নের উত্তর')
+    }
+    expect(card).toHaveTextContent('(i) A queen')
+    expect(card).toHaveTextContent('Behula was (a)')
+    expect(card).toHaveTextContent('Behula gave up her journey.')
+    expect(card).toHaveTextContent('Person')
+    expect(card).toHaveTextContent('Explain')
+    expect(card).toHaveTextContent('Reached the gods')
+    expect(card).toHaveTextContent('Began the journey')
+    expect(card).not.toHaveTextContent('She endured a dangerous journey.')
+    expect(card).not.toHaveTextContent('brave heroine')
+    expect(card).not.toHaveTextContent('She continued her journey.')
+    expect(card).not.toHaveTextContent('showed')
+    expect(card).not.toHaveTextContent('quality')
+    expect(card).not.toHaveTextContent('devotion')
+
+    fireEvent.click(card.querySelector('[data-action="toggle-answer"]'))
+    const answer = await screen.findByTestId('qb-answer')
+    expect(answer).toHaveTextContent('A. Choose the correct answer from the alternatives:')
+    expect(answer).toHaveTextContent('B. Answer the following questions:')
+    expect(answer).toHaveTextContent('(ii) A heroine')
+    expect(answer).toHaveTextContent('She endured a dangerous journey.')
+    expect(answer).toHaveTextContent('brave')
+    expect(answer).toHaveTextContent('She continued her journey.')
+    expect(answer).toHaveTextContent('devotion')
+    expect(answer).toHaveTextContent('Began the journey')
+    expect(answer).toHaveTextContent('Behula — brave heroine')
+    expect(answer).toHaveTextContent('Behula — showed — devotion')
+    expect(answer).toHaveTextContent('quality: devotion')
+    expect(answer.textContent.indexOf('Began the journey')).toBeLessThan(answer.textContent.indexOf('Reached the gods'))
+    expect(answer).not.toHaveTextContent(/\\{\\\"/)
+    expect(answer).not.toHaveTextContent('{"correct"')
+    expect(answer).not.toHaveTextContent('[object Object]')
   })
 })
