@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useFieldArray, useForm } from 'react-hook-form'
-import { ChevronDown, ImagePlus, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, Plus, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import { multipart } from '../../features/students/formData'
 import { useAuthStore } from '../../store/authStore'
@@ -483,7 +483,6 @@ export default function QbQuestionEdit() {
                         </figure>
                       ))}
                     </div>
-                    {canEdit && <Button variant="secondary" onClick={openPictureDialog} data-action="add-picture"><ImagePlus aria-hidden="true" className="h-4 w-4" />{t('qb.add_picture')}</Button>}
                     {errors.media_ids && <p role="alert" className="text-xs font-medium text-content">{errors.media_ids.message}</p>}
                   </fieldset>
                 </Section>
