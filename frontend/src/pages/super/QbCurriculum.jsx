@@ -169,7 +169,7 @@ function NodeForm({ kind, row, classLevels, levels, subjects = [], versions = []
     if (kind === 'class-levels') Object.assign(body, { education_level: v.education_level, is_active: Boolean(v.is_active) })
     if (kind === 'subjects') Object.assign(body, { code: v.code || null, is_active: Boolean(v.is_active) })
     if (kind === 'chapters') Object.assign(body, { number: v.number === '' ? null : Number(v.number) })
-    if (kind === 'curriculum-versions') Object.assign(body, { ...(isNew ? { qb_subject_id: row.qb_subject_id } : {}), version_key: v.version_key, is_active: Boolean(v.is_active) })
+    if (kind === 'curriculum-versions') Object.assign(body, { ...(isNew ? { qb_subject_id: row.qb_subject_id } : {}), version_key: v.version_key, is_active: Boolean(v.is_active), class_level_ids: [].concat(v.class_level_ids || []).map(Number) })
     if (kind === 'curriculum-nodes') Object.assign(body, { kind: v.kind, parent_id: v.parent_id === '' ? null : Number(v.parent_id) || null,
       ...(isNew ? { qb_curriculum_version_id: row.qb_curriculum_version_id } : {}), legacy_qb_chapter_id: v.legacy_qb_chapter_id || null, legacy_qb_topic_id: v.legacy_qb_topic_id || null })
     if (kind === 'subjects' || kind === 'chapters') body.class_level_ids = [].concat(v.class_level_ids || []).map(Number)
@@ -200,11 +200,11 @@ function NodeForm({ kind, row, classLevels, levels, subjects = [], versions = []
           <Input label={t('qbed.legacy_topic_id')} ltr inputMode="numeric" {...register('legacy_qb_topic_id')} /></>}
         <Input label={t('qb.sort_order')} ltr inputMode="numeric" error={errors.sort_order?.message} {...register('sort_order')} />
         {(kind === 'class-levels' || kind === 'subjects' || kind === 'curriculum-versions') && <Check label={t('qb.active')} {...register('is_active')} />}
-        {(kind === 'subjects' || kind === 'chapters') && (
+        {(kind === 'subjects' || kind === 'chapters' || kind === 'curriculum-versions') && (
           <fieldset className="sm:col-span-2 flex flex-col gap-1">
-            <legend className="text-sm font-medium mb-1">{t('qb.taught_in')}</legend>
+            <legend className="text-sm font-medium mb-1">{t(kind === 'curriculum-versions' ? 'qbed.version_classes' : 'qb.taught_in')}</legend>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3">
-              {classLevels.map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids')} />)}
+              {classLevels.filter(c => kind !== 'curriculum-versions' || (subjects.find(s => String(s.id) === String(row.qb_subject_id))?.class_level_ids ?? []).map(Number).includes(Number(c.id))).map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids')} />)}
             </div>
             {errors.class_level_ids && <p role="alert" className="text-xs font-medium text-content">{errors.class_level_ids.message}</p>}
           </fieldset>

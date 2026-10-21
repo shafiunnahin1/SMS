@@ -124,7 +124,7 @@ export default function QbQuestionEdit() {
   // D139: class first, then the subjects of those classes; a subject with a curriculum version is placed by its syllabus path,
   // any other subject by chapter → topic. The question type is chosen separately and is never a path node.
   const classSubjects = subjectsForClasses(tree.data.subjects, watch('class_level_ids'))
-  const curriculumVersions = versionsForSubject(tree.data.curriculum_versions, watch('qb_subject_id'))
+  const curriculumVersions = versionsForSubject(tree.data.curriculum_versions, watch('qb_subject_id'), watch('class_level_ids'))
   const curriculumOptions = flattenCurriculum(curriculumVersions, name)
   const usesCurriculum = curriculumVersions.length > 0 || isLanguagePaperSubject(subject)
   const chapter = subject?.chapters.find(c => String(c.id) === String(watch('qb_chapter_id')))

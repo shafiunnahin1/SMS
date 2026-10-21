@@ -22,6 +22,20 @@ describe('D139 curriculum helpers', () => {
     expect(versionsForSubject(versions, '5').map(v => v.id)).toEqual([1, 2])
   })
 
+  it('filters mapped versions by selected class and falls back to legacy versions only before any version is mapped', () => {
+    const mapped = [
+      { id: 10, qb_subject_id: 5, class_level_ids: [6, 7, 8], is_active: true },
+      { id: 11, qb_subject_id: 5, class_level_ids: [9, 10], is_active: true },
+      { id: 12, qb_subject_id: 5, class_level_ids: [11, 12], is_active: true },
+      { id: 13, qb_subject_id: 5, class_level_ids: [], is_active: true },
+    ]
+    expect(versionsForSubject(mapped, 5, [7, 8]).map(v => v.id)).toEqual([10])
+    expect(versionsForSubject(mapped, 5, [10]).map(v => v.id)).toEqual([11])
+    expect(versionsForSubject(mapped, 5, [7, 10]).map(v => v.id)).toEqual([])
+    expect(versionsForSubject(mapped, 5, []).map(v => v.id)).toEqual([])
+    expect(versionsForSubject([{ ...mapped[3] }], 5, [7]).map(v => v.id)).toEqual([13])
+  })
+
   it('flattens the tree into searchable paths', () => {
     const rows = flattenCurriculum(versionsForSubject(versions, 5), name)
     expect(rows.map(r => r.label)).toEqual(['Prose', 'Prose › Aam Antir Bhepu', 'Poetry'])

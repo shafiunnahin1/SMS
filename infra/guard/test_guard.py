@@ -142,17 +142,17 @@ def run_guard(d, base, head):
 
 def d139_probe():
     d = make_base()
-    decisions = DECISIONS + '| D138 | Flexible curriculum | approved |\n| D139 | Language curriculum task | approved |\n'
+    decisions = DECISIONS + '| D138 | Flexible curriculum | approved |\n| D139 | Language curriculum task | approved |\n| D144 | Class-scoped language curricula | approved |\n| D145 | Class-scoped curriculum version mapping | approved |\n'
     progress = PROGRESS + '\n- [x] R2.1.2 — accepted D114 scope\n'
     write(d, 'docs/LOCKED-DECISIONS.md', decisions)
     write(d, 'docs/PROGRESS.md', progress)
     git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'owner: approved D139 base')
     git(d, 'tag', 'd139base')
     write(d, 'api/app/Services/Curriculum.php', "<?php\nclass Curriculum {}\n")
-    write(d, 'api/database/migrations/2026_10_21_000001_create_qb_curriculum_versions.php', MIG % 'qb_curriculum_versions')
+    write(d, 'api/database/migrations/2026_10_21_000001_create_qb_curriculum_version_class_level.php', MIG % 'qb_curriculum_version_class_level')
     write(d, 'docs/PROGRESS.md', progress + '- [ ] R2.1.2-language-curriculum — in progress\n')
     git(d, 'add', '-A')
-    git(d, 'commit', '-q', '-m', 'feat: D139 curriculum slice\n\nTask: R2.1.2-language-curriculum\nChange-Request: D139')
+    git(d, 'commit', '-q', '-m', 'feat: D145 class mapping slice\n\nTask: R2.1.2-language-curriculum\nChange-Request: D145')
     code, out = run_guard(d, 'd139base', 'HEAD')
     shutil.rmtree(d, ignore_errors=True)
     return code, out
@@ -197,7 +197,7 @@ def main():
     n += 1
     code, out = d139_probe()
     good = code == 0
-    print(('ok    ' if good else 'WRONG ') + 'D139 custom task, dependency and new-table allowlist' + ('' if good else f' (exit {code})\n' + out[-500:]))
+    print(('ok    ' if good else 'WRONG ') + 'D145 custom task, dependency and new-table allowlist' + ('' if good else f' (exit {code})\n' + out[-500:]))
     bad += 0 if good else 1
     n += 1
     code, out = d142_probe()

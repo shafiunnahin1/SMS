@@ -11,7 +11,7 @@ import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
 import { Select, Textarea } from '../../components/FormField'
 import MathText from '../../features/qb/MathText'
-import { breadcrumbLabel, flattenCurriculum, versionsForSubject } from '../../features/qb/curriculum'
+import { breadcrumbLabel, flattenCurriculum, subjectsForClasses, versionsForSubject } from '../../features/qb/curriculum'
 import { fmtNumber as formatNumber } from '../../i18n/format'
 import { MAX_PHOTO_BYTES, readPhoto } from '../../features/qb/ocr'
 
@@ -26,7 +26,7 @@ export default function QbFinder() {
   const { locale } = useLocale()
   const [text, setText] = useState('')
   const [ocr, setOcr] = useState({ busy: false, status: '', pct: 0, error: '' })
-  const [f, setF] = useState({ qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', curriculum_node_id: '', qb_question_type_id: '', language: '' })
+  const [f, setF] = useState({ qb_class_level_id: '', qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', curriculum_node_id: '', qb_question_type_id: '', language: '' })
   const tree = useQuery({ queryKey: ['writer', 'curriculum'], queryFn: () => api.get('/writer/curriculum').then(r => r.data.data) })
   const types = useQuery({ queryKey: ['writer', 'types'], queryFn: () => api.get('/writer/question-types').then(r => r.data.data) })
   const find = useMutation({
@@ -41,10 +41,14 @@ export default function QbFinder() {
 
   const name = (n) => (n ? ((locale === 'bn' ? n.name_bn : n.name_en) || n.name_en || n.name_bn) : '')
   const n = (v) => formatNumber(v, i18n.language)
+  const availableSubjects = subjectsForClasses(tree.data.subjects, f.qb_class_level_id ? [f.qb_class_level_id] : [])
   const subject = tree.data.subjects.find(s => String(s.id) === f.qb_subject_id)
   const chapter = subject?.chapters.find(c => String(c.id) === f.qb_chapter_id)
-  const curriculumOptions = flattenCurriculum(versionsForSubject(tree.data.curriculum_versions, f.qb_subject_id), name)
-  const set = (k, v) => setF(p => ({ ...p, [k]: v, ...(k === 'qb_subject_id' ? { qb_chapter_id: '', qb_topic_id: '', curriculum_node_id: '' } : {}), ...(k === 'qb_chapter_id' ? { qb_topic_id: '' } : {}) }))
+  const curriculumOptions = flattenCurriculum(versionsForSubject(tree.data.curriculum_versions, f.qb_subject_id, f.qb_class_level_id ? [f.qb_class_level_id] : []), name)
+  const set = (k, v) => setF(p => ({ ...p, [k]: v,
+    ...(k === 'qb_class_level_id' ? { qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', curriculum_node_id: '' } : {}),
+    ...(k === 'qb_subject_id' ? { qb_chapter_id: '', qb_topic_id: '', curriculum_node_id: '' } : {}),
+    ...(k === 'qb_chapter_id' ? { qb_topic_id: '' } : {}) }))
   const short = text.trim().length < MIN
   const r = find.data
   const onPhoto = async (e) => {
@@ -84,9 +88,11 @@ export default function QbFinder() {
           <Textarea label={t('qbf.text')} name="text" rows={5} value={text} maxLength={MAX} dir="auto"
             onChange={e => setText(e.target.value)} hint={`${n(text.length)} / ${n(MAX)}`}
             error={text && short ? t('qbf.too_short') : undefined} />
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+            <Select label={t('qb.class_level')} name="qb_class_level_id" value={f.qb_class_level_id} placeholder={t('qbf.any')} onChange={e => set('qb_class_level_id', e.target.value)}
+              options={tree.data.class_levels.map(c => ({ value: String(c.id), label: name(c) }))} />
             <Select label={t('qb.subject')} name="qb_subject_id" value={f.qb_subject_id} placeholder={t('qbf.any')} onChange={e => set('qb_subject_id', e.target.value)}
-              options={tree.data.subjects.map(s => ({ value: String(s.id), label: name(s) }))} />
+              options={availableSubjects.map(s => ({ value: String(s.id), label: name(s) }))} />
             {curriculumOptions.length > 0
               ? <Select className="lg:col-span-2" label={t('qbed.curriculum_path')} name="curriculum_node_id" value={f.curriculum_node_id} placeholder={t('qbf.any')} onChange={e => set('curriculum_node_id', e.target.value)} options={curriculumOptions.map(x => ({ value: String(x.id), label: x.label }))} />
               : <>

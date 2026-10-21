@@ -3308,6 +3308,15 @@ CREATE TABLE qb_curriculum_versions (                        -- D138/D139: sylla
     FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
 );
 
+CREATE TABLE qb_curriculum_version_class_level (             -- D145: class applicability of a curriculum version
+    qb_curriculum_version_id BIGINT UNSIGNED NOT NULL,
+    qb_class_level_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (qb_curriculum_version_id, qb_class_level_id),
+    INDEX idx_qb_curriculum_version_classes (qb_class_level_id, qb_curriculum_version_id),
+    FOREIGN KEY (qb_curriculum_version_id) REFERENCES qb_curriculum_versions(id),
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
+);
+
 CREATE TABLE qb_curriculum_nodes (                            -- D138/D139: arbitrary-depth Part/Unit/Lesson/Text/Topic/Other tree
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     qb_curriculum_version_id BIGINT UNSIGNED NOT NULL,

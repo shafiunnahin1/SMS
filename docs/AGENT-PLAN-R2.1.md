@@ -1,6 +1,6 @@
 # R2.1 — generated planning plan (D83)
 
-> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle and D138-D139 language-curriculum slices below. Runtime remains R3; no runtime switch is authorized.
+> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle, D138-D145 language-curriculum, and D142 gap-authoring slices below. Runtime remains R3; no runtime switch is authorized.
 > Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.
 > Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.
 
@@ -26,13 +26,13 @@ The parent R2.1.2 task remains unchecked until its complete D114 acceptance scop
 
 ## Approved scoped implementation slice — R2.1.2-language-curriculum
 
-Task: R2.1.2-language-curriculum (parent R2.1.2); decisions: D138, D139.
+Task: R2.1.2-language-curriculum (parent R2.1.2); decisions: D138, D139, D144, D145.
 Depends on: R2.1.2; status: executable slice, not accepted.
-Scope: Versioned arbitrary-depth curriculum for Bangla 1st/2nd and English 1st/2nd papers; separate syllabus locations from question type/exam part; preserve legacy chapter/topic APIs; allow zero or multiple node links; add optional source question number, set and page/reference; Super Admin tree management and searchable writer breadcrumbs across authoring, preview, list and finder.
-Authorized table: qb_curriculum_versions, qb_curriculum_nodes, qb_question_curriculum_nodes.
+Scope: Versioned arbitrary-depth curriculum for Bangla 1st/2nd and English 1st/2nd papers; separate syllabus locations from question type/exam part; preserve legacy chapter/topic APIs; allow zero or multiple node links; add optional source question number, set and page/reference; Super Admin tree management and searchable writer breadcrumbs across authoring, preview, list and finder. D144/D145 add Super Admin mapping of existing versions to existing class levels, class-specific writer version lookup, legacy unmapped-version fallback, and no automatic changes to existing question/source links.
+Authorized table: qb_curriculum_versions, qb_curriculum_nodes, qb_question_curriculum_nodes, qb_curriculum_version_class_level.
 Routes: GET /super/qb/curriculum (super_admin); POST /super/qb/{kind} (super_admin); PUT|DELETE /super/qb/{kind}/{id} (super_admin); GET /writer/curriculum (content_writer, content_moderator, super_admin); POST|PUT /writer/questions[/{id}] (content_writer, super_admin); GET /writer/questions[/{id}] (content_writer, content_moderator, super_admin).
 Roles: content_writer, content_moderator, super_admin.
-Done when: Additive migrations and canonical schema parity; authorized version/node management with same-subject parent validation, arbitrary depth, cycle prevention, bilingual labels and stable ordering; searchable localized writer breadcrumbs; question create/edit/reopen/preview/list/finder round trips for zero, one and multiple curriculum links; optional source occurrence metadata round trip; old chapter/topic endpoints and records remain compatible; bn/en, role/module/tenant, no-answer-leak, migration rollback and focused regression checks pass. Do not seed unverified textbook content. Record exact evidence in docs/PROGRESS.md.
+Done when: Additive migrations and canonical schema parity; authorized version/node management with same-subject parent validation, arbitrary depth, cycle prevention, bilingual labels and stable ordering; searchable localized writer breadcrumbs; question create/edit/reopen/preview/list/finder round trips for zero, one and multiple curriculum links; optional source occurrence metadata round trip; version-to-class mapping validates subject/class links and rejects overlaps; writer lookup is class-specific with the approved legacy fallback; English 1st Paper remains linked to classes 6-12 and supports version mappings for 6-8, 9-10 and 11-12; existing question/source links remain unchanged; old chapter/topic endpoints and records remain compatible; bn/en, role/module/tenant, no-answer-leak, migration rollback and focused regression checks pass. Do not seed unverified textbook content. Record exact evidence in docs/PROGRESS.md.
 Deferred from the parent task: textbook content seeding; R2.1 runtime switch; all unrelated R2.1 tasks.
 The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
 

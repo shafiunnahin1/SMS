@@ -39,7 +39,7 @@ class QbCurriculumController extends Controller
                 'children' => $nestedNodes($versionId, $node->id),
             ])->values()->all();
         };
-        $versions = QbCurriculumVersion::with('subject:id,name_bn,name_en')->orderBy('sort_order')->orderBy('id')->get();
+        $versions = QbCurriculumVersion::with(['subject:id,name_bn,name_en', 'classLevels:id'])->orderBy('sort_order')->orderBy('id')->get();
         return [
             'class_levels' => QbClassLevel::orderBy('sort_order')->orderBy('id')->get()->map(fn ($c) => $self->row('class-levels', $c))->values(),
             'subjects' => QbSubject::with('classLevels:id')->orderBy('sort_order')->orderBy('id')->get()->map(fn ($s) => $self->row('subjects', $s) + [
@@ -53,6 +53,7 @@ class QbCurriculumController extends Controller
             'curriculum_versions' => $versions->map(fn ($version) => $self->row('curriculum-versions', $version) + [
                 'subject_name_bn' => $version->subject?->name_bn,
                 'subject_name_en' => $version->subject?->name_en,
+                'class_level_ids' => $version->classLevels->pluck('id')->values(),
                 'nodes' => $nestedNodes($version->id),
             ])->values(),
         ];
@@ -73,6 +74,7 @@ class QbCurriculumController extends Controller
                 }
                 $in['is_active'] = true;
             }
+            $this->assertVersionClasses($kind, $in);
             $this->assertFlexiblePlacement($kind, $in);
             $class = self::KINDS[$kind];
             $node = $class::create(collect($in)->except('class_level_ids')->all());
@@ -94,6 +96,7 @@ class QbCurriculumController extends Controller
     {
         $node = $this->find($kind, $id);
         $in = $request->validated();
+        $this->assertVersionClasses($kind, $in, $node);
         $this->assertFlexiblePlacement($kind, $in, $node);
         DB::transaction(function () use ($kind, $node, $in) {
             $node->update(collect($in)->except('class_level_ids')->all());
@@ -112,6 +115,7 @@ class QbCurriculumController extends Controller
         DB::transaction(function () use ($kind, $node) {
             if ($kind === 'class-levels') $node->chapters()->detach();             // a class only links chapters once nothing else uses it
             if (in_array($kind, ['subjects', 'chapters'], true)) $node->classLevels()->detach();
+            if ($kind === 'curriculum-versions') $node->classLevels()->detach();
             AuditLog::record("qb.{$kind}.deleted", $node, ['name_en' => $node->name_en]);
             $node->delete();
         });
@@ -139,8 +143,28 @@ class QbCurriculumController extends Controller
 
     private function syncClasses(string $kind, Model $node, array $in): void
     {
-        if (!array_key_exists('class_level_ids', $in) || !in_array($kind, ['subjects', 'chapters'], true)) return;
+        if (!array_key_exists('class_level_ids', $in) || !in_array($kind, ['subjects', 'chapters', 'curriculum-versions'], true)) return;
         $node->classLevels()->sync(array_map('intval', $in['class_level_ids']));
+    }
+
+    private function assertVersionClasses(string $kind, array $in, ?Model $current = null): void
+    {
+        if ($kind !== 'curriculum-versions' || !array_key_exists('class_level_ids', $in)) return;
+        $subjectId = (int) ($current?->qb_subject_id ?? $in['qb_subject_id'] ?? 0);
+        $ids = array_values(array_unique(array_map('intval', $in['class_level_ids'])));
+        if ($ids === []) return;
+        $linked = QbClassLevel::whereIn('id', $ids)->whereHas('subjects', fn ($query) => $query->where('qb_subjects.id', $subjectId))->count();
+        if ($linked !== count($ids)) {
+            throw ValidationException::withMessages(['class_level_ids' => __('validation.exists', ['attribute' => 'class level for this subject'])]);
+        }
+        foreach ($ids as $classLevelId) {
+            $overlap = QbCurriculumVersion::where('qb_subject_id', $subjectId)
+                ->when($current, fn ($query) => $query->whereKeyNot($current->id))
+                ->whereHas('classLevels', fn ($query) => $query->where('qb_class_levels.id', $classLevelId))->exists();
+            if ($overlap) {
+                throw ValidationException::withMessages(['class_level_ids' => __('validation.unique', ['attribute' => 'curriculum version for this class'])]);
+            }
+        }
     }
 
     private function inUse(string $kind, Model $node): bool
@@ -204,7 +228,8 @@ class QbCurriculumController extends Controller
             'subjects' => ['code' => $n->code, 'is_active' => (bool) $n->is_active],
             'chapters' => ['qb_subject_id' => $n->qb_subject_id, 'number' => $n->number],
             'topics' => ['qb_chapter_id' => $n->qb_chapter_id],
-            'curriculum-versions' => ['qb_subject_id' => (int) $n->qb_subject_id, 'version_key' => $n->version_key, 'is_active' => (bool) $n->is_active],
+            'curriculum-versions' => ['qb_subject_id' => (int) $n->qb_subject_id, 'version_key' => $n->version_key, 'is_active' => (bool) $n->is_active,
+                'class_level_ids' => $n->classLevels()->pluck('qb_class_levels.id')->values()],
             'curriculum-nodes' => ['qb_curriculum_version_id' => (int) $n->qb_curriculum_version_id, 'parent_id' => $n->parent_id ? (int) $n->parent_id : null,
                 'kind' => $n->kind, 'legacy_qb_chapter_id' => $n->legacy_qb_chapter_id ? (int) $n->legacy_qb_chapter_id : null,
                 'legacy_qb_topic_id' => $n->legacy_qb_topic_id ? (int) $n->legacy_qb_topic_id : null],

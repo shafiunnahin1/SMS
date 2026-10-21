@@ -75,11 +75,14 @@ export default function QbQuestionStart() {
   const subject = tree.data.subjects.find(s => String(s.id) === String(v.qb_subject_id))
   const chapter = subject?.chapters.find(c => String(c.id) === String(v.qb_chapter_id))
   const classes = v.class_level_ids.map(Number)
-  const curriculumVersions = versionsForSubject(tree.data.curriculum_versions, v.qb_subject_id)
+  const curriculumVersions = versionsForSubject(tree.data.curriculum_versions, v.qb_subject_id, v.class_level_ids)
   const curriculumOptions = flattenCurriculum(curriculumVersions, name)
   const pickerVersions = curriculumVersions.map(version => ({ ...version, label: name(version) }))
   const usesCurriculum = curriculumVersions.length > 0 || isLanguagePaperSubject(subject)
   const pickClasses = () => {
+    const availableVersions = versionsForSubject(tree.data.curriculum_versions, getValues('qb_subject_id'), getValues('class_level_ids'))
+    const availableNodeIds = new Set(flattenCurriculum(availableVersions, name).map(node => String(node.id)))
+    setValue('curriculum_node_ids', (getValues('curriculum_node_ids') ?? []).filter(id => availableNodeIds.has(String(id))))
     const stillAvailable = subjectsForClasses(tree.data.subjects, getValues('class_level_ids'))
       .some(item => String(item.id) === String(getValues('qb_subject_id')))
     if (!stillAvailable && getValues('qb_subject_id')) {

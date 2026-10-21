@@ -34,21 +34,20 @@ APPROVED_EXECUTION_SLICES = [{
                  'question finder and calibrated ranking fixtures'],
 }, {
     'id': 'R2.1.2-language-curriculum', 'parent_task': 'R2.1.2',
-    'decisions': ['D138', 'D139'], 'depends_on': ['R2.1.2'],
+    'decisions': ['D138', 'D139', 'D144', 'D145'], 'depends_on': ['R2.1.2'],
     'executable': True, 'accepted': False,
-    'scope': 'Versioned arbitrary-depth curriculum for Bangla 1st/2nd and English 1st/2nd papers; separate syllabus locations from question type/exam part; preserve legacy chapter/topic APIs; allow zero or multiple node links; add optional source question number, set and page/reference; Super Admin tree management and searchable writer breadcrumbs across authoring, preview, list and finder.',
-    'tables': ['qb_curriculum_versions', 'qb_curriculum_nodes', 'qb_question_curriculum_nodes'],
+    'scope': 'Versioned arbitrary-depth curriculum for Bangla 1st/2nd and English 1st/2nd papers; separate syllabus locations from question type/exam part; preserve legacy chapter/topic APIs; allow zero or multiple node links; add optional source question number, set and page/reference; Super Admin tree management and searchable writer breadcrumbs across authoring, preview, list and finder. D144/D145 add Super Admin mapping of existing versions to existing class levels, class-specific writer version lookup, legacy unmapped-version fallback, and no automatic changes to existing question/source links.',
+    'tables': ['qb_curriculum_versions', 'qb_curriculum_nodes', 'qb_question_curriculum_nodes', 'qb_curriculum_version_class_level'],
     'routes': [
-        {'method': 'GET|POST', 'uri': '/super/qb/curriculum-versions', 'roles': ['super_admin']},
-        {'method': 'GET|PUT|DELETE', 'uri': '/super/qb/curriculum-versions/{versionId}', 'roles': ['super_admin']},
-        {'method': 'GET|POST', 'uri': '/super/qb/curriculum-versions/{versionId}/nodes', 'roles': ['super_admin']},
-        {'method': 'PUT|DELETE', 'uri': '/super/qb/curriculum-nodes/{nodeId}', 'roles': ['super_admin']},
-        {'method': 'GET', 'uri': '/writer/curriculum/nodes', 'roles': ['content_writer', 'content_moderator', 'super_admin']},
+        {'method': 'GET', 'uri': '/super/qb/curriculum', 'roles': ['super_admin']},
+        {'method': 'POST', 'uri': '/super/qb/{kind}', 'roles': ['super_admin']},
+        {'method': 'PUT|DELETE', 'uri': '/super/qb/{kind}/{id}', 'roles': ['super_admin']},
+        {'method': 'GET', 'uri': '/writer/curriculum', 'roles': ['content_writer', 'content_moderator', 'super_admin']},
         {'method': 'POST|PUT', 'uri': '/writer/questions[/{id}]', 'roles': ['content_writer', 'super_admin']},
         {'method': 'GET', 'uri': '/writer/questions[/{id}]', 'roles': ['content_writer', 'content_moderator', 'super_admin']},
     ],
     'roles': ['content_writer', 'content_moderator', 'super_admin'],
-    'done_when': 'Additive migrations and canonical schema parity; authorized version/node management with same-subject parent validation, arbitrary depth, cycle prevention, bilingual labels and stable ordering; searchable localized writer breadcrumbs; question create/edit/reopen/preview/list/finder round trips for zero, one and multiple curriculum links; optional source occurrence metadata round trip; old chapter/topic endpoints and records remain compatible; bn/en, role/module/tenant, no-answer-leak, migration rollback and focused regression checks pass. Do not seed unverified textbook content. Record exact evidence in docs/PROGRESS.md.',
+    'done_when': 'Additive migrations and canonical schema parity; authorized version/node management with same-subject parent validation, arbitrary depth, cycle prevention, bilingual labels and stable ordering; searchable localized writer breadcrumbs; question create/edit/reopen/preview/list/finder round trips for zero, one and multiple curriculum links; optional source occurrence metadata round trip; version-to-class mapping validates subject/class links and rejects overlaps; writer lookup is class-specific with the approved legacy fallback; English 1st Paper remains linked to classes 6-12 and supports version mappings for 6-8, 9-10 and 11-12; existing question/source links remain unchanged; old chapter/topic endpoints and records remain compatible; bn/en, role/module/tenant, no-answer-leak, migration rollback and focused regression checks pass. Do not seed unverified textbook content. Record exact evidence in docs/PROGRESS.md.',
     'deferred': ['textbook content seeding', 'R2.1 runtime switch', 'all unrelated R2.1 tasks'],
 }, {
     'id': 'R2.1.2-gap-fill-authoring', 'parent_task': 'R2.1.2',
@@ -101,7 +100,7 @@ def validate(root, scope, gaps):
         'modules': [], 'packages': [],
     }
     require(scope.get('authorized_new_objects') == expected_objects,
-            'only the D139 curriculum tables may be authorized; D142 adds no new objects')
+            'only D139/D145 curriculum tables may be authorized; D142 adds no new objects')
     require(scope.get('source_policy') == 'read_only_files_no_db_no_execution', 'source access policy')
     require(scope.get('approved_execution_slices') == APPROVED_EXECUTION_SLICES,
             'approved execution slices must match their owner-approved contracts')
@@ -179,9 +178,9 @@ def build(root):
     acceptance = requirements(root)
     plan = {**scope, 'generated_from': [SCOPE, GAPS, 'RELEASE-2.1.md'],
             'acceptance_catalogue': acceptance,
-            'evidence_note': 'Only the explicit D114-D117 dataset-lifecycle and D138-D139 language-curriculum slices are executable; the full imported task scope and runtime switch remain governed by their existing acceptance gates.'}
+            'evidence_note': 'Only the explicit D114-D117 dataset-lifecycle, D138-D145 language-curriculum, and D142 gap-authoring slices are executable; the full imported task scope and runtime switch remain governed by their existing acceptance gates.'}
     lines = ['# R2.1 — generated planning plan (D83)', '',
-             '> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle and D138-D139 language-curriculum slices below. Runtime remains R3; no runtime switch is authorized.',
+             '> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle, D138-D145 language-curriculum, and D142 gap-authoring slices below. Runtime remains R3; no runtime switch is authorized.',
              '> Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.',
              '> Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.',
              '', 'Placement: after R3.A, before R4/later; retain existing R1.1/R2 prerequisites.',

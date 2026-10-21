@@ -16,4 +16,5 @@ class QbCurriculumVersion extends Model
 
     public function subject() { return $this->belongsTo(QbSubject::class, 'qb_subject_id'); }
     public function nodes() { return $this->hasMany(QbCurriculumNode::class, 'qb_curriculum_version_id'); }
+    public function classLevels() { return $this->belongsToMany(QbClassLevel::class, 'qb_curriculum_version_class_level', 'qb_curriculum_version_id', 'qb_class_level_id'); }
 }

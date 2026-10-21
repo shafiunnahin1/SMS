@@ -9,9 +9,14 @@ export const subjectsForClasses = (subjects, classIds) => {
 }
 
 /** the subject's curriculum versions, active first */
-export const versionsForSubject = (versions, subjectId) => (versions ?? [])
-  .filter(v => String(v.qb_subject_id) === String(subjectId))
-  .sort((a, b) => Number(b.is_active) - Number(a.is_active))
+export const versionsForSubject = (versions, subjectId, classIds = []) => {
+  const subjectVersions = (versions ?? []).filter(v => String(v.qb_subject_id) === String(subjectId))
+  const mapped = subjectVersions.filter(v => (v.class_level_ids ?? []).length > 0)
+  const visible = mapped.length === 0
+    ? subjectVersions
+    : mapped.filter(v => (classIds ?? []).length > 0 && (classIds ?? []).every(id => (v.class_level_ids ?? []).map(Number).includes(Number(id))))
+  return visible.sort((a, b) => Number(b.is_active) - Number(a.is_active))
+}
 
 const LANGUAGE_PAPER_NAMES = new Set([
   'বাংলা ১ম পত্র', 'bangla 1st paper', 'বাংলা ২য় পত্র', 'bangla 2nd paper',

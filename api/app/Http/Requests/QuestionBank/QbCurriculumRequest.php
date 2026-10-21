@@ -34,7 +34,7 @@ class QbCurriculumRequest extends FormRequest
                     ->ignore($this->route('id'))],
                 'name_bn' => "{$req}|string|max:200", 'name_en' => "{$req}|string|max:200",
                 'sort_order' => 'sometimes|integer|min:0|max:9999', 'is_active' => 'sometimes|boolean',
-            ],
+            ] + $classes,
             'curriculum-nodes' => [
                 'qb_curriculum_version_id' => $this->isMethod('post') ? 'required|integer|exists:qb_curriculum_versions,id' : 'prohibited',
                 'parent_id' => 'nullable|integer|exists:qb_curriculum_nodes,id',

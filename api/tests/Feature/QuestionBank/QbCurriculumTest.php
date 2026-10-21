@@ -154,6 +154,49 @@ class QbCurriculumTest extends TestCase
         $this->assertSame(1, QbCurriculumNode::where('name_en', 'Reading')->count());
     }
 
+    public function test_curriculum_versions_map_to_subject_classes_without_overlap_or_question_remap(): void
+    {
+        $classes = [];
+        foreach (range(6, 12) as $grade) $classes[$grade] = $this->add('class-levels', ['name_bn' => "শ্রেণী {$grade}", 'name_en' => "Class {$grade}"]);
+        $subject = $this->add('subjects', ['name_bn' => 'ইংরেজি ১ম পত্র', 'name_en' => 'English 1st Paper', 'class_level_ids' => array_values($classes)]);
+        $makeVersion = fn ($key, $ids) => $this->api('POST', $this->central, 'super/qb/curriculum-versions', $this->super, [
+            'qb_subject_id' => $subject, 'version_key' => $key, 'name_bn' => $key, 'name_en' => $key, 'class_level_ids' => $ids,
+        ])->assertCreated()->json('data.id');
+        $lower = $makeVersion('6-8', [$classes[6], $classes[7], $classes[8]]);
+        $middle = $makeVersion('9-10', [$classes[9], $classes[10]]);
+        $upper = $makeVersion('11-12', [$classes[11], $classes[12]]);
+
+        $this->api('POST', $this->central, 'super/qb/curriculum-versions', $this->super, [
+            'qb_subject_id' => $subject, 'version_key' => 'overlap', 'name_bn' => 'Overlap', 'name_en' => 'Overlap',
+            'class_level_ids' => [$classes[9]],
+        ])->assertStatus(422)->assertJsonValidationErrors('class_level_ids');
+        $otherSubject = $this->add('subjects', ['name_bn' => 'পদার্থ', 'name_en' => 'Physics', 'class_level_ids' => [$classes[6]]]);
+        $this->api('POST', $this->central, 'super/qb/curriculum-versions', $this->super, [
+            'qb_subject_id' => $otherSubject, 'version_key' => 'invalid-class', 'name_bn' => 'Invalid', 'name_en' => 'Invalid',
+            'class_level_ids' => [$classes[7]],
+        ])->assertStatus(422)->assertJsonValidationErrors('class_level_ids');
+
+        $writerTree = $this->api('GET', $this->central, 'writer/curriculum', $this->makeUser(null, 'content_writer'))->assertOk()->json('data');
+        $versions = collect($writerTree['curriculum_versions'])->keyBy('version_key');
+        $this->assertEqualsCanonicalizing([$classes[6], $classes[7], $classes[8]], $versions['6-8']['class_level_ids']);
+        $this->assertEqualsCanonicalizing(array_values($classes), $writerTree['subjects'][0]['class_level_ids']);
+        $this->assertSame(3, QbCurriculumVersion::where('qb_subject_id', $subject)->count());
+        $this->assertTrue(in_array($lower, $versions->pluck('id')->all(), true));
+        $this->assertTrue(in_array($middle, $versions->pluck('id')->all(), true));
+        $this->assertTrue(in_array($upper, $versions->pluck('id')->all(), true));
+
+        $legacySubject = $this->add('subjects', ['name_bn' => 'বাংলা ১ম পত্র', 'name_en' => 'Bangla 1st Paper', 'class_level_ids' => [$classes[6]]]);
+        $legacyVersion = $this->add('curriculum-versions', ['qb_subject_id' => $legacySubject, 'version_key' => 'legacy', 'name_bn' => 'Legacy', 'name_en' => 'Legacy']);
+        $node = $this->add('curriculum-nodes', ['qb_curriculum_version_id' => $legacyVersion, 'kind' => 'Part', 'name_bn' => 'পাঠ', 'name_en' => 'Reading']);
+        $type = QbQuestionType::create(['slug' => 'd145-short', 'name_bn' => 'সংক্ষিপ্ত', 'name_en' => 'Short', 'family' => 'short']);
+        $writer = $this->makeUser(null, 'content_writer');
+        $question = $this->api('POST', $this->central, 'writer/questions', $writer, [
+            'qb_question_type_id' => $type->id, 'qb_subject_id' => $legacySubject, 'question_text' => 'Legacy question', 'curriculum_node_ids' => [$node],
+        ])->assertCreated()->json('data.id');
+        $this->api('PUT', $this->central, "super/qb/curriculum-versions/{$legacyVersion}", $this->super, ['class_level_ids' => [$classes[6]]])->assertOk();
+        $this->assertSame([$node], $this->api('GET', $this->central, "writer/questions/{$question}", $writer)->assertOk()->json('data.curriculum_node_ids'));
+    }
+
     public function test_writer_initial_version_is_limited_to_language_papers_and_the_central_host(): void
     {
         $physics = $this->add('subjects', ['name_bn' => 'পদার্থ', 'name_en' => 'Physics']);
