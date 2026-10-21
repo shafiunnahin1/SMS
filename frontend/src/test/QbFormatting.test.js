@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertPicture, insertTable, mathRegionAt, mergeTableCells, parseTableSelection, pushValueHistory, splitTableCell, stepValueHistory, transformImagePixels } from '../features/qb/formatting'
+import { applyAlign, applyCase, applyFormat, applyList, clearFormat, createTableCells, insertPicture, insertTable, mathRegionAt, mergeTableCells, parseTableSelection, pictureRange, pushValueHistory, splitTableCell, stepValueHistory, transformImagePixels, updatePicture } from '../features/qb/formatting'
 import { transformImageFile } from '../features/qb/imageTransforms'
 
 // D72 (QB.12): qbank's ribbon actions write qbank's vocabulary; inside maths they write LaTeX.
@@ -55,6 +55,18 @@ describe('ribbon actions', () => {
     expect(insertPicture('one\ntwo', 0, 0, 9, { position: 'start' }).value).toBe(`${picture}one\ntwo`)
     expect(insertPicture('one\ntwo', 0, 0, 9, { position: 'end' }).value).toBe(`one\ntwo${picture}`)
     expect(insertPicture('one', 0, 0, 9, { position: 'after', paragraph: 4 }).value).toBe(`one${picture}`)
+  })
+
+  it('edits and moves only the selected embedded picture', () => {
+    const first = '<img data-qmx-media="9" data-qmx-width="100" data-qmx-align="center">'
+    const second = '<img data-qmx-media="10" data-qmx-width="50" data-qmx-align="left">'
+    const value = `first${first}<div>second ${second}</div>`
+    expect(pictureRange(value, 9)).toEqual({ start: 5, end: 5 + first.length })
+    expect(pictureRange(value, 0)).toBeNull()
+    expect(updatePicture(value, 0, 0, 9, 11, { width: 60, align: 'right' }).value)
+      .toBe(`first<img data-qmx-media="11" data-qmx-width="60" data-qmx-align="right"><div>second ${second}</div>`)
+    expect(updatePicture(value, 0, 0, 9, 9, { width: 75, align: 'center', position: 'end' }).value)
+      .toBe(`first<div>second ${second}</div><img data-qmx-media="9" data-qmx-width="75" data-qmx-align="center">`)
   })
 
   it('bakes right-angle rotation and light-background transparency into pixels', () => {

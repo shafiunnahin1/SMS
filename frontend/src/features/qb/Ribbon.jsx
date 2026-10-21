@@ -24,15 +24,11 @@ const Sep = () => <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
 
 // D72 (QB.12): qbank's editor ribbon. Every action works on the text field the writer was last in (run(fn, ...args) on the page
 // applies it to that field's value and selection); maths, pictures, save and reset are the page's own actions.
-export default function Ribbon({ run, readActive, onImage, onGraph, onDiagram, imageTransform, onImageTransformChange, onReset, onUndo, onRedo, canUndo, canRedo, disabled, saving }) {
+export default function Ribbon({ run, readActive, onImage, onGraph, onDiagram, onReset, onUndo, onRedo, canUndo, canRedo, disabled, saving }) {
   const { t } = useTranslation()
   const [ul, setUl] = useState(LIST_STYLES.ul[0])
   const [ol, setOl] = useState(LIST_STYLES.ol[0])
   const [table, setTable] = useState(null)
-  const [pictureWidth, setPictureWidth] = useState('100')
-  const [pictureAlign, setPictureAlign] = useState('center')
-  const [picturePosition, setPicturePosition] = useState('cursor')
-  const [pictureParagraph, setPictureParagraph] = useState('1')
   const fmt = (f, c) => () => run(applyFormat, f, c)
   const selectedCells = table?.selected.map((point) => point.split(':').map(Number)) ?? []
   const mergedCells = table ? mergeTableCells(table.cells, selectedCells) : null
@@ -103,35 +99,7 @@ export default function Ribbon({ run, readActive, onImage, onGraph, onDiagram, i
         <Tool label={t('qbed.table')} onClick={openTable} data-action="table"><Table aria-hidden="true" className="h-4 w-4" /></Tool>
         {onGraph && <Tool label={t('qbed.graph')} onClick={onGraph} data-action="graph"><LineChart aria-hidden="true" className="h-4 w-4" /></Tool>}
         {onDiagram && <Tool label={t('qbed.diagram')} onClick={onDiagram} data-action="diagram"><Shapes aria-hidden="true" className="h-4 w-4" /></Tool>}
-        <label className="inline-flex h-9 cursor-pointer items-center rounded-token px-2 hover:bg-primary-soft" title={t('qbed.image')}>
-          <ImagePlus aria-hidden="true" className="h-4 w-4" /><span className="sr-only">{t('qbed.image')}</span>
-          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={e => onImage(e, { width: Number(pictureWidth), align: pictureAlign, position: picturePosition, paragraph: Number(pictureParagraph) })} name="picture" className="sr-only" />
-        </label>
-        <label className="inline-flex h-9 items-center gap-1 px-1" title={t('qbed.picture_width')}>
-          <span className="sr-only">{t('qbed.picture_width')}</span>
-          <input type="range" min="10" max="100" step="5" value={pictureWidth} onChange={e => setPictureWidth(e.target.value)} aria-label={t('qbed.picture_width')} className="w-16" />
-          <span className="min-w-9 text-xs tabular-nums">{pictureWidth}%</span>
-        </label>
-        <label className="inline-flex h-9 items-center" title={t('qbed.picture_align')}>
-          <span className="sr-only">{t('qbed.picture_align')}</span>
-          <select value={pictureAlign} onChange={e => setPictureAlign(e.target.value)} aria-label={t('qbed.picture_align')} className="h-8 max-w-24 rounded-token bg-surface px-1 text-xs [border:1px_solid_var(--line)]">
-            {['left', 'center', 'right'].map(align => <option key={align} value={align}>{t(`qbed.align_${align}`)}</option>)}
-          </select>
-        </label>
-        <label className="inline-flex h-9 items-center" title={t('qbed.picture_position')}>
-          <span className="sr-only">{t('qbed.picture_position')}</span>
-          <select value={picturePosition} onChange={e => setPicturePosition(e.target.value)} aria-label={t('qbed.picture_position')} className="h-8 max-w-32 rounded-token bg-surface px-1 text-xs [border:1px_solid_var(--line)]">
-            {['cursor', 'start', 'end', 'after'].map(position => <option key={position} value={position}>{t(`qbed.picture_positions.${position}`)}</option>)}
-          </select>
-        </label>
-        {picturePosition === 'after' && <Input className="w-24" label={t('qbed.picture_paragraph')} ltr inputMode="numeric" value={pictureParagraph} onChange={e => setPictureParagraph(e.target.value)} />}
-        <select aria-label={t('qbed.picture_rotation')} title={t('qbed.picture_rotation')} value={String(imageTransform.rotation)}
-          onChange={e => onImageTransformChange({ ...imageTransform, rotation: Number(e.target.value) })}
-          className="h-8 max-w-24 rounded-token bg-surface px-1 text-xs [border:1px_solid_var(--line)]">
-          {[0, 90, 180, 270].map(rotation => <option key={rotation} value={rotation}>{rotation}°</option>)}
-        </select>
-        <Check label={t('qbed.picture_transparent_background')} checked={imageTransform.transparentBackground}
-          onChange={e => onImageTransformChange({ ...imageTransform, transparentBackground: e.target.checked })} />
+        <Tool label={t('qbed.image')} onClick={onImage} data-action="picture"><ImagePlus aria-hidden="true" className="h-4 w-4" /></Tool>
         <MathInsert onInsert={(snippet) => run(insertAt, snippet)} disabled={disabled} compact />
         <Tool label={t('qbed.reset')} onClick={onReset} data-action="reset"><RotateCcw aria-hidden="true" className="h-4 w-4" /></Tool>
       </fieldset>

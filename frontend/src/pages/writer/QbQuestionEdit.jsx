@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useFieldArray, useForm } from 'react-hook-form'
-import { Plus, Trash2 } from 'lucide-react'
+import { ImagePlus, Plus, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import { multipart } from '../../features/students/formData'
 import { useAuthStore } from '../../store/authStore'
@@ -19,7 +19,8 @@ import Check from '../../features/academic/Check'
 import QbStatus from '../../features/qb/QbStatus'
 import MathText from '../../features/qb/MathText'
 import Ribbon from '../../features/qb/Ribbon'
-import { insertAt, insertPicture, pushValueHistory, stepValueHistory } from '../../features/qb/formatting'
+import PictureDialog from '../../features/qb/PictureDialog'
+import { insertAt, insertPicture, pictureRange, pushValueHistory, stepValueHistory, updatePicture } from '../../features/qb/formatting'
 import { openDiagramPicker, pickGraph } from '../../features/qb/qbankTools'
 import { transformImageFile } from '../../features/qb/imageTransforms'
 import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } from '../../features/qb/questionMeta'
@@ -37,6 +38,14 @@ function Section({ id: key, current, onEnter, children }) {
 const BN_LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
 const LEVELS = ['knowledge', 'understanding', 'application', 'higher_order']
 const CREATIVE = LEVELS.map((level, i) => ({ part_label: BN_LABELS[i], cognitive_level: level, marks: String(i + 1), question_text: '', answer_text: '' }))
+const PICTURE_DEFAULTS = { width: 100, align: 'center', position: 'cursor', paragraph: 1, rotation: 0, transparentBackground: false }
+
+function hasPictureReference(value, mediaId) {
+  if (typeof value === 'string') return Boolean(pictureRange(value, mediaId))
+  if (Array.isArray(value)) return value.some(item => hasPictureReference(item, mediaId))
+  if (value && typeof value === 'object') return Object.values(value).some(item => hasPictureReference(item, mediaId))
+  return false
+}
 const EMPTY = { qb_question_type_id: '', qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', difficulty: '3', marks: '1', class_level_ids: [], question_text: '',
   answer_text: '', explanation_text: '', options: [], creative_parts: [], occurrences: [], media: [], structured: STRUCTURED_EMPTY }
 
@@ -63,7 +72,8 @@ export default function QbQuestionEdit() {
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(null)
   const [history, setHistory] = useState({ undo: [], redo: [] })
-  const [pictureTransform, setPictureTransform] = useState({ rotation: 0, transparentBackground: false })
+  const [pictureDialog, setPictureDialog] = useState(null)
+  const [pictureSaving, setPictureSaving] = useState(false)
   const [activeField, setActiveField] = useState(null)
   const valueSnapshots = useRef(new Map())
   const [section, setSection] = useState('meta')
@@ -170,23 +180,56 @@ export default function QbQuestionEdit() {
     if (fam === 'creative' && getValues('creative_parts').length === 0) setValue('creative_parts', CREATIVE)
   }
 
-  const uploadFile = async (file, placement) => {
+  const openPictureDialog = () => {
+    if (!active.current) { useUiStore.getState().addToast(t('qbed.pick_field'), 'error'); return }
+    setPictureDialog({ mode: 'insert', settings: PICTURE_DEFAULTS })
+  }
+  const queuePicture = (file) => {
     if (!file) return
+    if (!active.current) { useUiStore.getState().addToast(t('qbed.pick_field'), 'error'); return }
+    setPictureDialog({ mode: 'insert', file, settings: PICTURE_DEFAULTS })
+  }
+  const editPreviewImage = (fieldName, attrs, sourceUrl) => {
+    const field = document.getElementById('qb-question-form')?.elements.namedItem(fieldName)
+    const value = String(getValues(fieldName) ?? '')
+    const range = pictureRange(value, attrs.media)
+    if (field && range) {
+      active.current = { name: fieldName, el: field, start: range.start, end: range.end }
+      setActiveField(fieldName)
+    } else if (field) {
+      active.current = { name: fieldName, el: field, start: value.length, end: value.length }
+      setActiveField(fieldName)
+    } else if (!active.current) {
+      useUiStore.getState().addToast(t('qbed.pick_field'), 'error')
+      return
+    }
+    setPictureDialog({ mode: range ? 'edit' : 'attach', mediaId: String(attrs.media), sourceUrl,
+      settings: { ...PICTURE_DEFAULTS, width: attrs.width ?? 100, align: attrs.align ?? 'center' } })
+  }
+  const savePicture = async ({ file, settings }) => {
+    const target = pictureDialog
+    if (!target) return
+    setPictureSaving(true)
     try {
-      const form = new FormData()
-      form.append('file', await transformImageFile(file, pictureTransform))
-      const { data } = await api.post('/writer/media', form, multipart)
-      setValue('media', [...getValues('media'), data.data], { shouldDirty: true })
-      if (active.current) run(insertPicture, data.data.id, placement)
+      let mediaId = target.mediaId
+      if (file) {
+        const form = new FormData()
+        form.append('file', await transformImageFile(file, { rotation: settings.rotation, transparentBackground: settings.transparentBackground }))
+        const { data } = await api.post('/writer/media', form, multipart)
+        mediaId = String(data.data.id)
+        const media = getValues('media') ?? []
+        if (!media.some(item => String(item.id) === mediaId)) setValue('media', [...media, data.data], { shouldDirty: true })
+      }
+      if (target.mode === 'edit') run(updatePicture, target.mediaId, mediaId, settings)
+      else run(insertPicture, Number(mediaId), settings)
+      if (target.mode === 'edit' && file && target.mediaId !== mediaId && !hasPictureReference(getValues(), target.mediaId)) {
+        setValue('media', (getValues('media') ?? []).filter(item => String(item.id) !== target.mediaId), { shouldDirty: true })
+      }
+      setPictureDialog(null)
     } catch (err) {
       const message = err.message?.startsWith('qbed.') ? t(err.message) : err.response?.data?.errors?.file?.[0] ?? err.response?.data?.message ?? t('common.error')
       useUiStore.getState().addToast(message, 'error')
-    }
-  }
-  const upload = (e, placement) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    uploadFile(file, placement)
+    } finally { setPictureSaving(false) }
   }
   const pasteImage = (e) => {
     const item = Array.from(e.clipboardData?.items ?? []).find(x => x.kind === 'file' && x.type.startsWith('image/'))
@@ -194,7 +237,7 @@ export default function QbQuestionEdit() {
     if (!file) return
     e.preventDefault()
     track(e)
-    uploadFile(file)
+    queuePicture(file)
   }
   const allowImageDrop = (e) => {
     if (Array.from(e.dataTransfer?.items ?? []).some(x => x.kind === 'file' && x.type.startsWith('image/'))) e.preventDefault()
@@ -204,7 +247,7 @@ export default function QbQuestionEdit() {
     if (!file) return
     e.preventDefault()
     track(e)
-    uploadFile(file)
+    queuePicture(file)
   }
 
   const save = async (f) => {
@@ -278,7 +321,7 @@ export default function QbQuestionEdit() {
         </nav>
 
         <div className={`${pane === 'editor' ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 xl:flex xl:min-h-0 xl:overflow-y-auto`} data-testid="qb-editor-pane" onDragOver={allowImageDrop} onDrop={dropImage}>
-          {canEdit && <Ribbon run={run} readActive={readActive} onImage={upload} onGraph={insertGraph} onDiagram={insertDiagram} imageTransform={pictureTransform} onImageTransformChange={setPictureTransform}
+          {canEdit && <Ribbon run={run} readActive={readActive} onImage={openPictureDialog} onGraph={insertGraph} onDiagram={insertDiagram}
             onUndo={() => applyHistory('undo')} onRedo={() => applyHistory('redo')}
             canUndo={history.undo.some(entry => entry.name === activeField)} canRedo={history.redo.some(entry => entry.name === activeField)}
             onReset={() => { reset(); setHistory({ undo: [], redo: [] }); valueSnapshots.current.clear(); active.current = null; setActiveField(null) }} disabled={!canEdit} saving={isSubmitting} />}
@@ -371,10 +414,7 @@ export default function QbQuestionEdit() {
                         </figure>
                       ))}
                     </div>
-                    <label className="text-sm">
-                      <span className="block mb-1">{t('qb.add_picture')}</span>
-                      <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={upload} name="picture" className="text-sm" />
-                    </label>
+                    {canEdit && <Button variant="secondary" onClick={openPictureDialog} data-action="add-picture"><ImagePlus aria-hidden="true" className="h-4 w-4" />{t('qb.add_picture')}</Button>}
                     {errors.media_ids && <p role="alert" className="text-xs font-medium text-content">{errors.media_ids.message}</p>}
                   </fieldset>
                 </Section>
@@ -410,23 +450,26 @@ export default function QbQuestionEdit() {
             <h2 className="font-semibold">{t('qb.preview')}</h2>
             <span className="inline-flex items-center gap-1 text-xs text-content-muted"><span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary" />{t('qbed.live')}</span>
           </div>
-          <div className="text-base"><MathText text={v.question_text} media={v.media} /></div>
-          {v.media.map(m => <img key={m.id} src={m.url} alt={t('qb.picture_n', { id: m.id })} className="max-h-48 w-auto self-start" />)}
-          <StructuredPreview structure={structure} s={v.structured} />
+          <div className="text-base"><MathText text={v.question_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage('question_text', attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} /></div>
+          {v.media.map(m => canEdit
+            ? <button key={m.id} type="button" onClick={() => editPreviewImage('question_text', { media: String(m.id), width: 100, align: 'center' }, m.url)} className="max-h-48 w-fit self-start rounded-token focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-fg" aria-label={t('qb.picture_n', { id: m.id })}><img src={m.url} alt="" className="max-h-48 w-auto" /></button>
+            : <img key={m.id} src={m.url} alt={t('qb.picture_n', { id: m.id })} className="max-h-48 w-auto self-start" />)}
+          <StructuredPreview structure={structure} s={v.structured} media={v.media} onImageClick={canEdit ? (fieldName, attrs, url) => editPreviewImage(fieldName, attrs, url) : undefined} />
           {optionsFor && (
             <ol className="flex flex-col gap-1">
-              {v.options.map((o, i) => <li key={i} className="flex gap-2"><span className="font-medium">{o.label}.</span><MathText text={o.content_text} media={v.media} />{o.is_correct && <span className="text-xs text-content-muted">({t('qb.correct')})</span>}</li>)}
+              {v.options.map((o, i) => <li key={i} className="flex gap-2"><span className="font-medium">{o.label}.</span><MathText text={o.content_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage(`options.${i}.content_text`, attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} />{o.is_correct && <span className="text-xs text-content-muted">({t('qb.correct')})</span>}</li>)}
             </ol>
           )}
           {family === 'creative' && (
             <ol className="flex flex-col gap-2">
-              {v.creative_parts.map((p, i) => <li key={i}><span className="font-medium">{p.part_label}.</span> <MathText text={p.question_text} media={v.media} /> <span className="text-xs text-content-muted">[{p.marks}]</span></li>)}
+              {v.creative_parts.map((p, i) => <li key={i}><span className="font-medium">{p.part_label}.</span> <MathText text={p.question_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage(`creative_parts.${i}.question_text`, attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} /> <span className="text-xs text-content-muted">[{p.marks}]</span></li>)}
             </ol>
           )}
-          {v.answer_text && <div className="text-sm"><span className="font-medium">{t('qb.answer')}: </span><MathText text={v.answer_text} /></div>}
-          {v.explanation_text && <div className="text-sm text-content-muted"><MathText text={v.explanation_text} /></div>}
+          {v.answer_text && <div className="text-sm"><span className="font-medium">{t('qb.answer')}: </span><MathText text={v.answer_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage('answer_text', attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} /></div>}
+          {v.explanation_text && <div className="text-sm text-content-muted"><MathText text={v.explanation_text} media={v.media} onImageClick={canEdit ? attrs => editPreviewImage('explanation_text', attrs, v.media.find(m => String(m.id) === attrs.media)?.url) : undefined} /></div>}
         </Card>
       </div>
+      <PictureDialog open={Boolean(pictureDialog)} initial={pictureDialog} onClose={() => setPictureDialog(null)} onSave={savePicture} saving={pictureSaving} />
 
       {canReview && (
         <Card className="flex flex-col gap-3" data-testid="review-actions">

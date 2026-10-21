@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { render } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import '../i18n'
 import MathText from '../features/qb/MathText'
 import { parseRich, plainText } from '../features/qb/richText'
 
@@ -30,6 +31,13 @@ describe('rich question text', () => {
     expect(image.style.margin).toBe('0px 0px 0px auto')
     expect(container.querySelectorAll('img')).toHaveLength(1)
     expect(image).not.toHaveAttribute('onerror')
+  })
+
+  it('opens the supplied picture action from a preview image click', () => {
+    const onImageClick = vi.fn()
+    render(<MathText media={[{ id: 42, url: '/storage/question.png' }]} onImageClick={onImageClick} text={'<img data-qmx-media="42" data-qmx-width="55" data-qmx-align="right">'} />)
+    fireEvent.click(screen.getByRole('button', { name: 'ছবির সেটিংস খুলুন' }))
+    expect(onImageClick).toHaveBeenCalledWith({ media: '42', width: 55, align: 'right' })
   })
 
   it('renders only allowlisted table layout classes as semantic styles', () => {

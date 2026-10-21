@@ -277,6 +277,31 @@ export function insertPicture(value, start, end, mediaId, { width = 100, align =
   return splice(value, from, to, `<img data-qmx-media="${id}" data-qmx-width="${size}" data-qmx-align="${side}">`)
 }
 
+export function pictureRange(value, mediaId) {
+  const source = String(value ?? '')
+  const id = String(mediaId ?? '')
+  if (!/^[1-9]\d{0,9}$/.test(id)) return null
+  for (const match of source.matchAll(/<img\b[^>]*>/gi)) {
+    const attr = /\bdata-qmx-media\s*=\s*(?:"(\d+)"|'(\d+)'|(\d+))/i.exec(match[0])
+    if ((attr?.[1] ?? attr?.[2] ?? attr?.[3]) === id) return { start: match.index, end: match.index + match[0].length }
+  }
+  return null
+}
+
+/** Change an existing image reference's layout, or move it to a requested point in the same rich-text field. */
+export function updatePicture(value, start, end, mediaId, replacementId = mediaId, options = {}) {
+  const range = pictureRange(value, mediaId)
+  const id = String(replacementId ?? '')
+  if (!range || !/^[1-9]\d{0,9}$/.test(id)) return result(value, start, end)
+  const { width = 100, align = 'center', position = 'cursor', paragraph = 1 } = options
+  const size = Number.isInteger(width) && width >= 10 && width <= 100 ? width : 100
+  const side = ['left', 'center', 'right'].includes(align) ? align : 'center'
+  if (position === 'cursor') return splice(value, range.start, range.end,
+    `<img data-qmx-media="${id}" data-qmx-width="${size}" data-qmx-align="${side}">`)
+  const without = value.slice(0, range.start) + value.slice(range.end)
+  return insertPicture(without, 0, 0, id, { width: size, align: side, position, paragraph })
+}
+
 export function transformImagePixels(data, width, height, { rotation = 0, transparentBackground = false, threshold = 245 } = {}) {
   if (!Number.isInteger(width) || width < 1 || !Number.isInteger(height) || height < 1 || data.length !== width * height * 4) {
     throw new RangeError('Image pixel dimensions do not match the data')

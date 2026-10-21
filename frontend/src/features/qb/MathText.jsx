@@ -48,16 +48,20 @@ function Text({ text, ready }) {
   return parts.map((p, i) => /^\[\[qmx-(graph|diagram):/.test(p) ? <Graph key={i} token={p} /> : <Maths key={i} text={p} ready={ready} />)
 }
 
-function Node({ n, ready, media }) {
+function Node({ n, ready, media, onImageClick }) {
+  const { t } = useTranslation()
   if (n.text !== undefined) return <Text text={n.text} ready={ready} />
-  const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} media={media} />)
+  const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} media={media} onImageClick={onImageClick} />)
   const a = n.attrs
   switch (n.tag) {
     case 'img': {
       const src = media.get(a.media)
       if (!src) return null
       const margin = { left: '0 auto 0 0', center: '0 auto', right: '0 0 0 auto' }[a.align] ?? '0 auto'
-      return <img src={src} alt="" className="my-1 max-w-full" style={{ display: 'block', width: `${a.width ?? 100}%`, margin }} />
+      const image = <img src={src} alt="" className="my-1 max-w-full" style={{ display: 'block', width: `${a.width ?? 100}%`, margin }} />
+      return onImageClick
+        ? <button type="button" onClick={() => onImageClick(a)} aria-label={t('qbed.edit_picture')} className="block max-w-full rounded-token text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-fg">{image}</button>
+        : image
     }
     case 'br': return <br />
     case 'span': return <span style={{ color: a.color, backgroundColor: a.bg }}>{kids}</span>
@@ -83,13 +87,13 @@ function Node({ n, ready, media }) {
   }
 }
 
-export default function MathText({ text, className = '', media = [] }) {
+export default function MathText({ text, className = '', media = [], onImageClick }) {
   const [ready, setReady] = useState(false)
   const mediaById = new Map(media.filter((item) => item?.id != null && typeof item.url === 'string').map((item) => [String(item.id), item.url]))
   useEffect(() => { let on = true; loadMathlive().then(() => on && setReady(true)).catch(() => {}); return () => { on = false } }, [])
   return (
     <span dir="auto" className={`whitespace-pre-wrap ${className}`}>
-      {parseRich(text).map((n, i) => <Node key={i} n={n} ready={ready} media={mediaById} />)}
+      {parseRich(text).map((n, i) => <Node key={i} n={n} ready={ready} media={mediaById} onImageClick={onImageClick} />)}
     </span>
   )
 }

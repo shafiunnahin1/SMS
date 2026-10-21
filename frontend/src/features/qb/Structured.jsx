@@ -170,29 +170,30 @@ export function StructuredEditor({ structure, register, control, error }) {
 }
 
 /** The preview of a structured type (the writer sees the answers) */
-export function StructuredPreview({ structure, s }) {
+export function StructuredPreview({ structure, s, media = [], onImageClick }) {
   const { t } = useTranslation()
   if (!structure) return null
   const muted = 'text-xs text-content-muted'
   const head = (l) => <h4 className="text-sm font-semibold">{t(`qbx.kinds.${l}`)}</h4>
   const has = (l) => (s[l]?.length ?? 0) > 0
+  const rich = (text, field) => <MathText text={text} media={media} onImageClick={onImageClick ? attrs => onImageClick(field, attrs, media.find(item => String(item.id) === attrs.media)?.url) : undefined} />
   return (
     <div className="flex flex-col gap-2" data-testid="qb-structured-preview">
-      {s.box && <div className="rounded-token bg-surface-muted p-2 text-sm"><MathText text={s.box} /></div>}
-      {has('mcqs') && <div>{structure !== 'passage_mcq' && head('mcqs')}<ol className="flex flex-col gap-2">{s.mcqs.map((q, i) => <li key={i}>{i + 1}. <MathText text={q.prompt} />
-        <ul className="flex flex-col gap-1 px-4">{q.options.filter(Boolean).map((o, k) => <li key={k}>{LETTERS[k]}. <MathText text={o} />{String(k) === String(q.correct) && <span className={muted}> ({t('qb.correct')})</span>}</li>)}</ul></li>)}</ol></div>}
-      {has('subs') && <div>{structure !== 'passage' && head('subs')}<ol className="flex flex-col gap-1">{s.subs.map((q, i) => <li key={i}>{i + 1}. <MathText text={q.prompt} /> <span className={muted}>— {q.answer}</span></li>)}</ol></div>}
-      {has('gaps') && <div>{structure !== 'gap' && head('gaps')}<ol className="flex flex-col gap-1">{s.gaps.map((g, i) => <li key={i}><MathText text={g.prompt} />{g.hint && <span> ({g.hint})</span>} <span className={muted}>[{g.answers}]</span></li>)}</ol></div>}
-      {has('tfs') && <div>{head('tfs')}<ol className="flex flex-col gap-1">{s.tfs.map((x, i) => <li key={i}>{i + 1}. <MathText text={x.prompt} /> <span className={muted}>— {t(x.value === 'true' ? 'qb.true' : 'qb.false')}{x.correction ? `: ${x.correction}` : ''}</span></li>)}</ol></div>}
+      {s.box && <div className="rounded-token bg-surface-muted p-2 text-sm">{rich(s.box, 'structured.box')}</div>}
+      {has('mcqs') && <div>{structure !== 'passage_mcq' && head('mcqs')}<ol className="flex flex-col gap-2">{s.mcqs.map((q, i) => <li key={i}>{i + 1}. {rich(q.prompt, `structured.mcqs.${i}.prompt`)}
+        <ul className="flex flex-col gap-1 px-4">{q.options.filter(Boolean).map((o, k) => <li key={k}>{LETTERS[k]}. {rich(o, `structured.mcqs.${i}.options.${k}`)}{String(k) === String(q.correct) && <span className={muted}> ({t('qb.correct')})</span>}</li>)}</ul></li>)}</ol></div>}
+      {has('subs') && <div>{structure !== 'passage' && head('subs')}<ol className="flex flex-col gap-1">{s.subs.map((q, i) => <li key={i}>{i + 1}. {rich(q.prompt, `structured.subs.${i}.prompt`)} <span className={muted}>— {rich(q.answer, `structured.subs.${i}.answer`)}</span></li>)}</ol></div>}
+      {has('gaps') && <div>{structure !== 'gap' && head('gaps')}<ol className="flex flex-col gap-1">{s.gaps.map((g, i) => <li key={i}>{rich(g.prompt, `structured.gaps.${i}.prompt`)}{g.hint && <span> ({g.hint})</span>} <span className={muted}>[{g.answers}]</span></li>)}</ol></div>}
+      {has('tfs') && <div>{head('tfs')}<ol className="flex flex-col gap-1">{s.tfs.map((x, i) => <li key={i}>{i + 1}. {rich(x.prompt, `structured.tfs.${i}.prompt`)} <span className={muted}>— {t(x.value === 'true' ? 'qb.true' : 'qb.false')}{x.correction ? `: ${x.correction}` : ''}</span></li>)}</ol></div>}
       {has('tables') && <div>{head('tables')}{s.tables.map((x, i) => { const p = parseTable(x.columns, x.rows); return (
         <table key={i} className="my-1 border-collapse text-sm"><tbody>
           {p.table.columns.length > 0 && <tr>{p.table.columns.map((c, k) => <th key={k} className="px-2 py-1 [border:1px_solid_var(--line)]">{c}</th>)}</tr>}
           {p.table.rows.map((row, r) => <tr key={r}>{row.map((cell, c) => <td key={c} className="px-2 py-1 [border:1px_solid_var(--line)]">{cell ?? <span className={muted}>[{(p.cells[`${r}-${c}`] ?? []).join(', ')}]</span>}</td>)}</tr>)}
         </tbody></table>) })}</div>}
-      {has('triples') && <div>{head('triples')}<ul className="flex flex-col gap-1 text-sm">{s.triples.map((x, i) => <li key={i} className="flex flex-wrap gap-3"><MathText text={x.left} /><span aria-hidden="true">—</span><MathText text={x.middle} /><span aria-hidden="true">—</span><MathText text={x.right} /></li>)}</ul></div>}
-      {has('multis') && <div>{head('multis')}<ol className="flex flex-col gap-1">{s.multis.map((x, i) => <li key={i}>{i + 1}. <MathText text={x.prompt} /> <span className={muted}>— {csv(x.fields).map((f, k) => `${f}: ${csv(x.values)[k] ?? ''}`).join('; ')}</span></li>)}</ol></div>}
-      {has('pairs') && <div>{structure !== 'match' && head('pairs')}<ul className="flex flex-col gap-1 text-sm">{s.pairs.map((p, i) => <li key={i} className="flex flex-wrap gap-4"><MathText text={p.left} /><span aria-hidden="true">—</span><MathText text={p.right} /></li>)}</ul></div>}
-      {has('steps') && <div>{structure !== 'order' && head('steps')}<ol className="flex flex-col gap-1 list-decimal list-inside">{s.steps.map((st, i) => <li key={i}><MathText text={st.text} /></li>)}</ol></div>}
+      {has('triples') && <div>{head('triples')}<ul className="flex flex-col gap-1 text-sm">{s.triples.map((x, i) => <li key={i} className="flex flex-wrap gap-3">{rich(x.left, `structured.triples.${i}.left`)}<span aria-hidden="true">—</span>{rich(x.middle, `structured.triples.${i}.middle`)}<span aria-hidden="true">—</span>{rich(x.right, `structured.triples.${i}.right`)}</li>)}</ul></div>}
+      {has('multis') && <div>{head('multis')}<ol className="flex flex-col gap-1">{s.multis.map((x, i) => <li key={i}>{i + 1}. {rich(x.prompt, `structured.multis.${i}.prompt`)} <span className={muted}>— {csv(x.fields).map((f, k) => `${f}: ${csv(x.values)[k] ?? ''}`).join('; ')}</span></li>)}</ol></div>}
+      {has('pairs') && <div>{structure !== 'match' && head('pairs')}<ul className="flex flex-col gap-1 text-sm">{s.pairs.map((p, i) => <li key={i} className="flex flex-wrap gap-4">{rich(p.left, `structured.pairs.${i}.left`)}<span aria-hidden="true">—</span>{rich(p.right, `structured.pairs.${i}.right`)}</li>)}</ul></div>}
+      {has('steps') && <div>{structure !== 'order' && head('steps')}<ol className="flex flex-col gap-1 list-decimal list-inside">{s.steps.map((st, i) => <li key={i}>{rich(st.text, `structured.steps.${i}.text`)}</li>)}</ol></div>}
     </div>
   )
 }
