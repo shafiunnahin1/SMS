@@ -43,6 +43,10 @@ return [
     'qb_in_use'             => 'Questions, chapters, topics or an institution\'s class still use this, so it cannot be deleted - switch it off instead.',   // QB.1 (D65)
     'qb_wrong_status'       => 'The question is no longer in that state - reload the page.',   // QB.2
     'qb_topic_mismatch'     => 'This topic is not in that chapter.',   // QB.2
+    'qb_curriculum_parent_mismatch' => 'The parent must belong to the same curriculum version.',
+    'qb_curriculum_cycle' => 'A section cannot be placed beneath one of its descendants.',
+    'qb_curriculum_legacy_mismatch' => 'The legacy chapter or topic does not belong to this subject.',
+    'qb_curriculum_subject_mismatch' => 'The question subject and curriculum subject must match.',
     'qb_chapter_mismatch'   => 'This chapter is not in that subject.',   // QB.2
     'qb_media_not_yours'    => 'This picture was not uploaded by you.',   // QB.3
     'qb_dataset_columns'    => 'A dataset needs 1 to :max columns.',   // D115

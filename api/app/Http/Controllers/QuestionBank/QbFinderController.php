@@ -20,6 +20,7 @@ class QbFinderController extends Controller
             'qb_subject_id' => ['nullable', 'integer', 'exists:qb_subjects,id'],
             'qb_chapter_id' => ['nullable', 'integer', 'exists:qb_chapters,id'],
             'qb_topic_id' => ['nullable', 'integer', 'exists:qb_topics,id'],
+            'curriculum_node_id' => ['nullable', 'integer', 'exists:qb_curriculum_nodes,id'],
             'qb_question_type_id' => ['nullable', 'integer', 'exists:qb_question_types,id'],
             'language' => ['nullable', 'in:bn,en'],
         ]);

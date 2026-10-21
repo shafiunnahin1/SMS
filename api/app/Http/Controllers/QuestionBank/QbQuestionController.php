@@ -46,6 +46,7 @@ class QbQuestionController extends Controller
             'subject_ids' => 'nullable|array', 'subject_ids.*' => 'integer',
             'chapter_ids' => 'nullable|array', 'chapter_ids.*' => 'integer',
             'topic_ids' => 'nullable|array', 'topic_ids.*' => 'integer',
+            'curriculum_node_ids' => 'nullable|array', 'curriculum_node_ids.*' => 'integer|distinct|exists:qb_curriculum_nodes,id',
             'question_type_ids' => 'nullable|array', 'question_type_ids.*' => 'integer',
             'source_types' => 'nullable|array', 'source_types.*' => 'string|max:50',
             'years' => 'nullable|array', 'years.*' => 'integer|min:1900|max:2100',
@@ -68,6 +69,7 @@ class QbQuestionController extends Controller
             ->when($f['subject_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_subject_id', $ids))
             ->when($f['chapter_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_chapter_id', $ids))
             ->when($f['topic_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_topic_id', $ids))
+            ->when($f['curriculum_node_ids'] ?? [], fn ($q, $ids) => $q->whereHas('curriculumNodes', fn ($nodes) => $nodes->whereIn('qb_curriculum_nodes.id', $ids)))
             ->when($f['question_type_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_question_type_id', $ids))
             ->when($f['source_types'] ?? [], fn ($q, $types) => $q->whereHas('occurrences', fn ($occurrences) => $occurrences->whereIn('exam_type', $types)))
             ->when($f['years'] ?? [], fn ($q, $years) => $q->whereHas('occurrences', fn ($occurrences) => $occurrences->whereIn('year', $years)))
@@ -89,13 +91,15 @@ class QbQuestionController extends Controller
                     }
                 });
             })
-            ->with(['classLevels:id,name_bn,name_en', 'options', 'creativeParts', 'occurrences', 'stimuli', 'items', 'media'])
+            ->with(['classLevels:id,name_bn,name_en', 'curriculumNodes.version.subject', 'curriculumNodes.parent', 'options', 'creativeParts', 'occurrences', 'stimuli', 'items', 'media'])
             ->orderByDesc('updated_at')->orderByDesc('id')->paginate($f['per_page'] ?? 25);
         $authors = User::platform()->whereIn('id', collect($page->items())->pluck('created_by')->unique())->pluck('name', 'id');
         return response()->json(['success' => true,
             'data' => collect($page->items())->map(fn ($q) => $q->only(['id', 'qb_question_type_id', 'qb_subject_id', 'qb_chapter_id', 'qb_topic_id', 'difficulty', 'marks',
                 'language', 'content_mode', 'question_json', 'question_text', 'answer_json', 'answer_text', 'explanation_json', 'explanation_text', 'status', 'review_note', 'created_by'])
-                + ['class_level_ids' => $q->classLevels->pluck('id')->all(), 'updated_at' => $q->updated_at?->toIso8601String(), 'author' => $authors[$q->created_by] ?? null]
+                + ['class_level_ids' => $q->classLevels->pluck('id')->all(), 'curriculum_node_ids' => $q->curriculumNodes->pluck('id')->all(),
+                    'curriculum_breadcrumbs' => $q->curriculumNodes()->with('version.subject', 'parent')->get()->map(fn ($node) => $this->curriculumBreadcrumb($node))->values()->all(),
+                    'updated_at' => $q->updated_at?->toIso8601String(), 'author' => $authors[$q->created_by] ?? null]
                 + $this->writer->previewParts($q) + ['media' => $q->media->map(fn ($media) => QbMediaController::view($media))->values()->all()])->values(),
             'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(), 'per_page' => $page->perPage(), 'facets' => $facets]]);
     }
@@ -275,9 +279,22 @@ class QbQuestionController extends Controller
     {
         return $q->only(['id', 'qb_question_type_id', 'qb_subject_id', 'qb_chapter_id', 'qb_topic_id', 'difficulty', 'marks', 'language', 'content_mode',
             'question_json', 'question_text', 'answer_json', 'answer_text', 'explanation_json', 'explanation_text', 'status', 'review_note', 'created_by', 'reviewed_by'])
-            + ['class_level_ids' => $q->classLevels()->pluck('qb_class_levels.id')->all(), 'published_at' => $q->published_at?->toIso8601String(),
+            + ['class_level_ids' => $q->classLevels()->pluck('qb_class_levels.id')->all(), 'curriculum_node_ids' => $q->curriculumNodes()->pluck('qb_curriculum_nodes.id')->all(), 'published_at' => $q->published_at?->toIso8601String(),
                 'updated_at' => $q->updated_at?->toIso8601String()]
+            + ['curriculum_breadcrumbs' => $q->curriculumNodes()->with('version.subject', 'parent')->get()->map(fn ($node) => $this->curriculumBreadcrumb($node))->values()->all()]
             + $this->writer->parts($q) + ['media' => $q->media()->get()->map(fn ($m) => QbMediaController::view($m))->values()->all()];
+    }
+
+    private function curriculumBreadcrumb(\App\Models\QbCurriculumNode $node): array
+    {
+        $labels = [];
+        for ($cursor = $node; $cursor;) {
+            $labels[] = ['name_bn' => $cursor->name_bn, 'name_en' => $cursor->name_en, 'kind' => $cursor->kind, 'sort_order' => (int) $cursor->sort_order];
+            if (count($labels) > 100) break;
+            $cursor = $cursor->parent_id ? \App\Models\QbCurriculumNode::find($cursor->parent_id) : null;
+        }
+        return ['node_id' => $node->id, 'subject_id' => $node->version?->qb_subject_id, 'subject_name_bn' => $node->version?->subject?->name_bn,
+            'subject_name_en' => $node->version?->subject?->name_en, 'path' => array_reverse($labels)];
     }
 
 }

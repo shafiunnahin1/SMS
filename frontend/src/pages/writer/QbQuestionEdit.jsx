@@ -47,7 +47,7 @@ function hasPictureReference(value, mediaId) {
   return false
 }
 const EMPTY = { qb_question_type_id: '', qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', difficulty: '3', marks: '1', class_level_ids: [], question_text: '',
-  answer_text: '', explanation_text: '', options: [], creative_parts: [], occurrences: [], media: [], structured: STRUCTURED_EMPTY }
+  curriculum_node_ids: [], answer_text: '', explanation_text: '', options: [], creative_parts: [], occurrences: [], media: [], structured: STRUCTURED_EMPTY }
 
 // QB.2 + QB.3 /writer/questions/:id and /new (D65, D66): one form for the six core types. Shared fields (place in the curriculum,
 // text, answer, explanation), then the type's own part: options with the right one (mcq), the two fixed options (true / false),
@@ -86,6 +86,7 @@ export default function QbQuestionEdit() {
       qb_topic_id: s(q.data.qb_topic_id), difficulty: s(q.data.difficulty), marks: s(q.data.marks), answer_text: s(q.data.answer_text), explanation_text: s(q.data.explanation_text),
       creative_parts: q.data.creative_parts.map(p => ({ ...p, marks: s(p.marks), answer_text: s(p.answer_text) })),
       class_level_ids: (q.data.class_level_ids ?? []).map(String),
+      curriculum_node_ids: (q.data.curriculum_node_ids ?? []).map(String),
       occurrences: q.data.occurrences.map(occurrenceToSource), structured: fromQuestion(q.data) })
   }, [q.data, reset])
 
@@ -98,7 +99,14 @@ export default function QbQuestionEdit() {
   const canReview = !isNew && role !== 'content_writer' && status === 'review'
   const name = (n) => (locale === 'bn' ? n.name_bn : n.name_en) || n.name_en
   const subject = tree.data.subjects.find(s => String(s.id) === String(watch('qb_subject_id')))
+  const curriculumVersions = (tree.data.curriculum_versions ?? []).filter(v => String(v.qb_subject_id) === String(watch('qb_subject_id')))
+  const flattenNodes = (nodes, parents = []) => (nodes ?? []).flatMap(node => {
+    const path = [...parents, name(node)]
+    return [{ id: node.id, label: path.join(' / ') }, ...flattenNodes(node.children, path)]
+  })
+  const curriculumOptions = curriculumVersions.flatMap(version => flattenNodes(version.nodes))
   const chapter = subject?.chapters.find(c => String(c.id) === String(watch('qb_chapter_id')))
+  const curriculumBreadcrumbs = curriculumOptions.filter(node => (watch('curriculum_node_ids') ?? []).includes(String(node.id)))
   const picked = types.data.find(ty => String(ty.id) === String(watch('qb_question_type_id')))
   const family = picked?.family
   const structure = picked?.structure ?? null                    // QB.4: gap / match / order / passage / passage_mcq
@@ -339,6 +347,11 @@ export default function QbQuestionEdit() {
                     options={(subject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} {...register('qb_chapter_id', { onChange: () => setValue('qb_topic_id', '') })} />
                   <Select label={t('qb.topic')} placeholder={t('qb.none_option')} error={errors.qb_topic_id?.message}
                     options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} {...register('qb_topic_id')} />
+                  {curriculumOptions.length > 0 && <fieldset className="sm:col-span-2 flex flex-col gap-2">
+                    <legend className="text-sm font-medium mb-1">{t('qbed.curriculum_path')}</legend>
+                    {curriculumOptions.map(node => <Check key={node.id} label={node.label} value={String(node.id)} {...register('curriculum_node_ids')} />)}
+                    {curriculumBreadcrumbs.length > 0 && <p className="text-xs text-content-muted" data-testid="curriculum-breadcrumb">{curriculumBreadcrumbs.map(node => node.label).join(' / ')}</p>}
+                  </fieldset>}
                   <Select label={t('qb.difficulty')} options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: t(`qb.difficulty_level.${d}`) }))} {...register('difficulty')} />
                   <Input label={t('qb.marks')} ltr inputMode="decimal" error={errors.marks?.message} {...register('marks')} />
                   <fieldset className="sm:col-span-2 flex flex-col gap-1">
@@ -423,6 +436,9 @@ export default function QbQuestionEdit() {
                   <fieldset className="sm:col-span-2 flex flex-col gap-2">
                     <legend className="font-semibold mb-1">{t('qbn.sources')}</legend>
                     {occurrences.fields.map((f, i) => (
+                        <Input className="w-24" label={t('qbed.question_number')} {...register(`occurrences.${i}.question_number`)} />
+                        <Input className="w-24" label={t('qbed.set_label')} {...register(`occurrences.${i}.set_label`)} />
+                        <Input className="w-28" label={t('qbed.page_reference')} {...register(`occurrences.${i}.page_reference`)} />
                       <div key={f.id} className="flex flex-wrap items-end gap-2">
                         <Select className="w-36" label={t('qbn.source_type')} placeholder={t('qb.pick')} options={SOURCE_TYPES.map(x => ({ value: x, label: t(`qbn.source_types.${x}`) }))} {...register(`occurrences.${i}.type`)} />
                         <Input className="flex-1 min-w-40" label={t('qbn.source_full')} {...register(`occurrences.${i}.full`)} />

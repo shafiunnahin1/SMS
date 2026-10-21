@@ -31,6 +31,8 @@ class QbQuestionRequest extends FormRequest
             'explanation_json'    => ['nullable', 'array'],
             'class_level_ids'     => ['sometimes', 'array', 'max:30'],
             'class_level_ids.*'   => ['integer', 'distinct', 'exists:qb_class_levels,id'],
+            'curriculum_node_ids' => ['sometimes', 'array', 'max:30'],
+            'curriculum_node_ids.*' => ['integer', 'distinct', 'exists:qb_curriculum_nodes,id'],
             // QB.3: the parts of the core types. A list present in the request REPLACES the stored one; absent = unchanged.
             'options'                      => ['sometimes', 'array', 'max:8'],                       // mcq, true_false
             'options.*.label'              => ['required', 'string', 'max:10'],
@@ -50,6 +52,9 @@ class QbQuestionRequest extends FormRequest
             'occurrences.*.institution_name' => ['nullable', 'string', 'max:200'],
             'occurrences.*.exam_type'      => ['nullable', 'string', 'max:50'],
             'occurrences.*.year'           => ['nullable', 'integer', 'min:1950', 'max:2100'],
+            'occurrences.*.question_number' => ['nullable', 'string', 'max:30'],
+            'occurrences.*.set_label'      => ['nullable', 'string', 'max:30'],
+            'occurrences.*.page_reference' => ['nullable', 'string', 'max:100'],
             'occurrences.*.note'           => ['nullable', 'string', 'max:200'],
             'media_ids'                    => ['sometimes', 'array', 'max:10'],                      // pictures uploaded through POST /writer/media
             'media_ids.*'                  => ['integer', 'distinct', 'exists:qb_media,id'],

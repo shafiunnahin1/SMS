@@ -2843,8 +2843,11 @@ CREATE TABLE qb_question_occurrences (
     board VARCHAR(50) NULL,
     institution_name VARCHAR(200) NULL,
     exam_type VARCHAR(50) NULL,
+    question_number VARCHAR(30) NULL,
+    set_label VARCHAR(30) NULL,
     year SMALLINT UNSIGNED NULL,
     note VARCHAR(200) NULL,
+    page_reference VARCHAR(100) NULL,
     INDEX idx_qb_occurrence_board_year (board, year),
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
 );
@@ -3288,6 +3291,52 @@ CREATE TABLE qb_graph_datasets (                            -- D115 (R2.1.2): qb
     INDEX idx_qb_graph_datasets_question (qb_question_id, deleted_at),
     INDEX idx_qb_graph_datasets_checksum (created_by, checksum),
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
+);
+
+CREATE TABLE qb_curriculum_versions (                        -- D138/D139: syllabus editions for a language subject
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_subject_id BIGINT UNSIGNED NOT NULL,
+    version_key VARCHAR(64) NOT NULL,
+    name_bn VARCHAR(200) NOT NULL,
+    name_en VARCHAR(200) NOT NULL,
+    sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    CONSTRAINT unique_qb_curriculum_subject_version UNIQUE (qb_subject_id, version_key),
+    INDEX idx_qb_curriculum_versions_subject (qb_subject_id, is_active, sort_order),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
+);
+
+CREATE TABLE qb_curriculum_nodes (                            -- D138/D139: arbitrary-depth Part/Unit/Lesson/Text/Topic/Other tree
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    qb_curriculum_version_id BIGINT UNSIGNED NOT NULL,
+    parent_id BIGINT UNSIGNED NULL,
+    kind VARCHAR(20) NOT NULL,
+    name_bn VARCHAR(200) NOT NULL,
+    name_en VARCHAR(200) NOT NULL,
+    sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+    legacy_qb_chapter_id BIGINT UNSIGNED NULL,
+    legacy_qb_topic_id BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qb_curriculum_nodes_parent_order (qb_curriculum_version_id, parent_id, sort_order),
+    CONSTRAINT unique_qb_curriculum_legacy_chapter UNIQUE (legacy_qb_chapter_id),
+    CONSTRAINT unique_qb_curriculum_legacy_topic UNIQUE (legacy_qb_topic_id),
+    FOREIGN KEY (qb_curriculum_version_id) REFERENCES qb_curriculum_versions(id),
+    FOREIGN KEY (parent_id) REFERENCES qb_curriculum_nodes(id),
+    FOREIGN KEY (legacy_qb_chapter_id) REFERENCES qb_chapters(id),
+    FOREIGN KEY (legacy_qb_topic_id) REFERENCES qb_topics(id)
+);
+
+CREATE TABLE qb_question_curriculum_nodes (                    -- D138/D139: question ↔ zero or more syllabus nodes
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    qb_curriculum_node_id BIGINT UNSIGNED NOT NULL,
+    sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    CONSTRAINT pk_qb_question_curriculum_nodes PRIMARY KEY (qb_question_id, qb_curriculum_node_id),
+    INDEX idx_qb_curriculum_node_questions (qb_curriculum_node_id, qb_question_id),
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id),
+    FOREIGN KEY (qb_curriculum_node_id) REFERENCES qb_curriculum_nodes(id)
 );
 
 CREATE TABLE qb_import_batches (                             -- D123 (R2.1.3): one JSON/TOON question import, staged before anything enters the bank

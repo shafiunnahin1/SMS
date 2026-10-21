@@ -19,6 +19,7 @@ class QbQuestion extends Model
     protected $casts = ['marks' => 'decimal:2', 'question_json' => 'array', 'answer_json' => 'array', 'explanation_json' => 'array', 'published_at' => 'datetime'];
 
     public function classLevels() { return $this->belongsToMany(QbClassLevel::class, 'qb_question_class_level'); }
+    public function curriculumNodes() { return $this->belongsToMany(QbCurriculumNode::class, 'qb_question_curriculum_nodes', 'qb_question_id', 'qb_curriculum_node_id')->withPivot('sort_order')->orderByPivot('sort_order'); }
 
     public function type() { return $this->belongsTo(QbQuestionType::class, 'qb_question_type_id'); }
     public function options() { return $this->hasMany(QbQuestionOption::class)->orderBy('sort_order')->orderBy('id'); }

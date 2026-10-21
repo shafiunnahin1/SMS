@@ -25,7 +25,7 @@ export default function QbFinder() {
   const { locale } = useLocale()
   const [text, setText] = useState('')
   const [ocr, setOcr] = useState({ busy: false, status: '', pct: 0, error: '' })
-  const [f, setF] = useState({ qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', qb_question_type_id: '', language: '' })
+  const [f, setF] = useState({ qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', curriculum_node_id: '', qb_question_type_id: '', language: '' })
   const tree = useQuery({ queryKey: ['writer', 'curriculum'], queryFn: () => api.get('/writer/curriculum').then(r => r.data.data) })
   const types = useQuery({ queryKey: ['writer', 'types'], queryFn: () => api.get('/writer/question-types').then(r => r.data.data) })
   const find = useMutation({
@@ -42,7 +42,9 @@ export default function QbFinder() {
   const n = (v) => formatNumber(v, i18n.language)
   const subject = tree.data.subjects.find(s => String(s.id) === f.qb_subject_id)
   const chapter = subject?.chapters.find(c => String(c.id) === f.qb_chapter_id)
-  const set = (k, v) => setF(p => ({ ...p, [k]: v, ...(k === 'qb_subject_id' ? { qb_chapter_id: '', qb_topic_id: '' } : {}), ...(k === 'qb_chapter_id' ? { qb_topic_id: '' } : {}) }))
+  const curriculumVersions = (tree.data.curriculum_versions ?? []).filter(v => String(v.qb_subject_id) === f.qb_subject_id)
+  const curriculumOptions = curriculumVersions.flatMap(v => flattenNodes(v.nodes, [], name))
+  const set = (k, v) => setF(p => ({ ...p, [k]: v, ...(k === 'qb_subject_id' ? { qb_chapter_id: '', qb_topic_id: '', curriculum_node_id: '' } : {}), ...(k === 'qb_chapter_id' ? { qb_topic_id: '' } : {}) }))
   const short = text.trim().length < MIN
   const r = find.data
   const onPhoto = async (e) => {
@@ -89,6 +91,7 @@ export default function QbFinder() {
               options={(subject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} />
             <Select label={t('qb.topic')} name="qb_topic_id" value={f.qb_topic_id} placeholder={t('qbf.any')} onChange={e => set('qb_topic_id', e.target.value)}
               options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} />
+            {curriculumOptions.length > 0 && <Select label={t('qbed.curriculum_path')} name="curriculum_node_id" value={f.curriculum_node_id} placeholder={t('qbf.any')} onChange={e => set('curriculum_node_id', e.target.value)} options={curriculumOptions.map(x => ({ value: String(x.id), label: x.label }))} />}
             <Select label={t('qb.type')} name="qb_question_type_id" value={f.qb_question_type_id} placeholder={t('qbf.any')} onChange={e => set('qb_question_type_id', e.target.value)}
               options={types.data.map(ty => ({ value: String(ty.id), label: name(ty) }))} />
             <Select label={t('qbf.language')} name="language" value={f.language} placeholder={t('qbf.any')} onChange={e => set('language', e.target.value)}
@@ -114,6 +117,7 @@ export default function QbFinder() {
                   </div>
                   <span dir="auto"><MathText text={x.question_text} /></span>
                   <span className="text-sm text-content-muted">{[name(x.subject), name(x.chapter), name(x.topic), name(x.question_type)].filter(Boolean).join(' › ')}</span>
+                  {(x.curriculum_breadcrumbs ?? []).map((crumb, i) => <span key={i} className="text-sm text-content-muted" dir="auto">{[locale === 'bn' ? crumb.subject_name_bn : crumb.subject_name_en, ...crumb.path.map(part => locale === 'bn' ? part.name_bn : part.name_en)].filter(Boolean).join(' › ')}</span>)}
                   <Link to={`/writer/questions/${x.question_id}`} className="text-sm text-primary-fg underline">{t('qbf.open')}</Link>
                 </li>
               ))}
@@ -123,4 +127,11 @@ export default function QbFinder() {
       )}
     </div>
   )
+}
+
+function flattenNodes(nodes, parents, name) {
+  return (nodes ?? []).flatMap(node => {
+    const path = [...parents, name(node)]
+    return [{ id: node.id, label: path.join(' / ') }, ...flattenNodes(node.children, path, name)]
+  })
 }

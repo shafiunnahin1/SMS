@@ -29,7 +29,7 @@ export default function QbQuestions() {
   const role = useAuthStore(s => s.user?.role)
   const [params, setParams] = useSearchParams()
   const status = params.get('status') ?? (role === 'content_moderator' ? 'review' : 'all')
-  const [filters, setFilters] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], question_type_ids: [], source_types: [], years: [] })
+  const [filters, setFilters] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] })
   const [page, setPage] = useState(1)
   const [shown, setShown] = useState(() => new Set())
   const q = useQuery({
@@ -53,22 +53,24 @@ export default function QbQuestions() {
   const setFilter = (key, value) => { setPage(1); setFilters(old => {
     const next = { ...old, [key]: value }
     if (key === 'class_level_ids') { next.subject_ids = []; next.chapter_ids = []; next.topic_ids = [] }
-    if (key === 'subject_ids') { next.chapter_ids = []; next.topic_ids = [] }
+    if (key === 'subject_ids') { next.chapter_ids = []; next.topic_ids = []; next.curriculum_node_ids = [] }
     if (key === 'chapter_ids') next.topic_ids = []
     return next
   }) }
-  const resetFilters = () => { setPage(1); setFilters({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], question_type_ids: [], source_types: [], years: [] }) }
+  const resetFilters = () => { setPage(1); setFilters({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] }) }
   const availableSubjects = useMemo(() => subjects.filter(s => !filters.class_level_ids.length || (s.class_level_ids ?? []).some(id => filters.class_level_ids.includes(id))), [subjects, filters.class_level_ids])
   const availableChapters = availableSubjects.filter(s => filters.subject_ids.includes(s.id)).flatMap(s => s.chapters ?? [])
     .filter(c => !filters.class_level_ids.length || !c.class_level_ids?.length || c.class_level_ids.some(id => filters.class_level_ids.includes(id)))
   const availableTopics = availableChapters.filter(c => filters.chapter_ids.includes(c.id)).flatMap(c => c.topics ?? [])
   const facets = meta?.facets ?? { question_types: [], source_types: [], years: [] }
-  const activeFilters = ['class_level_ids', 'subject_ids', 'chapter_ids', 'topic_ids', 'question_type_ids', 'source_types', 'years'].reduce((n, k) => n + filters[k].length, 0) + Number(Boolean(filters.q))
+  const activeFilters = ['class_level_ids', 'subject_ids', 'chapter_ids', 'topic_ids', 'curriculum_node_ids', 'question_type_ids', 'source_types', 'years'].reduce((n, k) => n + filters[k].length, 0) + Number(Boolean(filters.q))
   const subjectById = Object.fromEntries(subjects.map(item => [item.id, item]))
   const chapterById = Object.fromEntries(subjects.flatMap(item => item.chapters ?? []).map(item => [item.id, item]))
   const topicById = Object.fromEntries(subjects.flatMap(item => item.chapters ?? []).flatMap(chapter => chapter.topics ?? []).map(item => [item.id, item]))
   const classById = Object.fromEntries((curriculum.data?.class_levels ?? []).map(item => [item.id, item]))
   const typeById = Object.fromEntries((questionTypes.data ?? []).map(item => [item.id, item]))
+  const curriculumVersions = (curriculum.data?.curriculum_versions ?? []).filter(v => filters.subject_ids.includes(v.qb_subject_id))
+  const curriculumOptions = curriculumVersions.flatMap(v => flattenCurriculum(v.nodes, [], localizedName))
   return (
     <div className="flex flex-col gap-4" data-testid="qb-questions">
       <PageHeader title={t('qb.questions')} actions={role !== 'content_moderator' &&
@@ -134,6 +136,7 @@ export default function QbQuestions() {
                 <span>{t('qbaq.class')}: <bdi>{(subjectById[row.qb_subject_id]?.class_level_ids ?? []).map(id => localizedName(classById[id])).filter(Boolean).slice(0, 3).join(', ') || '—'}</bdi></span>
                 {row.marks != null && <span>{t('qbaq.marks')}: <bdi>{row.marks}</bdi></span>}
                 {row.difficulty != null && <span>{t('qbaq.difficulty')}: {t(`qbaq.level.${row.difficulty}`, { defaultValue: row.difficulty })}</span>}
+                {(row.curriculum_breadcrumbs ?? []).map((crumb, i) => <span key={`${crumb.node_id}-${i}`} dir="auto">{[locale === 'bn' ? crumb.subject_name_bn : crumb.subject_name_en, ...crumb.path.map(part => locale === 'bn' ? part.name_bn : part.name_en)].filter(Boolean).join(' › ')}</span>)}
                 <span className="rounded-token bg-surface-muted px-2 py-0.5" dir="auto">{row.occurrences?.[0] ? [row.occurrences[0].board, row.occurrences[0].institution_name, row.occurrences[0].exam_type, row.occurrences[0].year].filter(Boolean).join(' · ') : t('qbaq.no_source')}</span>
               </footer>
             </Card>
@@ -159,6 +162,7 @@ export default function QbQuestions() {
             <Multi label={t('qbaq.subject')} name="subject" value={filters.subject_ids} onChange={v => setFilter('subject_ids', v)} options={availableSubjects.map(s => ({ value: s.id, label: localizedName(s) }))} />
             <Multi label={t('qbaq.chapter')} name="chapter" value={filters.chapter_ids} onChange={v => setFilter('chapter_ids', v)} disabled={!filters.subject_ids.length} options={availableChapters.map(c => ({ value: c.id, label: localizedName(c) }))} />
             <Multi label={t('qbaq.topic')} name="topic" value={filters.topic_ids} onChange={v => setFilter('topic_ids', v)} disabled={!filters.chapter_ids.length} options={availableTopics.map(item => ({ value: item.id, label: localizedName(item) }))} />
+            {curriculumOptions.length > 0 && <Multi label={t('qbed.curriculum_path')} name="curriculum" value={filters.curriculum_node_ids} onChange={v => setFilter('curriculum_node_ids', v)} options={curriculumOptions} />}
             <Multi label={t('qbaq.type')} name="type" value={filters.question_type_ids} onChange={v => setFilter('question_type_ids', v)} options={facets.question_types.map(item => ({ value: item.id, label: localizedName(item) }))} />
             <Multi label={t('qbaq.source')} name="source" value={filters.source_types} onChange={v => setFilter('source_types', v)} options={facets.source_types.map(item => ({ value: item, label: item }))} />
             <Multi label={t('qbaq.year')} name="year" value={filters.years} onChange={v => setFilter('years', v)} options={facets.years.map(item => ({ value: item, label: String(item) }))} />
@@ -167,6 +171,13 @@ export default function QbQuestions() {
       </div>
     </div>
   )
+}
+
+function flattenCurriculum(nodes, parents, name) {
+  return (nodes ?? []).flatMap(node => {
+    const path = [...parents, name(node)]
+    return [{ value: node.id, label: path.join(' / ') }, ...flattenCurriculum(node.children, path, name)]
+  })
 }
 
 function Multi({ label, name, value, onChange, options, disabled = false }) {

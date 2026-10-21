@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{QbQuestion, QbQuestionType, QbSubject, User};
+use App\Models\{QbCurriculumNode, QbCurriculumVersion, QbQuestion, QbQuestionType, QbSubject, User};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,6 +17,7 @@ class QbFinderTest extends TestCase
     private array $ids = [];
     private int $physics;
     private int $geo;
+    private int $curriculumNode;
 
     protected function setUp(): void
     {
@@ -26,6 +27,8 @@ class QbFinderTest extends TestCase
         $type = QbQuestionType::create(['slug' => 'short', 'name_bn' => 'সংক্ষিপ্ত', 'name_en' => 'Short', 'family' => 'short'])->id;
         $this->physics = QbSubject::create(['name_bn' => 'পদার্থবিজ্ঞান', 'name_en' => 'Physics'])->id;
         $this->geo = QbSubject::create(['name_bn' => 'ভূগোল', 'name_en' => 'Geography'])->id;
+        $version = QbCurriculumVersion::create(['qb_subject_id' => $this->geo, 'version_key' => 'current', 'name_bn' => 'বর্তমান', 'name_en' => 'Current']);
+        $this->curriculumNode = QbCurriculumNode::create(['qb_curriculum_version_id' => $version->id, 'kind' => 'Topic', 'name_bn' => 'নদী', 'name_en' => 'Rivers'])->id;
         foreach ([
             'boil' => ['পানির স্ফুটনাঙ্ক সমুদ্রপৃষ্ঠে কত ডিগ্রি সেলসিয়াস?', $this->physics, 'published'],
             'freeze' => ['পানির হিমাঙ্ক সমুদ্রপৃষ্ঠে কত ডিগ্রি সেলসিয়াস?', $this->physics, 'published'],
@@ -74,6 +77,10 @@ class QbFinderTest extends TestCase
         $only = $this->find('কত ডিগ্রি সেলসিয়াস', ['qb_subject_id' => $this->geo]);
         $this->assertNotContains($this->ids['boil'], array_column($only['results'], 'question_id'), 'the subject filter keeps physics out');
         $this->assertSame(2, $this->find('বাংলাদেশ', ['qb_subject_id' => $this->geo])['candidate_count']);
+        QbQuestion::find($this->ids['capital'])->curriculumNodes()->sync([$this->curriculumNode]);
+        $located = $this->find('capital city Bangladesh', ['curriculum_node_id' => $this->curriculumNode]);
+        $this->assertSame([$this->ids['capital']], array_column($located['results'], 'question_id'));
+        $this->assertSame('Rivers', $located['results'][0]['curriculum_breadcrumbs'][0]['path'][0]['name_en']);
     }
 
     public function test_no_answer_leaves_and_bad_input_is_refused(): void

@@ -38,6 +38,8 @@ export default function QbCurriculum() {
   const subjects = cls ? d.subjects.filter(s => s.class_level_ids.includes(cls)) : d.subjects
   const subject = d.subjects.find(s => s.id === subj) ?? null
   const chapter = subject?.chapters.find(c => c.id === chap) ?? null
+  const flexibleVersions = (d.curriculum_versions ?? []).filter(v => d.subjects.some(s => s.id === v.qb_subject_id && /বাংলা|Bangla|ইংরেজি|English/i.test(`${s.name_bn} ${s.name_en}`)))
+  const allParentNodes = (d.curriculum_versions ?? []).flatMap(v => flattenCurriculum(v.nodes, [], name, v.id))
 
   const remove = (kind, row, after) => useUiStore.getState().openConfirm({
     title: t('common.delete_confirm', { name: name(row) }), description: t('common.delete_hint'), type: 'danger', confirmLabel: t('common.delete'),
@@ -90,10 +92,40 @@ export default function QbCurriculum() {
           ))}
         </Column>
       </div>
-      {editing && <NodeForm {...editing} classLevels={d.class_levels} levels={d.education_levels} name={name} onClose={() => setEditing(null)}
+      <Card className="flex flex-col gap-3" data-testid="qb-language-curriculum">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div><h2 className="font-semibold">{t('qbed.language_curriculum')}</h2><p className="text-sm text-content-muted">{t('qbed.language_curriculum_hint')}</p></div>
+          {subject && <Button variant="secondary" onClick={() => setEditing({ kind: 'curriculum-versions', row: { qb_subject_id: subject.id, version_key: 'current', name_bn: `${name(subject)} — বর্তমান পাঠ্যক্রম`, name_en: `${name(subject)} — Current curriculum` } })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add')}</Button>}
+        </div>
+        {flexibleVersions.map(version => <VersionTree key={version.id} version={version} name={name}
+          onVersionEdit={() => setEditing({ kind: 'curriculum-versions', row: version })} onVersionDelete={() => remove('curriculum-versions', version)}
+          onAdd={(parentId = null) => setEditing({ kind: 'curriculum-nodes', row: { qb_curriculum_version_id: version.id, parent_id: parentId, kind: parentId ? 'Topic' : 'Part' } })}
+          onEdit={node => setEditing({ kind: 'curriculum-nodes', row: node })} onDelete={node => remove('curriculum-nodes', node)} />)}
+        {flexibleVersions.length === 0 && <p className="text-sm text-content-muted">{subject ? t('qbed.no_language_curriculum') : t('qb.pick_subject')}</p>}
+      </Card>
+      {editing && <NodeForm {...editing} classLevels={d.class_levels} levels={d.education_levels} subjects={d.subjects} versions={d.curriculum_versions ?? []} parentNodes={allParentNodes} name={name} onClose={() => setEditing(null)}
         onSaved={(row) => { if (editing.kind === 'subjects' && !editing.row.id) setSubj(row.id); setEditing(null); qc.invalidateQueries({ queryKey: KEY }) }} />}
     </div>
   )
+}
+
+function VersionTree({ version, name, onAdd, onEdit, onDelete, onVersionEdit, onVersionDelete }) {
+  const { t } = useTranslation()
+  return <div className="rounded-token [border:1px_solid_var(--line)] p-3" data-testid={`curriculum-version-${version.id}`}>
+    <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-medium">{name(version)}</h3><p className="text-xs text-content-muted">{version.version_key}</p></div><div className="flex items-center gap-2"><RowActions name={name(version)} onEdit={onVersionEdit} onDelete={onVersionDelete} /><Button variant="secondary" onClick={() => onAdd(null)}><Plus aria-hidden="true" className="h-4 w-4" />{t('qbed.add_curriculum_node')}</Button></div></div>
+    <ul className="flex flex-col gap-1">{(version.nodes ?? []).map(node => <VersionNode key={node.id} node={node} depth={0} name={name} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} />)}</ul>
+  </div>
+}
+
+function VersionNode({ node, depth, name, onAdd, onEdit, onDelete }) {
+  const { t } = useTranslation()
+  return <li className="flex flex-col gap-1" style={{ marginInlineStart: `${Math.min(depth, 8) * 1.25}rem` }}>
+    <div className="flex flex-wrap items-center gap-2 rounded-token bg-surface-muted px-2 py-1"><span className="flex-1" dir="auto">{name(node)} <small className="text-content-muted">{node.kind}</small></span>
+      <Button variant="secondary" onClick={() => onAdd(node.id)} aria-label={t('qbed.add_child')}><Plus aria-hidden="true" className="h-4 w-4" /></Button>
+      <RowActions name={name(node)} onEdit={() => onEdit(node)} onDelete={() => onDelete(node)} />
+    </div>
+    {(node.children ?? []).map(child => <VersionNode key={child.id} node={child} depth={depth + 1} name={name} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} />)}
+  </li>
 }
 
 function Column({ title, testid, onAdd, empty, children }) {
@@ -122,18 +154,22 @@ function Row({ label, active, onSelect, actions, badge, muted }) {
   )
 }
 
-function NodeForm({ kind, row, classLevels, levels, name, onClose, onSaved }) {
+function NodeForm({ kind, row, classLevels, levels, subjects = [], versions = [], parentNodes = [], name, onClose, onSaved }) {
   const { t } = useTranslation()
   const isNew = !row.id
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm({
     defaultValues: { name_bn: row.name_bn ?? '', name_en: row.name_en ?? '', education_level: row.education_level ?? 'other', code: row.code ?? '',
-      number: row.number ?? '', sort_order: row.sort_order ?? 0, is_active: row.is_active ?? true, class_level_ids: (row.class_level_ids ?? []).map(String) },
+      number: row.number ?? '', qb_subject_id: row.qb_subject_id ?? '', version_key: row.version_key ?? '', parent_id: row.parent_id ?? '', kind: row.kind ?? 'Part',
+      legacy_qb_chapter_id: row.legacy_qb_chapter_id ?? '', legacy_qb_topic_id: row.legacy_qb_topic_id ?? '', sort_order: row.sort_order ?? 0, is_active: row.is_active ?? true, class_level_ids: (row.class_level_ids ?? []).map(String) },
   })
   const submit = async (v) => {
     const body = { name_bn: v.name_bn, name_en: v.name_en, sort_order: Number(v.sort_order) || 0 }
     if (kind === 'class-levels') Object.assign(body, { education_level: v.education_level, is_active: Boolean(v.is_active) })
     if (kind === 'subjects') Object.assign(body, { code: v.code || null, is_active: Boolean(v.is_active) })
     if (kind === 'chapters') Object.assign(body, { number: v.number === '' ? null : Number(v.number) })
+    if (kind === 'curriculum-versions') Object.assign(body, { ...(isNew ? { qb_subject_id: row.qb_subject_id } : {}), version_key: v.version_key, is_active: Boolean(v.is_active) })
+    if (kind === 'curriculum-nodes') Object.assign(body, { kind: v.kind, parent_id: v.parent_id === '' ? null : Number(v.parent_id) || null,
+      ...(isNew ? { qb_curriculum_version_id: row.qb_curriculum_version_id } : {}), legacy_qb_chapter_id: v.legacy_qb_chapter_id || null, legacy_qb_topic_id: v.legacy_qb_topic_id || null })
     if (kind === 'subjects' || kind === 'chapters') body.class_level_ids = [].concat(v.class_level_ids || []).map(Number)
     if (isNew && kind === 'chapters') body.qb_subject_id = row.qb_subject_id
     if (isNew && kind === 'topics') body.qb_chapter_id = row.qb_chapter_id
@@ -154,8 +190,13 @@ function NodeForm({ kind, row, classLevels, levels, name, onClose, onSaved }) {
         {kind === 'class-levels' && <Select label={t('qb.education_level')} options={levels.map(l => ({ value: l, label: t(`qb.levels.${l}`) }))} {...register('education_level')} />}
         {kind === 'subjects' && <Input label={t('qb.code')} ltr error={errors.code?.message} {...register('code')} />}
         {kind === 'chapters' && <Input label={t('qb.number')} ltr inputMode="numeric" error={errors.number?.message} {...register('number')} />}
+        {kind === 'curriculum-versions' && <Input label={t('qbed.version_key')} ltr error={errors.version_key?.message} {...register('version_key', req)} />}
+        {kind === 'curriculum-nodes' && <><Select label={t('qbed.node_kind')} options={['Part', 'Unit', 'Lesson', 'Text', 'Topic', 'Other'].map(k => ({ value: k, label: t(`qbed.node_kinds.${k}`) }))} {...register('kind', req)} />
+          <Select label={t('qbed.parent_node')} options={[{ value: '', label: t('qb.none_option') }, ...parentNodes.filter(n => n.version_id === row.qb_curriculum_version_id).map(n => ({ value: String(n.id), label: n.label }))].filter(o => o.value === '' || Number(o.value) !== Number(row.id))} {...register('parent_id')} />
+          <Select label={t('qbed.legacy_chapter')} options={[{ value: '', label: t('qb.none_option') }, ...subjects.flatMap(s => s.chapters.map(c => ({ value: String(c.id), label: `${name(s)} / ${name(c)}` })))]} {...register('legacy_qb_chapter_id')} />
+          <Input label={t('qbed.legacy_topic_id')} ltr inputMode="numeric" {...register('legacy_qb_topic_id')} /></>}
         <Input label={t('qb.sort_order')} ltr inputMode="numeric" error={errors.sort_order?.message} {...register('sort_order')} />
-        {(kind === 'class-levels' || kind === 'subjects') && <Check label={t('qb.active')} {...register('is_active')} />}
+        {(kind === 'class-levels' || kind === 'subjects' || kind === 'curriculum-versions') && <Check label={t('qb.active')} {...register('is_active')} />}
         {(kind === 'subjects' || kind === 'chapters') && (
           <fieldset className="sm:col-span-2 flex flex-col gap-1">
             <legend className="text-sm font-medium mb-1">{t('qb.taught_in')}</legend>
@@ -172,4 +213,11 @@ function NodeForm({ kind, row, classLevels, levels, name, onClose, onSaved }) {
       </form>
     </Modal>
   )
+}
+
+function flattenCurriculum(nodes, parents, name, versionId) {
+  return (nodes ?? []).flatMap(node => {
+    const path = [...parents, name(node)]
+    return [{ id: node.id, label: path.join(' / '), version_id: versionId }, ...flattenCurriculum(node.children, path, name, versionId)]
+  })
 }

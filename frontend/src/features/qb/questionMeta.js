@@ -14,5 +14,7 @@ export function questionCode(slug, id) {
 export const SOURCE_TYPES = ['board', 'school', 'college', 'madrasa', 'admission', 'model_test', 'book', 'other']
 
 // a source row <-> the existing occurrence fields: note = source type, institution_name = full name, board = short name
-export const sourceToOccurrence = (s) => ({ note: s.type || null, institution_name: s.full || null, board: s.short || null, exam_type: s.exam_type || null, year: s.year ? Number(s.year) : null })
-export const occurrenceToSource = (o) => ({ type: SOURCE_TYPES.includes(o.note) ? o.note : (o.note ? 'other' : ''), full: o.institution_name ?? '', short: o.board ?? '', exam_type: o.exam_type ?? '', year: o.year ? String(o.year) : '' })
+export const sourceToOccurrence = (s) => ({ note: s.type || null, institution_name: s.full || null, board: s.short || null, exam_type: s.exam_type || null,
+  question_number: s.question_number || null, set_label: s.set_label || null, page_reference: s.page_reference || null, year: s.year ? Number(s.year) : null })
+export const occurrenceToSource = (o) => ({ type: SOURCE_TYPES.includes(o.note) ? o.note : (o.note ? 'other' : ''), full: o.institution_name ?? '', short: o.board ?? '', exam_type: o.exam_type ?? '',
+  question_number: o.question_number ?? '', set_label: o.set_label ?? '', page_reference: o.page_reference ?? '', year: o.year ? String(o.year) : '' })

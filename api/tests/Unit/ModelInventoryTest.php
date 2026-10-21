@@ -17,6 +17,7 @@ class ModelInventoryTest extends TestCase
     /** D65 (docs/modules/question-bank.md §2): the platform question-bank catalogue - no institution_id, PlatformCatalogue instead */
     private const PLATFORM_CATALOGUE = ['QbClassLevel', 'QbSubject', 'QbClassLevelSubject', 'QbChapter', 'QbChapterClassLevel', 'QbTopic', 'QbQuestionType',
         'QbQuestion', 'QbQuestionOption', 'QbCreativePart', 'QbQuestionStimulus', 'QbQuestionItem', 'QbQuestionClassLevel', 'QbQuestionOccurrence',
+        'QbCurriculumVersion', 'QbCurriculumNode', 'QbQuestionCurriculumNode',
         'QbQuestionRevision', 'QbMedia', 'QbMediaLink', 'QbConcept', 'QbResource', 'QbPrice', 'QbPriceRule', 'QbWriterEarning', 'QbWriterWallet',
         'QbWriterWalletTxn', 'QbWithdrawalRequest', 'QbQuizPackage', 'QbQuiz', 'QbQuizQuestion', 'QbImportMap', 'QbImportBatch', 'QbImportRecord', 'QbBlueprint', 'QbBlueprintItem'];   // QbImportMap: D69; QbImport*: D123
 

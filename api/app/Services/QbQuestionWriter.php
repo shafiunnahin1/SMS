@@ -9,7 +9,7 @@ use Illuminate\Validation\ValidationException;
 // curriculum placement check, the child lists, the revision snapshot - shared by the editor and the import's "import selected".
 class QbQuestionWriter
 {
-    public const CHILDREN = ['class_level_ids', 'options', 'creative_parts', 'occurrences', 'media_ids', 'stimuli', 'items'];
+    public const CHILDREN = ['class_level_ids', 'curriculum_node_ids', 'options', 'creative_parts', 'occurrences', 'media_ids', 'stimuli', 'items'];
 
     /** The chapter must belong to the subject and the topic to the chapter (a topic alone fills in its chapter) */
     public function placed(array $in): array
@@ -29,6 +29,13 @@ class QbQuestionWriter
     public function children(QbQuestion $q, array $in, User $user): void
     {
         if (array_key_exists('class_level_ids', $in)) $q->classLevels()->sync($in['class_level_ids']);
+        if (array_key_exists('curriculum_node_ids', $in)) {
+            $nodes = \App\Models\QbCurriculumNode::with('version')->whereIn('id', $in['curriculum_node_ids'])->get();
+            if ($nodes->pluck('version.qb_subject_id')->filter()->unique()->count() > 1 || $nodes->contains(fn ($node) => (int) $node->version->qb_subject_id !== (int) $q->qb_subject_id)) {
+                throw ValidationException::withMessages(['curriculum_node_ids' => __('errors.qb_curriculum_subject_mismatch')]);
+            }
+            $q->curriculumNodes()->sync($nodes->pluck('id')->all());
+        }
         if (array_key_exists('options', $in)) {
             $q->options()->delete();
             foreach (array_values($in['options']) as $i => $o) $q->options()->create(['label' => $o['label'], 'content_text' => $o['content_text'],
@@ -58,7 +65,13 @@ class QbQuestionWriter
         }
         if (array_key_exists('occurrences', $in)) {
             $q->occurrences()->delete();
-            foreach ($in['occurrences'] as $o) $q->occurrences()->create(collect($o)->only(['board', 'institution_name', 'exam_type', 'year', 'note'])->all());
+            foreach ($in['occurrences'] as $o) {
+                $row = collect($o)->only(['board', 'institution_name', 'exam_type', 'year', 'note'])->all();
+                if (\Illuminate\Support\Facades\Schema::hasColumn('qb_question_occurrences', 'question_number')) {
+                    $row += collect($o)->only(['question_number', 'set_label', 'page_reference'])->all();
+                }
+                $q->occurrences()->create($row);
+            }
         }
         if (array_key_exists('media_ids', $in)) {
             $linked = $q->media()->pluck('qb_media.id')->all();
@@ -74,7 +87,7 @@ class QbQuestionWriter
         QbQuestionRevision::create(['qb_question_id' => $q->id, 'edited_by' => $user->id,
             'snapshot' => $q->only(['qb_question_type_id', 'qb_subject_id', 'qb_chapter_id', 'qb_topic_id', 'difficulty', 'marks', 'language', 'content_mode',
                 'question_json', 'question_text', 'answer_json', 'answer_text', 'explanation_json', 'explanation_text', 'status'])
-                + ['class_level_ids' => $q->classLevels()->pluck('qb_class_levels.id')->all()] + $this->parts($q)]);
+                + ['class_level_ids' => $q->classLevels()->pluck('qb_class_levels.id')->all(), 'curriculum_node_ids' => $q->curriculumNodes()->pluck('qb_curriculum_nodes.id')->all()] + $this->parts($q)]);
     }
 
     /** The parts with their answers - the writers' panel only; an institution or a student gets QbQuestionPublicResource */
@@ -84,7 +97,12 @@ class QbQuestionWriter
             'options' => $q->options()->get(['label', 'content_text', 'content_json', 'is_correct'])->map(fn ($o) => ['label' => $o->label, 'content_text' => $o->content_text,
                 'content_json' => $o->content_json, 'is_correct' => (bool) $o->is_correct])->all(),
             'creative_parts' => $q->creativeParts()->get()->map(fn ($p) => $p->only(['part_label', 'cognitive_level', 'marks', 'question_text', 'question_json', 'answer_text', 'answer_json']))->all(),
-            'occurrences' => $q->occurrences()->get()->map(fn ($o) => $o->only(['board', 'institution_name', 'exam_type', 'year', 'note']))->all(),
+            'occurrences' => $q->occurrences()->get()->map(function ($o) {
+                $row = $o->only(['board', 'institution_name', 'exam_type', 'year', 'note']);
+                if (\Illuminate\Support\Facades\Schema::hasColumn('qb_question_occurrences', 'question_number')) $row += $o->only(['question_number', 'set_label', 'page_reference']);
+                return $row;
+            })->all(),
+            'curriculum_node_ids' => $q->curriculumNodes()->pluck('qb_curriculum_nodes.id')->all(),
             'media_ids' => $q->media()->pluck('qb_media.id')->all(),
             'stimuli' => $q->stimuli()->get()->map(fn ($st) => ['id' => $st->id] + $st->only(['label', 'content_text', 'content_json']))->all(),
             'items' => $q->items()->get()->map(fn ($it) => $it->only(['item_type', 'prompt_text', 'prompt_json', 'answer_json', 'marks', 'qb_question_stimulus_id']))->all(),
@@ -98,7 +116,12 @@ class QbQuestionWriter
             'options' => $q->options->map(fn ($o) => ['label' => $o->label, 'content_text' => $o->content_text,
                 'content_json' => $o->content_json, 'is_correct' => (bool) $o->is_correct])->all(),
             'creative_parts' => $q->creativeParts->map(fn ($p) => $p->only(['part_label', 'cognitive_level', 'marks', 'question_text', 'question_json', 'answer_text', 'answer_json']))->all(),
-            'occurrences' => $q->occurrences->map(fn ($o) => $o->only(['board', 'institution_name', 'exam_type', 'year', 'note']))->all(),
+            'occurrences' => $q->occurrences->map(function ($o) {
+                $row = $o->only(['board', 'institution_name', 'exam_type', 'year', 'note']);
+                if (\Illuminate\Support\Facades\Schema::hasColumn('qb_question_occurrences', 'question_number')) $row += $o->only(['question_number', 'set_label', 'page_reference']);
+                return $row;
+            })->all(),
+            'curriculum_node_ids' => $q->curriculumNodes->pluck('id')->all(),
             'stimuli' => $q->stimuli->map(fn ($st) => ['id' => $st->id] + $st->only(['label', 'content_text', 'content_json']))->all(),
             'items' => $q->items->map(fn ($it) => $it->only(['item_type', 'prompt_text', 'prompt_json', 'answer_json', 'marks', 'qb_question_stimulus_id']))->all(),
         ];

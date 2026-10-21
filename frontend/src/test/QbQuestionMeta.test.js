@@ -12,7 +12,7 @@ describe('question meta', () => {
   })
   it('keeps a source row through the occurrence fields', () => {
     const s = { type: 'board', full: 'ঢাকা বোর্ড', short: 'ঢা.বো.', exam_type: 'SSC', year: '2023' }
-    expect(sourceToOccurrence(s)).toEqual({ note: 'board', institution_name: 'ঢাকা বোর্ড', board: 'ঢা.বো.', exam_type: 'SSC', year: 2023 })
-    expect(occurrenceToSource(sourceToOccurrence(s))).toEqual(s)
+    expect(sourceToOccurrence(s)).toEqual({ note: 'board', institution_name: 'ঢাকা বোর্ড', board: 'ঢা.বো.', exam_type: 'SSC', question_number: null, set_label: null, page_reference: null, year: 2023 })
+    expect(occurrenceToSource(sourceToOccurrence(s))).toEqual({ ...s, question_number: '', set_label: '', page_reference: '' })
   })
 })

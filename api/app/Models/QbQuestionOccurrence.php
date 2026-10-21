@@ -14,5 +14,5 @@ class QbQuestionOccurrence extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['qb_question_id', 'board', 'institution_name', 'exam_type', 'year', 'note'];
+    protected $fillable = ['qb_question_id', 'board', 'institution_name', 'exam_type', 'question_number', 'set_label', 'year', 'note', 'page_reference'];
 }

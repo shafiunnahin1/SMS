@@ -24,6 +24,7 @@ class QbQuestionFinderService
             ->when($filters['qb_subject_id'] ?? null, fn ($q, $v) => $q->where('qb_subject_id', $v))
             ->when($filters['qb_chapter_id'] ?? null, fn ($q, $v) => $q->where('qb_chapter_id', $v))
             ->when($filters['qb_topic_id'] ?? null, fn ($q, $v) => $q->where('qb_topic_id', $v))
+            ->when($filters['curriculum_node_id'] ?? null, fn ($q, $v) => $q->whereHas('curriculumNodes', fn ($nodes) => $nodes->where('qb_curriculum_nodes.id', $v)))
             ->when($filters['qb_question_type_id'] ?? null, fn ($q, $v) => $q->where('qb_question_type_id', $v))
             ->when($filters['qb_class_level_id'] ?? null, fn ($q, $v) => $q->whereHas('classLevels', fn ($c) => $c->where('qb_class_levels.id', $v)))
             // D74: a writer's question is language-neutral ('und'); a language filter keeps those and the imported ones of that language
@@ -43,6 +44,21 @@ class QbQuestionFinderService
             'score' => $r['score'], 'confidence' => $r['score'] >= self::HIGH ? 'high' : ($r['score'] >= self::MEDIUM ? 'medium' : 'low'),
             'question_type' => $label($types, $r['q']->qb_question_type_id), 'subject' => $label($subjects, $r['q']->qb_subject_id),
             'chapter' => $label($chapters, $r['q']->qb_chapter_id), 'topic' => $label($topics, $r['q']->qb_topic_id), 'language' => $r['q']->language])->all();
+        if ($results !== []) {
+            $ids = collect($results)->pluck('question_id');
+            $questions = QbQuestion::with(['curriculumNodes.version.subject', 'curriculumNodes.parent'])->whereIn('id', $ids)->get()->keyBy('id');
+            $results = array_map(function ($row) use ($questions) {
+                $row['curriculum_breadcrumbs'] = $questions->get($row['question_id'])->curriculumNodes->map(function ($node) {
+                    $path = [];
+                    for ($cursor = $node; $cursor && count($path) < 100;) {
+                        $path[] = ['name_bn' => $cursor->name_bn, 'name_en' => $cursor->name_en, 'kind' => $cursor->kind];
+                        $cursor = $cursor->parent_id ? \App\Models\QbCurriculumNode::find($cursor->parent_id) : null;
+                    }
+                    return ['subject_name_bn' => $node->version?->subject?->name_bn, 'subject_name_en' => $node->version?->subject?->name_en, 'path' => array_reverse($path)];
+                })->values()->all();
+                return $row;
+            }, $results);
+        }
         $top = (float) ($results[0]['score'] ?? 0);
         $margin = round(max(0, $top - (float) ($results[1]['score'] ?? 0)), 2);
         $decision = match (true) {

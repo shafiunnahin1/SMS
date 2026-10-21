@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{AuditLog, Program, QbChapter, QbClassLevel, QbQuestion, QbQuestionType, QbSubject, QbTopic, User};
+use App\Models\{AuditLog, Program, QbChapter, QbClassLevel, QbCurriculumNode, QbCurriculumVersion, QbQuestion, QbQuestionType, QbSubject, QbTopic, User};
 use App\Support\Tenancy;
 use Database\Seeders\QbCurriculumSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -70,6 +70,50 @@ class QbCurriculumTest extends TestCase
         $this->api('PUT', $this->central, "super/qb/chapters/{$motion}", $this->super, ['qb_subject_id' => $physics])->assertStatus(422)->assertJsonValidationErrors('qb_subject_id');
         $this->api('PUT', $this->central, "super/qb/class-levels/{$nine}", $this->super, ['is_active' => false])->assertOk();
         $this->assertFalse(QbClassLevel::find($nine)->is_active);
+    }
+
+    public function test_versioned_curriculum_is_arbitrary_depth_ordered_and_linked_to_questions(): void
+    {
+        $subject = $this->add('subjects', ['name_bn' => 'বাংলা ১ম পত্র', 'name_en' => 'Bangla 1st Paper']);
+        $version = $this->api('POST', $this->central, 'super/qb/curriculum-versions', $this->super, [
+            'qb_subject_id' => $subject, 'version_key' => 'current', 'name_bn' => 'বর্তমান', 'name_en' => 'Current', 'sort_order' => 1,
+        ])->assertCreated()->json('data.id');
+        $part = $this->api('POST', $this->central, 'super/qb/curriculum-nodes', $this->super, [
+            'qb_curriculum_version_id' => $version, 'kind' => 'Part', 'name_bn' => 'গদ্য', 'name_en' => 'Prose', 'sort_order' => 1,
+        ])->assertCreated()->json('data.id');
+        $text = $this->api('POST', $this->central, 'super/qb/curriculum-nodes', $this->super, [
+            'qb_curriculum_version_id' => $version, 'parent_id' => $part, 'kind' => 'Text', 'name_bn' => 'অপরিচিতা', 'name_en' => 'Aparichita', 'sort_order' => 2,
+        ])->assertCreated()->json('data.id');
+        $topic = $this->api('POST', $this->central, 'super/qb/curriculum-nodes', $this->super, [
+            'qb_curriculum_version_id' => $version, 'parent_id' => $text, 'kind' => 'Topic', 'name_bn' => 'লেখক পরিচিতি', 'name_en' => 'Author',
+        ])->assertCreated()->json('data.id');
+        $tree = $this->api('GET', $this->central, 'writer/curriculum', $this->makeUser(null, 'content_writer'))->assertOk()->json('data');
+        $this->assertSame('লেখক পরিচিতি', $tree['curriculum_versions'][0]['nodes'][0]['children'][0]['children'][0]['name_bn']);
+        $this->api('PUT', $this->central, "super/qb/curriculum-nodes/{$topic}", $this->super, ['parent_id' => $topic])->assertStatus(422)->assertJsonValidationErrors('parent_id');
+        $this->api('PUT', $this->central, "super/qb/curriculum-nodes/{$part}", $this->super, ['parent_id' => $topic])->assertStatus(422)->assertJsonValidationErrors('parent_id');
+
+        $type = QbQuestionType::create(['slug' => 'short', 'name_bn' => 'সংক্ষিপ্ত', 'name_en' => 'Short', 'family' => 'short']);
+        $writer = $this->makeUser(null, 'content_writer');
+        $question = $this->api('POST', $this->central, 'writer/questions', $writer, [
+            'qb_question_type_id' => $type->id, 'qb_subject_id' => $subject, 'question_text' => 'লেখক কে?', 'answer_text' => 'রবীন্দ্রনাথ',
+            'curriculum_node_ids' => [$text, $topic], 'occurrences' => [['exam_type' => 'HSC', 'question_number' => '৩', 'set_label' => 'খ', 'year' => 2026, 'page_reference' => 'পৃষ্ঠা ৫']],
+        ])->assertCreated()->json('data.id');
+        $opened = $this->api('GET', $this->central, "writer/questions/{$question}", $writer)->assertOk()->json('data');
+        $this->assertSame([$text, $topic], $opened['curriculum_node_ids']);
+        $this->assertSame('Bangla 1st Paper', $opened['curriculum_breadcrumbs'][0]['subject_name_en']);
+        $this->assertSame(['Prose', 'Aparichita'], array_column($opened['curriculum_breadcrumbs'][0]['path'], 'name_en'));
+        $this->assertSame(['৩', 'খ', 'পৃষ্ঠা ৫'], [$opened['occurrences'][0]['question_number'], $opened['occurrences'][0]['set_label'], $opened['occurrences'][0]['page_reference']]);
+        $listed = $this->api('GET', $this->central, 'writer/questions', $writer, ['curriculum_node_ids' => [$topic]])->assertOk()->json('data');
+        $this->assertSame([$question], array_column($listed, 'id'));
+        $this->assertContains(['Prose', 'Aparichita', 'Author'], array_map(fn ($breadcrumb) => array_column($breadcrumb['path'], 'name_en'), $listed[0]['curriculum_breadcrumbs']));
+        $this->api('PUT', $this->central, "writer/questions/{$question}", $writer, ['curriculum_node_ids' => [$topic]])->assertOk();
+        $this->assertSame([$topic], $this->api('GET', $this->central, "writer/questions/{$question}", $writer)->json('data.curriculum_node_ids'));
+        $this->api('PUT', $this->central, "writer/questions/{$question}", $writer, ['curriculum_node_ids' => []])->assertOk();
+        $this->assertSame([], $this->api('GET', $this->central, "writer/questions/{$question}", $writer)->json('data.curriculum_node_ids'));
+        $this->api('DELETE', $this->central, "super/qb/curriculum-nodes/{$part}", $this->super)->assertStatus(422);
+        $this->api('DELETE', $this->central, "super/qb/curriculum-versions/{$version}", $this->super)->assertStatus(422);
+        $this->assertSame(3, QbCurriculumNode::count());
+        $this->assertSame(1, QbCurriculumVersion::count());
     }
 
     public function test_input_is_checked(): void

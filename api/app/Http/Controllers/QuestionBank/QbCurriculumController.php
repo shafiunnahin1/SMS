@@ -5,16 +5,18 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QuestionBank\QbCurriculumRequest;
-use App\Models\{AuditLog, Program, QbChapter, QbClassLevel, QbConcept, QbQuestion, QbResource, QbSubject, QbTopic};
+use App\Models\{AuditLog, Program, QbChapter, QbClassLevel, QbConcept, QbCurriculumNode, QbCurriculumVersion, QbQuestion, QbResource, QbSubject, QbTopic};
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 // QB.1 (D65, docs/modules/question-bank.md §3ক): the platform curriculum class → subject → chapter → topic. The Super Admin
 // edits it on the central host (`tenancy.bypass`); an institution's admin only lists the active classes, to link a program.
 // A node is never deleted while anything hangs on it (422 `qb_in_use`): its children, questions, concepts, resources, programs.
 class QbCurriculumController extends Controller
 {
-    public const KINDS = ['class-levels' => QbClassLevel::class, 'subjects' => QbSubject::class, 'chapters' => QbChapter::class, 'topics' => QbTopic::class];
+    public const KINDS = ['class-levels' => QbClassLevel::class, 'subjects' => QbSubject::class, 'chapters' => QbChapter::class, 'topics' => QbTopic::class,
+        'curriculum-versions' => QbCurriculumVersion::class, 'curriculum-nodes' => QbCurriculumNode::class];
     public const EDUCATION_LEVELS = ['primary', 'secondary', 'higher_secondary', 'madrasa', 'technical', 'admission', 'other'];
 
     /** GET /super/qb/curriculum: the whole tree in one answer (a few hundred rows at most) */
@@ -29,6 +31,13 @@ class QbCurriculumController extends Controller
         $topics = QbTopic::orderBy('sort_order')->orderBy('id')->get()->groupBy('qb_chapter_id');
         $chapters = QbChapter::with('classLevels:id')->orderBy('sort_order')->orderBy('number')->orderBy('id')->get()->groupBy('qb_subject_id');
         $self = new self;
+        $curriculumNodes = QbCurriculumNode::orderBy('sort_order')->orderBy('id')->get()->groupBy(fn ($node) => $node->qb_curriculum_version_id . ':' . ($node->parent_id ?? 0));
+        $nestedNodes = function (int $versionId, ?int $parentId = null) use (&$nestedNodes, $curriculumNodes, $self): array {
+            return ($curriculumNodes[$versionId . ':' . ($parentId ?? 0)] ?? collect())->map(fn ($node) => $self->row('curriculum-nodes', $node) + [
+                'children' => $nestedNodes($versionId, $node->id),
+            ])->values()->all();
+        };
+        $versions = QbCurriculumVersion::with('subject:id,name_bn,name_en')->orderBy('sort_order')->orderBy('id')->get();
         return [
             'class_levels' => QbClassLevel::orderBy('sort_order')->orderBy('id')->get()->map(fn ($c) => $self->row('class-levels', $c))->values(),
             'subjects' => QbSubject::with('classLevels:id')->orderBy('sort_order')->orderBy('id')->get()->map(fn ($s) => $self->row('subjects', $s) + [
@@ -39,6 +48,11 @@ class QbCurriculumController extends Controller
                 ])->values(),
             ])->values(),
             'education_levels' => self::EDUCATION_LEVELS,
+            'curriculum_versions' => $versions->map(fn ($version) => $self->row('curriculum-versions', $version) + [
+                'subject_name_bn' => $version->subject?->name_bn,
+                'subject_name_en' => $version->subject?->name_en,
+                'nodes' => $nestedNodes($version->id),
+            ])->values(),
         ];
     }
 
@@ -47,6 +61,7 @@ class QbCurriculumController extends Controller
     {
         $this->kind($kind);
         $in = $request->validated();
+        $this->assertFlexiblePlacement($kind, $in);
         $node = DB::transaction(function () use ($kind, $in) {
             $class = self::KINDS[$kind];
             $node = $class::create(collect($in)->except('class_level_ids')->all());
@@ -62,6 +77,7 @@ class QbCurriculumController extends Controller
     {
         $node = $this->find($kind, $id);
         $in = $request->validated();
+        $this->assertFlexiblePlacement($kind, $in, $node);
         DB::transaction(function () use ($kind, $node, $in) {
             $node->update(collect($in)->except('class_level_ids')->all());
             $this->syncClasses($kind, $node, $in);
@@ -121,7 +137,46 @@ class QbCurriculumController extends Controller
                 || QbResource::withTrashed()->where('qb_chapter_id', $node->id)->exists(),
             'topics' => QbQuestion::withTrashed()->where('qb_topic_id', $node->id)->exists() || QbConcept::withTrashed()->where('qb_topic_id', $node->id)->exists()
                 || QbResource::withTrashed()->where('qb_topic_id', $node->id)->exists(),
+            'curriculum-versions' => $node->nodes()->exists() || QbQuestion::withTrashed()->whereHas('curriculumNodes', fn ($q) => $q->where('qb_curriculum_version_id', $node->id))->exists(),
+            'curriculum-nodes' => $node->children()->exists() || $node->questionLinks()->exists(),
         };
+    }
+
+    private function assertFlexiblePlacement(string $kind, array $in, ?Model $current = null): void
+    {
+        if ($kind !== 'curriculum-nodes') return;
+        $versionId = (int) ($current?->qb_curriculum_version_id ?? $in['qb_curriculum_version_id'] ?? 0);
+        $version = QbCurriculumVersion::with('subject')->findOrFail($versionId);
+        $parentId = $in['parent_id'] ?? $current?->parent_id;
+        if ($current && !array_key_exists('parent_id', $in)) $parentId = null;
+        if ($parentId !== null) {
+            $parent = QbCurriculumNode::findOrFail($parentId);
+            if ((int) $parent->qb_curriculum_version_id !== $versionId || ($current && (int) $parent->id === (int) $current->id)) {
+                throw ValidationException::withMessages(['parent_id' => __('errors.qb_curriculum_parent_mismatch')]);
+            }
+            if ($current) {
+                $descendants = QbCurriculumNode::where('qb_curriculum_version_id', $versionId)->where('parent_id', $current->id)->pluck('id');
+                while ($descendants->isNotEmpty()) {
+                    if ($descendants->contains((int) $parentId)) throw ValidationException::withMessages(['parent_id' => __('errors.qb_curriculum_cycle')]);
+                    $descendants = QbCurriculumNode::whereIn('parent_id', $descendants)->pluck('id');
+                }
+            }
+        }
+        $chapterId = array_key_exists('legacy_qb_chapter_id', $in) ? $in['legacy_qb_chapter_id'] : $current?->legacy_qb_chapter_id;
+        $topicId = array_key_exists('legacy_qb_topic_id', $in) ? $in['legacy_qb_topic_id'] : $current?->legacy_qb_topic_id;
+        if ($topicId) {
+            $topic = QbTopic::findOrFail($topicId);
+            if ($chapterId && (int) $topic->qb_chapter_id !== (int) $chapterId) {
+                throw ValidationException::withMessages(['legacy_qb_topic_id' => __('errors.qb_curriculum_legacy_mismatch')]);
+            }
+            $chapterId = $topic->qb_chapter_id;
+        }
+        if ($chapterId && (int) QbChapter::findOrFail($chapterId)->qb_subject_id !== (int) $version->qb_subject_id) {
+            throw ValidationException::withMessages(['legacy_qb_chapter_id' => __('errors.qb_curriculum_legacy_mismatch')]);
+        }
+        if ($topicId && (int) QbTopic::whereKey($topicId)->value('qb_chapter_id') !== (int) $chapterId) {
+            throw ValidationException::withMessages(['legacy_qb_topic_id' => __('errors.qb_curriculum_legacy_mismatch')]);
+        }
     }
 
     private function row(string $kind, Model $n): array
@@ -132,6 +187,10 @@ class QbCurriculumController extends Controller
             'subjects' => ['code' => $n->code, 'is_active' => (bool) $n->is_active],
             'chapters' => ['qb_subject_id' => $n->qb_subject_id, 'number' => $n->number],
             'topics' => ['qb_chapter_id' => $n->qb_chapter_id],
+            'curriculum-versions' => ['qb_subject_id' => (int) $n->qb_subject_id, 'version_key' => $n->version_key, 'is_active' => (bool) $n->is_active],
+            'curriculum-nodes' => ['qb_curriculum_version_id' => (int) $n->qb_curriculum_version_id, 'parent_id' => $n->parent_id ? (int) $n->parent_id : null,
+                'kind' => $n->kind, 'legacy_qb_chapter_id' => $n->legacy_qb_chapter_id ? (int) $n->legacy_qb_chapter_id : null,
+                'legacy_qb_topic_id' => $n->legacy_qb_topic_id ? (int) $n->legacy_qb_topic_id : null],
         };
     }
 }

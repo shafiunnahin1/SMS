@@ -43,6 +43,8 @@
 - `qb_subjects` (name_bn, name_en, code), `qb_class_level_subject` (pivot)
 - `qb_chapters` (qb_subject_id, name_bn, name_en, number, sort_order), `qb_chapter_class_level` (pivot — একই অধ্যায় একাধিক শ্রেণিতে)
 - `qb_topics` (qb_chapter_id, name_bn, name_en, sort_order)
+- D139: ভাষা-পত্রের নমনীয় পাঠ্যক্রম `qb_curriculum_versions` ও `qb_curriculum_nodes`-এ থাকে। সংস্করণ বিষয়ের সাথে যুক্ত; নোড একই সংস্করণে যেকোনো গভীরতার Part/Unit/Lesson/Text/Topic/Other হতে পারে এবং `sort_order` অনুযায়ী সাজে। ঐচ্ছিক legacy chapter/topic link পুরনো ফিল্টারকে সহায়তা করে। `qb_question_curriculum_nodes` প্রশ্নের সাথে শূন্য বা একাধিক নোড যুক্ত করে; এটি প্রশ্নের ধরন বা পরীক্ষার পার্ট নয়।
+- D139: ভাষা-পত্রের নমনীয় পাঠ্যক্রম `qb_curriculum_versions` ও `qb_curriculum_nodes`-এ থাকে। সংস্করণ বিষয়ের সাথে যুক্ত; নোড একই সংস্করণে যেকোনো গভীরতার Part/Unit/Lesson/Text/Topic/Other হতে পারে এবং `sort_order` অনুযায়ী সাজে। ঐচ্ছিক legacy chapter/topic link পুরনো ফিল্টারকে সহায়তা করে। `qb_question_curriculum_nodes` প্রশ্নের সাথে শূন্য বা একাধিক নোড যুক্ত করে; এটি প্রশ্নের ধরন বা পরীক্ষার পার্ট নয়।
 
 **খ. প্রশ্ন (প্ল্যাটফর্ম)** — qbank-এর মডেল থেকে
 - `qb_question_types` (slug, name_bn, name_en, family — `mcq|creative|short|fill_gap|matching|true_false|ordering|writing|other`, ui_config JSON, is_active, sort_order) — qbank-এর ~৭৭টি slug সিড হিসেবে আসে।
@@ -50,7 +52,7 @@
 - `qb_question_options` (qb_question_id, label, content_json, content_text, is_correct, sort_order)
 - `qb_creative_parts` (qb_question_id, part_label ক/খ/গ/ঘ, cognitive_level `knowledge|understanding|application|higher_order`, marks, question_json/text, answer_json/text)
 - `qb_question_items` / `qb_question_stimuli` — ফাঁকা-পূরণ, ম্যাচিং, অনুচ্ছেদ-ভিত্তিক প্রশ্নের কাঠামো (qbank-এর structured model; task QB.4)
-- `qb_question_class_level` (pivot), `qb_question_occurrences` (board, institution_name, exam_type, year — "কোন বোর্ড-পরীক্ষায় এসেছিল")
+- `qb_question_class_level` (pivot), `qb_question_occurrences` (board, institution_name, exam_type, question_number, set_label, year, note, page_reference — "কোথায় এসেছিল")
 - `qb_question_revisions` (qb_question_id, snapshot JSON, edited_by) — লেখকের প্রতিটি সংরক্ষণ
 - `qb_media` (path on the platform's private disk, mime, size, uploaded_by) + `qb_media_links` (polymorphic) — ছবি, ডায়াগ্রাম
 
