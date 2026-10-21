@@ -82,6 +82,8 @@ class RoleMatrixContractTest extends TestCase
             if (++$checkedRoutes % 100 === 0) $this->travel(61)->seconds();
             [$method, $uri] = explode(' ', $key, 2);
             $path = strtr(substr($uri, strlen('api/v1/')), self::PARAMS);
+            // D143: exercise the writer curriculum-version route so its role middleware is reached.
+            if ($uri === 'api/v1/writer/qb/{kind}') $path = 'writer/qb/curriculum-versions';
             // D90 adds two numeric row placeholders; retain the same role assertions and all existing substitutions.
             $path = strtr($path, ['{department}' => '999999', '{duty}' => '999999']);
             // D84: use a valid shared action so route constraints do not preempt the role middleware.

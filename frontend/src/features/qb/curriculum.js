@@ -13,13 +13,22 @@ export const versionsForSubject = (versions, subjectId) => (versions ?? [])
   .filter(v => String(v.qb_subject_id) === String(subjectId))
   .sort((a, b) => Number(b.is_active) - Number(a.is_active))
 
+const LANGUAGE_PAPER_NAMES = new Set([
+  'বাংলা ১ম পত্র', 'bangla 1st paper', 'বাংলা ২য় পত্র', 'bangla 2nd paper',
+  'ইংরেজি ১ম পত্র', 'english 1st paper', 'ইংরেজি ২য় পত্র', 'english 2nd paper',
+])
+
+/** D139's language papers use the flexible syllabus path, including before nodes are added. */
+export const isLanguagePaperSubject = (subject) => [subject?.name_bn, subject?.name_en]
+  .some(value => LANGUAGE_PAPER_NAMES.has(String(value ?? '').trim().toLocaleLowerCase()))
+
 /** every node of the versions as one searchable row: its id, the path of names and the version it belongs to */
 export function flattenCurriculum(versions, name) {
   const rows = []
-  const walk = (nodes, parents, version) => (nodes ?? []).forEach(node => {
+  const walk = (nodes, parents, version, parentId = null) => (nodes ?? []).forEach(node => {
     const path = [...parents, name(node)]
-    rows.push({ id: node.id, kind: node.kind, path, label: path.join(' › '), version: name(version) || version.version_key, version_id: version.id, parent_id: node.parent_id ?? null, sort_order: node.sort_order ?? 0, depth: parents.length })
-    walk(node.children, path, version)
+    rows.push({ id: node.id, kind: node.kind, path, label: path.join(' › '), version: name(version) || version.version_key, version_id: version.id, parent_id: node.parent_id ?? parentId, sort_order: node.sort_order ?? 0, depth: parents.length })
+    walk(node.children, path, version, node.id)
   })
   for (const version of versions ?? []) walk(version.nodes, [], version)
   return rows

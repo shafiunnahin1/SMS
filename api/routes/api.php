@@ -122,7 +122,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/curriculum',                     [QbQuestionController::class, 'curriculum']);
         // D141: writers may create shared curriculum entries, but only Super Admins may manage/update/delete the catalogue.
         Route::post('/qb/{kind}',                     [QbCurriculumController::class, 'store'])
-            ->middleware('role:content_writer,super_admin')->where('kind', 'subjects|chapters|topics|curriculum-nodes');
+            ->middleware('role:content_writer,super_admin')->where('kind', 'subjects|chapters|topics|curriculum-versions|curriculum-nodes');
         Route::get('/question-types',                 [QbQuestionController::class, 'types']);
         Route::get('/questions',                      [QbQuestionController::class, 'index']);
         Route::post('/questions',                     [QbQuestionController::class, 'store'])->middleware('role:content_writer,super_admin');

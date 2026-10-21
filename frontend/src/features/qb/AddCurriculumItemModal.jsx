@@ -12,13 +12,13 @@ import { Input, Select } from '../../components/FormField'
 
 const NODE_KINDS = ['Part', 'Unit', 'Lesson', 'Text', 'Topic', 'Other']
 
-export default function AddCurriculumItemModal({ mode, classes = [], classLevelIds = [], subjectId, chapterId, versions = [], nodes = [], defaultVersionId = '', defaultParentId = '', defaultSortOrder = 0, onClose, onCreated }) {
+export default function AddCurriculumItemModal({ mode, classes = [], classLevelIds = [], subjectId, chapterId, versions = [], nodes = [], defaultVersionId = '', defaultParentId = '', defaultKind = '', defaultSortOrder = 0, onClose, onCreated }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const role = useAuthStore(s => s.user?.role)
   const [selectedClasses, setSelectedClasses] = useState(classLevelIds.map(String))
   const { register, handleSubmit, setError, setValue, watch, formState: { errors, isSubmitting } } = useForm({
-    defaultValues: { name_bn: '', name_en: '', number: '', kind: defaultParentId ? 'Text' : 'Part', version_id: String(defaultVersionId), parent_id: String(defaultParentId), sort_order: String(defaultSortOrder) },
+    defaultValues: { name_bn: '', name_en: '', number: '', version_key: '', kind: defaultKind || (defaultParentId ? 'Text' : 'Part'), version_id: String(defaultVersionId), parent_id: String(defaultParentId), sort_order: String(defaultSortOrder) },
   })
   const name = t(`qbed.add_item.${mode}.title`)
   const submit = async values => {
@@ -30,11 +30,12 @@ export default function AddCurriculumItemModal({ mode, classes = [], classLevelI
     if (mode === 'subject') Object.assign(body, { class_level_ids: selectedClasses.map(Number) })
     if (mode === 'chapter') Object.assign(body, { qb_subject_id: Number(subjectId), number: values.number === '' ? null : Number(values.number), class_level_ids: classLevelIds.map(Number) })
     if (mode === 'topic') Object.assign(body, { qb_chapter_id: Number(chapterId) })
+    if (mode === 'curriculum-version') Object.assign(body, { qb_subject_id: Number(subjectId), version_key: values.version_key.trim(), is_active: true })
     if (mode === 'curriculum-node') Object.assign(body, {
       qb_curriculum_version_id: Number(values.version_id), parent_id: values.parent_id === '' ? null : Number(values.parent_id), kind: values.kind,
     })
     try {
-      const kind = { subject: 'subjects', chapter: 'chapters', topic: 'topics', 'curriculum-node': 'curriculum-nodes' }[mode]
+      const kind = { subject: 'subjects', chapter: 'chapters', topic: 'topics', 'curriculum-version': 'curriculum-versions', 'curriculum-node': 'curriculum-nodes' }[mode]
       const base = role === 'super_admin' ? '/super' : '/writer'
       const { data } = await api.post(`${base}/qb/${kind}`, body)
       useUiStore.getState().addToast(t('common.saved'))
@@ -55,6 +56,7 @@ export default function AddCurriculumItemModal({ mode, classes = [], classLevelI
         <Select label={t('qbed.parent_node')} options={[{ value: '', label: t('qb.none_option') }, ...nodes.filter(node => Number(node.version_id) === currentVersionId).map(node => ({ value: String(node.id), label: node.label }))]} {...register('parent_id')} />
       </>}
       {mode === 'chapter' && <Input label={t('qb.number')} ltr inputMode="numeric" error={errors.number?.message} {...register('number')} />}
+      {mode === 'curriculum-version' && <Input label={t('qbed.version_key')} ltr error={errors.version_key?.message} {...register('version_key', req)} />}
       <Input label={t('qb.name_bn')} error={errors.name_bn?.message} {...register('name_bn', req)} />
       <Input label={t('qb.name_en')} ltr error={errors.name_en?.message} {...register('name_en', req)} />
       <Input label={t('qb.sort_order')} ltr inputMode="numeric" {...register('sort_order')} />

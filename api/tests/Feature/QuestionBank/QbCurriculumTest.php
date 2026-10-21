@@ -102,6 +102,10 @@ class QbCurriculumTest extends TestCase
         $this->assertSame([$text, $topic], $opened['curriculum_node_ids']);
         $this->assertSame('Bangla 1st Paper', $opened['curriculum_breadcrumbs'][0]['subject_name_en']);
         $this->assertSame(['Prose', 'Aparichita'], array_column($opened['curriculum_breadcrumbs'][0]['path'], 'name_en'));
+        $this->api('PUT', $this->central, "writer/questions/{$question}", $writer, ['curriculum_node_ids' => [$topic, $text]])->assertOk();
+        $reordered = $this->api('GET', $this->central, "writer/questions/{$question}", $writer)->assertOk()->json('data');
+        $this->assertSame([$topic, $text], $reordered['curriculum_node_ids']);
+        $this->assertSame([['Prose', 'Aparichita', 'Author'], ['Prose', 'Aparichita']], array_map(fn ($breadcrumb) => array_column($breadcrumb['path'], 'name_en'), $reordered['curriculum_breadcrumbs']));
         $this->assertSame(['৩', 'খ', 'পৃষ্ঠা ৫'], [$opened['occurrences'][0]['question_number'], $opened['occurrences'][0]['set_label'], $opened['occurrences'][0]['page_reference']]);
         $listed = $this->api('GET', $this->central, 'writer/questions', $writer, ['curriculum_node_ids' => [$topic]])->assertOk()->json('data');
         $this->assertSame([$question], array_column($listed, 'id'));
@@ -114,6 +118,66 @@ class QbCurriculumTest extends TestCase
         $this->api('DELETE', $this->central, "super/qb/curriculum-versions/{$version}", $this->super)->assertStatus(422);
         $this->assertSame(3, QbCurriculumNode::count());
         $this->assertSame(1, QbCurriculumVersion::count());
+    }
+
+    public function test_content_writer_can_create_only_the_first_active_language_paper_version(): void
+    {
+        $subject = $this->add('subjects', ['name_bn' => 'ইংরেজি ১ম পত্র', 'name_en' => 'English 1st Paper']);
+        $writer = $this->makeUser(null, 'content_writer');
+        $body = ['qb_subject_id' => $subject, 'version_key' => '2026', 'name_bn' => '২০২৬', 'name_en' => '2026', 'is_active' => false];
+
+        $this->api('POST', $this->central, 'writer/qb/curriculum-versions', $writer, $body)->assertCreated()
+            ->assertJsonPath('data.is_active', true);
+        $this->assertSame(1, QbCurriculumVersion::where('qb_subject_id', $subject)->count());
+        $this->api('GET', $this->central, 'writer/curriculum', $writer)->assertOk()
+            ->assertJsonPath('data.curriculum_versions.0.qb_subject_id', $subject);
+        $anotherWriter = $this->makeUser(null, 'content_writer');
+        $this->api('GET', $this->central, 'writer/curriculum', $anotherWriter)->assertOk()
+            ->assertJsonPath('data.curriculum_versions.0.qb_subject_id', $subject);
+
+        $type = QbQuestionType::create(['slug' => 'd143-short', 'name_bn' => 'সংক্ষিপ্ত', 'name_en' => 'Short', 'family' => 'short']);
+        $node = $this->api('POST', $this->central, 'writer/qb/curriculum-nodes', $writer, [
+            'qb_curriculum_version_id' => QbCurriculumVersion::where('qb_subject_id', $subject)->value('id'),
+            'kind' => 'Part', 'name_bn' => 'পাঠ', 'name_en' => 'Reading', 'sort_order' => 1,
+        ])->assertCreated()->json('data.id');
+        $createdQuestion = $this->api('POST', $this->central, 'writer/questions', $writer, [
+            'qb_question_type_id' => $type->id, 'qb_subject_id' => $subject, 'question_text' => 'First draft', 'curriculum_node_ids' => [$node],
+        ])->assertCreated()->assertJsonPath('data.status', 'draft');
+        $question = $createdQuestion->json('data.id');
+        $this->assertSame([$node], $this->api('GET', $this->central, "writer/questions/{$question}", $writer)->assertOk()->json('data.curriculum_node_ids'));
+        $this->api('PUT', $this->central, "writer/questions/{$question}", $writer, ['question_text' => 'Edited draft', 'curriculum_node_ids' => [$node]])
+            ->assertOk()->assertJsonPath('data.status', 'draft')->assertJsonPath('data.question_text', 'Edited draft')->assertJsonPath('data.curriculum_node_ids.0', $node);
+
+        $this->api('POST', $this->central, 'writer/qb/curriculum-versions', $writer, [...$body, 'version_key' => '2027'])
+            ->assertStatus(422)->assertJsonValidationErrors('qb_subject_id');
+        $this->assertSame(1, QbCurriculumVersion::where('qb_subject_id', $subject)->count());
+        $this->assertSame(1, QbCurriculumNode::where('name_en', 'Reading')->count());
+    }
+
+    public function test_writer_initial_version_is_limited_to_language_papers_and_the_central_host(): void
+    {
+        $physics = $this->add('subjects', ['name_bn' => 'পদার্থ', 'name_en' => 'Physics']);
+        $body = ['qb_subject_id' => $physics, 'version_key' => '2026', 'name_bn' => '২০২৬', 'name_en' => '2026'];
+        $writer = $this->makeUser(null, 'content_writer');
+        $moderator = $this->makeUser(null, 'content_moderator');
+        $institution = $this->makeInstitution('qbversiontenant');
+
+        $this->api('POST', $this->central, 'writer/qb/curriculum-versions', $writer, $body)->assertForbidden();
+        $this->api('POST', $this->central, 'writer/qb/curriculum-versions', $moderator, $body)->assertForbidden();
+        $this->api('POST', $this->hostOf($institution), 'writer/qb/curriculum-versions', $writer, $body)->assertNotFound();
+        $this->assertSame(0, QbCurriculumVersion::count());
+    }
+
+    public function test_writer_cannot_create_a_version_when_an_inactive_version_exists(): void
+    {
+        $subject = $this->add('subjects', ['name_bn' => 'বাংলা ২য় পত্র', 'name_en' => 'Bangla 2nd Paper']);
+        QbCurriculumVersion::create(['qb_subject_id' => $subject, 'version_key' => 'old', 'name_bn' => 'পুরোনো', 'name_en' => 'Old', 'is_active' => false]);
+        $writer = $this->makeUser(null, 'content_writer');
+
+        $this->api('POST', $this->central, 'writer/qb/curriculum-versions', $writer, [
+            'qb_subject_id' => $subject, 'version_key' => 'new', 'name_bn' => 'নতুন', 'name_en' => 'New',
+        ])->assertStatus(422)->assertJsonValidationErrors('qb_subject_id');
+        $this->assertSame(1, QbCurriculumVersion::where('qb_subject_id', $subject)->count());
     }
 
     public function test_input_is_checked(): void

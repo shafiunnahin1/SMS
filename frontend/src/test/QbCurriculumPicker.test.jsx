@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import '../i18n'
 import CurriculumPicker from '../features/qb/CurriculumPicker'
 import { breadcrumbLabel, flattenCurriculum, sourceLabel, subjectsForClasses, versionsForSubject } from '../features/qb/curriculum'
@@ -43,14 +43,36 @@ describe('CurriculumPicker', () => {
 
   it('searches by any words and picks with the keyboard', () => {
     const onChange = vi.fn()
-    render(<CurriculumPicker label="Path" rows={rows} value={[]} onChange={onChange} />)
-    const box = screen.getByRole('combobox')
-    fireEvent.change(box, { target: { value: 'prose aam' } })
-    expect(screen.getAllByRole('option')).toHaveLength(1)
-    fireEvent.keyDown(box, { key: 'Enter' })
+    render(<CurriculumPicker label="Path" versions={[{ id: 1, label: '2026' }]} rows={rows} value={[]} onChange={onChange} />)
+    const search = screen.getByRole('combobox', { name: 'Path' })
+    fireEvent.change(search, { target: { value: 'prose aam' } })
+    expect(within(screen.getByRole('listbox')).getAllByRole('option')).toHaveLength(1)
+    fireEvent.keyDown(search, { key: 'Enter' })
     expect(onChange).toHaveBeenCalledWith(['11'])
-    fireEvent.keyDown(box, { key: 'Escape' })
+    fireEvent.keyDown(search, { key: 'Escape' })
     expect(screen.queryByRole('listbox')).toBeNull()
+  })
+
+  it('selects a node through parent-to-child dropdowns and replaces the active path node', () => {
+    const onChange = vi.fn()
+    render(<CurriculumPicker label="Path" versions={[{ id: 1, label: '2026' }]} rows={rows} value={[]} onChange={onChange} />)
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '10' } })
+    expect(onChange).toHaveBeenLastCalledWith(['10'])
+    fireEvent.change(screen.getAllByRole('combobox')[2], { target: { value: '11' } })
+    expect(onChange).toHaveBeenLastCalledWith(['11'])
+  })
+
+  it('adds a node at the selected level with the current version and parent', () => {
+    const onAdd = vi.fn()
+    render(<CurriculumPicker label="Path" versions={[{ id: 1, label: '2026' }]} rows={rows} value={[]} onChange={vi.fn()} onAdd={onAdd} />)
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '10' } })
+    fireEvent.click(screen.getAllByRole('button')[1])
+    expect(onAdd).toHaveBeenCalledWith({ versionId: '1', parentId: '10', depth: 1, kind: 'Unit' })
+  })
+
+  it('hydrates dropdowns from a saved terminal node', () => {
+    render(<CurriculumPicker label="Path" versions={[{ id: 1, label: '2026' }]} rows={rows} value={['11']} onChange={vi.fn()} />)
+    expect(screen.getAllByRole('combobox').slice(1).map(select => select.value)).toEqual(['10', '11', ''])
   })
 
   it('shows picked paths as removable breadcrumbs and an empty result', () => {
@@ -59,7 +81,6 @@ describe('CurriculumPicker', () => {
     expect(screen.getByTestId('curriculum-breadcrumb').textContent).toContain('Prose › Aam Antir Bhepu')
     fireEvent.click(screen.getAllByRole('button')[0])
     expect(onChange).toHaveBeenCalledWith(['12'])
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'zzz' } })
-    expect(screen.queryAllByRole('option')).toHaveLength(0)
+    expect(screen.getAllByRole('combobox')).toHaveLength(3)
   })
 })

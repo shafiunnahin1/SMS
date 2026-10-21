@@ -18,6 +18,8 @@ class QbCurriculumController extends Controller
     public const KINDS = ['class-levels' => QbClassLevel::class, 'subjects' => QbSubject::class, 'chapters' => QbChapter::class, 'topics' => QbTopic::class,
         'curriculum-versions' => QbCurriculumVersion::class, 'curriculum-nodes' => QbCurriculumNode::class];
     public const EDUCATION_LEVELS = ['primary', 'secondary', 'higher_secondary', 'madrasa', 'technical', 'admission', 'other'];
+    private const LANGUAGE_PAPER_NAMES_BN = ['বাংলা ১ম পত্র', 'বাংলা ২য় পত্র', 'ইংরেজি ১ম পত্র', 'ইংরেজি ২য় পত্র'];
+    private const LANGUAGE_PAPER_NAMES_EN = ['bangla 1st paper', 'bangla 2nd paper', 'english 1st paper', 'english 2nd paper'];
 
     /** GET /super/qb/curriculum: the whole tree in one answer (a few hundred rows at most) */
     public function tree()
@@ -61,8 +63,17 @@ class QbCurriculumController extends Controller
     {
         $this->kind($kind);
         $in = $request->validated();
-        $this->assertFlexiblePlacement($kind, $in);
-        $node = DB::transaction(function () use ($kind, $in) {
+        $user = $request->user();
+        $node = DB::transaction(function () use ($kind, $in, $user) {
+            if ($kind === 'curriculum-versions' && $user?->role === 'content_writer') {
+                $subject = QbSubject::lockForUpdate()->findOrFail($in['qb_subject_id']);
+                abort_unless($this->isLanguagePaperSubject($subject), 403);
+                if (QbCurriculumVersion::where('qb_subject_id', $subject->id)->exists()) {
+                    throw ValidationException::withMessages(['qb_subject_id' => __('validation.unique', ['attribute' => 'curriculum version'])]);
+                }
+                $in['is_active'] = true;
+            }
+            $this->assertFlexiblePlacement($kind, $in);
             $class = self::KINDS[$kind];
             $node = $class::create(collect($in)->except('class_level_ids')->all());
             $this->syncClasses($kind, $node, $in);
@@ -70,6 +81,12 @@ class QbCurriculumController extends Controller
             return $node;
         });
         return response()->json(['success' => true, 'data' => $this->row($kind, $node->fresh()), 'message' => __('messages.saved')], 201);
+    }
+
+    private function isLanguagePaperSubject(QbSubject $subject): bool
+    {
+        return in_array(trim($subject->name_bn), self::LANGUAGE_PAPER_NAMES_BN, true)
+            || in_array(strtolower(trim($subject->name_en)), self::LANGUAGE_PAPER_NAMES_EN, true);
     }
 
     /** PUT /super/qb/{kind}/{id} */

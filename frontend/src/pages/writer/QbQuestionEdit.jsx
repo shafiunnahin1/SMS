@@ -27,7 +27,7 @@ import { SOURCE_TYPES, occurrenceToSource, questionCode, sourceToOccurrence } fr
 import CurriculumPicker from '../../features/qb/CurriculumPicker'
 import WriterFieldHelp, { WriterFieldHelpButton } from '../../features/qb/WriterFieldHelp'
 import AddCurriculumItemModal from '../../features/qb/AddCurriculumItemModal'
-import { flattenCurriculum, sourceLabel, subjectsForClasses, versionsForSubject } from '../../features/qb/curriculum'
+import { flattenCurriculum, isLanguagePaperSubject, sourceLabel, subjectsForClasses, versionsForSubject } from '../../features/qb/curriculum'
 import { STRUCTURED_EMPTY, StructuredEditor, StructuredPreview, fromQuestion, toPayload } from '../../features/qb/Structured'
 
 const EDITABLE = ['draft', 'rejected']
@@ -126,7 +126,7 @@ export default function QbQuestionEdit() {
   const classSubjects = subjectsForClasses(tree.data.subjects, watch('class_level_ids'))
   const curriculumVersions = versionsForSubject(tree.data.curriculum_versions, watch('qb_subject_id'))
   const curriculumOptions = flattenCurriculum(curriculumVersions, name)
-  const usesCurriculum = curriculumVersions.length > 0
+  const usesCurriculum = curriculumVersions.length > 0 || isLanguagePaperSubject(subject)
   const chapter = subject?.chapters.find(c => String(c.id) === String(watch('qb_chapter_id')))
   const curriculumBreadcrumbs = curriculumOptions.filter(node => (watch('curriculum_node_ids') ?? []).includes(String(node.id)))
   const pickClasses = () => {                                     // a subject outside the chosen classes is cleared with its place
@@ -404,14 +404,12 @@ export default function QbQuestionEdit() {
                   {canCreateCurriculum && <Button variant="secondary" className="shrink-0" onClick={() => setAddItem({ mode: 'subject', defaultSortOrder: Math.max(0, ...tree.data.subjects.map(item => Number(item.sort_order) || 0)) + 1 })} aria-label={t('qbed.add_item.subject.button')}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add')}</Button>}</div>
                 {usesCurriculum ? (
                   <CurriculumPicker label={t('qbed.curriculum_path')} onHelp={() => setHelpTopic('curriculum')}
-                    onAdd={canCreateCurriculum ? () => {
-                      const selectedNode = (watch('curriculum_node_ids') ?? []).map(String).at(-1)
-                      const parent = curriculumOptions.find(node => String(node.id) === selectedNode)
-                      const versionId = parent?.version_id ?? curriculumVersions[0]?.id ?? ''
-                      const parentId = parent?.id ?? ''
-                      const siblings = curriculumOptions.filter(node => String(node.version_id) === String(versionId) && String(node.parent_id ?? '') === String(parentId))
-                      setAddItem({ mode: 'curriculum-node', defaultVersionId: versionId, defaultParentId: parentId, defaultSortOrder: Math.max(0, ...siblings.map(node => Number(node.sort_order) || 0)) + 1 })
-                    } : undefined} note={t('qbed.type_not_path')} rows={curriculumOptions} value={(watch('curriculum_node_ids') ?? []).map(String)}
+                    onAddVersion={canCreateCurriculum && subject && curriculumVersions.length === 0 ? () => setAddItem({ mode: 'curriculum-version', subjectId: subject.id, defaultSortOrder: 1 }) : undefined}
+                    onAdd={canCreateCurriculum && curriculumVersions.length ? ({ versionId, parentId, kind }) => {
+                      const siblings = curriculumOptions.filter(node => String(node.version_id) === String(versionId) && String(node.parent_id ?? '') === String(parentId ?? ''))
+                      setAddItem({ mode: 'curriculum-node', defaultVersionId: versionId, defaultParentId: parentId ?? '', defaultKind: kind, defaultSortOrder: Math.max(0, ...siblings.map(node => Number(node.sort_order) || 0)) + 1 })
+                    } : undefined} versions={curriculumVersions.map(version => ({ ...version, label: name(version) }))}
+                    note={t('qbed.type_not_path')} rows={curriculumOptions} value={(watch('curriculum_node_ids') ?? []).map(String)}
                     onChange={ids => setValue('curriculum_node_ids', ids, { shouldDirty: true })} disabled={!canEdit} />
                 ) : <>
                   <div className="flex items-end gap-2"><Select className="min-w-0 flex-1" label={t('qb.chapter')} onHelp={() => setHelpTopic('chapter')} placeholder={t('qb.none_option')} error={errors.qb_chapter_id?.message}
@@ -595,8 +593,8 @@ export default function QbQuestionEdit() {
       </div>
       <PictureDialog open={Boolean(pictureDialog)} initial={pictureDialog} onClose={() => setPictureDialog(null)} onSave={savePicture} onDelete={deletePicture} saving={pictureSaving} />
       {helpTopic && <WriterFieldHelp topic={helpTopic} onClose={() => setHelpTopic(null)} />}
-      {addItem && <AddCurriculumItemModal {...addItem} classes={tree.data.class_levels} classLevelIds={watch('class_level_ids') ?? []}
-        subjectId={subject?.id} chapterId={chapter?.id} versions={curriculumVersions} nodes={curriculumOptions}
+      {addItem && <AddCurriculumItemModal {...addItem} classes={tree.data.class_levels} classLevelIds={watch('class_level_ids') ?? []} subjectId={subject?.id}
+        chapterId={chapter?.id} versions={curriculumVersions} nodes={curriculumOptions}
         onClose={() => setAddItem(null)} onCreated={addCreatedItem} />}
 
       {canReview && (

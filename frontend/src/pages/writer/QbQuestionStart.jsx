@@ -16,6 +16,9 @@ import { ErrorState } from '../../components/StateViews'
 import { Input, Select } from '../../components/FormField'
 import Check from '../../features/academic/Check'
 import { SOURCE_TYPES, sourceToOccurrence } from '../../features/qb/questionMeta'
+import CurriculumPicker from '../../features/qb/CurriculumPicker'
+import { flattenCurriculum, isLanguagePaperSubject, subjectsForClasses, versionsForSubject } from '../../features/qb/curriculum'
+import AddCurriculumItemModal from '../../features/qb/AddCurriculumItemModal'
 
 const EMPTY_SOURCE = { type: '', full: '', short: '', exam_type: '', year: '' }
 
@@ -53,22 +56,39 @@ export default function QbQuestionStart() {
   const { locale } = useLocale()
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const isSuper = useAuthStore(s => s.user?.role) === 'super_admin'
+  const role = useAuthStore(s => s.user?.role)
+  const isSuper = role === 'super_admin'
+  const canCreateCurriculum = isSuper || role === 'content_writer'
   const tree = useQuery({ queryKey: ['writer', 'curriculum'], queryFn: () => api.get('/writer/curriculum').then(r => r.data.data) })
   const types = useQuery({ queryKey: ['writer', 'types'], queryFn: () => api.get('/writer/question-types').then(r => r.data.data) })
-  const { register, control, handleSubmit, watch, setValue, setError, formState: { errors, isSubmitting } } = useForm({
-    defaultValues: { class_level_ids: [], qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', qb_question_type_id: '', difficulty: '3', marks: '1', exam_type: '', sources: [] },
+  const { register, control, handleSubmit, watch, getValues, setValue, setError, formState: { errors, isSubmitting } } = useForm({
+    defaultValues: { class_level_ids: [], qb_subject_id: '', qb_chapter_id: '', qb_topic_id: '', curriculum_node_ids: [], qb_question_type_id: '', difficulty: '3', marks: '1', exam_type: '', sources: [] },
   })
   const sources = useFieldArray({ control, name: 'sources' })
+  const [addItem, setAddItem] = useState(null)
   if (tree.isPending || types.isPending) return <Loader type="page" />
   if (tree.isError || types.isError) return <ErrorState onRetry={() => { tree.refetch(); types.refetch() }} />
 
   const name = (n) => (locale === 'bn' ? n.name_bn : n.name_en) || n.name_en || n.name_bn
   const v = watch()
+  const classSubjects = subjectsForClasses(tree.data.subjects, v.class_level_ids)
   const subject = tree.data.subjects.find(s => String(s.id) === String(v.qb_subject_id))
   const chapter = subject?.chapters.find(c => String(c.id) === String(v.qb_chapter_id))
   const classes = v.class_level_ids.map(Number)
-  const forClass = (n) => !classes.length || !(n.class_level_ids?.length) || n.class_level_ids.some(id => classes.includes(id))
+  const curriculumVersions = versionsForSubject(tree.data.curriculum_versions, v.qb_subject_id)
+  const curriculumOptions = flattenCurriculum(curriculumVersions, name)
+  const pickerVersions = curriculumVersions.map(version => ({ ...version, label: name(version) }))
+  const usesCurriculum = curriculumVersions.length > 0 || isLanguagePaperSubject(subject)
+  const pickClasses = () => {
+    const stillAvailable = subjectsForClasses(tree.data.subjects, getValues('class_level_ids'))
+      .some(item => String(item.id) === String(getValues('qb_subject_id')))
+    if (!stillAvailable && getValues('qb_subject_id')) {
+      setValue('qb_subject_id', '')
+      setValue('qb_chapter_id', '')
+      setValue('qb_topic_id', '')
+      setValue('curriculum_node_ids', [])
+    }
+  }
   const add = (kind, parent) => async (names) => {
     try {
       const { data } = await api.post(`/super/qb/${kind}`, { ...names, ...parent, ...(kind !== 'topics' ? { class_level_ids: classes } : {}) })
@@ -81,12 +101,23 @@ export default function QbQuestionStart() {
       useUiStore.getState().addToast(Object.values(e.response?.data?.errors ?? {})[0]?.[0] ?? e.response?.data?.message ?? t('common.error'), 'error')
     }
   }
+  const addCreatedCurriculumNode = row => {
+    if (addItem?.mode === 'curriculum-version') {
+      setAddItem(null)
+      return
+    }
+    const selected = (getValues('curriculum_node_ids') ?? []).map(String)
+    setValue('curriculum_node_ids', [...new Set([...selected, String(row.id)])], { shouldDirty: true })
+    setAddItem(null)
+  }
   const save = async (f) => {
     const type = types.data.find(ty => String(ty.id) === String(f.qb_question_type_id))
     const num = (x) => (x === '' || x == null ? null : Number(x))
     try {
       const { data } = await api.post('/writer/questions', {
-        qb_question_type_id: num(f.qb_question_type_id), qb_subject_id: num(f.qb_subject_id), qb_chapter_id: num(f.qb_chapter_id), qb_topic_id: num(f.qb_topic_id),
+        qb_question_type_id: num(f.qb_question_type_id), qb_subject_id: num(f.qb_subject_id),
+        qb_chapter_id: usesCurriculum ? null : num(f.qb_chapter_id), qb_topic_id: usesCurriculum ? null : num(f.qb_topic_id),
+        curriculum_node_ids: (f.curriculum_node_ids ?? []).map(Number),
         difficulty: Number(f.difficulty), marks: f.marks, class_level_ids: f.class_level_ids.map(Number),
         question_text: type ? name(type) : t('qb.question'),                // the draft's placeholder - the editor replaces it
         occurrences: f.sources.map(s => sourceToOccurrence({ ...s, exam_type: s.exam_type || f.exam_type })),
@@ -109,21 +140,31 @@ export default function QbQuestionStart() {
           <fieldset className="flex flex-col gap-1">
             <legend className="text-sm font-medium mb-1">{t('qbn.classes')}</legend>
             <div className="flex flex-wrap gap-3">
-              {tree.data.class_levels.map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids')} />)}
+              {tree.data.class_levels.map(c => <Check key={c.id} label={name(c)} value={String(c.id)} {...register('class_level_ids', { onChange: pickClasses })} />)}
             </div>
           </fieldset>
           <SearchSelect label={t('qb.subject')} placeholder={t('qb.pick')} name="qb_subject_id" value={v.qb_subject_id} error={errors.qb_subject_id?.message}
-            options={tree.data.subjects.filter(forClass).map(s => ({ value: String(s.id), label: name(s) }))}
-            onChange={x => { setValue('qb_subject_id', x); setValue('qb_chapter_id', ''); setValue('qb_topic_id', '') }}
+            options={classSubjects.map(s => ({ value: String(s.id), label: name(s) }))}
+            onChange={x => { setValue('qb_subject_id', x); setValue('qb_chapter_id', ''); setValue('qb_topic_id', ''); setValue('curriculum_node_ids', []) }}
             onAdd={isSuper ? add('subjects', {}) : null} addLabel={t('qbn.add')} />
-          <SearchSelect label={t('qb.chapter')} placeholder={t('qb.none_option')} name="qb_chapter_id" value={v.qb_chapter_id}
-            options={(subject?.chapters ?? []).filter(forClass).map(c => ({ value: String(c.id), label: name(c) }))}
-            onChange={x => { setValue('qb_chapter_id', x); setValue('qb_topic_id', '') }}
-            onAdd={isSuper && subject ? add('chapters', { qb_subject_id: subject.id }) : null} addLabel={t('qbn.add')} />
-          <SearchSelect label={t('qb.topic')} placeholder={t('qb.none_option')} name="qb_topic_id" value={v.qb_topic_id}
-            options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))}
-            onChange={x => setValue('qb_topic_id', x)}
-            onAdd={isSuper && chapter ? add('topics', { qb_chapter_id: chapter.id }) : null} addLabel={t('qbn.add')} />
+          {usesCurriculum ? <CurriculumPicker label={t('qbed.curriculum_path')} note={t('qbed.type_not_path')}
+            versions={pickerVersions} rows={curriculumOptions} value={(v.curriculum_node_ids ?? []).map(String)}
+            onAddVersion={canCreateCurriculum && subject ? () => setAddItem({ mode: 'curriculum-version', subjectId: subject.id, defaultSortOrder: 1 }) : undefined}
+            onAdd={canCreateCurriculum && curriculumVersions.length ? ({ versionId, parentId, kind }) => {
+              const siblings = curriculumOptions.filter(node => String(node.version_id) === String(versionId) && String(node.parent_id ?? '') === String(parentId ?? ''))
+              setAddItem({ mode: 'curriculum-node', defaultVersionId: versionId, defaultParentId: parentId ?? '', defaultKind: kind,
+                defaultSortOrder: Math.max(0, ...siblings.map(node => Number(node.sort_order) || 0)) + 1 })
+            } : undefined}
+            onChange={ids => setValue('curriculum_node_ids', ids)} /> : <>
+            <SearchSelect label={t('qb.chapter')} placeholder={t('qb.none_option')} name="qb_chapter_id" value={v.qb_chapter_id}
+              options={(subject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))}
+              onChange={x => { setValue('qb_chapter_id', x); setValue('qb_topic_id', '') }}
+              onAdd={isSuper && subject ? add('chapters', { qb_subject_id: subject.id }) : null} addLabel={t('qbn.add')} />
+            <SearchSelect label={t('qb.topic')} placeholder={t('qb.none_option')} name="qb_topic_id" value={v.qb_topic_id}
+              options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))}
+              onChange={x => setValue('qb_topic_id', x)}
+              onAdd={isSuper && chapter ? add('topics', { qb_chapter_id: chapter.id }) : null} addLabel={t('qbn.add')} />
+          </>}
         </Card>
 
         <Card className="flex flex-col gap-3">
@@ -160,6 +201,8 @@ export default function QbQuestionStart() {
           </div>
         </Card>
       </form>
+      {addItem && <AddCurriculumItemModal {...addItem} classes={tree.data.class_levels} classLevelIds={v.class_level_ids} subjectId={subject?.id}
+        versions={curriculumVersions} nodes={curriculumOptions} onClose={() => setAddItem(null)} onCreated={addCreatedCurriculumNode} />}
     </div>
   )
 }

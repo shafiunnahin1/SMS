@@ -34,7 +34,12 @@ class QbQuestionWriter
             if ($nodes->pluck('version.qb_subject_id')->filter()->unique()->count() > 1 || $nodes->contains(fn ($node) => (int) $node->version->qb_subject_id !== (int) $q->qb_subject_id)) {
                 throw ValidationException::withMessages(['curriculum_node_ids' => __('errors.qb_curriculum_subject_mismatch')]);
             }
-            $q->curriculumNodes()->sync($nodes->pluck('id')->all());
+            $orderedNodeIds = array_values($in['curriculum_node_ids']);
+            $pivot = [];
+            foreach ($orderedNodeIds as $sortOrder => $nodeId) {
+                $pivot[$nodeId] = ['sort_order' => $sortOrder];
+            }
+            $q->curriculumNodes()->sync($pivot);
         }
         if (array_key_exists('options', $in)) {
             $q->options()->delete();
