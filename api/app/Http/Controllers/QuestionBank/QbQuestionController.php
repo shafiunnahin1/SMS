@@ -5,7 +5,7 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QuestionBank\QbQuestionRequest;
-use App\Models\{AuditLog, QbQuestion, QbQuestionRevision, QbQuestionType, User};
+use App\Models\{AuditLog, QbQuestion, QbQuestionOccurrence, QbQuestionRevision, QbQuestionType, QbSubject, User};
 use App\Services\QbQuestionWriter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,18 +39,65 @@ class QbQuestionController extends Controller
     /** GET /writer/questions?status=&qb_subject_id=&q=: a writer's own; moderators and the Super Admin see all */
     public function index(Request $request)
     {
-        $f = $request->validate(['status' => 'nullable|in:draft,review,published,rejected', 'qb_subject_id' => 'nullable|integer',
-            'q' => 'nullable|string|max:100', 'per_page' => 'nullable|integer|min:1|max:100']);
-        $page = $this->visible($request->user())
-            ->when($f['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
+        $f = $request->validate([
+            'status' => 'nullable|in:draft,review,published,rejected', 'qb_subject_id' => 'nullable|integer',
+            'q' => 'nullable|string|max:100', 'per_page' => 'nullable|integer|min:1|max:100',
+            'class_level_ids' => 'nullable|array', 'class_level_ids.*' => 'integer',
+            'subject_ids' => 'nullable|array', 'subject_ids.*' => 'integer',
+            'chapter_ids' => 'nullable|array', 'chapter_ids.*' => 'integer',
+            'topic_ids' => 'nullable|array', 'topic_ids.*' => 'integer',
+            'question_type_ids' => 'nullable|array', 'question_type_ids.*' => 'integer',
+            'source_types' => 'nullable|array', 'source_types.*' => 'string|max:50',
+            'years' => 'nullable|array', 'years.*' => 'integer|min:1900|max:2100',
+        ]);
+
+        $scoped = $this->visible($request->user())->when($f['status'] ?? null, fn ($q, $s) => $q->where('status', $s));
+        $facetIds = (clone $scoped)->select('qb_questions.id');
+        $facets = [
+            'question_types' => QbQuestionType::whereIn('id', (clone $scoped)->select('qb_question_type_id')->distinct())
+                ->orderBy('sort_order')->orderBy('id')->get(['id', 'slug', 'name_bn', 'name_en'])->values(),
+            'source_types' => QbQuestionOccurrence::whereIn('qb_question_id', (clone $facetIds)->select('qb_questions.id'))
+                ->whereNotNull('exam_type')->select('exam_type')->distinct()->orderBy('exam_type')->pluck('exam_type')->values(),
+            'years' => QbQuestionOccurrence::whereIn('qb_question_id', (clone $facetIds)->select('qb_questions.id'))
+                ->whereNotNull('year')->select('year')->distinct()->orderByDesc('year')->pluck('year')->values(),
+        ];
+
+        $page = (clone $scoped)
             ->when($f['qb_subject_id'] ?? null, fn ($q, $s) => $q->where('qb_subject_id', $s))
-            ->when($f['q'] ?? null, fn ($q, $s) => $q->where('question_text', 'like', '%' . addcslashes($s, '%_\\') . '%'))
+            ->when($f['class_level_ids'] ?? [], fn ($q, $ids) => $q->whereHas('classLevels', fn ($classes) => $classes->whereIn('qb_class_levels.id', $ids)))
+            ->when($f['subject_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_subject_id', $ids))
+            ->when($f['chapter_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_chapter_id', $ids))
+            ->when($f['topic_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_topic_id', $ids))
+            ->when($f['question_type_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_question_type_id', $ids))
+            ->when($f['source_types'] ?? [], fn ($q, $types) => $q->whereHas('occurrences', fn ($occurrences) => $occurrences->whereIn('exam_type', $types)))
+            ->when($f['years'] ?? [], fn ($q, $years) => $q->whereHas('occurrences', fn ($occurrences) => $occurrences->whereIn('year', $years)))
+            ->when($f['q'] ?? null, function ($q, $term) {
+                $like = '%' . addcslashes($term, '%_\\') . '%';
+                preg_match('/^([a-z0-9]+)-([a-z0-9]+)-(\d+)$/i', trim($term), $code);
+                $q->where(function ($search) use ($term, $like, $code) {
+                    $search->where('question_text', 'like', $like);
+                    if (ctype_digit($term)) $search->orWhere('qb_questions.id', (int) $term);
+                    if ($code) {
+                        [$subjectCode, $typeSlug, $id] = [strtoupper($code[1]), strtolower($code[2]), (int) $code[3]];
+                        $subjects = QbSubject::query()->where(function ($subjects) use ($subjectCode) {
+                            $subjectCode === 'Q'
+                                ? $subjects->whereNull('code')->orWhere('code', '')
+                                : $subjects->whereRaw('UPPER(code) = ?', [$subjectCode]);
+                        })->select('id');
+                        $types = QbQuestionType::whereRaw('LOWER(slug) = ?', [$typeSlug])->select('id');
+                        $search->orWhere(fn ($byCode) => $byCode->where('qb_questions.id', $id)->whereIn('qb_subject_id', $subjects)->whereIn('qb_question_type_id', $types));
+                    }
+                });
+            })
+            ->with(['classLevels:id,name_bn,name_en', 'options', 'creativeParts', 'occurrences', 'stimuli', 'items', 'media'])
             ->orderByDesc('updated_at')->orderByDesc('id')->paginate($f['per_page'] ?? 25);
         $authors = User::platform()->whereIn('id', collect($page->items())->pluck('created_by')->unique())->pluck('name', 'id');
         return response()->json(['success' => true,
             'data' => collect($page->items())->map(fn ($q) => $q->only(['id', 'qb_question_type_id', 'qb_subject_id', 'qb_chapter_id', 'qb_topic_id', 'difficulty', 'marks',
-                'language', 'question_text', 'status', 'review_note', 'created_by']) + ['updated_at' => $q->updated_at?->toIso8601String(), 'author' => $authors[$q->created_by] ?? null])->values(),
-            'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(), 'per_page' => $page->perPage()]]);
+                'language', 'content_mode', 'question_json', 'question_text', 'answer_json', 'answer_text', 'explanation_json', 'explanation_text', 'status', 'review_note', 'created_by'])
+                + ['class_level_ids' => $q->classLevels->pluck('id')->all(), 'updated_at' => $q->updated_at?->toIso8601String(), 'author' => $authors[$q->created_by] ?? null]
+                + $this->writer->previewParts($q) + ['media' => $q->media->map(fn ($media) => QbMediaController::view($media))->values()->all()])->values(),
+            'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(), 'per_page' => $page->perPage(), 'facets' => $facets]]);
     }
 
     /** POST /writer/questions: a new draft (writers and the Super Admin; a moderator only reviews) */

@@ -1,9 +1,8 @@
-import { plainText } from '../../features/qb/richText'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, RotateCcw, Search } from 'lucide-react'
+import { ChevronDown, Plus, RotateCcw, Search, X } from 'lucide-react'
 import api from '../../api/axios'
 import { useAuthStore } from '../../store/authStore'
 import PageHeader from '../../components/PageHeader'
@@ -15,6 +14,10 @@ import Tabs from '../../ui/variants/Tabs'
 import { Input } from '../../components/FormField'
 import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
+import MathText from '../../features/qb/MathText'
+
+const PER_PAGE = 16
+const LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
 
 const STATUSES = ['all', 'draft', 'review', 'rejected', 'published']
 
@@ -26,26 +29,41 @@ export default function QbQuestions() {
   const role = useAuthStore(s => s.user?.role)
   const [params, setParams] = useSearchParams()
   const status = params.get('status') ?? (role === 'content_moderator' ? 'review' : 'all')
-  const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], question_type_ids: [], source_types: [], years: [] })
   const [page, setPage] = useState(1)
+  const [shown, setShown] = useState(() => new Set())
   const q = useQuery({
-    queryKey: ['writer', 'questions', status, search, page],
-    queryFn: () => api.get('/writer/questions', { params: { status: status === 'all' ? undefined : status, q: search || undefined, page, per_page: 16 } }).then(r => r.data),
+    queryKey: ['writer', 'questions', status, filters, page],
+    queryFn: () => api.get('/writer/questions', { params: { ...filters, q: filters.q || undefined, status: status === 'all' ? undefined : status, page, per_page: PER_PAGE } }).then(r => r.data),
   })
   const rows = q.data?.data ?? []
   const meta = q.data?.meta
   const curriculum = useQuery({
     queryKey: ['writer', 'curriculum'],
     queryFn: () => api.get('/writer/curriculum').then(r => r.data.data),
-    enabled: rows.length > 0,
+    enabled: true,
   })
   const questionTypes = useQuery({
     queryKey: ['writer', 'question-types'],
     queryFn: () => api.get('/writer/question-types').then(r => r.data.data),
-    enabled: rows.length > 0,
+    enabled: true,
   })
   const localizedName = item => i18n.language?.startsWith('en') ? item?.name_en || item?.name_bn : item?.name_bn || item?.name_en
   const subjects = curriculum.data?.subjects ?? []
+  const setFilter = (key, value) => { setPage(1); setFilters(old => {
+    const next = { ...old, [key]: value }
+    if (key === 'class_level_ids') { next.subject_ids = []; next.chapter_ids = []; next.topic_ids = [] }
+    if (key === 'subject_ids') { next.chapter_ids = []; next.topic_ids = [] }
+    if (key === 'chapter_ids') next.topic_ids = []
+    return next
+  }) }
+  const resetFilters = () => { setPage(1); setFilters({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], question_type_ids: [], source_types: [], years: [] }) }
+  const availableSubjects = useMemo(() => subjects.filter(s => !filters.class_level_ids.length || (s.class_level_ids ?? []).some(id => filters.class_level_ids.includes(id))), [subjects, filters.class_level_ids])
+  const availableChapters = availableSubjects.filter(s => filters.subject_ids.includes(s.id)).flatMap(s => s.chapters ?? [])
+    .filter(c => !filters.class_level_ids.length || !c.class_level_ids?.length || c.class_level_ids.some(id => filters.class_level_ids.includes(id)))
+  const availableTopics = availableChapters.filter(c => filters.chapter_ids.includes(c.id)).flatMap(c => c.topics ?? [])
+  const facets = meta?.facets ?? { question_types: [], source_types: [], years: [] }
+  const activeFilters = ['class_level_ids', 'subject_ids', 'chapter_ids', 'topic_ids', 'question_type_ids', 'source_types', 'years'].reduce((n, k) => n + filters[k].length, 0) + Number(Boolean(filters.q))
   const subjectById = Object.fromEntries(subjects.map(item => [item.id, item]))
   const chapterById = Object.fromEntries(subjects.flatMap(item => item.chapters ?? []).map(item => [item.id, item]))
   const topicById = Object.fromEntries(subjects.flatMap(item => item.chapters ?? []).flatMap(chapter => chapter.topics ?? []).map(item => [item.id, item]))
@@ -76,7 +94,7 @@ export default function QbQuestions() {
                   <span className="font-semibold text-primary-fg group-hover:text-primary">{t('qb.question_no', { id: row.id })}</span>
                   <span className="flex flex-wrap gap-1.5 text-xs">
                     {[
-                      ['type', localizedName(typeById[row.qb_question_type_id])],
+                      ['type', localizedName(typeById[row.qb_question_type_id] ?? facets.question_types.find(x => x.id === row.qb_question_type_id))],
                       ['subject', localizedName(subjectById[row.qb_subject_id])],
                       ['chapter', chapterById[row.qb_chapter_id] && t('qbaq.chapter_n', { n: chapterById[row.qb_chapter_id].number ?? '', name: localizedName(chapterById[row.qb_chapter_id]) })],
                       ['topic', localizedName(topicById[row.qb_topic_id])],
@@ -88,13 +106,35 @@ export default function QbQuestions() {
                   </span>
                 </button>
               </header>
-              <button type="button" onClick={() => navigate(`/writer/questions/${row.id}`)} className="px-5 py-5 text-start text-base leading-8" dir="auto">
-                <span className="line-clamp-3 whitespace-normal [overflow-wrap:anywhere]">{plainText(row.question_text)}</span>
-              </button>
+              <div className="flex flex-col gap-3 border-t border-border-subtle px-5 py-4">
+                <button type="button" onClick={() => navigate(`/writer/questions/${row.id}`)} className="text-start text-base leading-8" dir="auto">
+                  <span className="line-clamp-3 whitespace-normal [overflow-wrap:anywhere]"><MathText text={row.question_text} media={row.media ?? []} /></span>
+                </button>
+                {(row.options ?? []).length > 0 && <ol className="grid gap-2 sm:grid-cols-2">{row.options.map((option, k) => (
+                  <li key={option.id ?? k} className={`flex min-h-12 items-center gap-3 rounded-token border border-border-subtle bg-surface-muted/30 px-3 py-2 ${shown.has(row.id) && option.is_correct ? 'bg-primary-soft' : ''}`}>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs">{LABELS[k] ?? k + 1}</span><MathText text={option.content_text} media={row.media ?? []} />
+                  </li>))}</ol>}
+                {(row.creative_parts ?? []).length > 0 && <ol className="flex flex-col gap-1">{row.creative_parts.map((part, k) => <li key={part.part_label ?? k}><span className="font-medium">{part.part_label}.</span> <MathText text={part.question_text} /></li>)}</ol>}
+                {(row.stimuli ?? []).map((stimulus, k) => stimulus.content_text && <div key={stimulus.id ?? k} className="rounded-token bg-surface-muted/40 p-3"><MathText text={stimulus.content_text} media={row.media ?? []} /></div>)}
+                {(row.items ?? []).length > 0 && <ol className="flex flex-col gap-1">{row.items.map((item, k) => <li key={k}><MathText text={item.prompt_text} media={row.media ?? []} /></li>)}</ol>}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="secondary" onClick={() => setShown(old => { const next = new Set(old); next.has(row.id) ? next.delete(row.id) : next.add(row.id); return next })} aria-expanded={shown.has(row.id)} data-action="toggle-answer">
+                    {shown.has(row.id) ? t('qbaq.hide_answer') : t('qbaq.show_answer')}<ChevronDown aria-hidden="true" className="h-4 w-4" />
+                  </Button>
+                </div>
+                {shown.has(row.id) && <div className="flex flex-col gap-2 rounded-token bg-primary-soft p-3 text-sm" data-testid="qb-answer">
+                  {row.options?.some(option => option.is_correct) && <div><p className="font-semibold">{t('qbaq.correct')}</p><div className="flex flex-wrap gap-2">{row.options.map((option, k) => option.is_correct && <span key={k}>{LABELS[k] ?? k + 1} <MathText text={option.content_text} media={row.media ?? []} /></span>)}</div></div>}
+                  {row.answer_text && <div><p className="font-semibold">{t('qb.answer')}</p><MathText text={row.answer_text} media={row.media ?? []} /></div>}
+                  {row.explanation_text && <div><p className="font-semibold">{t('qbaq.explanation')}</p><MathText text={row.explanation_text} media={row.media ?? []} /></div>}
+                  {(row.creative_parts ?? []).some(part => part.answer_text) && row.creative_parts.filter(part => part.answer_text).map((part, k) => <div key={k}><p className="font-semibold">{part.part_label}. {t('qb.answer')}</p><MathText text={part.answer_text} media={row.media ?? []} /></div>)}
+                  {(row.items ?? []).some(item => item.answer_json != null) && row.items.filter(item => item.answer_json != null).map((item, k) => <div key={k}><p className="font-semibold">{t('qb.answer')}</p><pre className="whitespace-pre-wrap font-sans">{typeof item.answer_json === 'string' ? item.answer_json : JSON.stringify(item.answer_json)}</pre></div>)}
+                </div>}
+              </div>
               <footer className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-subtle bg-surface-muted/30 px-5 py-3 text-xs text-content-muted">
                 <span>{t('qbaq.class')}: <bdi>{(subjectById[row.qb_subject_id]?.class_level_ids ?? []).map(id => localizedName(classById[id])).filter(Boolean).slice(0, 3).join(', ') || '—'}</bdi></span>
                 {row.marks != null && <span>{t('qbaq.marks')}: <bdi>{row.marks}</bdi></span>}
                 {row.difficulty != null && <span>{t('qbaq.difficulty')}: {t(`qbaq.level.${row.difficulty}`, { defaultValue: row.difficulty })}</span>}
+                <span className="rounded-token bg-surface-muted px-2 py-0.5" dir="auto">{row.occurrences?.[0] ? [row.occurrences[0].board, row.occurrences[0].institution_name, row.occurrences[0].exam_type, row.occurrences[0].year].filter(Boolean).join(' · ') : t('qbaq.no_source')}</span>
               </footer>
             </Card>
           ))}
@@ -107,16 +147,45 @@ export default function QbQuestions() {
           )}
         </section>
         <aside className="flex flex-col gap-3 xl:sticky xl:top-4 xl:self-start" data-testid="qb-question-filter">
-          <Card className="flex flex-col gap-3 p-4 shadow-sm">
+          <Card className="flex max-h-[calc(100vh-2rem)] flex-col gap-3 overflow-y-auto p-4 shadow-sm">
             <div className="flex items-center gap-2 border-b border-border-subtle pb-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-token bg-primary text-on-primary"><Search aria-hidden="true" className="h-4 w-4" /></span>
               <div className="flex-1"><p className="text-xs font-semibold uppercase text-primary-fg">{t('qbaq.filter')}</p><h2 className="font-semibold">{t('qbaq.search_questions')}</h2></div>
-              <Button variant="ghost" onClick={() => { setPage(1); setSearch('') }} aria-label={t('qbaq.reset')} data-action="reset-search"><RotateCcw aria-hidden="true" className="h-4 w-4" /></Button>
+              {activeFilters > 0 && <span className="rounded-token bg-primary-soft px-2 text-xs">{t('qbaq.active_n', { n: activeFilters })}</span>}
+              <Button variant="ghost" onClick={resetFilters} aria-label={t('qbaq.reset')} data-action="reset"><RotateCcw aria-hidden="true" className="h-4 w-4" /></Button>
             </div>
-            <Input label={t('qb.search')} value={search} onChange={e => { setPage(1); setSearch(e.target.value) }} name="q" />
+            <Input label={t('qbaq.search')} value={filters.q} onChange={e => setFilter('q', e.target.value)} name="q" placeholder={t('qbaq.search_hint')} />
+            <Multi label={t('qbaq.class')} name="class" value={filters.class_level_ids} onChange={v => setFilter('class_level_ids', v)} options={(curriculum.data?.class_levels ?? []).map(c => ({ value: c.id, label: localizedName(c) }))} />
+            <Multi label={t('qbaq.subject')} name="subject" value={filters.subject_ids} onChange={v => setFilter('subject_ids', v)} options={availableSubjects.map(s => ({ value: s.id, label: localizedName(s) }))} />
+            <Multi label={t('qbaq.chapter')} name="chapter" value={filters.chapter_ids} onChange={v => setFilter('chapter_ids', v)} disabled={!filters.subject_ids.length} options={availableChapters.map(c => ({ value: c.id, label: localizedName(c) }))} />
+            <Multi label={t('qbaq.topic')} name="topic" value={filters.topic_ids} onChange={v => setFilter('topic_ids', v)} disabled={!filters.chapter_ids.length} options={availableTopics.map(item => ({ value: item.id, label: localizedName(item) }))} />
+            <Multi label={t('qbaq.type')} name="type" value={filters.question_type_ids} onChange={v => setFilter('question_type_ids', v)} options={facets.question_types.map(item => ({ value: item.id, label: localizedName(item) }))} />
+            <Multi label={t('qbaq.source')} name="source" value={filters.source_types} onChange={v => setFilter('source_types', v)} options={facets.source_types.map(item => ({ value: item, label: item }))} />
+            <Multi label={t('qbaq.year')} name="year" value={filters.years} onChange={v => setFilter('years', v)} options={facets.years.map(item => ({ value: item, label: String(item) }))} />
           </Card>
         </aside>
       </div>
     </div>
   )
+}
+
+function Multi({ label, name, value, onChange, options, disabled = false }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const chosen = options.filter(option => value.includes(option.value))
+  const visible = options.filter(option => !search || String(option.label).toLowerCase().includes(search.toLowerCase()))
+  return <div className="flex flex-col gap-1" data-filter={name}>
+    <span className="text-sm font-medium">{label}</span>
+    <div className={`flex flex-wrap items-center gap-1 rounded-token border p-1 ${disabled ? 'opacity-50' : ''}`}>
+      {chosen.map(option => <span key={option.value} className="flex items-center gap-1 rounded-token bg-primary px-2 py-0.5 text-xs text-on-primary" dir="auto">{option.label}<button type="button" aria-label={t('qbaq.remove', { x: option.label })} onClick={() => onChange(value.filter(item => item !== option.value))}><X aria-hidden="true" className="h-3 w-3" /></button></span>)}
+      <button type="button" disabled={disabled} onClick={() => setOpen(current => !current)} aria-expanded={open} aria-label={label} className="flex flex-1 items-center gap-1 p-1 text-sm text-content-muted">
+        {chosen.length === 0 && <span className="flex-1 text-start">{t('qbaq.pick')}</span>}<ChevronDown aria-hidden="true" className="h-4 w-4" />
+      </button>
+    </div>
+    {open && !disabled && <div className="flex max-h-60 flex-col gap-1 overflow-auto rounded-token border p-2">
+      <input className="rounded-token border px-2 py-1 text-sm" placeholder={t('qbaq.search')} value={search} onChange={event => setSearch(event.target.value)} aria-label={t('qbaq.search')} />
+      {visible.length === 0 ? <p className="text-xs text-content-muted">{t('qbaq.no_choices')}</p> : visible.map(option => <label key={option.value} className="flex items-center gap-2 text-sm" dir="auto"><input type="checkbox" checked={value.includes(option.value)} onChange={() => onChange(value.includes(option.value) ? value.filter(item => item !== option.value) : [...value, option.value])} />{option.label}</label>)}
+    </div>}
+  </div>
 }

@@ -90,4 +90,17 @@ class QbQuestionWriter
             'items' => $q->items()->get()->map(fn ($it) => $it->only(['item_type', 'prompt_text', 'prompt_json', 'answer_json', 'marks', 'qb_question_stimulus_id']))->all(),
         ];
     }
+
+    /** The eager-loaded child data for the writer's question cards. */
+    public function previewParts(QbQuestion $q): array
+    {
+        return [
+            'options' => $q->options->map(fn ($o) => ['label' => $o->label, 'content_text' => $o->content_text,
+                'content_json' => $o->content_json, 'is_correct' => (bool) $o->is_correct])->all(),
+            'creative_parts' => $q->creativeParts->map(fn ($p) => $p->only(['part_label', 'cognitive_level', 'marks', 'question_text', 'question_json', 'answer_text', 'answer_json']))->all(),
+            'occurrences' => $q->occurrences->map(fn ($o) => $o->only(['board', 'institution_name', 'exam_type', 'year', 'note']))->all(),
+            'stimuli' => $q->stimuli->map(fn ($st) => ['id' => $st->id] + $st->only(['label', 'content_text', 'content_json']))->all(),
+            'items' => $q->items->map(fn ($it) => $it->only(['item_type', 'prompt_text', 'prompt_json', 'answer_json', 'marks', 'qb_question_stimulus_id']))->all(),
+        ];
+    }
 }
