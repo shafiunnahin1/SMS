@@ -928,6 +928,7 @@ Final checkpoint gate: all tested schema/contract/test/generated blobs unchanged
   - Next agent: D133 Step 2 grid is done in `c4b125c` (pushed); start Step 3, the question-paper page and final-paper edit lifecycle.
   - Next step: verify scan-free finals return to draft and invalidate frozen sets/OMR layout; scanned papers must remain locked and direct users to copy.
   - Open question: none pending owner input; see D133. Existing `qb-paper.spec.js` print-download checkpoint remains an unverified baseline issue.
+  - 2026-10-21 · D136 UI follow-up (/writer/questions): qbank-style question cards beside the right-side search panel; existing status tabs, search, pagination, roles, routes and API preserved. Focused Vitest 1 passed; full Vitest 141 passed / 4 existing vendor-manifest failures; theme lint 160 files, 0 violations; build passed with existing large-chunk warning.
 - [ ] R2.1.6 — OMR forms, scan review/comparison and grading (D127)
   - Next agent: generated form setup, print, browser geometry/pixel reader, and private batch persistence are pushed (`597497f`).
   - Next step: wire camera/photo and local PDF/HEIC input into the reader, then build manual scan review/correction, student matching, grading, and CSV export.
