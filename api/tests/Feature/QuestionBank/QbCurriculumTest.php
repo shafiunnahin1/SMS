@@ -111,6 +111,8 @@ class QbCurriculumTest extends TestCase
         $listed = $this->api('GET', $this->central, 'writer/questions', $writer, ['curriculum_node_ids' => [$topic]])->assertOk()->json('data');
         $this->assertSame([$question], array_column($listed, 'id'));
         $this->assertContains(['Prose', 'Aparichita', 'Author'], array_map(fn ($breadcrumb) => array_column($breadcrumb['path'], 'name_en'), $listed[0]['curriculum_breadcrumbs']));
+        $listedByParent = $this->api('GET', $this->central, 'writer/questions', $writer, ['curriculum_node_ids' => [$part]])->assertOk()->json('data');
+        $this->assertSame([$question], array_column($listedByParent, 'id'), 'Filtering a parent syllabus node includes questions linked to descendant nodes.');
         $this->api('PUT', $this->central, "writer/questions/{$question}", $writer, ['curriculum_node_ids' => [$topic]])->assertOk();
         $this->assertSame([$topic], $this->api('GET', $this->central, "writer/questions/{$question}", $writer)->json('data.curriculum_node_ids'));
         $this->api('PUT', $this->central, "writer/questions/{$question}", $writer, ['curriculum_node_ids' => []])->assertOk();

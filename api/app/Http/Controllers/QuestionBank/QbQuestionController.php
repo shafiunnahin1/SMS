@@ -5,7 +5,7 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QuestionBank\QbQuestionRequest;
-use App\Models\{AuditLog, QbQuestion, QbQuestionOccurrence, QbQuestionRevision, QbQuestionType, QbSubject, User};
+use App\Models\{AuditLog, QbCurriculumNode, QbQuestion, QbQuestionOccurrence, QbQuestionRevision, QbQuestionType, QbSubject, User};
 use App\Services\QbQuestionWriter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -63,13 +63,14 @@ class QbQuestionController extends Controller
                 ->whereNotNull('year')->select('year')->distinct()->orderByDesc('year')->pluck('year')->values(),
         ];
 
+        $curriculumNodeIds = $this->curriculumFilterNodeIds($f['curriculum_node_ids'] ?? []);
         $page = (clone $scoped)
             ->when($f['qb_subject_id'] ?? null, fn ($q, $s) => $q->where('qb_subject_id', $s))
             ->when($f['class_level_ids'] ?? [], fn ($q, $ids) => $q->whereHas('classLevels', fn ($classes) => $classes->whereIn('qb_class_levels.id', $ids)))
             ->when($f['subject_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_subject_id', $ids))
             ->when($f['chapter_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_chapter_id', $ids))
             ->when($f['topic_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_topic_id', $ids))
-            ->when($f['curriculum_node_ids'] ?? [], fn ($q, $ids) => $q->whereHas('curriculumNodes', fn ($nodes) => $nodes->whereIn('qb_curriculum_nodes.id', $ids)))
+            ->when($curriculumNodeIds, fn ($q) => $q->whereHas('curriculumNodes', fn ($nodes) => $nodes->whereIn('qb_curriculum_nodes.id', $curriculumNodeIds)))
             ->when($f['question_type_ids'] ?? [], fn ($q, $ids) => $q->whereIn('qb_question_type_id', $ids))
             ->when($f['source_types'] ?? [], fn ($q, $types) => $q->whereHas('occurrences', fn ($occurrences) => $occurrences->whereIn('exam_type', $types)))
             ->when($f['years'] ?? [], fn ($q, $years) => $q->whereHas('occurrences', fn ($occurrences) => $occurrences->whereIn('year', $years)))
@@ -200,6 +201,27 @@ class QbQuestionController extends Controller
     private function visible(User $user)
     {
         return $user->role === 'content_writer' ? QbQuestion::where('created_by', $user->id) : QbQuestion::query();
+    }
+
+    /** A syllabus location filter includes questions linked at that node or anywhere below it. */
+    private function curriculumFilterNodeIds(array $selected): array
+    {
+        $nodes = QbCurriculumNode::whereIn('id', $selected)->get(['id', 'qb_curriculum_version_id']);
+        $allIds = $nodes->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $frontier = $nodes->groupBy('qb_curriculum_version_id')->map(fn ($rows) => $rows->pluck('id')->all());
+
+        while ($frontier->isNotEmpty()) {
+            $next = collect();
+            foreach ($frontier as $versionId => $parentIds) {
+                $children = QbCurriculumNode::where('qb_curriculum_version_id', $versionId)
+                    ->whereIn('parent_id', $parentIds)->pluck('id')->map(fn ($id) => (int) $id);
+                $allIds = [...$allIds, ...$children->all()];
+                if ($children->isNotEmpty()) $next->put($versionId, $children->all());
+            }
+            $frontier = $next;
+        }
+
+        return array_values(array_unique($allIds));
     }
 
     private function find(User $user, int $id, bool $lock = false): QbQuestion
