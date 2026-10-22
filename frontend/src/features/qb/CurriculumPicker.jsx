@@ -17,19 +17,19 @@ export default function CurriculumPicker({ label, note, rows, value, onChange, o
   const listId = useId()
   const derivedVersions = [...new Map(rows.map(row => [String(row.version_id), { id: row.version_id, label: row.version }])).values()]
   const versions = suppliedVersions.length ? suppliedVersions : derivedVersions
+  const [versionId, setVersionId] = useState(String(versions[0]?.id ?? ''))
+  const [path, setPath] = useState([])
+  const [activeSelection, setActiveSelection] = useState(null)
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [cursor, setCursor] = useState(0)
   const versionSignature = versions.map(version => String(version.id)).join('|')
   const rowsSignature = rows.map(row => `${row.id}:${row.version_id}:${row.parent_id ?? ''}`).join('|')
   const valueSignature = value.map(String).join('|')
-  const [versionId, setVersionId] = useState(String(versions[0]?.id ?? ''))
-  const [path, setPath] = useState([])
-  const [activeSelection, setActiveSelection] = useState(null)
   const shown = useMemo(() => {
     const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
-    return rows.filter(row => words.every(word => row.label.toLowerCase().includes(word))).slice(0, 50)
-  }, [rows, query])
+    return rows.filter(row => String(row.version_id) === versionId && words.every(word => row.label.toLowerCase().includes(word))).slice(0, 50)
+  }, [rows, query, versionId])
   useEffect(() => {
     const selectedId = valueSignature.split('|').filter(Boolean).at(-1)
     const byId = new Map(rows.map(row => [String(row.id), row]))
@@ -122,6 +122,15 @@ export default function CurriculumPicker({ label, note, rows, value, onChange, o
           <Plus aria-hidden="true" className="h-4 w-4" />{t('qbed.add_item.curriculum-version.button')}
         </Button>}
       </div> : <>
+        {!disabled && <Select label={t('qbed.node_version')} value={versionId}
+          options={versions.map(version => ({ value: String(version.id), label: version.label ?? version.name_bn ?? version.name_en ?? version.version_key }))}
+          onChange={event => {
+            const nextVersion = event.target.value
+            if (activeSelection) onChange(value.filter(item => String(item) !== String(activeSelection)))
+            setVersionId(nextVersion)
+            setPath([])
+            setActiveSelection(null)
+          }} />}
         {!disabled && <div className="relative flex flex-col">
           <input type="search" className="rounded-token border px-3 py-2 text-sm" placeholder={t('qbed.curriculum_search')} value={query}
             role="combobox" aria-expanded={open} aria-controls={listId} aria-label={label} aria-autocomplete="list"
@@ -140,15 +149,6 @@ export default function CurriculumPicker({ label, note, rows, value, onChange, o
             ))}
           </ul>}
         </div>}
-        {!disabled && versions.length > 1 && <Select label={t('qbed.node_version')} value={versionId}
-          options={versions.map(version => ({ value: String(version.id), label: version.label ?? version.name_bn ?? version.name_en ?? version.version_key }))}
-          onChange={event => {
-            const nextVersion = event.target.value
-            if (activeSelection) onChange(value.filter(item => String(item) !== String(activeSelection)))
-            setVersionId(nextVersion)
-            setPath([])
-            setActiveSelection(null)
-          }} />}
         {!disabled && levels.map(({ depth, parentId: levelParentId, options }) => (
           <div key={`${versionId}-${depth}`} className="flex items-end gap-2">
             <Select className="min-w-0 flex-1" label={t('qbed.curriculum_level', { level: depth + 1 })}

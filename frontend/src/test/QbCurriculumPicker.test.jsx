@@ -58,6 +58,7 @@ describe('CurriculumPicker', () => {
   it('searches by any words and picks with the keyboard', () => {
     const onChange = vi.fn()
     render(<CurriculumPicker label="Path" versions={[{ id: 1, label: '2026' }]} rows={rows} value={[]} onChange={onChange} />)
+    expect(screen.getByRole('combobox', { name: 'পাঠ্যক্রম সংস্করণ' })).toHaveValue('1')
     const search = screen.getByRole('combobox', { name: 'Path' })
     fireEvent.change(search, { target: { value: 'prose aam' } })
     expect(within(screen.getByRole('listbox')).getAllByRole('option')).toHaveLength(1)
@@ -70,23 +71,23 @@ describe('CurriculumPicker', () => {
   it('selects a node through parent-to-child dropdowns and replaces the active path node', () => {
     const onChange = vi.fn()
     render(<CurriculumPicker label="Path" versions={[{ id: 1, label: '2026' }]} rows={rows} value={[]} onChange={onChange} />)
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '10' } })
+    fireEvent.change(screen.getByRole('combobox', { name: 'সিলেবাসের স্তর 1' }), { target: { value: '10' } })
     expect(onChange).toHaveBeenLastCalledWith(['10'])
-    fireEvent.change(screen.getAllByRole('combobox')[2], { target: { value: '11' } })
+    fireEvent.change(screen.getByRole('combobox', { name: 'সিলেবাসের স্তর 2' }), { target: { value: '11' } })
     expect(onChange).toHaveBeenLastCalledWith(['11'])
   })
 
   it('adds a node at the selected level with the current version and parent', () => {
     const onAdd = vi.fn()
     render(<CurriculumPicker label="Path" versions={[{ id: 1, label: '2026' }]} rows={rows} value={[]} onChange={vi.fn()} onAdd={onAdd} />)
-    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '10' } })
+    fireEvent.change(screen.getByRole('combobox', { name: 'সিলেবাসের স্তর 1' }), { target: { value: '10' } })
     fireEvent.click(screen.getAllByRole('button')[1])
     expect(onAdd).toHaveBeenCalledWith({ versionId: '1', parentId: '10', depth: 1, kind: 'Unit' })
   })
 
   it('hydrates dropdowns from a saved terminal node', () => {
     render(<CurriculumPicker label="Path" versions={[{ id: 1, label: '2026' }]} rows={rows} value={['11']} onChange={vi.fn()} />)
-    expect(screen.getAllByRole('combobox').slice(1).map(select => select.value)).toEqual(['10', '11', ''])
+    expect(screen.getAllByRole('combobox').slice(2).map(select => select.value)).toEqual(['10', '11', ''])
   })
 
   it('shows picked paths as removable breadcrumbs and an empty result', () => {
@@ -95,6 +96,21 @@ describe('CurriculumPicker', () => {
     expect(screen.getByTestId('curriculum-breadcrumb').textContent).toContain('Prose › Aam Antir Bhepu')
     fireEvent.click(screen.getAllByRole('button')[0])
     expect(onChange).toHaveBeenCalledWith(['12'])
-    expect(screen.getAllByRole('combobox')).toHaveLength(3)
+    expect(screen.getAllByRole('combobox')).toHaveLength(4)
+  })
+
+  it('loads the chosen version before showing its root nodes', () => {
+    const versionRows = flattenCurriculum([
+      { id: 41, version_key: 'old', name_en: 'Old', nodes: [{ id: 410, kind: 'Part', name_en: 'Old part', children: [] }] },
+      { id: 42, version_key: 'new', name_en: 'New', nodes: [{ id: 420, kind: 'Unit', name_en: 'New unit', children: [{ id: 421, kind: 'Topic', name_en: 'New topic', children: [] }] }] },
+    ], name)
+    render(<CurriculumPicker label="Path" versions={[{ id: 41, label: 'Old' }, { id: 42, label: 'New' }]} rows={versionRows} value={[]} onChange={vi.fn()} />)
+    const version = screen.getByRole('combobox', { name: 'পাঠ্যক্রম সংস্করণ' })
+    fireEvent.change(version, { target: { value: '42' } })
+    const root = screen.getByRole('combobox', { name: 'সিলেবাসের স্তর 1' })
+    expect(root).toHaveTextContent('New unit')
+    expect(root).not.toHaveTextContent('Old part')
+    fireEvent.change(root, { target: { value: '420' } })
+    expect(screen.getByRole('combobox', { name: 'সিলেবাসের স্তর 2' })).toHaveTextContent('New topic')
   })
 })
