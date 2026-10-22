@@ -189,6 +189,31 @@ def d146_probe():
     shutil.rmtree(d, ignore_errors=True)
     return code, out
 
+def d150_probe():
+    results = []
+    for task_id, trailers, expected in [
+        ('R2.1.3-json-toon-import', '\nChange-Request: D123\nChange-Request: D150', None),
+        ('R2.1.3-json-toon-import', '\nChange-Request: D123', 'C9'),
+        ('R2.1.3', '\nChange-Request: D123\nChange-Request: D150', 'C9'),
+    ]:
+        d = make_base()
+        decisions = DECISIONS + '| D123 | JSON/TOON import | approved |\n| D150 | Bulk source attribution | approved |\n'
+        progress = PROGRESS + '\n- [x] R2.1.2 — accepted prerequisite\n'
+        write(d, 'docs/LOCKED-DECISIONS.md', decisions)
+        write(d, 'docs/PROGRESS.md', progress)
+        git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'owner: approve D123 and D150')
+        git(d, 'tag', 'd150base')
+        write(d, 'api/app/Services/QbImportService.php', "<?php\nclass QbImportService {}\n")
+        write(d, 'docs/PROGRESS.md', progress + '- D150 source-attribution slice in progress\n')
+        git(d, 'add', '-A')
+        git(d, 'commit', '-q', '-m', f'feat: D150 source attribution\n\nTask: {task_id}' + trailers)
+        code, out = run_guard(d, 'd150base', 'HEAD')
+        good = code == 0 if expected is None else code == 1 and expected in out
+        results.append((good, expected, code, out))
+        shutil.rmtree(d, ignore_errors=True)
+    details = '\n'.join(out for good, _, _, out in results if not good)
+    return (0 if all(good for good, _, _, _ in results) else 1), details or 'D150 requires both D123/D150 trailers and accepted R2.1.2 dependency'
+
 def d148_probe():
     results = []
     for path, expected in [
@@ -249,6 +274,11 @@ def main():
     code, out = d146_probe()
     good = code == 0
     print(('ok    ' if good else 'WRONG ') + 'D146 custom task, accepted dependency and zero-new-object allowlist' + ('' if good else f' (exit {code})\n' + out[-500:]))
+    bad += 0 if good else 1
+    n += 1
+    code, out = d150_probe()
+    good = code == 0
+    print(('ok    ' if good else 'WRONG ') + 'D150 custom task requires D123/D150 trailers and accepted dependency' + ('' if good else f' (exit {code})\n' + out[-500:]))
     bad += 0 if good else 1
     n += 1
     code, out = d148_probe()

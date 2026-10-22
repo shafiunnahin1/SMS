@@ -60,6 +60,18 @@ Done when: The generated plan is fresh; the pinned vendor manifest exactly match
 Deferred from the parent task: graph behavior or API changes; R2.1 runtime switch; all unrelated R2.1 tasks.
 The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
 
+## Approved scoped implementation slice — R2.1.3-json-toon-import
+
+Task: R2.1.3-json-toon-import (parent R2.1.3); decisions: D123, D150.
+Depends on: R2.1.2; status: executable slice, not accepted.
+Scope: Extend the existing JSON/TOON staging review Bulk Settings with additive source attribution for selected, valid, not-yet-imported records only. Map source type to note, full source/institution name to institution_name, and short board/source name to board; preserve exam_type, year, question_number, set_label and page_reference. Keep every pre-existing occurrence and all other question content unchanged; an identical normalized occurrence is a no-op. Validate source type against SOURCE_TYPES and all fields against the existing QbQuestionRequest occurrence limits. Invalid values remain visible as field-path errors. Use existing qb_import_records.payload.occurrences and qb_question_occurrences; no new table, column, route, package or external service.
+Authorized table: .
+Routes: .
+Roles: content_writer, super_admin.
+Done when: Bulk source attribution is available in Bangla and English. Existing occurrences and question content remain unchanged; repeated application is idempotent; all occurrence fields round-trip through JSON/TOON staging, quick edit, bulk settings, draft finalization and the full question editor. Invalid values remain visible and do not alter unrelated rows. Rejected, invalid, unselected and imported rows cannot be changed or made importable. Existing role, duplicate, selected-only, audit, answer/privacy and no-publish contracts pass focused checks. Record exact evidence in docs/PROGRESS.md.
+Deferred from the parent task: all unrelated D123 acceptance scope; R2.1 runtime switch.
+The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
+
 ## R2.1.0 — Source/target inventory, fixtures and measured baseline
 
 Depends on: R3.A. Status: BLOCKED / unaccepted / non-executable.

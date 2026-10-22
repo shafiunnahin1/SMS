@@ -44,7 +44,9 @@ def empty_tree(root):
     return EMPTY_TREE
 
 # D111 clause 7 / D139: R2.1 tasks whose refined scope a locked decision approved -> (decision, dependencies); all other R2.1 tasks stay blocked
-R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1']), 'R2.1.2-language-curriculum': ('D145', ['R2.1.2']), 'R2.1.2-gap-fill-authoring': ('D142', ['R2.1.2']), 'R2.1.2-graph-tool-viewport': ('D146', ['R2.1.2']), 'R2.1.3': ('D123', ['R2.1.2']), 'R2.1.4': ('D124', ['R2.1.3']), 'R2.1.5': ('D126', ['R2.1.4']), 'R2.1.6': ('D127', ['R2.1.5'])}
+R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1']), 'R2.1.2-language-curriculum': ('D145', ['R2.1.2']), 'R2.1.2-gap-fill-authoring': ('D142', ['R2.1.2']), 'R2.1.2-graph-tool-viewport': ('D146', ['R2.1.2']), 'R2.1.3-json-toon-import': ('D123', ['R2.1.2']), 'R2.1.4': ('D124', ['R2.1.3']), 'R2.1.5': ('D126', ['R2.1.4']), 'R2.1.6': ('D127', ['R2.1.5'])}
+R21_ADDITIONAL_DECISIONS = {'R2.1.3-json-toon-import': ['D150']}
+R21_REQUIRED_TRAILERS = {'R2.1.3-json-toon-import': ['D123', 'D150']}
 # D119: qbank's tool files copied unchanged (D118); C7 and C11 skip them, a sha256 manifest pins them instead
 QBANK_VENDOR = 'frontend/public/vendor/qbank/'
 QBANK_MANIFEST = QBANK_VENDOR + 'MANIFEST.sha256'
@@ -260,14 +262,20 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
             task_specs = {**task_specs, task: target['tasks'][task]}
     # D111 clause 7: an R2.1 task is executable only when a locked decision approved its refined scope and its dependencies are done
     decisions_before = show(root, parent, 'docs/LOCKED-DECISIONS.md') or ''
-    r21_ok = lambda t: t in R21_APPROVED and f'| {R21_APPROVED[t][0]} |' in decisions_before
+    r21_ok = lambda t: t in R21_APPROVED and all(
+        f'| {d} |' in decisions_before
+        for d in [R21_APPROVED[t][0], *R21_ADDITIONAL_DECISIONS.get(t, [])])
     if touches_code:
         if task and (re.fullmatch(r'R2\.1\.\d+', task) or task in R21_APPROVED):
             if not r21_ok(task):
                 rep.fail('C9', commit, 'D83 permits R2.1 planning only; executable scope needs owner approval and R3.A acceptance')
             else:
-                missing = [d for d in R21_APPROVED[task][1] if d not in done_before]
-                if missing: rep.fail('C9', commit, f'task {task} depends on {missing}, which are not [x] in docs/PROGRESS.md yet - do the tasks in order')
+                missing_trailers = [d for d in R21_REQUIRED_TRAILERS.get(task, []) if d not in crs]
+                if missing_trailers:
+                    rep.fail('C9', commit, f'task {task} requires Change-Request trailers {missing_trailers}')
+                else:
+                    missing = [d for d in R21_APPROVED[task][1] if d not in done_before]
+                    if missing: rep.fail('C9', commit, f'task {task} depends on {missing}, which are not [x] in docs/PROGRESS.md yet - do the tasks in order')
         elif not task: rep.fail('C9', commit, 'a commit that changes api/ or frontend/ needs a `Task: <id>` trailer (task ids: docs/AGENT-PLAN-R*.md)')
         elif task not in task_specs:
             why = f'task {task} belongs to a later release (current: {st["current"]})' if task in st['later_tasks'] else f'unknown task id {task}'

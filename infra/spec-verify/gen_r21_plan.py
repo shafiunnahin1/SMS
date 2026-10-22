@@ -67,6 +67,15 @@ APPROVED_EXECUTION_SLICES = [{
     'roles': ['content_writer', 'super_admin'],
     'done_when': 'The generated plan is fresh; the pinned vendor manifest exactly matches the graph tool; desktop and narrow viewports show the preview while long controls scroll independently. Record exact evidence in docs/PROGRESS.md.',
     'deferred': ['graph behavior or API changes', 'R2.1 runtime switch', 'all unrelated R2.1 tasks'],
+}, {
+    'id': 'R2.1.3-json-toon-import', 'parent_task': 'R2.1.3',
+    'decisions': ['D123', 'D150'], 'depends_on': ['R2.1.2'],
+    'executable': True, 'accepted': False,
+    'scope': 'Extend the existing JSON/TOON staging review Bulk Settings with additive source attribution for selected, valid, not-yet-imported records only. Map source type to note, full source/institution name to institution_name, and short board/source name to board; preserve exam_type, year, question_number, set_label and page_reference. Keep every pre-existing occurrence and all other question content unchanged; an identical normalized occurrence is a no-op. Validate source type against SOURCE_TYPES and all fields against the existing QbQuestionRequest occurrence limits. Invalid values remain visible as field-path errors. Use existing qb_import_records.payload.occurrences and qb_question_occurrences; no new table, column, route, package or external service.',
+    'tables': [], 'routes': [],
+    'roles': ['content_writer', 'super_admin'],
+    'done_when': 'Bulk source attribution is available in Bangla and English. Existing occurrences and question content remain unchanged; repeated application is idempotent; all occurrence fields round-trip through JSON/TOON staging, quick edit, bulk settings, draft finalization and the full question editor. Invalid values remain visible and do not alter unrelated rows. Rejected, invalid, unselected and imported rows cannot be changed or made importable. Existing role, duplicate, selected-only, audit, answer/privacy and no-publish contracts pass focused checks. Record exact evidence in docs/PROGRESS.md.',
+    'deferred': ['all unrelated D123 acceptance scope', 'R2.1 runtime switch'],
 }]
 
 
