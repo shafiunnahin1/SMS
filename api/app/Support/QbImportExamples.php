@@ -13,6 +13,7 @@ class QbImportExamples
         $subject = ['name' => 'Mathematics'];
         return ['schema_version' => QbImportService::SCHEMA_V5, 'document' => ['title' => 'Example', 'language' => 'bn'], 'questions' => [
             ['question_type' => 'mcq', 'question_text' => '\(x^2 = 9\) হলে \(x\) এর মান কত?', 'marks' => 1, 'difficulty' => 2,
+                'curriculum_node_ids' => [],
                 'options' => [['label' => 'ক', 'text' => '\(\pm 3\)', 'is_correct' => true], ['label' => 'খ', 'text' => '\(3\)', 'is_correct' => false],
                     ['label' => 'গ', 'text' => '\(9\)', 'is_correct' => false], ['label' => 'ঘ', 'text' => '\(-9\)', 'is_correct' => false]],
                 'explanation_text' => '\(x = \pm\sqrt{9}\)', 'settings' => ['subject' => $subject, 'class_levels' => [['name' => 'Class 9']], 'chapter' => ['name' => 'Algebra']]],
@@ -37,7 +38,7 @@ class QbImportExamples
         $ref = ['oneOf' => [['type' => 'string'], ['type' => 'object', 'properties' => ['id' => ['type' => 'integer'], 'name' => ['type' => 'string']]]]];
         return [
             '$schema' => 'https://json-schema.org/draft/2020-12/schema', 'title' => 'SMS question import (JSON or TOON, same fields)',
-            'description' => 'qbank universal-content JSON v5 keys. Any question type of the question bank by slug, Bangla or English name. Text is kept exactly (LaTeX as \\( ... \\)). Unknown types or parts a type cannot hold stay in staging with an error.',
+            'description' => 'qbank universal-content JSON v5 keys. Any question type of the question bank by slug, Bangla or English name. Text is kept exactly (LaTeX as \\( ... \\)). Language-paper questions may include curriculum_node_ids, an optional list of existing curriculum node IDs belonging to the selected subject. Unknown IDs or IDs from another subject stay in staging with an error.',
             'type' => ['object', 'array'],
             'properties' => [
                 'schema_version' => ['const' => QbImportService::SCHEMA_V5],
@@ -47,6 +48,7 @@ class QbImportExamples
             '$defs' => ['question' => ['type' => 'object', 'required' => ['question_type'], 'properties' => [
                 'question_type' => ['enum' => QbQuestionType::where('is_active', true)->orderBy('id')->pluck('slug')->all()],
                 'question_text' => ['type' => 'string'], 'stimulus_text' => ['type' => 'string'], 'answer_text' => ['type' => 'string'], 'explanation_text' => ['type' => 'string'],
+                'curriculum_node_ids' => ['type' => 'array', 'maxItems' => 30, 'uniqueItems' => true, 'items' => ['type' => 'integer', 'minimum' => 1]],
                 'language' => ['enum' => ['bn', 'en', 'mixed']], 'marks' => ['type' => 'number'], 'difficulty' => ['oneOf' => [['type' => 'integer', 'minimum' => 1, 'maximum' => 5], ['enum' => ['easy', 'medium', 'hard']]]],
                 'options' => ['type' => 'array', 'items' => ['type' => 'object', 'properties' => ['label' => ['type' => 'string'], 'text' => ['type' => 'string'], 'is_correct' => ['type' => 'boolean']]]],
                 'creative_parts' => ['type' => 'array', 'maxItems' => 4, 'items' => ['type' => 'object', 'properties' => ['label' => ['type' => 'string'],

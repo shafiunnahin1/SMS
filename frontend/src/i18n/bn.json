@@ -1642,6 +1642,7 @@
    "select": "নির্বাচন",
    "has_math": "Math/LaTeX",
    "open_draft": "খসড়া খুলুন",
+   "full_editor": "ফুল এডিটরে খুলুন",
    "duplicate": "সম্ভাব্য Duplicate - একই রকম প্রশ্ন আছে",
    "dup_skip": "বাদ দিন",
    "dup_import": "তবুও Import করুন",

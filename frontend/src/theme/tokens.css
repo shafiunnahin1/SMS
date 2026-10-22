@@ -53,6 +53,20 @@ body { font-family: var(--font-body); background: var(--surface-muted); color: v
   animation: skeleton-shimmer 1.4s ease-in-out infinite; }
 [dir='rtl'] .skeleton::after { animation-direction: reverse; }
 @keyframes skeleton-shimmer { to { transform: translateX(100%); } }
+@keyframes qb-copy-success {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgb(34 197 94 / 0%); }
+  35% { transform: scale(1.045); box-shadow: 0 0 0 5px rgb(34 197 94 / 18%); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgb(34 197 94 / 0%); }
+}
+@keyframes qb-copy-check {
+  0% { opacity: 0; transform: scale(.45) rotate(-20deg); }
+  70% { opacity: 1; transform: scale(1.2) rotate(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[qb-copy-success_700ms_ease-out\],
+  .animate-\[qb-copy-check_500ms_cubic-bezier\(0\.16\,1\,0\.3\,1\)\] { animation: none !important; }
+}
 @media (prefers-reduced-motion: reduce) { .skeleton::after { animation: none; display: none; } }
 
 /* Status colours (not brand): success / danger / warning / info - used by StatusBadge and the charts, which need a colour VALUE (SVG fill) */

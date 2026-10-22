@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
+import { versionsForSubject } from '../../features/qb/curriculum'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
@@ -78,19 +79,24 @@ export default function QbImports() {
   const selectedSubject = availableSubjects.find(s => String(s.id) === promptSubjectId)
   const currentChapters = (selectedSubject?.chapters ?? []).filter(ch => !ch.class_level_ids?.length || ch.class_level_ids.some(id => Number(id) === Number(promptClassId)))
   const displayName = (row) => (locale === 'bn' ? row?.name_bn : row?.name_en) || row?.name_bn || row?.name_en || ''
-  const subjectIsEnglish = /english|ইংরেজি/i.test(`${selectedSubject?.name_en ?? ''} ${selectedSubject?.name_bn ?? ''}`)
-  const contentLanguage = subjectIsEnglish ? 'en' : locale
+  const curriculumVersions = versionsForSubject(tree?.curriculum_versions, selectedSubject?.id, promptClassId ? [promptClassId] : [])
+  const namedNodes = (nodes) => (nodes ?? []).map(node => ({ id: node.id, kind: node.kind, name: displayName(node), children: namedNodes(node.children) }))
+  const subjectNames = `${selectedSubject?.name_en ?? ''} ${selectedSubject?.name_bn ?? ''}`
+  const contentLanguage = /english|ইংরেজি/i.test(subjectNames)
+    ? 'en'
+    : /bangla|বাংলা/i.test(subjectNames) ? 'bn' : locale
   const prompt = selectedClass && selectedSubject ? [
     `Create question records for ${displayName(selectedSubject)} in ${displayName(selectedClass)}. Follow the subject's terminology and question conventions, using only the curriculum data below.`,
     'Return one valid JSON object using schema_version "exam-management.universal-content-json.v5", with document and questions fields.',
     `Set document.language to "${contentLanguage}" and write the question content in ${contentLanguage === 'bn' ? 'Bengali' : 'English'} unless the source material requires another language.`,
-    'Each question must include question_type, question_text, answer_text and explanation_text when applicable, plus settings containing class_levels, subject, chapter and topic. Use the supplied IDs and exact names. For multiple choice questions include options with label, text and is_correct; for creative questions include stimulus_text and creative_parts with label, cognitive_level, question_text, answer_text and marks. Put source information in that question\'s occurrences array using only known fields such as note, institution_name, board, exam_type, year, question_number, set_label and page_reference.',
+    'Each question must include question_type, question_text, answer_text and explanation_text when applicable, plus settings containing class_levels and subject. For legacy chapter/topic curricula, include settings.chapter and settings.topic using supplied IDs and exact names. For a language-paper syllabus path, include question-level curriculum_node_ids as an array of integer node IDs from the selected subject; include every applicable node ID, and do not use question type or exam part as a syllabus node. For multiple choice questions include options with label, text and is_correct; for creative questions include stimulus_text and creative_parts with label, cognitive_level, question_text, answer_text and marks. Put source information in that question\'s occurrences array using only known fields such as note, institution_name, board, exam_type, year, question_number, set_label and page_reference.',
     `Use question_type only from these active types: ${JSON.stringify((promptTypes.data ?? []).map(type => type.slug))}.`,
     'Never invent a curriculum item or map an unfamiliar topic to an existing topic. If a genuinely new topic is needed, leave that question\'s settings.topic unset and add a root-level topic_proposals array entry with chapter_id, chapter_name, proposed_topic_name, reason, and affected_question_numbers. Tell the user to add or review each proposed topic in its named chapter before assigning it. topic_proposals is informational metadata, not an importable question.',
     'Do not include markdown fences or text outside the JSON object.',
     `Selected class: ${JSON.stringify({ id: selectedClass.id, name: displayName(selectedClass) })}`,
     `Selected subject: ${JSON.stringify({ id: selectedSubject.id, name: displayName(selectedSubject) })}`,
     `Existing chapters and topics: ${JSON.stringify(currentChapters.map(ch => ({ id: ch.id, name: displayName(ch), topics: (ch.topics ?? []).map(topic => ({ id: topic.id, name: displayName(topic) })) })))}`,
+    `Applicable language-paper curriculum versions and nodes: ${JSON.stringify(curriculumVersions.map(version => ({ id: version.id, version_key: version.version_key, name: displayName(version), nodes: namedNodes(version.nodes) })))}`,
   ].join('\n\n') : ''
   const closePrompt = () => { setPromptOpen(false); setCopied(false); setCopyFailed(false) }
   useEffect(() => {
@@ -172,7 +178,9 @@ export default function QbImports() {
             className="flex max-h-[92vh] w-full max-w-4xl flex-col gap-4 overflow-y-auto rounded-token bg-surface p-density text-content shadow-card">
             <div className="flex items-start justify-between gap-3">
               <div><h2 id="qbi-prompt-title" className="text-lg font-semibold">{t('qbi.ai_prompt')}</h2><p className="mt-1 text-sm text-content-muted">{t('qbi.ai_prompt_hint')}</p></div>
-              <Button variant="ghost" aria-label={t('qbi.prompt_close')} onClick={closePrompt}>×</Button>
+              <Button variant="ghost" aria-label={t('qbi.prompt_close')} onClick={closePrompt}>
+                <span aria-hidden="true" className="inline-flex size-4 items-center justify-center text-2xl leading-none">×</span>
+              </Button>
             </div>
             {promptTree.isPending || promptTypes.isPending ? <Loader type="list" /> : promptTree.isError || promptTypes.isError ? (
               <ErrorState onRetry={() => { promptTree.refetch(); promptTypes.refetch() }} />
@@ -188,7 +196,11 @@ export default function QbImports() {
                 {selectedSubject && currentChapters.length === 0 && <p className="text-sm text-content-muted">{t('qbi.prompt_no_chapters')}</p>}
                 {prompt && <Textarea label={t('qbi.prompt_output')} rows={16} readOnly value={prompt} dir="auto" data-testid="qbi-prompt-output" />}
                 <div className="flex flex-wrap justify-end gap-2">
-                  <Button variant="secondary" disabled={!prompt} onClick={copyPrompt}>{copied ? t('qbi.prompt_copied') : copyFailed ? t('qbi.prompt_copy_failed') : t('qbi.prompt_copy')}</Button>
+                  <Button variant="secondary" disabled={!prompt} onClick={copyPrompt}
+                    className={copied ? 'animate-[qb-copy-success_700ms_ease-out] border-green-500 bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200' : ''}
+                    aria-live="polite" data-testid="qbi-copy-button">
+                    {copied ? <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="inline-block animate-[qb-copy-check_500ms_cubic-bezier(0.16,1,0.3,1)]">✓</span>{t('qbi.prompt_copied')}</span> : copyFailed ? t('qbi.prompt_copy_failed') : t('qbi.prompt_copy')}
+                  </Button>
                   <Button disabled={!prompt} onClick={downloadPrompt}>{t('qbi.prompt_download')}</Button>
                 </div>
               </>

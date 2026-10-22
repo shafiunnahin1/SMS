@@ -15,6 +15,14 @@ const curriculum = {
       chapters: [{ id: 34, name_bn: 'প্যাটার্ন', name_en: 'Patterns', class_level_ids: [8], topics: [{ id: 56, name_bn: 'সংখ্যার প্যাটার্ন', name_en: 'Number patterns' }] }] },
     { id: 18, name_bn: 'ইংরেজি ১ম পত্র', name_en: 'English 1st Paper', class_level_ids: [8], is_active: true,
       chapters: [{ id: 35, name_bn: 'Reading', name_en: 'Reading', class_level_ids: [8], topics: [{ id: 57, name_bn: 'Comprehension', name_en: 'Comprehension' }] }] },
+    { id: 19, name_bn: 'বাংলা ১ম পত্র', name_en: 'Bangla 1st Paper', class_level_ids: [8], is_active: true,
+      chapters: [{ id: 36, name_bn: 'গদ্য', name_en: 'Prose', class_level_ids: [8], topics: [{ id: 58, name_bn: 'অপরিচিতা', name_en: 'The Unknown Woman' }] }] },
+  ],
+  curriculum_versions: [
+    { id: 90, qb_subject_id: 18, version_key: 'eng-v1', name_bn: 'ইংরেজি সিলেবাস', name_en: 'English syllabus', class_level_ids: [8],
+      nodes: [{ id: 91, kind: 'Unit', name_bn: 'ইউনিট ১', name_en: 'Unit 1', children: [{ id: 92, kind: 'Lesson', name_bn: 'পাঠ ১', name_en: 'Lesson 1', children: [] }] }] },
+    { id: 93, qb_subject_id: 19, version_key: 'bn-v1', name_bn: 'বাংলা সিলেবাস', name_en: 'Bangla syllabus', class_level_ids: [8],
+      nodes: [{ id: 94, kind: 'Text', name_bn: 'অপরিচিতা', name_en: 'The Unknown Woman', children: [] }] },
   ],
 }
 
@@ -51,6 +59,17 @@ describe('writer import AI prompt', () => {
     expect(output.value).toContain('"en"')
     expect(output.value).toContain('ইংরেজি ১ম পত্র')
     expect(output.value).toContain('Comprehension')
+    expect(output.value).toContain('curriculum_node_ids')
+    expect(output.value).toContain('"id":91')
+    expect(output.value).toContain('"id":92')
     expect(output.value).not.toContain('সংখ্যার প্যাটার্ন')
+
+    fireEvent.change(screen.getByLabelText('বিষয়'), { target: { value: '19' } })
+    await waitFor(() => expect(output.value).toContain('document.language to "bn"'))
+    expect(output.value).toContain('বাংলা ১ম পত্র')
+    expect(output.value).toContain('অপরিচিতা')
+    expect(output.value).toContain('"id":94')
+    expect(output.value).not.toContain('ইউনিট ১')
+    expect(output.value).not.toContain('Comprehension')
   })
 })

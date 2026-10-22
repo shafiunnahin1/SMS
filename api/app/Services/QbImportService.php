@@ -138,7 +138,7 @@ class QbImportService
 
     /** the fields a reviewer may change on a staged record (quick edit and bulk settings) */
     public const EDITABLE = ['type', 'question_text', 'answer_text', 'explanation_text', 'language', 'difficulty', 'marks', 'subject', 'chapter', 'topic',
-        'class_levels', 'options', 'creative_parts', 'stimuli', 'items', 'occurrences'];
+        'class_levels', 'curriculum_node_ids', 'options', 'creative_parts', 'stimuli', 'items', 'occurrences'];
 
     /** quick edit / bulk settings: change the staged record only, then check it again exactly as on upload */
     public function edit(QbImportRecord $record, array $changes): QbImportRecord

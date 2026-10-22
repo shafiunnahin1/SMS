@@ -72,6 +72,18 @@ Done when: Current class-subject-chapter-topic data appears in the modal; copy a
 Deferred from the parent task: AI provider integration; persistent prompt or curriculum cache; R2.1 runtime switch; all unrelated R2.1 tasks.
 The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
 
+## Approved scoped implementation slice — R2.1.2-json-v5-language-curriculum-import
+
+Task: R2.1.2-json-v5-language-curriculum-import (parent R2.1.2); decisions: D152.
+Depends on: R2.1.2; status: executable slice, not accepted.
+Scope: Add optional per-question curriculum_node_ids to the existing universal-content-json.v5 importer. Validate each ID exists and belongs to the selected subject; preserve it through staged review/edit and final draft creation into the existing question curriculum-node pivot. Update the downloadable JSON schema/example and AI prompt. Missing IDs preserve the existing chapter/topic path; use existing tables/routes only.
+Authorized table: .
+Routes: .
+Roles: content_writer, super_admin.
+Done when: JSON and TOON language-paper records with Bengali and English content preserve curriculum_node_ids through staging, review/edit and draft finalization; unknown and cross-subject IDs remain field-path errors; saved questions reopen with the same node links; records without IDs retain chapter/topic behavior; schema/example/prompt describe the optional field; focused importer, editor round-trip, answer/privacy, role and no-publish checks pass. Record exact evidence in docs/PROGRESS.md.
+Deferred from the parent task: new curriculum tables/routes/packages; R2.1 runtime switch; all unrelated importer behavior.
+The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
+
 ## Approved scoped implementation slice — R2.1.3-json-toon-import
 
 Task: R2.1.3-json-toon-import (parent R2.1.3); decisions: D123, D150.

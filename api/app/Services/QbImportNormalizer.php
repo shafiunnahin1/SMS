@@ -78,6 +78,9 @@ class QbImportNormalizer
             'topic' => $this->ref($pick('topic')),
             'class_levels' => array_values(array_filter(array_map(fn ($c) => $this->ref($c), $this->list($pick('class_levels', 'classes'))), fn ($c) => $c !== null)),
         ];
+        if (array_key_exists('curriculum_node_ids', $raw)) {
+            $payload['curriculum_node_ids'] = $this->curriculumNodeIds($raw['curriculum_node_ids'], $err);
+        }
         if (($payload['question_text'] ?? '') === '' && !in_array($structure, ['gap', 'match', 'order'], true)) $err('question_text', 'the question text is empty');
 
         // the parts the type's structure holds
@@ -158,8 +161,20 @@ class QbImportNormalizer
             $id = $this->classLevel($c);
             if ($id) $classes[] = $id; else $err("class_levels.{$i}", 'no such class: ' . $this->label($c));
         }
+        $curriculumNodeIds = $payload['curriculum_node_ids'] ?? [];
+        if ($curriculumNodeIds !== []) {
+            $nodes = \App\Models\QbCurriculumNode::with('version')->whereIn('id', $curriculumNodeIds)->get()->keyBy('id');
+            foreach ($curriculumNodeIds as $i => $nodeId) {
+                $node = $nodes->get($nodeId);
+                if (!$node) $err("curriculum_node_ids.{$i}", "no such curriculum node: {$nodeId}");
+                elseif (!$subject || (int) $node->version->qb_subject_id !== (int) $subject) {
+                    $err("curriculum_node_ids.{$i}", 'curriculum node does not belong to the selected subject');
+                }
+            }
+        }
         $body = ['qb_question_type_id' => $type['id'] ?? null, 'qb_subject_id' => $subject, 'qb_chapter_id' => $chapter, 'qb_topic_id' => $topic,
             'question_text' => $payload['question_text'] ?? '', 'class_level_ids' => array_values(array_unique($classes))];
+        if (array_key_exists('curriculum_node_ids', $payload)) $body['curriculum_node_ids'] = $curriculumNodeIds;
         foreach (['answer_text', 'explanation_text', 'difficulty', 'marks', 'options', 'creative_parts', 'stimuli', 'items', 'occurrences'] as $k) {
             if (array_key_exists($k, $payload)) $body[$k] = $payload[$k];
         }
@@ -331,6 +346,27 @@ class QbImportNormalizer
     {
         if (!is_array($v)) return [];
         return array_values(array_filter(array_is_list($v) ? $v : [$v], fn ($x) => $x !== null));
+    }
+
+    /** v5 language-paper locations are explicit node ids; malformed values remain actionable field-path errors. */
+    private function curriculumNodeIds(mixed $value, callable $err): array
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            $err('curriculum_node_ids', 'must be an array of curriculum node IDs');
+            return [];
+        }
+        if (count($value) > 30) $err('curriculum_node_ids', 'may contain at most 30 IDs');
+        $ids = [];
+        foreach ($value as $i => $id) {
+            if ((!is_int($id) && !(is_string($id) && ctype_digit($id))) || (int) $id < 1) {
+                $err("curriculum_node_ids.{$i}", 'must be a positive integer ID');
+                continue;
+            }
+            $id = (int) $id;
+            if (in_array($id, $ids, true)) $err("curriculum_node_ids.{$i}", 'must be distinct');
+            else $ids[] = $id;
+        }
+        return $ids;
     }
 
     private function str(mixed $v): string

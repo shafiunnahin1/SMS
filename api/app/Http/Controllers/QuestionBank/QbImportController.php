@@ -195,6 +195,7 @@ class QbImportController extends Controller
             $prefix . 'marks' => 'sometimes|nullable|numeric|min:0|max:100',
             $prefix . 'subject' => ['sometimes', ...$ref], $prefix . 'chapter' => ['sometimes', ...$ref], $prefix . 'topic' => ['sometimes', ...$ref],
             $prefix . 'class_levels' => 'sometimes|array|max:30',
+            $prefix . 'curriculum_node_ids' => 'sometimes|array|max:30', $prefix . 'curriculum_node_ids.*' => 'integer|distinct|exists:qb_curriculum_nodes,id',
             $prefix . 'options' => 'sometimes|array|max:8', $prefix . 'creative_parts' => 'sometimes|array|max:4',
             $prefix . 'stimuli' => 'sometimes|array|max:5', $prefix . 'items' => 'sometimes|array|max:40', $prefix . 'occurrences' => 'sometimes|array|max:20',
             $prefix . 'source_occurrence' => 'sometimes|array',

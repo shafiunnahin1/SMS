@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import '../i18n'
@@ -36,6 +36,7 @@ describe('D150 import source bulk settings', () => {
 
   it('maps the chosen source into the existing selected-record settings endpoint', async () => {
     renderPage()
+    fireEvent.click(await screen.findByTestId('qbi-open-bulk'))
     fireEvent.change(await screen.findByRole('combobox', { name: 'উৎসের ধরন' }), { target: { value: 'board' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'উৎসের পূর্ণ নাম' }), { target: { value: 'ঢাকা বোর্ড' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'সংক্ষিপ্ত নাম' }), { target: { value: 'ঢা.বো.' } })
@@ -81,5 +82,32 @@ describe('D150 import source bulk settings', () => {
     await waitFor(() => expect(screen.getByRole('checkbox', { name: 'নির্বাচন' })).toBeEnabled())
     fireEvent.click(screen.getByRole('checkbox', { name: 'নির্বাচন' }))
     await waitFor(() => expect(api.post).toHaveBeenCalledWith(`/writer/imports/${id}/select`, { record_ids: [record.id], selected: true }))
+  })
+
+  it('shows and saves language-paper curriculum node IDs in staged quick edit', async () => {
+    const paperRecord = { ...record, payload: { question_text: 'পাঠ-ভিত্তিক প্রশ্ন', subject: { id: 2, name_bn: 'বাংলা ১ম পত্র' },
+      class_levels: [{ id: 7 }], curriculum_node_ids: [20] } }
+    api.get.mockImplementation(path => {
+      if (path === `/writer/imports/${id}`) return Promise.resolve({ data: { data: batch } })
+      if (path === '/writer/curriculum') return Promise.resolve({ data: { data: {
+        class_levels: [{ id: 7, name_bn: 'সপ্তম', name_en: 'Class 7' }],
+        subjects: [{ id: 2, name_bn: 'বাংলা ১ম পত্র', name_en: 'Bangla 1st Paper', chapters: [] }],
+        curriculum_versions: [{ id: 10, qb_subject_id: 2, version_key: 'bn-v1', name_bn: 'বাংলা সিলেবাস', name_en: 'Bangla syllabus', class_level_ids: [7],
+          nodes: [{ id: 20, kind: 'Unit', name_bn: 'ইউনিট ১', name_en: 'Unit 1', children: [] }, { id: 21, kind: 'Unit', name_bn: 'ইউনিট ২', name_en: 'Unit 2', children: [] }] }],
+      } } })
+      if (path === '/writer/question-types') return Promise.resolve({ data: { data: [{ id: 1, slug: 'short', name_bn: 'সংক্ষিপ্ত', name_en: 'Short' }] } })
+      if (path.startsWith(`/writer/imports/${id}/records`)) return Promise.resolve({ data: { data: [paperRecord], meta: { last_page: 1 } } })
+      return Promise.resolve({ data: { data: [] } })
+    })
+    api.patch.mockResolvedValue({ data: { data: { ...paperRecord, errors: [] } } })
+
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'দ্রুত সম্পাদনা' }))
+    expect(await screen.findByText('ইউনিট ১')).toBeInTheDocument()
+    const search = screen.getByRole('combobox', { name: 'সিলেবাসে অবস্থান' })
+    fireEvent.change(search, { target: { value: 'ইউনিট ২' } })
+    fireEvent.mouseDown(await within(screen.getByRole('listbox')).findByRole('option', { name: /ইউনিট ২/ }), { preventDefault: vi.fn() })
+    fireEvent.click(screen.getByRole('button', { name: 'সংরক্ষণ' }))
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith(`/writer/imports/${id}/records/${record.id}`, expect.objectContaining({ curriculum_node_ids: [20, 21] })))
   })
 })

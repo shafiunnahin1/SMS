@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{QbImportBatch, QbImportRecord, QbQuestion, QbQuestionType, QbSubject, User};
+use App\Models\{QbCurriculumNode, QbCurriculumVersion, QbImportBatch, QbImportRecord, QbQuestion, QbQuestionType, QbSubject, User};
 use App\Services\QbImportService;
 use App\Support\Toon\ToonEncoder;
 use Database\Seeders\QbQuestionTypeSeeder;
@@ -155,6 +155,73 @@ class QbJsonToonImportTest extends TestCase
         ]))->all());
     }
 
+    public function test_language_paper_curriculum_node_ids_round_trip_from_json_and_toon_to_draft_questions(): void
+    {
+        $subjects = [];
+        $nodes = [];
+        foreach ([['বাংলা ১ম পত্র', 'Bangla 1st Paper', 'bn'], ['ইংরেজি ১ম পত্র', 'English 1st Paper', 'en']] as [$nameBn, $nameEn, $language]) {
+            $subject = QbSubject::create(['name_bn' => $nameBn, 'name_en' => $nameEn]);
+            $version = QbCurriculumVersion::create(['qb_subject_id' => $subject->id, 'version_key' => $language . '-paper-v1', 'name_bn' => $nameBn, 'name_en' => $nameEn]);
+            $node = QbCurriculumNode::create(['qb_curriculum_version_id' => $version->id, 'kind' => 'Unit', 'name_bn' => $nameBn . ' ইউনিট', 'name_en' => $nameEn . ' Unit']);
+            $subjects[] = [$subject, $language];
+            $nodes[] = $node;
+        }
+        $questions = ['schema_version' => QbImportService::SCHEMA_V5, 'questions' => []];
+        $questionTexts = [];
+        foreach ($subjects as $i => [$subject, $language]) {
+            $questionTexts[$i] = $language === 'bn' ? "বাংলা প্রশ্ন {$i}" : "English question {$i}";
+            $questions['questions'][] = ['question_type' => 'short', 'question_text' => $questionTexts[$i], 'language' => $language,
+                'settings' => ['subject' => ['id' => $subject->id]], 'curriculum_node_ids' => [$nodes[$i]->id]];
+        }
+        $uuid = $this->upload($this->writer, 'language.json', json_encode($questions, JSON_UNESCAPED_UNICODE))->assertCreated()->json('data.id');
+        $toonQuestions = $questions;
+        foreach ($toonQuestions['questions'] as $i => &$question) $question['question_text'] .= ' (TOON)';
+        unset($question);
+        $toonUuid = $this->api('POST', $this->central, 'writer/imports', $this->writer,
+            ['text' => ToonEncoder::encode($toonQuestions), 'format' => 'toon'])->assertCreated()->json('data.id');
+        $records = QbImportRecord::whereHas('batch', fn ($query) => $query->where('uuid', $uuid))->orderBy('record_index')->get();
+        $this->assertCount(2, $records);
+        foreach ($records as $i => $record) {
+            $this->assertSame([], $record->errors ?? []);
+            $this->assertSame([$nodes[$i]->id], $record->payload['curriculum_node_ids']);
+        }
+        $toonRecords = QbImportRecord::whereHas('batch', fn ($query) => $query->where('uuid', $toonUuid))->orderBy('record_index')->get();
+        foreach ($toonRecords as $i => $record) $this->assertSame([$nodes[$i]->id], $record->payload['curriculum_node_ids']);
+
+        $editRecord = $records[0];
+        $this->api('PATCH', $this->central, "writer/imports/{$uuid}/records/{$editRecord->id}", $this->writer,
+            ['curriculum_node_ids' => [$nodes[1]->id]])->assertOk();
+        $editRecord->refresh();
+        $this->assertContains('curriculum_node_ids.0', array_column($editRecord->errors, 'path'));
+        $this->api('PATCH', $this->central, "writer/imports/{$uuid}/records/{$editRecord->id}", $this->writer,
+            ['curriculum_node_ids' => [$nodes[0]->id]])->assertOk();
+        $editRecord->refresh();
+        $this->assertSame([], $editRecord->errors ?? []);
+        $this->assertSame([$nodes[0]->id], $editRecord->payload['curriculum_node_ids']);
+
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/select", $this->writer,
+            ['record_ids' => $records->pluck('id')->all(), 'selected' => true])->assertOk();
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/finalize", $this->writer)->assertOk()->assertJsonPath('result.imported', 2);
+        $this->api('POST', $this->central, "writer/imports/{$toonUuid}/select", $this->writer,
+            ['record_ids' => $toonRecords->pluck('id')->all(), 'selected' => true])->assertOk();
+        $this->api('POST', $this->central, "writer/imports/{$toonUuid}/finalize", $this->writer)->assertOk()->assertJsonPath('result.imported', 2);
+        foreach ($subjects as $i => [$subject, $language]) {
+            $saved = QbQuestion::where('question_text', $questionTexts[$i])->firstOrFail();
+            $this->assertSame([$nodes[$i]->id], $saved->curriculumNodes()->pluck('qb_curriculum_nodes.id')->all());
+            $this->assertSame('draft', $saved->status);
+            $this->api('GET', $this->central, "writer/questions/{$saved->id}", $this->writer)->assertOk()
+                ->assertJsonPath('data.curriculum_node_ids.0', $nodes[$i]->id);
+            $toonSaved = QbQuestion::where('question_text', $questionTexts[$i] . ' (TOON)')->firstOrFail();
+            $this->assertSame([$nodes[$i]->id], $toonSaved->curriculumNodes()->pluck('qb_curriculum_nodes.id')->all());
+            $this->api('GET', $this->central, "writer/questions/{$toonSaved->id}", $this->writer)->assertOk()
+                ->assertJsonPath('data.curriculum_node_ids.0', $nodes[$i]->id);
+        }
+        $schemaNodeIds = $this->api('GET', $this->central, 'writer/imports/schema.json', $this->writer)->assertOk()->json()
+            ['$defs']['question']['properties']['curriculum_node_ids'];
+        $this->assertSame('array', $schemaNodeIds['type']);
+        $this->assertSame('integer', $schemaNodeIds['items']['type']);
+    }
+
     public function test_d150_toon_occurrences_keep_all_fields_through_editor(): void
     {
         $questions = $this->questions();
@@ -258,6 +325,8 @@ class QbJsonToonImportTest extends TestCase
         $toon = $this->api('GET', $this->central, 'writer/imports/example.toon', $this->writer)->assertOk()->getContent();
         $schema = $this->api('GET', $this->central, 'writer/imports/schema.json', $this->writer)->assertOk()->json();
         $this->assertContains('fill_in_the_blank', $schema['$defs']['question']['properties']['question_type']['enum']);
+        $this->assertSame('array', $schema['$defs']['question']['properties']['curriculum_node_ids']['type']);
+        $this->assertSame([], json_decode($json, true)['questions'][0]['curriculum_node_ids']);
         $a = $this->upload($this->writer, 'example.json', $json)->assertCreated()->json('data');
         $b = $this->upload($this->writer, 'example.toon', $toon)->assertCreated()->json('data');
         foreach ([$a, $b] as $batch) $this->assertSame(['ready', 6, 6, 0], [$batch['status'], $batch['counts']['total'], $batch['counts']['valid'], $batch['counts']['invalid']], json_encode(QbImportRecord::whereNotNull('errors')->pluck('errors')));

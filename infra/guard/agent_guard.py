@@ -44,9 +44,9 @@ def empty_tree(root):
     return EMPTY_TREE
 
 # D111 clause 7 / D139: R2.1 tasks whose refined scope a locked decision approved -> (decision, dependencies); all other R2.1 tasks stay blocked
-R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1']), 'R2.1.2-language-curriculum': ('D145', ['R2.1.2']), 'R2.1.2-gap-fill-authoring': ('D142', ['R2.1.2']), 'R2.1.2-graph-tool-viewport': ('D146', ['R2.1.2']), 'R2.1.2-ai-prompt-library': ('D151', ['R2.1.2']), 'R2.1.3-json-toon-import': ('D123', ['R2.1.2']), 'R2.1.4': ('D124', ['R2.1.3']), 'R2.1.5': ('D126', ['R2.1.4']), 'R2.1.6': ('D127', ['R2.1.5'])}
+R21_APPROVED = {'R2.1.0': ('D109', ['R3.A']), 'R2.1.1': ('D111', ['R2.1.0']), 'R2.1.2': ('D114', ['R2.1.1']), 'R2.1.2-language-curriculum': ('D145', ['R2.1.2']), 'R2.1.2-gap-fill-authoring': ('D142', ['R2.1.2']), 'R2.1.2-graph-tool-viewport': ('D146', ['R2.1.2']), 'R2.1.2-ai-prompt-library': ('D151', ['R2.1.2']), 'R2.1.2-json-v5-language-curriculum-import': ('D152', ['R2.1.2']), 'R2.1.3-json-toon-import': ('D123', ['R2.1.2']), 'R2.1.4': ('D124', ['R2.1.3']), 'R2.1.5': ('D126', ['R2.1.4']), 'R2.1.6': ('D127', ['R2.1.5'])}
 R21_ADDITIONAL_DECISIONS = {'R2.1.3-json-toon-import': ['D150']}
-R21_REQUIRED_TRAILERS = {'R2.1.3-json-toon-import': ['D123', 'D150'], 'R2.1.2-ai-prompt-library': ['D151']}
+R21_REQUIRED_TRAILERS = {'R2.1.3-json-toon-import': ['D123', 'D150'], 'R2.1.2-ai-prompt-library': ['D151'], 'R2.1.2-json-v5-language-curriculum-import': ['D152']}
 # D119: qbank's tool files copied unchanged (D118); C7 and C11 skip them, a sha256 manifest pins them instead
 QBANK_VENDOR = 'frontend/public/vendor/qbank/'
 QBANK_MANIFEST = QBANK_VENDOR + 'MANIFEST.sha256'
@@ -263,7 +263,7 @@ def check_commit(root, commit, parent, msg, rep, state_cache):
     # D111 clause 7: an R2.1 task is executable only when a locked decision approved its refined scope and its dependencies are done
     decisions_before = show(root, parent, 'docs/LOCKED-DECISIONS.md') or ''
     r21_ok = lambda t: t in R21_APPROVED and all(
-        f'| {d} |' in decisions_before
+        (f'| {d} |' in decisions_before or re.search(rf'^{d}\s*\|', decisions_before, re.M))
         for d in [R21_APPROVED[t][0], *R21_ADDITIONAL_DECISIONS.get(t, [])])
     if touches_code:
         if task and (re.fullmatch(r'R2\.1\.\d+', task) or task in R21_APPROVED):

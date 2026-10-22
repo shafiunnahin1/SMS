@@ -77,6 +77,15 @@ APPROVED_EXECUTION_SLICES = [{
     'done_when': 'Current class-subject-chapter-topic data appears in the modal; copy and UTF-8 .txt contain identical prompts; prompt specifies universal-content-json.v5 and existing per-question metadata; topic proposals remain informational and visible without fabricated mappings; existing import controls and behavior are unchanged; empty/error, role, Bangla/English and theme checks pass. Record evidence in docs/PROGRESS.md.',
     'deferred': ['AI provider integration', 'persistent prompt or curriculum cache', 'R2.1 runtime switch', 'all unrelated R2.1 tasks'],
 }, {
+    'id': 'R2.1.2-json-v5-language-curriculum-import', 'parent_task': 'R2.1.2',
+    'decisions': ['D152'], 'depends_on': ['R2.1.2'],
+    'executable': True, 'accepted': False,
+    'scope': 'Add optional per-question curriculum_node_ids to the existing universal-content-json.v5 importer. Validate each ID exists and belongs to the selected subject; preserve it through staged review/edit and final draft creation into the existing question curriculum-node pivot. Update the downloadable JSON schema/example and AI prompt. Missing IDs preserve the existing chapter/topic path; use existing tables/routes only.',
+    'tables': [], 'routes': [],
+    'roles': ['content_writer', 'super_admin'],
+    'done_when': 'JSON and TOON language-paper records with Bengali and English content preserve curriculum_node_ids through staging, review/edit and draft finalization; unknown and cross-subject IDs remain field-path errors; saved questions reopen with the same node links; records without IDs retain chapter/topic behavior; schema/example/prompt describe the optional field; focused importer, editor round-trip, answer/privacy, role and no-publish checks pass. Record exact evidence in docs/PROGRESS.md.',
+    'deferred': ['new curriculum tables/routes/packages', 'R2.1 runtime switch', 'all unrelated importer behavior'],
+}, {
     'id': 'R2.1.3-json-toon-import', 'parent_task': 'R2.1.3',
     'decisions': ['D123', 'D150'], 'depends_on': ['R2.1.2'],
     'executable': True, 'accepted': False,
@@ -132,7 +141,7 @@ def validate(root, scope, gaps):
     require(scope.get('approved_execution_slices') == APPROVED_EXECUTION_SLICES,
             'approved execution slices must match their owner-approved contracts')
     decisions = (root / 'docs/LOCKED-DECISIONS.md').read_text(encoding='utf-8')
-    require(all(f'| {decision} |' in decisions for active in APPROVED_EXECUTION_SLICES
+    require(all((f'| {decision} |' in decisions or re.search(rf'^{decision}\s*\|', decisions, re.M)) for active in APPROVED_EXECUTION_SLICES
                 for decision in active['decisions']),
             'approved slice decisions must precede execution')
     progress = (root / 'docs/PROGRESS.md').read_text(encoding='utf-8')

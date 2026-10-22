@@ -235,6 +235,28 @@ def d151_probe():
     details = '\n'.join(out for good, _, _, out in results if not good)
     return (0 if all(good for good, _, _, _ in results) else 1), details or 'D151 requires its decision trailer and accepted R2.1.2 dependency'
 
+def d152_probe():
+    results = []
+    for trailers, expected in [('\nChange-Request: D152', None), ('', 'C9')]:
+        d = make_base()
+        # D152 was committed as a plain decision row without the table's leading pipe.
+        decisions = DECISIONS + 'D152 | JSON v5 language curriculum metadata | approved |\n'
+        progress = PROGRESS + '\n- [x] R2.1.2 — accepted prerequisite\n'
+        write(d, 'docs/LOCKED-DECISIONS.md', decisions)
+        write(d, 'docs/PROGRESS.md', progress)
+        git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'owner: approve D152')
+        git(d, 'tag', 'd152base')
+        write(d, 'api/app/Services/QbImportService.php', '<?php class QbImportService {}\n')
+        write(d, 'docs/PROGRESS.md', progress + '- [ ] R2.1.2-json-v5-language-curriculum-import — in progress\n')
+        git(d, 'add', '-A')
+        git(d, 'commit', '-q', '-m', 'feat: v5 language curriculum import\n\nTask: R2.1.2-json-v5-language-curriculum-import' + trailers)
+        code, out = run_guard(d, 'd152base', 'HEAD')
+        good = code == 0 if expected is None else code == 1 and expected in out
+        results.append((good, expected, code, out))
+        shutil.rmtree(d, ignore_errors=True)
+    details = '\n'.join(out for good, _, _, out in results if not good)
+    return (0 if all(good for good, _, _, _ in results) else 1), details or 'D152 requires its trailer and accepts the committed decision row format'
+
 def d148_probe():
     results = []
     for path, expected in [
@@ -305,6 +327,11 @@ def main():
     code, out = d151_probe()
     good = code == 0
     print(('ok    ' if good else 'WRONG ') + 'D151 custom task requires its trailer and accepted dependency' + ('' if good else f' (exit {code})\n' + out[-500:]))
+    bad += 0 if good else 1
+    n += 1
+    code, out = d152_probe()
+    good = code == 0
+    print(('ok    ' if good else 'WRONG ') + 'D152 custom task accepts committed decision row and requires its trailer' + ('' if good else f' (exit {code})\n' + out[-500:]))
     bad += 0 if good else 1
     n += 1
     code, out = d148_probe()

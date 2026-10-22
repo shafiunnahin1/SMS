@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{QbChapter, QbClassLevel, QbQuestionType, QbSubject, QbTopic};
+use App\Models\{QbChapter, QbClassLevel, QbCurriculumNode, QbCurriculumVersion, QbQuestionType, QbSubject, QbTopic};
 use App\Services\QbImportNormalizer;
 use App\Support\Toon\ToonDecoder;
 use App\Support\Toon\ToonEncoder;
@@ -86,6 +86,35 @@ class QbImportNormalizerTest extends TestCase
         $this->assertSame([], $creative['errors']);
         $this->assertSame('উদ্দীপক', $creative['payload']['question_text'], 'the stimulus is the creative question text, as in the editor');
         $this->assertSame(['খ', 'understanding'], [$creative['payload']['creative_parts'][1]['part_label'], $creative['payload']['creative_parts'][1]['cognitive_level']]);
+    }
+
+    public function test_language_paper_curriculum_node_ids_are_preserved_and_subject_checked(): void
+    {
+        $bangla = QbSubject::create(['name_bn' => 'বাংলা ১ম পত্র', 'name_en' => 'Bangla 1st Paper']);
+        $english = QbSubject::create(['name_bn' => 'ইংরেজি ১ম পত্র', 'name_en' => 'English 1st Paper']);
+        $banglaVersion = QbCurriculumVersion::create(['qb_subject_id' => $bangla->id, 'version_key' => 'bangla-v1', 'name_bn' => 'বাংলা সিলেবাস', 'name_en' => 'Bangla syllabus']);
+        $englishVersion = QbCurriculumVersion::create(['qb_subject_id' => $english->id, 'version_key' => 'english-v1', 'name_bn' => 'ইংরেজি সিলেবাস', 'name_en' => 'English syllabus']);
+        $banglaNode = QbCurriculumNode::create(['qb_curriculum_version_id' => $banglaVersion->id, 'kind' => 'Text', 'name_bn' => 'অপরিচিতা', 'name_en' => 'Aparichita']);
+        $englishNode = QbCurriculumNode::create(['qb_curriculum_version_id' => $englishVersion->id, 'kind' => 'Unit', 'name_bn' => 'ইউনিট ১', 'name_en' => 'Unit 1']);
+
+        foreach ([['বাংলা ১ম পত্র', 'bn', $banglaNode->id], ['English 1st Paper', 'en', $englishNode->id]] as [$subject, $language, $nodeId]) {
+            $raw = ['question_type' => 'short', 'question_text' => $language === 'bn' ? 'বাংলা প্রশ্ন' : 'English question', 'language' => $language,
+                'settings' => ['subject' => ['name' => $subject]], 'curriculum_node_ids' => [$nodeId]];
+            $normalized = $this->n->normalize($raw);
+            $this->assertSame([], $normalized['errors']);
+            $this->assertSame([$nodeId], $normalized['payload']['curriculum_node_ids']);
+            $this->assertSame([$nodeId], $this->n->editorBody($normalized['payload'])['curriculum_node_ids']);
+        }
+
+        $wrongSubject = $this->n->normalize(['question_type' => 'short', 'question_text' => 'Question',
+            'settings' => ['subject' => ['name' => 'বাংলা ১ম পত্র']], 'curriculum_node_ids' => [$englishNode->id]]);
+        $this->assertContains('curriculum_node_ids.0', array_column($wrongSubject['errors'], 'path'));
+        $unknown = $this->n->normalize(['question_type' => 'short', 'question_text' => 'Question',
+            'settings' => ['subject' => ['name' => 'বাংলা ১ম পত্র']], 'curriculum_node_ids' => [999999]]);
+        $this->assertContains('curriculum_node_ids.0', array_column($unknown['errors'], 'path'));
+        $legacy = $this->n->normalize(['question_type' => 'short', 'question_text' => 'Question', 'settings' => ['subject' => ['name' => 'Mathematics']]]);
+        $this->assertArrayNotHasKey('curriculum_node_ids', $legacy['payload']);
+        $this->assertArrayNotHasKey('curriculum_node_ids', $this->n->editorBody($legacy['payload']));
     }
 
     public function test_problems_are_field_path_errors_never_a_changed_type(): void

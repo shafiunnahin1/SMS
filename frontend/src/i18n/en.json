@@ -1642,6 +1642,7 @@
    "select": "Select",
    "has_math": "Math/LaTeX",
    "open_draft": "Open draft",
+   "full_editor": "Open full editor",
    "duplicate": "Possible duplicate - a similar question exists",
    "dup_skip": "Skip",
    "dup_import": "Import anyway",

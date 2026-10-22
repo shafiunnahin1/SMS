@@ -14,6 +14,8 @@ import { Input, Select, Textarea } from '../../components/FormField'
 import Check from '../../features/academic/Check'
 import MathText from '../../features/qb/MathText'
 import { SOURCE_TYPES, sourceToOccurrence } from '../../features/qb/questionMeta'
+import { flattenCurriculum, versionsForSubject } from '../../features/qb/curriculum'
+import CurriculumPicker from '../../features/qb/CurriculumPicker'
 import { fmtNumber as formatNumber } from '../../i18n/format'
 
 const FILTERS = ['', 'valid', 'invalid', 'duplicate', 'imported']
@@ -31,7 +33,8 @@ export default function QbImportReview() {
   const [filter, setFilter] = useState('')
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState(null)
-  const [bulk, setBulk] = useState({ subject: '', chapter: '', topic: '', type: '', difficulty: '', language: '' })
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulk, setBulk] = useState({ subject: '', chapter: '', topic: '', type: '', difficulty: '', language: '', marks: '', class_levels: [], curriculum_node_ids: [] })
   const [bulkSource, setBulkSource] = useState({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })
   const [result, setResult] = useState(null)
 
@@ -52,6 +55,8 @@ export default function QbImportReview() {
   const typeName = (slug) => name(types.data.find(ty => ty.slug === slug)) || slug || '—'
   const bulkSubject = tree.data.subjects.find(s => String(s.id) === bulk.subject)
   const bulkChapter = bulkSubject?.chapters.find(c => String(c.id) === bulk.chapter)
+  const bulkCurriculumVersions = versionsForSubject(tree.data.curriculum_versions, bulk.subject, bulk.class_levels)
+  const bulkCurriculumRows = flattenCurriculum(bulkCurriculumVersions, name)
   const download = async () => {
     const blob = (await api.get(`/writer/imports/${id}/errors.csv`, { responseType: 'blob' })).data
     const a = document.createElement('a')
@@ -69,7 +74,7 @@ export default function QbImportReview() {
     const r = await act.mutateAsync({ url: '/finalize' })
     setResult(r.result)
   } })
-  const applyBulk = () => {
+  const applyBulk = async () => {
     const changes = {}
     if (bulk.subject) changes.subject = Number(bulk.subject)
     if (bulk.chapter) changes.chapter = Number(bulk.chapter)
@@ -77,9 +82,16 @@ export default function QbImportReview() {
     if (bulk.type) changes.type = bulk.type
     if (bulk.difficulty) changes.difficulty = Number(bulk.difficulty)
     if (bulk.language) changes.language = bulk.language
-    act.mutate({ url: '/settings', body: { selected: true, changes } })
+    if (bulk.marks !== '') changes.marks = bulk.marks
+    if (bulk.class_levels.length) changes.class_levels = bulk.class_levels.map(Number)
+    if (bulk.curriculum_node_ids.length) changes.curriculum_node_ids = bulk.curriculum_node_ids.map(Number)
+    await act.mutateAsync({ url: '/settings', body: { selected: true, changes } })
+    setBulkOpen(false)
   }
-  const applySource = () => act.mutate({ url: '/settings', body: { selected: true, changes: { source_occurrence: sourceToOccurrence(bulkSource) } } })
+  const applySource = async () => {
+    await act.mutateAsync({ url: '/settings', body: { selected: true, changes: { source_occurrence: sourceToOccurrence(bulkSource) } } })
+    setBulkOpen(false)
+  }
 
   return (
     <div className="flex flex-col gap-4" data-testid="qb-import-review" data-status={b.status}>
@@ -107,9 +119,17 @@ export default function QbImportReview() {
 
       {b.status === 'ready' && (
         <>
-          <Card>
-            <h2 className="mb-1 font-semibold">{t('qbi.bulk')}</h2>
-            <p className="mb-3 text-sm text-content-muted">{t('qbi.bulk_hint')}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setBulkOpen(true)} data-testid="qbi-open-bulk">{t('qbi.bulk')}</Button>
+            <Button variant="secondary" onClick={() => act.mutate({ url: '/select', body: { all_valid: true, selected: true } })} data-testid="qbi-select-valid">{t('qbi.select_valid')}</Button>
+            <Button variant="secondary" onClick={() => act.mutate({ url: '/select', body: { all_valid: true, selected: false } })}>{t('qbi.select_none')}</Button>
+            <Button onClick={finalize} loading={act.isPending} data-testid="qbi-finalize">{t('qbi.import_selected')}</Button>
+          </div>
+          {bulkOpen && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-5" onClick={() => setBulkOpen(false)}>
+          <section role="dialog" aria-modal="true" aria-labelledby="qbi-bulk-title" onClick={e => e.stopPropagation()}
+            className="flex max-h-[92vh] w-full max-w-5xl flex-col gap-4 overflow-y-auto rounded-token bg-surface p-density text-content shadow-card">
+            <div className="flex items-center justify-between gap-3"><div><h2 id="qbi-bulk-title" className="font-semibold">{t('qbi.bulk')}</h2><p className="mt-1 text-sm text-content-muted">{t('qbi.bulk_hint')}</p></div>
+              <Button variant="ghost" aria-label={t('qbi.cancel')} onClick={() => setBulkOpen(false)}>×</Button></div>
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <Select label={t('qb.subject')} name="bulk_subject" value={bulk.subject} placeholder="—" onChange={e => setBulk({ ...bulk, subject: e.target.value, chapter: '', topic: '' })}
                 options={tree.data.subjects.map(s => ({ value: String(s.id), label: name(s) }))} />
@@ -123,12 +143,18 @@ export default function QbImportReview() {
                 options={[1, 2, 3, 4, 5].map(d => ({ value: String(d), label: n(d) }))} />
               <Select label={t('qbf.language')} name="bulk_language" value={bulk.language} placeholder="—" onChange={e => setBulk({ ...bulk, language: e.target.value })}
                 options={[{ value: 'bn', label: t('qbf.lang_bn') }, { value: 'en', label: t('qbf.lang_en') }, { value: 'und', label: t('qbi.mixed') }]} />
+              <Input label={t('qbi.marks')} name="bulk_marks" value={bulk.marks} onChange={e => setBulk({ ...bulk, marks: e.target.value })} ltr />
             </div>
+            <fieldset className="mt-3 flex flex-wrap gap-2" data-testid="qbi-bulk-classes">
+              <legend className="mb-1 text-sm font-medium">{t('qb.class_levels')}</legend>
+              {(tree.data.class_levels ?? []).map(level => <Check key={level.id} label={name(level)} value={String(level.id)} checked={bulk.class_levels.includes(String(level.id))}
+                onChange={() => setBulk(old => ({ ...old, class_levels: old.class_levels.includes(String(level.id)) ? old.class_levels.filter(value => value !== String(level.id)) : [...old.class_levels, String(level.id)], curriculum_node_ids: [] }))} />)}
+            </fieldset>
+            {bulkCurriculumVersions.length > 0 && <div className="mt-3" data-testid="qbi-bulk-curriculum"><CurriculumPicker label={t('qbed.curriculum_path')} rows={bulkCurriculumRows}
+              versions={bulkCurriculumVersions.map(version => ({ ...version, label: name(version) || version.version_key }))} value={bulk.curriculum_node_ids}
+              onChange={ids => setBulk(old => ({ ...old, curriculum_node_ids: ids }))} /></div>}
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={applyBulk} disabled={!Object.values(bulk).some(Boolean)} data-testid="qbi-bulk-apply">{t('qbi.bulk_apply')}</Button>
-              <Button variant="secondary" onClick={() => act.mutate({ url: '/select', body: { all_valid: true, selected: true } })} data-testid="qbi-select-valid">{t('qbi.select_valid')}</Button>
-              <Button variant="secondary" onClick={() => act.mutate({ url: '/select', body: { all_valid: true, selected: false } })}>{t('qbi.select_none')}</Button>
-              <Button onClick={finalize} loading={act.isPending} data-testid="qbi-finalize">{t('qbi.import_selected')}</Button>
+              <Button variant="secondary" onClick={applyBulk} disabled={!bulk.subject && !bulk.chapter && !bulk.topic && !bulk.type && !bulk.difficulty && !bulk.language && bulk.marks === '' && !bulk.class_levels.length && !bulk.curriculum_node_ids.length} data-testid="qbi-bulk-apply">{t('qbi.bulk_apply')}</Button>
             </div>
             <fieldset className="mt-4 grid gap-3 [border-top:1px_solid_var(--line)] pt-3" data-testid="qbi-bulk-source">
               <legend className="font-medium">{t('qbi.bulk_source')}</legend>
@@ -158,7 +184,8 @@ export default function QbImportReview() {
                 </Button>
               </div>
             </fieldset>
-          </Card>
+          </section>
+          </div>}
 
           <Card>
             <div className="mb-3 flex flex-wrap gap-2" role="tablist">
@@ -180,7 +207,7 @@ export default function QbImportReview() {
                       <span>{typeName(r.type)}</span>
                       <span className="text-content-muted">{name(subjectOf(r.payload.subject)) || r.payload.subject?.name || ''}</span>
                       {r.has_math && <span className="rounded-token bg-surface-muted px-2">{t('qbi.has_math')}</span>}
-                      {r.qb_question_id && <Link to={`/writer/questions/${r.qb_question_id}`} className="text-primary-fg underline">{t('qbi.open_draft')}</Link>}
+                      {r.qb_question_id && <Link to={`/writer/questions/${r.qb_question_id}`} className="text-primary-fg underline" data-testid="qbi-full-editor">{t('qbi.full_editor')}</Link>}
                     </div>
                     <span dir="auto"><MathText text={r.payload.question_text ?? ''} /></span>
                     {r.errors.length > 0 && (
@@ -196,16 +223,12 @@ export default function QbImportReview() {
                         <Button variant={r.duplicate_status === 'import' ? 'primary' : 'secondary'} onClick={() => act.mutate({ url: `/records/${r.id}/duplicate`, body: { choice: 'import' } })}>{t('qbi.dup_import')}</Button>
                       </div>
                     )}
-                    {!r.qb_question_id && (editing?.id === r.id ? (
-                      <QuickEdit record={r} types={types.data} tree={tree.data} name={name} t={t} saving={act.isPending}
-                        onCancel={() => setEditing(null)}
-                        onSave={async (changes) => { await act.mutateAsync({ method: 'patch', url: `/records/${r.id}`, body: changes }); setEditing(null) }} />
-                    ) : (
+                    {!r.qb_question_id && (
                       <div className="flex flex-wrap gap-2">
                         {!rejected(r) && <Button variant="ghost" onClick={() => setEditing(r)} data-testid="qbi-edit">{t('qbi.quick_edit')}</Button>}
                         {b.format === 'pdf' && <Button variant="ghost" data-testid="qbi-reject" onClick={() => act.mutate({ url: `/records/${r.id}/reject`, body: { rejected: !rejected(r) } })}>{rejected(r) ? t('qbi.unreject') : t('qbi.reject')}</Button>}
                       </div>
-                    ))}
+                    )}
                   </li>
                 ))}
               </ol>
@@ -218,6 +241,16 @@ export default function QbImportReview() {
               </div>
             )}
           </Card>
+          {editing && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-5" onClick={() => setEditing(null)}>
+            <section role="dialog" aria-modal="true" aria-labelledby="qbi-quick-edit-title" onClick={e => e.stopPropagation()}
+              className="flex max-h-[92vh] w-full max-w-4xl flex-col gap-4 overflow-y-auto rounded-token bg-surface p-density text-content shadow-card">
+              <div className="flex items-center justify-between gap-3"><h2 id="qbi-quick-edit-title" className="text-lg font-semibold">{t('qbi.quick_edit')} · #{n(editing.record)}</h2>
+                <Button variant="ghost" aria-label={t('qbi.cancel')} onClick={() => setEditing(null)}>×</Button></div>
+              <QuickEdit key={editing.id} record={editing} types={types.data} tree={tree.data} name={name} t={t} saving={act.isPending}
+                onCancel={() => setEditing(null)}
+                onSave={async (changes) => { await act.mutateAsync({ method: 'patch', url: `/records/${editing.id}`, body: changes }); setEditing(null) }} />
+            </section>
+          </div>}
         </>
       )}
     </div>
@@ -230,10 +263,13 @@ function QuickEdit({ record, types, tree, name, t, saving, onSave, onCancel }) {
   const [f, setF] = useState({ type: record.type ?? '', question_text: p.question_text ?? '', answer_text: p.answer_text ?? '', marks: p.marks ?? '',
     subject: p.subject?.id ? String(p.subject.id) : String(tree.subjects.find(s => [s.name_bn, s.name_en].includes(p.subject?.name))?.id ?? ''),
     chapter: p.chapter?.id ? String(p.chapter.id) : '', topic: p.topic?.id ? String(p.topic.id) : '',
-    class_levels: (p.class_levels ?? []).map(level => String(level?.id ?? level)), difficulty: p.difficulty ?? '', language: p.language ?? '' })
+    class_levels: (p.class_levels ?? []).map(level => String(level?.id ?? level)), curriculum_node_ids: (p.curriculum_node_ids ?? []).map(String),
+    difficulty: p.difficulty ?? '', language: p.language ?? '' })
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
   const subject = tree.subjects.find(item => String(item.id) === f.subject)
   const chapter = (subject?.chapters ?? []).find(item => String(item.id) === f.chapter)
+  const curriculumVersions = versionsForSubject(tree.curriculum_versions, f.subject, f.class_levels)
+  const curriculumRows = flattenCurriculum(curriculumVersions, name)
   const toggleClass = id => setF(old => ({ ...old, class_levels: old.class_levels.includes(id)
     ? old.class_levels.filter(value => value !== id) : [...old.class_levels, id] }))
   return (
@@ -245,6 +281,7 @@ function QuickEdit({ record, types, tree, name, t, saving, onSave, onCancel }) {
       changes.chapter = f.chapter ? Number(f.chapter) : null
       changes.topic = f.topic ? Number(f.topic) : null
       changes.class_levels = f.class_levels.map(Number)
+      changes.curriculum_node_ids = f.curriculum_node_ids.map(Number)
       if (f.marks !== '') changes.marks = f.marks
       if (f.difficulty !== '') changes.difficulty = Number(f.difficulty)
       if (f.language) changes.language = f.language
@@ -252,7 +289,7 @@ function QuickEdit({ record, types, tree, name, t, saving, onSave, onCancel }) {
     }}>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <Select label={t('qb.type')} name="type" value={f.type} placeholder="—" onChange={set('type')} options={types.map(ty => ({ value: ty.slug, label: name(ty) }))} />
-        <Select label={t('qb.subject')} name="subject" value={f.subject} placeholder="—" onChange={e => setF({ ...f, subject: e.target.value, chapter: '', topic: '' })} options={tree.subjects.map(s => ({ value: String(s.id), label: name(s) }))} />
+        <Select label={t('qb.subject')} name="subject" value={f.subject} placeholder="—" onChange={e => setF({ ...f, subject: e.target.value, chapter: '', topic: '', curriculum_node_ids: [] })} options={tree.subjects.map(s => ({ value: String(s.id), label: name(s) }))} />
         <Select label={t('qb.chapter')} name="chapter" value={f.chapter} placeholder="—" onChange={e => setF({ ...f, chapter: e.target.value, topic: '' })}
           options={(subject?.chapters ?? []).map(item => ({ value: String(item.id), label: name(item) }))} />
         <Select label={t('qb.topic')} name="topic" value={f.topic} placeholder="—" onChange={set('topic')}
@@ -268,6 +305,9 @@ function QuickEdit({ record, types, tree, name, t, saving, onSave, onCancel }) {
         {(tree.class_levels ?? []).map(level => <Check key={level.id} label={name(level)} value={String(level.id)} checked={f.class_levels.includes(String(level.id))}
           onChange={() => toggleClass(String(level.id))} />)}
       </fieldset>
+      {curriculumVersions.length > 0 && <CurriculumPicker label={t('qbed.curriculum_path')} rows={curriculumRows}
+        versions={curriculumVersions.map(version => ({ ...version, label: name(version) || version.version_key }))} value={f.curriculum_node_ids}
+        onChange={ids => setF(old => ({ ...old, curriculum_node_ids: ids }))} />}
       <Textarea label={t('qbi.question')} name="question_text" rows={3} dir="auto" value={f.question_text} onChange={set('question_text')} />
       <Textarea label={t('qbi.answer')} name="answer_text" rows={2} dir="auto" value={f.answer_text} onChange={set('answer_text')} />
       <div className="flex gap-2">
