@@ -102,6 +102,20 @@
       "deferred": ["graph behavior or API changes", "R2.1 runtime switch", "all unrelated R2.1 tasks"]
     },
     {
+      "id": "R2.1.2-ai-prompt-library",
+      "parent_task": "R2.1.2",
+      "decisions": ["D151"],
+      "depends_on": ["R2.1.2"],
+      "executable": true,
+      "accepted": false,
+      "scope": "On /writer/imports, add one এআই প্রম্পট entry button opening a modal with class and linked-subject selectors. Fetch the latest existing curriculum data from /writer/curriculum on open/selection; include all applicable chapters and current topics. Generate a copyable prompt and identical UTF-8 .txt download for universal-content-json.v5 question imports, per-question class/subject/chapter/topic/type, answer/explanation/options/creative parts and source occurrences. Existing topic IDs/names only; unknown topics stay unset and are disclosed in informational root topic_proposals (chapter, proposed name, reason, affected question numbers). Do not persist prompts/curriculum snapshots or call an AI provider. Preserve all existing JSON/TOON/PDF import controls and routes.",
+      "tables": [],
+      "routes": [],
+      "roles": ["content_writer", "content_moderator", "super_admin"],
+      "done_when": "Current class-subject-chapter-topic data appears in the modal; copy and UTF-8 .txt contain identical prompts; prompt specifies universal-content-json.v5 and existing per-question metadata; topic proposals remain informational and visible without fabricated mappings; existing import controls and behavior are unchanged; empty/error, role, Bangla/English and theme checks pass. Record evidence in docs/PROGRESS.md.",
+      "deferred": ["AI provider integration", "persistent prompt or curriculum cache", "R2.1 runtime switch", "all unrelated R2.1 tasks"]
+    },
+    {
       "id": "R2.1.3-json-toon-import",
       "parent_task": "R2.1.3",
       "decisions": ["D123", "D150"],

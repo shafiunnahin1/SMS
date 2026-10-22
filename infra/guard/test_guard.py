@@ -214,6 +214,27 @@ def d150_probe():
     details = '\n'.join(out for good, _, _, out in results if not good)
     return (0 if all(good for good, _, _, _ in results) else 1), details or 'D150 requires both D123/D150 trailers and accepted R2.1.2 dependency'
 
+def d151_probe():
+    results = []
+    for trailers, expected in [('\nChange-Request: D151', None), ('', 'C9')]:
+        d = make_base()
+        decisions = DECISIONS + '| D151 | Live curriculum AI prompt modal | approved |\n'
+        progress = PROGRESS + '\n- [x] R2.1.2 — accepted prerequisite\n'
+        write(d, 'docs/LOCKED-DECISIONS.md', decisions)
+        write(d, 'docs/PROGRESS.md', progress)
+        git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'owner: approve D151')
+        git(d, 'tag', 'd151base')
+        write(d, 'frontend/src/pages/writer/QbImports.jsx', 'export const aiPrompt = true\n')
+        write(d, 'docs/PROGRESS.md', progress + '- [ ] R2.1.2-ai-prompt-library — in progress\n')
+        git(d, 'add', '-A')
+        git(d, 'commit', '-q', '-m', 'feat: D151 AI prompt modal\n\nTask: R2.1.2-ai-prompt-library' + trailers)
+        code, out = run_guard(d, 'd151base', 'HEAD')
+        good = code == 0 if expected is None else code == 1 and expected in out
+        results.append((good, expected, code, out))
+        shutil.rmtree(d, ignore_errors=True)
+    details = '\n'.join(out for good, _, _, out in results if not good)
+    return (0 if all(good for good, _, _, _ in results) else 1), details or 'D151 requires its decision trailer and accepted R2.1.2 dependency'
+
 def d148_probe():
     results = []
     for path, expected in [
@@ -279,6 +300,11 @@ def main():
     code, out = d150_probe()
     good = code == 0
     print(('ok    ' if good else 'WRONG ') + 'D150 custom task requires D123/D150 trailers and accepted dependency' + ('' if good else f' (exit {code})\n' + out[-500:]))
+    bad += 0 if good else 1
+    n += 1
+    code, out = d151_probe()
+    good = code == 0
+    print(('ok    ' if good else 'WRONG ') + 'D151 custom task requires its trailer and accepted dependency' + ('' if good else f' (exit {code})\n' + out[-500:]))
     bad += 0 if good else 1
     n += 1
     code, out = d148_probe()

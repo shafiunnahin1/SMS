@@ -1,6 +1,6 @@
 # R2.1 — generated planning plan (D83)
 
-> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle, D138-D149 language-curriculum, D142 gap-authoring, and D146 graph-tool viewport slices below. Runtime remains R3; no runtime switch is authorized.
+> PLANNING ONLY except for the explicit owner-approved scoped slices below. Runtime remains R3; no runtime switch is authorized.
 > Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.
 > Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.
 
@@ -58,6 +58,18 @@ Routes: .
 Roles: content_writer, super_admin.
 Done when: The generated plan is fresh; the pinned vendor manifest exactly matches the graph tool; desktop and narrow viewports show the preview while long controls scroll independently. Record exact evidence in docs/PROGRESS.md.
 Deferred from the parent task: graph behavior or API changes; R2.1 runtime switch; all unrelated R2.1 tasks.
+The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
+
+## Approved scoped implementation slice — R2.1.2-ai-prompt-library
+
+Task: R2.1.2-ai-prompt-library (parent R2.1.2); decisions: D151.
+Depends on: R2.1.2; status: executable slice, not accepted.
+Scope: On /writer/imports, add one এআই প্রম্পট entry button opening a modal with class and linked-subject selectors. Fetch the latest existing curriculum data from /writer/curriculum on open/selection; include all applicable chapters and current topics. Generate a copyable prompt and identical UTF-8 .txt download for universal-content-json.v5 question imports, per-question class/subject/chapter/topic/type, answer/explanation/options/creative parts and source occurrences. Existing topic IDs/names only; unknown topics stay unset and are disclosed in informational root topic_proposals (chapter, proposed name, reason, affected question numbers). Do not persist prompts/curriculum snapshots or call an AI provider. Preserve all existing JSON/TOON/PDF import controls and routes.
+Authorized table: .
+Routes: .
+Roles: content_writer, content_moderator, super_admin.
+Done when: Current class-subject-chapter-topic data appears in the modal; copy and UTF-8 .txt contain identical prompts; prompt specifies universal-content-json.v5 and existing per-question metadata; topic proposals remain informational and visible without fabricated mappings; existing import controls and behavior are unchanged; empty/error, role, Bangla/English and theme checks pass. Record evidence in docs/PROGRESS.md.
+Deferred from the parent task: AI provider integration; persistent prompt or curriculum cache; R2.1 runtime switch; all unrelated R2.1 tasks.
 The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
 
 ## Approved scoped implementation slice — R2.1.3-json-toon-import

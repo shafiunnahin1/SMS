@@ -68,6 +68,15 @@ APPROVED_EXECUTION_SLICES = [{
     'done_when': 'The generated plan is fresh; the pinned vendor manifest exactly matches the graph tool; desktop and narrow viewports show the preview while long controls scroll independently. Record exact evidence in docs/PROGRESS.md.',
     'deferred': ['graph behavior or API changes', 'R2.1 runtime switch', 'all unrelated R2.1 tasks'],
 }, {
+    'id': 'R2.1.2-ai-prompt-library', 'parent_task': 'R2.1.2',
+    'decisions': ['D151'], 'depends_on': ['R2.1.2'],
+    'executable': True, 'accepted': False,
+    'scope': 'On /writer/imports, add one এআই প্রম্পট entry button opening a modal with class and linked-subject selectors. Fetch the latest existing curriculum data from /writer/curriculum on open/selection; include all applicable chapters and current topics. Generate a copyable prompt and identical UTF-8 .txt download for universal-content-json.v5 question imports, per-question class/subject/chapter/topic/type, answer/explanation/options/creative parts and source occurrences. Existing topic IDs/names only; unknown topics stay unset and are disclosed in informational root topic_proposals (chapter, proposed name, reason, affected question numbers). Do not persist prompts/curriculum snapshots or call an AI provider. Preserve all existing JSON/TOON/PDF import controls and routes.',
+    'tables': [], 'routes': [],
+    'roles': ['content_writer', 'content_moderator', 'super_admin'],
+    'done_when': 'Current class-subject-chapter-topic data appears in the modal; copy and UTF-8 .txt contain identical prompts; prompt specifies universal-content-json.v5 and existing per-question metadata; topic proposals remain informational and visible without fabricated mappings; existing import controls and behavior are unchanged; empty/error, role, Bangla/English and theme checks pass. Record evidence in docs/PROGRESS.md.',
+    'deferred': ['AI provider integration', 'persistent prompt or curriculum cache', 'R2.1 runtime switch', 'all unrelated R2.1 tasks'],
+}, {
     'id': 'R2.1.3-json-toon-import', 'parent_task': 'R2.1.3',
     'decisions': ['D123', 'D150'], 'depends_on': ['R2.1.2'],
     'executable': True, 'accepted': False,
@@ -196,9 +205,9 @@ def build(root):
     acceptance = requirements(root)
     plan = {**scope, 'generated_from': [SCOPE, GAPS, 'RELEASE-2.1.md'],
             'acceptance_catalogue': acceptance,
-            'evidence_note': 'Only the explicit D114-D117 dataset-lifecycle, D138-D149 language-curriculum, D142 gap-authoring, and D146 graph-tool viewport slices are executable; the full imported task scope and runtime switch remain governed by their existing acceptance gates.'}
+            'evidence_note': 'Only explicitly approved scoped slices are executable; the full imported task scope and runtime switch remain governed by their existing acceptance gates.'}
     lines = ['# R2.1 — generated planning plan (D83)', '',
-             '> PLANNING ONLY except for the explicit R2.1.2 D114-D117 dataset-lifecycle, D138-D149 language-curriculum, D142 gap-authoring, and D146 graph-tool viewport slices below. Runtime remains R3; no runtime switch is authorized.',
+             '> PLANNING ONLY except for the explicit owner-approved scoped slices below. Runtime remains R3; no runtime switch is authorized.',
              '> Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.',
              '> Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.',
              '', 'Placement: after R3.A, before R4/later; retain existing R1.1/R2 prerequisites.',
