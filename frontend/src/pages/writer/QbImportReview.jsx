@@ -11,6 +11,7 @@ import Button from '../../components/Button'
 import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select, Textarea } from '../../components/FormField'
+import Check from '../../features/academic/Check'
 import MathText from '../../features/qb/MathText'
 import { SOURCE_TYPES, sourceToOccurrence } from '../../features/qb/questionMeta'
 import { fmtNumber as formatNumber } from '../../i18n/format'
@@ -227,22 +228,46 @@ export default function QbImportReview() {
 function QuickEdit({ record, types, tree, name, t, saving, onSave, onCancel }) {
   const p = record.payload
   const [f, setF] = useState({ type: record.type ?? '', question_text: p.question_text ?? '', answer_text: p.answer_text ?? '', marks: p.marks ?? '',
-    subject: p.subject?.id ? String(p.subject.id) : String(tree.subjects.find(s => [s.name_bn, s.name_en].includes(p.subject?.name))?.id ?? '') })
+    subject: p.subject?.id ? String(p.subject.id) : String(tree.subjects.find(s => [s.name_bn, s.name_en].includes(p.subject?.name))?.id ?? ''),
+    chapter: p.chapter?.id ? String(p.chapter.id) : '', topic: p.topic?.id ? String(p.topic.id) : '',
+    class_levels: (p.class_levels ?? []).map(level => String(level?.id ?? level)), difficulty: p.difficulty ?? '', language: p.language ?? '' })
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
+  const subject = tree.subjects.find(item => String(item.id) === f.subject)
+  const chapter = (subject?.chapters ?? []).find(item => String(item.id) === f.chapter)
+  const toggleClass = id => setF(old => ({ ...old, class_levels: old.class_levels.includes(id)
+    ? old.class_levels.filter(value => value !== id) : [...old.class_levels, id] }))
   return (
     <form className="flex flex-col gap-2" data-testid="qbi-quick-edit" onSubmit={(e) => {
       e.preventDefault()
       const changes = { question_text: f.question_text, answer_text: f.answer_text || null }
       if (f.type) changes.type = f.type
       if (f.subject) changes.subject = Number(f.subject)
+      changes.chapter = f.chapter ? Number(f.chapter) : null
+      changes.topic = f.topic ? Number(f.topic) : null
+      changes.class_levels = f.class_levels.map(Number)
       if (f.marks !== '') changes.marks = f.marks
+      if (f.difficulty !== '') changes.difficulty = Number(f.difficulty)
+      if (f.language) changes.language = f.language
       onSave(changes)
     }}>
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <Select label={t('qb.type')} name="type" value={f.type} placeholder="—" onChange={set('type')} options={types.map(ty => ({ value: ty.slug, label: name(ty) }))} />
-        <Select label={t('qb.subject')} name="subject" value={f.subject} placeholder="—" onChange={set('subject')} options={tree.subjects.map(s => ({ value: String(s.id), label: name(s) }))} />
+        <Select label={t('qb.subject')} name="subject" value={f.subject} placeholder="—" onChange={e => setF({ ...f, subject: e.target.value, chapter: '', topic: '' })} options={tree.subjects.map(s => ({ value: String(s.id), label: name(s) }))} />
+        <Select label={t('qb.chapter')} name="chapter" value={f.chapter} placeholder="—" onChange={e => setF({ ...f, chapter: e.target.value, topic: '' })}
+          options={(subject?.chapters ?? []).map(item => ({ value: String(item.id), label: name(item) }))} />
+        <Select label={t('qb.topic')} name="topic" value={f.topic} placeholder="—" onChange={set('topic')}
+          options={(chapter?.topics ?? []).map(item => ({ value: String(item.id), label: name(item) }))} />
         <Input label={t('qbi.marks')} name="marks" value={f.marks} onChange={set('marks')} ltr />
+        <Select label={t('qbi.difficulty')} name="difficulty" value={String(f.difficulty)} placeholder="—" onChange={set('difficulty')}
+          options={[1, 2, 3, 4, 5].map(value => ({ value: String(value), label: t(`qbi.level.${value}`, { defaultValue: value }) }))} />
+        <Select label={t('qbf.language')} name="language" value={f.language} placeholder="—" onChange={set('language')}
+          options={[{ value: 'bn', label: t('qbf.lang_bn') }, { value: 'en', label: t('qbf.lang_en') }, { value: 'und', label: t('qbi.mixed') }]} />
       </div>
+      <fieldset className="flex flex-wrap gap-2" data-testid="qbi-quick-edit-classes">
+        <legend className="mb-1 text-sm font-medium">{t('qb.class_levels')}</legend>
+        {(tree.class_levels ?? []).map(level => <Check key={level.id} label={name(level)} value={String(level.id)} checked={f.class_levels.includes(String(level.id))}
+          onChange={() => toggleClass(String(level.id))} />)}
+      </fieldset>
       <Textarea label={t('qbi.question')} name="question_text" rows={3} dir="auto" value={f.question_text} onChange={set('question_text')} />
       <Textarea label={t('qbi.answer')} name="answer_text" rows={2} dir="auto" value={f.answer_text} onChange={set('answer_text')} />
       <div className="flex gap-2">

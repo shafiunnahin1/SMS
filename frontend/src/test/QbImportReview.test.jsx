@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import '../i18n'
 
-vi.mock('../api/axios', () => ({ bindAuthStore: vi.fn(), default: { get: vi.fn(), post: vi.fn() } }))
+vi.mock('../api/axios', () => ({ bindAuthStore: vi.fn(), default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }))
 const { default: api } = await import('../api/axios')
 const { default: QbImportReview } = await import('../pages/writer/QbImportReview')
 
@@ -31,6 +31,7 @@ describe('D150 import source bulk settings', () => {
       return Promise.resolve({ data: { data: [] } })
     })
     api.post.mockResolvedValue({ data: { data: batch } })
+    api.patch.mockResolvedValue({ data: { data: { ...record, errors: [] } } })
   })
 
   it('maps the chosen source into the existing selected-record settings endpoint', async () => {
@@ -50,5 +51,35 @@ describe('D150 import source bulk settings', () => {
       changes: { source_occurrence: { note: 'board', institution_name: 'ঢাকা বোর্ড', board: 'ঢা.বো.', exam_type: 'SSC', year: 2025,
         question_number: '12', set_label: 'A', page_reference: 'পৃষ্ঠা 8' } },
     }))
+  })
+
+  it('lets quick edit correct an invalid chapter before enabling the record checkbox', async () => {
+    let row = { ...record, selected: false, payload: { ...record.payload, subject: { name: 'Mathematics' }, chapter: { name: 'Missing chapter' } },
+      errors: [{ path: 'chapter', message: 'no such chapter in this subject' }] }
+    api.get.mockImplementation(path => {
+      if (path === `/writer/imports/${id}`) return Promise.resolve({ data: { data: batch } })
+      if (path === '/writer/curriculum') return Promise.resolve({ data: { data: { class_levels: [{ id: 7, name_bn: 'সপ্তম', name_en: 'Class 7' }],
+        subjects: [{ id: 1, name_bn: 'গণিত', name_en: 'Mathematics', chapters: [{ id: 2, name_bn: 'বীজগণিত', name_en: 'Algebra', topics: [] }] }] } } })
+      if (path === '/writer/question-types') return Promise.resolve({ data: { data: [{ id: 1, slug: 'short', name_bn: 'সংক্ষিপ্ত', name_en: 'Short' }] } })
+      if (path.startsWith(`/writer/imports/${id}/records`)) return Promise.resolve({ data: { data: [{ ...row }], meta: { last_page: 1 } } })
+      return Promise.resolve({ data: { data: [] } })
+    })
+    api.patch.mockImplementation(async (path, body) => {
+      expect(path).toBe(`/writer/imports/${id}/records/${record.id}`)
+      expect(body).toMatchObject({ chapter: null, topic: null, class_levels: [] })
+      row = { ...row, payload: { ...row.payload, chapter: null, topic: null }, errors: [] }
+      return { data: { data: row } }
+    })
+
+    renderPage()
+    const checkbox = await screen.findByRole('checkbox', { name: 'নির্বাচন' })
+    expect(checkbox).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'দ্রুত সম্পাদনা' }))
+    fireEvent.change(screen.getByTestId('qbi-quick-edit').querySelector('select[name="chapter"]'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'সংরক্ষণ' }))
+
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'নির্বাচন' })).toBeEnabled())
+    fireEvent.click(screen.getByRole('checkbox', { name: 'নির্বাচন' }))
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith(`/writer/imports/${id}/select`, { record_ids: [record.id], selected: true }))
   })
 })
