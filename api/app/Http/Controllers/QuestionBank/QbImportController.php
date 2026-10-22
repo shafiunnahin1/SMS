@@ -122,6 +122,7 @@ class QbImportController extends Controller
         $in = $request->validate(['record_ids' => 'required_without:selected|array|max:1000', 'record_ids.*' => 'integer', 'selected' => 'nullable|boolean']);
         $changes = $this->changes($request, 'changes.');
         $rows = QbImportRecord::where('qb_import_batch_id', $batch->id)->whereNull('qb_question_id')
+            ->when(array_key_exists('source_occurrence', $changes), fn ($q) => $q->where('selected', true)->whereNull('errors'))
             ->when(isset($in['record_ids']), fn ($q) => $q->whereIn('id', $in['record_ids']), fn ($q) => $q->where('selected', true))->get();
         foreach ($rows as $r) $this->imports->edit($r, $changes);
         $this->imports->recount($batch);
@@ -196,6 +197,7 @@ class QbImportController extends Controller
             $prefix . 'class_levels' => 'sometimes|array|max:30',
             $prefix . 'options' => 'sometimes|array|max:8', $prefix . 'creative_parts' => 'sometimes|array|max:4',
             $prefix . 'stimuli' => 'sometimes|array|max:5', $prefix . 'items' => 'sometimes|array|max:40', $prefix . 'occurrences' => 'sometimes|array|max:20',
+            $prefix . 'source_occurrence' => 'sometimes|array',
         ]);
         $changes = $prefix === '' ? $in : ($in['changes'] ?? []);
         foreach (['subject', 'chapter', 'topic'] as $k) {
@@ -208,8 +210,10 @@ class QbImportController extends Controller
 
     private function record(QbImportBatch $batch, QbImportRecord $r): array
     {
+        $payload = $r->payload ?? [];
+        unset($payload['source_occurrence_indexes']);
         return ['id' => $r->id, 'file' => $batch->files[$r->file_index]['name'] ?? '', 'record' => $r->record_index + 1, 'page' => $r->page_number,
-            'type' => $r->type_slug, 'payload' => $r->payload, 'errors' => $r->errors ?? [], 'warnings' => $r->warnings ?? [], 'has_math' => $r->has_math,
+            'type' => $r->type_slug, 'payload' => $payload, 'errors' => $r->errors ?? [], 'warnings' => $r->warnings ?? [], 'has_math' => $r->has_math,
             'duplicate_status' => $r->duplicate_status, 'duplicate_question_id' => $r->duplicate_question_id, 'selected' => $r->selected,
             'qb_question_id' => $r->qb_question_id];
     }

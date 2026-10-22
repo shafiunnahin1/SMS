@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Validator;
 // stays staged, nothing is guessed or flattened. Text is taken exactly as decoded (no LaTeX "repair").
 class QbImportNormalizer
 {
+    private const SOURCE_TYPES = ['board', 'school', 'college', 'madrasa', 'admission', 'model_test', 'book', 'other'];
+
     /** qbank's own type words (AiJsonImportService::normaliseTypeSlug) for the six it knew */
     private const ALIASES = ['multiple_choice' => 'mcq', 'multiple_choice_question' => 'mcq', 'cq' => 'creative', 'creative_question' => 'creative',
         'short_answer' => 'short', 'short_question' => 'short', 'knowledge_based' => 'knowledge', 'understanding_based' => 'understanding',
@@ -40,7 +42,7 @@ class QbImportNormalizer
     /**
      * @return array{payload: array, errors: list<array{path:string,message:string}>, warnings: list<string>, type_slug: ?string, has_math: bool}
      */
-    public function normalize(array $raw, array $document = []): array
+    public function normalize(array $raw, array $document = [], array $sourceIndexes = []): array
     {
         $errors = [];
         $warnings = [];
@@ -103,8 +105,22 @@ class QbImportNormalizer
             'content_text' => $this->str($s['content_text'] ?? $s['text'] ?? '')], $stimuli);
         if (in_array('items', $holds, true)) $payload['items'] = array_map(fn ($it) => array_intersect_key($it, array_flip(['item_type', 'stimulus_index', 'prompt_text', 'prompt_json', 'answer_json', 'marks'])), $items);
         $this->structureErrors($structure, $family, $payload, $err);
-        $payload['occurrences'] = array_values(array_filter(array_map(fn ($o) => is_array($o) ? array_intersect_key($o, array_flip(['board', 'institution_name', 'exam_type', 'year', 'note'])) : null,
-            $this->list($pick('occurrences')))));
+        $occurrenceFields = ['board', 'institution_name', 'exam_type', 'year', 'note', 'question_number', 'set_label', 'page_reference'];
+        $occurrenceRows = $this->list($pick('occurrences'));
+        $sourceIndexes = array_values(array_unique(array_filter($sourceIndexes,
+            fn ($index) => is_int($index) && $index >= 0 && $index < count($occurrenceRows))));
+        $payload['occurrences'] = array_map(function ($occurrence, $index) use ($occurrenceFields, $sourceIndexes, $err) {
+            if (!is_array($occurrence)) {
+                $err("occurrences.{$index}", 'must be an object');
+                return [];
+            }
+            $row = array_intersect_key($occurrence, array_flip($occurrenceFields));
+            if (in_array($index, $sourceIndexes, true) && !in_array($row['note'] ?? null, self::SOURCE_TYPES, true)) {
+                $err("occurrences.{$index}.note", 'must be a valid source type');
+            }
+            return $row;
+        }, $occurrenceRows, array_keys($occurrenceRows));
+        if ($sourceIndexes !== []) $payload['source_occurrence_indexes'] = $sourceIndexes;
 
         // kept with the record for the reviewer; the editor does not take them
         foreach (['figure_descriptions', 'visuals', 'source'] as $k) if (!empty($raw[$k])) $payload[$k] = $raw[$k];

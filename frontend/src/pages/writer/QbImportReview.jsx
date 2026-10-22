@@ -12,6 +12,7 @@ import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select, Textarea } from '../../components/FormField'
 import MathText from '../../features/qb/MathText'
+import { SOURCE_TYPES, sourceToOccurrence } from '../../features/qb/questionMeta'
 import { fmtNumber as formatNumber } from '../../i18n/format'
 
 const FILTERS = ['', 'valid', 'invalid', 'duplicate', 'imported']
@@ -30,6 +31,7 @@ export default function QbImportReview() {
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState(null)
   const [bulk, setBulk] = useState({ subject: '', chapter: '', topic: '', type: '', difficulty: '', language: '' })
+  const [bulkSource, setBulkSource] = useState({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })
   const [result, setResult] = useState(null)
 
   const batch = useQuery({ queryKey: ['writer', 'import', id], queryFn: () => api.get(`/writer/imports/${id}`).then(r => r.data.data),
@@ -76,6 +78,7 @@ export default function QbImportReview() {
     if (bulk.language) changes.language = bulk.language
     act.mutate({ url: '/settings', body: { selected: true, changes } })
   }
+  const applySource = () => act.mutate({ url: '/settings', body: { selected: true, changes: { source_occurrence: sourceToOccurrence(bulkSource) } } })
 
   return (
     <div className="flex flex-col gap-4" data-testid="qb-import-review" data-status={b.status}>
@@ -126,6 +129,34 @@ export default function QbImportReview() {
               <Button variant="secondary" onClick={() => act.mutate({ url: '/select', body: { all_valid: true, selected: false } })}>{t('qbi.select_none')}</Button>
               <Button onClick={finalize} loading={act.isPending} data-testid="qbi-finalize">{t('qbi.import_selected')}</Button>
             </div>
+            <fieldset className="mt-4 grid gap-3 [border-top:1px_solid_var(--line)] pt-3" data-testid="qbi-bulk-source">
+              <legend className="font-medium">{t('qbi.bulk_source')}</legend>
+              <p className="text-sm text-content-muted">{t('qbi.bulk_source_hint')}</p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Select label={t('qbn.source_type')} name="bulk_source_type" value={bulkSource.type} placeholder="—"
+                  onChange={e => setBulkSource({ ...bulkSource, type: e.target.value })}
+                  options={SOURCE_TYPES.map(type => ({ value: type, label: t(`qbn.source_types.${type}`) }))} />
+                <Input label={t('qbn.source_full')} name="bulk_source_full" value={bulkSource.full}
+                  onChange={e => setBulkSource({ ...bulkSource, full: e.target.value })} />
+                <Input label={t('qbn.source_short')} name="bulk_source_short" value={bulkSource.short}
+                  onChange={e => setBulkSource({ ...bulkSource, short: e.target.value })} />
+                <Input label={t('qbn.exam_type')} name="bulk_source_exam_type" value={bulkSource.exam_type}
+                  onChange={e => setBulkSource({ ...bulkSource, exam_type: e.target.value })} />
+                <Input label={t('qb.year')} name="bulk_source_year" type="number" min="1950" max="2100" ltr value={bulkSource.year}
+                  onChange={e => setBulkSource({ ...bulkSource, year: e.target.value })} />
+                <Input label={t('qbn.question_number')} name="bulk_source_question_number" value={bulkSource.question_number}
+                  onChange={e => setBulkSource({ ...bulkSource, question_number: e.target.value })} />
+                <Input label={t('qbn.set_label')} name="bulk_source_set_label" value={bulkSource.set_label}
+                  onChange={e => setBulkSource({ ...bulkSource, set_label: e.target.value })} />
+                <Input label={t('qbn.page_reference')} name="bulk_source_page_reference" value={bulkSource.page_reference}
+                  onChange={e => setBulkSource({ ...bulkSource, page_reference: e.target.value })} />
+              </div>
+              <div>
+                <Button variant="secondary" onClick={applySource} disabled={!bulkSource.type || act.isPending} data-testid="qbi-source-apply">
+                  {t('qbi.bulk_source_apply')}
+                </Button>
+              </div>
+            </fieldset>
           </Card>
 
           <Card>

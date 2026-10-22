@@ -124,6 +124,81 @@ class QbJsonToonImportTest extends TestCase
         $this->api('GET', $this->central, "writer/imports/{$uuid}", $super)->assertOk();
     }
 
+    public function test_d150_bulk_source_attribution_is_additive_idempotent_and_round_trips(): void
+    {
+        $questions = $this->questions();
+        $existing = ['note' => 'board', 'institution_name' => 'Dhaka Board', 'board' => 'DB', 'exam_type' => 'SSC', 'year' => 2025,
+            'question_number' => '12', 'set_label' => 'A', 'page_reference' => 'p. 8'];
+        $questions['questions'][0]['occurrences'] = [$existing];
+        $uuid = $this->upload($this->writer, 'q.json', json_encode($questions, JSON_UNESCAPED_UNICODE))->json('data.id');
+        $record = QbImportRecord::where('record_index', 0)->firstOrFail();
+        $this->assertSame([$existing], $record->payload['occurrences']);
+
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/select", $this->writer, ['record_ids' => [$record->id], 'selected' => true])->assertOk();
+        $source = ['note' => 'school', 'institution_name' => 'North High School', 'board' => 'NHS', 'exam_type' => 'Final', 'year' => 2026,
+            'question_number' => '4(b)', 'set_label' => 'B', 'page_reference' => 'p. 19'];
+        $apply = fn () => $this->api('POST', $this->central, "writer/imports/{$uuid}/settings", $this->writer,
+            ['selected' => true, 'changes' => ['source_occurrence' => $source]])->assertOk();
+        $apply();
+        $apply();
+        $record->refresh();
+        $this->assertSame([$existing, $source], $record->payload['occurrences']);
+        $this->api('PATCH', $this->central, "writer/imports/{$uuid}/records/{$record->id}", $this->writer, ['question_text' => 'Edited after source apply'])->assertOk();
+        $record->refresh();
+        $this->assertSame([$existing, $source], $record->payload['occurrences'], 'quick edit preserves source history');
+
+        $result = $this->api('POST', $this->central, "writer/imports/{$uuid}/finalize", $this->writer)->assertOk()->json('result');
+        $this->assertSame(1, $result['imported']);
+        $question = QbQuestion::findOrFail($record->fresh()->qb_question_id);
+        $this->assertSame([$existing, $source], $question->occurrences()->get()->map(fn ($row) => $row->only([
+            'note', 'institution_name', 'board', 'exam_type', 'year', 'question_number', 'set_label', 'page_reference',
+        ]))->all());
+    }
+
+    public function test_d150_toon_occurrences_keep_all_fields_through_editor(): void
+    {
+        $questions = $this->questions();
+        $occurrence = ['note' => 'board', 'institution_name' => 'Dhaka Board', 'board' => 'DB', 'exam_type' => 'SSC', 'year' => 2025,
+            'question_number' => '12', 'set_label' => 'A', 'page_reference' => 'p. 8'];
+        $questions['questions'][0]['occurrences'] = [$occurrence];
+        $batch = $this->api('POST', $this->central, 'writer/imports', $this->writer,
+            ['text' => ToonEncoder::encode($questions), 'format' => 'toon'])->assertCreated()->json('data');
+        $record = QbImportRecord::where('record_index', 0)->firstOrFail();
+        $this->assertSame([$occurrence], $record->payload['occurrences']);
+
+        $this->api('POST', $this->central, "writer/imports/{$batch['id']}/select", $this->writer,
+            ['record_ids' => [$record->id], 'selected' => true])->assertOk();
+        $this->api('POST', $this->central, "writer/imports/{$batch['id']}/finalize", $this->writer)->assertOk();
+        $question = $this->api('GET', $this->central, 'writer/questions/' . $record->fresh()->qb_question_id, $this->writer)->assertOk()->json('data');
+        $this->assertEquals([$occurrence], $question['occurrences']);
+    }
+
+    public function test_d150_invalid_source_stays_visible_and_does_not_change_unselected_records(): void
+    {
+        $uuid = $this->upload($this->writer, 'q.json', json_encode($this->questions(), JSON_UNESCAPED_UNICODE))->json('data.id');
+        $selected = QbImportRecord::where('record_index', 0)->firstOrFail();
+        $unselected = QbImportRecord::where('record_index', 2)->firstOrFail();
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/select", $this->writer,
+            ['record_ids' => [$selected->id], 'selected' => true])->assertOk();
+
+        $response = $this->api('POST', $this->central, "writer/imports/{$uuid}/settings", $this->writer, [
+            'record_ids' => [$selected->id, $unselected->id], 'changes' => ['source_occurrence' => [
+                'note' => 'not-a-source-type', 'institution_name' => 'Bad source', 'board' => 'BAD', 'exam_type' => 'SSC', 'year' => 1800,
+                'question_number' => '1', 'set_label' => 'A', 'page_reference' => 'p. 2',
+            ]],
+        ])->assertOk()->assertJsonPath('changed', 1);
+        $selected->refresh();
+        $unselected->refresh();
+        $this->assertSame(['occurrences.0.note', 'occurrences.0.year'], array_column($selected->errors, 'path'));
+        $this->assertSame('not-a-source-type', $selected->payload['occurrences'][0]['note']);
+        $this->api('PATCH', $this->central, "writer/imports/{$uuid}/records/{$selected->id}", $this->writer,
+            ['question_text' => 'Edited while reviewing'])->assertOk()->assertJsonPath('data.errors.0.path', 'occurrences.0.note');
+        $selected->refresh();
+        $this->assertSame('not-a-source-type', $selected->payload['occurrences'][0]['note']);
+        $this->assertSame([], $unselected->payload['occurrences']);
+        $this->assertNull($unselected->errors);
+    }
+
     public function test_review_quick_edit_bulk_settings_duplicates_and_import_selected(): void
     {
         $data = $this->questions();

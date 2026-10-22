@@ -144,16 +144,49 @@ class QbImportService
     public function edit(QbImportRecord $record, array $changes): QbImportRecord
     {
         if ($record->qb_question_id) throw new BusinessException('this record is already imported', 'qb_import_done', 422);
-        $payload = array_merge($record->payload ?? [], array_intersect_key($changes, array_flip(self::EDITABLE)));
+        $payload = $record->payload ?? [];
+        $sourceIndexes = $payload['source_occurrence_indexes'] ?? [];
+        unset($payload['source_occurrence_indexes']);
+        if (array_key_exists('source_occurrence', $changes)) {
+            $source = $changes['source_occurrence'];
+            unset($changes['source_occurrence']);
+            $occurrences = $payload['occurrences'] ?? [];
+            $occurrences = is_array($occurrences) ? array_values($occurrences) : [];
+            if (!is_array($source)) $source = [];
+            $sourceFields = ['note', 'institution_name', 'board', 'exam_type', 'year', 'question_number', 'set_label', 'page_reference'];
+            $source = array_intersect_key($source, array_flip($sourceFields));
+            $existingIndex = collect($occurrences)->search(fn ($occurrence) => is_array($occurrence) && $this->occurrenceKey($occurrence) === $this->occurrenceKey($source));
+            if ($existingIndex === false) {
+                $sourceIndexes[] = count($occurrences);
+                $occurrences[] = $source;
+            } else {
+                $sourceIndexes[] = $existingIndex;
+            }
+            $changes['occurrences'] = $occurrences;
+        }
+        $payload = array_merge($payload, array_intersect_key($changes, array_flip(self::EDITABLE)));
         if (array_key_exists('subject', $changes) && !array_key_exists('chapter', $changes)) unset($payload['chapter'], $payload['topic']);
         if (array_key_exists('chapter', $changes) && !array_key_exists('topic', $changes)) unset($payload['topic']);
-        $n = $this->normalizer->normalize(array_filter($payload, fn ($v) => $v !== null));
+        $n = $this->normalizer->normalize(array_filter($payload, fn ($v) => $v !== null), [], $sourceIndexes);
         $dupes = $this->duplicates([0 => $n]);
         $dupe = $dupes[0] ?? null;
         $status = $dupe === null ? 'none' : ($record->duplicate_question_id === $dupe && $record->duplicate_status !== 'none' ? $record->duplicate_status : 'possible');
         $record->update(['type_slug' => $n['type_slug'], 'payload' => $n['payload'], 'errors' => $n['errors'] ?: null, 'warnings' => $n['warnings'] ?: null,
             'has_math' => $n['has_math'], 'duplicate_status' => $status, 'duplicate_question_id' => $dupe, 'selected' => $record->selected && !$n['errors']]);
         return $record;
+    }
+
+    private function occurrenceKey(array $occurrence): string
+    {
+        $fields = ['note', 'institution_name', 'board', 'exam_type', 'year', 'question_number', 'set_label', 'page_reference'];
+        $normalized = [];
+        foreach ($fields as $field) {
+            $value = $occurrence[$field] ?? null;
+            $normalized[$field] = $field === 'year'
+                ? ($value === null || $value === '' ? null : (int) $value)
+                : (is_scalar($value) && trim((string) $value) !== '' ? trim((string) $value) : null);
+        }
+        return json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     /** D124: rejecting marks the record with a "rejected" error (so it can never be selected or imported); un-rejecting checks it again */
