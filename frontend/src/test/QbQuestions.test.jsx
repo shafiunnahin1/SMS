@@ -83,6 +83,37 @@ describe('writer question list cards', () => {
     expect(answer).not.toHaveTextContent('{"answers"')
   })
 
+  it('loads the mapped language-paper curriculum from the selected class and subject in parent-first order', async () => {
+    api.get.mockImplementation(url => {
+      if (url === '/writer/curriculum') return Promise.resolve({ data: { data: {
+        class_levels: [{ id: 9, name_bn: 'নবম শ্রেণি' }, { id: 10, name_bn: 'দশম শ্রেণি' }],
+        subjects: [{ id: 22, name_bn: 'ইংরেজি ১ম পত্র', name_en: 'English 1st Paper', class_level_ids: [9, 10], chapters: [] }],
+        curriculum_versions: [
+          { id: 101, qb_subject_id: 22, version_key: 'grade-9-10', name_bn: 'নবম-দশম', name_en: 'Classes 9–10', class_level_ids: [9, 10], nodes: [{ id: 201, kind: 'Part', name_bn: 'গদ্য', name_en: 'Prose', children: [{ id: 202, kind: 'Lesson', name_bn: 'পাঠ ১', name_en: 'Lesson 1', parent_id: 201, children: [{ id: 203, kind: 'Topic', name_bn: 'মূলভাব', name_en: 'Main idea', parent_id: 202, children: [] }] }] }] },
+          { id: 102, qb_subject_id: 22, version_key: 'grade-6-8', name_bn: 'ষষ্ঠ-অষ্টম', name_en: 'Classes 6–8', class_level_ids: [6, 7, 8], nodes: [{ id: 301, kind: 'Part', name_bn: 'পুরনো কাঠামো', name_en: 'Other structure', children: [] }] },
+        ],
+      } } })
+      if (url === '/writer/question-types') return Promise.resolve({ data: { data: [] } })
+      return Promise.resolve({ data: { data: [], meta: { current_page: 1, last_page: 1, total: 0, per_page: 16, facets: { question_types: [], source_types: [], years: [] } } } })
+    })
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'শ্রেণি' }))
+    fireEvent.click(await screen.findByText('নবম শ্রেণি'))
+    fireEvent.click(screen.getByTestId('qb-question-filter').querySelector('[data-filter="subject"] button'))
+    fireEvent.click(await screen.findByText('ইংরেজি ১ম পত্র'))
+
+    const root = await screen.findByRole('combobox', { name: 'সিলেবাসের স্তর 1' })
+    expect(root).toHaveTextContent('গদ্য')
+    expect(root).not.toHaveTextContent('পুরনো কাঠামো')
+    fireEvent.change(root, { target: { value: '201' } })
+    const lesson = await screen.findByRole('combobox', { name: 'সিলেবাসের স্তর 2' })
+    expect(lesson).toHaveTextContent('পাঠ ১')
+    fireEvent.change(lesson, { target: { value: '202' } })
+    const topic = await screen.findByRole('combobox', { name: 'সিলেবাসের স্তর 3' })
+    expect(topic).toHaveTextContent('মূলভাব')
+  })
+
   it('groups a seen passage and every structured item type, then reveals readable answers', async () => {
     const passageQuestion = {
       id: 24, qb_question_type_id: 9, qb_subject_id: 3, qb_chapter_id: null, qb_topic_id: null,

@@ -15,7 +15,8 @@ import { Input } from '../../components/FormField'
 import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
 import MathText from '../../features/qb/MathText'
-import { breadcrumbLabel, sourceLabel } from '../../features/qb/curriculum'
+import { breadcrumbLabel, sourceLabel, versionsForSubject } from '../../features/qb/curriculum'
+import CurriculumPicker from '../../features/qb/CurriculumPicker'
 import { fromQuestion, StructuredAnswers, StructuredPreview } from '../../features/qb/Structured'
 
 const PER_PAGE = 16
@@ -81,8 +82,14 @@ export default function QbQuestions() {
   const topicById = Object.fromEntries(subjects.flatMap(item => item.chapters ?? []).flatMap(chapter => chapter.topics ?? []).map(item => [item.id, item]))
   const classById = Object.fromEntries((curriculum.data?.class_levels ?? []).map(item => [item.id, item]))
   const typeById = Object.fromEntries((questionTypes.data ?? []).map(item => [item.id, item]))
-  const curriculumVersions = (curriculum.data?.curriculum_versions ?? []).filter(v => filters.subject_ids.includes(v.qb_subject_id))
-  const curriculumOptions = curriculumVersions.flatMap(v => flattenCurriculum(v.nodes, [], localizedName))
+  // Language-paper paths depend on the selected class and subject, then follow
+  // the version's actual parent/child order at any depth.
+  const curriculumVersions = filters.class_level_ids.length && filters.subject_ids.length
+    ? [...new Map(filters.subject_ids.flatMap(subjectId => versionsForSubject(
+      curriculum.data?.curriculum_versions, subjectId, filters.class_level_ids,
+    )).map(version => [version.id, version])).values()]
+    : []
+  const curriculumOptions = curriculumVersions.flatMap(version => flattenCurriculum(version.nodes, [], localizedName, version))
   return (
     <div className="flex flex-col gap-4" data-testid="qb-questions">
       <PageHeader title={t('qb.questions')} actions={role !== 'content_moderator' &&
@@ -197,7 +204,9 @@ export default function QbQuestions() {
             <Multi label={t('qbaq.subject')} name="subject" value={filters.subject_ids} onChange={v => setFilter('subject_ids', v)} options={availableSubjects.map(s => ({ value: s.id, label: localizedName(s) }))} />
             <Multi label={t('qbaq.chapter')} name="chapter" value={filters.chapter_ids} onChange={v => setFilter('chapter_ids', v)} disabled={!filters.subject_ids.length} options={availableChapters.map(c => ({ value: c.id, label: localizedName(c) }))} />
             <Multi label={t('qbaq.topic')} name="topic" value={filters.topic_ids} onChange={v => setFilter('topic_ids', v)} disabled={!filters.chapter_ids.length} options={availableTopics.map(item => ({ value: item.id, label: localizedName(item) }))} />
-            {curriculumOptions.length > 0 && <Multi label={t('qbed.curriculum_path')} name="curriculum" value={filters.curriculum_node_ids} onChange={v => setFilter('curriculum_node_ids', v)} options={curriculumOptions} />}
+            {curriculumOptions.length > 0 && <CurriculumPicker label={t('qbed.curriculum_path')} name="curriculum"
+              rows={curriculumOptions} versions={curriculumVersions.map(version => ({ ...version, label: localizedName(version) || version.version_key }))}
+              value={filters.curriculum_node_ids.map(String)} onChange={v => setFilter('curriculum_node_ids', v)} />}
             <Multi label={t('qbaq.type')} name="type" value={filters.question_type_ids} onChange={v => setFilter('question_type_ids', v)} options={facets.question_types.map(item => ({ value: item.id, label: localizedName(item) }))} />
             <Multi label={t('qbaq.source')} name="source" value={filters.source_types} onChange={v => setFilter('source_types', v)} options={facets.source_types.map(item => ({ value: item, label: item }))} />
             <Multi label={t('qbaq.year')} name="year" value={filters.years} onChange={v => setFilter('years', v)} options={facets.years.map(item => ({ value: item, label: String(item) }))} />
@@ -208,10 +217,10 @@ export default function QbQuestions() {
   )
 }
 
-function flattenCurriculum(nodes, parents, name) {
+function flattenCurriculum(nodes, parents, name, version, parentId = null) {
   return (nodes ?? []).flatMap(node => {
     const path = [...parents, name(node)]
-    return [{ value: node.id, label: path.join(' / ') }, ...flattenCurriculum(node.children, path, name)]
+    return [{ id: node.id, kind: node.kind, path, label: path.join(' / '), version_id: version.id, version: name(version) || version.version_key, parent_id: node.parent_id ?? parentId }, ...flattenCurriculum(node.children, path, name, version, node.id)]
   })
 }
 
