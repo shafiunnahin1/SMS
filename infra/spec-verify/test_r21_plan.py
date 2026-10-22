@@ -68,6 +68,23 @@ class R21PlanningTests(unittest.TestCase):
         self.assertFalse(slice_['accepted'])
         self.assertFalse(self.scope['runtime_switch']['authorized'])
 
+    def test_d150_source_attribution_is_non_schema_and_leaves_parent_blocked(self):
+        slice_ = next(s for s in self.scope['approved_execution_slices']
+                      if s['id'] == 'R2.1.3-json-toon-import')
+        self.assertEqual(['D123', 'D150'], slice_['decisions'])
+        self.assertEqual('R2.1.3', slice_['parent_task'])
+        self.assertEqual(['R2.1.2'], slice_['depends_on'])
+        self.assertEqual([], slice_['tables'])
+        self.assertEqual([], slice_['routes'])
+        self.assertFalse(slice_['accepted'])
+        self.assertFalse(self.scope['authorized_new_objects']['routes'])
+        self.assertFalse(self.scope['runtime_switch']['authorized'])
+        parent = next(t for t in self.scope['tasks'] if t['id'] == 'R2.1.3')
+        self.assertFalse(parent['executable'])
+        self.assertFalse(parent['accepted'])
+        self.assertIn('question_number', slice_['scope'])
+        self.assertIn('idempotent', slice_['done_when'])
+
     def test_approved_slice_cannot_gain_objects_or_scope(self):
         self.scope['approved_execution_slices'][0]['tables'].append('invented')
         errors = G.validate(ROOT, self.scope, self.gaps)
