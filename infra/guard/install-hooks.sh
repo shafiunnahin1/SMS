@@ -10,9 +10,11 @@ HOOK
 cat > "$HOOKS/pre-push" <<'HOOK'
 #!/usr/bin/env bash
 # checks every commit that is about to be pushed against the integration branch
+ROOT="$(git rev-parse --show-toplevel)"
+python3 "$ROOT/infra/guard/pre_push_guard.py" || exit $?
 BASE="${GUARD_BASE:-origin/develop}"
 git rev-parse --verify -q "$BASE" >/dev/null || BASE="$(git rev-list --max-parents=0 HEAD | tail -1)"
-exec python3 "$(git rev-parse --show-toplevel)/infra/guard/agent_guard.py" --base "$BASE" --head HEAD
+exec python3 "$ROOT/infra/guard/agent_guard.py" --base "$BASE" --head HEAD
 HOOK
 chmod +x "$HOOKS/commit-msg" "$HOOKS/pre-push"
 echo "installed commit-msg and pre-push hooks in $HOOKS"

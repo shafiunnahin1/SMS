@@ -71,6 +71,8 @@
 **নিয়ম:** নিচের যেকোনোটিতে থামো, `docs/BLOCKED.md`-এ **একটি** এন্ট্রি লেখো, অনুমান করে এগিও না: (১) একই সমস্যায় ৩ বার চেষ্টা ব্যর্থ; (২) স্পেকের সাথে স্পেক বা সিদ্ধান্তের বিরোধ; (৩) প্রয়োজনীয় তথ্য অস্পষ্ট/অনুপস্থিত (🔌 — আসল ফরম্যাট, আইনি হার, গেটওয়ে-ডকুমেন্ট); (৪) সুরক্ষিত ফাইল বদলাতে হবে; (৫) পরীক্ষা সত্যিই ভুল মনে হচ্ছে; (৬) শেষ-শর্ত পূরণ অসম্ভব। **বাধ্য করে:** `review`।
 
 ### G13 — ধ্বংসাত্মক কাজ নয়
+
+**D155 push safety:** কাঁচা tracked/untracked/staged কাজ বা পুশ করা branch-এর stash থাকলে push নয়। আগে `git status --short --branch`, `git stash list`, `git fetch --prune` এবং local/remote commit divergence পরীক্ষা করো। `infra/guard/pre_push_guard.py` pre-push gate হিসেবে dirty state বা matching stash পেলে ব্লক করে, কিন্তু stash কোনোভাবে মুছবে, apply বা pop করবে না। Remote-tracking target-এ local commit-এর সব প্রতিনিধিত্ব নিশ্চিত না হওয়া পর্যন্ত push নয়; `Everything up-to-date` একা proof নয়।
 **নিয়ম:** `git push --force`, `git reset --hard`, history বদল, কাজের গাছের বাইরে `rm -rf`, `migrate:fresh`/`db:wipe` ডেভ বা টেস্ট ডেটাবেসের বাইরে, production বা আসল SMS/পেমেন্টে সংযোগ, `main`/`develop`-এ সরাসরি push বা নিজের PR নিজে merge — নিষিদ্ধ। **বাধ্য করে:** `permissions` (§৬), `branch-protection` (§৭)।
 
 ### G14 — নির্দেশের অগ্রাধিকার

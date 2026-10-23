@@ -6,7 +6,8 @@
 | `protected-paths.txt` | Paths the agent may not change without `Change-Request: D<n>`. Read from the PARENT tree, so a commit cannot remove its own protection. |
 | `test_guard.py` | Self-test: builds a throw-away git repository and commits one real violation per rule (51 scenarios). `verify.py` runs it. |
 | `gen_progress.py` | Writes `docs/PROGRESS.md` (one line per plan task); `--check` that every task has a line. |
-| `install-hooks.sh` | Local commit-msg / pre-push hooks (fast feedback; `--no-verify` skips them). |
+| `pre_push_guard.py` | D155 push-state guard. Rejects dirty/untracked/staged work, matching branch stashes, stale/divergent push targets, and never mutates stashes. |
+| `install-hooks.sh` | Local commit-msg / pre-push hooks (D155 state check runs before commit-range validation; `--no-verify` skips them). |
 | `claude-settings.example.json` | EXAMPLE tool permissions (syntax NOT verified against your tool). |
 | `../github-actions-guard.yml` | CI job that runs the BASE-branch copy of the guard on a PR. |
 | `../CODEOWNERS.template` | Human approval for the protected paths. |

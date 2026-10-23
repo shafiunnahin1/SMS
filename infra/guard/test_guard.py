@@ -257,6 +257,43 @@ def d152_probe():
     details = '\n'.join(out for good, _, _, out in results if not good)
     return (0 if all(good for good, _, _, _ in results) else 1), details or 'D152 requires its trailer and accepts the committed decision row format'
 
+def d155_probe():
+    d = make_base()
+    decisions = DECISIONS + '| D155 | Push worktree safety | approved |\n'
+    write(d, 'docs/LOCKED-DECISIONS.md', decisions)
+    git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'owner: approve D155')
+    remote = os.path.join(d, '..', 'd155-origin.git')
+    git(d, 'init', '--bare', '-q', remote)
+    git(d, 'remote', 'add', 'origin', remote)
+    git(d, 'checkout', '-q', '-B', 'feature')
+    write(d, 'frontend/src/Feature.jsx', 'export const feature = true\n')
+    git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'feat: feature')
+    git(d, 'push', '-q', '-u', 'origin', 'feature')
+    head = subprocess.check_output(['git', '-C', d, 'rev-parse', 'HEAD'], text=True).strip()
+    push_line = f'refs/heads/feature {head} refs/heads/feature {head}\n'
+
+    def push_guard(input_text=push_line):
+        script = os.path.join(HERE, 'pre_push_guard.py')
+        return subprocess.run([sys.executable, script], cwd=d, input=input_text, text=True, capture_output=True)
+
+    r = push_guard(); good_clean = r.returncode == 0
+    clean_error = r.stderr
+    write(d, 'frontend/src/Dirty.jsx', 'export const dirty = true\n')
+    r = push_guard(); good_untracked = r.returncode != 0 and 'working tree is not clean' in r.stderr
+    os.remove(os.path.join(d, 'frontend/src/Dirty.jsx'))
+    write(d, 'frontend/src/Feature.jsx', 'export const stashed = true\n')
+    git(d, 'stash', 'push', '-q', '-m', 'D155 UI work')
+    stash_before = subprocess.check_output(['git', '-C', d, 'stash', 'list', '--format=%gd%x09%gs'], text=True)
+    r = push_guard(); good_stash = r.returncode != 0 and 'stash entries belong' in r.stderr
+    stash_after = subprocess.check_output(['git', '-C', d, 'stash', 'list', '--format=%gd%x09%gs'], text=True)
+    good_stash_mutation = stash_after == stash_before
+    git(d, 'stash', 'pop', '-q'); write(d, 'frontend/src/Feature.jsx', 'export const feature = true\n')
+    shutil.rmtree(d, ignore_errors=True)
+    good = good_clean and good_untracked and good_stash and good_stash_mutation
+    details = '' if good else f'clean={good_clean} untracked={good_untracked} stash={good_stash} clean_error={clean_error}'
+    return (0 if good else 1), details or 'D155 pre-push clean/dirty/stash cases'
+
+
 def d148_probe():
     results = []
     for path, expected in [
@@ -332,6 +369,11 @@ def main():
     code, out = d152_probe()
     good = code == 0
     print(('ok    ' if good else 'WRONG ') + 'D152 custom task accepts committed decision row and requires its trailer' + ('' if good else f' (exit {code})\n' + out[-500:]))
+    bad += 0 if good else 1
+    n += 1
+    code, out = d155_probe()
+    good = code == 0
+    print(('ok    ' if good else 'WRONG ') + 'D155 pre-push rejects dirty work and matching stashes without mutation' + ('' if good else f' (exit {code})\n' + out[-500:]))
     bad += 0 if good else 1
     n += 1
     code, out = d148_probe()
