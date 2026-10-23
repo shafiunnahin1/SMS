@@ -2,8 +2,9 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{QbCurriculumNode, QbCurriculumVersion, QbImportBatch, QbImportRecord, QbQuestion, QbQuestionType, QbSubject, User};
+use App\Models\{AuditLog, QbCurriculumNode, QbCurriculumVersion, QbImportBatch, QbImportRecord, QbQuestion, QbQuestionType, QbSubject, User};
 use App\Services\QbImportService;
+use App\Support\Tenancy;
 use App\Support\Toon\ToonEncoder;
 use Database\Seeders\QbQuestionTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -264,7 +265,8 @@ class QbJsonToonImportTest extends TestCase
         foreach ($subjects as $i => [$subject, $language]) {
             $saved = QbQuestion::where('question_text', $questionTexts[$i])->firstOrFail();
             $this->assertSame([$nodes[$i]->id], $saved->curriculumNodes()->pluck('qb_curriculum_nodes.id')->all());
-            $this->assertSame('draft', $saved->status);
+            $this->assertSame(['review', $this->writer->id], [$saved->status, $saved->created_by], 'multi-select import submits each question for moderation');
+            $this->assertTrue(Tenancy::withoutTenancy(fn () => AuditLog::query()->where('action', 'qb.import.submitted')->where('model', 'QbQuestion')->where('model_id', $saved->id)->exists()));
             $this->api('GET', $this->central, "writer/questions/{$saved->id}", $this->writer)->assertOk()
                 ->assertJsonPath('data.curriculum_node_ids.0', $nodes[$i]->id);
             $toonSaved = QbQuestion::where('question_text', $questionTexts[$i] . ' (TOON)')->firstOrFail();
@@ -354,10 +356,10 @@ class QbJsonToonImportTest extends TestCase
         // the draft opens in the full editor with its content
         $qid = QbImportRecord::find($mcq)->qb_question_id;
         $open = $this->api('GET', $this->central, "writer/questions/{$qid}", $this->writer)->assertOk()->json('data');
-        $this->assertSame(['draft', $this->writer->id, 'en', 'If \(x^2 = 4\), x = ?'], [$open['status'], $open['created_by'], $open['language'], $open['question_text']]);
+        $this->assertSame(['review', $this->writer->id, 'en', 'If \(x^2 = 4\), x = ?'], [$open['status'], $open['created_by'], $open['language'], $open['question_text']]);
         $this->assertSame([true, false], array_column($open['options'], 'is_correct'));
-        $this->api('PUT', $this->central, "writer/questions/{$qid}", $this->writer, ['question_text' => 'If \(x^2 = 9\), x = ?'])->assertOk();
-        $this->assertSame('If \(x^2 = 9\), x = ?', $this->api('GET', $this->central, "writer/questions/{$qid}", $this->writer)->json('data.question_text'));
+        $this->api('PUT', $this->central, "writer/questions/{$qid}", $this->writer, ['question_text' => 'If \(x^2 = 9\), x = ?'])->assertStatus(422);
+        $this->assertSame('If \(x^2 = 4\), x = ?', $this->api('GET', $this->central, "writer/questions/{$qid}", $this->writer)->json('data.question_text'));
         $this->api('PATCH', $this->central, "writer/imports/{$uuid}/records/{$mcq}", $this->writer, ['question_text' => 'x'])->assertStatus(422);
         $this->api('GET', $this->central, "writer/imports/{$uuid}", $this->writer)->assertJsonPath('data.counts.imported', 2);
     }

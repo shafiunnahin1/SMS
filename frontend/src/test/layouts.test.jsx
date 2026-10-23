@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../i18n'
@@ -38,6 +38,18 @@ describe.each([['sidebar-classic', SidebarClassicLayout], ['sidebar-mini', Sideb
     expect(screen.getAllByTestId('app-topbar').length).toBe(1)
     const hrefs = [...document.querySelectorAll('a')].map(a => a.getAttribute('href'))
     EXPECTED[key].forEach(p => expect(hrefs).toContain(p))
+  })
+
+  if (key === 'sidebar-classic') it('collapses the desktop menu while keeping the topbar and page viewport fixed', async () => {
+    render(wrap(<SidebarClassicLayout {...props}><p>PAGE BODY</p></SidebarClassicLayout>))
+    const shell = document.querySelector('[data-layout="sidebar-classic"]')
+    const topbar = screen.getByTestId('app-topbar')
+    const nav = screen.getByTestId('app-nav')
+    expect(shell).toHaveClass('h-dvh', 'overflow-hidden')
+    expect(topbar).toHaveClass('shrink-0')
+    expect(nav).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto')
+    fireEvent.click(screen.getByRole('button', { name: 'ম্যানুবার সংকুচিত করুন' }))
+    expect(shell).toHaveAttribute('data-sidebar-collapsed', 'true')
   })
 
   it('shows the suspended banner only for a suspended institution', () => {

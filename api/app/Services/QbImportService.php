@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\BusinessException;
 use App\Jobs\ParseQbImportBatch;
 use App\Jobs\ParseQbImportChunk;
+use App\Models\AuditLog;
 use App\Models\QbImportBatch;
 use App\Models\QbImportRecord;
 use App\Models\QbQuestion;
@@ -241,13 +242,13 @@ class QbImportService
         return Storage::disk('private')->get($this->path($batch, 0)) ?? '';
     }
 
-    /** "import selected": every selected, valid, not-yet-imported record whose duplicate question is resolved becomes a DRAFT of the
-     *  importing writer, saved through the editor's own steps; each in its own transaction, so one failure never undoes another */
+    /** D154: "import selected" saves each selected, valid record as a review item owned by the importing writer. */
     public function finalize(QbImportBatch $batch, User $user): array
     {
         $result = ['imported' => 0, 'invalid' => 0, 'duplicate_unresolved' => 0, 'skipped' => 0, 'failed' => 0];
-        QbImportRecord::where('qb_import_batch_id', $batch->id)->where('selected', true)->whereNull('qb_question_id')->orderBy('id')
-            ->chunkById(200, function ($records) use ($user, &$result) {
+        $batchId = $batch->id;
+        QbImportRecord::where('qb_import_batch_id', $batchId)->where('selected', true)->whereNull('qb_question_id')->orderBy('id')
+            ->chunkById(200, function ($records) use ($batchId, $user, &$result) {
                 foreach ($records as $r) {
                     if ($r->errors) { $result['invalid']++; continue; }
                     if ($r->duplicate_status === 'possible') { $result['duplicate_unresolved']++; continue; }
@@ -256,13 +257,14 @@ class QbImportService
                     $body = $this->normalizer->editorBody($r->payload, function ($path, $message) use (&$errors) { $errors[] = ['path' => $path, 'message' => $message]; });
                     if ($errors) { $r->update(['errors' => $errors, 'selected' => false]); $result['invalid']++; continue; }
                     try {
-                        DB::transaction(function () use ($r, $body, $user) {
+                        DB::transaction(function () use ($batchId, $r, $body, $user) {
                             $in = $this->writer->placed($body);
                             $q = QbQuestion::create(collect($in)->except(QbQuestionWriter::CHILDREN)->all()
-                                + ['language' => $r->payload['language'] ?? 'und', 'content_mode' => 'mixed', 'status' => 'draft', 'created_by' => $user->id]);
+                                + ['language' => $r->payload['language'] ?? 'und', 'content_mode' => 'mixed', 'status' => 'review', 'created_by' => $user->id]);
                             $this->writer->children($q, $in, $user);
                             $this->writer->revision($q, $user);
                             $r->update(['qb_question_id' => $q->id, 'selected' => false]);
+                            AuditLog::record('qb.import.submitted', $q, ['batch_id' => $batchId, 'record_id' => $r->id, 'from' => 'draft', 'to' => 'review']);
                         });
                         $result['imported']++;
                     } catch (ValidationException $e) {

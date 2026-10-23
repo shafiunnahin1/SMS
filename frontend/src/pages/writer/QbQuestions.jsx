@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronDown, Plus, RotateCcw, Search, X } from 'lucide-react'
 import api from '../../api/axios'
@@ -45,6 +45,9 @@ export default function QbQuestions() {
   const [filters, setFilters] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] })
   const [page, setPage] = useState(1)
   const [shown, setShown] = useState(() => new Set())
+  const [selected, setSelected] = useState(() => new Set())
+  const [bulkError, setBulkError] = useState('')
+  const qc = useQueryClient()
   const q = useQuery({
     queryKey: ['writer', 'questions', status, filters, page],
     queryFn: () => api.get('/writer/questions', { params: { ...filters, q: filters.q || undefined, status: status === 'all' ? undefined : status, page, per_page: PER_PAGE } }).then(r => r.data),
@@ -90,6 +93,23 @@ export default function QbQuestions() {
     )).map(version => [version.id, version])).values()]
     : []
   const curriculumOptions = curriculumVersions.flatMap(version => flattenCurriculum(version.nodes, [], localizedName, version))
+  const selectableRows = rows.filter(row => role !== 'content_moderator' && ['draft', 'rejected'].includes(row.status))
+  const allSelectableSelected = selectableRows.length > 0 && selectableRows.every(row => selected.has(row.id))
+  const someSelectableSelected = selectableRows.some(row => selected.has(row.id))
+  const toggleSelected = id => setSelected(old => { const next = new Set(old); next.has(id) ? next.delete(id) : next.add(id); return next })
+  const submitSelected = useMutation({
+    mutationFn: async () => {
+      const ids = [...selected]
+      const results = await Promise.allSettled(ids.map(id => api.post(`/writer/questions/${id}/submit`)))
+      const failed = results.map((result, index) => ({ id: ids[index], ok: result.status === 'fulfilled' })).filter(item => !item.ok)
+      const succeeded = results.length - failed.length
+      await qc.invalidateQueries({ queryKey: ['writer', 'questions'] })
+      setSelected(old => new Set(failed.map(item => item.id).filter(id => old.has(id))))
+      if (failed.length) setBulkError(t('qbaq.bulk_submit_partial', { count: failed.length }))
+      else setBulkError('')
+      return succeeded
+    },
+  })
   return (
     <div className="flex flex-col gap-4" data-testid="qb-questions">
       <PageHeader title={t('qb.questions')} actions={role !== 'content_moderator' &&
@@ -101,11 +121,20 @@ export default function QbQuestions() {
         <section className="flex min-w-0 flex-col gap-4">
           <Tabs label={t('qb.state')} value={status} onChange={(s) => { setPage(1); setParams({ status: s }) }}
             items={STATUSES.map(s => ({ key: s, label: s === 'all' ? t('qb.all') : t(`qb.status.${s}`) }))} />
-          <Card className="flex min-h-20 flex-wrap items-center gap-3 px-5 py-4 shadow-sm">
+          <Card data-testid="qb-bulk-toolbar" className="sticky top-0 z-20 flex min-h-20 flex-wrap items-center gap-3 bg-surface px-5 py-4 shadow-sm">
             <div className="flex-1">
               <p className="font-semibold"><bdi>{meta?.total ?? 0}</bdi> {t('qb.questions')}</p>
               {meta && meta.total > 0 && <p className="text-sm text-content-muted"><bdi>{(meta.current_page - 1) * meta.per_page + 1}–{(meta.current_page - 1) * meta.per_page + rows.length}</bdi> {t('qbaq.displayed')}</p>}
             </div>
+            {role !== 'content_moderator' && selectableRows.length > 0 && <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={allSelectableSelected} ref={node => { if (node) node.indeterminate = someSelectableSelected && !allSelectableSelected }}
+                  onChange={event => setSelected(old => { const next = new Set(old); selectableRows.forEach(row => event.target.checked ? next.add(row.id) : next.delete(row.id)); return next })} />
+                {t('qbaq.select_all')}
+              </label>
+              <Button disabled={!selected.size || submitSelected.isPending} loading={submitSelected.isPending} onClick={() => submitSelected.mutate()} data-action="bulk-submit">{t('qb.submit')} {selected.size > 0 && `(${selected.size})`}</Button>
+            </div>}
+            {bulkError && <p className="basis-full text-sm text-red-600" role="alert">{bulkError}</p>}
           </Card>
           {q.isPending ? <Loader /> : q.isError ? <ErrorState onRetry={q.refetch} /> : rows.length === 0 ? <EmptyState title={t('qb.no_questions')} /> : rows.map((row, index) => {
             const questionType = typeById[row.qb_question_type_id]
@@ -117,6 +146,8 @@ export default function QbQuestions() {
             return (
             <Card key={row.id} className="group flex flex-col gap-0 overflow-hidden p-0 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md" data-question={row.id}>
               <header className="flex flex-wrap items-start gap-3 border-b border-border-subtle bg-surface-muted/30 px-5 py-4">
+                {role !== 'content_moderator' && ['draft', 'rejected'].includes(row.status) && <input type="checkbox" className="mt-2" aria-label={t('qb.question_no', { id: row.id })}
+                  checked={selected.has(row.id)} onChange={() => toggleSelected(row.id)} />}
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-token bg-primary font-semibold text-on-primary"><bdi>{(meta.current_page - 1) * meta.per_page + index + 1}</bdi></span>
                 <button type="button" onClick={() => navigate(`/writer/questions/${row.id}`)} className="flex min-w-0 flex-1 flex-col gap-2 text-start" aria-label={t('qb.question_no', { id: row.id })}>
                   <span className="font-semibold text-primary-fg group-hover:text-primary">{t('qb.question_no', { id: row.id })}</span>

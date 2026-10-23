@@ -24,9 +24,9 @@ import { fmtNumber as formatNumber } from '../../i18n/format'
 const FILTERS = ['', 'valid', 'invalid', 'duplicate', 'imported']
 const emptyBulkSource = () => ({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })
 
-// R2.1.3 /writer/imports/:id (D123, D110): qbank's staging review - exact counts, every record with its field-path errors,
-// the possible-duplicate choice, qbank's quick edit and bulk settings (they change the staged record only), then "import
-// selected", which makes drafts of the selected valid records. Reads progress while the file is still being read.
+// R2.1.3 /writer/imports/:id (D123, D154, D110): qbank's staging review - exact counts, every record with its field-path errors,
+// the possible-duplicate choice, qbank's quick edit and bulk settings (they change the staged record only), then "send selected
+// to review", which creates review items of the selected valid records. Reads progress while the file is still being read.
 export default function QbImportReview() {
   const { id } = useParams()
   const navigate = useNavigate()
