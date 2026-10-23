@@ -17,6 +17,7 @@ function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/writer/imports/${id}`]}><Routes>
     <Route path="/writer/imports/:id" element={<QbImportReview />} />
+    <Route path="/writer/questions/:id" element={<p>FULL EDITOR</p>} />
   </Routes></MemoryRouter></QueryClientProvider>)
 }
 
@@ -45,13 +46,22 @@ describe('D150 import source bulk settings', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'উৎসে প্রশ্ন নম্বর' }), { target: { value: '12' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'সেট' }), { target: { value: 'A' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'পৃষ্ঠা / রেফারেন্স' }), { target: { value: 'পৃষ্ঠা 8' } })
-    fireEvent.click(screen.getByRole('button', { name: 'নির্বাচিত প্রশ্নে উৎস যোগ' }))
+    fireEvent.click(screen.getByTestId('qbi-source-add'))
+    fireEvent.change(screen.getAllByRole('combobox', { name: 'উৎসের ধরন' })[1], { target: { value: 'book' } })
+    fireEvent.change(screen.getAllByRole('textbox', { name: 'উৎসের পূর্ণ নাম' })[1], { target: { value: 'বাংলা ব্যাকরণ' } })
+    fireEvent.click(screen.getByTestId('qbi-bulk-apply'))
 
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith(`/writer/imports/${id}/settings`, {
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2))
+    expect(api.post).toHaveBeenNthCalledWith(1, `/writer/imports/${id}/settings`, {
       selected: true,
       changes: { source_occurrence: { note: 'board', institution_name: 'ঢাকা বোর্ড', board: 'ঢা.বো.', exam_type: 'SSC', year: 2025,
         question_number: '12', set_label: 'A', page_reference: 'পৃষ্ঠা 8' } },
-    }))
+    })
+    expect(api.post).toHaveBeenNthCalledWith(2, `/writer/imports/${id}/settings`, {
+      selected: true,
+      changes: { source_occurrence: { note: 'book', institution_name: 'বাংলা ব্যাকরণ', board: null, exam_type: null, year: null,
+        question_number: null, set_label: null, page_reference: null } },
+    })
   })
 
   it('lets quick edit correct an invalid chapter before enabling the record checkbox', async () => {
@@ -109,5 +119,76 @@ describe('D150 import source bulk settings', () => {
     fireEvent.mouseDown(await within(screen.getByRole('listbox')).findByRole('option', { name: /ইউনিট ২/ }), { preventDefault: vi.fn() })
     fireEvent.click(screen.getByRole('button', { name: 'সংরক্ষণ' }))
     await waitFor(() => expect(api.patch).toHaveBeenCalledWith(`/writer/imports/${id}/records/${record.id}`, expect.objectContaining({ curriculum_node_ids: [20, 21] })))
+  })
+
+  it('clears class-scoped curriculum nodes when the selected classes change', async () => {
+        api.get.mockImplementation(path => {
+          if (path === `/writer/imports/${id}`) return Promise.resolve({ data: { data: batch } })
+          if (path === '/writer/curriculum') return Promise.resolve({ data: { data: {
+            class_levels: [{ id: 7, name_bn: 'সপ্তম', name_en: 'Class 7' }, { id: 8, name_bn: 'অষ্টম', name_en: 'Class 8' }],
+            subjects: [{ id: 2, name_bn: 'বাংলা ১ম পত্র', name_en: 'Bangla 1st Paper', class_level_ids: [7, 8], chapters: [] }],
+            curriculum_versions: [
+              { id: 10, qb_subject_id: 2, version_key: 'class-7', class_level_ids: [7], nodes: [{ id: 20, kind: 'Unit', name_bn: 'সপ্তমের ইউনিট', name_en: 'Class 7 unit', children: [] }] },
+              { id: 11, qb_subject_id: 2, version_key: 'class-8', class_level_ids: [8], nodes: [{ id: 21, kind: 'Unit', name_bn: 'অষ্টমের ইউনিট', name_en: 'Class 8 unit', children: [] }] },
+            ],
+          } } })
+          if (path === '/writer/question-types') return Promise.resolve({ data: { data: [{ id: 1, slug: 'short', name_bn: 'সংক্ষিপ্ত', name_en: 'Short' }] } })
+          if (path.startsWith(`/writer/imports/${id}/records`)) return Promise.resolve({ data: { data: [record], meta: { last_page: 1 } } })
+          return Promise.resolve({ data: { data: [] } })
+        })
+
+        renderPage()
+        fireEvent.click(await screen.findByTestId('qbi-open-bulk'))
+        fireEvent.click(screen.getByLabelText('সপ্তম'))
+        fireEvent.change(screen.getByRole('combobox', { name: 'বিষয়' }), { target: { value: '2' } })
+        const search = within(screen.getByTestId('qbi-bulk-curriculum')).getByRole('combobox', { name: 'সিলেবাসে অবস্থান' })
+        fireEvent.change(search, { target: { value: 'সপ্তমের ইউনিট' } })
+        fireEvent.mouseDown(await within(screen.getByRole('listbox')).findByRole('option', { name: /সপ্তমের ইউনিট/ }), { preventDefault: vi.fn() })
+        expect(screen.getByTestId('curriculum-breadcrumb')).toHaveTextContent('সপ্তমের ইউনিট')
+
+        fireEvent.click(screen.getByLabelText('অষ্টম'))
+        fireEvent.click(screen.getByTestId('qbi-bulk-apply'))
+
+        await waitFor(() => expect(api.post).toHaveBeenCalledWith(`/writer/imports/${id}/settings`, {
+          selected: true, changes: { subject: 2, class_levels: [7, 8] },
+        }))
+      })
+
+  it('shows MCQ options, creative parts, answer, and explanation in the staged question card', async () => {
+    const completeRecord = { ...record, payload: { ...record.payload, options: [{ label: 'ক', content_text: 'বিকল্প ক', is_correct: true }],
+      creative_parts: [{ part_label: 'ক', cognitive_level: 'knowledge', question_text: 'অংশের প্রশ্ন', answer_text: 'অংশের উত্তর', marks: 2 }],
+      answer_text: 'সম্পূর্ণ উত্তর', explanation_text: 'ব্যাখ্যার লেখা' } }
+    api.get.mockImplementation(path => {
+      if (path === `/writer/imports/${id}`) return Promise.resolve({ data: { data: batch } })
+      if (path === '/writer/curriculum') return Promise.resolve({ data: { data: { subjects: [] } } })
+      if (path === '/writer/question-types') return Promise.resolve({ data: { data: [{ id: 1, slug: 'short', name_bn: 'সংক্ষিপ্ত', name_en: 'Short' }] } })
+      if (path.startsWith(`/writer/imports/${id}/records`)) return Promise.resolve({ data: { data: [completeRecord], meta: { last_page: 1 } } })
+      return Promise.resolve({ data: { data: [] } })
+    })
+    renderPage()
+    expect(await screen.findByText('বিকল্প ক')).toBeInTheDocument()
+    expect(screen.getByText('অংশের প্রশ্ন')).toBeInTheDocument()
+    expect(screen.queryByText('অংশের উত্তর')).not.toBeInTheDocument()
+    expect(screen.queryByText('সম্পূর্ণ উত্তর')).not.toBeInTheDocument()
+    expect(screen.queryByText('ব্যাখ্যার লেখা')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('qbi-toggle-answer'))
+    expect(screen.getByText('অংশের উত্তর')).toBeInTheDocument()
+    expect(screen.getByText('সম্পূর্ণ উত্তর')).toBeInTheDocument()
+    expect(screen.getByText('ব্যাখ্যার লেখা')).toBeInTheDocument()
+  })
+
+  it('opens the canonical editor for just the requested staged record', async () => {
+    api.get.mockImplementation(path => {
+      if (path === `/writer/imports/${id}`) return Promise.resolve({ data: { data: batch } })
+      if (path === '/writer/curriculum') return Promise.resolve({ data: { data: { subjects: [] } } })
+      if (path === '/writer/question-types') return Promise.resolve({ data: { data: [{ id: 1, slug: 'short', name_bn: 'সংক্ষিপ্ত', name_en: 'Short' }] } })
+      if (path.startsWith(`/writer/imports/${id}/records`)) return Promise.resolve({ data: { data: [record], meta: { last_page: 1 } } })
+      return Promise.resolve({ data: { data: [] } })
+    })
+    api.post.mockResolvedValue({ data: { data: { question_id: 23 } } })
+    renderPage()
+    fireEvent.click(await screen.findByTestId('qbi-full-editor'))
+    expect(await screen.findByText('FULL EDITOR')).toBeInTheDocument()
+    expect(api.post).toHaveBeenCalledWith(`/writer/imports/${id}/records/${record.id}/open-editor`)
   })
 })

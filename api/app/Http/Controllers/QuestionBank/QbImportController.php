@@ -21,7 +21,7 @@ class QbImportController extends Controller
     /** GET /writer/imports */
     public function index(Request $request): JsonResponse
     {
-        $rows = $this->visible($request)->latest('id')->limit(50)->get();
+        $rows = $this->visible($request)->latest('created_at')->latest('id')->limit(50)->get();
         return response()->json(['success' => true, 'data' => $rows->map(fn ($b) => $this->view($b))->values()]);
     }
 
@@ -113,6 +113,18 @@ class QbImportController extends Controller
         $this->imports->edit($r, $this->changes($request));
         $this->imports->recount($batch);
         return response()->json(['success' => true, 'data' => $this->record($batch, $r->fresh())]);
+    }
+
+    /** POST /writer/imports/{id}/records/{record}/open-editor: D153 creates/reuses one draft without finalizing other selected rows. */
+    public function openEditor(Request $request, string $uuid, int $record): JsonResponse
+    {
+        $batch = $this->find($request, $uuid);
+        if ($batch->status !== 'ready') throw new \App\Exceptions\BusinessException('the import is still being read', 'qb_import_not_ready', 422);
+        $staged = QbImportRecord::where('qb_import_batch_id', $batch->id)->findOrFail($record);
+        $question = $this->imports->openEditorDraft($staged, $request->user());
+        $this->imports->recount($batch);
+        AuditLog::record('qb.import.editor_draft_opened', $question, ['batch_id' => $batch->id, 'record_id' => $staged->id]);
+        return response()->json(['success' => true, 'data' => ['question_id' => $question->id, 'record' => $this->record($batch, $staged->fresh())]]);
     }
 
     /** POST /writer/imports/{id}/settings {record_ids[] | selected: true, changes{...}}: qbank's bulk settings */

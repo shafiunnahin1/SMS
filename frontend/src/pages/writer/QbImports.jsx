@@ -10,7 +10,7 @@ import Button from '../../components/Button'
 import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select, Textarea } from '../../components/FormField'
-import { fmtNumber as formatNumber } from '../../i18n/format'
+import { fmtDate, fmtNumber as formatNumber, fmtTime } from '../../i18n/format'
 import { multipart } from '../../features/students/formData'
 import { subjectsForClasses } from '../../features/qb/curriculum'
 
@@ -87,9 +87,23 @@ export default function QbImports() {
     : /bangla|বাংলা/i.test(subjectNames) ? 'bn' : locale
   const prompt = selectedClass && selectedSubject ? [
     `Create question records for ${displayName(selectedSubject)} in ${displayName(selectedClass)}. Follow the subject's terminology and question conventions, using only the curriculum data below.`,
-    'Return one valid JSON object using schema_version "exam-management.universal-content-json.v5", with document and questions fields.',
+    'Return exactly one raw UTF-8 JSON object using schema_version "exam-management.universal-content-json.v5", with document and questions fields. Do not return an attachment or attachment reference (including #attachment:...), HTML-escaped text such as &#x20;, markdown fences, labels, commentary, or text outside the object. Do not add backslashes at line ends or between JSON lines. The response must paste directly into JSON.parse without cleanup.',
+    `Use this syntax-only example; replace every sample value and question with the requested content: ${JSON.stringify({
+      schema_version: 'exam-management.universal-content-json.v5',
+      document: { title: 'নমুনা', language: contentLanguage },
+      questions: [{
+        question_type: 'mcq', question_text: 'প্রশ্নের লেখা', answer_text: 'সঠিক উত্তর', explanation_text: 'সংক্ষিপ্ত ব্যাখ্যা',
+        settings: { class_levels: [{ id: selectedClass.id, name: displayName(selectedClass) }], subject: { id: selectedSubject.id, name: displayName(selectedSubject) } },
+        options: [{ label: 'ক', text: 'বিকল্প ১', is_correct: true }, { label: 'খ', text: 'বিকল্প ২', is_correct: false }],
+        occurrences: [],
+      }],
+    }, null, 2)}`,
+    'Only transcribe or reproduce supplied source questions when the user confirms they own the rights or have explicit permission to reproduce and import them. A copyright notice or upload alone is not permission. Otherwise, do not copy or closely paraphrase the source; offer original questions instead.',
     `Set document.language to "${contentLanguage}" and write the question content in ${contentLanguage === 'bn' ? 'Bengali' : 'English'} unless the source material requires another language.`,
+    'For mathematical expressions, use LaTeX in question_text, options[].text, answer_text, explanation_text, stimulus_text and creative-part text where needed. Use \\( ... \\) for inline math and \\[ ... \\] for display math. Keep formulas as text; do not convert them to HTML or HTML entities.',
+    `JSON must escape LaTeX backslashes so the parsed string contains the normal delimiters. Example: ${JSON.stringify({ question_text: 'সমীকরণটি \\(x^2 = 9\\) সমাধান করো।' })}`,
     'Each question must include question_type, question_text, answer_text and explanation_text when applicable, plus settings containing class_levels and subject. For legacy chapter/topic curricula, include settings.chapter and settings.topic using supplied IDs and exact names. For a language-paper syllabus path, include question-level curriculum_node_ids as an array of integer node IDs from the selected subject; include every applicable node ID, and do not use question type or exam part as a syllabus node. For multiple choice questions include options with label, text and is_correct; for creative questions include stimulus_text and creative_parts with label, cognitive_level, question_text, answer_text and marks. Put source information in that question\'s occurrences array using only known fields such as note, institution_name, board, exam_type, year, question_number, set_label and page_reference.',
+    `For every question transcribed from a rights-cleared source, include the source's exact printed serial in occurrences.question_number as a JSON string (for example "12"), never a number or the output/batch position; include page_reference as a string when known. Preserve letters, punctuation and leading zeroes in printed serials. Do not guess or renumber missing source numbers. For independently authored questions with no source mapping, use occurrences: []. Keep the source number and page reference on image-bearing questions so a later editor can match the correct figure. Example occurrence shape (replace these illustrative values): ${JSON.stringify({ question_number: '12', page_reference: 'p. 4' })}`,
     `Use question_type only from these active types: ${JSON.stringify((promptTypes.data ?? []).map(type => type.slug))}.`,
     'Never invent a curriculum item or map an unfamiliar topic to an existing topic. If a genuinely new topic is needed, leave that question\'s settings.topic unset and add a root-level topic_proposals array entry with chapter_id, chapter_name, proposed_topic_name, reason, and affected_question_numbers. Tell the user to add or review each proposed topic in its named chapter before assigning it. topic_proposals is informational metadata, not an importable question.',
     'Do not include markdown fences or text outside the JSON object.',
@@ -216,7 +230,10 @@ export default function QbImports() {
               <li key={b.id}>
                 <Link to={`/writer/imports/${b.id}`} data-batch={b.id}
                   className="flex flex-wrap items-center justify-between gap-2 rounded-token [border:1px_solid_var(--line)] p-3 hover:bg-surface-muted">
-                  <span className="font-medium" dir="auto">{b.files.map(f => f.name).join(', ')} <span className="text-xs uppercase text-content-muted">{b.format}</span></span>
+                  <span className="min-w-0 font-medium" dir="auto">
+                    {b.files.map(f => f.name).join(', ')} <span className="text-xs uppercase text-content-muted">{b.format}</span>
+                    {b.created_at && <time className="block text-xs font-normal text-content-muted" dateTime={b.created_at}>{fmtDate(b.created_at, i18n.language)} · {fmtTime(b.created_at, i18n.language)}</time>}
+                  </span>
                   <span className="text-sm">{t(`qbi.status.${b.status}`)} · {t('qbi.counts', { total: n(b.counts.total), valid: n(b.counts.valid), invalid: n(b.counts.invalid), imported: n(b.counts.imported) })}</span>
                 </Link>
               </li>

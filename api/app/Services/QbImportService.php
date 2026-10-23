@@ -198,6 +198,44 @@ class QbImportService
 
     public const REJECTED = 'rejected by the reviewer';
 
+    /** Create or reuse the draft for exactly one valid staged record and open it in the canonical editor. */
+    public function openEditorDraft(QbImportRecord $record, User $user): QbQuestion
+    {
+        try {
+            $result = DB::transaction(function () use ($record, $user) {
+                $locked = QbImportRecord::query()->lockForUpdate()->findOrFail($record->id);
+                if ($locked->qb_question_id) return ['question' => QbQuestion::findOrFail($locked->qb_question_id)];
+                if ($locked->errors) throw new BusinessException('only a valid staged question can open in the full editor', 'qb_import_invalid_record', 422);
+                if ($locked->duplicate_status === 'possible') throw new BusinessException('resolve the possible duplicate before opening the full editor', 'qb_import_duplicate_unresolved', 422);
+                if ($locked->duplicate_status === 'skip') throw new BusinessException('a skipped duplicate cannot open in the full editor', 'qb_import_duplicate_skipped', 422);
+
+                $errors = [];
+                $body = $this->normalizer->editorBody($locked->payload ?? [], function ($path, $message) use (&$errors) { $errors[] = ['path' => $path, 'message' => $message]; });
+                if ($errors) return ['errors' => $errors];
+
+                $in = $this->writer->placed($body);
+                $question = QbQuestion::create(collect($in)->except(QbQuestionWriter::CHILDREN)->all()
+                    + ['language' => $locked->payload['language'] ?? 'und', 'content_mode' => 'mixed', 'status' => 'draft', 'created_by' => $user->id]);
+                $this->writer->children($question, $in, $user);
+                $this->writer->revision($question, $user);
+                $locked->update(['qb_question_id' => $question->id, 'selected' => false]);
+                return ['question' => $question];
+            }, 5);
+        } catch (ValidationException $e) {
+            $errors = collect($e->errors())->map(fn ($messages, $path) => ['path' => $path, 'message' => $messages[0] ?? 'invalid value'])->values()->all();
+            $record->update(['errors' => $errors, 'selected' => false]);
+            throw $e;
+        }
+
+        if (isset($result['errors'])) {
+            $record->update(['errors' => $result['errors'], 'selected' => false]);
+            $messages = [];
+            foreach ($result['errors'] as $error) $messages[$error['path'] ?: 'question'][] = $error['message'];
+            throw ValidationException::withMessages($messages);
+        }
+        return $result['question'];
+    }
+
     public function sourceBytes(QbImportBatch $batch): string
     {
         return Storage::disk('private')->get($this->path($batch, 0)) ?? '';

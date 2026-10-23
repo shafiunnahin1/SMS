@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router-dom'
+import { Plus, X } from 'lucide-react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/axios'
 import { useLocale } from '../../ui/I18nProvider'
 import { useUiStore } from '../../store/uiStore'
+import { useAuthStore } from '../../store/authStore'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
@@ -14,28 +16,34 @@ import { Input, Select, Textarea } from '../../components/FormField'
 import Check from '../../features/academic/Check'
 import MathText from '../../features/qb/MathText'
 import { SOURCE_TYPES, sourceToOccurrence } from '../../features/qb/questionMeta'
-import { flattenCurriculum, versionsForSubject } from '../../features/qb/curriculum'
+import { flattenCurriculum, isLanguagePaperSubject, subjectsForClasses, versionsForSubject } from '../../features/qb/curriculum'
 import CurriculumPicker from '../../features/qb/CurriculumPicker'
+import AddCurriculumItemModal from '../../features/qb/AddCurriculumItemModal'
 import { fmtNumber as formatNumber } from '../../i18n/format'
 
 const FILTERS = ['', 'valid', 'invalid', 'duplicate', 'imported']
+const emptyBulkSource = () => ({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })
 
 // R2.1.3 /writer/imports/:id (D123, D110): qbank's staging review - exact counts, every record with its field-path errors,
 // the possible-duplicate choice, qbank's quick edit and bulk settings (they change the staged record only), then "import
 // selected", which makes drafts of the selected valid records. Reads progress while the file is still being read.
 export default function QbImportReview() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const { locale } = useLocale()
   const qc = useQueryClient()
   const openConfirm = useUiStore(s => s.openConfirm)
+  const role = useAuthStore(s => s.user?.role)
   const n = (v) => formatNumber(v, i18n.language)
   const [filter, setFilter] = useState('')
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState(null)
+  const [shownAnswers, setShownAnswers] = useState(() => new Set())
   const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkCurriculumItem, setBulkCurriculumItem] = useState(null)
   const [bulk, setBulk] = useState({ subject: '', chapter: '', topic: '', type: '', difficulty: '', language: '', marks: '', class_levels: [], curriculum_node_ids: [] })
-  const [bulkSource, setBulkSource] = useState({ type: '', full: '', short: '', exam_type: '', year: '', question_number: '', set_label: '', page_reference: '' })
+  const [bulkSources, setBulkSources] = useState([emptyBulkSource()])
   const [result, setResult] = useState(null)
 
   const batch = useQuery({ queryKey: ['writer', 'import', id], queryFn: () => api.get(`/writer/imports/${id}`).then(r => r.data.data),
@@ -46,17 +54,40 @@ export default function QbImportReview() {
   const types = useQuery({ queryKey: ['writer', 'types'], queryFn: () => api.get('/writer/question-types').then(r => r.data.data) })
   const refresh = () => qc.invalidateQueries({ queryKey: ['writer', 'import', id] })
   const act = useMutation({ mutationFn: ({ method = 'post', url, body }) => api[method](`/writer/imports/${id}${url}`, body).then(r => r.data), onSuccess: refresh })
+  const openEditor = useMutation({
+    mutationFn: (recordId) => api.post(`/writer/imports/${id}/records/${recordId}/open-editor`).then(r => r.data.data),
+    onSuccess: (data) => { refresh(); navigate(`/writer/questions/${data.question_id}`) },
+  })
 
   if (batch.isPending || tree.isPending || types.isPending) return <Loader type="page" />
   if (batch.isError || tree.isError || types.isError) return <ErrorState onRetry={() => { batch.refetch(); tree.refetch(); types.refetch() }} />
   const b = batch.data
+  const selectableOnPage = (records.data?.data ?? []).filter(record => record.errors.length === 0 && !record.qb_question_id)
+  const pageAllSelected = selectableOnPage.length > 0 && selectableOnPage.every(record => record.selected)
+  const pagePartiallySelected = selectableOnPage.some(record => record.selected) && !pageAllSelected
   const name = (x) => (x ? ((locale === 'bn' ? x.name_bn : x.name_en) || x.name_en || x.name_bn) : '')
   const subjectOf = (ref) => tree.data.subjects.find(s => (ref?.id && s.id === ref.id) || (ref?.name && [s.name_bn, s.name_en].includes(ref.name)))
   const typeName = (slug) => name(types.data.find(ty => ty.slug === slug)) || slug || '—'
-  const bulkSubject = tree.data.subjects.find(s => String(s.id) === bulk.subject)
+  const bulkSubjects = subjectsForClasses(tree.data.subjects, bulk.class_levels)
+  const bulkSubject = bulkSubjects.find(s => String(s.id) === bulk.subject)
   const bulkChapter = bulkSubject?.chapters.find(c => String(c.id) === bulk.chapter)
   const bulkCurriculumVersions = versionsForSubject(tree.data.curriculum_versions, bulk.subject, bulk.class_levels)
   const bulkCurriculumRows = flattenCurriculum(bulkCurriculumVersions, name)
+  const bulkUsesCurriculum = bulkCurriculumVersions.length > 0 || isLanguagePaperSubject(bulkSubject)
+  const canCreateCurriculum = role === 'super_admin' || role === 'content_writer'
+  const pickBulkClasses = (classId) => setBulk(old => {
+    const classLevels = old.class_levels.includes(classId) ? old.class_levels.filter(value => value !== classId) : [...old.class_levels, classId]
+    const subjectIsAvailable = subjectsForClasses(tree.data.subjects, classLevels).some(subject => String(subject.id) === old.subject)
+    return { ...old, class_levels: classLevels, subject: subjectIsAvailable ? old.subject : '', chapter: subjectIsAvailable ? old.chapter : '',
+      topic: subjectIsAvailable ? old.topic : '', curriculum_node_ids: [] }
+  })
+  const createdBulkCurriculumItem = row => {
+    if (bulkCurriculumItem?.mode === 'subject') setBulk(old => ({ ...old, subject: String(row.id), chapter: '', topic: '', curriculum_node_ids: [] }))
+    if (bulkCurriculumItem?.mode === 'chapter') setBulk(old => ({ ...old, chapter: String(row.id), topic: '' }))
+    if (bulkCurriculumItem?.mode === 'topic') setBulk(old => ({ ...old, topic: String(row.id) }))
+    if (bulkCurriculumItem?.mode === 'curriculum-node') setBulk(old => ({ ...old, curriculum_node_ids: [...new Set([...old.curriculum_node_ids, String(row.id)])] }))
+    setBulkCurriculumItem(null)
+  }
   const download = async () => {
     const blob = (await api.get(`/writer/imports/${id}/errors.csv`, { responseType: 'blob' })).data
     const a = document.createElement('a')
@@ -85,13 +116,14 @@ export default function QbImportReview() {
     if (bulk.marks !== '') changes.marks = bulk.marks
     if (bulk.class_levels.length) changes.class_levels = bulk.class_levels.map(Number)
     if (bulk.curriculum_node_ids.length) changes.curriculum_node_ids = bulk.curriculum_node_ids.map(Number)
-    await act.mutateAsync({ url: '/settings', body: { selected: true, changes } })
+    if (Object.keys(changes).length) await act.mutateAsync({ url: '/settings', body: { selected: true, changes } })
+    for (const source of bulkSources.filter(row => row.type)) {
+      await act.mutateAsync({ url: '/settings', body: { selected: true, changes: { source_occurrence: sourceToOccurrence(source) } } })
+    }
+    setBulkSources([emptyBulkSource()])
     setBulkOpen(false)
   }
-  const applySource = async () => {
-    await act.mutateAsync({ url: '/settings', body: { selected: true, changes: { source_occurrence: sourceToOccurrence(bulkSource) } } })
-    setBulkOpen(false)
-  }
+  const hasBulkChanges = Boolean(bulk.subject || bulk.chapter || bulk.topic || bulk.type || bulk.difficulty || bulk.language || bulk.marks !== '' || bulk.class_levels.length || bulk.curriculum_node_ids.length || bulkSources.some(source => source.type))
 
   return (
     <div className="flex flex-col gap-4" data-testid="qb-import-review" data-status={b.status}>
@@ -128,15 +160,40 @@ export default function QbImportReview() {
           {bulkOpen && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-5" onClick={() => setBulkOpen(false)}>
           <section role="dialog" aria-modal="true" aria-labelledby="qbi-bulk-title" onClick={e => e.stopPropagation()}
             className="flex max-h-[92vh] w-full max-w-5xl flex-col gap-4 overflow-y-auto rounded-token bg-surface p-density text-content shadow-card">
-            <div className="flex items-center justify-between gap-3"><div><h2 id="qbi-bulk-title" className="font-semibold">{t('qbi.bulk')}</h2><p className="mt-1 text-sm text-content-muted">{t('qbi.bulk_hint')}</p></div>
-              <Button variant="ghost" aria-label={t('qbi.cancel')} onClick={() => setBulkOpen(false)}>×</Button></div>
+              <div className="flex items-center justify-between gap-3"><div><h2 id="qbi-bulk-title" className="font-semibold">{t('qbi.bulk')}</h2><p className="mt-1 text-sm text-content-muted">{t('qbi.bulk_hint')}</p></div>
+                <Button variant="ghost" aria-label={t('qbi.cancel')} onClick={() => setBulkOpen(false)}><X aria-hidden="true" className="h-5 w-5" /></Button></div>
+            <fieldset className="flex flex-wrap gap-2" data-testid="qbi-bulk-classes">
+              <legend className="mb-1 w-full text-sm font-medium">{t('qb.class_levels')}</legend>
+              {(tree.data.class_levels ?? []).map(level => <Check key={level.id} label={name(level)} value={String(level.id)} checked={bulk.class_levels.includes(String(level.id))}
+                onChange={() => pickBulkClasses(String(level.id))} />)}
+            </fieldset>
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <Select label={t('qb.subject')} name="bulk_subject" value={bulk.subject} placeholder="—" onChange={e => setBulk({ ...bulk, subject: e.target.value, chapter: '', topic: '' })}
-                options={tree.data.subjects.map(s => ({ value: String(s.id), label: name(s) }))} />
-              <Select label={t('qb.chapter')} name="bulk_chapter" value={bulk.chapter} placeholder="—" onChange={e => setBulk({ ...bulk, chapter: e.target.value, topic: '' })}
-                options={(bulkSubject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} />
-              <Select label={t('qb.topic')} name="bulk_topic" value={bulk.topic} placeholder="—" onChange={e => setBulk({ ...bulk, topic: e.target.value })}
-                options={(bulkChapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} />
+              <div className="flex min-w-0 items-end gap-2 sm:col-span-3 lg:col-span-2"><Select className="min-w-0 flex-1" label={t('qb.subject')} name="bulk_subject" value={bulk.subject} placeholder={bulkSubjects.length ? t('qb.pick') : t('qbed.no_subject_for_class')}
+                onChange={e => setBulk({ ...bulk, subject: e.target.value, chapter: '', topic: '', curriculum_node_ids: [] })}
+                options={bulkSubjects.map(s => ({ value: String(s.id), label: name(s) }))} />
+                {canCreateCurriculum && <Button variant="secondary" className="shrink-0" aria-label={t('qbed.add_item.subject.button')} onClick={() => setBulkCurriculumItem({ mode: 'subject', defaultSortOrder: Math.max(0, ...tree.data.subjects.map(item => Number(item.sort_order) || 0)) + 1 })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add')}</Button>}</div>
+              {bulkUsesCurriculum ? <div className="sm:col-span-3 lg:col-span-6" data-testid="qbi-bulk-curriculum">
+                <CurriculumPicker label={t('qbed.curriculum_path')} rows={bulkCurriculumRows}
+                  versions={bulkCurriculumVersions.map(version => ({ ...version, label: name(version) || version.version_key }))} value={bulk.curriculum_node_ids}
+                  onAddVersion={canCreateCurriculum && bulkSubject && bulkCurriculumVersions.length === 0 ? () => setBulkCurriculumItem({ mode: 'curriculum-version', subjectId: bulkSubject.id, defaultSortOrder: 1 }) : undefined}
+                  onAdd={canCreateCurriculum && bulkCurriculumVersions.length ? ({ versionId, parentId, kind }) => {
+                    const siblings = bulkCurriculumRows.filter(node => String(node.version_id) === String(versionId) && String(node.parent_id ?? '') === String(parentId ?? ''))
+                    setBulkCurriculumItem({ mode: 'curriculum-node', defaultVersionId: versionId, defaultParentId: parentId ?? '', defaultKind: kind,
+                      defaultSortOrder: Math.max(0, ...siblings.map(node => Number(node.sort_order) || 0)) + 1 })
+                  } : undefined}
+                  onChange={ids => setBulk(old => ({ ...old, curriculum_node_ids: ids }))} />
+              </div> : <>
+                <div className="flex min-w-0 items-end gap-2 sm:col-span-3 lg:col-span-2"><Select className="min-w-0 flex-1" label={t('qb.chapter')} name="bulk_chapter" value={bulk.chapter} placeholder={t('qb.none_option')}
+                  onChange={e => setBulk({ ...bulk, chapter: e.target.value, topic: '' })}
+                  options={(bulkSubject?.chapters ?? []).map(c => ({ value: String(c.id), label: name(c) }))} />
+                  {canCreateCurriculum && bulkSubject && <Button variant="secondary" className="shrink-0" aria-label={t('qbed.add_item.chapter.button')}
+                    onClick={() => setBulkCurriculumItem({ mode: 'chapter', subjectId: bulkSubject.id, classLevelIds: bulk.class_levels, defaultSortOrder: Math.max(0, ...(bulkSubject.chapters ?? []).map(item => Number(item.sort_order) || 0)) + 1 })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add')}</Button>}</div>
+                <div className="flex min-w-0 items-end gap-2 sm:col-span-3 lg:col-span-2"><Select className="min-w-0 flex-1" label={t('qb.topic')} name="bulk_topic" value={bulk.topic} placeholder={t('qb.none_option')}
+                  onChange={e => setBulk({ ...bulk, topic: e.target.value })}
+                  options={(bulkChapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} />
+                  {canCreateCurriculum && <Button variant="secondary" className="shrink-0" aria-label={t('qbed.add_item.topic.button')} disabled={!bulkChapter}
+                    onClick={() => setBulkCurriculumItem({ mode: 'topic', chapterId: bulkChapter.id, defaultSortOrder: Math.max(0, ...(bulkChapter.topics ?? []).map(item => Number(item.sort_order) || 0)) + 1 })}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add')}</Button>}</div>
+              </>}
               <Select label={t('qb.type')} name="bulk_type" value={bulk.type} placeholder="—" onChange={e => setBulk({ ...bulk, type: e.target.value })}
                 options={types.data.map(ty => ({ value: ty.slug, label: name(ty) }))} />
               <Select label={t('qbi.difficulty')} name="bulk_difficulty" value={bulk.difficulty} placeholder="—" onChange={e => setBulk({ ...bulk, difficulty: e.target.value })}
@@ -145,49 +202,51 @@ export default function QbImportReview() {
                 options={[{ value: 'bn', label: t('qbf.lang_bn') }, { value: 'en', label: t('qbf.lang_en') }, { value: 'und', label: t('qbi.mixed') }]} />
               <Input label={t('qbi.marks')} name="bulk_marks" value={bulk.marks} onChange={e => setBulk({ ...bulk, marks: e.target.value })} ltr />
             </div>
-            <fieldset className="mt-3 flex flex-wrap gap-2" data-testid="qbi-bulk-classes">
-              <legend className="mb-1 text-sm font-medium">{t('qb.class_levels')}</legend>
-              {(tree.data.class_levels ?? []).map(level => <Check key={level.id} label={name(level)} value={String(level.id)} checked={bulk.class_levels.includes(String(level.id))}
-                onChange={() => setBulk(old => ({ ...old, class_levels: old.class_levels.includes(String(level.id)) ? old.class_levels.filter(value => value !== String(level.id)) : [...old.class_levels, String(level.id)], curriculum_node_ids: [] }))} />)}
-            </fieldset>
-            {bulkCurriculumVersions.length > 0 && <div className="mt-3" data-testid="qbi-bulk-curriculum"><CurriculumPicker label={t('qbed.curriculum_path')} rows={bulkCurriculumRows}
-              versions={bulkCurriculumVersions.map(version => ({ ...version, label: name(version) || version.version_key }))} value={bulk.curriculum_node_ids}
-              onChange={ids => setBulk(old => ({ ...old, curriculum_node_ids: ids }))} /></div>}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={applyBulk} disabled={!bulk.subject && !bulk.chapter && !bulk.topic && !bulk.type && !bulk.difficulty && !bulk.language && bulk.marks === '' && !bulk.class_levels.length && !bulk.curriculum_node_ids.length} data-testid="qbi-bulk-apply">{t('qbi.bulk_apply')}</Button>
-            </div>
             <fieldset className="mt-4 grid gap-3 [border-top:1px_solid_var(--line)] pt-3" data-testid="qbi-bulk-source">
               <legend className="font-medium">{t('qbi.bulk_source')}</legend>
               <p className="text-sm text-content-muted">{t('qbi.bulk_source_hint')}</p>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Select label={t('qbn.source_type')} name="bulk_source_type" value={bulkSource.type} placeholder="—"
-                  onChange={e => setBulkSource({ ...bulkSource, type: e.target.value })}
-                  options={SOURCE_TYPES.map(type => ({ value: type, label: t(`qbn.source_types.${type}`) }))} />
-                <Input label={t('qbn.source_full')} name="bulk_source_full" value={bulkSource.full}
-                  onChange={e => setBulkSource({ ...bulkSource, full: e.target.value })} />
-                <Input label={t('qbn.source_short')} name="bulk_source_short" value={bulkSource.short}
-                  onChange={e => setBulkSource({ ...bulkSource, short: e.target.value })} />
-                <Input label={t('qbn.exam_type')} name="bulk_source_exam_type" value={bulkSource.exam_type}
-                  onChange={e => setBulkSource({ ...bulkSource, exam_type: e.target.value })} />
-                <Input label={t('qb.year')} name="bulk_source_year" type="number" min="1950" max="2100" ltr value={bulkSource.year}
-                  onChange={e => setBulkSource({ ...bulkSource, year: e.target.value })} />
-                <Input label={t('qbn.question_number')} name="bulk_source_question_number" value={bulkSource.question_number}
-                  onChange={e => setBulkSource({ ...bulkSource, question_number: e.target.value })} />
-                <Input label={t('qbn.set_label')} name="bulk_source_set_label" value={bulkSource.set_label}
-                  onChange={e => setBulkSource({ ...bulkSource, set_label: e.target.value })} />
-                <Input label={t('qbn.page_reference')} name="bulk_source_page_reference" value={bulkSource.page_reference}
-                  onChange={e => setBulkSource({ ...bulkSource, page_reference: e.target.value })} />
-              </div>
-              <div>
-                <Button variant="secondary" onClick={applySource} disabled={!bulkSource.type || act.isPending} data-testid="qbi-source-apply">
-                  {t('qbi.bulk_source_apply')}
-                </Button>
+              {bulkSources.map((source, index) => <div key={index} className="rounded-token border border-border-subtle p-3">
+                <div className="mb-2 flex items-center justify-between gap-2"><span className="text-sm font-medium">{t('qbn.add_source')} {n(index + 1)}</span>
+                  {bulkSources.length > 1 && <Button variant="ghost" className="h-8 px-2" aria-label={`${t('common.delete')} ${n(index + 1)}`} onClick={() => setBulkSources(old => old.filter((_, rowIndex) => rowIndex !== index))}><X aria-hidden="true" className="h-4 w-4" /></Button>}</div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <Select label={t('qbn.source_type')} name={`bulk_source_type_${index}`} value={source.type} placeholder="—"
+                    onChange={e => setBulkSources(old => old.map((row, rowIndex) => rowIndex === index ? { ...row, type: e.target.value } : row))}
+                    options={SOURCE_TYPES.map(type => ({ value: type, label: t(`qbn.source_types.${type}`) }))} />
+                  <Input label={t('qbn.source_full')} name={`bulk_source_full_${index}`} value={source.full}
+                    onChange={e => setBulkSources(old => old.map((row, rowIndex) => rowIndex === index ? { ...row, full: e.target.value } : row))} />
+                  <Input label={t('qbn.source_short')} name={`bulk_source_short_${index}`} value={source.short}
+                    onChange={e => setBulkSources(old => old.map((row, rowIndex) => rowIndex === index ? { ...row, short: e.target.value } : row))} />
+                  <Input label={t('qbn.exam_type')} name={`bulk_source_exam_type_${index}`} value={source.exam_type}
+                    onChange={e => setBulkSources(old => old.map((row, rowIndex) => rowIndex === index ? { ...row, exam_type: e.target.value } : row))} />
+                  <Input label={t('qb.year')} name={`bulk_source_year_${index}`} type="number" min="1950" max="2100" ltr value={source.year}
+                    onChange={e => setBulkSources(old => old.map((row, rowIndex) => rowIndex === index ? { ...row, year: e.target.value } : row))} />
+                  <Input label={t('qbn.question_number')} name={`bulk_source_question_number_${index}`} value={source.question_number}
+                    onChange={e => setBulkSources(old => old.map((row, rowIndex) => rowIndex === index ? { ...row, question_number: e.target.value } : row))} />
+                  <Input label={t('qbn.set_label')} name={`bulk_source_set_label_${index}`} value={source.set_label}
+                    onChange={e => setBulkSources(old => old.map((row, rowIndex) => rowIndex === index ? { ...row, set_label: e.target.value } : row))} />
+                  <Input label={t('qbn.page_reference')} name={`bulk_source_page_reference_${index}`} value={source.page_reference}
+                    onChange={e => setBulkSources(old => old.map((row, rowIndex) => rowIndex === index ? { ...row, page_reference: e.target.value } : row))} />
+                </div>
+              </div>)}
+              <div className="flex flex-wrap gap-2">
+                <Button variant="secondary" onClick={() => setBulkSources(old => [...old, emptyBulkSource()])} data-testid="qbi-source-add"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbn.add_source')}</Button>
               </div>
             </fieldset>
+            <div className="flex justify-end border-t border-border-subtle pt-3">
+              <Button variant="secondary" onClick={applyBulk} disabled={!hasBulkChanges || act.isPending} data-testid="qbi-bulk-apply">{t('qbi.bulk_apply')}</Button>
+            </div>
           </section>
           </div>}
+          {bulkCurriculumItem && <AddCurriculumItemModal {...bulkCurriculumItem} classes={tree.data.class_levels} classLevelIds={bulk.class_levels}
+            subjectId={bulkSubject?.id} chapterId={bulkChapter?.id} versions={bulkCurriculumVersions} nodes={bulkCurriculumRows}
+            onClose={() => setBulkCurriculumItem(null)} onCreated={createdBulkCurriculumItem} />}
 
           <Card>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <Check label={t('qbaq.select_all')} checked={pageAllSelected} disabled={selectableOnPage.length === 0 || act.isPending}
+                ref={checkbox => { if (checkbox) checkbox.indeterminate = pagePartiallySelected }}
+                onChange={event => act.mutate({ url: '/select', body: { record_ids: selectableOnPage.map(record => record.id), selected: event.target.checked } })} />
+            </div>
             <div className="mb-3 flex flex-wrap gap-2" role="tablist">
               {FILTERS.map(f => (
                 <Button key={f || 'all'} variant={filter === f ? 'primary' : 'secondary'} role="tab" aria-selected={filter === f} data-filter={f || 'all'}
@@ -195,21 +254,33 @@ export default function QbImportReview() {
               ))}
             </div>
             {records.isPending ? <Loader type="list" /> : records.isError ? <ErrorState onRetry={records.refetch} /> : records.data.data.length === 0 ? <EmptyState title={t('qbi.no_records')} /> : (
-              <ol className="flex flex-col gap-2">
+              <ol className="flex flex-col gap-3">
                 {records.data.data.map(r => (
                   <li key={r.id} data-record={r.record} data-valid={r.errors.length === 0 ? '1' : '0'} data-rejected={rejected(r) ? '1' : '0'}
-                    className={`flex flex-col gap-2 rounded-token [border:1px_solid_var(--line)] p-3 ${rejected(r) ? 'opacity-60' : ''}`}>
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <input type="checkbox" aria-label={t('qbi.select')} checked={r.selected} disabled={r.errors.length > 0 || Boolean(r.qb_question_id)}
+                    className={`group flex flex-col gap-0 overflow-hidden rounded-token border border-border-subtle bg-surface shadow-sm transition-shadow hover:shadow-md ${rejected(r) ? 'opacity-60' : ''}`}>
+                    <header className="flex flex-wrap items-start gap-3 border-b border-border-subtle bg-surface-muted/30 px-5 py-4">
+                      <input type="checkbox" aria-label={t('qbi.select')} className="mt-2" checked={r.selected} disabled={r.errors.length > 0 || Boolean(r.qb_question_id)}
                         onChange={e => act.mutate({ url: '/select', body: { record_ids: [r.id], selected: e.target.checked } })} />
-                      <span className="font-semibold" dir="ltr">#{n(r.record)}</span>
-                      {r.page && <button type="button" className="text-primary-fg underline" onClick={() => openSource(r.page)} data-testid="qbi-page">{t('qbi.page', { page: n(r.page) })}</button>}
-                      <span>{typeName(r.type)}</span>
-                      <span className="text-content-muted">{name(subjectOf(r.payload.subject)) || r.payload.subject?.name || ''}</span>
-                      {r.has_math && <span className="rounded-token bg-surface-muted px-2">{t('qbi.has_math')}</span>}
-                      {r.qb_question_id && <Link to={`/writer/questions/${r.qb_question_id}`} className="text-primary-fg underline" data-testid="qbi-full-editor">{t('qbi.full_editor')}</Link>}
-                    </div>
-                    <span dir="auto"><MathText text={r.payload.question_text ?? ''} /></span>
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-token bg-primary font-semibold text-on-primary"><bdi>{n(r.record)}</bdi></span>
+                      <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <div className="flex flex-wrap items-center gap-2 font-semibold">
+                          <span>{t('qb.question_no', { id: n(r.record) })}</span>
+                          {r.page && <button type="button" className="text-sm font-normal text-primary-fg underline" onClick={() => openSource(r.page)} data-testid="qbi-page">{t('qbi.page', { page: n(r.page) })}</button>}
+                        </div>
+                        <span className="flex flex-wrap gap-1.5 text-xs">
+                          {[typeName(r.type), name(subjectOf(r.payload.subject)) || r.payload.subject?.name, name(r.payload.chapter), name(r.payload.topic)]
+                            .filter(Boolean).map((label, index) => <span key={`${index}-${label}`} className="rounded-token bg-primary-soft px-2 py-0.5" dir="auto">{label}</span>)}
+                          {r.has_math && <span className="rounded-token bg-primary-soft px-2 py-0.5">{t('qbi.has_math')}</span>}
+                          {r.errors.length > 0 && <span className="rounded-token bg-red-100 px-2 py-0.5 text-red-700">{t('qbi.filter.invalid')}</span>}
+                          {r.qb_question_id && <Link to={`/writer/questions/${r.qb_question_id}`} className="rounded-token bg-primary-soft px-2 py-0.5 text-primary-fg underline" data-testid="qbi-full-editor">{t('qbi.continue_full_editor')}</Link>}
+                        </span>
+                      </div>
+                    </header>
+                    <div className="flex flex-col gap-3 px-5 py-4">
+                      <div className="text-base leading-8" dir="auto"><span className="whitespace-normal [overflow-wrap:anywhere]"><MathText text={r.payload.question_text ?? ''} /></span></div>
+                      <QuestionContent payload={r.payload} t={t} showAnswers={shownAnswers.has(r.id)} onToggleAnswers={() => setShownAnswers(old => {
+                        const next = new Set(old); next.has(r.id) ? next.delete(r.id) : next.add(r.id); return next
+                      })} />
                     {r.errors.length > 0 && (
                       <ul className="text-sm text-red-600" data-testid="qbi-errors">
                         {r.errors.map((e, i) => <li key={i}><code dir="ltr">{e.path || '—'}</code>: {e.message}</li>)}
@@ -223,12 +294,23 @@ export default function QbImportReview() {
                         <Button variant={r.duplicate_status === 'import' ? 'primary' : 'secondary'} onClick={() => act.mutate({ url: `/records/${r.id}/duplicate`, body: { choice: 'import' } })}>{t('qbi.dup_import')}</Button>
                       </div>
                     )}
-                    {!r.qb_question_id && (
-                      <div className="flex flex-wrap gap-2">
+                    </div>
+                    <footer className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-subtle bg-surface-muted/30 px-5 py-3 text-xs text-content-muted">
+                      {r.payload.class_levels?.length > 0 && <span>{t('qbaq.class')}: <bdi>{r.payload.class_levels.map(level => name(level) || level?.name || level).join(', ')}</bdi></span>}
+                      {r.payload.marks != null && <span>{t('qbaq.marks')}: <bdi>{r.payload.marks}</bdi></span>}
+                      {r.payload.difficulty && <span>{t('qbaq.difficulty')}: {t(`qbaq.level.${r.payload.difficulty}`, { defaultValue: r.payload.difficulty })}</span>}
+                      {r.payload.occurrences?.[0] && <span className="rounded-token bg-surface-muted px-2 py-0.5">{Object.values(r.payload.occurrences[0]).filter(value => value != null && value !== '').join(' · ')}</span>}
+                      {!r.qb_question_id && (
+                      <div className="ms-auto flex flex-wrap gap-2">
                         {!rejected(r) && <Button variant="ghost" onClick={() => setEditing(r)} data-testid="qbi-edit">{t('qbi.quick_edit')}</Button>}
+                        {r.errors.length === 0 && r.duplicate_status !== 'skip' && r.duplicate_status !== 'possible' && <Button variant="ghost"
+                          loading={openEditor.isPending && openEditor.variables === r.id} disabled={openEditor.isPending}
+                          onClick={() => openEditor.mutate(r.id)} data-testid="qbi-full-editor">{t('qbi.full_editor')}</Button>}
                         {b.format === 'pdf' && <Button variant="ghost" data-testid="qbi-reject" onClick={() => act.mutate({ url: `/records/${r.id}/reject`, body: { rejected: !rejected(r) } })}>{rejected(r) ? t('qbi.unreject') : t('qbi.reject')}</Button>}
                       </div>
                     )}
+                    {openEditor.isError && openEditor.variables === r.id && <p className="text-sm text-red-600" role="alert">{openEditor.error?.response?.data?.message ?? t('qbi.full_editor_failed')}</p>}
+                    </footer>
                   </li>
                 ))}
               </ol>
@@ -255,6 +337,60 @@ export default function QbImportReview() {
       )}
     </div>
   )
+}
+
+function QuestionContent({ payload, t, showAnswers, onToggleAnswers }) {
+  const valueText = value => typeof value === 'string' ? value : value == null ? '' : JSON.stringify(value, null, 2)
+  const hasAnswer = (payload.options ?? []).some(option => option.is_correct) || (payload.creative_parts ?? []).some(part => part.answer_text)
+    || (payload.items ?? []).some(item => item.answer_text || item.answer_json != null) || payload.answer_text || payload.explanation_text
+  const hasContent = (payload.options?.length ?? 0) || (payload.creative_parts?.length ?? 0) || (payload.stimuli?.length ?? 0)
+    || (payload.items?.length ?? 0) || hasAnswer || (payload.occurrences?.length ?? 0)
+    || (payload.figure_descriptions?.length ?? 0) || (payload.visuals?.length ?? 0)
+  if (!hasContent) return null
+  return <div className="flex flex-col gap-3" data-testid="qbi-question-content">
+    {(payload.stimuli ?? []).map((stimulus, index) => <section key={`stimulus-${index}`} className="rounded-token bg-surface-muted p-3">
+      <h3 className="mb-1 text-sm font-semibold">{stimulus.label || t('qbi.stimulus')}</h3><MathText text={valueText(stimulus.content_text ?? stimulus.text)} />
+    </section>)}
+    {!!payload.figure_descriptions?.length && <section><h3 className="mb-1 text-sm font-semibold">{t('qbi.figure_descriptions')}</h3><ul className="list-inside list-disc">
+      {payload.figure_descriptions.map((description, index) => <li key={`figure-${index}`}><MathText text={valueText(description)} /></li>)}
+    </ul></section>}
+    {!!payload.visuals?.length && <section><h3 className="mb-1 text-sm font-semibold">{t('qbi.visuals')}</h3><ul className="flex flex-col gap-1">
+      {payload.visuals.map((visual, index) => <li key={`visual-${index}`}><pre className="overflow-x-auto whitespace-pre-wrap rounded-token bg-surface-muted p-2 text-sm">{valueText(visual)}</pre></li>)}
+    </ul></section>}
+    {!!payload.options?.length && <section><h3 className="mb-1 text-sm font-semibold">{t('qbi.options')}</h3><ol className="grid gap-2 sm:grid-cols-2">
+      {payload.options.map((option, index) => <li key={`option-${index}`} className={`flex min-h-12 items-center gap-3 rounded-token border border-border-subtle bg-surface-muted/30 px-3 py-2 ${showAnswers && option.is_correct ? 'bg-primary-soft' : ''}`} dir="auto">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs">{option.label || ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ'][index] || index + 1}</span><MathText text={valueText(option.content_text ?? option.text)} />
+      </li>)}
+    </ol></section>}
+    {!!payload.creative_parts?.length && <section><h3 className="mb-1 text-sm font-semibold">{t('qbi.creative_parts')}</h3><ol className="flex flex-col gap-3">
+      {payload.creative_parts.map((part, index) => <li key={`part-${index}`} className="rounded-token [border:1px_solid_var(--line)] p-3">
+        <div className="mb-1 flex flex-wrap items-center gap-2"><strong>{part.part_label || part.label || `${index + 1}.`}</strong>
+          {part.cognitive_level && <span className="text-sm text-content-muted">{part.cognitive_level}</span>}{part.marks != null && <span className="text-sm text-content-muted">{t('qbi.marks')}: {part.marks}</span>}</div>
+        <MathText text={valueText(part.question_text ?? part.text)} />
+      </li>)}
+    </ol></section>}
+    {!!payload.items?.length && <section><h3 className="mb-1 text-sm font-semibold">{t('qbi.question_parts')}</h3><ol className="flex flex-col gap-2">
+      {payload.items.map((item, index) => <li key={`item-${index}`} className="rounded-token [border:1px_solid_var(--line)] p-3">
+        <MathText text={valueText(item.prompt_text ?? item.prompt_json)} />
+        {item.marks != null && <p className="text-sm text-content-muted">{t('qbi.marks')}: {item.marks}</p>}
+      </li>)}
+    </ol></section>}
+    {hasAnswer && <>
+      <Button variant="secondary" className="self-start" onClick={onToggleAnswers} aria-expanded={showAnswers} data-testid="qbi-toggle-answer">
+        {showAnswers ? t('qbaq.hide_answer') : t('qbaq.show_answer')}
+      </Button>
+      {showAnswers && <section className="flex flex-col gap-2 rounded-token bg-primary-soft p-3 text-sm" data-testid="qbi-answer">
+        {(payload.options ?? []).some(option => option.is_correct) && <div><p className="font-semibold">{t('qbaq.correct')}</p><div className="flex flex-wrap gap-2">{payload.options.map((option, index) => option.is_correct && <span key={index}>{option.label || ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ'][index] || index + 1} <MathText text={valueText(option.content_text ?? option.text)} /></span>)}</div></div>}
+        {payload.answer_text && <div><p className="font-semibold">{t('qbi.answer')}</p><MathText text={valueText(payload.answer_text)} /></div>}
+        {(payload.creative_parts ?? []).filter(part => part.answer_text).map((part, index) => <div key={`answer-part-${index}`}><p className="font-semibold">{part.part_label || part.label} {t('qbi.answer')}</p><MathText text={valueText(part.answer_text)} /></div>)}
+        {(payload.items ?? []).filter(item => item.answer_text || item.answer_json != null).map((item, index) => <div key={`answer-item-${index}`}><p className="font-semibold">{t('qbi.answer')}</p><MathText text={valueText(item.answer_text ?? item.answer_json)} /></div>)}
+        {payload.explanation_text && <div><p className="font-semibold">{t('qbi.explanation')}</p><MathText text={valueText(payload.explanation_text)} /></div>}
+      </section>}
+    </>}
+    {!!payload.occurrences?.length && <section><h3 className="mb-1 text-sm font-semibold">{t('qbi.sources')}</h3><ul className="flex flex-col gap-1 text-sm text-content-muted">
+      {payload.occurrences.map((occurrence, index) => <li key={`source-${index}`}>{Object.entries(occurrence).filter(([, value]) => value != null && value !== '').map(([key, value]) => `${key}: ${value}`).join(' · ')}</li>)}
+    </ul></section>}
+  </div>
 }
 
 // qbank's quick edit: the record's text, type and placement; the parts stay as imported (open the draft for the full editor)

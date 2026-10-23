@@ -112,6 +112,26 @@ class QbJsonToonImportTest extends TestCase
             ->assertJsonPath('data.counts.parsed', 3);
     }
 
+    public function test_import_batches_are_listed_by_creation_time_newest_first(): void
+    {
+        $firstQuestions = $this->questions();
+        $firstQuestions['document']['title'] = 'first';
+        $first = $this->upload($this->writer, 'first.json', json_encode($firstQuestions, JSON_UNESCAPED_UNICODE))->assertCreated()->json('data');
+
+        $secondQuestions = $this->questions();
+        $secondQuestions['document']['title'] = 'second';
+        $second = $this->upload($this->writer, 'second.json', json_encode($secondQuestions, JSON_UNESCAPED_UNICODE))->assertCreated()->json('data');
+
+        $firstBatch = QbImportBatch::where('uuid', $first['id'])->firstOrFail();
+        $firstBatch->created_at = now()->addMinute();
+        $firstBatch->saveQuietly();
+
+        $rows = $this->api('GET', $this->central, 'writer/imports', $this->writer)->assertOk()->json('data');
+
+        $this->assertSame([$first['id'], $second['id']], array_column($rows, 'id'));
+        $this->assertGreaterThan($rows[1]['created_at'], $rows[0]['created_at']);
+    }
+
     public function test_only_the_owner_and_the_super_admin_see_a_batch(): void
     {
         $uuid = $this->upload($this->writer, 'q.json', json_encode($this->questions()))->json('data.id');
@@ -153,6 +173,42 @@ class QbJsonToonImportTest extends TestCase
         $this->assertSame([$existing, $source], $question->occurrences()->get()->map(fn ($row) => $row->only([
             'note', 'institution_name', 'board', 'exam_type', 'year', 'question_number', 'set_label', 'page_reference',
         ]))->all());
+    }
+
+    public function test_d153_opens_one_valid_staged_record_in_the_full_editor_without_finalizing_other_rows(): void
+    {
+        $questions = $this->questions();
+        $questions['questions'][0]['answer_text'] = 'The answer is 2.';
+        $questions['questions'][0]['explanation_text'] = 'Because x squared equals 4.';
+        $uuid = $this->upload($this->writer, 'editor-bridge.json', json_encode($questions, JSON_UNESCAPED_UNICODE))->json('data.id');
+        $records = QbImportRecord::whereHas('batch', fn ($q) => $q->where('uuid', $uuid))->orderBy('record_index')->get();
+        $valid = $records[0];
+
+        $first = $this->api('POST', $this->central, "writer/imports/{$uuid}/records/{$valid->id}/open-editor", $this->writer)
+            ->assertOk()->json('data');
+        $questionId = $first['question_id'];
+        $this->assertSame($questionId, $first['record']['qb_question_id']);
+        $question = QbQuestion::findOrFail($questionId);
+        $this->assertSame(['draft', $this->writer->id], [$question->status, $question->created_by]);
+        $this->assertSame('The answer is 2.', $question->answer_text);
+        $this->assertSame('Because x squared equals 4.', $question->explanation_text);
+        $this->assertTrue((bool) $question->options()->where('label', 'A')->value('is_correct'));
+
+        $again = $this->api('POST', $this->central, "writer/imports/{$uuid}/records/{$valid->id}/open-editor", $this->writer)->assertOk();
+        $this->assertSame($questionId, $again->json('data.question_id'));
+        $this->assertSame(2, QbQuestion::count(), 'reopening reuses the same draft');
+        $this->assertNull($records[1]->fresh()->qb_question_id, 'the invalid row stays staged');
+        $this->assertNull($records[2]->fresh()->qb_question_id, 'the possible duplicate stays staged');
+        $this->api('GET', $this->central, "writer/questions/{$questionId}", $this->writer)->assertOk()
+            ->assertJsonPath('data.answer_text', 'The answer is 2.')
+            ->assertJsonPath('data.explanation_text', 'Because x squared equals 4.')
+            ->assertJsonPath('data.options.0.is_correct', true);
+
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/records/{$records[1]->id}/open-editor", $this->writer)->assertUnprocessable();
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/records/{$records[2]->id}/open-editor", $this->writer)->assertUnprocessable();
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/records/{$records[2]->id}/duplicate", $this->writer, ['choice' => 'skip'])->assertOk();
+        $this->api('POST', $this->central, "writer/imports/{$uuid}/records/{$records[2]->id}/open-editor", $this->writer)->assertUnprocessable();
+        $this->assertSame(2, QbQuestion::count());
     }
 
     public function test_language_paper_curriculum_node_ids_round_trip_from_json_and_toon_to_draft_questions(): void

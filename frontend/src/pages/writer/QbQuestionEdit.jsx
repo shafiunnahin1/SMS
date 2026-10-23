@@ -68,7 +68,7 @@ const EMPTY = { qb_question_type_id: '', qb_subject_id: '', qb_chapter_id: '', q
 
 // QB.2 + QB.3 /writer/questions/:id and /new (D65, D66): one form for the six core types. Shared fields (place in the curriculum,
 // text, answer, explanation), then the type's own part: options with the right one (mcq), the two fixed options (true / false),
-// the four creative parts ক-ঘ, a ___ blank (fill in the blank); pictures on the private disk; maths as $...$ built with mathlive;
+// up to four creative parts ক-ঘ, a ___ blank (fill in the blank); pictures on the private disk; maths as $...$ built with mathlive;
 // a live preview. A writer edits only a draft or a returned question; a moderator reviews; the Super Admin may do both.
 export default function QbQuestionEdit() {
   const { t } = useTranslation()
@@ -507,13 +507,20 @@ export default function QbQuestionEdit() {
                       <legend className="font-semibold mb-1">{t('qb.parts')}</legend>
                       {parts.fields.map((f, i) => (
                         <div key={f.id} className="grid gap-2 sm:grid-cols-4 rounded-token [border:1px_solid_var(--line)] p-2">
-                          <Input label={t('qb.label')} {...register(`creative_parts.${i}.part_label`)} />
+                          <div className="flex items-end gap-2"><Input className="min-w-0 flex-1" label={t('qb.label')} {...register(`creative_parts.${i}.part_label`)} />
+                            {parts.fields.length > 1 && <Button variant="secondary" title={t('common.delete')} aria-label={t('common.delete')} onClick={() => parts.remove(i)}><X aria-hidden="true" className="h-4 w-4" /></Button>}</div>
                           <Select label={t('qb.level')} options={LEVELS.map(l => ({ value: l, label: t(`qb.levels_cog.${l}`) }))} {...register(`creative_parts.${i}.cognitive_level`)} />
                           <Input label={t('qb.marks')} ltr inputMode="decimal" {...register(`creative_parts.${i}.marks`)} />
                           <Textarea className="sm:col-span-4" label={t('qb.part_question')} rows={2} {...register(`creative_parts.${i}.question_text`)} />
                           <Textarea className="sm:col-span-4" label={t('qb.answer')} rows={2} {...register(`creative_parts.${i}.answer_text`)} />
                         </div>
                       ))}
+                      {parts.fields.length < LEVELS.length && <div><Button variant="secondary" onClick={() => {
+                        const usedLabels = getValues('creative_parts').map(part => part.part_label)
+                        const label = BN_LABELS.find(value => !usedLabels.includes(value))
+                        const labelIndex = BN_LABELS.indexOf(label)
+                        parts.append({ part_label: label, cognitive_level: LEVELS[labelIndex] ?? LEVELS[0], marks: String(labelIndex + 1), question_text: '', answer_text: '' })
+                      }}><Plus aria-hidden="true" className="h-4 w-4" />{t('qb.add_part')}</Button></div>}
                       {errors.creative_parts && <p role="alert" className="text-xs font-medium text-content">{errors.creative_parts.message}</p>}
                     </fieldset>
                   </Section>
