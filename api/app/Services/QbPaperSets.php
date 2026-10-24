@@ -91,6 +91,23 @@ class QbPaperSets
         }
     }
 
+    /** D157: delete the given sets (never the main set 1); the rest are renumbered in order and take the names of their new
+     *  positions, each keeping its own frozen order and answer key; returns the number of sets left */
+    public function remove(QbPaper $paper, array $numbers): int
+    {
+        $numbers = array_values(array_unique(array_map('intval', $numbers)));
+        if (in_array(1, $numbers, true)) throw new BusinessException('the main set cannot be deleted', 'qb_set_main', 422);
+        $existing = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->get();
+        $missing = array_diff($numbers, $existing->pluck('variant_number')->map(fn ($n) => (int) $n)->all());
+        if ($numbers === [] || $missing !== []) throw new BusinessException('this paper has no such set', 'qb_no_such_set', 422);
+        $names = in_array($existing->first()?->code, self::BANGLA, true) ? self::BANGLA : self::LATIN;
+        QbPaperVariant::where('qb_paper_id', $paper->id)->whereIn('variant_number', $numbers)->delete();
+        $left = $existing->reject(fn ($v) => in_array((int) $v->variant_number, $numbers, true))->values();
+        // ascending: each new number is at most the old one and already free (deleted or vacated), so the unique (paper, number) holds
+        foreach ($left as $k => $v) $v->update(['variant_number' => $k + 1, 'code' => $names[$k]]);
+        return $left->count();
+    }
+
     private function correctFlags(array $sections)
     {
         return QbQuestionOption::whereIn('qb_question_id', $this->ids($sections))->orderBy('sort_order')->orderBy('id')->get(['qb_question_id', 'is_correct'])

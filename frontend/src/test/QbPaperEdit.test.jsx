@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../i18n'
 import api from '../api/axios'
+import { useUiStore } from '../store/uiStore'
 import QbPaperEdit from '../pages/qb/QbPaperEdit'
 
 vi.mock('../api/axios', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn() }, bindAuthStore: () => {} }))
@@ -62,5 +63,26 @@ describe('question paper detail layout (D135)', () => {
     fireEvent.change(within(create).getByRole('combobox', { name: /পদ্ধতি|কৌশল|Strategy/i }), { target: { value: 'options' } })
     fireEvent.click(within(create).getByRole('button', { name: /সেট তৈরি করুন/ }))
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/question-bank/papers/8/finalize', { count: 2, strategy: 'options' }))
+  })
+
+  it('deletes the picked sets together after a confirm that shows the new names (D157)', async () => {
+    const sets = [['A', 'ক'], ['B', 'খ'], ['C', 'গ'], ['D', 'ঘ']].map(([set, code], k) => ({ number: k + 1, set, code, strategy: 'both' }))
+    const final = { ...paper, status: 'final', sets_count: 4, sets }
+    api.get.mockImplementation(path => Promise.resolve({ data: { data: path === '/question-bank/papers/8' ? final : [] } }))
+    api.post.mockResolvedValue({ data: { data: final } })
+    const confirm = vi.spyOn(useUiStore.getState(), 'openConfirm')
+    renderPage()
+    await screen.findByTestId('paper-set-list')
+    expect(screen.queryByRole('checkbox', { name: 'সেট ক বাছুন' })).toBeNull()        // the main set cannot be picked
+    expect(screen.getByRole('button', { name: /নির্বাচিত সেট মুছুন/ })).toBeDisabled()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'সেট খ বাছুন' }))
+    fireEvent.click(screen.getByRole('button', { name: /নির্বাচিত সেট মুছুন \(1\)/ }))
+    const config = confirm.mock.calls.at(-1)[0]
+    expect(config.title).toContain('খ')
+    expect(config.description).toContain('গ → খ')
+    expect(config.description).toContain('ঘ → গ')
+    await config.onConfirm()
+    expect(api.post).toHaveBeenCalledWith('/question-bank/papers/8/finalize', { remove: [2] })
+    confirm.mockRestore()
   })
 })

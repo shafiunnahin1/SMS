@@ -92,7 +92,8 @@ class QbPaperController extends Controller
         $this->staffGate($request);
         $paper = $this->find($request->user(), $id);
         $in = $request->validate(['strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES), 'set_names' => 'nullable|in:latin,bangla',
-            'count' => 'nullable|integer|min:1|max:' . (QbPaperSets::MAX - 1)]);
+            'count' => 'nullable|integer|min:1|max:' . (QbPaperSets::MAX - 1), 'remove' => 'nullable|array|min:1|max:' . QbPaperSets::MAX, 'remove.*' => 'integer|min:1']);
+        if ($paper->status !== 'draft' && isset($in['remove'])) return $this->removeSets($request, $paper, $sets, $in['remove']);
         if ($paper->status !== 'draft' && isset($in['count'])) return $this->addSets($request, $paper, $sets, (int) $in['count'], $in['strategy'] ?? 'both');
         if ($paper->status !== 'draft') throw new BusinessException('already final', 'qb_paper_final', 422);
         if ($this->items($paper)->isEmpty()) throw new BusinessException('a paper needs at least one question', 'qb_paper_empty', 422);
@@ -117,6 +118,20 @@ class QbPaperController extends Controller
             if ($form?->locked_at !== null) app(QbOmrFormService::class)->unlock($request->user(), $paper->id);
         });
         AuditLog::record('qb.paper.sets_added', $paper, ['count' => $count, 'strategy' => $strategy]);
+        return response()->json(['success' => true, 'data' => $this->row($paper->fresh()), 'message' => __('messages.saved')]);
+    }
+
+    /** D157: delete one or more sets of a final paper (POST .../finalize with `remove` = set numbers): never the main set, never after an
+     *  OMR sheet is scanned; the rest are renamed in order; a generated OMR layout is unlocked to be rebuilt */
+    private function removeSets(Request $request, QbPaper $paper, QbPaperSets $sets, array $numbers)
+    {
+        $form = QbOmrForm::where('qb_paper_id', $paper->id)->first();
+        if ($form && QbOmrScan::where('qb_omr_form_id', $form->id)->exists()) throw new BusinessException('an OMR sheet of this paper is already scanned', 'qb_paper_scanned', 422);
+        DB::transaction(function () use ($request, $paper, $sets, $numbers, $form) {
+            $paper->update(['sets_count' => $sets->remove($paper, $numbers)]);
+            if ($form?->locked_at !== null) app(QbOmrFormService::class)->unlock($request->user(), $paper->id);
+        });
+        AuditLog::record('qb.paper.sets_deleted', $paper, ['sets' => array_values(array_map('intval', $numbers))]);
         return response()->json(['success' => true, 'data' => $this->row($paper->fresh()), 'message' => __('messages.saved')]);
     }
 

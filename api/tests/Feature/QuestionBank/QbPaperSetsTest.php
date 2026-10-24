@@ -182,4 +182,36 @@ class QbPaperSetsTest extends TestCase
         $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['count' => 1, 'strategy' => 'both'])->assertStatus(422)->assertJsonPath('error', 'qb_paper_scanned');
         $this->assertSame(2, Tenancy::as($i, fn () => QbPaperVariant::where('qb_paper_id', $id)->count()));
     }
+
+    // D157: one or more sets deleted together; the main set stays; the rest are renamed in order and keep their own order and key
+    public function test_sets_are_deleted_together_and_the_rest_renamed_in_order(): void
+    {
+        [$host, $admin, $id, $i] = $this->paper(5);
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['strategy' => 'both', 'set_names' => 'bangla'])->assertOk();
+        $before = [];
+        foreach (['A', 'B', 'C', 'D', 'E'] as $set) $before[$set] = $this->printed($host, $admin, $id, $set, true);
+
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['remove' => [1]])->assertStatus(422)->assertJsonPath('error', 'qb_set_main');
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['remove' => [9]])->assertStatus(422)->assertJsonPath('error', 'qb_no_such_set');
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['remove' => [2, 4]])->assertOk()
+            ->assertJsonPath('data.sets_count', 3)->assertJsonPath('data.sets.1.code', 'খ')->assertJsonPath('data.sets.2.code', 'গ');
+
+        // old গ (C) is now খ (B), old ঙ (E) is now গ (C): the same questions, options and key, only the name moved
+        foreach (['B' => 'C', 'C' => 'E'] as $now => $was) {
+            $after = $this->printed($host, $admin, $id, $now, true);
+            $this->assertSame([$before[$was]['sections'], $before[$was]['answer_key']], [$after['sections'], $after['answer_key']], "old {$was} is new {$now}");
+        }
+        $this->assertSame($before['A']['sections'], $this->printed($host, $admin, $id, 'A', true)['sections']);
+        $this->assertSame(['ক', 'খ', 'গ'], Tenancy::as($i, fn () => QbPaperVariant::where('qb_paper_id', $id)->orderBy('variant_number')->pluck('code')->all()));
+        $this->api('GET', $host, "question-bank/papers/{$id}/pdf?set=D&format=json", $admin)->assertStatus(422)->assertJsonPath('error', 'qb_no_such_set');
+
+        // a new set after a deletion takes the next name and never repeats a kept order
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['count' => 1, 'strategy' => 'both'])->assertOk()->assertJsonPath('data.sets.3.code', 'ঘ');
+
+        [$otherHost, $otherAdmin] = $this->paper(2);
+        $this->api('POST', $otherHost, "question-bank/papers/{$id}/finalize", $otherAdmin, ['remove' => [2]])->assertNotFound();
+        $form = Tenancy::as($i, fn () => QbOmrForm::create(['qb_paper_id' => $id, 'code' => 'F2', 'settings_json' => ['is_generated' => true], 'locked_at' => now()]));
+        Tenancy::as($i, fn () => QbOmrScan::create(['qb_omr_form_id' => $form->id, 'layout_version' => 1, 'status' => 'pending_review', 'source' => 'upload']));
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['remove' => [2]])->assertStatus(422)->assertJsonPath('error', 'qb_paper_scanned');
+    }
 }

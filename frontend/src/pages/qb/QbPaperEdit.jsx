@@ -271,7 +271,22 @@ function PaperSets({ paperId, paper, base, onChanged }) {
   const navigate = useNavigate()
   const [form, setForm] = useState({ count: '1', strategy: 'both' })
   const [busy, setBusy] = useState(false)
+  const [picked, setPicked] = useState([])
   const sets = paper.sets ?? []
+  // D157: delete the picked sets (never the main set); the confirm shows the names the remaining sets will take
+  const removePicked = () => {
+    const left = sets.filter(s => !picked.includes(s.number))
+    const renamed = left.map((s, k) => ({ from: s.code, to: sets[k]?.code })).filter(r => r.from !== r.to)
+    useUiStore.getState().openConfirm({
+      title: t('qbpp.delete_sets_title', { n: picked.length, names: sets.filter(s => picked.includes(s.number)).map(s => s.code).join(', ') }),
+      description: renamed.length ? t('qbpp.delete_sets_renamed', { list: renamed.map(r => t('qbpp.rename_pair', r)).join(', ') }) : t('qbpp.delete_sets_hint'),
+      type: 'danger', confirmLabel: t('common.delete'),
+      onConfirm: async () => {
+        try { await api.post(`/question-bank/papers/${paperId}/finalize`, { remove: picked }); setPicked([]); useUiStore.getState().addToast(t('qbpp.sets_deleted')); onChanged() }
+        catch { /* the interceptor shows why (scanned) */ }
+      },
+    })
+  }
   const add = async () => {
     setBusy(true)
     try { await api.post(`/question-bank/papers/${paperId}/finalize`, { count: Number(form.count), strategy: form.strategy }); useUiStore.getState().addToast(t('qbpp.sets_added')); onChanged() }
@@ -289,9 +304,16 @@ function PaperSets({ paperId, paper, base, onChanged }) {
           <Button onClick={add} loading={busy} disabled={sets.length >= 26} data-action="create-sets"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.create_sets')}</Button>
         </div>
       </div>
+      {sets.length > 1 && <div className="flex flex-wrap items-center gap-2 text-sm">
+        <label className="flex items-center gap-2"><input type="checkbox" name="pick_all_sets" checked={picked.length === sets.length - 1}
+          onChange={e => setPicked(e.target.checked ? sets.filter(s => s.number !== 1).map(s => s.number) : [])} />{t('qbpp.pick_all_sets')}</label>
+        <Button variant="danger" disabled={picked.length === 0} onClick={removePicked} data-action="delete-sets"><Trash2 aria-hidden="true" className="h-4 w-4" />{t('qbpp.delete_sets', { n: picked.length })}</Button>
+      </div>}
       <ul className="flex flex-col gap-2" data-testid="paper-set-list">
         {sets.map(s => (
           <li key={s.number} className="flex flex-wrap items-center gap-2 rounded-token px-3 py-2 [border:1px_solid_var(--line)]" data-set={s.set}>
+            {s.number === 1 ? <span className="w-4" aria-hidden="true" /> : <input type="checkbox" name={`pick_set_${s.number}`} aria-label={t('qbpp.pick_set', { code: s.code })}
+              checked={picked.includes(s.number)} onChange={e => setPicked(p => (e.target.checked ? [...p, s.number] : p.filter(n => n !== s.number)))} />}
             <span className="min-w-16 font-semibold">{t('qbpp.set_code', { code: s.code })}</span>
             <span className="flex-1 text-sm text-content-muted">{s.number === 1 ? t('qbpp.main_set') : t(`qbpp.strategies.${s.strategy}`)}</span>
             <Button variant="secondary" onClick={() => navigate(`${base}/${paperId}/preview?set=${s.set}`)} data-action="preview" data-set={s.set}><Eye aria-hidden="true" className="h-4 w-4" />{t('qbpv.open')}</Button>

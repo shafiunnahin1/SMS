@@ -1214,6 +1214,14 @@
    "no_choices": "Nothing to choose"
   },
   "qbpp": {
+   "pick_all_sets": "Pick all sets (except the main set)",
+   "pick_set": "Pick set {{code}}",
+   "delete_sets": "Delete picked sets ({{n}})",
+   "delete_sets_title": "Delete {{n}} set(s)? ({{names}})",
+   "delete_sets_hint": "Deleted sets cannot be brought back.",
+   "delete_sets_renamed": "Deleted sets cannot be brought back. The remaining sets are renamed: {{list}}. Their questions and answer keys stay the same.",
+   "rename_pair": "{{from}} → {{to}}",
+   "sets_deleted": "Sets deleted",
    "sets_title": "Sets",
    "sets_hint": "New sets shuffle the MCQ order and options; earlier sets do not change.",
    "sets_count": "How many sets",
