@@ -53,4 +53,19 @@ class QbOmrGeometryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $builder->build(1, ['question_count' => 0, 'option_count' => 1, 'roll_digits' => 0]);
     }
+
+    // R2.1.6: qbank's code boxes stand side by side and never share a bubble's place, whatever the digit counts; the code bar sits on the top markers' line
+    public function test_code_boxes_never_overlap_and_the_code_bar_is_on_the_marker_line(): void
+    {
+        foreach ([[3, 1, 2, 3], [12, 4, 3, 4], [1, 1, 1, 1]] as [$roll, $set, $class, $subject]) {
+            $g = (new QbOmrGeometryService)->build(9, ['question_count' => 5, 'option_count' => 4, 'roll_digits' => $roll,
+                'info_boxes' => ['class' => ['digits' => $class], 'subject' => ['digits' => $subject], 'set' => ['digits' => $set]]]);
+            $boxes = [$g['class'], $g['roll'], $g['subject'], $g['set']];
+            for ($i = 1; $i < 4; $i++) $this->assertGreaterThan($boxes[$i - 1]['left'] + $boxes[$i - 1]['width'], $boxes[$i]['left'], "roll {$roll}: box {$i} overlaps");
+            $this->assertGreaterThanOrEqual(0.05, $g['class']['left']);
+            $this->assertLessThanOrEqual(0.7001, $g['set']['left'] + $g['set']['width']);
+            $this->assertEqualsWithDelta(0.05, $g['code']['top'] + ($g['code']['height'] / 2), 0.0001);
+            $this->assertGreaterThan($g['set']['top'] + $g['set']['height'], $g['answers']['top']);
+        }
+    }
 }

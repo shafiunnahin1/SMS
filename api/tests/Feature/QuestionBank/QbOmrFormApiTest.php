@@ -191,7 +191,7 @@ class QbOmrFormApiTest extends TestCase
         $this->assertStringContainsString('#16a34a', $html);
         $this->assertStringContainsString('write-cell', $html);
         $this->assertStringContainsString('পরীক্ষার্থীর তথ্য', $html);
-        $this->assertStringContainsString('প্রবেশিকা পরীক্ষা', $html);
+        $this->assertStringContainsString('দৈনিক পরীক্ষা', $html);
         $this->assertStringContainsString('কক্ষ পরিদর্শকের স্বাক্ষর', $html);
     }
 

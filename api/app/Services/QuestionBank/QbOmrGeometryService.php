@@ -26,9 +26,10 @@ class QbOmrGeometryService
         $codeWidth = 2.2 / $pageWidth;
         $codeGap = 0.4 / $pageWidth;
         $codeTotalWidth = (28 * $codeWidth) + (27 * $codeGap);
-        $codeBits = array_map(fn (int $index): array => $this->rect(0.5 - ($codeTotalWidth / 2) + ($index * ($codeWidth + $codeGap)), 0.095, $codeWidth, 2.2 / $pageHeight), range(0, 27));
+        // qbank's code bar sits on the line of the top markers, between them
+        $codeBits = array_map(fn (int $index): array => $this->rect(0.5 - ($codeTotalWidth / 2) + ($index * ($codeWidth + $codeGap)), 0.05 - (1.1 / $pageHeight), $codeWidth, 2.2 / $pageHeight), range(0, 27));
         $answerColumns = $this->answerColumns($questionCount, $optionCount, $settings['answer_columns'] ?? 'auto');
-        $answerGeometry = $this->answerGeometry($questionCount, $optionCount, $answerColumns, $pageWidth, $pageHeight, $settings['subject_blocks'] ?? [], $manual ? 0.59 : 0.66);
+        $answerGeometry = $this->answerGeometry($questionCount, $optionCount, $answerColumns, $pageWidth, $pageHeight, $settings['subject_blocks'] ?? [], $manual ? 0.45 : 0.538);
 
         return [
             'version' => 2,
@@ -36,10 +37,7 @@ class QbOmrGeometryService
             'bubble_only' => true,
             'markers' => ['left' => 0.119, 'right' => 0.881, 'top' => 0.050, 'bottom' => 0.882],
             'code' => $this->bounds($codeBits) + ['bits' => $codeBits, 'value' => $code],
-            'class' => $this->numericGrid(0.14 * $pageWidth, 0.26 * $pageHeight, 0.115 * $pageWidth, 0.35 * $pageHeight, $classDigits, $pageWidth, $pageHeight),
-            'roll' => $this->numericGrid(0.30 * $pageWidth, 0.26 * $pageHeight, 0.16 * $pageWidth, 0.35 * $pageHeight, $rollDigits, $pageWidth, $pageHeight),
-            'subject' => $this->numericGrid(0.465 * $pageWidth, 0.26 * $pageHeight, 0.16 * $pageWidth, 0.35 * $pageHeight, $subjectDigits, $pageWidth, $pageHeight),
-            'set' => $this->numericGrid(0.585 * $pageWidth, 0.26 * $pageHeight, 0.07 * $pageWidth, 0.35 * $pageHeight, $setDigits, $pageWidth, $pageHeight),
+            ...$this->codeGrids(['class' => $classDigits, 'roll' => $rollDigits, 'subject' => $subjectDigits, 'set' => $setDigits], $pageWidth, $pageHeight),
             'answers' => $answerGeometry,
         ];
     }
@@ -69,12 +67,13 @@ class QbOmrGeometryService
             if (array_key_exists($q, $starts)) $slots[] = ['heading' => (string) $starts[$q]];
             $slots[] = ['question' => $q];
         }
-        $left = 0.13;
-        $width = 0.74;
+        $left = 0.06;
+        $width = 0.88;
+        $gap = $columnCount > 1 ? 0.015 : 0.0;                    // qbank's answer tables stand apart
         $rowsPerColumn = (int) ceil(count($slots) / $columnCount) + ($subjectBlocks ? 1 : 0);   // room for a heading moved down
-        $height = min(0.36, (7 * $rowsPerColumn) / $pageHeight);
-        $columnWidth = $width / $columnCount;
-        $numberWidth = $columnWidth * 0.24;
+        $height = min(0.36, (8 * $rowsPerColumn) / $pageHeight);
+        $columnWidth = ($width - ($gap * ($columnCount - 1))) / $columnCount;
+        $numberWidth = $columnWidth * 0.165;
         $bubbleWidth = $columnWidth - $numberWidth;
         $rowHeight = $height / $rowsPerColumn;
         $groups = array_chunk($slots, max(1, $rowsPerColumn - ($subjectBlocks ? 1 : 0)));
@@ -84,7 +83,7 @@ class QbOmrGeometryService
         $columns = [];
 
         foreach ($groups as $columnIndex => $questionIndexes) {
-            $columnLeft = $left + ($columnIndex * $columnWidth);
+            $columnLeft = $left + ($columnIndex * ($columnWidth + $gap));
             $bubbleLeft = $columnLeft + $numberWidth;
             $columnRows = [];
             $headings = [];
@@ -113,6 +112,26 @@ class QbOmrGeometryService
             'column_count' => $columnCount,
             'columns' => $columns,
         ];
+    }
+
+    /**
+     * qbank's code boxes side by side between the left margin and the instructions column (x 0.077 - 0.70 of the page), never
+     * overlapping: one digit column is at most 8 mm wide, narrower when many digits must fit, and the space left over is spread
+     * evenly between the boxes; ten bubble rows from 23.5% of the page height, under a head cell and a write-in row
+     */
+    private function codeGrids(array $digits, float $pageWidth, float $pageHeight): array
+    {
+        $left = 0.077 * $pageWidth;
+        $right = 0.70 * $pageWidth;
+        $minGap = 4.0;
+        $digitWidth = min(8.0, ($right - $left - ($minGap * (count($digits) - 1))) / array_sum($digits));
+        $gap = ($right - $left - ($digitWidth * array_sum($digits))) / (count($digits) - 1);
+        $grids = [];
+        foreach ($digits as $key => $count) {
+            $grids[$key] = $this->numericGrid($left, 0.235 * $pageHeight, $digitWidth * $count, 0.245 * $pageHeight, $count, $pageWidth, $pageHeight);
+            $left += ($digitWidth * $count) + $gap;
+        }
+        return $grids;
     }
 
     private function numericGrid(float $leftMm, float $topMm, float $widthMm, float $heightMm, int $digitCount, float $pageWidth, float $pageHeight): array
