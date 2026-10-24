@@ -11,6 +11,7 @@ import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import Ltr from '../../components/bidi/Ltr'
 import McqImport from '../../features/exams/McqImport'
+import { useAuthStore } from '../../store/authStore'
 
 // Step 4.5 marks entry (admin: /admin/exams/:examId/entry/:subjectId, teacher: /teacher/marks/:examId/:subjectId). The sheet
 // brings the limits and parts; the browser only bounds the inputs - the grade comes back from the server after saving (grading.md).
@@ -22,6 +23,7 @@ export default function MarksEntry() {
   const [marks, setMarks] = useState({})
   const [saving, setSaving] = useState(false)
   const [rowErrors, setRowErrors] = useState({})
+  const role = useAuthStore(s => s.role)
 
   const initial = useMemo(() => Object.fromEntries((sheet.data?.rows ?? []).map(r => [r.student_id, {
     marks: r.result?.marks_obtained != null ? String(Number(r.result.marks_obtained)) : '',
@@ -35,8 +37,25 @@ export default function MarksEntry() {
   const { exam, subject, rows } = sheet.data
   const parts = subject.components ?? []
   const set = (sid, patch) => setMarks(m => ({ ...m, [sid]: { ...m[sid], ...patch } }))
+  const published = exam.status === 'published'
+  const correcting = published && role === 'admin'                      // D161 (3): after publishing only the head corrects, one mark at a time
+  const locked = published && !correcting
   const filled = (m) => m.absent || (parts.length ? parts.every(p => m.parts[p.key] !== undefined && m.parts[p.key] !== '') : m.marks !== '')
 
+  const body = (m) => m.absent ? { is_absent: true }
+    : parts.length ? { components: Object.fromEntries(parts.map(p => [p.key, Number(m.parts[p.key])])) } : { marks_obtained: Number(m.marks) }
+  const changed = (r) => JSON.stringify(marks[r.student_id]) !== JSON.stringify(initial[r.student_id])
+  const correct = async () => {
+    const todo = rows.filter(r => r.result?.id && marks[r.student_id] && filled(marks[r.student_id]) && changed(r))
+    if (!todo.length) return
+    setSaving(true)
+    try {
+      for (const r of todo) await api.put(`/results/${r.result.id}`, body(marks[r.student_id]))
+      useUiStore.getState().addToast(t('exams.marks_corrected', { count: todo.length }))
+      qc.invalidateQueries({ queryKey: ['entry', examId, subjectId] })
+      qc.invalidateQueries({ queryKey: ['results'] })
+    } catch (e) { useUiStore.getState().addToast(e.response?.data?.message ?? t('common.error'), 'error') } finally { setSaving(false) }
+  }
   const save = async () => {
     const payload = rows.filter(r => marks[r.student_id] && filled(marks[r.student_id])).map(r => {
       const m = marks[r.student_id]
@@ -59,7 +78,7 @@ export default function MarksEntry() {
     } finally { setSaving(false) }
   }
   const numberInput = (value, max, onChange, label) => (
-    <input type="number" inputMode="decimal" min="0" max={max} step="0.5" dir="ltr" value={value} onChange={e => onChange(e.target.value)} aria-label={label}
+    <input type="number" inputMode="decimal" min="0" max={max} step="0.5" dir="ltr" value={value} readOnly={locked} onChange={e => onChange(e.target.value)} aria-label={label}
       className="h-10 w-full rounded-token px-2 bg-surface text-content [border:1px_solid_var(--line)] text-end" />
   )
 
@@ -71,7 +90,7 @@ export default function MarksEntry() {
         <span className="rounded-token bg-surface-muted px-2 py-1">{t('exams.pass_marks')} <Ltr className="font-semibold">{Number(subject.pass_marks)}</Ltr></span>
         {parts.map(p => <span key={p.key} className="rounded-token bg-primary-soft px-2 py-1">{p.label} <Ltr className="font-semibold">{Number(p.full)}</Ltr></span>)}
       </div>
-      {exam.status === 'published' && <Card><p className="text-sm">{t('exams.locked_hint')}</p></Card>}
+      {published && <Card><p className="text-sm">{t(correcting ? 'exams.correct_hint' : 'exams.locked_hint')}</p></Card>}
       {exam.status !== 'published' && parts.some(p => p.key === 'mcq') && rows.length > 0 && (
         <McqImport examId={examId} subjectId={subjectId} exam={exam.name} subject={subject.name} rows={rows} full={Number(parts.find(p => p.key === 'mcq').full)}
           onSaved={() => { qc.invalidateQueries({ queryKey: ['entry', examId, subjectId] }); qc.invalidateQueries({ queryKey: ['results'] }) }} />
@@ -98,7 +117,7 @@ export default function MarksEntry() {
                       : <label className="flex min-w-0 flex-col gap-1 text-xs text-content-muted"><span>{t('exams.marks')} <Ltr>({Number(subject.full_marks)})</Ltr></span>
                           {numberInput(m.marks, subject.full_marks, v => set(r.student_id, { marks: v }), `${r.name} ${t('exams.marks')}`)}</label>)}
                     <label className="inline-flex h-10 items-center gap-2 rounded-token px-2 text-sm [border:1px_solid_var(--line)]">
-                      <input type="checkbox" checked={m.absent} onChange={e => set(r.student_id, { absent: e.target.checked })} className="h-4 w-4 accent-[var(--color-primary)]" />
+                      <input type="checkbox" checked={m.absent} disabled={locked} onChange={e => set(r.student_id, { absent: e.target.checked })} className="h-4 w-4 accent-[var(--color-primary)]" />
                       {t('status.absent')}
                     </label>
                   </div>
@@ -107,7 +126,7 @@ export default function MarksEntry() {
               )
             })}
           </ul>
-          {exam.status !== 'published' && <div className="sticky bottom-0 -mx-4 flex justify-end bg-surface px-4 py-2 [border-top:1px_solid_var(--line)] sm:static sm:mx-0 sm:border-0 sm:p-0"><Button onClick={save} loading={saving} data-action="save">{t('common.save')}</Button></div>}
+          {!locked && <div className="sticky bottom-0 -mx-4 flex justify-end bg-surface px-4 py-2 [border-top:1px_solid_var(--line)] sm:static sm:mx-0 sm:border-0 sm:p-0"><Button onClick={correcting ? correct : save} loading={saving} data-action="save">{t(correcting ? 'exams.save_correction' : 'common.save')}</Button></div>}
         </Card>
       )}
     </div>
