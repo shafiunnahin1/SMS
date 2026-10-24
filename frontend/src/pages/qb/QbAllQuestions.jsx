@@ -104,9 +104,11 @@ export default function QbAllQuestions() {
     setBusy(true)
     try {
       const p = paper.data
+      // owner 2026-10-24: the one class picked in the filter is the paper's class (its heading shows it)
+      const pickedClass = f.class_level_ids.length === 1 ? { class_level_id: f.class_level_ids[0] } : {}
       const body = p
-        ? { title: p.title, exam_name: p.exam_name, program_id: p.program_id, qb_subject_id: p.qb_subject_id, duration_minutes: p.duration_minutes, instructions_json: p.instructions_json, sets_count: p.sets_count, sections: sections() }
-        : { title: name.trim(), sets_count: 1, sections: sections() }
+        ? { title: p.title, exam_name: p.exam_name, program_id: p.program_id, qb_subject_id: p.qb_subject_id, duration_minutes: p.duration_minutes, instructions_json: { ...(p.instructions_json ?? {}), ...pickedClass }, sets_count: p.sets_count, sections: sections() }
+        : { title: name.trim(), sets_count: 1, instructions_json: pickedClass, sections: sections() }
       const { data } = p ? await api.put(`/question-bank/papers/${p.id}`, body) : await api.post('/question-bank/papers', body)
       toast(t('common.saved'))
       qc.invalidateQueries({ queryKey: ['qb-papers'] })

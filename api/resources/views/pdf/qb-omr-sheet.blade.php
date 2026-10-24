@@ -13,7 +13,7 @@
     $font = \App\Services\QuestionBank\QbOmrFormService::FONTS[$settings['font'] ?? 'default'] ?? 'Arial, "Noto Sans Bengali", sans-serif';
     $manual = ($settings['entry_mode'] ?? 'digital') === 'manual';
     // qbank prints the title alone; a subtitle line only when one is set (or the paper names its exam)
-    $subtitle = trim((string) ($settings['subtitle'] ?? '')) !== '' ? $settings['subtitle'] : ($paper->exam_name ?? '');
+    $subtitle = trim((string) ($settings['subtitle'] ?? ''));
     $subtitleShown = trim((string) $subtitle) !== '';
     // the light shade of qbank's roll / subject cells and of every other answer column (theme colour at 14%)
     $tint = $color . '24';
@@ -36,10 +36,14 @@
         .omr-page { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #ffffff; }
         /* qbank's sheet: markers and the code bar at the top, the title and the exam-type boxes under them, the code boxes (head cell,
            write-in row, bubble rows) or the manual candidate panel, the instructions column, then the answer tables */
-        .heading { position: absolute; top: 7.6%; left: 20%; width: 60%; text-align: center; line-height: 1.2; }
-        .heading h1 { margin: 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; font-weight: 600; color: #111111; }
+        .heading { position: absolute; top: 6.2%; left: 20%; width: 60%; text-align: center; line-height: 1.2; }
+        .heading h1 { margin: 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; font-weight: 700; color: {{ $color }}; }
+        .heading p { margin: .3mm 0 0; font-size: 10px; }
+        .heading p.exam { font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; font-weight: 600; }
+        .heading .meta { position: absolute; left: -12%; right: -12%; display: flex; justify-content: space-between; margin-top: .5mm; font-size: 9px; }
+        .set-box { position: absolute; top: 6.4%; right: 6%; padding: 1mm 2.5mm; border: .3mm solid {{ $color }}; border-radius: 1mm; text-align: end; font-size: 9px; font-weight: 700; line-height: 1.25; color: {{ $color }}; }
         .heading p.subtitle { margin: .5mm 0 0; font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; }
-        .exam-types { position: absolute; top: {{ $subtitleShown ? 13.4 : 11.6 }}%; left: 35.5%; width: 34%; display: grid; grid-template-columns: 1.05fr 1.2fr 1fr; gap: 1.6mm 2mm; font-size: 6.5pt; }
+        .exam-types { position: absolute; top: 14%; left: 35.5%; width: 34%; display: grid; grid-template-columns: 1.05fr 1.2fr 1fr; gap: 1.6mm 2mm; font-size: 6.5pt; }
         .exam-types label { display: flex; align-items: center; gap: 1.5mm; white-space: nowrap; }
         .exam-types i { display: inline-block; flex: none; width: 3.6mm; height: 3.6mm; border: .25mm solid {{ $color }}; }
         .marker { position: absolute; width: 8mm; height: 8mm; transform: translate(-50%, -50%); background: #000000; }
@@ -51,15 +55,15 @@
         .grid-cell { position: absolute; border: .2mm solid {{ $color }}; }
         .grid-cell.tint { background: {{ $tint }}; }
         .write-cell { position: absolute; border: .2mm solid {{ $color }}; }
-        .head-cell { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid {{ $color }}; background: #ffffff; font-size: 8pt; font-weight: 700; color: #111111; white-space: nowrap; }
+        .head-cell { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid {{ $color }}; background: #ffffff; font-size: 8pt; font-weight: 700; color: {{ $color }}; white-space: nowrap; }
         .notes { position: absolute; font-size: 6.5pt; line-height: 1.5; }
-        .notes h2 { margin: 0 0 1.5mm; padding-bottom: 1mm; font-size: 8pt; text-align: center; color: #111111; border-bottom: .2mm solid {{ $color }}; }
+        .notes h2 { margin: 0 0 1.5mm; padding-bottom: 1mm; font-size: 8pt; text-align: center; color: {{ $color }}; border-bottom: .2mm solid {{ $color }}; }
         .notes ol { margin: 0; padding-inline-start: 4mm; }
         .notes li { margin-bottom: 1mm; }
         .signature { position: absolute; border-top: .3mm solid {{ $color }}; padding-top: 1.2mm; font-size: 6.5pt; font-weight: 700; text-align: center; }
         .footer-note { position: absolute; left: 8%; width: 84%; text-align: center; font-size: 6.5pt; }
         .manual-info { position: absolute; left: 6.4%; top: 17.5%; width: 58.4%; height: 21.7%; border: .3mm solid {{ $color }}; padding: 3mm 6mm; }
-        .manual-info h2 { margin: 0 auto 5mm; width: 38%; padding-bottom: 1mm; border-bottom: .25mm solid {{ $color }}; text-align: center; font-size: 9pt; color: #111111; }
+        .manual-info h2 { margin: 0 auto 5mm; width: 38%; padding-bottom: 1mm; border-bottom: .25mm solid {{ $color }}; text-align: center; font-size: 9pt; color: {{ $color }}; }
         .manual-info .line { display: grid; align-items: end; gap: 2mm; margin: 0 0 6mm; font-size: 7.5pt; font-weight: 700; }
         .manual-info .line.single { grid-template-columns: auto 1fr; }
         .manual-info .line.triple { grid-template-columns: auto 1.6fr auto 1fr auto 1.2fr; }
@@ -67,19 +71,35 @@
         .manual-notes { position: absolute; left: 67%; top: 17.5%; width: 27%; height: 21.7%; border: .3mm solid {{ $color }}; padding: 0 3mm 3mm; font-size: 6pt; line-height: 1.5; }
         .manual-notes h2 { margin: 0 -3mm 2mm; padding: 1.6mm; background: {{ $color }}; color: #ffffff; text-align: center; font-size: 8pt; }
         .manual-notes ol { margin: 0; padding: 0; list-style: none; }
-        .bubble { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid #111111; border-radius: 50%; background: #ffffff; font-size: 6.5pt; font-weight: 600; line-height: 1; }
-        .answers-title { position: absolute; left: 8%; width: 84%; text-align: center; font-size: 8.5pt; font-weight: 700; color: #111111; }
+        .bubble { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid {{ $color }}; border-radius: 50%; background: #ffffff; font-size: 6.5pt; font-weight: 600; line-height: 1; }
+        .answers-title { position: absolute; left: 8%; width: 84%; text-align: center; font-size: 8.5pt; font-weight: 700; color: {{ $color }}; }
         .question-number { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: 700; }
         .subject-heading { position: absolute; display: flex; align-items: flex-end; font-size: 7.5pt; font-weight: 700; border-bottom: .2mm solid {{ $color }}; overflow: hidden; white-space: nowrap; }
-        .answer-bubble { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid #111111; border-radius: 50%; background: #ffffff; font-size: 6.5pt; line-height: 1; }
+        .answer-bubble { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid {{ $color }}; border-radius: 50%; background: #ffffff; font-size: 6.5pt; line-height: 1; }
     </style>
 </head>
 <body>
 <main class="omr-page">
+    {{-- owner request 2026-10-24: the paper's own heading (institution, exam, class, subjects, time, full marks, set) on every sheet,
+         so sheets of different papers are not mixed up when handed out; the OMR title is the exam line when one is set --}}
+    @php
+        $head = $header ?? [];
+        $exam = trim((string) ($settings['title'] ?? '')) !== '' ? $settings['title'] : ($head['exam'] ?? '');
+        $digits = static fn ($v) => $locale === 'bn' ? strtr((string) $v, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']) : (string) $v;
+        $marks = isset($head['total_marks']) && $head['total_marks'] !== null ? rtrim(rtrim((string) $head['total_marks'], '0'), '.') : '';
+    @endphp
     <header class="heading">
-        <h1>{{ $settings['title'] }}</h1>
-        @if ($subtitleShown)<p class="subtitle">{{ $subtitle }}</p>@endif
+        @if (($head['institution'] ?? '') !== '')<h1>{{ $head['institution'] }}</h1>@endif
+        <p class="exam">{{ $exam }}</p>
+        @if ($subtitleShown)<p>{{ $subtitle }}</p>@endif
+        @if (($head['class'] ?? '') !== '')<p>{{ $head['class'] }}</p>@endif
+        @if (($head['subjects'] ?? '') !== '')<p>{{ $head['subjects'] }}</p>@endif
+        <div class="meta">
+            <span>{{ __('pdf.qb_paper.time') }} : {{ !empty($head['duration_minutes']) ? $digits($head['duration_minutes']) . ' ' . __('pdf.qb_paper.minutes') : '' }}</span>
+            <span>{{ __('pdf.qb_paper.full_marks') }} : {{ $digits($marks) }}</span>
+        </div>
     </header>
+    <div class="set-box">{{ __('pdf.qb_omr.set') }}<br>{{ $variant->code }}</div>
 
     <section class="exam-types" aria-label="{{ __('pdf.qb_omr.exam_type') }}">
         @foreach (__('pdf.qb_omr.exam_types') as $examType)
@@ -106,7 +126,7 @@
         <section class="manual-notes">
             <h2>{{ __('pdf.qb_omr.instructions') }}</h2>
             <ol>@foreach (__('pdf.qb_omr.rules') as $i => $rule)<li>{{ $locale === 'bn' ? $toBangla($i + 1) : $i + 1 }}। {{ $rule }}</li>@endforeach</ol>
-            <div class="signature" style="left:6%;top:74%;width:88%;border-top-color:#111111">{{ __('pdf.qb_omr.invigilator') }}</div>
+            <div class="signature" style="left:6%;top:74%;width:88%">{{ __('pdf.qb_omr.invigilator') }}</div>
         </section>
     @else
         @foreach (['class' => 'class', 'roll' => 'roll_number', 'subject' => 'subject', 'set' => 'set_code'] as $key => $label)

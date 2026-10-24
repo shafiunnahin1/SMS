@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\QbQuestionPublicResource;
 use App\Models\{AuditLog, QbOmrForm, QbOmrScan, QbPaper, QbPaperItem, QbPaperSection, QbPaperVariant, QbQuestion, QbUnlock, User};
 use App\Services\{PdfService, QbPaperSets, QbPricingService};
-use App\Services\QuestionBank\QbOmrFormService;
+use App\Services\QuestionBank\{QbOmrFormService, QbPaperHeader};
 use App\Support\{Money, Tenancy};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -159,7 +159,9 @@ class QbPaperController extends Controller
             'qb_subject_id' => 'nullable|integer', 'duration_minutes' => 'nullable|integer|min:1|max:600', 'instructions_json' => 'nullable|array',
             'instructions_json.text' => 'nullable|string|max:2000',
             'instructions_json.group_by_subject' => 'nullable|boolean', 'instructions_json.subject_order' => 'nullable|array|max:50',   // D128
-            'instructions_json.subject_order.*' => 'integer', 'sets_count' => 'nullable|integer|min:1|max:' . QbPaperSets::MAX,   // D126 (2)
+            'instructions_json.subject_order.*' => 'integer',
+            'instructions_json.class_level_id' => 'nullable|integer|exists:qb_class_levels,id',   // owner 2026-10-24: the class picked while building, for the heading
+            'sets_count' => 'nullable|integer|min:1|max:' . QbPaperSets::MAX,   // D126 (2)
             'sections' => 'required|array|min:1|max:20', 'sections.*.title' => 'required|string|max:200', 'sections.*.instruction' => 'nullable|string|max:500',
             'sections.*.items' => 'present|array|max:100', 'sections.*.items.*.qb_question_id' => 'required|integer',
             'sections.*.items.*.marks' => ['required', 'regex:/^\d{1,3}(\.\d{1,2})?$/'],
@@ -254,6 +256,8 @@ class QbPaperController extends Controller
         return $paper->only(['id', 'title', 'exam_name', 'duration_minutes', 'total_marks']) + ['instructions' => $paper->instructions_json['text'] ?? null,
             'set' => QbPaperSets::LATIN[$number - 1], 'set_code' => $frozen?->code ?? QbPaperSets::LATIN[$number - 1], 'sets_count' => (int) $paper->sets_count,
             'answers' => $answers, 'institution' => Tenancy::current()->name, 'sections' => $sections,
+            // owner request 2026-10-24: the heading's class and subjects load by themselves
+            'class_name' => app(QbPaperHeader::class)->className($paper), 'subject_names' => implode(', ', array_filter(array_column($row['subjects'], 'name'))),
             'answer_key' => $answers ? $key : [],   // D126 (4): the set's own key (frozen sets only), with the answers copy
             // R2.1.2: only the pictures the printed questions may show (the public shape already left out answer-only ones)
             'media' => self::pictures($questions->keys()->all(), collect($sections)->flatMap(fn ($s) => collect($s['items'])->flatMap(fn ($it) => array_column($it['question']['media'], 'id')))->all())];
@@ -292,9 +296,7 @@ class QbPaperController extends Controller
     /** D128: the paper's subjects with names, in grouping order */
     private function subjects(QbPaper $paper): array
     {
-        $subjectOf = QbQuestion::whereIn('id', $this->items($paper)->pluck('qb_question_id'))->pluck('qb_subject_id', 'id')->map(fn ($v) => (int) $v);
-        $names = \App\Models\QbSubject::whereIn('id', $subjectOf->unique())->get()->keyBy('id');
-        return array_map(fn ($id) => ['id' => $id, 'name' => $names->get($id)?->name_bn ?? $names->get($id)?->name_en], $this->subjectOrder($paper, $subjectOf));
+        return app(QbPaperHeader::class)->subjects($paper);
     }
 
     /** QB.14: the questions' own pictures as data: URIs for the PDF (only media linked to these questions; a large file is left out) */

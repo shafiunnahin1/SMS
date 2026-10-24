@@ -150,7 +150,8 @@ class QbOmrFormService
         $firstCode = (string) QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->value('code');
         $symbols = preg_match('/^[A-Z]/', $firstCode) ? range('A', 'J') : ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ', 'ঞ'];
 
-        return ['paper' => $paper, 'form' => $form, 'variant' => $variant, 'settings' => $settings, 'set_symbols' => $symbols];
+        return ['paper' => $paper, 'form' => $form, 'variant' => $variant, 'settings' => $settings, 'set_symbols' => $symbols,
+            'header' => app(QbPaperHeader::class)->lines($paper, (string) \App\Support\Tenancy::current()?->name)];
     }
 
     /** D128: the MCQ rows of each subject block (the same in every set: sets shuffle only inside a block), from set 1's frozen order */

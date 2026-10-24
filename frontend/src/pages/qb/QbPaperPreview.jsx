@@ -83,7 +83,7 @@ export default function QbPaperPreview() {
   useEffect(() => {
     const d = paper.data
     if (!d) return
-    setHeader({ institution: d.institution ?? '', exam: d.exam_name || d.title || '', class: '', subject: '', setCode: d.sets_count > 1 ? d.set_code : '',
+    setHeader({ institution: d.institution ?? '', exam: d.exam_name || d.title || '', class: d.class_name ?? '', subject: d.subject_names ?? '', setCode: d.sets_count > 1 ? d.set_code : '',
       time: d.duration_minutes ? t('qbpv.minutes', { n: d.duration_minutes }) : t('qbpv.default_time'), marks: d.total_marks ?? '', instructions: d.instructions ?? '' })
     setOrder(d.sections.map((_, i) => i))
   }, [paper.data, t])
@@ -213,14 +213,13 @@ export default function QbPaperPreview() {
         <article ref={paperRef} lang={o.language} className="qb-paper relative w-full max-w-[210mm] rounded-token bg-surface text-content shadow-card [border:1px_solid_var(--line)]"
           style={paperStyle} data-testid="qb-paper">
           {renderBoxes('h-start')}
-          <header className={`pb-2 text-center ${o.headerStyle === 'bordered' ? 'rounded-token p-3 [border:2px_solid_currentColor]' : ''} ${o.headerStyle === 'image' ? 'rounded-token bg-surface-muted p-3' : ''}`} data-testid="qb-paper-header">
+          <header className={`relative pb-2 text-center ${o.headerStyle === 'bordered' ? 'rounded-token p-3 [border:2px_solid_currentColor]' : ''} ${o.headerStyle === 'image' ? 'rounded-token bg-surface-muted p-3' : ''}`} data-testid="qb-paper-header">
             {HEADER_LINES.map(k => header[k] && [<div key={k} style={{ fontSize: `${o.sizes[k]}px` }} className={`mb-1 ${k === 'institution' ? 'font-semibold' : ''}`} dir="auto" data-line={k} data-gap={`h-${k}`}>{header[k]}</div>, ...renderBoxes(`h-${k}`)])}
-            <div className="mt-1 flex w-full items-end justify-between gap-2 border-y border-line py-1" data-gap="h-meta">
+            {/* owner's reference heading: the set in a framed box at the top corner, time and full marks on one line under the heading */}
+            {header.setCode && <span style={{ fontSize: `${o.sizes.setCode}px` }} className="absolute end-0 top-0 flex flex-col items-end rounded-token border border-current px-2 py-1 font-semibold leading-tight" data-testid="qb-paper-set"><span>{L('set')}</span> <span>{header.setCode}</span></span>}
+            <div className="mt-3 flex w-full items-end justify-between gap-2 py-1" data-gap="h-meta">
               <span style={{ fontSize: `${o.sizes.time}px` }}>{L('time')} : {num(header.time)}</span>
-              <span className="flex gap-3">
-                {header.setCode && <span style={{ fontSize: `${o.sizes.setCode}px` }} data-testid="qb-paper-set">{L('set')} {header.setCode}</span>}
-                <span style={{ fontSize: `${o.sizes.marks}px` }}>{L('full_marks')} : {num(header.marks)}</span>
-              </span>
+              <span style={{ fontSize: `${o.sizes.marks}px` }}>{L('full_marks')} : {num(header.marks)}</span>
             </div>
             {renderBoxes('h-meta')}
           </header>

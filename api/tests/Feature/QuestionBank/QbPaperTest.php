@@ -134,6 +134,29 @@ class QbPaperTest extends TestCase
         $this->assertSame(['ক', 'খ', 'গ', 'ঘ'], array_column($json('B'), 'label'), 'relabelled by position');
     }
 
+    // owner request 2026-10-24: the heading's class (most of the questions' class) and subjects load by themselves, in the preview and on the OMR
+    public function test_the_heading_loads_the_class_and_subjects_by_itself(): void
+    {
+        $class = \App\Models\QbClassLevel::create(['name_bn' => 'অষ্টম শ্রেণি', 'name_en' => 'Class 8', 'sort_order' => 8]);
+        foreach ([$this->mcq, $this->creative] as $q) $q->classLevels()->attach($class->id);
+        $i = $this->makeInstitution('qbpaperhead');
+        $admin = $this->makeUser($i, 'admin');
+        Tenancy::as($i, function () use ($admin) {
+            foreach ([$this->mcq, $this->creative] as $q) QbUnlock::create(['item_type' => 'question', 'item_id' => $q->id, 'unlocked_by' => $admin->id, 'price' => '0.00', 'reason' => 'free']);
+        });
+        $id = $this->api('POST', $this->hostOf($i), 'question-bank/papers', $admin, $this->body())->assertCreated()->json('data.id');
+        $data = $this->api('GET', $this->hostOf($i), "question-bank/papers/{$id}/pdf?format=json", $admin)->assertOk()->json('data');
+        $this->assertSame(['অষ্টম শ্রেণি', 'পদার্থবিজ্ঞান'], [$data['class_name'], $data['subject_names']]);
+        $lines = Tenancy::as($i, fn () => app(\App\Services\QuestionBank\QbPaperHeader::class)->lines(QbPaper::findOrFail($id), 'School'));
+        $this->assertSame(['School', 'পদার্থবিজ্ঞান', 'অষ্টম শ্রেণি', 'পদার্থবিজ্ঞান', 60], [$lines['institution'], $lines['exam'], $lines['class'], $lines['subjects'], $lines['duration_minutes']]);
+
+        // the class picked in the question filter while building wins
+        $nine = \App\Models\QbClassLevel::create(['name_bn' => 'নবম শ্রেণি', 'name_en' => 'Class 9', 'sort_order' => 9]);
+        $picked = $this->api('POST', $this->hostOf($i), 'question-bank/papers', $admin, $this->body(['instructions_json' => ['class_level_id' => $nine->id]]))->assertCreated()->json('data.id');
+        $this->assertSame('নবম শ্রেণি', $this->api('GET', $this->hostOf($i), "question-bank/papers/{$picked}/pdf?format=json", $admin)->json('data.class_name'));
+        $this->api('POST', $this->hostOf($i), 'question-bank/papers', $admin, $this->body(['instructions_json' => ['class_level_id' => 999999]]))->assertStatus(422);
+    }
+
     /** R2.1.2 (D114 (1)): structured questions print their passage and every part; answers (matching, order, gap, sub-MCQ)
      *  only on the answer copy */
     public function test_structured_questions_print_their_passage_and_parts(): void
