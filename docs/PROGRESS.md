@@ -1060,3 +1060,4 @@ Final checkpoint gate: all tested schema/contract/test/generated blobs unchanged
 - 2026-10-24: D163 draft updated with the owner: no outside AI API at all; every assistant answer reviewed by writers/moderators, rewritten answers weigh most in training.
 - 2026-10-24: D163 draft final - answers shown at once marked "not yet reviewed" (owner choice).
 - 2026-10-24: D164 draft (AI assistant P1 plan: teacher text chat, Qwen3 14B / BGE-M3 / vLLM / Qdrant self-hosted, rented 24 GB GPU first, review queue with weights 1/2/3, 300-question quality gate, tasks AI-P1.1-6): owner/decision-D164-ai-assistant-p1.md + owner/approve-D164.ps1 (owner-run). No code.
+- 2026-10-24: D164 draft rewritten for no cost (owner): P1 runs inside Laravel/MySQL on any server - FULLTEXT search over the reviewed answer bank, question bank and curriculum, direct or template-composed answers with sources, review queue feeds the answer bank (weights 1/2/3); no GPU, model or new package. No code.
