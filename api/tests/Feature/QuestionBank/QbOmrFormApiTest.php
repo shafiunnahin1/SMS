@@ -204,7 +204,7 @@ class QbOmrFormApiTest extends TestCase
         $this->assertStringContainsString('#16a34a', $html);
         $this->assertStringContainsString('write-cell', $html);
         $this->assertStringContainsString('পরীক্ষার্থীর তথ্য', $html);
-        $this->assertStringContainsString('দৈনিক পরীক্ষা', $html);
+        $this->assertStringNotContainsString('দৈনিক পরীক্ষা', $html);   // owner 2026-10-24: no exam-type boxes on the sheet (room saved)
         $this->assertStringContainsString('কক্ষ পরিদর্শকের স্বাক্ষর', $html);
     }
 

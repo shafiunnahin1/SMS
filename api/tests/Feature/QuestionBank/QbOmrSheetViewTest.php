@@ -11,7 +11,8 @@ class QbOmrSheetViewTest extends TestCase
 {
     public function test_the_sheet_prints_its_labels_and_subject_headings_in_both_languages(): void
     {
-        $settings = ['title' => 'OMR', 'roll_digits' => 4, 'option_count' => 4, 'option_labels' => ['ক', 'খ', 'গ', 'ঘ'], 'page_size' => 'a4', 'page_orientation' => 'portrait',
+        $settings = ['title' => '', 'roll_digits' => 4,   // owner 2026-10-24: an empty title and subtitle load the paper's class and subjects
+             'option_count' => 4, 'option_labels' => ['ক', 'খ', 'গ', 'ঘ'], 'page_size' => 'a4', 'page_orientation' => 'portrait',
             'answer_columns' => 'auto', 'question_count' => 6, 'info_boxes' => ['class' => ['visible' => true], 'roll' => ['visible' => true, 'digits' => 4], 'subject' => ['visible' => true], 'set' => ['visible' => true, 'digits' => 1]],
             'subject_blocks' => [['subject_id' => 1, 'start' => 0, 'count' => 3, 'name' => 'গণিত'], ['subject_id' => 2, 'start' => 3, 'count' => 3, 'name' => 'বিজ্ঞান']]];
         $settings['geometry'] = app(QbOmrGeometryService::class)->build(7, $settings);

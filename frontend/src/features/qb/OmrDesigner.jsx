@@ -15,7 +15,7 @@ import { pdfPages } from './omrSheet'
 // manual) and candidate codes (show + digits), answer layout. Every change is saved after a short pause and the preview is the
 // server's own sheet PDF drawn from the saved settings (`pdf?preview=1`), so what is seen is exactly what "Generate" prints and
 // what the scanner reads. A generated form is locked; "edit again" unlocks it (a new layout version, as before).
-export const OMR_DEFAULTS = { title: '', subtitle: '', title_size: 20, subtitle_size: 14, font: 'default', theme_color: 'black', entry_mode: 'digital',
+export const OMR_DEFAULTS = { title: '', subtitle: '', title_size: 12, subtitle_size: 12, font: 'default', theme_color: 'black', entry_mode: 'digital',
   roll_digits: 6, digits: { class: 2, subject: 3, set: 1 }, option_count: 4, option_language: 'bangla', info_boxes: { class: false, roll: true, student_id: true, set: true },   // owner 2026-10-24: roll, 10-digit ID and set; class off by default
   page_size: 'a4', page_orientation: 'portrait', answer_columns: 'auto', question_mark: '1.00', negative_mark_enabled: false, negative_mark: '0.00', multiple_answer_policy: 'wrong' }
 // the swatches only point at the colour; the sheet itself uses the server's exact colour for the same key
@@ -46,7 +46,7 @@ export default function OmrDesigner({ id, form, onSaved }) {
   const toast = (m, k) => useUiStore.getState().addToast(m, k)
 
   // a new form starts with the paper's title
-  useEffect(() => { if (!form && paper.data && !v.title) { setV(x => ({ ...x, title: paper.data.title })); setDirty(true) } }, [paper.data])   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!form && paper.data && !v.title) { setV(x => ({ ...x, title: paper.data.class_name || paper.data.title, subtitle: x.subtitle || paper.data.subject_names || '' })); setDirty(true) } }, [paper.data])   // eslint-disable-line react-hooks/exhaustive-deps   // owner 2026-10-24: class and subjects from the paper, editable
   const set = (patch) => { setV(x => ({ ...x, ...patch })); setDirty(true) }
 
   const body = () => ({ settings: { ...v, roll_digits: Number(v.roll_digits), option_count: Number(v.option_count), title_size: Number(v.title_size), subtitle_size: Number(v.subtitle_size),
@@ -154,7 +154,7 @@ export default function OmrDesigner({ id, form, onSaved }) {
 
           <Section title={t('qbomr.sec_title')}>
             <Labelled label={t('qbomr.form_title')}><input className={field} dir="auto" name="title" value={v.title} onChange={e => set({ title: e.target.value })} /></Labelled>
-            <Slider label={t('qbomr.title_size')} name="title_size" min={12} max={32} value={v.title_size} onChange={n => set({ title_size: n })} />
+            <Slider label={t('qbomr.title_size')} name="title_size" min={10} max={32} value={v.title_size} onChange={n => set({ title_size: n })} />
             <Labelled label={t('qbomr.subtitle')}><input className={field} dir="auto" name="subtitle" placeholder={t('qbomr.subtitle_ph')} value={v.subtitle} onChange={e => set({ subtitle: e.target.value })} /></Labelled>
             <Slider label={t('qbomr.subtitle_size')} name="subtitle_size" min={10} max={24} value={v.subtitle_size} onChange={n => set({ subtitle_size: n })} />
           </Section>

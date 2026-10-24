@@ -60,8 +60,8 @@ class QbOmrFormService
                 'question_count' => count($mcqIds),
                 'subject_blocks' => $this->subjectBlocks($lockedPaper),   // D128: [] unless the paper is grouped by subject
                 'subtitle' => trim((string) ($input['subtitle'] ?? '')),
-                'title_size' => (int) ($input['title_size'] ?? 20),
-                'subtitle_size' => (int) ($input['subtitle_size'] ?? 14),
+                'title_size' => (int) ($input['title_size'] ?? 12),
+                'subtitle_size' => (int) ($input['subtitle_size'] ?? 12),
                 'font' => $input['font'] ?? 'default',
                 'theme_color' => $input['theme_color'] ?? 'black',
                 'entry_mode' => $input['entry_mode'] ?? 'digital',

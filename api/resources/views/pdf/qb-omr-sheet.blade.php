@@ -47,17 +47,14 @@
         .heading h1 { margin: 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; font-weight: 700; color: {{ $color }}; }
         .heading p { margin: .3mm 0 0; font-size: 10px; }
         .heading p.details { margin: .8mm 0 0; font-size: 8px; color: #333333; }
-        .heading p.exam { font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; font-weight: 600; }
+        .heading p.exam { margin: .3mm 0 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; font-weight: 600; }
         .heading .meta { align-self: stretch; display: flex; justify-content: space-between; margin-top: .8mm; font-size: 9px; }
         .set-box { position: absolute; top: 7.8%; right: 4%; display: flex; flex-direction: column; align-items: flex-end; gap: 1mm; padding: 1.2mm 2mm; border: .4mm solid {{ $color }}; font-size: 8px; font-weight: 700; color: {{ $color }}; }
         .set-box .code-row { display: flex; align-items: center; gap: 1.5mm; }
         .set-box .digits { display: flex; }
         .set-box b { display: inline-flex; align-items: center; justify-content: center; width: 4.2mm; height: 4.6mm; margin-inline-start: -.3mm; border: .3mm solid {{ $color }}; font-size: 9px; color: #111111; }
         .set-box b.wide { width: 7mm; }
-        .heading p.subtitle { margin: .5mm 0 0; font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; }
-        .exam-types { margin-top: 2mm; display: grid; grid-template-columns: 1.05fr 1.2fr 1fr; gap: 1.6mm 2mm; font-size: 6.5pt; }
-        .exam-types label { display: flex; align-items: center; gap: 1.5mm; white-space: nowrap; }
-        .exam-types i { display: inline-block; flex: none; width: 3.6mm; height: 3.6mm; border: .25mm solid {{ $color }}; }
+        .heading p.subtitle { margin: .3mm 0 0; font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; }
         .marker { position: absolute; width: 8mm; height: 8mm; transform: translate(-50%, -50%); background: #000000; }
         .marker::after { position: absolute; top: 2.5mm; left: 2.5mm; width: 3mm; height: 3mm; content: ""; background: #ffffff; }
         .code-bit { position: absolute; border: .25mm solid #111111; background: #ffffff; }
@@ -100,21 +97,16 @@
         $digits = static fn ($v) => $locale === 'bn' ? strtr((string) $v, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']) : (string) $v;
         $marks = isset($head['total_marks']) && $head['total_marks'] !== null ? rtrim(rtrim((string) $head['total_marks'], '0'), '.') : '';
     @endphp
-    {{-- owner layout 2026-10-24 (qbank's sheet): the exam title, one small line of the paper's details, then the exam-type boxes --}}
+    {{-- owner 2026-10-24: institution, title and subtitle in one small size (title_size / subtitle_size, 12px by default), no exam-type
+         boxes; the title starts as the paper's class and the subtitle as its subjects (editable in the form settings) --}}
     @php
-        $details = array_filter([$subtitle, $head['class'] ?? '', $head['subjects'] ?? '',
-], fn ($v) => trim((string) $v) !== '');
+        $title = trim((string) ($settings['title'] ?? '')) !== '' ? $settings['title'] : (($head['class'] ?? '') !== '' ? $head['class'] : $exam);
+        $sub = $subtitleShown ? $subtitle : ($head['subjects'] ?? '');
     @endphp
     <header class="heading">
-        {{-- owner 2026-10-24: the institution's name large, the exam's name smaller under it --}}
         @if (($head['institution'] ?? '') !== '')<h1>{{ $head['institution'] }}</h1>@endif
-        @if ($exam !== '')<p class="exam">{{ $exam }}</p>@endif
-        @if ($details)<p class="details">{{ implode(' · ', $details) }}</p>@endif
-        <section class="exam-types" aria-label="{{ __('pdf.qb_omr.exam_type') }}">
-            @foreach (__('pdf.qb_omr.exam_types') as $examType)
-                <label><i></i>{{ $examType }}</label>
-            @endforeach
-        </section>
+        @if (trim((string) $title) !== '')<p class="exam">{{ $title }}</p>@endif
+        @if (trim((string) $sub) !== '')<p class="subtitle">{{ $sub }}</p>@endif
     </header>
     {{-- the board paper's framed box: each subject's code in digit boxes (one row per subject), then the set --}}
     {{-- owner 2026-10-24: one sheet serves every set - the student marks the set code; the header names no set, time or full marks --}}
