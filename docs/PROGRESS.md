@@ -1063,3 +1063,4 @@ Final checkpoint gate: all tested schema/contract/test/generated blobs unchanged
 - 2026-10-24: D164 draft rewritten for no cost (owner): P1 runs inside Laravel/MySQL on any server - FULLTEXT search over the reviewed answer bank, question bank and curriculum, direct or template-composed answers with sources, review queue feeds the answer bank (weights 1/2/3); no GPU, model or new package. No code.
 - 2026-10-24: D164 draft - assistant searches the whole platform question bank; locked answers within a per-institution daily free quota (default 20), then unlock (owner).
 - 2026-10-24: D164 draft - small CPU model (llama.cpp, Qwen3 1.7B/4B, VPS BDT 2-5k/month) added to P1 to phrase answers, template fallback (owner).
+- 2026-10-24: D164 draft final with the owner answers (70% gate, 20 free answers/day, bank open to all, price/limit later, Hostinger cheapest 8 GB VPS).
