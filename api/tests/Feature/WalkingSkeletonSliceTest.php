@@ -46,7 +46,7 @@ class WalkingSkeletonSliceTest extends TestCase
         $host = $this->hostOf($inst);
 
         $s = $this->admit($inst, $admin, $a, 'রাহিম');
-        $this->assertSame('DHA-' . date('Y') . '-0001', $s['student_id']);
+        $this->assertSame(date('ymd') . '0001', $s['student_id']);   // D160: today's YYmmdd + the day's first global serial
         $this->assertSame(['A', 'রাহিম'], [$s['batch']['name'], $s['name']]);
         $this->assertSame('DHA-' . date('Y') . '-0002', $this->admit($inst, $admin, $a, 'করিম', '01711111111')['student_id']);
         $this->assertSame(1, Tenancy::as($inst, fn () => User::inTenant()->where('role', 'parent')->count()), 'siblings share one parent account');
