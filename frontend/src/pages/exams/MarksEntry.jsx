@@ -10,6 +10,7 @@ import Button from '../../components/Button'
 import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import Ltr from '../../components/bidi/Ltr'
+import McqImport from '../../features/exams/McqImport'
 
 // Step 4.5 marks entry (admin: /admin/exams/:examId/entry/:subjectId, teacher: /teacher/marks/:examId/:subjectId). The sheet
 // brings the limits and parts; the browser only bounds the inputs - the grade comes back from the server after saving (grading.md).
@@ -70,6 +71,10 @@ export default function MarksEntry() {
         {parts.length > 0 && <> · {parts.map(p => `${p.label} ${p.full}/${p.pass}`).join(' · ')}</>}
       </p>
       {exam.status === 'published' && <Card><p className="text-sm">{t('exams.locked_hint')}</p></Card>}
+      {exam.status !== 'published' && parts.some(p => p.key === 'mcq') && rows.length > 0 && (
+        <McqImport examId={examId} subjectId={subjectId} exam={exam.name} subject={subject.name} rows={rows} full={Number(parts.find(p => p.key === 'mcq').full)}
+          onSaved={() => { qc.invalidateQueries({ queryKey: ['entry', examId, subjectId] }); qc.invalidateQueries({ queryKey: ['results'] }) }} />
+      )}
       {!rows.length ? <EmptyState title={t('exams.no_students')} /> : (
         <Card className="flex flex-col gap-3">
           <ul className="flex flex-col divide-y divide-line" data-testid="marks-entry">

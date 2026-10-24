@@ -611,6 +611,10 @@ Route::prefix('v1')->group(function () {
                 Route::post('/results/bulk',              [ResultController::class, 'bulkStore']);
                 Route::put('/results/{id}',               [ResultController::class, 'update'])->whereNumber('id');
             });
+            // D158 (5)(6): the MCQ part from pasted JSON or from the linked paper's graded OMR sheets (preview, then save)
+            Route::middleware('role:admin,teacher')->group(function () {
+                Route::post('/exams/{id}/subjects/{subjectId}/mcq-import', [ResultController::class, 'mcqImport'])->whereNumber(['id', 'subjectId']);
+            });
             Route::get('/results/marksheet/{studentId}',  [ResultController::class, 'marksheet'])->whereNumber('studentId')->middleware('role:admin,teacher,parent,institution_staff');
             Route::get('/parent/children/{id}/results',   [ResultController::class, 'forParent'])->whereNumber('id')->middleware('role:parent');
         });

@@ -158,4 +158,7 @@ return [
     'exam_paper_not_final' => 'Only a final question paper can be linked.',
     'exam_paper_empty' => 'The question paper has no questions with marks.',
     'exam_paper_has_marks' => 'Marks are already entered for this subject - its question paper cannot change.',
+    // D158 (5)(6)
+    'exam_no_paper' => 'No question paper is linked to this subject.',
+    'exam_no_mcq_part' => 'This subject has no MCQ part - link a question paper with MCQs first.',
 ];

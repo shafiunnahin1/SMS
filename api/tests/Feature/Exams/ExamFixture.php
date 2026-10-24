@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Exams;
 
-use App\Models\{Batch, Institution, Program, Subject, Teacher, User};
+use App\Models\{Batch, Institution, Program, QbCreativePart, QbQuestion, QbQuestionOption, QbQuestionType, QbSubject, QbUnlock, Subject, Teacher, User};
 use App\Services\StudentService;
 use App\Support\Tenancy;
 use Illuminate\Support\Facades\Queue;
@@ -47,6 +47,32 @@ trait ExamFixture
             ['subject_id' => $s['physics']->id, 'full_marks' => 100, 'pass_marks' => 33, 'components' => [
                 ['key' => 'written', 'label' => 'লিখিত', 'full' => 70, 'pass' => 23], ['key' => 'mcq', 'label' => 'MCQ', 'full' => 30, 'pass' => 10]]],
         ]])->assertOk();
+        return $id;
+    }
+
+    /** D158: a paper of 30 MCQ + 50 creative + 20 short marks, bought free and (by default) finalized */
+    protected function paper(array $s, string $status = 'final'): int
+    {
+        $super = User::firstOrCreate(['phone' => '01700000099'], ['institution_id' => null, 'name' => 's', 'role' => 'super_admin', 'password' => 'Super-pass-2026', 'is_active' => true]);
+        $mcqType = QbQuestionType::firstOrCreate(['slug' => 'mcq'], ['name_bn' => 'বহুনির্বাচনী', 'name_en' => 'MCQ', 'family' => 'mcq'])->id;
+        $creType = QbQuestionType::firstOrCreate(['slug' => 'creative'], ['name_bn' => 'সৃজনশীল', 'name_en' => 'Creative', 'family' => 'creative'])->id;
+        $shortType = QbQuestionType::firstOrCreate(['slug' => 'short'], ['name_bn' => 'সংক্ষিপ্ত', 'name_en' => 'Short', 'family' => 'short'])->id;
+        $subject = QbSubject::firstOrCreate(['name_bn' => 'পদার্থবিজ্ঞান'], ['name_en' => 'Physics'])->id;
+        $q = fn ($type) => QbQuestion::create(['qb_question_type_id' => $type, 'qb_subject_id' => $subject, 'question_text' => 'q' . uniqid(), 'status' => 'published', 'created_by' => $super->id]);
+        $mcq = $q($mcqType);
+        foreach ([true, false, false, false] as $n => $ok) QbQuestionOption::create(['qb_question_id' => $mcq->id, 'label' => 'x', 'content_text' => "o{$n}", 'is_correct' => $ok]);
+        $cq = $q($creType);
+        QbCreativePart::create(['qb_question_id' => $cq->id, 'part_label' => 'ক', 'cognitive_level' => 'knowledge', 'marks' => 1, 'question_text' => 'x']);
+        $short = $q($shortType);
+        Tenancy::as($s['i'], function () use ($s, $mcq, $cq, $short) {
+            foreach ([$mcq, $cq, $short] as $x) QbUnlock::create(['item_type' => 'question', 'item_id' => $x->id, 'unlocked_by' => $s['admin']->id, 'price' => '0.00', 'reason' => 'free']);
+        });
+        $id = $this->api('POST', $s['host'], 'question-bank/papers', $s['admin'], ['title' => 'Physics paper', 'sets_count' => 1, 'sections' => [
+            ['title' => 'MCQ', 'items' => [['qb_question_id' => $mcq->id, 'marks' => '30']]],
+            ['title' => 'CQ', 'items' => [['qb_question_id' => $cq->id, 'marks' => '50']]],
+            ['title' => 'Short', 'items' => [['qb_question_id' => $short->id, 'marks' => '20']]],
+        ]])->assertCreated()->json('data.id');
+        if ($status === 'final') $this->api('POST', $s['host'], "question-bank/papers/{$id}/finalize", $s['admin'], ['strategy' => 'serial'])->assertOk();
         return $id;
     }
 }

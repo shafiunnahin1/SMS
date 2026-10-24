@@ -98,9 +98,10 @@ class DepartmentRouteInventoryTest extends TestCase
     public function test_d158_exam_paper_link_routes_are_admin_only_and_match_live_routes(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);
-        $this->assertCount(2, DepartmentRouteCatalog::D158);
+        $this->assertCount(3, DepartmentRouteCatalog::D158);
         foreach (DepartmentRouteCatalog::D158 as $entry) {
-            $this->assertSame(['D158', 'preserve_nonstaff_boundary', [], ['admin']], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
+            $roles = str_ends_with($entry['uri'], '/mcq-import') ? ['admin', 'teacher'] : ['admin'];   // D158 (5): teachers import their own subjects' MCQ marks
+            $this->assertSame(['D158', 'preserve_nonstaff_boundary', [], $roles], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
             $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
                 ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array($entry['method'], $candidate->methods(), true));
             $this->assertNotNull($route, $entry['method'] . ' ' . $entry['uri']);

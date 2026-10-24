@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Exams;
 
+use App\Services\Exams\McqImportService;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Exams\BulkResultsRequest;
@@ -57,6 +58,18 @@ class ResultController extends Controller
             'rows' => $this->exams->sitters($exam, $es, $batchIds)->map(fn ($e) => ['student_id' => $e->student_id, 'code' => $e->student?->student_id,
                 'name' => $e->student?->user?->name, 'roll_no' => $e->roll_no, 'batch' => $e->batch?->name, 'result' => $this->resultRow($saved->get($e->student_id))])->values(),
         ]]);
+    }
+
+    /** D158 (5)(6): POST - {source: json|omr, rows?: [{roll, batch?, mcq}], save: bool}; answers the checked rows */
+    public function mcqImport(Request $request, int $id, int $subjectId, McqImportService $import)
+    {
+        [$exam, $es, $batchIds] = $this->entryScope($request, $id, $subjectId);   // another institution's exam is 404 first
+        $data = $request->validate(['source' => 'required|in:json,omr', 'save' => 'boolean', 'rows' => 'required_if:source,json|array|max:2000',
+            'rows.*' => 'array', 'rows.*.roll' => 'nullable', 'rows.*.batch' => 'nullable|string|max:100', 'rows.*.mcq' => 'nullable']);
+        if ($exam->status === 'published') throw new BusinessException('exam is published', 'exam_published', 422);
+        $save = (bool) ($data['save'] ?? false);
+        $out = $data['source'] === 'omr' ? $import->fromOmr($exam, $es, $batchIds, $save) : $import->fromRows($exam, $es, $data['rows'], $batchIds, $save);
+        return response()->json(['success' => true, 'data' => $out]);
     }
 
     /** POST /results/bulk - one subject of one exam; answers with the server's grades */

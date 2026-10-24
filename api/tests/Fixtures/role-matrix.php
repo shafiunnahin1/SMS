@@ -111,6 +111,7 @@ return [
     'PUT api/v1/exams/{id}/subjects' => ['admin'],
     'PUT api/v1/exams/{id}/subjects/{subjectId}/paper' => ['admin'],      // D158 (3)
     'DELETE api/v1/exams/{id}/subjects/{subjectId}/paper' => ['admin'],
+    'POST api/v1/exams/{id}/subjects/{subjectId}/mcq-import' => ['admin', 'teacher'],   // D158 (5)(6)
     'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => ['admin', 'institution_staff', 'teacher'],
     'GET api/v1/fees/categories' => ['admin'],
     'POST api/v1/fees/categories' => ['admin'],
