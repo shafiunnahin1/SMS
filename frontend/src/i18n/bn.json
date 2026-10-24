@@ -1,6 +1,9 @@
 {
  "app": {
   "qbpv": {
+   "wrap": "Wrap Text (বক্স বেছে নিন)",
+   "wraps": {"inline": "In Line with Text", "square": "Square", "tight": "Tight", "topBottom": "Top and Bottom", "behind": "Behind Text", "front": "In Front of Text"},
+   "box_list": "বক্সসমূহ (বেছে নিন)",
    "edit_question": "{{n}} নং প্রশ্ন সম্পাদনা",
    "edited": "এই পত্রে বদলানো",
    "edit_note": "এই পরিবর্তন শুধু এই প্রশ্নপত্র ও সেটে, এই ব্রাউজারে থাকবে; প্রশ্নব্যাংকের মূল প্রশ্ন বদলাবে না। সঠিক অপশন বদলানো যায় না।",

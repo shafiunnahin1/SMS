@@ -96,4 +96,38 @@ describe('D133 paper print preview', () => {
     expect(box.previousElementSibling).toHaveAttribute('data-qid', '103')
     expect(screen.queryByTestId('qb-drop-gap')).toBeNull()
   })
+
+  it('drops a box between header lines and switches its wrap like Word', async () => {
+    window.localStorage.clear()
+    renderPage()
+    const paper = await screen.findByTestId('qb-paper')
+    const rect = (top, height = 20) => () => ({ top, height, bottom: top + height, left: 0, right: 600, width: 600, x: 0, y: top, toJSON() {} })
+    paper.querySelectorAll('[data-gap]').forEach(el => { el.getBoundingClientRect = rect(1000) })
+    paper.querySelector('[data-gap="h-institution"]').getBoundingClientRect = rect(100)
+    paper.getBoundingClientRect = rect(0, 1200)
+    fireEvent.click(screen.getByRole('button', { name: /Add Text Box/ }))
+    fireEvent.pointerDown(screen.getByLabelText('টেনে সরান'), { clientX: 10, clientY: 10 })
+    fireEvent.pointerMove(window, { clientX: 500, clientY: 130 })
+    expect(screen.getByTestId('qb-drag-ghost').style.display).toBe('block')
+    fireEvent.pointerUp(window, { clientX: 500, clientY: 130 })
+    const box = screen.getByTestId('qb-text-box')
+    expect(box).toHaveAttribute('data-anchor', 'h-institution')      // under the institution name, inside the header
+    expect(box.previousElementSibling).toHaveAttribute('data-line', 'institution')
+
+    const wrap = screen.getByRole('combobox', { name: /Wrap Text/ })
+    fireEvent.change(wrap, { target: { value: 'square' } })
+    expect(screen.getByTestId('qb-text-box')).toHaveAttribute('data-wrap', 'square')
+    expect(screen.getByTestId('qb-text-box').style.float).toBe('inline-end')   // dropped on the right half
+
+    fireEvent.change(wrap, { target: { value: 'front' } })
+    const free = screen.getByTestId('qb-text-box')
+    expect(free).toHaveAttribute('data-anchor', 'free')
+    expect(free.style.position).toBe('absolute')
+    free.getBoundingClientRect = rect(0, 40)
+    fireEvent.pointerDown(screen.getByLabelText('টেনে সরান'), { clientX: 5, clientY: 5 })
+    fireEvent.pointerMove(window, { clientX: 305, clientY: 405 })
+    expect(free.style.left).toBe('300px')                              // moves with the pointer, anywhere on the page
+    fireEvent.pointerUp(window, { clientX: 305, clientY: 405 })
+    expect(JSON.parse(window.localStorage.getItem('qb-paper-preview:7:A')).boxes[0]).toMatchObject({ wrap: 'front', x: 300, y: 400 })
+  })
 })

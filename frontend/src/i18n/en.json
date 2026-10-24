@@ -1,6 +1,9 @@
 {
  "app": {
   "qbpv": {
+   "wrap": "Wrap Text (pick a box)",
+   "wraps": {"inline": "In Line with Text", "square": "Square", "tight": "Tight", "topBottom": "Top and Bottom", "behind": "Behind Text", "front": "In Front of Text"},
+   "box_list": "Boxes (pick one)",
    "edit_question": "Edit question {{n}}",
    "edited": "Changed in this paper",
    "edit_note": "This change stays with this paper and set in this browser only; the question in the bank does not change. The correct option cannot be changed.",

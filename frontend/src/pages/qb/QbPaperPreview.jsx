@@ -20,6 +20,9 @@ import { loadFont } from '../../theme/fonts'
 // this browser and never reaches the question bank (no decision yet stores it on the server; D133 adds no table); which option is
 // right cannot change here, so the OMR answer key stays true. Text boxes and pictures are dropped between two questions, open a
 // gap there and take that place in the flow; their corner handle resizes them.
+// Owner request 2026-10-24 (as Word's "Wrap Text"): every box has a wrap mode - In line, Square, Tight, Top and bottom (in the
+// flow, dropped into any gap: above, between or under the header lines, under a section title, between questions), Behind text and
+// In front of text (free on the page, moved anywhere). Dragging moves the box itself with the pointer (no re-render per move).
 
 const BN_DIGITS = '০১২৩৪৫৬৭৮৯'
 const toBn = (v) => String(v ?? '').replace(/\d/g, d => BN_DIGITS[d])
@@ -39,6 +42,8 @@ const DEFAULTS = {
   columnLine: true, margin: 18, boxBorder: true, boxBottomLine: false, columns: 2,
 }
 const STORE = 'qb-paper-preview'
+const FREE = ['behind', 'front']                         // wraps placed freely on the page; the rest sit in the flow
+const WRAPS = ['inline', 'square', 'tight', 'topBottom', 'behind', 'front']
 const paperStore = (id, set) => `qb-paper-preview:${id}:${set}`
 const readJson = (key, fallback) => { try { return JSON.parse(window.localStorage.getItem(key) ?? 'null') ?? fallback } catch { return fallback } }
 const writeJson = (key, value) => { try { window.localStorage.setItem(key, JSON.stringify(value)) } catch { /* full or private: kept until the page closes */ } }
@@ -62,6 +67,7 @@ export default function QbPaperPreview() {
   const [editing, setEditing] = useState(null)
   const [activeBox, setActiveBox] = useState(null)
   const [drop, setDrop] = useState(null)
+  const ghostRef = useRef(null)
   const paperRef = useRef(null)
   const drag = useRef(null)
   const imageInput = useRef(null)
@@ -88,7 +94,7 @@ export default function QbPaperPreview() {
 
   const move = (i, dir) => setOrder(list => { const next = [...list]; const j = i + dir; if (j < 0 || j >= next.length) return list; [next[i], next[j]] = [next[j], next[i]]; return next })
   const print = () => { window.focus(); window.print() }
-  const addBox = (extra = {}) => { const box = { id: Date.now(), kind: 'text', anchor: 'top', width: 240, height: 0, html: '', ...extra }; setBoxes(b => [...b, box]); setActiveBox(box.id) }
+  const addBox = (extra = {}) => { const box = { id: Date.now(), kind: 'text', wrap: 'topBottom', anchor: 'top', side: 'start', x: 40, y: 40, width: 240, height: 0, html: '', ...extra }; setBoxes(b => [...b, box]); setActiveBox(box.id) }
   const addImage = (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -99,28 +105,73 @@ export default function QbPaperPreview() {
   }
   const patchBox = (boxId, patch) => setBoxes(list => list.map(b => (b.id === boxId ? { ...b, ...patch } : b)))
   const format = (cmd) => { if (activeBox) document.execCommand(cmd) }
-  // the gap a dragged box would drop into: after the last question whose middle is above the pointer, or under the header
+  // the gap a dragged box would drop into: after the last gap marker (header line, section title, question) whose middle is above
+  // the pointer, or before the first header line
   const gapAt = (y) => {
-    let anchor = 'top'
-    paperRef.current?.querySelectorAll('[data-qid]').forEach(el => { const r = el.getBoundingClientRect(); if (r.top + r.height / 2 < y) anchor = el.dataset.qid })
+    let anchor = 'h-start'
+    paperRef.current?.querySelectorAll('[data-gap]').forEach(el => { const r = el.getBoundingClientRect(); if (r.top + r.height / 2 < y) anchor = el.dataset.gap })
     return anchor
   }
-  const onPointerMove = (e) => { if (drag.current) setDrop(gapAt(e.clientY)) }
-  const onPointerUp = (e) => {
-    const d = drag.current
-    drag.current = null
-    if (!d) return
-    patchBox(d.id, { anchor: gapAt(e.clientY) })
-    setDrop(null)
+  const boxEl = (boxId) => paperRef.current?.querySelector(`[data-box="${boxId}"]`)
+  const startDrag = (b, e) => {
+    e.preventDefault()
+    const el = boxEl(b.id)
+    if (!el || !paperRef.current) return
+    const r = el.getBoundingClientRect()
+    const d = { id: b.id, free: FREE.includes(b.wrap), el, dx: e.clientX - r.left, dy: e.clientY - r.top, gap: null, side: b.side ?? 'start', x: b.x ?? 0, y: b.y ?? 0 }
+    setActiveBox(b.id)
+    const ghost = ghostRef.current
+    if (!d.free && ghost) {
+      Object.assign(ghost.style, { display: 'block', width: `${r.width}px`, height: `${r.height}px`, transform: `translate(${r.left}px, ${r.top}px)` })
+      el.style.opacity = '0.35'
+    }
+    d.move = (ev) => {
+      const pr = paperRef.current.getBoundingClientRect()
+      if (d.free) {
+        d.x = Math.round(ev.clientX - pr.left - d.dx); d.y = Math.round(ev.clientY - pr.top - d.dy)
+        el.style.left = `${d.x}px`; el.style.top = `${d.y}px`
+        return
+      }
+      if (ghost) ghost.style.transform = `translate(${ev.clientX - d.dx}px, ${ev.clientY - d.dy}px)`
+      d.side = ev.clientX - pr.left < pr.width / 2 ? 'start' : 'end'
+      const g = gapAt(ev.clientY)
+      if (g !== d.gap) { d.gap = g; setDrop(g) }
+    }
+    d.up = (ev) => {
+      window.removeEventListener('pointermove', d.move)
+      window.removeEventListener('pointerup', d.up)
+      drag.current = null
+      if (d.free) patchBox(d.id, { x: d.x, y: d.y })
+      else {
+        el.style.opacity = ''
+        if (ghost) ghost.style.display = 'none'
+        patchBox(d.id, { anchor: gapAt(ev.clientY), side: d.side })
+        setDrop(null)
+      }
+    }
+    drag.current = d
+    window.addEventListener('pointermove', d.move)
+    window.addEventListener('pointerup', d.up)
+  }
+  // Word's wrap switch keeps the box where it is on the page
+  const setWrap = (boxId, wrap) => {
+    const b = boxes.find(x => x.id === boxId)
+    const el = boxEl(boxId)
+    if (!b || !el || !paperRef.current) return patchBox(boxId, { wrap })
+    const r = el.getBoundingClientRect()
+    const pr = paperRef.current.getBoundingClientRect()
+    if (FREE.includes(wrap) && !FREE.includes(b.wrap)) return patchBox(boxId, { wrap, x: Math.round(r.left - pr.left), y: Math.round(r.top - pr.top) })
+    if (!FREE.includes(wrap) && FREE.includes(b.wrap)) return patchBox(boxId, { wrap, anchor: gapAt(r.top + r.height / 2) })
+    return patchBox(boxId, { wrap })
   }
   const q = (item) => ({ ...item.question, ...edits[item.question.id], options: (item.question.options ?? []).map((op, k) => ({ ...op, content_text: edits[item.question.id]?.options?.[k] ?? op.content_text })) })
+  const box = (b) => <PaperBox key={b.id} box={b} t={t} active={activeBox === b.id} onFocus={() => setActiveBox(b.id)} onChange={patch => patchBox(b.id, patch)}
+    onDelete={() => setBoxes(list => list.filter(x => x.id !== b.id))} onGrab={e => startDrag(b, e)} />
   const renderBoxes = (anchor) => [
-    drop === anchor && <div key="drop" className="qb-no-print my-1 h-8 rounded-token [border:2px_dashed_var(--color-primary)]" data-testid="qb-drop-gap" />,
-    ...boxes.filter(b => String(b.anchor) === String(anchor)).map(b => (
-      <PaperBox key={b.id} box={b} t={t} active={activeBox === b.id} onFocus={() => setActiveBox(b.id)} onChange={patch => patchBox(b.id, patch)}
-        onDelete={() => setBoxes(list => list.filter(x => x.id !== b.id))} onGrab={() => { drag.current = { id: b.id }; setDrop(b.anchor) }} />
-    )),
+    drop === anchor && <div key="drop" className="qb-no-print my-1 h-8 w-full rounded-token [border:2px_dashed_var(--color-primary)]" data-testid="qb-drop-gap" />,
+    ...boxes.filter(b => !FREE.includes(b.wrap) && String(b.anchor) === String(anchor)).map(box),
   ]
+  const activeWrap = boxes.find(b => b.id === activeBox)?.wrap ?? 'topBottom'
 
   const paperStyle = { fontFamily: `${o.font}, 'Noto Sans Bengali', sans-serif`, fontSize: `${o.fontSize}px`, fontWeight: o.fontWeight, lineHeight: o.lineHeight, padding: `${o.margin}mm` }
   let running = 0
@@ -129,6 +180,11 @@ export default function QbPaperPreview() {
       <style>{`
         .qb-paper .qb-cols{column-count:${o.columns};column-gap:2rem;column-rule:${o.columnLine && o.columns > 1 ? '1px solid var(--line)' : 'none'}}
         .qb-paper .qb-q{break-inside:avoid}
+        .qb-paper .qb-cols,.qb-paper header{display:flow-root}
+        .qb-paper>:not(.qb-free):not(.qb-ghost){position:relative;z-index:1}
+        .qb-paper .qb-free.qb-behind{z-index:0}
+        .qb-paper .qb-free.qb-front{z-index:2}
+        .qb-paper .qb-free.qb-behind.qb-active{z-index:3}
         .qb-paper .qb-box{border:${o.boxBorder ? '1px solid currentColor' : '0'};border-bottom:${o.boxBottomLine ? '1px solid currentColor' : o.boxBorder ? '1px solid currentColor' : '0'}}
         @media print{
           @page{size:A4;margin:0}
@@ -142,23 +198,26 @@ export default function QbPaperPreview() {
 
       <div className="flex min-w-0 flex-1 justify-center">
         <article ref={paperRef} lang={o.language} className="qb-paper relative w-full max-w-[210mm] rounded-token bg-surface text-content shadow-card [border:1px_solid_var(--line)]"
-          style={paperStyle} onPointerMove={onPointerMove} onPointerUp={onPointerUp} data-testid="qb-paper">
-          <header className={`flex flex-col items-center gap-1 pb-2 text-center ${o.headerStyle === 'bordered' ? 'rounded-token p-3 [border:2px_solid_currentColor]' : ''} ${o.headerStyle === 'image' ? 'rounded-token bg-surface-muted p-3' : ''}`} data-testid="qb-paper-header">
-            {HEADER_LINES.map(k => header[k] && <div key={k} style={{ fontSize: `${o.sizes[k]}px` }} className={k === 'institution' ? 'font-semibold' : ''} dir="auto" data-line={k}>{header[k]}</div>)}
-            <div className="mt-1 flex w-full items-end justify-between gap-2 border-y border-line py-1">
+          style={paperStyle} data-testid="qb-paper">
+          {renderBoxes('h-start')}
+          <header className={`pb-2 text-center ${o.headerStyle === 'bordered' ? 'rounded-token p-3 [border:2px_solid_currentColor]' : ''} ${o.headerStyle === 'image' ? 'rounded-token bg-surface-muted p-3' : ''}`} data-testid="qb-paper-header">
+            {HEADER_LINES.map(k => header[k] && [<div key={k} style={{ fontSize: `${o.sizes[k]}px` }} className={`mb-1 ${k === 'institution' ? 'font-semibold' : ''}`} dir="auto" data-line={k} data-gap={`h-${k}`}>{header[k]}</div>, ...renderBoxes(`h-${k}`)])}
+            <div className="mt-1 flex w-full items-end justify-between gap-2 border-y border-line py-1" data-gap="h-meta">
               <span style={{ fontSize: `${o.sizes.time}px` }}>{L('time')} : {num(header.time)}</span>
               <span className="flex gap-3">
                 {header.setCode && <span style={{ fontSize: `${o.sizes.setCode}px` }} data-testid="qb-paper-set">{L('set')} {header.setCode}</span>}
                 <span style={{ fontSize: `${o.sizes.marks}px` }}>{L('full_marks')} : {num(header.marks)}</span>
               </span>
             </div>
+            {renderBoxes('h-meta')}
           </header>
-          {header.instructions.trim() && <p className="whitespace-pre-line pb-2 text-center text-sm" dir="auto" data-testid="qb-paper-instructions">{header.instructions}</p>}
+          <div data-gap="top">{header.instructions.trim() && <p className="whitespace-pre-line pb-2 text-center text-sm" dir="auto" data-testid="qb-paper-instructions">{header.instructions}</p>}</div>
           {renderBoxes('top')}
 
           {sections.map((s, si) => (
             <section key={si} className="pt-3" style={{ breakBefore: o.pageBreak && si > 0 ? 'page' : 'auto' }} data-testid="qb-paper-section">
-              {o.showSections && s.title && <h2 className="mb-2 border-b border-line pb-1 text-center font-semibold" dir="auto">{s.title}</h2>}
+              {o.showSections && s.title && <h2 className="mb-2 border-b border-line pb-1 text-center font-semibold" dir="auto" data-gap={`s-${si}`}>{s.title}</h2>}
+              {renderBoxes(`s-${si}`)}
               {o.showSections && s.instruction && <p className="mb-2 text-center text-sm" dir="auto">{s.instruction}</p>}
               <div className="qb-cols">
                 {s.items.map((it, ii) => {
@@ -170,7 +229,7 @@ export default function QbPaperPreview() {
                   if (editing === qid) return <QuestionEditor key={qid} t={t} question={it.question} value={edits[it.question.id]} onCancel={() => setEditing(null)}
                     onSave={v => { setEdits(e => ({ ...e, [it.question.id]: v })); setEditing(null) }} onReset={() => { setEdits(({ [it.question.id]: _drop, ...rest }) => rest); setEditing(null) }} />
                   return [
-                    <div key={`${si}-${ii}`} className="qb-q group relative mb-4" data-testid="qb-paper-question" data-qid={qid} data-edited={edits[it.question.id] ? 'yes' : undefined}>
+                    <div key={`${si}-${ii}`} className="qb-q group relative mb-4" data-testid="qb-paper-question" data-qid={qid} data-gap={qid} data-edited={edits[it.question.id] ? 'yes' : undefined}>
                       <button type="button" onClick={() => setEditing(qid)} className="qb-no-print absolute -top-1 end-0 rounded-token bg-surface p-1 text-content-muted opacity-60 hover:opacity-100 group-hover:opacity-100 [border:1px_solid_var(--line)]" aria-label={t('qbpv.edit_question', { n: no })} data-action="edit-question"><Pencil aria-hidden="true" className="h-3.5 w-3.5" /></button>
                       {edits[it.question.id] && <span className="qb-no-print absolute -top-1 end-8 rounded-token bg-primary-soft px-1 text-xs text-primary-fg">{t('qbpv.edited')}</span>}
                       {it.subject && <p className="mb-1 font-semibold" dir="auto">{it.subject}</p>}
@@ -197,6 +256,8 @@ export default function QbPaperPreview() {
             </section>
           ))}
           {running === 0 && <p className="py-8 text-center text-content-muted">{t('qbpv.empty')}</p>}
+          {boxes.filter(b => FREE.includes(b.wrap)).map(box)}
+          <div ref={ghostRef} aria-hidden="true" className="qb-ghost qb-no-print pointer-events-none fixed top-0 z-50 hidden rounded-token bg-primary-soft opacity-70 [border:2px_dashed_var(--color-primary)]" style={{ left: 0 }} data-testid="qb-drag-ghost" />
 
         </article>
       </div>
@@ -280,6 +341,14 @@ export default function QbPaperPreview() {
                 <button type="button" disabled={!activeBox} onMouseDown={e => e.preventDefault()} onClick={() => format('bold')} className="rounded-token px-2 py-1 font-bold [border:1px_solid_var(--line)] disabled:opacity-50">B {t('qbpv.bold')}</button>
                 <button type="button" disabled={!activeBox} onMouseDown={e => e.preventDefault()} onClick={() => format('underline')} className="rounded-token px-2 py-1 underline [border:1px_solid_var(--line)] disabled:opacity-50">U {t('qbpv.underline')}</button>
               </div></div>
+            <label className="col-span-2 flex flex-col gap-1"><span className="font-semibold">{t('qbpv.wrap')}</span>
+              <select className="rounded-token border px-2 py-1 disabled:opacity-50" name="wrap" disabled={!activeBox} value={activeWrap} onChange={e => setWrap(activeBox, e.target.value)}>
+                {WRAPS.map(w => <option key={w} value={w}>{t(`qbpv.wraps.${w}`)}</option>)}
+              </select></label>
+            {boxes.length > 0 && <div className="col-span-2 flex flex-col gap-1"><span className="font-semibold">{t('qbpv.box_list')}</span>
+              <ul className="flex flex-col gap-1" data-testid="qb-box-list">{boxes.map((b, i) => (
+                <li key={b.id}><button type="button" onClick={() => setActiveBox(b.id)} className={`w-full truncate rounded-token px-2 py-1 text-start text-xs ${activeBox === b.id ? 'bg-primary-soft text-primary-fg' : 'bg-surface-muted'}`}>
+                  {b.kind === 'image' ? t('qbpv.image') : t('qbpv.text_box')} {i + 1} · {t(`qbpv.wraps.${b.wrap ?? 'topBottom'}`)}</button></li>))}</ul></div>}
             <label className="col-span-2 flex flex-col gap-1"><span className="font-semibold">{t('qbpv.columns')}</span>
               <select className="rounded-token border px-2 py-1" value={o.columns} name="columns" onChange={e => setOpt({ columns: Number(e.target.value) })}>
                 {[1, 2, 3].map(c => <option key={c} value={c}>{t(`qbpv.cols.${c}`)}</option>)}
@@ -319,15 +388,21 @@ function Range({ label, min, max, step, value, shown, onChange }) {
 
 // a text box or picture in the paper's flow: the grip drags it to another gap, the native corner handle resizes it
 function PaperBox({ box, t, active, onFocus, onChange, onDelete, onGrab }) {
+  const wrap = box.wrap ?? 'topBottom'
+  const free = FREE.includes(wrap)
+  const place = free ? { position: 'absolute', left: box.x ?? 0, top: box.y ?? 0, margin: 0 }
+    : wrap === 'square' || wrap === 'tight' ? { float: box.side === 'end' ? 'inline-end' : 'inline-start', margin: wrap === 'tight' ? '0.15rem 0.5rem' : '0.5rem 1rem' }
+    : wrap === 'inline' ? { display: 'inline-block', verticalAlign: 'middle' } : {}
   const ref = useRef(null)
   const body = useRef(null)
   useEffect(() => { if (body.current && box.kind === 'text') body.current.innerHTML = box.html ?? '' }, [])   // eslint-disable-line react-hooks/exhaustive-deps
   const keepSize = () => { const el = ref.current; if (el) onChange({ width: el.offsetWidth, height: el.offsetHeight }) }
   return (
-    <div ref={ref} className={`qb-box relative my-2 max-w-full overflow-hidden bg-surface px-2 py-1 [break-inside:avoid] [resize:both] ${active ? 'ring-2 ring-primary-fg qb-active' : ''}`}
-      style={{ width: box.width || undefined, height: box.height || undefined }} onMouseUp={keepSize} data-testid={box.kind === 'image' ? 'qb-image-box' : 'qb-text-box'} data-anchor={box.anchor}>
+    <div ref={ref} className={`qb-box my-2 max-w-full overflow-hidden px-2 py-1 text-start [break-inside:avoid] [resize:both] ${free ? `qb-free qb-${wrap}` : 'relative'} ${wrap === 'behind' ? '' : 'bg-surface'} ${active ? 'ring-2 ring-primary-fg qb-active' : ''}`}
+      style={{ width: box.width || undefined, height: box.height || undefined, ...place }} onMouseUp={keepSize} onPointerDown={onFocus} data-box={box.id} data-wrap={wrap}
+      data-testid={box.kind === 'image' ? 'qb-image-box' : 'qb-text-box'} data-anchor={free ? 'free' : box.anchor}>
       <div className="qb-no-print mb-1 flex select-none items-center justify-between gap-2 text-xs text-content-muted">
-        <span className="cursor-move touch-none px-1" onPointerDown={e => { e.preventDefault(); onGrab() }} aria-label={t('qbpv.drag')} data-action="drag-box">⋮⋮</span>
+        <span className="cursor-move touch-none px-1" onPointerDown={onGrab} aria-label={t('qbpv.drag')} data-action="drag-box">⋮⋮</span>
         <button type="button" onClick={onDelete} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-3 w-3" /></button>
       </div>
       {box.kind === 'image'
