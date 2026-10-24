@@ -1,5 +1,81 @@
 {
  "app": {
+  "qbpv": {
+   "controller": "Paper Controller",
+   "print": "Print",
+   "image": "Image",
+   "pdf_hint": "Choose 'Save as PDF' in the print dialog",
+   "image_off": "Image export is not available yet (needs a library approval)",
+   "language": "ভাষা / Language",
+   "section_controls": "Section Controls",
+   "sections": "Sections",
+   "restart": "Restart numbering",
+   "page_break": "Page break",
+   "section_order": "Section order",
+   "section_n": "Section {{n}}",
+   "move_up": "Up",
+   "move_down": "Down",
+   "header_settings": "Header Settings",
+   "h": {
+    "institution": "Institution name",
+    "exam": "Exam name",
+    "class": "Class",
+    "subject": "Subject",
+    "setCode": "Set code",
+    "time": "Time",
+    "marks": "Full marks"
+   },
+   "size_of": "Text size of {{x}}",
+   "header_style": "Header Style",
+   "styles": {
+    "simple": "Simple",
+    "bordered": "Bordered",
+    "image": "Image Style"
+   },
+   "instructions": "Info/Instructions",
+   "instructions_ph": "Write instructions...",
+   "visibility": "Content Visibility",
+   "show": {
+    "question": "Question",
+    "answer": "Answer",
+    "explanation": "Explanation",
+    "source": "Source"
+   },
+   "typography": "Typography",
+   "font": "Font",
+   "font_size": "Font Size",
+   "font_weight": "Font Weight",
+   "line_height": "Line Height",
+   "layout": "Layout & Extras",
+   "column_line": "Column Line",
+   "margin": "Margin (mm)",
+   "box_border": "Text Box Border",
+   "box_bottom": "Text Box Bottom Line",
+   "add_box": "Add Text Box",
+   "box_format": "Text Box Format",
+   "bold": "Bold",
+   "underline": "Underline",
+   "text_box": "Text box",
+   "columns": "Column layout",
+   "cols": {
+    "1": "One column",
+    "2": "Two columns",
+    "3": "Three columns"
+   },
+   "back": "Back to the paper",
+   "empty": "This set has no questions",
+   "minutes": "{{n}} minutes",
+   "default_time": "3 hours",
+   "open": "Print preview",
+   "paper": {
+    "time": "Time",
+    "full_marks": "Full marks",
+    "set": "Set",
+    "answer": "Answer",
+    "explanation": "Explanation",
+    "correct": "Correct answer"
+   }
+  },
   "common": {
    "loading": "Loading…",
    "retry": "Try again",

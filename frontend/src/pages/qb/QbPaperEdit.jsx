@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Eye, Plus, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
 import Card from '../../components/Card'
@@ -137,6 +137,7 @@ export default function QbPaperEdit() {
             </div>
           </div>
           {!isNew && <div className="flex flex-wrap gap-2" data-testid="paper-primary-actions">
+            {setLetters.slice(0, final ? Number(v.sets_count) || 1 : 1).map(set => <Button key={`${set}p`} variant="secondary" onClick={() => navigate(`${base}/${id}/preview?set=${set}`)} data-action="preview" data-set={set}><Eye aria-hidden="true" className="h-4 w-4" />{final && Number(v.sets_count) > 1 ? `${t('qbpv.open')} ${set}` : t('qbpv.open')}</Button>)}
             {final && setLetters.slice(0, Number(v.sets_count) || 1).map(set => <PrintButton key={set} url={`/question-bank/papers/${id}/pdf`} params={{ set, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}.pdf`} label={t('qbpp.print_set', { set })} />)}
             {final && <Button variant="secondary" onClick={() => navigate(`${base}/${id}/omr`)} data-action="omr">{t('qbomr.title')}</Button>}
             {!final && <Button variant="secondary" onClick={() => document.querySelector('[data-testid="paper-picker"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} data-action="add-questions-shortcut"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.add_questions')}</Button>}

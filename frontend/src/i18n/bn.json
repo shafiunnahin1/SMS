@@ -1,5 +1,81 @@
 {
  "app": {
+  "qbpv": {
+   "controller": "Paper Controller",
+   "print": "প্রিন্ট",
+   "image": "ইমেজ",
+   "pdf_hint": "প্রিন্ট ডায়ালগে 'Save as PDF' বেছে নিন",
+   "image_off": "ইমেজ export এখনো চালু নয় (লাইব্রেরির অনুমোদন লাগবে)",
+   "language": "ভাষা / Language",
+   "section_controls": "Section Controls",
+   "sections": "সেকশন",
+   "restart": "নতুন সিরিয়াল",
+   "page_break": "পেজ ব্রেক",
+   "section_order": "Section order",
+   "section_n": "সেকশন {{n}}",
+   "move_up": "উপরে",
+   "move_down": "নিচে",
+   "header_settings": "Header Settings",
+   "h": {
+    "institution": "প্রতিষ্ঠানের নাম",
+    "exam": "পরীক্ষার নাম",
+    "class": "শ্রেণি",
+    "subject": "বিষয়",
+    "setCode": "সেট কোড",
+    "time": "সময়",
+    "marks": "পূর্ণমান"
+   },
+   "size_of": "{{x}}-এর অক্ষরের মাপ",
+   "header_style": "Header Style",
+   "styles": {
+    "simple": "Simple",
+    "bordered": "Bordered",
+    "image": "Image Style"
+   },
+   "instructions": "Info/Instructions",
+   "instructions_ph": "নির্দেশনা লিখুন...",
+   "visibility": "Content Visibility",
+   "show": {
+    "question": "Question",
+    "answer": "Answer",
+    "explanation": "Explanation",
+    "source": "Source"
+   },
+   "typography": "Typography",
+   "font": "Font",
+   "font_size": "Font Size",
+   "font_weight": "Font Weight",
+   "line_height": "Line Height",
+   "layout": "Layout & Extras",
+   "column_line": "Column Line",
+   "margin": "Margin (mm)",
+   "box_border": "Text Box Border",
+   "box_bottom": "Text Box Bottom Line",
+   "add_box": "Add Text Box",
+   "box_format": "Text Box Format",
+   "bold": "Bold",
+   "underline": "Underline",
+   "text_box": "লেখার বাক্স",
+   "columns": "কলাম লেআউট",
+   "cols": {
+    "1": "এক কলাম",
+    "2": "দুই কলাম",
+    "3": "তিন কলাম"
+   },
+   "back": "প্রশ্নপত্রে ফিরে যান",
+   "empty": "এই সেটে কোনো প্রশ্ন নেই",
+   "minutes": "{{n}} মিনিট",
+   "default_time": "৩ ঘণ্টা",
+   "open": "প্রিন্ট প্রিভিউ",
+   "paper": {
+    "time": "সময়",
+    "full_marks": "পূর্ণমান",
+    "set": "সেট",
+    "answer": "উত্তর",
+    "explanation": "ব্যাখ্যা",
+    "correct": "সঠিক উত্তর"
+   }
+  },
   "common": {
    "loading": "লোড হচ্ছে…",
    "retry": "আবার চেষ্টা করুন",
