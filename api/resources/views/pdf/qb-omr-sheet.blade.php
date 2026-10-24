@@ -84,7 +84,8 @@
         .bubble { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid {{ $color }}; border-radius: 50%; background: #ffffff; font-size: 6.5pt; font-weight: 600; line-height: 1; }
         .answers-title { position: absolute; left: 8%; width: 84%; text-align: center; font-size: 8.5pt; font-weight: 700; color: {{ $color }}; }
         .question-number { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: 700; }
-        .subject-heading { position: absolute; display: flex; align-items: flex-end; font-size: 7.5pt; font-weight: 700; border-bottom: .2mm solid {{ $color }}; overflow: hidden; white-space: nowrap; }
+        .subject-heading { position: absolute; display: flex; align-items: center; justify-content: center;   /* owner 2026-10-24: centred in its column */
+             font-size: 7.5pt; font-weight: 700; border-bottom: .2mm solid {{ $color }}; overflow: hidden; white-space: nowrap; }
         .answer-bubble { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid {{ $color }}; border-radius: 50%; background: #ffffff; font-size: 6.5pt; line-height: 1; }
     </style>
 </head>
@@ -152,7 +153,7 @@
                 $tinted = in_array($key, ['roll', 'subject', 'student_id'], true);
             @endphp
             {{-- head cell, one write-in box per digit, then a ruled cell around each bubble (cell lines only clear of the reader's ring) --}}
-            <strong class="head-cell" style="{{ $rectStyle(['left' => $headLeft, 'top' => $box['top'] - $writeHeight - 0.022, 'width' => $headWidth, 'height' => 0.022]) }}">{{ __('pdf.qb_omr.' . $label) }}</strong>
+            <strong class="head-cell" style="{{ $rectStyle(['left' => $headLeft, 'top' => $box['top'] - $writeHeight - 0.022, 'width' => $headWidth, 'height' => 0.022]) }}{{ $headWidth < 0.075 ? ';font-size:6.5pt;padding:0 .6mm' : '' }}">{{ __('pdf.qb_omr.' . $label) }}</strong>
             @foreach ($box['rows'][0] as $first)
                 <span class="write-cell" style="{{ $rectStyle(['left' => $first['cell']['left'], 'top' => $box['top'] - $writeHeight, 'width' => $first['cell']['width'], 'height' => $writeHeight]) }}"></span>
             @endforeach
