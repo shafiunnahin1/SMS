@@ -53,8 +53,11 @@ test('QB.8 a question paper from a bought question, printed', async ({ page, bro
   await school.locator('[data-action="finalize"]').click()
   await expect(school.locator('[data-status="final"]')).toBeVisible()
 
+  // owner 2026-10-24: a set prints from its print preview (the paper page keeps only the sets list's preview)
+  await school.locator('[data-testid="paper-set-list"] [data-action="preview"][data-set="A"]').click()
+  await expect(school.locator('[data-testid="qb-paper-question"]').first()).toBeVisible()
   const download = school.waitForEvent('download')
-  await school.getByRole('button', { name: /সেট A প্রিন্ট|Print set A/ }).click()
+  await school.locator('[data-action="pdf"]').click()
   expect((await download).suggestedFilename()).toMatch(/paper-\d+-A\.pdf/)
   await school.goto('/admin/question-bank/papers')
   await expect(school.locator('[data-testid="qb-papers"]')).toContainText(`অর্ধবার্ষিক ${tag}`)

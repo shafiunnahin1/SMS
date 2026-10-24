@@ -1214,8 +1214,6 @@
    "no_choices": "Nothing to choose"
   },
   "qbpp": {
-   "set_print": "Print",
-   "set_answers": "With answers",
    "sets_title": "Sets",
    "sets_hint": "New sets shuffle the MCQ order and options; earlier sets do not change.",
    "sets_count": "How many sets",

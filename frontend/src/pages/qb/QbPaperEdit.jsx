@@ -8,7 +8,6 @@ import { useUiStore } from '../../store/uiStore'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
 import Loader from '../../components/Loader'
-import PrintButton from '../../components/PrintButton'
 import DirIcon from '../../components/DirIcon'
 import Ltr from '../../components/bidi/Ltr'
 import { ErrorState } from '../../components/StateViews'
@@ -37,7 +36,6 @@ export default function QbPaperEdit() {
   const [target, setTarget] = useState(0)
   const [busy, setBusy] = useState(false)
   const [finalOpts, setFinalOpts] = useState({ strategy: 'both', set_names: 'latin' })   // D126 (2)
-  const [columns, setColumns] = useState(false)
   const [planInfo, setPlanInfo] = useState(null)       // D126 (3): the blueprint a new paper started from, and what it was short of
   const blueprints = useQuery({ queryKey: ['qb-blueprints'], queryFn: () => api.get('/question-bank/blueprints').then(r => r.data.data), enabled: isNew })
   const found = useQuery({ queryKey: ['qb-library', 'questions', 'paper', search], queryFn: () => api.get('/question-bank/questions', { params: { q: search || undefined, per_page: 10 } }).then(r => r.data.data) })
@@ -137,16 +135,14 @@ export default function QbPaperEdit() {
             </div>
           </div>
           {!isNew && <div className="flex flex-wrap gap-2" data-testid="paper-primary-actions">
-            {setLetters.slice(0, final ? Number(v.sets_count) || 1 : 1).map(set => <Button key={`${set}p`} variant="secondary" onClick={() => navigate(`${base}/${id}/preview?set=${set}`)} data-action="preview" data-set={set}><Eye aria-hidden="true" className="h-4 w-4" />{final && Number(v.sets_count) > 1 ? `${t('qbpv.open')} ${set}` : t('qbpv.open')}</Button>)}
-            {final && setLetters.slice(0, Number(v.sets_count) || 1).map(set => <PrintButton key={set} url={`/question-bank/papers/${id}/pdf`} params={{ set, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}.pdf`} label={t('qbpp.print_set', { set })} />)}
+            {!final && <Button variant="secondary" onClick={() => navigate(`${base}/${id}/preview?set=A`)} data-action="preview" data-set="A"><Eye aria-hidden="true" className="h-4 w-4" />{t('qbpv.open')}</Button>}
             {final && <Button variant="secondary" onClick={() => navigate(`${base}/${id}/omr`)} data-action="omr">{t('qbomr.title')}</Button>}
             {!final && <Button variant="secondary" onClick={() => document.querySelector('[data-testid="paper-picker"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} data-action="add-questions-shortcut"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.add_questions')}</Button>}
             {!final && <Button onClick={finalize} data-action="finalize">{t('qbpp.finalize')}</Button>}
-            {final && setLetters.slice(0, Number(v.sets_count) || 1).map(set => <PrintButton key={`${set}a`} url={`/question-bank/papers/${id}/pdf`} params={{ set, answers: 1, columns: columns ? 2 : 1 }} filename={`paper-${id}-${set}-answers.pdf`} label={t('qbpp.print_answers', { set })} />)}
           </div>}
         </div>
       </Card>
-      {!isNew && final && <PaperSets paperId={id} paper={paper.data} base={base} columns={columns} onChanged={() => { paper.refetch(); qc.invalidateQueries({ queryKey: ['qb-papers'] }) }} />}
+      {!isNew && final && <PaperSets paperId={id} paper={paper.data} base={base} onChanged={() => { paper.refetch(); qc.invalidateQueries({ queryKey: ['qb-papers'] }) }} />}
       <Card className="grid gap-3 sm:grid-cols-2" data-testid="paper-settings">
         <fieldset disabled={final} className="contents">
           <Input label={t('qbpp.title')} value={v.title} onChange={e => set({ title: e.target.value })} name="title" />
@@ -240,9 +236,6 @@ export default function QbPaperEdit() {
                   options={[{ value: 'latin', label: 'A, B, C…' }, { value: 'bangla', label: 'ক, খ, গ…' }]} />
               </div>
             )}
-            {!isNew && final && (
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="columns" checked={columns} onChange={e => setColumns(e.target.checked)} />{t('qbpp.two_columns')}</label>
-            )}
           </div>
         </div>
         {!final && (
@@ -273,7 +266,7 @@ export default function QbPaperEdit() {
 
 // qbank's subsets on the paper page (D126 (2), D133): the frozen sets with their own preview and print, and "create sets" that adds
 // more sets after them - MCQ order and options shuffled by the chosen strategy, never repeating an earlier set
-function PaperSets({ paperId, paper, base, columns, onChanged }) {
+function PaperSets({ paperId, paper, base, onChanged }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [form, setForm] = useState({ count: '1', strategy: 'both' })
@@ -301,9 +294,7 @@ function PaperSets({ paperId, paper, base, columns, onChanged }) {
           <li key={s.number} className="flex flex-wrap items-center gap-2 rounded-token px-3 py-2 [border:1px_solid_var(--line)]" data-set={s.set}>
             <span className="min-w-16 font-semibold">{t('qbpp.set_code', { code: s.code })}</span>
             <span className="flex-1 text-sm text-content-muted">{s.number === 1 ? t('qbpp.main_set') : t(`qbpp.strategies.${s.strategy}`)}</span>
-            <Button variant="secondary" onClick={() => navigate(`${base}/${paperId}/preview?set=${s.set}`)}><Eye aria-hidden="true" className="h-4 w-4" />{t('qbpv.open')}</Button>
-            <PrintButton url={`/question-bank/papers/${paperId}/pdf`} params={{ set: s.set, columns: columns ? 2 : 1 }} filename={`paper-${paperId}-${s.set}.pdf`} label={t('qbpp.set_print')} />
-            <PrintButton url={`/question-bank/papers/${paperId}/pdf`} params={{ set: s.set, answers: 1, columns: columns ? 2 : 1 }} filename={`paper-${paperId}-${s.set}-answers.pdf`} label={t('qbpp.set_answers')} />
+            <Button variant="secondary" onClick={() => navigate(`${base}/${paperId}/preview?set=${s.set}`)} data-action="preview" data-set={s.set}><Eye aria-hidden="true" className="h-4 w-4" />{t('qbpv.open')}</Button>
           </li>
         ))}
       </ul>
