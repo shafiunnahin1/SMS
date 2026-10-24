@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
-import { Camera, Check, Download, Lock, Unlock, Upload, X } from 'lucide-react'
+import { Camera, Check, Download, Upload, X } from 'lucide-react'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
 import { usePrint } from '../../hooks/usePrint'
@@ -10,26 +10,19 @@ import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
 import Loader from '../../components/Loader'
-import PrintButton from '../../components/PrintButton'
 import Ltr from '../../components/bidi/Ltr'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select } from '../../components/FormField'
 import Tabs from '../../ui/variants/Tabs'
 import { multipart } from '../../features/students/formData'
+import OmrDesigner from '../../features/qb/OmrDesigner'
 import { MAX_BYTES, MAX_SHEETS, bitmapToImageData, canvasToBlob, heicToJpeg, isHeic, pdfPages, readSheet } from '../../features/qb/omrSheet'
 
 // R2.1.6 (D127/D128/D129) /admin|teacher/question-bank/papers/:id/omr: qbank's OMR screens in its order - form settings, sheet
 // print, scan, batch review, results. Sheets are read in this browser with the form's own geometry; photos and PDFs never go to
 // another service; every sheet waits for a person's review before it counts; marks never reach exam results here (R2.1.7).
-const DEFAULTS = { title: '', roll_digits: '6', option_count: '4', option_language: 'bangla', info_boxes: { class: true, roll: true, subject: true, set: true },
-  page_size: 'a4', page_orientation: 'portrait', answer_columns: 'auto', question_mark: '1.00', negative_mark_enabled: false, negative_mark: '0.25', multiple_answer_policy: 'wrong' }
 const LATIN = 'ABCDEFGHIJ'.split('')
 const BANGLA = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ', 'ঞ']
-
-const fromSaved = (s) => ({ title: s.title, roll_digits: String(s.roll_digits), option_count: String(s.option_count), option_language: s.option_labels?.[0] === 'A' ? 'latin' : 'bangla',
-  info_boxes: Object.fromEntries(['class', 'roll', 'subject', 'set'].map(k => [k, s.info_boxes?.[k]?.visible !== false])), page_size: s.page_size, page_orientation: s.page_orientation,
-  answer_columns: s.answer_columns ?? 'auto', question_mark: s.marking?.question_mark ?? '1.00', negative_mark_enabled: !!s.marking?.negative_mark_enabled,
-  negative_mark: s.marking?.negative_mark ?? '0.00', multiple_answer_policy: s.marking?.multiple_answer_policy ?? 'wrong' })
 
 export default function QbOmr() {
   const { t } = useTranslation()
@@ -44,53 +37,12 @@ export default function QbOmr() {
     <div className="flex flex-col gap-4" data-testid="qb-omr">
       <PageHeader title={t('qbomr.title')} />
       <Tabs items={['form', 'scan', 'review', 'results'].map(k => ({ key: k, label: t(`qbomr.tabs.${k}`) }))} value={tab} onChange={setTab} label={t('qbomr.title')} />
-      {tab === 'form' && <FormTab id={id} form={form.data} onSaved={form.refetch} />}
+      {tab === 'form' && <OmrDesigner id={id} form={form.data} onSaved={form.refetch} />}
       {tab !== 'form' && !ready && <EmptyState title={t('qbomr.generate_first')} />}
       {tab === 'scan' && ready && <ScanTab id={id} form={form.data} />}
       {tab === 'review' && ready && <ReviewTab id={id} form={form.data} />}
       {tab === 'results' && ready && <ResultsTab id={id} />}
     </div>
-  )
-}
-
-function FormTab({ id, form, onSaved }) {
-  const { t } = useTranslation()
-  const [v, setV] = useState(form?.settings ? fromSaved(form.settings) : DEFAULTS)
-  const locked = !!form?.locked_at
-  const set = (p) => setV(x => ({ ...x, ...p }))
-  const toast = (m, k) => useUiStore.getState().addToast(m, k)
-  const call = (fn) => fn().then(() => { toast(t('common.saved')); onSaved() }).catch(e => toast(Object.values(e.response?.data?.errors ?? {})[0]?.[0] ?? e.response?.data?.message ?? t('common.error'), 'error'))
-  const save = () => call(() => api.put(`/question-bank/papers/${id}/omr-form`, { settings: { ...v, roll_digits: Number(v.roll_digits), option_count: Number(v.option_count) } }))
-  return (
-    <Card className="flex flex-col gap-3" data-testid="omr-form">
-      <fieldset disabled={locked} className="grid gap-3 sm:grid-cols-2">
-        <Input label={t('qbomr.form_title')} name="title" value={v.title} onChange={e => set({ title: e.target.value })} />
-        <Select label={t('qbomr.roll_digits')} name="roll_digits" value={v.roll_digits} onChange={e => set({ roll_digits: e.target.value })} options={Array.from({ length: 12 }, (_, k) => ({ value: String(k + 1), label: String(k + 1) }))} />
-        <Select label={t('qbomr.option_count')} name="option_count" value={v.option_count} onChange={e => set({ option_count: e.target.value })} options={[2, 3, 4, 5].map(n => ({ value: String(n), label: String(n) }))} />
-        <Select label={t('qbomr.option_language')} name="option_language" value={v.option_language} onChange={e => set({ option_language: e.target.value })} options={[{ value: 'bangla', label: 'ক খ গ ঘ' }, { value: 'latin', label: 'A B C D' }]} />
-        <Select label={t('qbomr.page_size')} name="page_size" value={v.page_size} onChange={e => set({ page_size: e.target.value })} options={['a5', 'a4', 'legal'].map(x => ({ value: x, label: x.toUpperCase() }))} />
-        <Select label={t('qbomr.orientation')} name="page_orientation" value={v.page_orientation} onChange={e => set({ page_orientation: e.target.value })} options={['portrait', 'landscape'].map(x => ({ value: x, label: t(`qbomr.${x}`) }))} />
-        <Select label={t('qbomr.columns')} name="answer_columns" value={v.answer_columns} onChange={e => set({ answer_columns: e.target.value })} options={['auto', '1', '2', '3', '4', '5', '6'].map(x => ({ value: x, label: x === 'auto' ? t('qbomr.auto') : x }))} />
-        <Input label={t('qbomr.question_mark')} ltr inputMode="decimal" name="question_mark" value={v.question_mark} onChange={e => set({ question_mark: e.target.value })} />
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="negative_mark_enabled" checked={v.negative_mark_enabled} onChange={e => set({ negative_mark_enabled: e.target.checked })} />{t('qbomr.negative')}</label>
-        <Input label={t('qbomr.negative_mark')} ltr inputMode="decimal" name="negative_mark" value={v.negative_mark} onChange={e => set({ negative_mark: e.target.value })} />
-        <Select label={t('qbomr.multiple')} name="multiple_answer_policy" value={v.multiple_answer_policy} onChange={e => set({ multiple_answer_policy: e.target.value })} options={['wrong', 'correct_if_any'].map(x => ({ value: x, label: t(`qbomr.policy.${x}`) }))} />
-        <div className="flex flex-wrap gap-3 text-sm sm:col-span-2">
-          {['class', 'roll', 'subject', 'set'].map(k => (
-            <label key={k} className="flex items-center gap-2"><input type="checkbox" name={`box-${k}`} checked={v.info_boxes[k]} onChange={e => set({ info_boxes: { ...v.info_boxes, [k]: e.target.checked } })} />{t(`qbomr.box.${k}`)}</label>
-          ))}
-        </div>
-      </fieldset>
-      <div className="flex flex-wrap gap-2">
-        {!locked && <Button onClick={save} data-action="save-form">{t('common.save')}</Button>}
-        {!locked && form && <Button variant="secondary" onClick={() => call(() => api.post(`/question-bank/papers/${id}/omr-form/generate`))} data-action="generate"><Lock aria-hidden="true" className="h-4 w-4" />{t('qbomr.generate')}</Button>}
-        {locked && <Button variant="secondary" onClick={() => call(() => api.post(`/question-bank/papers/${id}/omr-form/unlock`))} data-action="unlock"><Unlock aria-hidden="true" className="h-4 w-4" />{t('qbomr.unlock')}</Button>}
-        {locked && (form.set_codes ?? []).map(code => (
-          <PrintButton key={code} url={`/question-bank/papers/${id}/omr-form/pdf`} params={{ set: code }} filename={`omr-${form.code}-${code}.pdf`} label={t('qbomr.print_set', { set: code })} />
-        ))}
-      </div>
-      {locked && <p className="text-sm text-content-muted">{t('qbomr.locked_hint', { version: form.layout_version })}</p>}
-    </Card>
   )
 }
 

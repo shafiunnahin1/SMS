@@ -9,6 +9,13 @@ use Illuminate\Support\Str;
 
 class QbOmrFormService
 {
+    /** qbank's web-font list: key => CSS family stack (the server's Chromium falls back when a family is not installed) */
+    public const FONTS = ['default' => 'Arial, "Noto Sans Bengali", sans-serif', 'solaiman' => '"SolaimanLipi", "Noto Sans Bengali", sans-serif',
+        'kalpurush' => '"Kalpurush", "Noto Sans Bengali", sans-serif', 'noto' => '"Noto Sans Bengali", Arial, sans-serif', 'hind' => '"Hind Siliguri", "Noto Sans Bengali", sans-serif'];
+    /** qbank's theme colours (line and heading colour of the sheet; the scan markers and code bits stay black) */
+    public const COLORS = ['blue' => '#2563eb', 'red' => '#e11d48', 'slate' => '#4b5563', 'sky' => '#3b82f6', 'green' => '#16a34a', 'purple' => '#9333ea',
+        'orange' => '#ea580c', 'cyan' => '#0891b2', 'pink' => '#db2777', 'yellow' => '#ca8a04', 'lime' => '#65a30d', 'black' => '#111111'];
+
     public function paper(User $actor, int $paperId, bool $lock = false): QbPaper
     {
         if (!in_array($actor->role, ['admin', 'teacher'], true)) abort(404);
@@ -52,11 +59,18 @@ class QbOmrFormService
                 'answer_columns' => (string) $input['answer_columns'],
                 'question_count' => count($mcqIds),
                 'subject_blocks' => $this->subjectBlocks($lockedPaper),   // D128: [] unless the paper is grouped by subject
+                'subtitle' => trim((string) ($input['subtitle'] ?? '')),
+                'title_size' => (int) ($input['title_size'] ?? 20),
+                'subtitle_size' => (int) ($input['subtitle_size'] ?? 14),
+                'font' => $input['font'] ?? 'default',
+                'theme_color' => $input['theme_color'] ?? 'black',
+                'entry_mode' => $input['entry_mode'] ?? 'digital',
                 'info_boxes' => [
-                    'class' => ['visible' => (bool) $input['info_boxes']['class'], 'digits' => 2],
+                    'class' => ['visible' => (bool) $input['info_boxes']['class'], 'digits' => (int) ($input['digits']['class'] ?? 2)],
                     'roll' => ['visible' => (bool) $input['info_boxes']['roll'], 'digits' => $rollDigits],
-                    'subject' => ['visible' => (bool) $input['info_boxes']['subject'], 'digits' => 3],
-                    'set' => ['visible' => (bool) $input['info_boxes']['set'], 'digits' => $this->setDigits((int) $lockedPaper->sets_count)],
+                    'subject' => ['visible' => (bool) $input['info_boxes']['subject'], 'digits' => (int) ($input['digits']['subject'] ?? 3)],
+                    // the set box never has fewer digits than the paper's sets need
+                    'set' => ['visible' => (bool) $input['info_boxes']['set'], 'digits' => max($this->setDigits((int) $lockedPaper->sets_count), (int) ($input['digits']['set'] ?? 1))],
                 ],
                 'marking' => [
                     'question_mark' => (string) $input['question_mark'],
@@ -118,12 +132,15 @@ class QbOmrFormService
         });
     }
 
-    public function printData(User $actor, int $paperId, ?string $setCode = null): array
+    /** the sheet to print; `$preview` (qbank's live preview before "Generate OMR") draws the saved, not yet generated settings with
+     *  their geometry built on the fly - the same builder "Generate" uses, so the preview is exactly the sheet that will be printed */
+    public function printData(User $actor, int $paperId, ?string $setCode = null, bool $preview = false): array
     {
         $paper = $this->paper($actor, $paperId);
         $form = $this->form($paper);
         $settings = $form->settings_json;
-        if ($form->locked_at === null || !is_array($settings['geometry'] ?? null)) {
+        if ($preview && $form->locked_at === null) $settings['geometry'] = app(QbOmrGeometryService::class)->build($paper->id, $settings);
+        if (($form->locked_at === null && !$preview) || !is_array($settings['geometry'] ?? null)) {
             throw new BusinessException(__('errors.qb_omr_not_generated'), 'qb_omr_not_generated', 422);
         }
 

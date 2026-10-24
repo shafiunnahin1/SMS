@@ -13,6 +13,8 @@ class QbOmrGeometryService
         $rollDigits = (int) ($settings['roll_digits'] ?? 0);
         $infoBoxes = $settings['info_boxes'] ?? [];
         $setDigits = (int) ($infoBoxes['set']['digits'] ?? 1);
+        $classDigits = max(1, min(3, (int) ($infoBoxes['class']['digits'] ?? 2)));
+        $subjectDigits = max(1, min(4, (int) ($infoBoxes['subject']['digits'] ?? 3)));
         [$pageWidth, $pageHeight] = $this->pageDimensions($settings);
 
         if ($paperId < 1 || $questionCount < 1 || $optionCount < 2 || $optionCount > 5 || $rollDigits < 1 || $rollDigits > 12 || $setDigits < 1 || $setDigits > 4) {
@@ -33,9 +35,9 @@ class QbOmrGeometryService
             'bubble_only' => true,
             'markers' => ['left' => 0.119, 'right' => 0.881, 'top' => 0.050, 'bottom' => 0.882],
             'code' => $this->bounds($codeBits) + ['bits' => $codeBits, 'value' => $code],
-            'class' => $this->numericGrid(0.05 * $pageWidth, 0.17 * $pageHeight, 18, 65, 2, $pageWidth, $pageHeight),
+            'class' => $this->numericGrid(0.05 * $pageWidth, 0.17 * $pageHeight, 9 * $classDigits, 65, $classDigits, $pageWidth, $pageHeight),
             'roll' => $this->numericGrid(0.20 * $pageWidth, 0.17 * $pageHeight, min(8, max(4, 45 / $rollDigits)) * $rollDigits, 65, $rollDigits, $pageWidth, $pageHeight),
-            'subject' => $this->numericGrid(0.52 * $pageWidth, 0.17 * $pageHeight, 21, 65, 3, $pageWidth, $pageHeight),
+            'subject' => $this->numericGrid(0.52 * $pageWidth, 0.17 * $pageHeight, 7 * $subjectDigits, 65, $subjectDigits, $pageWidth, $pageHeight),
             'set' => $this->numericGrid(0.70 * $pageWidth, 0.17 * $pageHeight, 8 * $setDigits, 65, $setDigits, $pageWidth, $pageHeight),
             'answers' => $answerGeometry,
         ];

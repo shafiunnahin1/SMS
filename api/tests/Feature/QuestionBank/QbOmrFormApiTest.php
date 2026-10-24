@@ -147,6 +147,52 @@ class QbOmrFormApiTest extends TestCase
         $this->assertStringEndsWith('-A.pdf"', $response->headers->get('Content-Disposition'));
     }
 
+    // D133 / D110: qbank's OMR controller - title/subtitle sizes, web font, theme colour, digital/manual candidate info and each
+    // code's digit count are kept; the sheet can be previewed before "Generate OMR" with the same geometry builder
+    public function test_qbank_controller_settings_are_kept_and_the_sheet_previews_before_generation(): void
+    {
+        $institution = $this->makeInstitution('omr-form-controller');
+        $teacher = $this->makeUser($institution, 'teacher');
+        $paperId = $this->paper($institution, $teacher);
+        Tenancy::as($institution, fn () => QbPaperVariant::create(['institution_id' => $institution->id, 'qb_paper_id' => $paperId, 'variant_number' => 1,
+            'code' => 'A', 'strategy' => 'serial', 'layout_json' => ['question_order' => [$this->mcq->id], 'option_order' => []]]));
+        $baseUrl = "question-bank/papers/{$paperId}/omr-form";
+        $host = $this->hostOf($institution);
+        $this->api('PUT', $host, $baseUrl, $teacher, ['settings' => $this->settings(['theme_color' => 'nope'])])->assertStatus(422);
+        $saved = $this->api('PUT', $host, $baseUrl, $teacher, ['settings' => $this->settings(['subtitle' => 'Half yearly', 'title_size' => 24, 'subtitle_size' => 12,
+            'font' => 'noto', 'theme_color' => 'blue', 'entry_mode' => 'manual', 'digits' => ['class' => 3, 'subject' => 2, 'set' => 2]])])->assertOk()->json('data.settings');
+        $this->assertSame(['Half yearly', 24, 12, 'noto', 'blue', 'manual'], [$saved['subtitle'], $saved['title_size'], $saved['subtitle_size'], $saved['font'], $saved['theme_color'], $saved['entry_mode']]);
+        $this->assertSame([3, 6, 2, 2], array_map(fn ($k) => $saved['info_boxes'][$k]['digits'], ['class', 'roll', 'subject', 'set']));   // MySQL JSON reorders keys
+
+        $this->api('GET', $host, "{$baseUrl}/pdf", $teacher)->assertStatus(422)->assertJsonPath('error', 'qb_omr_not_generated');
+        $renderer = $this->mock(PdfService::class);
+        $renderer->shouldReceive('renderOmr')->once()->withArgs(fn ($view, $data) => $data['settings']['geometry']['version'] === 2
+            && count($data['settings']['geometry']['class']['rows'][0]) === 3 && count($data['settings']['geometry']['subject']['rows'][0]) === 2
+            && $data['settings']['entry_mode'] === 'manual')->andReturn('%PDF-PREVIEW');
+        $this->api('GET', $host, "{$baseUrl}/pdf?preview=1", $teacher)->assertOk()->assertSee('%PDF-PREVIEW', false);
+        $this->assertNull(Tenancy::as($institution, fn () => \App\Models\QbOmrForm::where('qb_paper_id', $paperId)->first()->locked_at), 'a preview never generates the form');
+        $this->assertArrayNotHasKey('geometry', Tenancy::as($institution, fn () => \App\Models\QbOmrForm::where('qb_paper_id', $paperId)->first()->settings_json));
+    }
+
+    public function test_the_sheet_template_draws_the_controller_settings(): void
+    {
+        $institution = $this->makeInstitution('omr-form-template');
+        $teacher = $this->makeUser($institution, 'teacher');
+        $paperId = $this->paper($institution, $teacher);
+        Tenancy::as($institution, fn () => QbPaperVariant::create(['institution_id' => $institution->id, 'qb_paper_id' => $paperId, 'variant_number' => 1,
+            'code' => 'A', 'strategy' => 'serial', 'layout_json' => ['question_order' => [$this->mcq->id], 'option_order' => []]]));
+        $baseUrl = "question-bank/papers/{$paperId}/omr-form";
+        $this->api('PUT', $this->hostOf($institution), $baseUrl, $teacher, ['settings' => $this->settings(['subtitle' => 'Half yearly', 'theme_color' => 'green', 'entry_mode' => 'manual'])])->assertOk();
+        $html = Tenancy::as($institution, function () use ($teacher, $paperId) {
+            $sheet = app(\App\Services\QuestionBank\QbOmrFormService::class)->printData($teacher, $paperId, null, true);
+            return view('pdf.qb-omr-sheet', $sheet + ['locale' => 'bn', 'dir' => 'ltr'])->render();
+        });
+        $this->assertStringContainsString('Half yearly', $html);
+        $this->assertStringContainsString('#16a34a', $html);
+        $this->assertStringContainsString('write-cell', $html);
+        $this->assertStringContainsString('কক্ষ পরিদর্শকের স্বাক্ষর', $html);
+    }
+
     public function test_batch_scan_upload_saves_valid_sheets_privately_and_keeps_duplicates_for_review(): void
     {
         Storage::fake('private');

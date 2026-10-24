@@ -45,6 +45,18 @@ class QbOmrFormController extends Controller
             'settings.negative_mark_enabled' => 'required|boolean',
             'settings.negative_mark' => ['required', 'regex:/^\d{1,6}(\.\d{1,2})?$/'],
             'settings.multiple_answer_policy' => 'required|in:wrong,correct_if_any',
+            // D133 / D110: qbank's OMR controller - subtitle and title sizes, web font, theme colour, digital/manual candidate info,
+            // and each candidate code's digit count (all optional so older clients keep working)
+            'settings.subtitle' => 'nullable|string|max:200',
+            'settings.title_size' => 'nullable|integer|min:12|max:32',
+            'settings.subtitle_size' => 'nullable|integer|min:10|max:24',
+            'settings.font' => 'nullable|in:' . implode(',', array_keys(QbOmrFormService::FONTS)),
+            'settings.theme_color' => 'nullable|in:' . implode(',', array_keys(QbOmrFormService::COLORS)),
+            'settings.entry_mode' => 'nullable|in:digital,manual',
+            'settings.digits' => 'nullable|array:class,subject,set',
+            'settings.digits.class' => 'nullable|integer|min:1|max:3',
+            'settings.digits.subject' => 'nullable|integer|min:1|max:4',
+            'settings.digits.set' => 'nullable|integer|min:1|max:4',
         ]);
 
         return new QbOmrFormResource($service->save($paper, $validated['settings']));
@@ -62,8 +74,8 @@ class QbOmrFormController extends Controller
 
     public function pdf(Request $request, int $id, QbOmrFormService $service, PdfService $pdf)
     {
-        $validated = $request->validate(['set' => 'nullable|string|max:10']);
-        $sheet = $service->printData($request->user(), $id, $validated['set'] ?? null);
+        $validated = $request->validate(['set' => 'nullable|string|max:10', 'preview' => 'nullable|boolean']);
+        $sheet = $service->printData($request->user(), $id, $validated['set'] ?? null, (bool) ($validated['preview'] ?? false));
         $settings = $sheet['settings'];
         $bytes = $pdf->renderOmr('pdf.qb-omr-sheet', $sheet, $settings['page_size'], $settings['page_orientation']);
 
