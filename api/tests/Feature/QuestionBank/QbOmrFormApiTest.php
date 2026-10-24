@@ -162,12 +162,12 @@ class QbOmrFormApiTest extends TestCase
         $saved = $this->api('PUT', $host, $baseUrl, $teacher, ['settings' => $this->settings(['subtitle' => 'Half yearly', 'title_size' => 24, 'subtitle_size' => 12,
             'font' => 'noto', 'theme_color' => 'blue', 'entry_mode' => 'manual', 'digits' => ['class' => 3, 'subject' => 2, 'set' => 2]])])->assertOk()->json('data.settings');
         $this->assertSame(['Half yearly', 24, 12, 'noto', 'blue', 'manual'], [$saved['subtitle'], $saved['title_size'], $saved['subtitle_size'], $saved['font'], $saved['theme_color'], $saved['entry_mode']]);
-        $this->assertSame([3, 6, 2, 2], array_map(fn ($k) => $saved['info_boxes'][$k]['digits'], ['class', 'roll', 'subject', 'set']));   // MySQL JSON reorders keys
+        $this->assertSame([3, 6, 10, 2], array_map(fn ($k) => $saved['info_boxes'][$k]['digits'], ['class', 'roll', 'student_id', 'set']));   // MySQL JSON reorders keys; D159 (4): the 10-digit ID box replaces the subject code
 
         $this->api('GET', $host, "{$baseUrl}/pdf", $teacher)->assertStatus(422)->assertJsonPath('error', 'qb_omr_not_generated');
         $renderer = $this->mock(PdfService::class);
         $renderer->shouldReceive('renderOmr')->once()->withArgs(fn ($view, $data) => $data['settings']['geometry']['version'] === 2
-            && count($data['settings']['geometry']['class']['rows'][0]) === 3 && count($data['settings']['geometry']['subject']['rows'][0]) === 2
+            && count($data['settings']['geometry']['class']['rows'][0]) === 3 && count($data['settings']['geometry']['student_id']['rows'][0]) === 10
             && $data['settings']['entry_mode'] === 'manual')->andReturn('%PDF-PREVIEW');
         $this->api('GET', $host, "{$baseUrl}/pdf?preview=1", $teacher)->assertOk()->assertSee('%PDF-PREVIEW', false);
         $this->assertNull(Tenancy::as($institution, fn () => \App\Models\QbOmrForm::where('qb_paper_id', $paperId)->first()->locked_at), 'a preview never generates the form');

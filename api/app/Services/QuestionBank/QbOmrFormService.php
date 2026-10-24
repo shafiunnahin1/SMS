@@ -68,7 +68,8 @@ class QbOmrFormService
                 'info_boxes' => [
                     'class' => ['visible' => (bool) $input['info_boxes']['class'], 'digits' => (int) ($input['digits']['class'] ?? 2)],
                     'roll' => ['visible' => (bool) $input['info_boxes']['roll'], 'digits' => $rollDigits],
-                    'subject' => ['visible' => (bool) $input['info_boxes']['subject'], 'digits' => (int) ($input['digits']['subject'] ?? 3)],
+                    // D159 (4): the student's 10-digit OMR ID replaces the subject-code box (a request with the old `subject` key shows it the same way)
+                    'student_id' => ['visible' => (bool) ($input['info_boxes']['student_id'] ?? $input['info_boxes']['subject']), 'digits' => 10],
                     // the set box never has fewer digits than the paper's sets need
                     'set' => ['visible' => (bool) $input['info_boxes']['set'], 'digits' => max($this->setDigits((int) $lockedPaper->sets_count), (int) ($input['digits']['set'] ?? 1))],
                 ],

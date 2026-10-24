@@ -1137,7 +1137,7 @@
     "wrong": "ভুল ধরা হবে",
     "correct_if_any": "একটি সঠিক হলেই সঠিক"
    },
-   "box": {
+   "box": {"student_id": "আইডি নম্বর", 
     "class": "শ্রেণি",
     "roll": "রোল",
     "subject": "বিষয়",
@@ -1170,6 +1170,7 @@
     "verified": "যাচাইকৃত"
    },
    "reason": {
+    "student_id_unconfirmed": "আইডি নম্বর পড়া হয়েছে - নিশ্চিত করুন",
     "roll_unconfirmed": "রোল পড়া হয়েছে - নিশ্চিত করুন",
     "set_code_unconfirmed": "সেট পড়া হয়েছে - নিশ্চিত করুন",
     "roll_unreadable": "রোল পড়া যায়নি",

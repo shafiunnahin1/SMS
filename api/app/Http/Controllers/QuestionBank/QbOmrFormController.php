@@ -33,10 +33,11 @@ class QbOmrFormController extends Controller
             'settings.roll_digits' => 'required|integer|min:1|max:12',
             'settings.option_count' => 'required|integer|min:2|max:5',
             'settings.option_language' => 'required|in:bangla,latin',
-            'settings.info_boxes' => 'required|array:class,roll,subject,set',
+            'settings.info_boxes' => 'required|array:class,roll,student_id,subject,set',   // D159 (4): student_id replaces subject (old key still read)
             'settings.info_boxes.class' => 'required|boolean',
             'settings.info_boxes.roll' => 'required|boolean',
-            'settings.info_boxes.subject' => 'required|boolean',
+            'settings.info_boxes.student_id' => 'required_without:settings.info_boxes.subject|boolean',
+            'settings.info_boxes.subject' => 'required_without:settings.info_boxes.student_id|boolean',
             'settings.info_boxes.set' => 'required|boolean',
             'settings.page_size' => 'required|in:a5,a4,legal',
             'settings.page_orientation' => 'required|in:portrait,landscape',

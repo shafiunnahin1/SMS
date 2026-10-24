@@ -172,4 +172,37 @@ class QbOmrReviewTest extends TestCase
             ->assertJsonPath('data.comparison.reason_codes', []);
         $this->api('POST', $host, "question-bank/omr-scans/{$id}/approve", $teacher)->assertOk()->assertJsonPath('data.correct_count', 2);
     }
+
+    // D159 (4): the 10-digit student ID on the sheet finds the student even when the roll is unreadable; an unknown ID falls back to the roll
+    public function test_the_student_id_box_matches_before_the_roll(): void
+    {
+        Storage::fake('private');
+        $institution = $this->makeInstitution('omr-id');
+        $teacher = $this->makeUser($institution, 'teacher');
+        [$paperId, $studentId] = $this->setup_paper($institution, $teacher);
+        $omrId = Tenancy::as($institution, function () use ($studentId) {
+            $student = Student::find($studentId);
+            $student->update(['admission_date' => '2026-01-15']);
+            return \App\Services\StudentOmrId::of($student->fresh());
+        });
+        $this->assertSame('20260115' . str_pad((string) ($studentId % 100), 2, '0', STR_PAD_LEFT), $omrId);
+        $host = $this->hostOf($institution);
+        $base = "question-bank/papers/{$paperId}/omr-form";
+        $this->api('PUT', $host, $base, $teacher, ['settings' => [
+            'title' => 'OMR', 'roll_digits' => 4, 'option_count' => 4, 'option_language' => 'bangla',
+            'info_boxes' => ['class' => true, 'roll' => true, 'student_id' => true, 'set' => true], 'page_size' => 'a4', 'page_orientation' => 'portrait',
+            'answer_columns' => 'auto', 'question_mark' => '1.00', 'negative_mark_enabled' => false, 'negative_mark' => '0.00', 'multiple_answer_policy' => 'wrong',
+        ]])->assertOk()->assertJsonPath('data.settings.info_boxes.student_id.digits', 10);
+        $geometry = $this->api('POST', $host, "{$base}/generate", $teacher)->assertOk()->json('data.settings.geometry');
+        $this->assertArrayHasKey('student_id', $geometry, 'the ID box is printed and read');
+        $this->assertArrayNotHasKey('subject', $geometry);
+
+        $r = $this->upload($institution, $teacher, $paperId, [
+            $this->sheet('a', '??', 'A', [[0], [1]]) + ['student_omr_id' => $omrId],
+            $this->sheet('b', '0007', 'A', [[0], [1]]) + ['student_omr_id' => '2099010199'],
+        ])->assertOk();
+        $r->assertJsonPath('data.results.0.scan.matched_student_id', $studentId);
+        $this->assertNotContains('roll_unreadable', $r->json('data.results.0.scan.comparison.reason_codes'), 'the ID found the student');
+        $r->assertJsonPath('data.results.1.scan.matched_student_id', $studentId);   // unknown ID -> matched by roll 7, as before
+    }
 }

@@ -43,6 +43,8 @@ class QbOmrScanService
                 'roll' => ['nullable', 'string', 'max:12'],
                 'roll_uncertain' => ['sometimes', 'boolean'],        // D131: the roll/set digits are offered, a person confirms them
                 'set_uncertain' => ['sometimes', 'boolean'],
+                'student_omr_id' => ['nullable', 'string', 'max:10'],   // D159 (4): the ID box's digits ('?' = unreadable)
+                'student_omr_id_uncertain' => ['sometimes', 'boolean'],
                 'answers' => ['required', 'array', 'size:' . $questionCount],
                 'answers.*' => ['required', 'array'],
                 'answers.*.selected' => ['present', 'array', 'max:' . $optionCount],
@@ -101,7 +103,9 @@ class QbOmrScanService
                         'answered_count' => count(array_filter($answers, fn ($answer) => $answer['status'] === 'marked')),
                         'status' => 'needs_review',
                         'comparison_json' => ['unresolved_question_numbers' => $unresolvedQuestions]
-                            + array_filter(['roll_uncertain' => filter_var($scan['roll_uncertain'] ?? false, FILTER_VALIDATE_BOOLEAN), 'set_uncertain' => filter_var($scan['set_uncertain'] ?? false, FILTER_VALIDATE_BOOLEAN)]),
+                            + array_filter(['roll_uncertain' => filter_var($scan['roll_uncertain'] ?? false, FILTER_VALIDATE_BOOLEAN), 'set_uncertain' => filter_var($scan['set_uncertain'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                                'omr_id' => filled($scan['student_omr_id'] ?? null) ? (string) $scan['student_omr_id'] : null,
+                                'omr_id_uncertain' => filter_var($scan['student_omr_id_uncertain'] ?? false, FILTER_VALIDATE_BOOLEAN)]),
                         'image_path' => $imagePath,
                         'source' => $scan['source'],
                     ]);

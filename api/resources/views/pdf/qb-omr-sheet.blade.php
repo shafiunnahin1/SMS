@@ -139,14 +139,14 @@
             <div class="signature" style="left:6%;top:74%;width:88%">{{ __('pdf.qb_omr.invigilator') }}</div>
         </section>
     @else
-        @foreach (['class' => 'class', 'roll' => 'roll_number', 'subject' => 'subject', 'set' => 'set_code'] as $key => $label)
+        @foreach (['class' => 'class', 'roll' => 'roll_number', ...(isset($geometry['student_id']) ? ['student_id' => 'student_id'] : ['subject' => 'subject']), 'set' => 'set_code'] as $key => $label)
             @continue (($settings['info_boxes'][$key]['visible'] ?? true) !== true)
             @php
                 $box = $geometry[$key];
-                $headWidth = max($box['width'], 0.095);
+                $headWidth = max($box['width'], min(0.095, $box['width'] + 0.03));   // a narrow box's head grows a little, never over its neighbour
                 $headLeft = $box['left'] + ($box['width'] / 2) - ($headWidth / 2);
                 $writeHeight = 0.0235;
-                $tinted = in_array($key, ['roll', 'subject'], true);
+                $tinted = in_array($key, ['roll', 'subject', 'student_id'], true);
             @endphp
             {{-- head cell, one write-in box per digit, then a ruled cell around each bubble (cell lines only clear of the reader's ring) --}}
             <strong class="head-cell" style="{{ $rectStyle(['left' => $headLeft, 'top' => $box['top'] - $writeHeight - 0.022, 'width' => $headWidth, 'height' => 0.022]) }}">{{ __('pdf.qb_omr.' . $label) }}</strong>

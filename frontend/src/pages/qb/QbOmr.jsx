@@ -58,7 +58,7 @@ function ScanTab({ id, form }) {
   const read = (imageData, name, blob, source) => {
     const r = readSheet(imageData, s, symbols)
     // an unreadable page is kept with every answer blank, so a person reads it from the image (never silently dropped)
-    push({ key: `${Date.now()}-${Math.random()}`, name, blob, source, quality: r.quality, error: r.ok ? null : r.error, roll: r.ok ? r.roll : null, set_code: r.ok ? r.set_code : null, roll_uncertain: !!r.roll_uncertain, set_uncertain: !!r.set_uncertain, answers: r.ok ? r.answers : blank(), result: null })
+    push({ key: `${Date.now()}-${Math.random()}`, name, blob, source, quality: r.quality, error: r.ok ? null : r.error, roll: r.ok ? r.roll : null, set_code: r.ok ? r.set_code : null, roll_uncertain: !!r.roll_uncertain, set_uncertain: !!r.set_uncertain, student_omr_id: r.ok ? (r.student_omr_id ?? null) : null, student_omr_id_uncertain: !!r.student_omr_id_uncertain, answers: r.ok ? r.answers : blank(), result: null })
   }
   const add = async (files, source) => {
     setBusy(true)
@@ -95,6 +95,8 @@ function ScanTab({ id, form }) {
         if (x.set_code) fd.append(`scans[${i}][set_code]`, x.set_code)
         if (x.roll_uncertain) fd.append(`scans[${i}][roll_uncertain]`, '1')   // D131: offered, a person confirms
         if (x.set_uncertain) fd.append(`scans[${i}][set_uncertain]`, '1')
+        if (x.student_omr_id) fd.append(`scans[${i}][student_omr_id]`, x.student_omr_id)   // D159 (4): matched by ID first on the server
+        if (x.student_omr_id_uncertain) fd.append(`scans[${i}][student_omr_id_uncertain]`, '1')
         x.answers.forEach((a, q) => {
           if (a.selected.length === 0) fd.append(`scans[${i}][answers][${q}][selected]`, '')
           a.selected.forEach((o, j) => fd.append(`scans[${i}][answers][${q}][selected][${j}]`, String(o)))

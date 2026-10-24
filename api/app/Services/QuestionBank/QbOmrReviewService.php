@@ -25,7 +25,9 @@ class QbOmrReviewService
     {
         $c = $scan->comparison_json ?? [];
         $reasons = [];
-        if (!preg_match('/^\d+$/', (string) $scan->roll)) $reasons[] = 'roll_unreadable';
+        if (($c['matched_by'] ?? null) === 'id') {                // D159 (4): matched by the student's ID - the roll is not needed to find them
+            if (!empty($c['omr_id_uncertain'])) $reasons[] = 'student_id_unconfirmed';
+        } elseif (!preg_match('/^\d+$/', (string) $scan->roll)) $reasons[] = 'roll_unreadable';
         elseif (!empty($c['roll_uncertain'])) $reasons[] = 'roll_unconfirmed';   // D131: read, but a person confirms it
         $codes = QbPaperVariant::where('qb_paper_id', $paper->id)->pluck('code')->map(fn ($v) => (string) $v)->all();
         if (($c['set_resolution'] ?? null) !== 'main') {
@@ -41,10 +43,17 @@ class QbOmrReviewService
         return $reasons;
     }
 
-    /** match the roll to the paper's program enrollment roll (active); 0 or several matches stay for a person to choose */
+    /** D159 (4): first the student ID read from the sheet (exactly one student of this tenant has it), then the roll in the paper's
+     *  program enrollment (active); 0 or several matches stay for a person to choose - never a silent guess */
     public function match(QbPaper $paper, QbOmrScan $scan): void
     {
         $c = $scan->comparison_json ?? [];
+        unset($c['matched_by']);
+        if (preg_match('/^\d{10}$/', (string) ($c['omr_id'] ?? ''))) {
+            $byId = app(\App\Services\StudentOmrId::class)->find($c['omr_id']);
+            if (count($byId) === 1) { $c['student_candidates'] = 1; $c['matched_by'] = 'id'; $scan->comparison_json = $c; $scan->matched_student_id = $byId[0]; return; }
+            $c['omr_id_candidates'] = count($byId);              // none or several: fall back to the roll and show it in review
+        }
         if (!$paper->program_id || !preg_match('/^\d+$/', (string) $scan->roll)) { $c['student_candidates'] = 0; $scan->comparison_json = $c; return; }
         $ids = Enrollment::where('program_id', $paper->program_id)->where('status', 'active')->where('roll_no', (int) $scan->roll)->pluck('student_id')->unique()->values();
         $c['student_candidates'] = $ids->count();
@@ -73,6 +82,7 @@ class QbOmrReviewService
                     : \App\Models\Student::whereKey($in['student_id'])->exists());
                 if (!$ok) throw new BusinessException(__('errors.qb_omr_student_outside'), 'qb_omr_student_outside', 422);
                 $scan->matched_student_id = $in['student_id'];
+                unset($c['omr_id_uncertain']);                       // D159 (4): a person chose the student - the ID read is settled
             }
             if (isset($in['answers'])) {
                 $answers = $scan->answers_json ?? [];

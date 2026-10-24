@@ -16,20 +16,20 @@ import { pdfPages } from './omrSheet'
 // server's own sheet PDF drawn from the saved settings (`pdf?preview=1`), so what is seen is exactly what "Generate" prints and
 // what the scanner reads. A generated form is locked; "edit again" unlocks it (a new layout version, as before).
 export const OMR_DEFAULTS = { title: '', subtitle: '', title_size: 20, subtitle_size: 14, font: 'default', theme_color: 'black', entry_mode: 'digital',
-  roll_digits: 6, digits: { class: 2, subject: 3, set: 1 }, option_count: 4, option_language: 'bangla', info_boxes: { class: true, roll: true, subject: true, set: true },
+  roll_digits: 6, digits: { class: 2, subject: 3, set: 1 }, option_count: 4, option_language: 'bangla', info_boxes: { class: true, roll: true, student_id: true, set: true },
   page_size: 'a4', page_orientation: 'portrait', answer_columns: 'auto', question_mark: '1.00', negative_mark_enabled: false, negative_mark: '0.00', multiple_answer_policy: 'wrong' }
 // the swatches only point at the colour; the sheet itself uses the server's exact colour for the same key
 const SWATCH = { black: 'black', blue: 'royalblue', red: 'crimson', slate: 'slategray', sky: 'dodgerblue', green: 'forestgreen', purple: 'darkorchid',
   orange: 'darkorange', cyan: 'darkcyan', pink: 'mediumvioletred', yellow: 'goldenrod', lime: 'olivedrab' }
 const FONTS = ['default', 'solaiman', 'kalpurush', 'noto', 'hind']
 const PAGE_MM = { a4: [210, 297], a5: [148, 210], legal: [215.9, 355.6] }
-const MAX_DIGITS = { class: 3, roll: 12, subject: 4, set: 4 }
+const MAX_DIGITS = { class: 3, roll: 12, student_id: 10, set: 4 }   // D159 (4): the ID box is always 10 digits
 
 export const omrFromSaved = (s) => ({ ...OMR_DEFAULTS, title: s.title ?? '', subtitle: s.subtitle ?? '', title_size: s.title_size ?? 20, subtitle_size: s.subtitle_size ?? 14,
   font: s.font ?? 'default', theme_color: s.theme_color ?? 'black', entry_mode: s.entry_mode ?? 'digital', roll_digits: s.roll_digits ?? 6,
   digits: { class: s.info_boxes?.class?.digits ?? 2, subject: s.info_boxes?.subject?.digits ?? 3, set: s.info_boxes?.set?.digits ?? 1 },
   option_count: s.option_count ?? 4, option_language: s.option_labels?.[0] === 'A' ? 'latin' : 'bangla',
-  info_boxes: Object.fromEntries(['class', 'roll', 'subject', 'set'].map(k => [k, s.info_boxes?.[k]?.visible !== false])),
+  info_boxes: Object.fromEntries(['class', 'roll', 'student_id', 'set'].map(k => [k, (s.info_boxes?.[k] ?? s.info_boxes?.[k === 'student_id' ? 'subject' : k])?.visible !== false])),
   page_size: s.page_size ?? 'a4', page_orientation: s.page_orientation ?? 'portrait', answer_columns: String(s.answer_columns ?? 'auto'),
   question_mark: s.marking?.question_mark ?? '1.00', negative_mark_enabled: !!s.marking?.negative_mark_enabled, negative_mark: s.marking?.negative_mark ?? '0.00',
   multiple_answer_policy: s.marking?.multiple_answer_policy ?? 'wrong' })
@@ -175,12 +175,12 @@ export default function OmrDesigner({ id, form, onSaved }) {
           </Section>
 
           <Section title={t('qbomr.sec_codes')}>
-            {['class', 'roll', 'subject', 'set'].map(k => (
+            {['class', 'roll', 'student_id', 'set'].map(k => (
               <div key={k} className="grid grid-cols-[1fr_5.5rem] items-end gap-2" data-code={k}>
                 <label className="flex flex-col gap-1 text-sm"><span className="font-semibold">{t(`qbomr.box.${k}`)}</span>
                   <span className="flex items-center gap-2"><input type="checkbox" name={`box-${k}`} checked={v.info_boxes[k]} onChange={e => set({ info_boxes: { ...v.info_boxes, [k]: e.target.checked } })} />{t('qbomr.show')}</span></label>
                 <label className="flex flex-col gap-1 text-xs text-content-muted">{t('qbomr.digits')}
-                  <input className={field} type="number" dir="ltr" min={1} max={MAX_DIGITS[k]} name={`digits-${k}`} value={k === 'roll' ? v.roll_digits : v.digits[k]}
+                  <input className={field} type="number" dir="ltr" min={1} max={MAX_DIGITS[k]} name={`digits-${k}`} value={k === 'roll' ? v.roll_digits : k === 'student_id' ? 10 : v.digits[k]} disabled={k === 'student_id'}
                     onChange={e => { const n = Math.max(1, Math.min(MAX_DIGITS[k], Number(e.target.value) || 1)); if (k === 'roll') set({ roll_digits: n }); else set({ digits: { ...v.digits, [k]: n } }) }} /></label>
               </div>
             ))}

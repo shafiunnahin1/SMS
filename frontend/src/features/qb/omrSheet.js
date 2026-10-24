@@ -61,11 +61,13 @@ export function codeMatch(bitScores, value) {
 }
 
 /** a whole sheet from its bubble scores (separated from the image so real photos' measurements can be kept as tests) */
-export function judgeSheet({ roll, set, answers }, setSymbols = []) {
-  const threshold = pageThreshold([...roll.flat(), ...set.flat(), ...answers.flat()])
+export function judgeSheet({ roll, set, answers, studentId = [] }, setSymbols = []) {
+  const threshold = pageThreshold([...roll.flat(), ...set.flat(), ...studentId.flat(), ...answers.flat()])
   const rollDigits = digitsFrom(roll, threshold)
   const setDigits = digitsFrom(set, threshold)
+  const idDigits = digitsFrom(studentId, threshold)          // D159 (4): the 10-digit student ID box ('?' = unreadable digit)
   return {
+    ...(studentId.length ? { student_omr_id: idDigits.map(d => (d === null ? '?' : String(d))).join(''), student_omr_id_uncertain: idDigits.uncertain } : {}),
     threshold,
     roll: rollDigits.map(d => (d === null ? '?' : String(d))).join(''),
     set_code: setDigits.length === 0 || setDigits.includes(null) ? null : setDigits.map(d => setSymbols[d] ?? String(d)).join(''),
@@ -324,6 +326,7 @@ export function scoresWith(img, markers, settings) {
   const scores = {
     roll: grid(g.roll),
     set: settings.info_boxes?.set?.visible === false ? [] : grid(g.set),
+    studentId: g.student_id && settings.info_boxes?.student_id?.visible !== false ? grid(g.student_id) : [],
     answers: answerRows(g).map(r => rowScores(img, h, r.options)),
   }
   const code = g.code?.bits?.length ? codeMatch(rowScores(img, h, g.code.bits), g.code.value) : null

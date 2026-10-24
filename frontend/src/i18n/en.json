@@ -1137,7 +1137,7 @@
     "wrong": "Count as wrong",
     "correct_if_any": "Correct if one is right"
    },
-   "box": {
+   "box": {"student_id": "ID number", 
     "class": "Class",
     "roll": "Roll",
     "subject": "Subject",
@@ -1170,6 +1170,7 @@
     "verified": "Verified"
    },
    "reason": {
+    "student_id_unconfirmed": "ID number read - confirm it",
     "roll_unconfirmed": "Roll read - confirm it",
     "set_code_unconfirmed": "Set read - confirm it",
     "roll_unreadable": "Roll unreadable",

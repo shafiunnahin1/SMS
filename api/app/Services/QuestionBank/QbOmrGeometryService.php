@@ -15,6 +15,7 @@ class QbOmrGeometryService
         $setDigits = (int) ($infoBoxes['set']['digits'] ?? 1);
         $classDigits = max(1, min(3, (int) ($infoBoxes['class']['digits'] ?? 2)));
         $subjectDigits = max(1, min(4, (int) ($infoBoxes['subject']['digits'] ?? 3)));
+        $idBox = isset($infoBoxes['student_id']);                  // D159 (4): new forms print the student ID box where the subject code was
         [$pageWidth, $pageHeight] = $this->pageDimensions($settings);
         $manual = ($settings['entry_mode'] ?? 'digital') === 'manual';
 
@@ -37,7 +38,7 @@ class QbOmrGeometryService
             'bubble_only' => true,
             'markers' => ['left' => 0.119, 'right' => 0.881, 'top' => 0.050, 'bottom' => 0.882],
             'code' => $this->bounds($codeBits) + ['bits' => $codeBits, 'value' => $code],
-            ...$this->codeGrids(['class' => $classDigits, 'roll' => $rollDigits, 'subject' => $subjectDigits, 'set' => $setDigits], $pageWidth, $pageHeight),
+            ...$this->codeGrids(['class' => $classDigits, 'roll' => $rollDigits, ...($idBox ? ['student_id' => 10] : ['subject' => $subjectDigits]), 'set' => $setDigits], $pageWidth, $pageHeight),
             'answers' => $answerGeometry,
         ];
     }
