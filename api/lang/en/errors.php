@@ -161,4 +161,8 @@ return [
     // D158 (5)(6)
     'exam_no_paper' => 'No question paper is linked to this subject.',
     'exam_no_mcq_part' => 'This subject has no MCQ part - link a question paper with MCQs first.',
+    // D159 (1)(2)
+    'exam_paper_pick_block' => 'This paper has several subjects - pick which subject\'s part to take.',
+    'exam_paper_no_block' => 'The paper has no such subject.',
+    'exam_paper_already_linked' => 'This paper (with this part) is already linked.',
 ];

@@ -3128,19 +3128,22 @@ CREATE TABLE qb_omr_forms (                                   -- D127: one versi
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
 );
-CREATE TABLE exam_papers (                                     -- D158 (3): an exam subject's linked final question paper; a paper may serve many exams
+CREATE TABLE exam_papers (                                     -- D158 (3) / D159 (1)(2): an exam subject's linked final papers; a paper may serve many exams
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     exam_subject_id BIGINT UNSIGNED NOT NULL,
     qb_paper_id BIGINT UNSIGNED NOT NULL,
+    qb_subject_id BIGINT UNSIGNED NULL,                       -- D159 (1): the paper's subject block this exam subject takes; NULL = the whole paper
     linked_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    UNIQUE KEY unique_exam_papers_subject (exam_subject_id),
+    UNIQUE KEY unique_exam_papers_block (exam_subject_id, qb_paper_id, qb_subject_id),
+    INDEX idx_exam_papers_subject (exam_subject_id),
     INDEX idx_exam_papers_paper (institution_id, qb_paper_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (exam_subject_id) REFERENCES exam_subjects(id),
-    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
+    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id)
 );
 CREATE TABLE qb_omr_scans (                                   -- D127: reviewable answers retain the form layout version used to read them
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

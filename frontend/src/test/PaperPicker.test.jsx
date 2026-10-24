@@ -26,6 +26,15 @@ describe('PaperPicker', () => {
     expect(screen.getByText('Physics final')).toBeInTheDocument()
     expect(screen.queryByText('Physics draft')).toBeNull()
     fireEvent.click(screen.getByText('Physics final'))
-    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }))
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }), null)
+  })
+
+  it('asks which subject block of a multi-subject paper to take (D159)', async () => {
+    api.get.mockImplementation(path => Promise.resolve({ data: { data: path.endsWith('paper-folders') ? [] : [{ id: 5, title: 'Class test', status: 'final', qb_paper_folder_id: null, subjects: [{ id: 1, name: 'গণিত' }, { id: 2, name: 'বিজ্ঞান' }] }] } }))
+    const onPick = vi.fn()
+    render(<QueryClientProvider client={new QueryClient()}><PaperPicker open onClose={() => {}} onPick={onPick} /></QueryClientProvider>)
+    fireEvent.click(await screen.findByText('Class test'))
+    fireEvent.click(await screen.findByText('বিজ্ঞান'))
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: 5 }), 2)
   })
 })

@@ -95,32 +95,38 @@ function MarksOverview({ examId, subjects, locked }) {
   )
 }
 
-// D158 (3)(4): each subject's question paper - "Link a question" opens the paper picker; the subject's mark fields then follow
-// the paper's kinds of question (MCQ / creative / short). Changing it is refused once marks exist or the exam is published.
+// D158 (3)(4) / D159 (1)(2): each subject's question papers - several per subject (e.g. MCQ paper + CQ/SQ paper), a multi-subject
+// paper by one subject's part; "Link a question" opens the paper picker; the subject's mark fields follow the papers' kinds of question.
+// Changing them is refused once marks exist or the exam is published.
 function PaperLinks({ examId, subjects, locked, onChanged }) {
   const { t } = useTranslation()
   const [picking, setPicking] = useState(null)
   const fail = (err) => useUiStore.getState().addToast(err.response?.data?.message ?? t('common.error'), 'error')
-  const link = (subjectId, paper) => api.put(`/exams/${examId}/subjects/${subjectId}/paper`, { qb_paper_id: paper.id })
+  const link = (subjectId, paper, block) => api.put(`/exams/${examId}/subjects/${subjectId}/paper`, { qb_paper_id: paper.id, ...(block ? { qb_subject_id: block } : {}) })
     .then(() => { useUiStore.getState().addToast(t('exam_paper.linked')); onChanged() }).catch(fail)
-  const unlink = (subjectId) => api.delete(`/exams/${examId}/subjects/${subjectId}/paper`).then(onChanged).catch(fail)
+  const unlink = (subjectId, linkId) => api.delete(`/exams/${examId}/subjects/${subjectId}/paper`, { params: { link_id: linkId } }).then(onChanged).catch(fail)
   if (!subjects.length) return <EmptyState title={t('exam_paper.no_subjects')} />
   return (
     <Card>
       <ul className="flex flex-col divide-y divide-line" data-testid="paper-links">
         {subjects.map(s => (
-          <li key={s.subject_id} className="flex flex-wrap items-center gap-3 py-3" data-subject={s.subject_id}>
+          <li key={s.subject_id} className="flex flex-wrap items-start gap-3 py-3" data-subject={s.subject_id}>
             <span className="min-w-40 flex-1 font-semibold" dir="auto">{s.name}</span>
-            <span className="min-w-40 flex-1 text-sm" dir="auto">{s.paper ? s.paper.title : <span className="text-content-muted">{t('exam_paper.none')}</span>}
-              {s.paper && (s.components ?? []).length > 0 && <span className="block text-xs text-content-muted">{s.components.map(c => `${c.label} ${c.full}`).join(' · ')}</span>}</span>
-            {!locked && <span className="flex gap-2">
-              <Button variant="secondary" onClick={() => setPicking(s.subject_id)} data-action="link-paper">{s.paper ? t('exam_paper.change') : t('exam_paper.link')}</Button>
-              {s.paper && <Button variant="ghost" onClick={() => unlink(s.subject_id)} data-action="unlink-paper">{t('exam_paper.unlink')}</Button>}
-            </span>}
+            <div className="flex min-w-48 flex-[2] flex-col gap-1 text-sm">
+              {(s.papers ?? []).length === 0 && <span className="text-content-muted">{t('exam_paper.none')}</span>}
+              {(s.papers ?? []).map(l => (
+                <span key={l.id} className="flex flex-wrap items-center gap-2" data-link={l.id}>
+                  <span dir="auto">{l.title}{l.block ? ` — ${l.block}` : ''}</span>
+                  {!locked && <Button variant="ghost" onClick={() => unlink(s.subject_id, l.id)} data-action="unlink-paper">{t('exam_paper.unlink')}</Button>}
+                </span>
+              ))}
+              {(s.components ?? []).length > 0 && (s.papers ?? []).length > 0 && <span className="text-xs text-content-muted">{s.components.map(c => `${c.label} ${c.full}`).join(' · ')}</span>}
+            </div>
+            {!locked && <Button variant="secondary" onClick={() => setPicking(s.subject_id)} data-action="link-paper">{(s.papers ?? []).length ? t('exam_paper.add') : t('exam_paper.link')}</Button>}
           </li>
         ))}
       </ul>
-      <PaperPicker open={picking !== null} onClose={() => setPicking(null)} onPick={(paper) => link(picking, paper)} />
+      <PaperPicker open={picking !== null} onClose={() => setPicking(null)} onPick={(paper, block) => link(picking, paper, block)} />
     </Card>
   )
 }

@@ -9,10 +9,11 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import DirIcon from '../../components/DirIcon'
 
 // D158 (3): picking a question paper works like a file-open dialog - it starts at the question-paper home, folders open,
-// and a FINAL paper is the file to pick (drafts are not shown).
+// and a FINAL paper is the file to pick (drafts are not shown). D159 (1): a paper of several subjects then asks which subject's part.
 export default function PaperPicker({ open, onClose, onPick }) {
   const { t } = useTranslation()
   const [folderId, setFolderId] = useState(null)
+  const [multi, setMulti] = useState(null)
   const papers = useQuery({ queryKey: ['qb-papers'], enabled: open, queryFn: () => api.get('/question-bank/papers').then(r => r.data.data) })
   const folders = useQuery({ queryKey: ['qb-paper-folders'], enabled: open, queryFn: () => api.get('/question-bank/paper-folders').then(r => r.data.data) })
   const chain = useMemo(() => {
@@ -24,7 +25,8 @@ export default function PaperPicker({ open, onClose, onPick }) {
   }, [folders.data, folderId])
   const childFolders = (folders.data ?? []).filter(f => (f.parent_id ?? null) === folderId)
   const files = (papers.data ?? []).filter(p => p.status === 'final' && (p.qb_paper_folder_id ?? null) === folderId)
-  const close = () => { setFolderId(null); onClose() }
+  const close = () => { setFolderId(null); setMulti(null); onClose() }
+  const pick = (p) => ((p.subjects ?? []).length > 1 ? setMulti(p) : (onPick(p, null), close()))
 
   return (
     <Modal open={open} onClose={close} title={t('exam_paper.pick_title')}>
@@ -35,7 +37,14 @@ export default function PaperPicker({ open, onClose, onPick }) {
             <button type="button" className="rounded-token px-2 py-1 text-primary-fg hover:bg-primary-soft" dir="auto" onClick={() => setFolderId(f.id)}>{f.name}</button></span>)}
           {folderId && <Button variant="secondary" onClick={() => setFolderId(chain[chain.length - 2]?.id ?? null)}><ArrowUp aria-hidden="true" className="h-4 w-4" />{t('qbpf.back')}</Button>}
         </div>
-        {papers.isError || folders.isError ? <ErrorState onRetry={() => { papers.refetch(); folders.refetch() }} />
+        {multi ? (
+          <div className="flex flex-col gap-2" data-testid="paper-blocks">
+            <p className="text-sm" dir="auto">{t('exam_paper.pick_block', { paper: multi.title })}</p>
+            <div className="flex flex-wrap gap-2">{multi.subjects.map(b => (
+              <Button key={b.id} variant="secondary" onClick={() => { onPick(multi, b.id); close() }} data-action="pick-block" data-block={b.id}><span dir="auto">{b.name}</span></Button>))}</div>
+            <Button variant="ghost" onClick={() => setMulti(null)}>{t('qbpf.back')}</Button>
+          </div>
+        ) : papers.isError || folders.isError ? <ErrorState onRetry={() => { papers.refetch(); folders.refetch() }} />
           : papers.isPending || folders.isPending ? <div className="h-24 animate-pulse rounded-token bg-surface-muted" aria-busy="true" />
           : !childFolders.length && !files.length ? <EmptyState title={t('exam_paper.none_here')} /> : (
           <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="listbox" aria-label={t('exam_paper.pick_title')}>
@@ -44,7 +53,7 @@ export default function PaperPicker({ open, onClose, onPick }) {
                 <Folder aria-hidden="true" className="h-8 w-8 text-primary-fg" /><span className="break-words text-sm" dir="auto">{f.name}</span></button></li>
             ))}
             {files.map(p => (
-              <li key={`p${p.id}`}><button type="button" role="option" aria-selected="false" className="flex w-full flex-col items-center gap-1 rounded-token p-3 text-center hover:bg-primary-soft" onClick={() => { onPick(p); close() }} data-action="pick-paper" data-paper={p.id}>
+              <li key={`p${p.id}`}><button type="button" role="option" aria-selected="false" className="flex w-full flex-col items-center gap-1 rounded-token p-3 text-center hover:bg-primary-soft" onClick={() => pick(p)} data-action="pick-paper" data-paper={p.id}>
                 <FileText aria-hidden="true" className="h-8 w-8 text-primary-fg" /><span className="break-words text-sm" dir="auto">{p.title}</span></button></li>
             ))}
           </ul>

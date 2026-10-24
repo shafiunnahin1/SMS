@@ -59,7 +59,7 @@ class ExamController extends Controller
     {
         $exam = Exam::findOrFail($id);
         $links = app(ExamPaperService::class)->linksOf($exam);
-        return response()->json(['success' => true, 'data' => $this->exams->subjectsOf($exam)->map(fn ($es) => $this->subjectRow($es) + ['paper' => $links[$es->subject_id] ?? null])]);
+        return response()->json(['success' => true, 'data' => $this->exams->subjectsOf($exam)->map(fn ($es) => $this->subjectRow($es) + ['papers' => $links[$es->subject_id] ?? []])]);
     }
 
     public function updateSubjects(int $id)
@@ -73,14 +73,17 @@ class ExamController extends Controller
     public function linkPaper(Request $request, int $id, int $subjectId, ExamPaperService $papers)
     {
         $exam = Exam::findOrFail($id);                                           // another institution's exam is 404 before any validation
-        $data = $request->validate(['qb_paper_id' => 'required|integer']);
-        $papers->link($exam, $subjectId, (int) $data['qb_paper_id'], $request->user());
+        $data = $request->validate(['qb_paper_id' => 'required|integer', 'qb_subject_id' => 'nullable|integer']);   // D159 (1): one block of a multi-subject paper
+        $papers->link($exam, $subjectId, (int) $data['qb_paper_id'], isset($data['qb_subject_id']) ? (int) $data['qb_subject_id'] : null, $request->user());
         return $this->subjects($id);
     }
 
-    public function unlinkPaper(int $id, int $subjectId, ExamPaperService $papers)
+    /** ?link_id= removes that one link (D159 (2): a subject may have several); without it every link of the subject */
+    public function unlinkPaper(Request $request, int $id, int $subjectId, ExamPaperService $papers)
     {
-        $papers->unlink(Exam::findOrFail($id), $subjectId);
+        $exam = Exam::findOrFail($id);
+        $linkId = $request->validate(['link_id' => 'nullable|integer'])['link_id'] ?? null;
+        $papers->unlink($exam, $subjectId, $linkId ? (int) $linkId : null);
         return $this->subjects($id);
     }
 
