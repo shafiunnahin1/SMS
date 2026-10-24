@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../i18n'
@@ -46,5 +46,21 @@ describe('question paper detail layout (D135)', () => {
     expect(screen.getByTestId('paper-section-0')).toHaveAttribute('data-testid', 'paper-section-0')
     expect(await screen.findByTestId('paper-answer-140')).toHaveTextContent('বেগের পরিবর্তনের হার')
     await waitFor(() => expect(screen.getByTestId('paper-picker')).toBeInTheDocument())
+  })
+
+  it('lists the sets of a final paper and creates more sets with the chosen strategy (qbank subsets)', async () => {
+    const final = { ...paper, status: 'final', sets_count: 2, sets: [{ number: 1, set: 'A', code: 'ক', strategy: 'both' }, { number: 2, set: 'B', code: 'খ', strategy: 'both' }] }
+    api.get.mockImplementation(path => Promise.resolve({ data: { data: path === '/question-bank/papers/8' ? final : [] } }))
+    api.post.mockResolvedValue({ data: { data: { ...final, sets_count: 4 } } })
+    renderPage()
+    const list = await screen.findByTestId('paper-set-list')
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2)
+    expect(list).toHaveTextContent('সেট ক')
+    expect(list).toHaveTextContent('মূল সেট')
+    const create = screen.getByTestId('paper-create-sets')
+    fireEvent.change(within(create).getByRole('combobox', { name: 'কতটি সেট' }), { target: { value: '2' } })
+    fireEvent.change(within(create).getByRole('combobox', { name: /পদ্ধতি|কৌশল|Strategy/i }), { target: { value: 'options' } })
+    fireEvent.click(within(create).getByRole('button', { name: /সেট তৈরি করুন/ }))
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/question-bank/papers/8/finalize', { count: 2, strategy: 'options' }))
   })
 })

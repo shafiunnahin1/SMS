@@ -68,6 +68,46 @@ class QbPaperSets
         }
     }
 
+    /** qbank's "create subsets" on a final paper (QuestionSetController::storeSubsets): `$count` more sets after the frozen ones, never
+     *  repeating an order already printed; the earlier sets are left exactly as they are; names follow the first set's scheme */
+    public function append(QbPaper $paper, array $sections, int $count, string $strategy): void
+    {
+        $existing = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->get();
+        $counts = $this->optionCounts($sections);
+        $max = min(self::MAX, $this->capacity($sections, $strategy, $counts));
+        if ($existing->count() + $count > $max) throw new BusinessException("at most {$max} sets are possible with this strategy", 'qb_sets_capacity', 422, ['max' => $max]);
+        $names = in_array($existing->first()?->code, self::BANGLA, true) ? self::BANGLA : self::LATIN;
+        $plain = fn (array $layout) => json_encode(array_map(fn ($s) => array_map(fn ($it) => [$it['qb_question_id'], $it['options']], $s['items']), $layout));
+        $seen = $existing->map(fn ($v) => $plain($v->layout_json))->all();
+        $correct = $this->correctFlags($sections);
+        for ($n = $existing->count() + 1, $last = $existing->count() + $count; $n <= $last; $n++) {
+            for ($attempt = 0; $attempt < 200; $attempt++) {
+                $layout = $this->arrange($paper, $sections, $n, $strategy, $counts, $attempt);
+                if (!in_array($plain($layout), $seen, true)) break;
+            }
+            $seen[] = $plain($layout);
+            QbPaperVariant::create(['qb_paper_id' => $paper->id, 'variant_number' => $n, 'code' => $names[$n - 1], 'strategy' => $strategy,
+                'layout_json' => $this->withKey($layout, $correct)]);
+        }
+    }
+
+    private function correctFlags(array $sections)
+    {
+        return QbQuestionOption::whereIn('qb_question_id', $this->ids($sections))->orderBy('sort_order')->orderBy('id')->get(['qb_question_id', 'is_correct'])
+            ->groupBy('qb_question_id')->map(fn ($os) => $os->pluck('is_correct')->map(fn ($v) => (bool) $v)->all());
+    }
+
+    /** each item's correct option labels in the set's own option order (the set's answer key) */
+    private function withKey(array $layout, $correct): array
+    {
+        foreach ($layout as &$s) foreach ($s['items'] as &$it) {
+            $flags = $correct[$it['qb_question_id']] ?? [];
+            $it['correct'] = array_values(array_filter(array_map(fn ($orig, $pos) => !empty($flags[$orig]) ? (self::LABELS[$pos] ?? (string) ($pos + 1)) : null, $it['options'], array_keys($it['options']))));
+        }
+        unset($s, $it);
+        return $layout;
+    }
+
     /** D128: the consecutive runs of one subject inside a section (the section list is already in subject order) */
     public static function blocks(array $items): array
     {

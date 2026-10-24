@@ -146,6 +146,7 @@ export default function QbPaperEdit() {
           </div>}
         </div>
       </Card>
+      {!isNew && final && <PaperSets paperId={id} paper={paper.data} base={base} columns={columns} onChanged={() => { paper.refetch(); qc.invalidateQueries({ queryKey: ['qb-papers'] }) }} />}
       <Card className="grid gap-3 sm:grid-cols-2" data-testid="paper-settings">
         <fieldset disabled={final} className="contents">
           <Input label={t('qbpp.title')} value={v.title} onChange={e => set({ title: e.target.value })} name="title" />
@@ -267,5 +268,45 @@ export default function QbPaperEdit() {
         )}
       </div>
     </div>
+  )
+}
+
+// qbank's subsets on the paper page (D126 (2), D133): the frozen sets with their own preview and print, and "create sets" that adds
+// more sets after them - MCQ order and options shuffled by the chosen strategy, never repeating an earlier set
+function PaperSets({ paperId, paper, base, columns, onChanged }) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [form, setForm] = useState({ count: '1', strategy: 'both' })
+  const [busy, setBusy] = useState(false)
+  const sets = paper.sets ?? []
+  const add = async () => {
+    setBusy(true)
+    try { await api.post(`/question-bank/papers/${paperId}/finalize`, { count: Number(form.count), strategy: form.strategy }); useUiStore.getState().addToast(t('qbpp.sets_added')); onChanged() }
+    catch { /* the interceptor shows why (capacity, scanned) */ } finally { setBusy(false) }
+  }
+  return (
+    <Card className="flex flex-col gap-3" data-testid="paper-sets">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div><h2 className="font-semibold">{t('qbpp.sets_title')}</h2><p className="text-sm text-content-muted">{t('qbpp.sets_hint')}</p></div>
+        <div className="flex flex-wrap items-end gap-2" data-testid="paper-create-sets">
+          <Select label={t('qbpp.sets_count')} name="add_count" value={form.count} onChange={e => setForm({ ...form, count: e.target.value })}
+            options={Array.from({ length: Math.max(1, 26 - sets.length) }, (_, k) => ({ value: String(k + 1), label: String(k + 1) }))} />
+          <Select label={t('qbpp.strategy')} name="add_strategy" value={form.strategy} onChange={e => setForm({ ...form, strategy: e.target.value })}
+            options={['both', 'options', 'serial'].map(x => ({ value: x, label: t(`qbpp.strategies.${x}`) }))} />
+          <Button onClick={add} loading={busy} disabled={sets.length >= 26} data-action="create-sets"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.create_sets')}</Button>
+        </div>
+      </div>
+      <ul className="flex flex-col gap-2" data-testid="paper-set-list">
+        {sets.map(s => (
+          <li key={s.number} className="flex flex-wrap items-center gap-2 rounded-token px-3 py-2 [border:1px_solid_var(--line)]" data-set={s.set}>
+            <span className="min-w-16 font-semibold">{t('qbpp.set_code', { code: s.code })}</span>
+            <span className="flex-1 text-sm text-content-muted">{s.number === 1 ? t('qbpp.main_set') : t(`qbpp.strategies.${s.strategy}`)}</span>
+            <Button variant="secondary" onClick={() => navigate(`${base}/${paperId}/preview?set=${s.set}`)}><Eye aria-hidden="true" className="h-4 w-4" />{t('qbpv.open')}</Button>
+            <PrintButton url={`/question-bank/papers/${paperId}/pdf`} params={{ set: s.set, columns: columns ? 2 : 1 }} filename={`paper-${paperId}-${s.set}.pdf`} label={t('qbpp.set_print')} />
+            <PrintButton url={`/question-bank/papers/${paperId}/pdf`} params={{ set: s.set, answers: 1, columns: columns ? 2 : 1 }} filename={`paper-${paperId}-${s.set}-answers.pdf`} label={t('qbpp.set_answers')} />
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }

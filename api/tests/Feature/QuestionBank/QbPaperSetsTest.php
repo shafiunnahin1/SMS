@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{QbPaperVariant, QbQuestion, QbQuestionOption, QbQuestionType, QbSubject, QbUnlock, User};
+use App\Models\{QbOmrForm, QbOmrScan, QbPaperVariant, QbQuestion, QbQuestionOption, QbQuestionType, QbSubject, QbUnlock, User};
 use App\Support\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -135,5 +135,51 @@ class QbPaperSetsTest extends TestCase
         $withKey = $print(['set' => 'B', 'answers' => '1']);
         $this->assertStringContainsString('উত্তরমালা — সেট খ', $withKey);
         $this->assertStringNotContainsString('class="cols-2"', $withKey);
+    }
+
+    // qbank's "create subsets" on a final paper (QuestionSetController::storeSubsets): more sets after the frozen ones
+    public function test_more_sets_are_added_to_a_final_paper_without_changing_the_printed_ones(): void
+    {
+        [$host, $admin, $id, $i] = $this->paper(1);
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['strategy' => 'both'])->assertOk();
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['strategy' => 'both'])->assertStatus(422)->assertJsonPath('error', 'qb_paper_final');   // without a count it is still "already final"
+        $a = $this->printed($host, $admin, $id, 'A', true);
+
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['count' => 2, 'strategy' => 'both'])->assertOk()->assertJsonPath('data.sets_count', 3);
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['count' => 1, 'strategy' => 'options'])->assertOk()->assertJsonPath('data.sets_count', 4);
+        $variants = Tenancy::as($i, fn () => QbPaperVariant::where('qb_paper_id', $id)->orderBy('variant_number')->get());
+        $this->assertSame(['A', 'B', 'C', 'D'], $variants->pluck('code')->all());
+        $this->assertSame(['both', 'both', 'both', 'options'], $variants->pluck('strategy')->all());
+        $again = $this->printed($host, $admin, $id, 'A', true);
+        $this->assertSame([$a['sections'], $a['answer_key'], $a['set_code']], [$again['sections'], $again['answer_key'], $again['set_code']], 'set A prints exactly as before');
+
+        $orders = [];
+        foreach (['A', 'B', 'C', 'D'] as $set) {
+            $d = $this->printed($host, $admin, $id, $set, true);
+            $items = $d['sections'][0]['items'];
+            $orders[] = json_encode(array_map(fn ($it) => [$it['question']['question_text'], array_column($it['question']['options'], 'content_text')], $items));
+            foreach ($items as $it) {
+                $right = collect($it['question']['options'])->firstWhere('content_text', self::RIGHT[$it['question']['question_text']]);
+                $this->assertSame([$right['label']], collect($d['answer_key'])->firstWhere('no', $it['no'])['correct'], "set {$set}");
+            }
+        }
+        $this->assertCount(4, array_unique($orders), 'an added set never repeats an earlier order');
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['count' => 30, 'strategy' => 'both'])->assertStatus(422);
+    }
+
+    public function test_sets_are_not_added_once_an_omr_sheet_is_scanned_and_not_on_another_institutions_paper(): void
+    {
+        [$host, $admin, $id, $i] = $this->paper(1);
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['strategy' => 'both'])->assertOk();
+        [$otherHost, $otherAdmin] = $this->paper(2);
+        $this->api('POST', $otherHost, "question-bank/papers/{$id}/finalize", $otherAdmin, ['count' => 1, 'strategy' => 'both'])->assertNotFound();
+
+        $form = Tenancy::as($i, fn () => QbOmrForm::create(['qb_paper_id' => $id, 'code' => 'F1', 'settings_json' => ['is_generated' => true], 'locked_at' => now()]));
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['count' => 1, 'strategy' => 'both'])->assertOk();
+        $this->assertNull(Tenancy::as($i, fn () => $form->fresh()->locked_at), 'a generated OMR layout is unlocked to be rebuilt with the new set');
+
+        Tenancy::as($i, fn () => QbOmrScan::create(['qb_omr_form_id' => $form->id, 'layout_version' => 1, 'status' => 'pending_review', 'source' => 'upload']));
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['count' => 1, 'strategy' => 'both'])->assertStatus(422)->assertJsonPath('error', 'qb_paper_scanned');
+        $this->assertSame(2, Tenancy::as($i, fn () => QbPaperVariant::where('qb_paper_id', $id)->count()));
     }
 }

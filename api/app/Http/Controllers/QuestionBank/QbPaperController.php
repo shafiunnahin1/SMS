@@ -5,8 +5,9 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\QbQuestionPublicResource;
-use App\Models\{AuditLog, QbPaper, QbPaperItem, QbPaperSection, QbPaperVariant, QbQuestion, QbUnlock, User};
+use App\Models\{AuditLog, QbOmrForm, QbOmrScan, QbPaper, QbPaperItem, QbPaperSection, QbPaperVariant, QbQuestion, QbUnlock, User};
 use App\Services\{PdfService, QbPaperSets, QbPricingService};
+use App\Services\QuestionBank\QbOmrFormService;
 use App\Support\{Money, Tenancy};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -90,7 +91,9 @@ class QbPaperController extends Controller
     {
         $this->staffGate($request);
         $paper = $this->find($request->user(), $id);
-        $in = $request->validate(['strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES), 'set_names' => 'nullable|in:latin,bangla']);
+        $in = $request->validate(['strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES), 'set_names' => 'nullable|in:latin,bangla',
+            'count' => 'nullable|integer|min:1|max:' . (QbPaperSets::MAX - 1)]);
+        if ($paper->status !== 'draft' && isset($in['count'])) return $this->addSets($request, $paper, $sets, (int) $in['count'], $in['strategy'] ?? 'both');
         if ($paper->status !== 'draft') throw new BusinessException('already final', 'qb_paper_final', 422);
         if ($this->items($paper)->isEmpty()) throw new BusinessException('a paper needs at least one question', 'qb_paper_empty', 422);
         DB::transaction(function () use ($paper, $sets, $in) {
@@ -98,6 +101,22 @@ class QbPaperController extends Controller
             $paper->update(['status' => 'final']);
         });
         AuditLog::record('qb.paper.finalized', $paper, ['total_marks' => $paper->total_marks]);
+        return response()->json(['success' => true, 'data' => $this->row($paper->fresh()), 'message' => __('messages.saved')]);
+    }
+
+    /** qbank's "create subsets" (D126 (2), D133 - "create sets" is the same action as making the paper final): on a final paper,
+     *  POST .../finalize with `count` adds that many frozen sets after the existing ones; refused once an OMR sheet of the paper is
+     *  scanned (D133), and a generated OMR layout is unlocked so it is rebuilt with the new sets */
+    private function addSets(Request $request, QbPaper $paper, QbPaperSets $sets, int $count, string $strategy)
+    {
+        $form = QbOmrForm::where('qb_paper_id', $paper->id)->first();
+        if ($form && QbOmrScan::where('qb_omr_form_id', $form->id)->exists()) throw new BusinessException('an OMR sheet of this paper is already scanned', 'qb_paper_scanned', 422);
+        DB::transaction(function () use ($request, $paper, $sets, $count, $strategy, $form) {
+            $sets->append($paper, $this->sectionList($paper), $count, $strategy);
+            $paper->update(['sets_count' => QbPaperVariant::where('qb_paper_id', $paper->id)->count()]);
+            if ($form?->locked_at !== null) app(QbOmrFormService::class)->unlock($request->user(), $paper->id);
+        });
+        AuditLog::record('qb.paper.sets_added', $paper, ['count' => $count, 'strategy' => $strategy]);
         return response()->json(['success' => true, 'data' => $this->row($paper->fresh()), 'message' => __('messages.saved')]);
     }
 
@@ -180,6 +199,8 @@ class QbPaperController extends Controller
         return $p->only(['id', 'title', 'exam_name', 'program_id', 'qb_subject_id', 'duration_minutes', 'total_marks', 'instructions_json', 'status', 'sets_count', 'created_by'])
             + ['updated_at' => $p->updated_at?->toIso8601String(),
                'subjects' => $this->subjects($p),   // D128: the paper's subjects, in the order the paper groups them
+               // D126 (2): the frozen sets (set = the Latin letter the print takes, code = the printed name)
+               'sets' => QbPaperVariant::where('qb_paper_id', $p->id)->orderBy('variant_number')->get()->map(fn ($v) => ['number' => $v->variant_number, 'set' => QbPaperSets::LATIN[$v->variant_number - 1], 'code' => $v->code, 'strategy' => $v->strategy])->values(),
                'sections' => QbPaperSection::where('qb_paper_id', $p->id)->orderBy('sort_order')->get()->map(fn ($s) => ['id' => $s->id, 'title' => $s->title, 'instruction' => $s->instruction,
                    'items' => ($items[$s->id] ?? collect())->sortBy('sort_order')->map(fn ($i) => ['qb_question_id' => (int) $i->qb_question_id, 'marks' => $i->marks])->values()])->values()];
     }
