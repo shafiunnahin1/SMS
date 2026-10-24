@@ -13,7 +13,7 @@ class DepartmentRoutePermissionResolver
     {
         $route = $request->route();
         if (!$route instanceof Route) return null;
-        foreach ([...DepartmentRouteCatalog::D94, ...DepartmentRouteCatalog::D101, ...DepartmentRouteCatalog::D102, ...DepartmentRouteCatalog::CAPTURED, ...DepartmentRouteCatalog::D100, ...DepartmentRouteCatalog::D104, ...DepartmentRouteCatalog::D106, ...DepartmentRouteCatalog::D107, ...DepartmentRouteCatalog::D111, ...DepartmentRouteCatalog::D127, ...DepartmentRouteCatalog::D158] as $entry) {
+        foreach ([...DepartmentRouteCatalog::D94, ...DepartmentRouteCatalog::D101, ...DepartmentRouteCatalog::D102, ...DepartmentRouteCatalog::CAPTURED, ...DepartmentRouteCatalog::D100, ...DepartmentRouteCatalog::D104, ...DepartmentRouteCatalog::D106, ...DepartmentRouteCatalog::D107, ...DepartmentRouteCatalog::D111, ...DepartmentRouteCatalog::D127, ...DepartmentRouteCatalog::D158, ...DepartmentRouteCatalog::D161] as $entry) {
             if ($route->uri() !== $entry['uri'] || !in_array($request->method(), explode('|', $entry['method']), true)) continue;
             // route:list omits a leading namespace separator that live fully-qualified routes may retain.
             if (ltrim($route->getActionName(), '\\') !== $entry['action']) return null;

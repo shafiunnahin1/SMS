@@ -12,6 +12,9 @@ class ConsentService
 
     public function record(Student $s, string $type, string $method, array $guardian = [], ?int $by = null): Consent
     {
+        // D161 (owner 2026-10-24): staff may record a guardian's SMS consent (paper), but never over the guardian's own opt-out
+        $own = Consent::where('student_id', $s->id)->where('type', $type)->where('status', 'revoked')->whereIn('method', ['portal', 'otp'])->exists();
+        if ($type === 'sms' && $method === 'paper' && $own) throw new \App\Exceptions\BusinessException('the guardian switched SMS off', 'consent_guardian_revoked', 422);
         $consent = Consent::updateOrCreate(['student_id' => $s->id, 'type' => $type], [
             'status' => 'granted', 'method' => $method, 'recorded_by' => $by, 'granted_at' => now(), 'revoked_at' => null,
             'guardian_name' => $guardian['name'] ?? null, 'guardian_phone' => User::normalisePhone($guardian['phone'] ?? $s->guardian_phone),

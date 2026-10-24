@@ -97,8 +97,13 @@ class ResultController extends Controller
         if ($exam->status === 'published' && $request->user()->role !== 'admin') throw new BusinessException('published', 'exam_published', 422);
         $data = $request->validate(['marks_obtained' => 'nullable|numeric|min:0|max:1000', 'components' => 'nullable|array', 'components.*' => 'nullable|numeric|min:0|max:1000',
             'is_absent' => 'nullable|boolean', 'teacher_remarks' => 'nullable|string|max:255']);
+        $before = ['marks_obtained' => $result->marks_obtained, 'grade' => $result->grade];
         $result->update($this->results->score($es, isset($data['marks_obtained']) ? (float) $data['marks_obtained'] : null, $data['components'] ?? null, (bool) ($data['is_absent'] ?? false))
             + (array_key_exists('teacher_remarks', $data) ? ['teacher_remarks' => $data['teacher_remarks']] : []));
+        // D161 (3): the admin changed a published mark - the guardian gets a correction SMS with the old and new result
+        if ($exam->status === 'published' && ((string) $before['marks_obtained'] !== (string) $result->marks_obtained || $before['grade'] !== $result->grade)) {
+            app(\App\Services\Exams\ResultSmsService::class)->correction($exam, $result->fresh('subject'), $before, $request->user());
+        }
         return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => ['student_id' => $result->student_id] + $this->resultRow($result->fresh())]);
     }
 

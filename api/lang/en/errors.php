@@ -165,4 +165,7 @@ return [
     'exam_paper_pick_block' => 'This paper has several subjects - pick which subject\'s part to take.',
     'exam_paper_no_block' => 'The paper has no such subject.',
     'exam_paper_already_linked' => 'This paper (with this part) is already linked.',
+    // D161
+    'consent_guardian_revoked' => 'The guardian switched SMS off - the institution cannot switch it on.',
+    'exam_not_published' => 'Publish (finalise) the result first.',
 ];

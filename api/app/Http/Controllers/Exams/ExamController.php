@@ -101,6 +101,18 @@ class ExamController extends Controller
         ]);
     }
 
+    /** D161 (2): the admin's "Send SMS" after publishing - queues once, then sends every pending / failed message; answers the report */
+    public function sendResultSms(Request $request, int $id, \App\Services\Exams\ResultSmsService $sms)
+    {
+        return response()->json(['success' => true, 'data' => $sms->run(Exam::findOrFail($id), $request->user())]);
+    }
+
+    /** D161 (2): sent / total with pending, failed and skipped, for results and corrections */
+    public function resultSmsReport(int $id, \App\Services\Exams\ResultSmsService $sms)
+    {
+        return response()->json(['success' => true, 'data' => $sms->report(Exam::findOrFail($id))]);
+    }
+
     private function load(Exam $exam): Exam
     {
         return $exam->load(['program:id,name', 'batch:id,name'])->loadCount('subjects')->loadExists('results');

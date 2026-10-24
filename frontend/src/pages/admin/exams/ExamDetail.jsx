@@ -51,6 +51,7 @@ export default function ExamDetail() {
     <div className="flex flex-col gap-4">
       <PageHeader title={<span className="inline-flex items-center gap-2"><span dir="auto">{e.name}</span> <StatusBadge status={e.status} /></span>}
         actions={!locked && <Button onClick={publish}><Send aria-hidden="true" className="h-4 w-4" />{t('exams.publish')}</Button>} />
+      {locked && <ResultSms examId={id} />}
       <p className="text-sm text-content-muted" dir="auto">{e.program?.name}{e.batch ? ` — ${e.batch.name}` : ''} · {t(`exams.types.${e.exam_type}`)} · <Ltr>{e.academic_year}</Ltr></p>
       <Tabs items={[{ key: 'subjects', label: t('exams.subjects') }, { key: 'papers', label: t('exam_paper.tab') }, { key: 'marks', label: t('exams.marks') }, { key: 'merit', label: t('merit.tab') }]} value={tab} onChange={setTab} label={e.name} />
       {tab === 'subjects' && (subjects.isPending ? <Card><Loader type="form" fields={4} /></Card> : subjects.isError ? <ErrorState onRetry={subjects.refetch} />
@@ -164,6 +165,34 @@ function MeritList({ examId, programId, fixedBatch }) {
       </div>
       <DataTable columns={columns} data={merit.data?.rows ?? []} rowKey="student_id" loading={merit.isPending} error={merit.isError} onRetry={merit.refetch}
         empty={<EmptyState title={t('exams.no_marks')} />} />
+    </Card>
+  )
+}
+
+// D161 (2): after publishing, the head of the institution sends the result SMS; the report shows sent / total with what waits (pending:
+// the wallet ran out - press again after a recharge), failed and skipped (no guardian opt-in); corrections are counted apart
+function ResultSms({ examId }) {
+  const { t } = useTranslation()
+  const [busy, setBusy] = useState(false)
+  const report = useQuery({ queryKey: ['result-sms', examId], queryFn: () => api.get(`/exams/${examId}/result-sms`).then(r => r.data.data), refetchInterval: 5000 })
+  const send = async () => {
+    setBusy(true)
+    try { await api.post(`/exams/${examId}/result-sms`); useUiStore.getState().addToast(t('result_sms.queued')); report.refetch() }
+    catch (err) { useUiStore.getState().addToast(err.response?.data?.message ?? t('common.error'), 'error') }
+    finally { setBusy(false) }
+  }
+  const r = report.data?.result
+  const c = report.data?.correction
+  return (
+    <Card className="flex flex-wrap items-center gap-3" data-testid="result-sms">
+      <Button onClick={send} loading={busy} data-action="send-result-sms">{r?.total ? t('result_sms.resend') : t('result_sms.send')}</Button>
+      {r && r.total > 0 && <span className="text-sm" data-testid="result-sms-report">
+        <strong><Ltr>{r.sent}/{r.total}</Ltr></strong> {t('result_sms.sent')}
+        {r.pending > 0 && <> · <Ltr>{r.pending}</Ltr> {t('result_sms.pending')}</>}
+        {r.failed > 0 && <> · <Ltr>{r.failed}</Ltr> {t('result_sms.failed')}</>}
+        {r.skipped > 0 && <> · <Ltr>{r.skipped}</Ltr> {t('result_sms.skipped')}</>}
+      </span>}
+      {c && c.total > 0 && <span className="text-sm text-content-muted">{t('result_sms.corrections')}: <Ltr>{c.sent}/{c.total}</Ltr>{c.pending > 0 && <> · <Ltr>{c.pending}</Ltr> {t('result_sms.pending')}</>}</span>}
     </Card>
   )
 }

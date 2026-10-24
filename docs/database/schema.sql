@@ -3128,6 +3128,26 @@ CREATE TABLE qb_omr_forms (                                   -- D127: one versi
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
 );
+CREATE TABLE exam_result_sms (                                 -- D161 (4): an exam's result / correction SMS per student; pending until the wallet can pay
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    exam_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,
+    kind VARCHAR(12) NOT NULL,                                   -- result | correction
+    phone VARCHAR(20) NULL,
+    message TEXT NOT NULL,
+    status VARCHAR(10) NOT NULL DEFAULT 'pending',               -- pending | sent | failed | skipped
+    sms_log_id BIGINT UNSIGNED NULL,                             -- the billing record when it went
+    error VARCHAR(60) NULL,
+    attempts SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    created_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_exam_result_sms_run (institution_id, exam_id, kind, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (exam_id) REFERENCES exams(id),
+    FOREIGN KEY (student_id) REFERENCES students(id)
+);
 CREATE TABLE exam_papers (                                     -- D158 (3) / D159 (1)(2): an exam subject's linked final papers; a paper may serve many exams
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
