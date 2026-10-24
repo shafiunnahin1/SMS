@@ -174,6 +174,19 @@ class QbOmrFormApiTest extends TestCase
         $this->assertArrayNotHasKey('geometry', Tenancy::as($institution, fn () => \App\Models\QbOmrForm::where('qb_paper_id', $paperId)->first()->settings_json));
     }
 
+    public function test_a5_or_sideways_page_warns_and_is_not_generated(): void
+    {
+        $institution = $this->makeInstitution('omr-form-fit');
+        $teacher = $this->makeUser($institution, 'teacher');
+        $url = 'question-bank/papers/' . $this->paper($institution, $teacher) . '/omr-form';
+        foreach ([['a5', 'portrait'], ['a4', 'landscape']] as [$size, $orientation]) {
+            $this->api('PUT', $this->hostOf($institution), $url, $teacher, ['settings' => $this->settings(['page_size' => $size, 'page_orientation' => $orientation])])->assertOk();
+            $this->api('POST', $this->hostOf($institution), "{$url}/generate", $teacher)->assertStatus(422)->assertJsonPath('error', 'omr_page_too_small');
+        }
+        $this->api('PUT', $this->hostOf($institution), $url, $teacher, ['settings' => $this->settings(['page_size' => 'legal', 'page_orientation' => 'portrait'])])->assertOk();
+        $this->api('POST', $this->hostOf($institution), "{$url}/generate", $teacher)->assertOk();
+    }
+
     public function test_the_sheet_template_draws_the_controller_settings(): void
     {
         $institution = $this->makeInstitution('omr-form-template');

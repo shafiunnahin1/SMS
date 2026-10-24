@@ -1096,6 +1096,7 @@
    "settings_hint": "ডিজাইন ও আউটপুট কনফিগার করুন",
    "saving": "সংরক্ষণ হচ্ছে...",
    "sec_output": "Output",
+   "no_fit": "{{size}} {{orientation}} পাতায় OMR শিট ধরে না। A4 বা Legal লম্বালম্বি বেছে নিন; নইলে তৈরি করা যাবে না।",
    "fit_note": "{{size}} {{orientation}} লেআউটে OMR পাতায় ফিট করছে।",
    "sec_marking": "Marking",
    "off": "বন্ধ",

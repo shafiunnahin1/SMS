@@ -1096,6 +1096,7 @@
    "settings_hint": "Configure the design and output",
    "saving": "Saving...",
    "sec_output": "Output",
+   "no_fit": "The OMR sheet does not fit {{size}} {{orientation}}. Choose A4 or Legal portrait; it cannot be generated otherwise.",
    "fit_note": "Fits the OMR page in {{size}} {{orientation}}.",
    "sec_marking": "Marking",
    "off": "Off",

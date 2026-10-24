@@ -82,6 +82,7 @@ export default function OmrDesigner({ id, form, onSaved }) {
   }
   const [w, h] = PAGE_MM[v.page_size] ?? PAGE_MM.a4
   const dims = v.page_orientation === 'landscape' ? [h, w] : [w, h]
+  const fits = ['a4', 'legal'].includes(v.page_size) && v.page_orientation === 'portrait'   // as the server's QbOmrFormService::pageFits
   const questions = form?.settings?.question_count ?? (paper.data?.sections ?? []).reduce((n, s) => n + s.items.length, 0)
   const status = locked ? 'generated' : form ? 'ready' : 'draft'
   const field = 'w-full rounded-token border px-3 py-2 text-sm'
@@ -127,14 +128,15 @@ export default function OmrDesigner({ id, form, onSaved }) {
                   className={`rounded-token px-2 py-1.5 text-sm font-semibold ${v.page_orientation === x ? 'bg-primary text-on-primary' : 'text-content-muted'}`}>{t(`qbomr.${x}`)}</button>)}
               </div>
             </Labelled>
-            <p className="text-xs text-content-muted">✓ {t('qbomr.fit_note', { size: v.page_size.toUpperCase(), orientation: t(`qbomr.${v.page_orientation}`) })}</p>
+            {fits ? <p className="text-xs text-content-muted">✓ {t('qbomr.fit_note', { size: v.page_size.toUpperCase(), orientation: t(`qbomr.${v.page_orientation}`) })}</p>
+              : <p className="text-xs text-red-600" role="alert" data-testid="omr-no-fit">⚠ {t('qbomr.no_fit', { size: v.page_size.toUpperCase(), orientation: t(`qbomr.${v.page_orientation}`) })}</p>}
           </Section>
         </fieldset>
         <Card className="flex flex-col gap-2">
-          {!locked && <Button onClick={() => act('generate')} disabled={!form || dirty || saving} data-action="generate"><Lock aria-hidden="true" className="h-4 w-4" />{t('qbomr.generate')}</Button>}
+          {!locked && <Button onClick={() => act('generate')} disabled={!form || dirty || saving || !fits} data-action="generate"><Lock aria-hidden="true" className="h-4 w-4" />{t('qbomr.generate')}</Button>}
           {locked && <>
             {/* owner 2026-10-24: one sheet for every set - the student bubbles the set code, the sheet names no set */}
-            {firstSet && <div className="flex flex-wrap gap-2"><PrintButton variant="primary" url={`/question-bank/papers/${id}/omr-form/pdf`} params={{ set: firstSet }} filename={`omr-${form.code}.pdf`} label={t('qbomr.print_sheet')} /></div>}
+            {firstSet && <div className="flex flex-wrap gap-2"><PrintButton variant="primary" url={`/question-bank/papers/${id}/omr-form/pdf`} params={{ set: firstSet }} filename={`omr-${form.code}.pdf`} label={t('qbpv.print')} /></div>}
             <Button variant="secondary" onClick={() => act('unlock')} data-action="unlock"><Unlock aria-hidden="true" className="h-4 w-4" />{t('qbomr.unlock')}</Button>
             <p className="text-xs text-content-muted">{t('qbomr.locked_hint', { version: form.layout_version })}</p>
           </>}

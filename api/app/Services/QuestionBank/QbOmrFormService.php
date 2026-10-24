@@ -96,6 +96,12 @@ class QbOmrFormService
         });
     }
 
+    /** owner 2026-10-24 (as qbank): the sheet is laid out for a tall page - A4 or Legal upright; A5 or sideways warns and is not generated */
+    public static function pageFits(array $settings): bool
+    {
+        return in_array($settings['page_size'] ?? 'a4', ['a4', 'legal'], true) && ($settings['page_orientation'] ?? 'portrait') === 'portrait';
+    }
+
     public function generate(User $actor, int $paperId, QbOmrGeometryService $geometryBuilder): QbOmrForm
     {
         return DB::transaction(function () use ($actor, $paperId, $geometryBuilder) {
@@ -103,6 +109,7 @@ class QbOmrFormService
             $form = QbOmrForm::where('qb_paper_id', $paper->id)->lockForUpdate()->firstOrFail();
             if ($form->locked_at === null) {
                 $settings = is_array($form->settings_json) ? $form->settings_json : [];
+                if (!self::pageFits($settings)) throw new BusinessException('the OMR sheet does not fit this page', 'omr_page_too_small', 422);
                 $settings['geometry'] = $geometryBuilder->build($paper->id, $settings);
                 $settings['is_generated'] = true;
                 $settings['generated_at'] = now()->toIso8601String();
