@@ -30,7 +30,7 @@ class QbOmrGeometryService
         // qbank's code bar sits on the line of the top markers, between them
         $codeBits = array_map(fn (int $index): array => $this->rect(0.5 - ($codeTotalWidth / 2) + ($index * ($codeWidth + $codeGap)), 0.05 - (1.1 / $pageHeight), $codeWidth, 2.2 / $pageHeight), range(0, 27));
         $answerColumns = $this->answerColumns($questionCount, $optionCount, $settings['answer_columns'] ?? 'auto');
-        $answerGeometry = $this->answerGeometry($questionCount, $optionCount, $answerColumns, $pageWidth, $pageHeight, $settings['subject_blocks'] ?? [], $manual ? 0.45 : 0.538);
+        $answerGeometry = $this->answerGeometry($questionCount, $optionCount, $answerColumns, $pageWidth, $pageHeight, $settings['subject_blocks'] ?? [], $manual ? 0.45 : 0.448);   // owner 2026-10-24: the one-line heading frees the top - the boxes and answers move up
 
         return [
             'version' => 2,
@@ -130,7 +130,7 @@ class QbOmrGeometryService
         $gap = ($right - $left - ($digitWidth * array_sum($digits))) / (count($digits) - 1);
         $grids = [];
         foreach ($digits as $key => $count) {
-            $grids[$key] = $this->numericGrid($left, 0.235 * $pageHeight, $digitWidth * $count, 0.245 * $pageHeight, $count, $pageWidth, $pageHeight);
+            $grids[$key] = $this->numericGrid($left, 0.145 * $pageHeight, $digitWidth * $count, 0.245 * $pageHeight, $count, $pageWidth, $pageHeight);
             $left += ($digitWidth * $count) + $gap;
         }
         return $grids;
