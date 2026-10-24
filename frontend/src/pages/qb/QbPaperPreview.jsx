@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowDown, ArrowUp, FileText, Image as ImageIcon, ImagePlus, Pencil, Printer, RotateCcw, Trash2 } from 'lucide-react'
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowUp, FileText, Image as ImageIcon, ImagePlus, Pencil, Printer, RotateCcw, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
@@ -43,6 +43,7 @@ const DEFAULTS = {
 }
 const STORE = 'qb-paper-preview'
 const FREE = ['behind', 'front']                         // wraps placed freely on the page; the rest sit in the flow
+const ALIGNS = [['left', AlignLeft], ['center', AlignCenter], ['right', AlignRight], ['justify', AlignJustify]]   // the box text's alignment, as Word
 const WRAPS = ['inline', 'square', 'tight', 'topBottom', 'behind', 'front']
 const paperStore = (id, set) => `qb-paper-preview:${id}:${set}`
 const readJson = (key, fallback) => { try { return JSON.parse(window.localStorage.getItem(key) ?? 'null') ?? fallback } catch { return fallback } }
@@ -340,6 +341,13 @@ export default function QbPaperPreview() {
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" disabled={!activeBox} onMouseDown={e => e.preventDefault()} onClick={() => format('bold')} className="rounded-token px-2 py-1 font-bold [border:1px_solid_var(--line)] disabled:opacity-50">B {t('qbpv.bold')}</button>
                 <button type="button" disabled={!activeBox} onMouseDown={e => e.preventDefault()} onClick={() => format('underline')} className="rounded-token px-2 py-1 underline [border:1px_solid_var(--line)] disabled:opacity-50">U {t('qbpv.underline')}</button>
+              </div>
+              <div className="grid grid-cols-4 gap-2" role="group" aria-label={t('qbpv.align')} data-testid="qb-box-align">
+                {ALIGNS.map(([a, Icon]) => {
+                  const on = (boxes.find(b => b.id === activeBox)?.align ?? 'left') === a
+                  return <button key={a} type="button" disabled={!activeBox} aria-pressed={on} aria-label={t(`qbpv.aligns.${a}`)} title={t(`qbpv.aligns.${a}`)} onMouseDown={e => e.preventDefault()}
+                    onClick={() => patchBox(activeBox, { align: a })} className={`flex items-center justify-center rounded-token px-2 py-1 [border:1px_solid_var(--line)] disabled:opacity-50 ${on ? 'bg-primary-soft text-primary-fg' : ''}`}><Icon aria-hidden="true" className="h-4 w-4" /></button>
+                })}
               </div></div>
             <label className="col-span-2 flex flex-col gap-1"><span className="font-semibold">{t('qbpv.wrap')}</span>
               <select className="rounded-token border px-2 py-1 disabled:opacity-50" name="wrap" disabled={!activeBox} value={activeWrap} onChange={e => setWrap(activeBox, e.target.value)}>
@@ -407,7 +415,7 @@ function PaperBox({ box, t, active, onFocus, onChange, onDelete, onGrab }) {
       </div>
       {box.kind === 'image'
         ? <img src={box.src} alt={t('qbpv.image')} className="pointer-events-none h-full max-h-full w-full object-contain" />
-        : <div ref={body} contentEditable suppressContentEditableWarning className="min-h-6 outline-none" dir="auto" onFocus={onFocus} onInput={e => onChange({ html: e.currentTarget.innerHTML })} aria-label={t('qbpv.text_box')} />}
+        : <div ref={body} contentEditable suppressContentEditableWarning className="min-h-6 outline-none" dir="auto" style={{ textAlign: box.align ?? 'left' }} onFocus={onFocus} onInput={e => onChange({ html: e.currentTarget.innerHTML })} aria-label={t('qbpv.text_box')} />}
     </div>
   )
 }

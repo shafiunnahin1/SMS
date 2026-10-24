@@ -1,6 +1,8 @@
 {
  "app": {
   "qbpv": {
+   "align": "লেখার অবস্থান",
+   "aligns": {"left": "বামে", "center": "মাঝে", "right": "ডানে", "justify": "জাস্টিফাই"},
    "wrap": "Wrap Text (বক্স বেছে নিন)",
    "wraps": {"inline": "In Line with Text", "square": "Square", "tight": "Tight", "topBottom": "Top and Bottom", "behind": "Behind Text", "front": "In Front of Text"},
    "box_list": "বক্সসমূহ (বেছে নিন)",

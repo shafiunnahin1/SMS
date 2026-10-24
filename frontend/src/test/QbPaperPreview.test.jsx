@@ -130,4 +130,20 @@ describe('D133 paper print preview', () => {
     fireEvent.pointerUp(window, { clientX: 305, clientY: 405 })
     expect(JSON.parse(window.localStorage.getItem('qb-paper-preview:7:A')).boxes[0]).toMatchObject({ wrap: 'front', x: 300, y: 400 })
   })
+
+  it('aligns the text of the picked box left, center, right or justified', async () => {
+    window.localStorage.clear()
+    renderPage()
+    await screen.findByTestId('qb-paper')
+    fireEvent.click(screen.getByRole('button', { name: /Add Text Box/ }))
+    const body = within(screen.getByTestId('qb-text-box')).getByLabelText('লেখার বাক্স')
+    expect(body.style.textAlign).toBe('left')
+    for (const [name, value] of [['মাঝে', 'center'], ['ডানে', 'right'], ['জাস্টিফাই', 'justify'], ['বামে', 'left']]) {
+      fireEvent.click(screen.getByRole('button', { name }))
+      expect(body.style.textAlign).toBe(value)
+      expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true')
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'মাঝে' }))
+    expect(JSON.parse(window.localStorage.getItem('qb-paper-preview:7:A')).boxes[0].align).toBe('center')
+  })
 })

@@ -1,6 +1,8 @@
 {
  "app": {
   "qbpv": {
+   "align": "Text alignment",
+   "aligns": {"left": "Left", "center": "Center", "right": "Right", "justify": "Justify"},
    "wrap": "Wrap Text (pick a box)",
    "wraps": {"inline": "In Line with Text", "square": "Square", "tight": "Tight", "topBottom": "Top and Bottom", "behind": "Behind Text", "front": "In Front of Text"},
    "box_list": "Boxes (pick one)",
