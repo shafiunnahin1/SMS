@@ -7,7 +7,7 @@ import Card from '../../components/Card'
 import Button from '../../components/Button'
 import Ltr from '../../components/bidi/Ltr'
 import Tabs from '../../ui/variants/Tabs'
-import { aiPrompt, parseJsonRows } from './mcqImport'
+import { aiPrompt, parseJsonRows } from './mcqPrompt'
 
 // D158 (5)(6): fill the MCQ part from JSON (with the AI prompt) or from the linked paper's graded OMR sheets: preview, then save
 export default function McqImport({ examId, subjectId, exam, subject, rows, full, onSaved }) {

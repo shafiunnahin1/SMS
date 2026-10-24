@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import '../i18n'
 import api from '../api/axios'
 import McqImport from '../features/exams/McqImport'
-import { aiPrompt, parseJsonRows } from '../features/exams/mcqImport'
+import { aiPrompt, parseJsonRows } from '../features/exams/mcqPrompt'
 
 vi.mock('../api/axios', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() }, bindAuthStore: () => {} }))
 
