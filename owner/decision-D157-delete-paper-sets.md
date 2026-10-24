@@ -7,11 +7,8 @@
 - qbank-এ (revision 40f769c) subset শুধু তৈরি করা যায়, মোছার কোনো route বা বোতাম নেই। D110 বলে R2.1-এ "no new workflow", আর D126/D133-এ সেট মোছার কথা নেই। তাই এটা নতুন workflow, মালিকের লিখিত সিদ্ধান্ত লাগবে।
 - সেট তৈরি করা (qbank-এর "create subsets") D126 (2) ও D133-এর মধ্যেই পড়ে, সেটা বানানো হয়ে গেছে।
 
-## প্রস্তাবিত সারি
-| D157 | প্রশ্নপত্রের সেট মোছা (D110, D126 (2), D133-এর সংশোধন) | (1) চূড়ান্ত প্রশ্নপত্রের সেট তালিকায় এক বা একাধিক সেট বেছে মোছা যাবে। মূল সেট (প্রথম সেট, A/ক) মোছা যাবে না। (2) প্রশ্নপত্রের কোনো OMR শিট scan হয়ে গেলে কোনো সেট মোছা যাবে না (D133-এর নিয়মের মতো)। (3) মোছার পর বাকি সেটগুলো ক্রমানুসারে নতুন নাম পায় (যেমন খ মুছলে আগের গ হবে খ)। প্রতিটি সেটের প্রশ্নের ক্রম, অপশনের ক্রম আর উত্তরপত্র অপরিবর্তিত থাকে, বদলায় শুধু নাম। মোছার আগে confirm বার্তায় নতুন নামগুলো দেখানো হবে। (4) তৈরি হয়ে থাকা OMR layout unlock হয়, পরের "OMR"-এ নতুন সেট-সংখ্যা দিয়ে আবার তৈরি হয়। (5) মোছা audit log-এ থাকে। নতুন table লাগবে না, `qb_paper_variants`-এর সারি মোছা হবে। |
+## প্রস্তাবিত সারি (মালিকের পছন্দ 2026-10-24: নাম ক্রমানুসারে বসবে)
+| D157 | Delete question-paper sets (amends D110, D126 (2), D133) | Owner approved (2026-10-24). (1) On a final paper's sets list the head teacher or the paper's teacher may select one or more sets and delete them together; the main set (the first set, A/ক) cannot be deleted. (2) No set can be deleted once any OMR sheet of the paper has been scanned (as D133). (3) After a deletion the remaining sets are renumbered in order and take the names of their new positions (e.g. deleting খ from ক, খ, গ, ঘ makes the old গ into খ and the old ঘ into গ); each remaining set's question order, option order and answer key stay unchanged, only its name changes; the confirm message shows the new names before deleting. (4) A generated OMR layout is unlocked and rebuilt with the new set count on the next "OMR". (5) The deletion is written to the audit log. No new table: rows of `qb_paper_variants` are deleted; the action uses the existing finalize route (D133 "create sets" is that action), so the route and permission contracts stay unchanged. |
 
-## বিকল্প (যদি নাম বদলানো না চান)
-(3)-এর বদলে: বাকি সেটের নাম অপরিবর্তিত থাকবে (ক, গ, ঘ — খ বাদ)। এতে ছাপানো কাগজের নাম মেলে, কিন্তু সেট-নম্বরে ফাঁক থাকে। তখন প্রিন্ট আর OMR-এর কোডও ফাঁক মেনে বদলাতে হবে, তাই কাজ বেশি।
-
-## মালিকের কাছে যা চাই
-সারিটি অনুমোদন করুন, অথবা কোন বিকল্প চান জানান।
+## মালিককে যা করতে হবে
+PowerShell-এ রিপোজিটরির ভিতরে চালান: `powershell -ExecutionPolicy Bypass -File owner\approve-D157.ps1` — এটি সারিটি `docs/LOCKED-DECISIONS.md`-এ D155-এর পরে যোগ করে `Change-Request: D157` সহ commit করে ও push করে।
