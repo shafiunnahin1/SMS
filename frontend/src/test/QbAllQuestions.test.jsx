@@ -42,5 +42,7 @@ describe('question bank all questions design', () => {
     screen.getAllByRole('checkbox')[1].click()
     screen.getByTestId('qb-create-paper').querySelector('[data-action="create-paper"]').click()
     expect(await screen.findByRole('textbox', { name: /প্রশ্নপত্রের নাম|নাম/ })).toBeInTheDocument()
+    screen.getByTestId('qb-create-paper').querySelector('[data-action="create-paper"]').click()   // a second click keeps it open
+    expect(await screen.findByRole('textbox', { name: /প্রশ্নপত্রের নাম|নাম/ })).toBeInTheDocument()
   })
 })

@@ -226,7 +226,9 @@ export default function QbAllQuestions() {
             <Button variant="ghost" onClick={() => setNaming(false)} aria-label={t('common.cancel')}><X aria-hidden="true" className="h-4 w-4" /></Button>
           </Card>
         )}
-        <Button onClick={() => (picked.size === 0 ? toast(t('qbaq.pick_first'), 'error') : paper.data ? save() : setNaming(n => !n))} loading={busy && Boolean(paper.data)} className="shadow-lg" data-action="create-paper">
+        {/* the name field never closes from this button (a second or double click used to hide it): open -> save a named paper, else focus the name */}
+        <Button onClick={() => (picked.size === 0 ? toast(t('qbaq.pick_first'), 'error') : paper.data ? save() : !naming ? setNaming(true)
+          : name.trim() ? save() : document.querySelector('input[name="paper_name"]')?.focus())} loading={busy && Boolean(paper.data)} className="shadow-lg" data-action="create-paper">
           <FolderPlus aria-hidden="true" className="h-4 w-4" />{paper.data ? t('qbaq.update_paper') : t('qbaq.create_paper')}
           <span className="rounded-full bg-surface px-2 text-xs text-content"><Ltr>{picked.size}</Ltr></span>
         </Button>
