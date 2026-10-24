@@ -28,7 +28,7 @@
     $boxHeads = [];
     foreach (['class', 'roll', 'student_id', 'subject', 'set'] as $k) if (isset($geometry[$k]) && ($settings['info_boxes'][$k]['visible'] ?? true) === true) $boxHeads[] = $geometry[$k]['top'] - 0.0455;
     $headingTop = $barBottom < 0.07 ? 0.062 : $barBottom + 0.006;
-    $headingBottom = ($manual ? 0.172 : ($boxHeads ? min($boxHeads) : 0.19)) - 0.006;
+    $headingBottom = ($manual ? 0.10 : ($boxHeads ? min($boxHeads) : 0.19)) - 0.006;
     $toBangla = static fn (int $number): string => strtr((string) $number, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']);
 @endphp
 <!doctype html>
@@ -72,13 +72,13 @@
         .notes li { margin-bottom: 1mm; }
         .signature { position: absolute; border-top: .3mm solid {{ $color }}; padding-top: 1.2mm; font-size: 6.5pt; font-weight: 700; text-align: center; }
         .footer-note { position: absolute; left: 8%; width: 84%; text-align: center; font-size: 6.5pt; }
-        .manual-info { position: absolute; left: 6.4%; top: 17.5%; width: 58.4%; height: 21.7%; border: .3mm solid {{ $color }}; padding: 3mm 6mm; }
+        .manual-info { position: absolute; left: 6.4%; top: 10%; width: 58.4%; height: 21.7%; border: .3mm solid {{ $color }}; padding: 3mm 6mm; }
         .manual-info h2 { margin: 0 auto 5mm; width: 38%; padding-bottom: 1mm; border-bottom: .25mm solid {{ $color }}; text-align: center; font-size: 9pt; color: {{ $color }}; }
         .manual-info .line { display: grid; align-items: end; gap: 2mm; margin: 0 0 6mm; font-size: 7.5pt; font-weight: 700; }
         .manual-info .line.single { grid-template-columns: auto 1fr; }
         .manual-info .line.triple { grid-template-columns: auto 1.6fr auto 1fr auto 1.2fr; }
         .manual-info .fill { border-bottom: .25mm dotted #111111; min-width: 10mm; height: 3mm; }
-        .manual-notes { position: absolute; left: 67%; top: 17.5%; width: 27%; height: 21.7%; border: .3mm solid {{ $color }}; padding: 0 3mm 3mm; font-size: 6pt; line-height: 1.5; }
+        .manual-notes { position: absolute; left: 67%; top: 10%; width: 27%; height: 21.7%; border: .3mm solid {{ $color }}; padding: 0 3mm 3mm; font-size: 6pt; line-height: 1.5; }
         .manual-notes h2 { margin: 0 -3mm 2mm; padding: 1.6mm; background: {{ $color }}; color: #ffffff; text-align: center; font-size: 8pt; }
         .manual-notes ol { margin: 0; padding: 0; list-style: none; }
         .bubble { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid {{ $color }}; border-radius: 50%; background: #ffffff; font-size: 6.5pt; font-weight: 600; line-height: 1; }
