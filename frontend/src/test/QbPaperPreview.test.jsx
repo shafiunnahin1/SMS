@@ -5,9 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../i18n'
 import api from '../api/axios'
 import QbPaperPreview from '../pages/qb/QbPaperPreview'
-import { downloadPaperJpg } from '../features/qb/paperImage'
+import { downloadPaperJpg, downloadPaperPdf } from '../features/qb/paperImage'
 
-vi.mock('../features/qb/paperImage', () => ({ downloadPaperJpg: vi.fn(() => Promise.resolve()) }))
+vi.mock('../features/qb/paperImage', () => ({ downloadPaperJpg: vi.fn(() => Promise.resolve()), downloadPaperPdf: vi.fn(() => Promise.resolve()) }))
 vi.mock('../api/axios', () => ({ default: { get: vi.fn() }, bindAuthStore: () => {} }))
 
 const mcq = (no, text) => ({ no, marks: '1.00', subject: null, question: { id: 100 + no, question_text: text, media: [], answer_text: 'x', explanation_text: `why ${no}`,
@@ -155,5 +155,18 @@ describe('D133 paper print preview', () => {
     const paper = await screen.findByTestId('qb-paper')
     fireEvent.click(screen.getByRole('button', { name: 'ইমেজ' }))
     expect(downloadPaperJpg).toHaveBeenCalledWith(paper, 'paper-7-A.jpg')
+  })
+
+  it('downloads a PDF file from the PDF button and opens the print dialog only from the print button', async () => {
+    window.localStorage.clear()
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {})
+    renderPage()
+    const paper = await screen.findByTestId('qb-paper')
+    fireEvent.click(screen.getByRole('button', { name: 'PDF' }))
+    expect(downloadPaperPdf).toHaveBeenCalledWith(paper, 'paper-7-A.pdf')
+    expect(print).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'প্রিন্ট' }))
+    expect(print).toHaveBeenCalledTimes(1)
+    print.mockRestore()
   })
 })

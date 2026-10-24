@@ -8,15 +8,15 @@ import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
 import MathText from '../../features/qb/MathText'
 import { loadFont } from '../../theme/fonts'
-import { downloadPaperJpg } from '../../features/qb/paperImage'
+import { downloadPaperJpg, downloadPaperPdf } from '../../features/qb/paperImage'
 import { useUiStore } from '../../store/uiStore'
 
 // D133 / D110: qbank's question-paper print preview with its Paper Controller (resources/views/question-paper/preview.blade.php at
 // 40f769c) - export bar, language, section controls and order, header settings with a size ruler per line, content visibility,
 // typography, layout (column line, margin, text boxes, columns). The paper is the set's printable data (GET papers/{id}/pdf?format=json,
 // answers only for bought questions as on the server); every setting is the viewer's own and is remembered in this browser only.
-// Visible differences forced by SMS (D110 (3)): PDF goes through the browser's print dialog ("Save as PDF") and the picture export is
-// off, because qbank's html2canvas/jsPDF are not SMS dependencies (G7); the font list is the families SMS can load (D52) plus the
+// Visible differences forced by SMS (D110 (3)): PDF and the picture are made in the browser without qbank's html2canvas/jsPDF
+// (not SMS dependencies, G7) - features/qb/paperImage.js, A4 pages cut at white rows; the font list is the families SMS can load (D52) plus the
 // Bangla system fonts qbank names; questions carry no source line yet (the printable shape has no occurrences).
 // Owner request 2026-10-24: a question's wording can be changed for this paper only - the edit is kept with this paper and set in
 // this browser and never reaches the question bank (no decision yet stores it on the server; D133 adds no table); which option is
@@ -72,6 +72,7 @@ export default function QbPaperPreview() {
   const [drop, setDrop] = useState(null)
   const ghostRef = useRef(null)
   const [jpgBusy, setJpgBusy] = useState(false)
+  const [pdfBusy, setPdfBusy] = useState(false)
   const paperRef = useRef(null)
   const drag = useRef(null)
   const imageInput = useRef(null)
@@ -98,6 +99,10 @@ export default function QbPaperPreview() {
 
   const move = (i, dir) => setOrder(list => { const next = [...list]; const j = i + dir; if (j < 0 || j >= next.length) return list; [next[i], next[j]] = [next[j], next[i]]; return next })
   const print = () => { window.focus(); window.print() }
+  const savePdf = async () => {
+    setPdfBusy(true)
+    try { await downloadPaperPdf(paperRef.current, `paper-${id}-${set}.pdf`) } catch { useUiStore.getState().addToast(t('qbpv.pdf_failed'), 'error') } finally { setPdfBusy(false) }
+  }
   const saveJpg = async () => {
     setJpgBusy(true)
     try { await downloadPaperJpg(paperRef.current, `paper-${id}-${set}.jpg`) } catch { useUiStore.getState().addToast(t('qbpv.image_failed'), 'error') } finally { setJpgBusy(false) }
@@ -275,7 +280,7 @@ export default function QbPaperPreview() {
           <h2 className="mb-3 text-lg font-semibold">⚙️ {t('qbpv.controller')}</h2>
           <div className="grid grid-cols-3 gap-2">
             <button type="button" onClick={print} className="flex items-center justify-center gap-1 rounded-token bg-primary px-2 py-2 text-sm font-medium text-on-primary" data-action="print"><Printer aria-hidden="true" className="h-4 w-4" />{t('qbpv.print')}</button>
-            <button type="button" onClick={print} title={t('qbpv.pdf_hint')} className="flex items-center justify-center gap-1 rounded-token bg-primary px-2 py-2 text-sm font-medium text-on-primary" data-action="pdf"><FileText aria-hidden="true" className="h-4 w-4" />PDF</button>
+            <button type="button" onClick={savePdf} disabled={pdfBusy} className="flex items-center justify-center gap-1 rounded-token bg-primary px-2 py-2 text-sm font-medium text-on-primary disabled:opacity-60" data-action="pdf"><FileText aria-hidden="true" className="h-4 w-4" />{pdfBusy ? t('qbpv.image_busy') : 'PDF'}</button>
             <button type="button" onClick={saveJpg} disabled={jpgBusy} className="flex items-center justify-center gap-1 rounded-token bg-primary px-2 py-2 text-sm font-medium text-on-primary disabled:opacity-60" data-action="image"><ImageIcon aria-hidden="true" className="h-4 w-4" />{jpgBusy ? t('qbpv.image_busy') : t('qbpv.image')}</button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 {
  "app": {
   "qbpv": {
+   "pdf_failed": "Could not make the PDF",
    "image_busy": "Making...",
    "image_failed": "Could not make the JPG",
    "align": "Text alignment",

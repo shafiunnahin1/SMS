@@ -1,6 +1,7 @@
 {
  "app": {
   "qbpv": {
+   "pdf_failed": "PDF তৈরি করা যায়নি",
    "image_busy": "তৈরি হচ্ছে...",
    "image_failed": "ছবি (JPG) তৈরি করা যায়নি",
    "align": "লেখার অবস্থান",
