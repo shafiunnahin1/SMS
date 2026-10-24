@@ -154,4 +154,8 @@ return [
     'inventory_adjust_needs_admin' => 'An adjustment this large needs an admin.',
     'inventory_return_invalid' => 'The return does not match a sale receipt of this item or exceeds the quantity sold.',
     'inventory_qty' => 'Enter a positive quantity with at most two decimal places.',
+    // D158 (3)
+    'exam_paper_not_final' => 'Only a final question paper can be linked.',
+    'exam_paper_empty' => 'The question paper has no questions with marks.',
+    'exam_paper_has_marks' => 'Marks are already entered for this subject - its question paper cannot change.',
 ];

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Exams;
 
+use App\Services\Exams\ExamPaperService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Exams\{ExamRequest, ExamSubjectsRequest};
 use App\Http\Resources\ExamResource;
@@ -56,7 +57,9 @@ class ExamController extends Controller
 
     public function subjects(int $id)
     {
-        return response()->json(['success' => true, 'data' => $this->exams->subjectsOf(Exam::findOrFail($id))->map(fn ($es) => $this->subjectRow($es))]);
+        $exam = Exam::findOrFail($id);
+        $links = app(ExamPaperService::class)->linksOf($exam);
+        return response()->json(['success' => true, 'data' => $this->exams->subjectsOf($exam)->map(fn ($es) => $this->subjectRow($es) + ['paper' => $links[$es->subject_id] ?? null])]);
     }
 
     public function updateSubjects(int $id)
@@ -64,6 +67,21 @@ class ExamController extends Controller
         $exam = Exam::findOrFail($id);
         $rows = $this->exams->updateSubjects($exam, app(ExamSubjectsRequest::class)->validated()['subjects']);
         return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $rows->map(fn ($es) => $this->subjectRow($es))]);
+    }
+
+    /** D158 (3): link a final question paper to one exam subject (its mark parts follow the paper) */
+    public function linkPaper(Request $request, int $id, int $subjectId, ExamPaperService $papers)
+    {
+        $exam = Exam::findOrFail($id);                                           // another institution's exam is 404 before any validation
+        $data = $request->validate(['qb_paper_id' => 'required|integer']);
+        $papers->link($exam, $subjectId, (int) $data['qb_paper_id'], $request->user());
+        return $this->subjects($id);
+    }
+
+    public function unlinkPaper(int $id, int $subjectId, ExamPaperService $papers)
+    {
+        $papers->unlink(Exam::findOrFail($id), $subjectId);
+        return $this->subjects($id);
     }
 
     private function load(Exam $exam): Exam

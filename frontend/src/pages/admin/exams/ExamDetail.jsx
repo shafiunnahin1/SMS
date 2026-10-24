@@ -17,6 +17,7 @@ import { EmptyState, ErrorState } from '../../../components/StateViews'
 import Ltr from '../../../components/bidi/Ltr'
 import Tabs from '../../../ui/variants/Tabs'
 import SubjectsEditor from '../../../features/exams/SubjectsEditor'
+import PaperPicker from '../../../features/exams/PaperPicker'
 
 // Step 4.5 /admin/exams/:id: the subjects (schedule, full/pass marks, parts), the marks (per subject: open the entry sheet;
 // per student: the marksheet PDF) and publishing (then parents see it; bulk entry and the scale close).
@@ -51,10 +52,11 @@ export default function ExamDetail() {
       <PageHeader title={<span className="inline-flex items-center gap-2"><span dir="auto">{e.name}</span> <StatusBadge status={e.status} /></span>}
         actions={!locked && <Button onClick={publish}><Send aria-hidden="true" className="h-4 w-4" />{t('exams.publish')}</Button>} />
       <p className="text-sm text-content-muted" dir="auto">{e.program?.name}{e.batch ? ` — ${e.batch.name}` : ''} · {t(`exams.types.${e.exam_type}`)} · <Ltr>{e.academic_year}</Ltr></p>
-      <Tabs items={[{ key: 'subjects', label: t('exams.subjects') }, { key: 'marks', label: t('exams.marks') }]} value={tab} onChange={setTab} label={e.name} />
+      <Tabs items={[{ key: 'subjects', label: t('exams.subjects') }, { key: 'papers', label: t('exam_paper.tab') }, { key: 'marks', label: t('exams.marks') }]} value={tab} onChange={setTab} label={e.name} />
       {tab === 'subjects' && (subjects.isPending ? <Card><Loader type="form" fields={4} /></Card> : subjects.isError ? <ErrorState onRetry={subjects.refetch} />
         : !subjects.data.length ? <EmptyState title={t('exams.no_subjects', { unit: term('program') })} />
         : <Card><SubjectsEditor examId={id} subjects={subjects.data} locked={locked} onSaved={refresh} /></Card>)}
+      {tab === 'papers' && <PaperLinks examId={id} subjects={subjects.data ?? []} locked={locked} onChanged={() => qc.invalidateQueries({ queryKey: ['exams', 'subjects', id] })} />}
       {tab === 'marks' && <MarksOverview examId={id} subjects={subjects.data ?? []} locked={locked} />}
     </div>
   )
@@ -90,5 +92,35 @@ function MarksOverview({ examId, subjects, locked }) {
           empty={<EmptyState title={t('exams.no_marks')} />} />
       </Card>
     </>
+  )
+}
+
+// D158 (3)(4): each subject's question paper - "Link a question" opens the paper picker; the subject's mark fields then follow
+// the paper's kinds of question (MCQ / creative / short). Changing it is refused once marks exist or the exam is published.
+function PaperLinks({ examId, subjects, locked, onChanged }) {
+  const { t } = useTranslation()
+  const [picking, setPicking] = useState(null)
+  const fail = (err) => useUiStore.getState().addToast(err.response?.data?.message ?? t('common.error'), 'error')
+  const link = (subjectId, paper) => api.put(`/exams/${examId}/subjects/${subjectId}/paper`, { qb_paper_id: paper.id })
+    .then(() => { useUiStore.getState().addToast(t('exam_paper.linked')); onChanged() }).catch(fail)
+  const unlink = (subjectId) => api.delete(`/exams/${examId}/subjects/${subjectId}/paper`).then(onChanged).catch(fail)
+  if (!subjects.length) return <EmptyState title={t('exam_paper.no_subjects')} />
+  return (
+    <Card>
+      <ul className="flex flex-col divide-y divide-line" data-testid="paper-links">
+        {subjects.map(s => (
+          <li key={s.subject_id} className="flex flex-wrap items-center gap-3 py-3" data-subject={s.subject_id}>
+            <span className="min-w-40 flex-1 font-semibold" dir="auto">{s.name}</span>
+            <span className="min-w-40 flex-1 text-sm" dir="auto">{s.paper ? s.paper.title : <span className="text-content-muted">{t('exam_paper.none')}</span>}
+              {s.paper && (s.components ?? []).length > 0 && <span className="block text-xs text-content-muted">{s.components.map(c => `${c.label} ${c.full}`).join(' · ')}</span>}</span>
+            {!locked && <span className="flex gap-2">
+              <Button variant="secondary" onClick={() => setPicking(s.subject_id)} data-action="link-paper">{s.paper ? t('exam_paper.change') : t('exam_paper.link')}</Button>
+              {s.paper && <Button variant="ghost" onClick={() => unlink(s.subject_id)} data-action="unlink-paper">{t('exam_paper.unlink')}</Button>}
+            </span>}
+          </li>
+        ))}
+      </ul>
+      <PaperPicker open={picking !== null} onClose={() => setPicking(null)} onPick={(paper) => link(picking, paper)} />
+    </Card>
   )
 }

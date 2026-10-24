@@ -16,4 +16,5 @@ return [
     'app/Support/Catalogue.php' => 'defines Catalogue::asPlatform() - the named exit for a question-bank platform write during an institution\'s request (D65)',
     'app/Exceptions/CatalogueAccessException.php' => 'only its message text names Catalogue::asPlatform() as advice; no call',
     'app/Services/QbEarningService.php' => 'QB.10b: books the writer\'s share (platform rows) inside the institution\'s or student\'s sale transaction - Catalogue::asPlatform() (§৪.৫)',
+    'app/Services/QuestionBank/QbPaperHeader.php' => 'reads the platform curriculum pivots qb_question_class_level / qb_class_level_subject (no institution_id) for the paper heading\'s class; the question ids come from the tenant\'s own paper',
 ];

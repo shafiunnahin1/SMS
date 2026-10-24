@@ -109,6 +109,8 @@ return [
     'POST api/v1/exams/{id}/publish' => ['admin'],
     'GET api/v1/exams/{id}/subjects' => ['admin'],
     'PUT api/v1/exams/{id}/subjects' => ['admin'],
+    'PUT api/v1/exams/{id}/subjects/{subjectId}/paper' => ['admin'],      // D158 (3)
+    'DELETE api/v1/exams/{id}/subjects/{subjectId}/paper' => ['admin'],
     'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => ['admin', 'institution_staff', 'teacher'],
     'GET api/v1/fees/categories' => ['admin'],
     'POST api/v1/fees/categories' => ['admin'],

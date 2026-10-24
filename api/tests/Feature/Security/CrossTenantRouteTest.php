@@ -29,6 +29,8 @@ class CrossTenantRouteTest extends TestCase
             'GET api/v1/parent/children/{id}/attendance'   => ['parent', "parent/children/{$theirs['student']}/attendance"],
             'GET api/v1/results/marksheet/{studentId}'     => ['admin', "results/marksheet/{$theirs['student']}?exam_id={$theirs['exam']}&format=json"],
             'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/entry"],
+            'PUT api/v1/exams/{id}/subjects/{subjectId}/paper' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/paper"],      // D158 (3)
+            'DELETE api/v1/exams/{id}/subjects/{subjectId}/paper' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/paper"],
             'GET api/v1/teacher/salary/slips/{id}.pdf' => ['teacher', "teacher/salary/slips/{$theirs['payroll_item']}.pdf"],
         ];
     }

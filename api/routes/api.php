@@ -601,6 +601,9 @@ Route::prefix('v1')->group(function () {
                 Route::post('/exams/{id}/publish',        [ExamController::class, 'publish'])->whereNumber('id');
                 Route::get('/exams/{id}/subjects',        [ExamController::class, 'subjects'])->whereNumber('id');
                 Route::put('/exams/{id}/subjects',        [ExamController::class, 'updateSubjects'])->whereNumber('id');
+                // D158 (3): an exam subject's linked question paper
+                Route::put('/exams/{id}/subjects/{subjectId}/paper',    [ExamController::class, 'linkPaper'])->whereNumber(['id', 'subjectId']);
+                Route::delete('/exams/{id}/subjects/{subjectId}/paper', [ExamController::class, 'unlinkPaper'])->whereNumber(['id', 'subjectId']);
             });
             Route::middleware('role:admin,teacher,institution_staff')->group(function () {
                 Route::get('/results',                    [ResultController::class, 'index']);

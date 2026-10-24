@@ -540,6 +540,7 @@
    }
   },
   "results_ws": {"title": "Results", "breadcrumb": "Result folders", "empty": "No exams here", "exam_count": "{{n}} exams"},
+  "exam_paper": {"tab": "Question papers", "link": "Link a question paper", "change": "Change paper", "unlink": "Unlink", "none": "No question paper linked", "linked": "Question paper linked", "pick_title": "Pick a question paper", "none_here": "No final question paper here", "no_subjects": "This exam has no subjects"},
   "exams": {
    "title": "Exams & results",
    "add": "New exam",
