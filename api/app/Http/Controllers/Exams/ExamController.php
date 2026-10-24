@@ -87,12 +87,18 @@ class ExamController extends Controller
         return $this->subjects($id);
     }
 
-    /** GET /exams/{id}/merit-list?batch_id= - rank, student, total, percentage; a tie shares the rank */
-    public function meritList(Request $request, int $id)
+    /** GET /exams/{id}/merit-list?batch_id=&format=pdf - rank, student, total, percentage; a tie shares the rank; D161 (1): as a PDF */
+    public function meritList(Request $request, int $id, \App\Services\PdfService $pdf)
     {
-        $exam = Exam::findOrFail($id);
-        $batchId = $request->validate(['batch_id' => 'nullable|integer'])['batch_id'] ?? null;
-        return response()->json(['success' => true, 'data' => $this->exams->meritList($exam, $batchId ? (int) $batchId : null)]);
+        $exam = Exam::with('program:id,name')->findOrFail($id);
+        $f = $request->validate(['batch_id' => 'nullable|integer', 'format' => 'nullable|in:json,pdf']);
+        $batchId = isset($f['batch_id']) ? (int) $f['batch_id'] : null;
+        $merit = $this->exams->meritList($exam, $batchId);
+        if (($f['format'] ?? null) !== 'pdf') return response()->json(['success' => true, 'data' => $merit]);
+        $batchName = $batchId ? \App\Models\Batch::whereKey($batchId)->value('name') : $exam->batch?->name;
+        return response($pdf->render('pdf.merit-list', ['exam' => $exam, 'merit' => $merit, 'batchName' => $batchName]), 200, [
+            'Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="merit-list-' . $exam->id . '.pdf"',
+        ]);
     }
 
     private function load(Exam $exam): Exam

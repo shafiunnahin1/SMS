@@ -138,6 +138,7 @@ function MeritList({ examId, programId, fixedBatch }) {
   const { t } = useTranslation()
   const term = useTerms()
   const [batch, setBatch] = useState('')
+  const { preview, loading } = usePrint()                              // D161 (1): the same list as a PDF
   const batches = useQuery({ queryKey: ['batches', { program_id: programId }], enabled: Boolean(programId) && !fixedBatch,
     queryFn: () => api.get('/batches', { params: { program_id: programId } }).then(r => r.data.data) })
   const merit = useQuery({ queryKey: ['merit', examId, batch], queryFn: () => api.get(`/exams/${examId}/merit-list`, { params: batch ? { batch_id: batch } : {} }).then(r => r.data.data) })
@@ -155,7 +156,11 @@ function MeritList({ examId, programId, fixedBatch }) {
         {!fixedBatch && <label className="flex flex-col gap-1 text-sm"><span>{term('batch')}</span>
           <select className="rounded-token border px-2 py-1" value={batch} onChange={e => setBatch(e.target.value)} name="merit_batch">
             <option value="">{t('merit.all')}</option>{(batches.data ?? []).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}
-        {merit.data && <span className="text-sm text-content-muted">{t('exams.full_marks')}: <Ltr>{Number(merit.data.full_marks)}</Ltr></span>}
+        <span className="flex items-center gap-3">
+          {merit.data && <span className="text-sm text-content-muted">{t('exams.full_marks')}: <Ltr>{Number(merit.data.full_marks)}</Ltr></span>}
+          <Button variant="secondary" loading={loading} onClick={() => preview(`/exams/${examId}/merit-list`, { format: 'pdf', ...(batch ? { batch_id: batch } : {}) })} data-action="merit-pdf">
+            <FileDown aria-hidden="true" className="h-4 w-4" />PDF</Button>
+        </span>
       </div>
       <DataTable columns={columns} data={merit.data?.rows ?? []} rowKey="student_id" loading={merit.isPending} error={merit.isError} onRetry={merit.refetch}
         empty={<EmptyState title={t('exams.no_marks')} />} />

@@ -35,4 +35,19 @@ class MeritListTest extends TestCase
         $this->assertSame([$s['sister']->id], array_column($onlyB, 'student_id'));
         $this->api('GET', $s['host'], "exams/{$exam}/merit-list", $s['karimUser'])->assertForbidden();
     }
+
+    // D161 (1): the same list as a PDF - ranks, IDs, totals, the batch name
+    public function test_the_merit_list_prints_as_a_pdf(): void
+    {
+        $s = $this->school('meritpdf');
+        $exam = $this->exam($s);
+        Tenancy::as($s['i'], fn () => Result::create(['exam_id' => $exam, 'student_id' => $s['mine']->id, 'subject_id' => $s['bangla']->id, 'marks_obtained' => 80]));
+        $html = null;
+        $this->mock(\App\Services\PdfService::class)->shouldReceive('render')->once()->andReturnUsing(function ($view, $data) use (&$html) {
+            $html = view($view, $data + ['institution' => \App\Support\Tenancy::current(), 'theme' => ['primary_color' => '#000000'], 'locale' => 'bn', 'dir' => 'ltr', 'logo' => null])->render();
+            return '%PDF-merit';
+        });
+        $this->api('GET', $s['host'], "exams/{$exam}/merit-list?format=pdf&batch_id={$s['a']->id}", $s['admin'])->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        foreach (['মেধা তালিকা', 'Half yearly', 'A', '80', Tenancy::as($s['i'], fn () => $s['mine']->fresh()->student_id)] as $text) $this->assertStringContainsString($text, $html);
+    }
 }
