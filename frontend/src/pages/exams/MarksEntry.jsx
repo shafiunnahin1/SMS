@@ -60,16 +60,17 @@ export default function MarksEntry() {
   }
   const numberInput = (value, max, onChange, label) => (
     <input type="number" inputMode="decimal" min="0" max={max} step="0.5" dir="ltr" value={value} onChange={e => onChange(e.target.value)} aria-label={label}
-      className="h-10 w-20 rounded-token px-2 bg-surface text-content [border:1px_solid_var(--line)] text-end" />
+      className="h-10 w-full rounded-token px-2 bg-surface text-content [border:1px_solid_var(--line)] text-end" />
   )
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title={<span dir="auto">{subject.name} — {exam.name}</span>} />
-      <p className="text-sm text-content-muted">
-        {t('exams.full_marks')}: <Ltr>{Number(subject.full_marks)}</Ltr> · {t('exams.pass_marks')}: <Ltr>{Number(subject.pass_marks)}</Ltr>
-        {parts.length > 0 && <> · {parts.map(p => `${p.label} ${p.full}/${p.pass}`).join(' · ')}</>}
-      </p>
+      <div className="flex flex-wrap gap-2 text-xs" data-testid="marks-summary">
+        <span className="rounded-token bg-surface-muted px-2 py-1">{t('exams.full_marks')} <Ltr className="font-semibold">{Number(subject.full_marks)}</Ltr></span>
+        <span className="rounded-token bg-surface-muted px-2 py-1">{t('exams.pass_marks')} <Ltr className="font-semibold">{Number(subject.pass_marks)}</Ltr></span>
+        {parts.map(p => <span key={p.key} className="rounded-token bg-primary-soft px-2 py-1">{p.label} <Ltr className="font-semibold">{Number(p.full)}</Ltr></span>)}
+      </div>
       {exam.status === 'published' && <Card><p className="text-sm">{t('exams.locked_hint')}</p></Card>}
       {exam.status !== 'published' && parts.some(p => p.key === 'mcq') && rows.length > 0 && (
         <McqImport examId={examId} subjectId={subjectId} exam={exam.name} subject={subject.name} rows={rows} full={Number(parts.find(p => p.key === 'mcq').full)}
@@ -82,23 +83,31 @@ export default function MarksEntry() {
               const m = marks[r.student_id] ?? { marks: '', parts: {}, absent: false }
               const err = rowErrors[`rows.${i}.marks_obtained`]?.[0]
               return (
-                <li key={r.student_id} data-row={r.student_id} className="py-2 flex flex-wrap items-center gap-3">
-                  <span className="flex-1 min-w-40"><bdi>{r.name}</bdi> <span className="text-xs text-content-muted" data-testid="student-id">{/* D159 (3): the permanent ID beside the roll */}{r.roll_no != null && <>{t('mcq_import.roll')} <Ltr>{r.roll_no}</Ltr> · </>}{t('mcq_import.id')} <Ltr>{r.code}</Ltr>{r.batch ? ` · ${r.batch}` : ''}</span></span>
-                  {!m.absent && (parts.length
-                    ? parts.map(p => <label key={p.key} className="inline-flex items-center gap-1 text-sm">{p.label}
-                        {numberInput(m.parts[p.key] ?? '', p.full, v => set(r.student_id, { parts: { ...m.parts, [p.key]: v } }), `${r.name} ${p.label}`)}</label>)
-                    : numberInput(m.marks, subject.full_marks, v => set(r.student_id, { marks: v }), `${r.name} ${t('exams.marks')}`))}
-                  <label className="inline-flex items-center gap-1 text-sm">
-                    <input type="checkbox" checked={m.absent} onChange={e => set(r.student_id, { absent: e.target.checked })} className="h-4 w-4 accent-[var(--color-primary)]" />
-                    {t('status.absent')}
-                  </label>
-                  <span className="w-16 text-sm font-semibold" data-testid="grade">{r.result?.grade ?? ''}</span>
-                  {err && <span className="w-full text-xs text-red-600">{err}</span>}
+                <li key={r.student_id} data-row={r.student_id} className="flex flex-col gap-2 py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <bdi className="block truncate font-medium">{r.name}</bdi>
+                      <span className="text-xs text-content-muted" data-testid="student-id">{/* D159 (3): the permanent ID beside the roll */}{r.roll_no != null && <>{t('mcq_import.roll')} <Ltr>{r.roll_no}</Ltr> · </>}{t('mcq_import.id')} <Ltr>{r.code}</Ltr>{r.batch ? ` · ${r.batch}` : ''}</span>
+                    </div>
+                    <span className={`shrink-0 rounded-token px-2 py-1 text-sm font-semibold ${r.result?.grade ? 'bg-primary-soft text-primary-fg' : ''}`} data-testid="grade">{r.result?.grade ?? ''}</span>
+                  </div>
+                  <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-4">
+                    {!m.absent && (parts.length
+                      ? parts.map(p => <label key={p.key} className="flex min-w-0 flex-col gap-1 text-xs text-content-muted"><span className="truncate">{p.label} <Ltr>({Number(p.full)})</Ltr></span>
+                          {numberInput(m.parts[p.key] ?? '', p.full, v => set(r.student_id, { parts: { ...m.parts, [p.key]: v } }), `${r.name} ${p.label}`)}</label>)
+                      : <label className="flex min-w-0 flex-col gap-1 text-xs text-content-muted"><span>{t('exams.marks')} <Ltr>({Number(subject.full_marks)})</Ltr></span>
+                          {numberInput(m.marks, subject.full_marks, v => set(r.student_id, { marks: v }), `${r.name} ${t('exams.marks')}`)}</label>)}
+                    <label className="inline-flex h-10 items-center gap-2 rounded-token px-2 text-sm [border:1px_solid_var(--line)]">
+                      <input type="checkbox" checked={m.absent} onChange={e => set(r.student_id, { absent: e.target.checked })} className="h-4 w-4 accent-[var(--color-primary)]" />
+                      {t('status.absent')}
+                    </label>
+                  </div>
+                  {err && <span className="text-xs text-red-600">{err}</span>}
                 </li>
               )
             })}
           </ul>
-          {exam.status !== 'published' && <div className="flex justify-end"><Button onClick={save} loading={saving} data-action="save">{t('common.save')}</Button></div>}
+          {exam.status !== 'published' && <div className="sticky bottom-0 -mx-4 flex justify-end bg-surface px-4 py-2 [border-top:1px_solid_var(--line)] sm:static sm:mx-0 sm:border-0 sm:p-0"><Button onClick={save} loading={saving} data-action="save">{t('common.save')}</Button></div>}
         </Card>
       )}
     </div>
