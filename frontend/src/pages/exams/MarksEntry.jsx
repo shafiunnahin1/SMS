@@ -12,6 +12,7 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import Ltr from '../../components/bidi/Ltr'
 import McqImport from '../../features/exams/McqImport'
 import { useAuthStore } from '../../store/authStore'
+import SubmissionBar from '../../features/exams/SubmissionBar'
 
 // Step 4.5 marks entry (admin: /admin/exams/:examId/entry/:subjectId, teacher: /teacher/marks/:examId/:subjectId). The sheet
 // brings the limits and parts; the browser only bounds the inputs - the grade comes back from the server after saving (grading.md).
@@ -39,7 +40,9 @@ export default function MarksEntry() {
   const set = (sid, patch) => setMarks(m => ({ ...m, [sid]: { ...m[sid], ...patch } }))
   const published = exam.status === 'published'
   const correcting = published && role === 'admin'                      // D161 (3): after publishing only the head corrects, one mark at a time
-  const locked = published && !correcting
+  const sub = sheet.data.submission ?? { status: 'draft' }
+  const held = role !== 'admin' && ['submitted', 'unlock_requested'].includes(sub.status)   // D162 (2): submitted marks are the head's
+  const locked = (published && !correcting) || held
   const filled = (m) => m.absent || (parts.length ? parts.every(p => m.parts[p.key] !== undefined && m.parts[p.key] !== '') : m.marks !== '')
 
   const body = (m) => m.absent ? { is_absent: true }
@@ -91,7 +94,9 @@ export default function MarksEntry() {
         {parts.map(p => <span key={p.key} className="rounded-token bg-primary-soft px-2 py-1">{p.label} <Ltr className="font-semibold">{Number(p.full)}</Ltr></span>)}
       </div>
       {published && <Card><p className="text-sm">{t(correcting ? 'exams.correct_hint' : 'exams.locked_hint')}</p></Card>}
-      {exam.status !== 'published' && parts.some(p => p.key === 'mcq') && rows.length > 0 && (
+      {!published && <SubmissionBar examId={examId} subjectId={subjectId} state={sub} isAdmin={role === 'admin'}
+        onChanged={() => qc.invalidateQueries({ queryKey: ['entry', examId, subjectId] })} />}
+      {!locked && exam.status !== 'published' && parts.some(p => p.key === 'mcq') && rows.length > 0 && (
         <McqImport examId={examId} subjectId={subjectId} exam={exam.name} subject={subject.name} rows={rows} full={Number(parts.find(p => p.key === 'mcq').full)}
           onSaved={() => { qc.invalidateQueries({ queryKey: ['entry', examId, subjectId] }); qc.invalidateQueries({ queryKey: ['results'] }) }} />
       )}
@@ -126,7 +131,7 @@ export default function MarksEntry() {
               )
             })}
           </ul>
-          {!locked && <div className="sticky bottom-0 -mx-4 flex justify-end bg-surface px-4 py-2 [border-top:1px_solid_var(--line)] sm:static sm:mx-0 sm:border-0 sm:p-0"><Button onClick={correcting ? correct : save} loading={saving} data-action="save">{t(correcting ? 'exams.save_correction' : 'common.save')}</Button></div>}
+          {!locked && <div className="sticky bottom-0 -mx-4 flex justify-end bg-surface px-4 py-2 [border-top:1px_solid_var(--line)] sm:static sm:mx-0 sm:border-0 sm:p-0"><Button onClick={correcting ? correct : save} loading={saving} data-action="save">{t(correcting ? 'exams.save_correction' : role === 'admin' ? 'common.save' : 'exams.save_draft')}</Button></div>}
         </Card>
       )}
     </div>

@@ -7,6 +7,8 @@ import Button from '../../components/Button'
 import { Input } from '../../components/FormField'
 
 const emptyPart = (i) => ({ key: `part${i + 1}`, label: '', full: '', pass: '' })
+// D162 (6): without a question paper the head sets the parts by hand; a known kind keeps its key (so JSON MCQ import finds `mcq`)
+const KINDS = ['mcq', 'cq', 'short', 'practical']
 
 // The exam's subjects: schedule, full/pass marks and optional parts (e.g. written 70 + MCQ 30; the parts must add up to the full
 // marks - the API checks). Saving a new scale re-grades marks already entered (server side).
@@ -50,7 +52,15 @@ export default function SubjectsEditor({ examId, subjects, locked, onSaved }) {
           <div className="sm:col-span-6 flex flex-col gap-2">
             {(r.components ?? []).map((c, p) => (
               <div key={p} className="grid gap-2 grid-cols-[1fr_5rem_5rem_auto] items-end">
-                <Input label={t('exams.part_label')} value={c.label} onChange={e => setPart(i, p, 'label', e.target.value)} />
+                <span className="flex flex-col gap-2 sm:flex-row">
+                  <label className="flex flex-col gap-1 text-sm"><span>{t('exams.part_kind')}</span>
+                    <select className="h-10 rounded-token px-2 bg-surface text-content [border:1px_solid_var(--line)]" name={`part_kind_${i}_${p}`} value={KINDS.includes(c.key) ? c.key : ''}
+                      onChange={e => { const k = e.target.value; set(i, 'components', rows[i].components.map((x, j) => (j === p ? { ...x, key: k || `part${p + 1}`, label: k ? t(`exams.kind.${k}`) : x.label } : x))) }}>
+                      <option value="">{t('exams.kind_custom')}</option>
+                      {KINDS.map(k => <option key={k} value={k}>{t(`exams.kind.${k}`)}</option>)}
+                    </select></label>
+                  <Input label={t('exams.part_label')} value={c.label} onChange={e => setPart(i, p, 'label', e.target.value)} />
+                </span>
                 <Input label={t('exams.full_marks')} ltr inputMode="decimal" value={c.full} onChange={e => setPart(i, p, 'full', e.target.value)} />
                 <Input label={t('exams.pass_marks')} ltr inputMode="decimal" value={c.pass} onChange={e => setPart(i, p, 'pass', e.target.value)} />
                 <Button variant="ghost" aria-label={`${t('common.delete')} ${c.label}`} onClick={() => set(i, 'components', r.components.filter((_, j) => j !== p))}>

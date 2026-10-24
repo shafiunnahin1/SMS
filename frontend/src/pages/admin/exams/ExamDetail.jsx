@@ -36,7 +36,10 @@ export default function ExamDetail() {
   const e = exam.data
   const locked = e.status === 'published'
   const publish = () => useUiStore.getState().openConfirm({
-    title: t('exams.publish_confirm', { name: e.name }), description: t('exams.publish_hint'), confirmLabel: t('exams.publish'),
+    // D162 (4): unsubmitted subjects are a warning, never a block
+    title: t('exams.publish_confirm', { name: e.name }), confirmLabel: t('exams.publish'),
+    description: [t('exams.publish_hint'), ...(() => { const open = (subjects.data ?? []).filter(s => s.submission?.status !== 'submitted').map(s => s.name)
+      return open.length ? [t('exams.unsubmitted_warn', { list: open.join(', ') })] : [] })()].join(' '),
     onConfirm: async () => {
       try {
         await api.post(`/exams/${id}/publish`)
@@ -86,6 +89,7 @@ function MarksOverview({ examId, subjects, locked }) {
           <Link key={s.subject_id} to={`/admin/exams/${examId}/entry/${s.subject_id}`}
             className="h-9 px-3 inline-flex items-center rounded-token text-sm [border:1px_solid_var(--line)] hover:bg-primary-soft">
             <span dir="auto">{t('exams.enter_marks', { subject: s.name })}</span>
+            {s.submission && <span className={`ms-2 rounded-token px-1 text-xs ${s.submission.status === 'unlock_requested' ? 'bg-primary-soft font-semibold text-primary-fg' : 'bg-surface-muted'}`} data-status={s.submission.status}>{t(`marks_flow.status.${s.submission.status}`)}</span>}
           </Link>
         ))}
       </Card>}
