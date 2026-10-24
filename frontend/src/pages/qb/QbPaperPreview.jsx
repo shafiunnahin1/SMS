@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowDown, ArrowUp, FileText, Image as ImageIcon, Printer, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, FileText, Image as ImageIcon, ImagePlus, Pencil, Printer, RotateCcw, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
@@ -16,6 +16,10 @@ import { loadFont } from '../../theme/fonts'
 // Visible differences forced by SMS (D110 (3)): PDF goes through the browser's print dialog ("Save as PDF") and the picture export is
 // off, because qbank's html2canvas/jsPDF are not SMS dependencies (G7); the font list is the families SMS can load (D52) plus the
 // Bangla system fonts qbank names; questions carry no source line yet (the printable shape has no occurrences).
+// Owner request 2026-10-24: a question's wording can be changed for this paper only - the edit is kept with this paper and set in
+// this browser and never reaches the question bank (no decision yet stores it on the server; D133 adds no table); which option is
+// right cannot change here, so the OMR answer key stays true. Text boxes and pictures are dropped between two questions, open a
+// gap there and take that place in the flow; their corner handle resizes them.
 
 const BN_DIGITS = '০১২৩৪৫৬৭৮৯'
 const toBn = (v) => String(v ?? '').replace(/\d/g, d => BN_DIGITS[d])
@@ -35,6 +39,9 @@ const DEFAULTS = {
   columnLine: true, margin: 18, boxBorder: true, boxBottomLine: false, columns: 2,
 }
 const STORE = 'qb-paper-preview'
+const paperStore = (id, set) => `qb-paper-preview:${id}:${set}`
+const readJson = (key, fallback) => { try { return JSON.parse(window.localStorage.getItem(key) ?? 'null') ?? fallback } catch { return fallback } }
+const writeJson = (key, value) => { try { window.localStorage.setItem(key, JSON.stringify(value)) } catch { /* full or private: kept until the page closes */ } }
 function remembered() {
   try { const v = JSON.parse(window.localStorage.getItem(STORE) ?? 'null'); return v ? { ...DEFAULTS, ...v, sizes: { ...DEFAULTS.sizes, ...v.sizes }, show: { ...DEFAULTS.show, ...v.show } } : DEFAULTS } catch { return DEFAULTS }
 }
@@ -49,13 +56,19 @@ export default function QbPaperPreview() {
   const [o, setO] = useState(remembered)
   const [header, setHeader] = useState(null)
   const [order, setOrder] = useState(null)
-  const [boxes, setBoxes] = useState([])
+  const saved = useMemo(() => readJson(paperStore(id, set), {}), [id, set])
+  const [edits, setEdits] = useState(saved.edits ?? {})      // question id -> { question_text, options: [text], answer_text, explanation_text }
+  const [boxes, setBoxes] = useState(saved.boxes ?? [])      // { id, kind: text|image, anchor: question id | 'top', width, height, html, src }
+  const [editing, setEditing] = useState(null)
   const [activeBox, setActiveBox] = useState(null)
+  const [drop, setDrop] = useState(null)
   const paperRef = useRef(null)
   const drag = useRef(null)
+  const imageInput = useRef(null)
 
   useEffect(() => { try { window.localStorage.setItem(STORE, JSON.stringify(o)) } catch { /* private window: the settings just are not remembered */ } }, [o])
   useEffect(() => { const f = FONTS.find(x => x.value === o.font); if (f?.load) loadFont(f.load) }, [o.font])
+  useEffect(() => { writeJson(paperStore(id, set), { edits, boxes }) }, [id, set, edits, boxes])
   useEffect(() => {
     const d = paper.data
     if (!d) return
@@ -75,14 +88,39 @@ export default function QbPaperPreview() {
 
   const move = (i, dir) => setOrder(list => { const next = [...list]; const j = i + dir; if (j < 0 || j >= next.length) return list; [next[i], next[j]] = [next[j], next[i]]; return next })
   const print = () => { window.focus(); window.print() }
-  const addBox = () => { const box = { id: Date.now(), x: 40, y: 140, html: '' }; setBoxes(b => [...b, box]); setActiveBox(box.id) }
-  const format = (cmd) => { if (activeBox) document.execCommand(cmd) }
-  const onPointerMove = (e) => {
-    const d = drag.current
-    if (!d) return
-    const rect = paperRef.current.getBoundingClientRect()
-    setBoxes(list => list.map(b => (b.id === d.id ? { ...b, x: Math.max(0, e.clientX - rect.left - d.dx), y: Math.max(0, e.clientY - rect.top - d.dy) } : b)))
+  const addBox = (extra = {}) => { const box = { id: Date.now(), kind: 'text', anchor: 'top', width: 240, height: 0, html: '', ...extra }; setBoxes(b => [...b, box]); setActiveBox(box.id) }
+  const addImage = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file?.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = () => addBox({ kind: 'image', src: String(reader.result), width: 200 })
+    reader.readAsDataURL(file)
   }
+  const patchBox = (boxId, patch) => setBoxes(list => list.map(b => (b.id === boxId ? { ...b, ...patch } : b)))
+  const format = (cmd) => { if (activeBox) document.execCommand(cmd) }
+  // the gap a dragged box would drop into: after the last question whose middle is above the pointer, or under the header
+  const gapAt = (y) => {
+    let anchor = 'top'
+    paperRef.current?.querySelectorAll('[data-qid]').forEach(el => { const r = el.getBoundingClientRect(); if (r.top + r.height / 2 < y) anchor = el.dataset.qid })
+    return anchor
+  }
+  const onPointerMove = (e) => { if (drag.current) setDrop(gapAt(e.clientY)) }
+  const onPointerUp = (e) => {
+    const d = drag.current
+    drag.current = null
+    if (!d) return
+    patchBox(d.id, { anchor: gapAt(e.clientY) })
+    setDrop(null)
+  }
+  const q = (item) => ({ ...item.question, ...edits[item.question.id], options: (item.question.options ?? []).map((op, k) => ({ ...op, content_text: edits[item.question.id]?.options?.[k] ?? op.content_text })) })
+  const renderBoxes = (anchor) => [
+    drop === anchor && <div key="drop" className="qb-no-print my-1 h-8 rounded-token [border:2px_dashed_var(--color-primary)]" data-testid="qb-drop-gap" />,
+    ...boxes.filter(b => String(b.anchor) === String(anchor)).map(b => (
+      <PaperBox key={b.id} box={b} t={t} active={activeBox === b.id} onFocus={() => setActiveBox(b.id)} onChange={patch => patchBox(b.id, patch)}
+        onDelete={() => setBoxes(list => list.filter(x => x.id !== b.id))} onGrab={() => { drag.current = { id: b.id }; setDrop(b.anchor) }} />
+    )),
+  ]
 
   const paperStyle = { fontFamily: `${o.font}, 'Noto Sans Bengali', sans-serif`, fontSize: `${o.fontSize}px`, fontWeight: o.fontWeight, lineHeight: o.lineHeight, padding: `${o.margin}mm` }
   let running = 0
@@ -99,11 +137,12 @@ export default function QbPaperPreview() {
           .qb-paper,.qb-paper *{visibility:visible}
           .qb-paper{position:absolute;inset-inline-start:0;top:0;width:100%;box-shadow:none;border:0;border-radius:0}
           .qb-no-print{display:none!important}
+          .qb-paper .qb-box{resize:none;box-shadow:none!important}
         }`}</style>
 
       <div className="flex min-w-0 flex-1 justify-center">
         <article ref={paperRef} lang={o.language} className="qb-paper relative w-full max-w-[210mm] rounded-token bg-surface text-content shadow-card [border:1px_solid_var(--line)]"
-          style={paperStyle} onPointerMove={onPointerMove} onPointerUp={() => { drag.current = null }} data-testid="qb-paper">
+          style={paperStyle} onPointerMove={onPointerMove} onPointerUp={onPointerUp} data-testid="qb-paper">
           <header className={`flex flex-col items-center gap-1 pb-2 text-center ${o.headerStyle === 'bordered' ? 'rounded-token p-3 [border:2px_solid_currentColor]' : ''} ${o.headerStyle === 'image' ? 'rounded-token bg-surface-muted p-3' : ''}`} data-testid="qb-paper-header">
             {HEADER_LINES.map(k => header[k] && <div key={k} style={{ fontSize: `${o.sizes[k]}px` }} className={k === 'institution' ? 'font-semibold' : ''} dir="auto" data-line={k}>{header[k]}</div>)}
             <div className="mt-1 flex w-full items-end justify-between gap-2 border-y border-line py-1">
@@ -115,6 +154,7 @@ export default function QbPaperPreview() {
             </div>
           </header>
           {header.instructions.trim() && <p className="whitespace-pre-line pb-2 text-center text-sm" dir="auto" data-testid="qb-paper-instructions">{header.instructions}</p>}
+          {renderBoxes('top')}
 
           {sections.map((s, si) => (
             <section key={si} className="pt-3" style={{ breakBefore: o.pageBreak && si > 0 ? 'page' : 'auto' }} data-testid="qb-paper-section">
@@ -124,14 +164,19 @@ export default function QbPaperPreview() {
                 {s.items.map((it, ii) => {
                   running += 1
                   const no = o.restartNumbers ? ii + 1 : it.no
-                  const q = it.question
-                  const opts = q.options ?? []
-                  return (
-                    <div key={`${si}-${ii}`} className="qb-q mb-4" data-testid="qb-paper-question">
+                  const qn = q(it)
+                  const opts = qn.options ?? []
+                  const qid = String(it.question.id ?? `${si}-${ii}`)
+                  if (editing === qid) return <QuestionEditor key={qid} t={t} question={it.question} value={edits[it.question.id]} onCancel={() => setEditing(null)}
+                    onSave={v => { setEdits(e => ({ ...e, [it.question.id]: v })); setEditing(null) }} onReset={() => { setEdits(({ [it.question.id]: _drop, ...rest }) => rest); setEditing(null) }} />
+                  return [
+                    <div key={`${si}-${ii}`} className="qb-q group relative mb-4" data-testid="qb-paper-question" data-qid={qid} data-edited={edits[it.question.id] ? 'yes' : undefined}>
+                      <button type="button" onClick={() => setEditing(qid)} className="qb-no-print absolute -top-1 end-0 rounded-token bg-surface p-1 text-content-muted opacity-60 hover:opacity-100 group-hover:opacity-100 [border:1px_solid_var(--line)]" aria-label={t('qbpv.edit_question', { n: no })} data-action="edit-question"><Pencil aria-hidden="true" className="h-3.5 w-3.5" /></button>
+                      {edits[it.question.id] && <span className="qb-no-print absolute -top-1 end-8 rounded-token bg-primary-soft px-1 text-xs text-primary-fg">{t('qbpv.edited')}</span>}
                       {it.subject && <p className="mb-1 font-semibold" dir="auto">{it.subject}</p>}
-                      {o.show.question && <div className="flex gap-2 font-semibold"><span>{num(no)}.</span><div className="min-w-0 flex-1" dir="auto"><MathText text={q.question_text} media={q.media ?? []} /></div></div>}
-                      {o.show.question && (q.creative_parts ?? []).length > 0 && <ol className="mt-1 flex flex-col gap-1 ps-6">{q.creative_parts.map(p => <li key={p.part_label} dir="auto"><span>{p.part_label}.</span> <MathText text={p.question_text} /></li>)}</ol>}
-                      {o.show.answer && q.answer_text && <div className="mt-1" data-testid="qb-paper-answer"><p>{L('answer')}</p><div dir="auto"><MathText text={q.answer_text} /></div></div>}
+                      {o.show.question && <div className="flex gap-2 font-semibold"><span>{num(no)}.</span><div className="min-w-0 flex-1" dir="auto"><MathText text={qn.question_text} media={qn.media ?? []} /></div></div>}
+                      {o.show.question && (qn.creative_parts ?? []).length > 0 && <ol className="mt-1 flex flex-col gap-1 ps-6">{qn.creative_parts.map(p => <li key={p.part_label} dir="auto"><span>{p.part_label}.</span> <MathText text={p.question_text} /></li>)}</ol>}
+                      {o.show.answer && qn.answer_text && <div className="mt-1" data-testid="qb-paper-answer"><p>{L('answer')}</p><div dir="auto"><MathText text={qn.answer_text} /></div></div>}
                       {o.show.question && opts.length > 0 && (
                         <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
                           {opts.map((op, k) => (
@@ -143,24 +188,16 @@ export default function QbPaperPreview() {
                           ))}
                         </div>
                       )}
-                      {o.show.explanation && q.explanation_text && <div className="mt-1" data-testid="qb-paper-explanation"><p>{L('explanation')}</p><div dir="auto"><MathText text={q.explanation_text} /></div></div>}
-                    </div>
-                  )
+                      {o.show.explanation && qn.explanation_text && <div className="mt-1" data-testid="qb-paper-explanation"><p>{L('explanation')}</p><div dir="auto"><MathText text={qn.explanation_text} /></div></div>}
+                    </div>,
+                    ...renderBoxes(qid),
+                  ]
                 })}
               </div>
             </section>
           ))}
           {running === 0 && <p className="py-8 text-center text-content-muted">{t('qbpv.empty')}</p>}
 
-          {boxes.map(b => (
-            <div key={b.id} className="qb-box absolute min-w-24 bg-surface px-2 py-1" style={{ insetInlineStart: b.x, top: b.y }} data-testid="qb-text-box">
-              <div className="qb-no-print -mt-1 mb-1 flex cursor-move items-center justify-between gap-2 text-xs text-content-muted" onPointerDown={e => { const r = e.currentTarget.parentElement.getBoundingClientRect(); drag.current = { id: b.id, dx: e.clientX - r.left, dy: e.clientY - r.top } }}>
-                <span>⋮⋮</span>
-                <button type="button" onClick={() => setBoxes(list => list.filter(x => x.id !== b.id))} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-3 w-3" /></button>
-              </div>
-              <div contentEditable suppressContentEditableWarning className="min-h-6 outline-none" dir="auto" onFocus={() => setActiveBox(b.id)} aria-label={t('qbpv.text_box')} />
-            </div>
-          ))}
         </article>
       </div>
 
@@ -234,7 +271,10 @@ export default function QbPaperPreview() {
             <Range label={t('qbpv.margin')} min={12} max={30} step={1} value={o.margin} shown={`${o.margin}mm`} onChange={v => setOpt({ margin: v })} />
             <label className="flex items-center gap-2"><input type="checkbox" checked={o.boxBorder} name="box_border" onChange={e => setOpt({ boxBorder: e.target.checked })} />{t('qbpv.box_border')}</label>
             <label className="flex items-center gap-2"><input type="checkbox" checked={o.boxBottomLine} name="box_bottom" onChange={e => setOpt({ boxBottomLine: e.target.checked })} />{t('qbpv.box_bottom')}</label>
-            <button type="button" onClick={addBox} className="col-span-2 rounded-token bg-primary px-3 py-2 font-medium text-on-primary sm:col-span-1" data-action="add-text-box">📝 {t('qbpv.add_box')}</button>
+            <button type="button" onClick={() => addBox()} className="rounded-token bg-primary px-3 py-2 font-medium text-on-primary" data-action="add-text-box">📝 {t('qbpv.add_box')}</button>
+            <button type="button" onClick={() => imageInput.current?.click()} className="flex items-center justify-center gap-1 rounded-token bg-primary px-3 py-2 font-medium text-on-primary" data-action="add-image"><ImagePlus aria-hidden="true" className="h-4 w-4" />{t('qbpv.add_image')}</button>
+            <input ref={imageInput} type="file" accept="image/*" className="hidden" onChange={addImage} data-testid="qb-image-input" />
+            <p className="col-span-2 text-xs text-content-muted">{t('qbpv.drag_hint')}</p>
             <div className="col-span-2 flex flex-col gap-1"><span className="font-semibold">{t('qbpv.box_format')}</span>
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" disabled={!activeBox} onMouseDown={e => e.preventDefault()} onClick={() => format('bold')} className="rounded-token px-2 py-1 font-bold [border:1px_solid_var(--line)] disabled:opacity-50">B {t('qbpv.bold')}</button>
@@ -274,5 +314,49 @@ function Range({ label, min, max, step, value, shown, onChange }) {
     <label className="flex min-w-0 flex-col gap-1"><span className="font-semibold">{label}</span>
       <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} />
       <span className="text-xs text-content-muted" dir="ltr">{shown}</span></label>
+  )
+}
+
+// a text box or picture in the paper's flow: the grip drags it to another gap, the native corner handle resizes it
+function PaperBox({ box, t, active, onFocus, onChange, onDelete, onGrab }) {
+  const ref = useRef(null)
+  const body = useRef(null)
+  useEffect(() => { if (body.current && box.kind === 'text') body.current.innerHTML = box.html ?? '' }, [])   // eslint-disable-line react-hooks/exhaustive-deps
+  const keepSize = () => { const el = ref.current; if (el) onChange({ width: el.offsetWidth, height: el.offsetHeight }) }
+  return (
+    <div ref={ref} className={`qb-box relative my-2 max-w-full overflow-hidden bg-surface px-2 py-1 [break-inside:avoid] [resize:both] ${active ? 'ring-2 ring-primary-fg qb-active' : ''}`}
+      style={{ width: box.width || undefined, height: box.height || undefined }} onMouseUp={keepSize} data-testid={box.kind === 'image' ? 'qb-image-box' : 'qb-text-box'} data-anchor={box.anchor}>
+      <div className="qb-no-print mb-1 flex select-none items-center justify-between gap-2 text-xs text-content-muted">
+        <span className="cursor-move touch-none px-1" onPointerDown={e => { e.preventDefault(); onGrab() }} aria-label={t('qbpv.drag')} data-action="drag-box">⋮⋮</span>
+        <button type="button" onClick={onDelete} aria-label={t('common.delete')}><Trash2 aria-hidden="true" className="h-3 w-3" /></button>
+      </div>
+      {box.kind === 'image'
+        ? <img src={box.src} alt={t('qbpv.image')} className="pointer-events-none h-full max-h-full w-full object-contain" />
+        : <div ref={body} contentEditable suppressContentEditableWarning className="min-h-6 outline-none" dir="auto" onFocus={onFocus} onInput={e => onChange({ html: e.currentTarget.innerHTML })} aria-label={t('qbpv.text_box')} />}
+    </div>
+  )
+}
+
+// this paper's own wording of a question: question, option texts, answer, explanation (which option is right stays as it is)
+function QuestionEditor({ t, question, value, onSave, onCancel, onReset }) {
+  const [v, setV] = useState(() => ({ question_text: value?.question_text ?? question.question_text ?? '', answer_text: value?.answer_text ?? question.answer_text ?? '',
+    explanation_text: value?.explanation_text ?? question.explanation_text ?? '', options: (question.options ?? []).map((op, k) => value?.options?.[k] ?? op.content_text ?? '') }))
+  const field = 'w-full rounded-token border px-2 py-1 text-sm'
+  return (
+    <div className="qb-no-print mb-4 flex flex-col gap-2 rounded-token bg-surface-muted p-2 [break-inside:avoid]" data-testid="qb-question-editor">
+      <p className="text-xs text-content-muted">{t('qbpv.edit_note')}</p>
+      <label className="flex flex-col gap-1 text-sm">{t('qbpv.f.question')}<textarea rows={3} className={field} dir="auto" name="question_text" value={v.question_text} onChange={e => setV({ ...v, question_text: e.target.value })} /></label>
+      {v.options.map((text, k) => (
+        <label key={k} className="flex flex-col gap-1 text-sm">{t('qbpv.f.option', { label: question.options[k]?.label ?? k + 1 })}
+          <input className={field} dir="auto" name={`option_${k}`} value={text} onChange={e => setV({ ...v, options: v.options.map((x, j) => (j === k ? e.target.value : x)) })} /></label>
+      ))}
+      {question.answer_text != null && <label className="flex flex-col gap-1 text-sm">{t('qbpv.f.answer')}<textarea rows={2} className={field} dir="auto" name="answer_text" value={v.answer_text} onChange={e => setV({ ...v, answer_text: e.target.value })} /></label>}
+      {question.explanation_text != null && <label className="flex flex-col gap-1 text-sm">{t('qbpv.f.explanation')}<textarea rows={2} className={field} dir="auto" name="explanation_text" value={v.explanation_text} onChange={e => setV({ ...v, explanation_text: e.target.value })} /></label>}
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => onSave(v)} className="rounded-token bg-primary px-3 py-1 text-sm font-medium text-on-primary" data-action="save-edit">{t('qbpv.save_edit')}</button>
+        <button type="button" onClick={onCancel} className="rounded-token px-3 py-1 text-sm [border:1px_solid_var(--line)]">{t('qbpv.cancel')}</button>
+        {value && <button type="button" onClick={onReset} className="flex items-center gap-1 rounded-token px-3 py-1 text-sm [border:1px_solid_var(--line)]" data-action="reset-edit"><RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />{t('qbpv.reset_edit')}</button>}
+      </div>
+    </div>
   )
 }

@@ -1,6 +1,16 @@
 {
  "app": {
   "qbpv": {
+   "edit_question": "Edit question {{n}}",
+   "edited": "Changed in this paper",
+   "edit_note": "This change stays with this paper and set in this browser only; the question in the bank does not change. The correct option cannot be changed.",
+   "f": {"question": "Question", "option": "Option {{label}}", "answer": "Answer", "explanation": "Explanation"},
+   "save_edit": "Keep in this paper",
+   "cancel": "Cancel",
+   "reset_edit": "Back to the original",
+   "add_image": "Add image",
+   "drag": "Drag to move",
+   "drag_hint": "Drag ⋮⋮ and drop between two questions; drag the corner to resize.",
    "controller": "Paper Controller",
    "print": "Print",
    "image": "Image",
