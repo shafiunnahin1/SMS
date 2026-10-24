@@ -257,7 +257,7 @@ class QbPaperController extends Controller
             'set' => QbPaperSets::LATIN[$number - 1], 'set_code' => $frozen?->code ?? QbPaperSets::LATIN[$number - 1], 'sets_count' => (int) $paper->sets_count,
             'answers' => $answers, 'institution' => Tenancy::current()->name, 'sections' => $sections,
             // owner request 2026-10-24: the heading's class and subjects load by themselves
-            'class_name' => app(QbPaperHeader::class)->className($paper), 'subject_names' => implode(', ', array_filter(array_column($row['subjects'], 'name'))),
+            'class_name' => app(QbPaperHeader::class)->className($paper), 'subject_names' => implode(', ', array_filter(array_column($row['subjects'], 'name'))), 'subject_codes' => QbPaperHeader::codes($row['subjects']),
             'answer_key' => $answers ? $key : [],   // D126 (4): the set's own key (frozen sets only), with the answers copy
             // R2.1.2: only the pictures the printed questions may show (the public shape already left out answer-only ones)
             'media' => self::pictures($questions->keys()->all(), collect($sections)->flatMap(fn ($s) => collect($s['items'])->flatMap(fn ($it) => array_column($it['question']['media'], 'id')))->all())];

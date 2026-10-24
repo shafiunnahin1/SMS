@@ -139,6 +139,7 @@ class QbPaperTest extends TestCase
     {
         $class = \App\Models\QbClassLevel::create(['name_bn' => 'অষ্টম শ্রেণি', 'name_en' => 'Class 8', 'sort_order' => 8]);
         foreach ([$this->mcq, $this->creative] as $q) $q->classLevels()->attach($class->id);
+        QbSubject::whereKey($this->mcq->qb_subject_id)->update(['code' => '174']);
         $i = $this->makeInstitution('qbpaperhead');
         $admin = $this->makeUser($i, 'admin');
         Tenancy::as($i, function () use ($admin) {
@@ -146,7 +147,7 @@ class QbPaperTest extends TestCase
         });
         $id = $this->api('POST', $this->hostOf($i), 'question-bank/papers', $admin, $this->body())->assertCreated()->json('data.id');
         $data = $this->api('GET', $this->hostOf($i), "question-bank/papers/{$id}/pdf?format=json", $admin)->assertOk()->json('data');
-        $this->assertSame(['অষ্টম শ্রেণি', 'পদার্থবিজ্ঞান'], [$data['class_name'], $data['subject_names']]);
+        $this->assertSame(['অষ্টম শ্রেণি', 'পদার্থবিজ্ঞান', ['174']], [$data['class_name'], $data['subject_names'], $data['subject_codes']]);
         $lines = Tenancy::as($i, fn () => app(\App\Services\QuestionBank\QbPaperHeader::class)->lines(QbPaper::findOrFail($id), 'School'));
         $this->assertSame(['School', 'পদার্থবিজ্ঞান', 'অষ্টম শ্রেণি', 'পদার্থবিজ্ঞান', 60], [$lines['institution'], $lines['exam'], $lines['class'], $lines['subjects'], $lines['duration_minutes']]);
 

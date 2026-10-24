@@ -39,6 +39,7 @@
     "exam": "Exam name",
     "class": "Class",
     "subject": "Subject",
+    "subjectCode": "Subject code",
     "setCode": "Set code",
     "time": "Time",
     "marks": "Full marks"
@@ -86,6 +87,7 @@
    "default_time": "3 hours",
    "open": "Print preview",
    "paper": {
+    "subject_code": "Subject code",
     "time": "Time",
     "full_marks": "Full marks",
     "set": "Set",

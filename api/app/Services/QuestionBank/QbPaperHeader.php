@@ -19,7 +19,7 @@ class QbPaperHeader
         $seen = $items->sortBy(['qb_paper_section_id', 'sort_order'])->map(fn ($i) => $subjectOf[(int) $i->qb_question_id] ?? 0)->unique()->values()->all();
         $order = array_values(array_intersect(array_map('intval', $paper->instructions_json['subject_order'] ?? []), $seen));
         $names = QbSubject::whereIn('id', $subjectOf->unique())->get()->keyBy('id');
-        return array_map(fn ($id) => ['id' => $id, 'name' => $names->get($id)?->name_bn ?? $names->get($id)?->name_en], array_values(array_unique(array_merge($order, $seen))));
+        return array_map(fn ($id) => ['id' => $id, 'name' => $names->get($id)?->name_bn ?? $names->get($id)?->name_en, 'code' => $names->get($id)?->code], array_values(array_unique(array_merge($order, $seen))));
     }
 
     /** the class picked while building the paper (its class filter, or its program's class), else the class most of its questions
@@ -47,8 +47,15 @@ class QbPaperHeader
     public function lines(QbPaper $paper, string $institution): array
     {
         return ['institution' => $institution, 'exam' => (string) ($paper->exam_name ?: $paper->title), 'class' => $this->className($paper),
-            'subjects' => implode(', ', array_filter(array_column($this->subjects($paper), 'name'))),
+            'subjects' => implode(', ', array_filter(array_column($subjects = $this->subjects($paper), 'name'))),
+            'subject_codes' => self::codes($subjects),
             'duration_minutes' => $paper->duration_minutes, 'total_marks' => $paper->total_marks];
+    }
+
+    /** the board-paper way: each subject's code in its own row of digit boxes (a subject without a code is left out) */
+    public static function codes(array $subjects): array
+    {
+        return array_values(array_filter(array_map(fn ($s) => trim((string) ($s['code'] ?? '')), $subjects), fn ($c) => $c !== ''));
     }
 
     private function items(QbPaper $paper)

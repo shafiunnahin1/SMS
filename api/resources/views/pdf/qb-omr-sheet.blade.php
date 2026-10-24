@@ -36,12 +36,16 @@
         .omr-page { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #ffffff; }
         /* qbank's sheet: markers and the code bar at the top, the title and the exam-type boxes under them, the code boxes (head cell,
            write-in row, bubble rows) or the manual candidate panel, the instructions column, then the answer tables */
-        .heading { position: absolute; top: 6.2%; left: 20%; width: 60%; text-align: center; line-height: 1.2; }
+        .heading { position: absolute; top: 6.2%; left: 24%; width: 52%; text-align: center; line-height: 1.2; }
         .heading h1 { margin: 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; font-weight: 700; color: {{ $color }}; }
         .heading p { margin: .3mm 0 0; font-size: 10px; }
         .heading p.exam { font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; font-weight: 600; }
-        .heading .meta { position: absolute; left: -12%; right: -12%; display: flex; justify-content: space-between; margin-top: .5mm; font-size: 9px; }
-        .set-box { position: absolute; top: 6.4%; right: 6%; padding: 1mm 2.5mm; border: .3mm solid {{ $color }}; border-radius: 1mm; text-align: end; font-size: 9px; font-weight: 700; line-height: 1.25; color: {{ $color }}; }
+        .heading .meta { position: absolute; left: -10%; right: -2%; display: flex; justify-content: space-between; margin-top: .5mm; font-size: 9px; }
+        .set-box { position: absolute; top: 7.8%; right: 4%; display: flex; flex-direction: column; align-items: flex-end; gap: 1mm; padding: 1.2mm 2mm; border: .4mm solid {{ $color }}; font-size: 8px; font-weight: 700; color: {{ $color }}; }
+        .set-box .code-row { display: flex; align-items: center; gap: 1.5mm; }
+        .set-box .digits { display: flex; }
+        .set-box b { display: inline-flex; align-items: center; justify-content: center; width: 4.2mm; height: 4.6mm; margin-inline-start: -.3mm; border: .3mm solid {{ $color }}; font-size: 9px; color: #111111; }
+        .set-box b.wide { width: 7mm; }
         .heading p.subtitle { margin: .5mm 0 0; font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; }
         .exam-types { position: absolute; top: 14%; left: 35.5%; width: 34%; display: grid; grid-template-columns: 1.05fr 1.2fr 1fr; gap: 1.6mm 2mm; font-size: 6.5pt; }
         .exam-types label { display: flex; align-items: center; gap: 1.5mm; white-space: nowrap; }
@@ -99,7 +103,13 @@
             <span>{{ __('pdf.qb_paper.full_marks') }} : {{ $digits($marks) }}</span>
         </div>
     </header>
-    <div class="set-box">{{ __('pdf.qb_omr.set') }}<br>{{ $variant->code }}</div>
+    {{-- the board paper's framed box: each subject's code in digit boxes (one row per subject), then the set --}}
+    <div class="set-box">
+        @foreach ($head['subject_codes'] ?? [] as $subjectCode)
+            <div class="code-row">{{ __('pdf.qb_omr.subject') }} :<span class="digits">@foreach (mb_str_split($subjectCode) as $ch)<b>{{ $digits($ch) }}</b>@endforeach</span></div>
+        @endforeach
+        <div class="code-row">{{ __('pdf.qb_omr.set') }} :<span class="digits"><b class="wide">{{ $variant->code }}</b></span></div>
+    </div>
 
     <section class="exam-types" aria-label="{{ __('pdf.qb_omr.exam_type') }}">
         @foreach (__('pdf.qb_omr.exam_types') as $examType)

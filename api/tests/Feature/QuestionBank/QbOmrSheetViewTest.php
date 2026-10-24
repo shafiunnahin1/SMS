@@ -19,10 +19,11 @@ class QbOmrSheetViewTest extends TestCase
             app()->setLocale($locale);
             $html = view('pdf.qb-omr-sheet', ['paper' => new QbPaper(['title' => 'P']), 'form' => new QbOmrForm(['code' => 'C1']), 'variant' => new QbPaperVariant(['code' => 'A']),
                 'settings' => $settings, 'set_symbols' => range('A', 'J'), 'locale' => $locale, 'dir' => 'ltr',
-                'header' => ['institution' => 'Dhanmondi School', 'exam' => 'Test', 'class' => 'অষ্টম শ্রেণি', 'subjects' => 'বাংলা, গণিত', 'duration_minutes' => 180, 'total_marks' => '5.00']])->render();
+                'header' => ['institution' => 'Dhanmondi School', 'exam' => 'Test', 'class' => 'অষ্টম শ্রেণি', 'subjects' => 'বাংলা, গণিত', 'duration_minutes' => 180, 'total_marks' => '5.00', 'subject_codes' => ['146', '147']]])->render();
             $this->assertStringNotContainsString('pdf.qb_omr', $html, "{$locale}: no raw translation keys");
             $this->assertStringContainsString($roll, $html);
             $this->assertSame(2, substr_count($html, 'class="subject-heading"'));
+            $this->assertSame(2, substr_count($html, '<div class="code-row">' . __('pdf.qb_omr.subject')), "{$locale}: one digit-box row per subject code");
             foreach (['Dhanmondi School', 'অষ্টম শ্রেণি', 'বাংলা, গণিত', 'class="set-box"'] as $text) $this->assertStringContainsString($text, $html, "{$locale}: the paper's heading is on the sheet");
         }
     }

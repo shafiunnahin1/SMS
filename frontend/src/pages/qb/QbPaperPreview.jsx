@@ -38,7 +38,7 @@ const FONTS = [
 const HEADER_LINES = ['institution', 'exam', 'class', 'subject']
 const DEFAULTS = {
   language: 'bn', showSections: true, restartNumbers: false, pageBreak: false,
-  sizes: { institution: 24, exam: 18, class: 16, subject: 14, setCode: 14, time: 14, marks: 14 }, headerStyle: 'simple',
+  sizes: { institution: 24, exam: 18, class: 16, subject: 14, subjectCode: 14, setCode: 14, time: 14, marks: 14 }, headerStyle: 'simple',
   show: { question: true, answer: true, explanation: true, source: true },
   font: 'SolaimanLipi', fontSize: 14, fontWeight: 400, lineHeight: 1.4,
   columnLine: true, margin: 18, boxBorder: true, boxBottomLine: false, columns: 2,
@@ -83,7 +83,7 @@ export default function QbPaperPreview() {
   useEffect(() => {
     const d = paper.data
     if (!d) return
-    setHeader({ institution: d.institution ?? '', exam: d.exam_name || d.title || '', class: d.class_name ?? '', subject: d.subject_names ?? '', setCode: d.sets_count > 1 ? d.set_code : '',
+    setHeader({ institution: d.institution ?? '', exam: d.exam_name || d.title || '', class: d.class_name ?? '', subject: d.subject_names ?? '', subjectCode: (d.subject_codes ?? []).join(', '), setCode: d.sets_count > 1 ? d.set_code : '',
       time: d.duration_minutes ? t('qbpv.minutes', { n: d.duration_minutes }) : t('qbpv.default_time'), marks: d.total_marks ?? '', instructions: d.instructions ?? '' })
     setOrder(d.sections.map((_, i) => i))
   }, [paper.data, t])
@@ -92,6 +92,7 @@ export default function QbPaperPreview() {
   const L = (key) => i18n.getFixedT(o.language)(`qbpv.paper.${key}`)
   const num = (v) => (en ? String(v) : toBn(v))
   const setOpt = (patch) => setO(p => ({ ...p, ...patch }))
+  const codes = (header?.subjectCode ?? '').split(/[,،]/).map(c => c.trim()).filter(Boolean)
   const sections = useMemo(() => (order ?? []).map(i => paper.data?.sections[i]).filter(Boolean), [order, paper.data])
 
   if (paper.isPending || !header) return <Loader type="page" />
@@ -214,9 +215,25 @@ export default function QbPaperPreview() {
           style={paperStyle} data-testid="qb-paper">
           {renderBoxes('h-start')}
           <header className={`relative pb-2 text-center ${o.headerStyle === 'bordered' ? 'rounded-token p-3 [border:2px_solid_currentColor]' : ''} ${o.headerStyle === 'image' ? 'rounded-token bg-surface-muted p-3' : ''}`} data-testid="qb-paper-header">
-            {HEADER_LINES.map(k => header[k] && [<div key={k} style={{ fontSize: `${o.sizes[k]}px` }} className={`mb-1 ${k === 'institution' ? 'font-semibold' : ''}`} dir="auto" data-line={k} data-gap={`h-${k}`}>{header[k]}</div>, ...renderBoxes(`h-${k}`)])}
-            {/* owner's reference heading: the set in a framed box at the top corner, time and full marks on one line under the heading */}
-            {header.setCode && <span style={{ fontSize: `${o.sizes.setCode}px` }} className="absolute end-0 top-0 flex flex-col items-end rounded-token border border-current px-2 py-1 font-semibold leading-tight" data-testid="qb-paper-set"><span>{L('set')}</span> <span>{header.setCode}</span></span>}
+            {/* three columns: an empty side, the heading lines in the middle, the code box at the end (board-paper layout) */}
+            <div className="grid grid-cols-[1fr_minmax(0,auto)_1fr] items-start gap-2">
+              <span />
+              <div>
+                {HEADER_LINES.map(k => header[k] && [<div key={k} style={{ fontSize: `${o.sizes[k]}px` }} className={`mb-1 ${k === 'institution' ? 'font-semibold' : ''}`} dir="auto" data-line={k} data-gap={`h-${k}`}>{header[k]}</div>, ...renderBoxes(`h-${k}`)])}
+              </div>
+              {/* the board paper's framed box: each subject's code in digit boxes (one row per subject), then the set in its own box */}
+              {(codes.length > 0 || header.setCode) && (
+                <div className="flex flex-col items-end gap-1 justify-self-end whitespace-nowrap rounded-token border-2 border-current p-2 font-semibold leading-tight" data-testid="qb-paper-codebox">
+                  {codes.map((c, i) => (
+                    <span key={i} className="flex items-center gap-2" style={{ fontSize: `${o.sizes.subjectCode ?? 14}px` }} data-testid="qb-paper-subject-code">
+                      <span>{L('subject_code')} :</span>
+                      <span className="flex" dir="ltr">{[...c].map((ch, j) => <span key={j} className="-ms-px inline-flex h-[1.9em] w-[1.6em] items-center justify-center border-2 border-current">{num(ch)}</span>)}</span>
+                    </span>
+                  ))}
+                  {header.setCode && <span className="flex items-center gap-2" style={{ fontSize: `${o.sizes.setCode}px` }} data-testid="qb-paper-set"><span>{L('set')} :</span> <span className="inline-flex h-[1.9em] min-w-[2.6em] items-center justify-center border-2 border-current px-1">{header.setCode}</span></span>}
+                </div>
+              )}
+            </div>
             <div className="mt-3 flex w-full items-end justify-between gap-2 py-1" data-gap="h-meta">
               <span style={{ fontSize: `${o.sizes.time}px` }}>{L('time')} : {num(header.time)}</span>
               <span style={{ fontSize: `${o.sizes.marks}px` }}>{L('full_marks')} : {num(header.marks)}</span>
@@ -307,12 +324,12 @@ export default function QbPaperPreview() {
 
         <Panel title={t('qbpv.header_settings')}>
           <div className="grid grid-cols-2 gap-3">
-            {['institution', 'exam', 'class', 'subject', 'setCode', 'time', 'marks'].map(k => (
+            {['institution', 'exam', 'class', 'subject', 'subjectCode', 'setCode', 'time', 'marks'].map(k => (
               <label key={k} className="flex min-w-0 flex-col gap-1 text-sm">
                 <span className="font-semibold">{t(`qbpv.h.${k}`)}</span>
-                <input className="min-w-0 rounded-token border px-2 py-1" value={header[k]} name={`header_${k}`} dir="auto" placeholder={k === 'setCode' ? 'A / B / C' : ''} onChange={e => setHeader(h => ({ ...h, [k]: e.target.value }))} />
-                <span className="flex items-center gap-2"><input type="range" min="10" max="32" value={o.sizes[k]} className="min-w-0 flex-1" aria-label={t('qbpv.size_of', { x: t(`qbpv.h.${k}`) })}
-                  onChange={e => setO(p => ({ ...p, sizes: { ...p.sizes, [k]: Number(e.target.value) } }))} /><span className="text-xs text-content-muted" dir="ltr">{o.sizes[k]}px</span></span>
+                <input className="min-w-0 rounded-token border px-2 py-1" value={header[k]} name={`header_${k}`} dir="auto" placeholder={k === 'setCode' ? 'A / B / C' : k === 'subjectCode' ? '146, 147' : ''} onChange={e => setHeader(h => ({ ...h, [k]: e.target.value }))} />
+                <span className="flex items-center gap-2"><input type="range" min="10" max="32" value={o.sizes[k] ?? 14} className="min-w-0 flex-1" aria-label={t('qbpv.size_of', { x: t(`qbpv.h.${k}`) })}
+                  onChange={e => setO(p => ({ ...p, sizes: { ...p.sizes, [k]: Number(e.target.value) } }))} /><span className="text-xs text-content-muted" dir="ltr">{o.sizes[k] ?? 14}px</span></span>
               </label>
             ))}
             <label className="flex min-w-0 flex-col gap-1 text-sm"><span className="font-semibold">{t('qbpv.header_style')}</span>

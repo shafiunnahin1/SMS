@@ -39,6 +39,7 @@
     "exam": "পরীক্ষার নাম",
     "class": "শ্রেণি",
     "subject": "বিষয়",
+    "subjectCode": "বিষয় কোড",
     "setCode": "সেট কোড",
     "time": "সময়",
     "marks": "পূর্ণমান"
@@ -86,6 +87,7 @@
    "default_time": "৩ ঘণ্টা",
    "open": "প্রিন্ট প্রিভিউ",
    "paper": {
+    "subject_code": "বিষয় কোড",
     "time": "সময়",
     "full_marks": "পূর্ণমান",
     "set": "সেট",
