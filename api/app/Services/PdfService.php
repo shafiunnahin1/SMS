@@ -81,7 +81,10 @@ class PdfService
         $browser = (new BrowserFactory(config('pdf.chrome_binary')))->createBrowser([
             'noSandbox' => (bool) config('pdf.no_sandbox'),
             'startupTimeout' => (int) ceil($timeout / 1000),
-            'customFlags' => ['--disable-dev-shm-usage', '--disable-gpu', '--allow-file-access-from-files'],
+            // Chrome's new headless mode: current Chrome on Windows no longer starts with the old `--headless` ("Devtools could not
+            // start", owner's PC 2026-10-24); `--headless=new` works on Windows and Linux alike, so the library's own switch is dropped
+            'customFlags' => ['--headless=new', '--disable-dev-shm-usage', '--disable-gpu', '--allow-file-access-from-files'],
+            'excludedSwitches' => ['--headless'],
             'enableImages' => true,
         ]);
         try {
@@ -161,7 +164,10 @@ JS;
         $browser = (new BrowserFactory(config('pdf.chrome_binary')))->createBrowser([
             'noSandbox' => (bool) config('pdf.no_sandbox'),
             'startupTimeout' => (int) ceil($timeout / 1000),
-            'customFlags' => ['--disable-dev-shm-usage', '--disable-gpu'],
+            // Chrome's new headless mode: current Chrome on Windows no longer starts with the old `--headless` ("Devtools could not
+            // start", owner's PC 2026-10-24); `--headless=new` works on Windows and Linux alike, so the library's own switch is dropped
+            'customFlags' => ['--headless=new', '--disable-dev-shm-usage', '--disable-gpu'],
+            'excludedSwitches' => ['--headless'],
             'enableImages' => true,
         ]);
         try {
