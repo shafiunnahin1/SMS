@@ -49,7 +49,7 @@ class QbOmrFormController extends Controller
             // D133 / D110: qbank's OMR controller - subtitle and title sizes, web font, theme colour, digital/manual candidate info,
             // and each candidate code's digit count (all optional so older clients keep working)
             'settings.subtitle' => 'nullable|string|max:200',
-            'settings.title_size' => 'nullable|integer|min:12|max:32',
+            'settings.title_size' => 'nullable|integer|min:10|max:32',
             'settings.subtitle_size' => 'nullable|integer|min:10|max:24',
             'settings.font' => 'nullable|in:' . implode(',', array_keys(QbOmrFormService::FONTS)),
             'settings.theme_color' => 'nullable|in:' . implode(',', array_keys(QbOmrFormService::COLORS)),

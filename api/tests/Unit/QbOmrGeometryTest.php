@@ -63,9 +63,17 @@ class QbOmrGeometryTest extends TestCase
             $boxes = [$g['class'], $g['roll'], $g['subject'], $g['set']];
             for ($i = 1; $i < 4; $i++) $this->assertGreaterThan($boxes[$i - 1]['left'] + $boxes[$i - 1]['width'], $boxes[$i]['left'], "roll {$roll}: box {$i} overlaps");
             $this->assertGreaterThanOrEqual(0.05, $g['class']['left']);
-            $this->assertLessThanOrEqual(0.7001, $g['set']['left'] + $g['set']['width']);
+            $boxRight = $g['set']['left'] + $g['set']['width'];
+            $boxBottom = $g['set']['top'] + $g['set']['height'];
+            $notesBottom = $g['notes']['top'] + $g['notes']['height'];
+            if ($g['notes']['left'] > $g['class']['left']) {
+                $this->assertLessThanOrEqual(0.7001, $boxRight - $g['class']['left'], "roll {$roll}: side-by-side code boxes stay within 70% of the page");
+                $this->assertGreaterThan($boxRight, $g['notes']['left'], "roll {$roll}: code boxes do not overlap instructions");
+            } else {
+                $this->assertGreaterThan($boxBottom, $g['notes']['top'], "roll {$roll}: instructions move below long code boxes");
+            }
             $this->assertEqualsWithDelta(0.05, $g['code']['top'] + ($g['code']['height'] / 2), 0.0001);
-            $this->assertGreaterThan($g['set']['top'] + $g['set']['height'], $g['answers']['top']);
+            $this->assertGreaterThan(max($boxBottom, $notesBottom), $g['answers']['top'], "roll {$roll}: answers start below code boxes and instructions");
         }
     }
 }
