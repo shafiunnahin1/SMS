@@ -158,17 +158,41 @@ function MeritList({ examId, programId, fixedBatch }) {
   return (
     <Card className="flex flex-col gap-3" data-testid="merit-list">
       <div className="flex flex-wrap items-end justify-between gap-2">
-        {!fixedBatch && <label className="flex flex-col gap-1 text-sm"><span>{term('batch')}</span>
-          <select className="rounded-token border px-2 py-1" value={batch} onChange={e => setBatch(e.target.value)} name="merit_batch">
+        {!fixedBatch && <label className="flex flex-col gap-1 text-sm"><span className="text-content-muted">{term('batch')}</span>
+          <select className="h-10 rounded-token px-2 bg-surface text-content [border:1px_solid_var(--line)]" value={batch} onChange={e => setBatch(e.target.value)} name="merit_batch">
             <option value="">{t('merit.all')}</option>{(batches.data ?? []).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}
         <span className="flex items-center gap-3">
-          {merit.data && <span className="text-sm text-content-muted">{t('exams.full_marks')}: <Ltr>{Number(merit.data.full_marks)}</Ltr></span>}
+          {merit.data && <span className="rounded-token bg-surface-muted px-2 py-1 text-xs">{t('exams.full_marks')} <Ltr className="font-semibold">{Number(merit.data.full_marks)}</Ltr></span>}
           <Button variant="secondary" loading={loading} onClick={() => preview(`/exams/${examId}/merit-list`, { format: 'pdf', ...(batch ? { batch_id: batch } : {}) })} data-action="merit-pdf">
             <FileDown aria-hidden="true" className="h-4 w-4" />PDF</Button>
         </span>
       </div>
-      <DataTable columns={columns} data={merit.data?.rows ?? []} rowKey="student_id" loading={merit.isPending} error={merit.isError} onRetry={merit.refetch}
-        empty={<EmptyState title={t('exams.no_marks')} />} />
+      {/* phones: one tidy row per student - rank badge, name with ID and roll, total and percentage at the end */}
+      <div className="sm:hidden">
+        {merit.isPending ? <Loader type="skeleton" rows={4} /> : merit.isError ? <ErrorState onRetry={merit.refetch} />
+          : !(merit.data?.rows ?? []).length ? <EmptyState title={t('exams.no_marks')} /> : (
+          <ol className="flex flex-col divide-y divide-line" data-testid="merit-cards">
+            {merit.data.rows.map(r => (
+              <li key={r.student_id} className="flex items-center gap-3 py-3" data-rank={r.rank ?? ''}>
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${r.rank && r.rank <= 3 ? 'bg-primary-soft text-primary-fg' : 'bg-surface-muted'}`}>
+                  <Ltr>{r.rank ?? '—'}</Ltr></span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <bdi className="truncate font-medium">{r.name}</bdi>
+                  <span className="text-xs text-content-muted"><Ltr>{r.code}</Ltr>{r.roll_no != null && <> · {t('mcq_import.roll')} <Ltr>{r.roll_no}</Ltr></>}{r.batch ? <> · <span dir="auto">{r.batch}</span></> : null}</span>
+                </span>
+                <span className="flex shrink-0 flex-col items-end">
+                  <span className="font-semibold">{r.total == null ? '—' : <Ltr>{Number(r.total)}</Ltr>}</span>
+                  <span className="text-xs text-content-muted">{r.percentage == null ? '' : <Ltr>{Number(r.percentage)}%</Ltr>}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+      <div className="hidden sm:block">
+        <DataTable columns={columns} data={merit.data?.rows ?? []} rowKey="student_id" loading={merit.isPending} error={merit.isError} onRetry={merit.refetch}
+          empty={<EmptyState title={t('exams.no_marks')} />} />
+      </div>
     </Card>
   )
 }
