@@ -34,7 +34,7 @@ class StudentManagementTest extends TestCase
         $res = $this->api('POST', $host, 'students', $admin, ['name' => 'Rafi', 'guardian_phone' => '01711110001', 'batch_id' => $a->id,
             'photo' => UploadedFile::fake()->image('../../evil.php.jpg', 200, 200), 'consent_data' => true, 'consent_sms' => true, 'father_name' => 'Karim'])->assertCreated();
         $id = $res->json('data.id');
-        $this->assertMatchesRegularExpression('/^SMS-\d{4}-0001$/', $res->json('data.student_id'), 'auto student ID');
+        $this->assertMatchesRegularExpression('/^\d{6}0001$/', $res->json('data.student_id'), 'auto student ID: YYmmdd + the day\'s first global serial (D160)');
         $student = Tenancy::as($i, fn () => Student::find($id));
         $this->assertMatchesRegularExpression("#^institutions/{$i->id}/students/{$id}/photo-[0-9a-f-]{36}\\.jpg$#", $student->photo, 'UUID name under the student folder');
         Storage::disk('private')->assertExists($student->photo);

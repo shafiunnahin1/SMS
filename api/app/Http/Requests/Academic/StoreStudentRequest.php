@@ -16,7 +16,7 @@ class StoreStudentRequest extends FormRequest
         $inst = Tenancy::current()->id;
         return [
             'name'           => 'required|string|max:100',
-            'student_id'     => ['nullable', 'string', 'max:20', Rule::unique('students', 'student_id')->where('institution_id', $inst)],
+            'student_id'     => ['nullable', 'string', 'regex:/^[0-9]{10}$/', Rule::unique('students', 'student_id')],   // D160: 10 digits, unique in the whole system
             'guardian_phone' => ['required', 'string', 'regex:/^(?:\+?88)?01[3-9]\d{8}$/'],
             'guardian_email' => 'nullable|email|max:150',
             'father_name'    => 'nullable|string|max:100',

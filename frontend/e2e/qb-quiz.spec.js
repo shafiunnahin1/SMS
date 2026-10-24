@@ -44,10 +44,10 @@ test('QB.10 a public quiz: a visitor checks it, a student takes it and keeps the
   await expect(visitor.locator('[data-testid="public-quiz-mark"]')).toHaveText('সঠিক')
 
   const student = await (await browser.newContext({ baseURL: `http://${TENANTS.school.slug}.${BASE}` })).newPage()
-  await login(student, 'DHA-2025-0009', 'DHA-2025-0009')
+  await login(student, '2501010009', '2501010009')
   await expect(student).toHaveURL(/\/change-password/)
   const pw = student.locator('form input[type="password"]')
-  await pw.nth(0).fill('DHA-2025-0009')
+  await pw.nth(0).fill('2501010009')
   await pw.nth(1).fill('Student-pass-2026')
   await pw.nth(2).fill('Student-pass-2026')
   await student.locator('form button[type="submit"]').click()

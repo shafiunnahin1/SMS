@@ -19,7 +19,7 @@ class PerInstitutionUniqueTest extends TestCase
     {
         Queue::fake();
         $made = [];
-        foreach (['one', 'two'] as $slug) {
+        foreach (['one' => '2601010001', 'two' => '2601010002'] as $slug => $sid) {   // D160: 10-digit IDs, unique across institutions
             $i = $this->makeInstitution("uniq{$slug}", 'school');
             $admin = $this->makeUser($i, 'admin');
             $host = $this->hostOf($i);
@@ -27,17 +27,21 @@ class PerInstitutionUniqueTest extends TestCase
                 FeeCategory::create(['name' => 'Tuition', 'amount' => 500, 'frequency' => 'monthly']);
                 return Batch::create(['program_id' => Program::create(['name' => 'P'])->id, 'name' => 'A']);
             });
-            $this->api('POST', $host, 'students', $admin, ['name' => 'X', 'student_id' => 'S-001', 'guardian_phone' => '01711112222', 'batch_id' => $batch->id])->assertCreated();
+            if ($slug === 'two') $this->api('POST', $host, 'students', $admin, ['name' => 'Z', 'student_id' => '2601010001', 'guardian_phone' => '01711112224'])
+                ->assertStatus(422)->assertJsonValidationErrors('student_id');   // D160: another institution's ID is taken everywhere
+            $this->api('POST', $host, 'students', $admin, ['name' => 'X', 'student_id' => $sid, 'guardian_phone' => '01711112222', 'batch_id' => $batch->id])->assertCreated();
             $this->api('POST', $host, 'teachers', $admin, ['name' => 'T', 'phone' => '01722223333', 'employee_id' => 'E-1'])->assertCreated();
-            $receipt = Tenancy::as($i, function () {
+            $receipt = Tenancy::as($i, function () use ($sid) {
                 $fees = app(FeeService::class);
-                $s = Student::where('student_id', 'S-001')->first();
+                $s = Student::where('student_id', $sid)->first();
                 return $fees->collect($s, [['key' => $fees->dueLines($s)->first()['key']]])->first()->receipt_no;
             });
             $made[] = $receipt;
 
-            $this->api('POST', $host, 'students', $admin, ['name' => 'Y', 'student_id' => 'S-001', 'guardian_phone' => '01711112223'])
+            $this->api('POST', $host, 'students', $admin, ['name' => 'Y', 'student_id' => $sid, 'guardian_phone' => '01711112223'])
                 ->assertStatus(422)->assertJsonValidationErrors('student_id');
+            $this->api('POST', $host, 'students', $admin, ['name' => 'W', 'student_id' => 'S-001', 'guardian_phone' => '01711112225'])
+                ->assertStatus(422)->assertJsonValidationErrors('student_id');   // D160: letters are refused
             $this->api('POST', $host, 'teachers', $admin, ['name' => 'U', 'phone' => '01722223334', 'employee_id' => 'E-1'])
                 ->assertStatus(422)->assertJsonValidationErrors('employee_id');
         }

@@ -34,14 +34,14 @@ class DemoDataSeeder extends Seeder
             $enrollments = app(EnrollmentService::class);
             $first = [];
             for ($i = 1; $i <= 10; $i++) {
-                $code = sprintf('DHA-2025-%04d', $i);
+                $code = sprintf('250101%04d', $i);   // D160: 10 digits - admission 2025-01-01 + that day's serial
                 $studentUser = User::create([
                     'institution_id' => $institution->id, 'name' => "ছাত্র $i", 'email' => "student{$i}@dhanmondischool.edu.bd",
                     'username' => $code, 'password' => $code, 'role' => 'student', 'must_change_password' => true,
                 ]);
                 $student = Student::create([
                     'user_id' => $studentUser->id, 'student_id' => $code, 'guardian_phone' => sprintf('019000000%02d', $i),
-                    'father_name' => "অভিভাবক $i", 'admission_date' => now()->subMonths(3), 'status' => 'active',
+                    'father_name' => "অভিভাবক $i", 'admission_date' => '2025-01-01', 'status' => 'active',
                 ]);
                 $enrollments->enroll($student, $batchA, ['roll_no' => $i]);
                 if ($i <= 2) $first[] = $student;

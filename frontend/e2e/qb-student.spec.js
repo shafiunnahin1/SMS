@@ -34,10 +34,10 @@ test('QB.9 a student reads a question free and sees the answer priced', async ({
   await expect(price).toHaveCount(0)
 
   const student = await (await browser.newContext({ baseURL: `http://${TENANTS.school.slug}.${BASE}` })).newPage()
-  await login(student, 'DHA-2025-0010', 'DHA-2025-0010')
+  await login(student, '2501010010', '2501010010')
   await expect(student).toHaveURL(/\/change-password/)
   const pw = student.locator('form input[type="password"]')
-  await pw.nth(0).fill('DHA-2025-0010')
+  await pw.nth(0).fill('2501010010')
   await pw.nth(1).fill('Student-pass-2026')
   await pw.nth(2).fill('Student-pass-2026')
   await student.locator('form button[type="submit"]').click()

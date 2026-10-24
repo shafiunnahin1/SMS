@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\BusinessException;
 use App\Models\{Batch, Enrollment, Institution, ParentStudent, Student, User};
 use App\Support\StudentFiles;
 use Illuminate\Http\UploadedFile;
@@ -19,7 +20,7 @@ class StudentService
     public function create(array $data, ?Batch $batch = null, array $enrollment = []): Student
     {
         return DB::transaction(function () use ($data, $batch, $enrollment) {
-            $data['student_id'] = $data['student_id'] ?? $this->generateStudentId();
+            $data['student_id'] = $data['student_id'] ?? $this->generateStudentId($data['admission_date'] ?? null);
             $user = User::create([
                 'institution_id' => Tenancy::current()->id, 'name' => $data['name'], 'username' => $data['student_id'],
                 'password' => $data['student_id'], 'role' => 'student', 'must_change_password' => true,
@@ -64,13 +65,24 @@ class StudentService
     }
 
     /** DHA-2026-0001: per institution and year; the institution row lock serialises two admissions at once. Inside a transaction. */
-    public function generateStudentId(): string
+    /**
+     * D160: a student's ID is 10 digits - the admission date (else today) as YYmmdd plus a 4-digit serial for that date shared by every
+     * institution (0001-9999), so IDs are unique across the system and never change. A named lock serialises the count across tenants;
+     * when the day's 9999 are used, registration for that date is refused.
+     */
+    public function generateStudentId(?string $admissionDate = null): string
     {
-        $institution = Tenancy::current();
-        Institution::whereKey($institution->id)->lockForUpdate()->value('id');
-        $prefix = strtoupper(substr($institution->slug, 0, 3)) . '-' . date('Y') . '-';
-        $last = Student::withTrashed()->where('student_id', 'like', $prefix . '%')->orderByDesc('student_id')->value('student_id');
-        return $prefix . str_pad((string) ($last ? ((int) substr($last, -4)) + 1 : 1), 4, '0', STR_PAD_LEFT);
+        $prefix = \Illuminate\Support\Carbon::parse($admissionDate ?: now())->format('ymd');
+        $locked = DB::selectOne('SELECT GET_LOCK(?, 10) AS l', ['student_id_serial'])->l ?? 0;   // guard:allow(C7) a named MySQL lock, no tenant data
+        if ((int) $locked !== 1) throw new BusinessException('student id busy', 'student_id_busy', 503);
+        try {
+            $last = Student::anyInstitution()->withTrashed()->where('student_id', 'like', $prefix . '____')->whereRaw('student_id REGEXP ?', ['^[0-9]{10}$'])->max('student_id');
+            $serial = $last ? ((int) substr($last, -4)) + 1 : 1;
+            if ($serial > 9999) throw new BusinessException('the day is full', 'student_id_day_full', 422);
+            return $prefix . str_pad((string) $serial, 4, '0', STR_PAD_LEFT);
+        } finally {
+            DB::selectOne('SELECT RELEASE_LOCK(?) AS r', ['student_id_serial']);                    // guard:allow(C7)
+        }
     }
 
     /** One parent user per guardian phone; siblings share it. Never the phone as password (R6): random + forced change. */

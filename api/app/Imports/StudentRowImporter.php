@@ -29,7 +29,7 @@ final class StudentRowImporter
     {
         $v = Validator::make($data, [
             'name' => 'required|string|max:100', 'guardian_phone' => ['required', 'regex:/^(?:\+?88)?01[3-9]\d{8}$/'],
-            'batch' => 'required|string', 'student_id' => 'nullable|string|max:20', 'roll_no' => 'nullable|integer|min:1',
+            'batch' => 'required|string', 'student_id' => ['nullable', 'string', 'regex:/^[0-9]{10}$/'],   // D160: 10 digits only 'roll_no' => 'nullable|integer|min:1',
             'gender' => 'nullable|in:male,female,other', 'date_of_birth' => 'nullable|date|before:today', 'admission_date' => 'nullable|date',
             'father_name' => 'nullable|string|max:100', 'mother_name' => 'nullable|string|max:100', 'address' => 'nullable|string|max:500',
             'studying_at' => 'nullable|string|max:150',

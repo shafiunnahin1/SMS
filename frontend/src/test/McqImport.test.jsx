@@ -7,7 +7,7 @@ import { aiPrompt, parseJsonRows } from '../features/exams/mcqPrompt'
 
 vi.mock('../api/axios', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() }, bindAuthStore: () => {} }))
 
-const rows = [{ student_id: 1, code: 'DHA-2025-0001', roll_no: 1, batch: 'A', name: 'Mine' }, { student_id: 2, code: 'DHA-2025-0002', roll_no: 2, batch: 'A', name: 'Other' }]
+const rows = [{ student_id: 1, code: '2501010001', roll_no: 1, batch: 'A', name: 'Mine' }, { student_id: 2, code: '2501010002', roll_no: 2, batch: 'A', name: 'Other' }]
 
 // D158 (5): the AI prompt carries the student list, the full marks and a JSON example; the pasted answer is previewed, then saved
 describe('MCQ import (D158)', () => {
@@ -16,13 +16,13 @@ describe('MCQ import (D158)', () => {
   it('builds a prompt with every student and a JSON example, and reads fenced or bare answers', () => {
     const p = aiPrompt({ exam: 'Half yearly', subject: 'Physics', rows, full: 30 })
     expect(p).toContain('MCQ full marks: 30')
-    expect(p).toContain('DHA-2025-0001\t1\tA\tMine')
-    expect(p).toContain('DHA-2025-0002\t2\tA\tOther')
-    expect(p).toContain('"id": "DHA-2025-0001"')
+    expect(p).toContain('2501010001\t1\tA\tMine')
+    expect(p).toContain('2501010002\t2\tA\tOther')
+    expect(p).toContain('"id": "2501010001"')
     expect(p).toContain('"results"')
     expect(parseJsonRows('```json\n{"results":[{"roll":2,"mcq":21}]}\n```')).toEqual([{ roll: '2', mcq: 21 }])
     expect(parseJsonRows('[{"roll":"1","batch":"A","mcq":3}]')).toEqual([{ roll: '1', batch: 'A', mcq: 3 }])
-    expect(parseJsonRows('{"results":[{"id":"DHA-2025-0002","mcq":7}]}')).toEqual([{ id: 'DHA-2025-0002', roll: '', mcq: 7 }])
+    expect(parseJsonRows('{"results":[{"id":"2501010002","mcq":7}]}')).toEqual([{ id: '2501010002', roll: '', mcq: 7 }])
     expect(() => parseJsonRows('{"x":1}')).toThrow()
   })
 

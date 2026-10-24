@@ -182,10 +182,11 @@ class QbOmrReviewTest extends TestCase
         [$paperId, $studentId] = $this->setup_paper($institution, $teacher);
         $omrId = Tenancy::as($institution, function () use ($studentId) {
             $student = Student::find($studentId);
-            $student->update(['admission_date' => '2026-01-15']);
+            $student->forceFill(['student_id' => '2601150001'])->save();           // D160: the 10-digit student ID is the OMR ID
             return \App\Services\StudentOmrId::of($student->fresh());
         });
-        $this->assertSame('20260115' . str_pad((string) ($studentId % 100), 2, '0', STR_PAD_LEFT), $omrId);
+        $this->assertSame('2601150001', $omrId);
+        $this->assertNull(\App\Services\StudentOmrId::of(new Student(['student_id' => 'S1'])), 'an old ID with letters has no OMR ID');
         $host = $this->hostOf($institution);
         $base = "question-bank/papers/{$paperId}/omr-form";
         $this->api('PUT', $host, $base, $teacher, ['settings' => [

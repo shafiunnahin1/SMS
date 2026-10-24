@@ -17,7 +17,7 @@ class UpdateStudentRequest extends FormRequest
         $inst = Tenancy::current()->id;
         return [
             'name'           => 'sometimes|string|max:100',
-            'student_id'     => ['sometimes', 'string', 'max:20', Rule::unique('students', 'student_id')->where('institution_id', $inst)->ignore($this->route('id'))],
+            'student_id'     => ['prohibited'],   // D160: an ID never changes after it is given
             'guardian_phone' => ['sometimes', 'string', 'regex:/^(?:\+?88)?01[3-9]\d{8}$/'],
             'father_name'    => 'nullable|string|max:100',
             'mother_name'    => 'nullable|string|max:100',
