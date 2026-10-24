@@ -34,7 +34,7 @@
     $v3 = isset($geometry['page_mm']);
     $pageMm = $geometry['page_mm'] ?? null;
     $mmY = static fn (float $mm): float => $pageMm ? $mm / $pageMm[1] : $mm / 297;
-    $writeHeight = $v3 ? $mmY(7) : 0.0235;
+    $writeHeight = $v3 ? $mmY(6) : 0.0235;
     $headHeightBox = $v3 ? $mmY(6) : 0.022;
     $tableHeadHeight = $v3 ? $mmY(6) : 0.024;
     $toBangla = static fn (int $number): string => strtr((string) $number, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']);
@@ -218,7 +218,7 @@
             @endforeach
         @endforeach
     @endforeach
-    <div class="footer-note" style="top:{{ min(92, (($geometry['answers']['top'] ?? 0.47) + max(array_map(fn ($c) => $c['height'], $geometry['answers']['columns']))) * 100 + ($v3 ? $mmY(2) * 100 : 1.4)) }}%">{{ __('pdf.qb_omr.footer') }}</div>
+    <div class="footer-note" style="{{ $v3 ? 'left:' . $geometry['answers_area']['left'] * 100 . '%;width:' . $geometry['answers_area']['width'] * 100 . '%;' : '' }}top:{{ min(92, (($geometry['answers']['top'] ?? 0.47) + max(array_map(fn ($c) => $c['height'], $geometry['answers']['columns']))) * 100 + ($v3 ? $mmY(2) * 100 : 1.4)) }}%">{{ __('pdf.qb_omr.footer') }}</div>
 </main>
 </body>
 </html>

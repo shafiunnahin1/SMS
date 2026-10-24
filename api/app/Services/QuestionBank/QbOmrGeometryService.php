@@ -18,7 +18,7 @@ class QbOmrGeometryService
     private const DIGIT_H = 7.0;        // one bubble row of a code box (ten rows); 7 x 7 mm keeps the ruled cell clear of the reader's ring
     private const BUBBLE = 5.0;         // every bubble's diameter
     private const HEAD_H = 6.0;         // a code box's head cell
-    private const WRITE_H = 7.0;        // the write-in row under it
+    private const WRITE_H = 6.0;        // the write-in row under it
     private const BOX_GAP = 3.0;        // roll 6 + ID 10 + set 1 at 7 mm fit A5 upright (128 mm) exactly
     private const NOTES_W = 42.0;       // the instructions column
     private const NOTES_BELOW_H = 24.0; // the instructions laid out under the code boxes (narrow page)
@@ -26,7 +26,7 @@ class QbOmrGeometryService
     private const NUMBER_W = 8.0;       // the question-number cell (qbank 8 mm)
     private const OPTION_W = 10.0;      // one answer option cell
     private const TABLE_GAP = 3.0;
-    private const TITLE_H = 6.0;        // "MCQ answers" over the tables
+    private const TITLE_H = 5.0;        // "MCQ answers" over the tables
     private const TABLE_HEAD_H = 6.0;   // each table's head row (question | answer)
     private const PANEL_W = 112.0;      // manual mode: the write-in candidate panel
     private const PANEL_H = 52.0;
@@ -58,7 +58,8 @@ class QbOmrGeometryService
         $innerW = $innerRight - $innerLeft;
         $markerX = [$margin + 8, $W - $margin - 8];                // 8 mm square markers 4 mm in from the page's corners
         $markerY = [$margin + 8, $H - $margin - 8];
-        $bottomLimit = $markerY[1] - 6;                            // the answers end clear of the bottom markers
+        if ($W === 210.0 && $H === 297.0) { $markerX = [0.119 * $W, 0.881 * $W]; $markerY = [0.05 * $H, 0.882 * $H]; }   // A4 upright keeps the R2.1.6 marker places
+        $bottomLimit = $markerY[1] - 1;                            // the answers may reach the markers' line between them (checked below)
         $fits = true;
         $n = fn (float $l, float $t, float $w, float $h): array => $this->rect($l / $W, $t / $H, $w / $W, $h / $H);
 
@@ -66,8 +67,8 @@ class QbOmrGeometryService
         $code = '1010' . str_pad(decbin($paperId & 0xFFFFF), 20, '0', STR_PAD_LEFT) . '0101';
         $codeTotal = (28 * 2.2) + (27 * 0.4);
         $codeBits = array_map(fn (int $i): array => $n(($W - $codeTotal) / 2 + $i * 2.6, $markerY[0] - 1.1, 2.2, 2.2), range(0, 27));
-        $heading = $n($innerLeft, $markerY[0] + 5, $innerW, 6);
-        $infoTop = $markerY[0] + 12;
+        $heading = $n($innerLeft, $markerY[0] + 4, $innerW, 5);
+        $infoTop = $markerY[0] + 10;
 
         // the info block: code boxes (head, write-in row, ten bubble rows) and the instructions beside them, or under them when narrow
         $digits = [...(($infoBoxes['class']['visible'] ?? true) === false ? [] : ['class' => $classDigits]),   // a hidden class box takes no room
@@ -96,7 +97,7 @@ class QbOmrGeometryService
             $area = ['left' => $infoLeft + $infoW + 5, 'right' => $innerRight, 'top' => $infoTop];
         } else {
             $infoLeft = $innerLeft + ($innerW - $infoW) / 2;
-            $area = ['left' => $innerLeft, 'right' => $innerRight, 'top' => $infoTop + $infoH + 4];
+            $area = ['left' => $innerLeft, 'right' => $innerRight, 'top' => $infoTop + $infoH + 3];
         }
         $codesLeft = $infoLeft;
         $notes = $notesBeside ? $n($codesLeft + $codesW + self::BOX_GAP, $infoTop, $notesW, $codesH)
@@ -123,16 +124,17 @@ class QbOmrGeometryService
             $columns = min($questionCount, 8, max(1, (int) $requested));
             if ($columns > $maxColumns || $rowsFor($columns) * self::ROW_H > $areaH) $fits = false;
         } else {
-            $columns = null;
-            for ($c = 1; $c <= min($maxColumns, $questionCount); $c++) {
-                if ($rowsFor($c) * self::ROW_H <= $areaH) { $columns = $c; break; }
-            }
-            if ($columns === null) { $columns = min($maxColumns, $questionCount); $fits = false; }
+            // R2.1.6's balanced start (about the square root of the questions, at most 4), then more columns while the rows are too tall
+            $columns = min($maxColumns, $questionCount <= 3 ? max(1, $questionCount) : min(4, (int) ceil(sqrt($questionCount))));
+            while ($rowsFor($columns) * self::ROW_H > $areaH && $columns < min($maxColumns, $questionCount)) $columns++;
+            if ($rowsFor($columns) * self::ROW_H > $areaH) $fits = false;
         }
         $tablesW = $columns * $tableW + ($columns - 1) * self::TABLE_GAP;
         $tablesLeft = $area['left'] + max(0, ($areaW - $tablesW) / 2);
         $answers = $this->answerGeometry($questionCount, $optionCount, $columns, $tablesLeft, $area['top'] + self::TITLE_H + self::TABLE_HEAD_H, $tableW, $W, $H, $settings['subject_blocks'] ?? []);
         if ($answers['bottom_mm'] > $bottomLimit + 0.01) $fits = false;
+        // low on the page the tables must stay clear of the bottom markers' squares (8 mm, centred on the marker points)
+        if ($answers['bottom_mm'] > $markerY[1] - 5 && ($tablesLeft < $markerX[0] + 5 || $tablesLeft + $tablesW > $markerX[1] - 5)) $fits = false;
         unset($answers['bottom_mm']);
 
         return [
@@ -147,6 +149,7 @@ class QbOmrGeometryService
             'notes' => $notes,
             ...($manual ? ['panel' => $panel] : []),
             'answers_title' => $n($tablesLeft, $area['top'], $tablesW, self::TITLE_H),
+            'answers_area' => $n($area['left'], $area['top'], $areaW, $bottomLimit - $area['top']),   // the footer note spans it
             ...$grids,
             'answers' => $answers,
         ];
@@ -205,7 +208,7 @@ class QbOmrGeometryService
             'top' => $topMm / $H,
             'width' => ($last['left'] + $last['width']) - $first['left'],
             'height' => $rowsMax * self::ROW_H / $H,
-            'column_count' => count($columns),
+            'column_count' => $columnCount,
             'columns' => $columns,
             'bottom_mm' => $topMm + $rowsMax * self::ROW_H,
         ];
