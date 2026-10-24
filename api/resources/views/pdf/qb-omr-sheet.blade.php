@@ -22,6 +22,13 @@
     // a cell line is drawn only clear of the reader's background ring (1.3 x the bubble radius, omrReader scoreBubble), so a line
     // never darkens what a bubble is compared with; crowded sheets keep only the outer frame
     $clear = static fn (array $cell, array $bubble): bool => $cell['width'] >= $bubble['width'] * 1.4 && $cell['height'] >= $bubble['height'] * 1.4;
+    // owner report 2026-10-24: the heading and the exam-type boxes take the band between the code bar (or the top markers) and the
+    // highest code-box head of THIS form's geometry, so a form generated with an older layout never prints text over the bar or boxes
+    $barBottom = $geometry['code']['top'] + $geometry['code']['height'];
+    $boxHeads = [];
+    foreach (['class', 'roll', 'student_id', 'subject', 'set'] as $k) if (isset($geometry[$k]) && ($settings['info_boxes'][$k]['visible'] ?? true) === true) $boxHeads[] = $geometry[$k]['top'] - 0.0455;
+    $headingTop = $barBottom < 0.07 ? 0.062 : $barBottom + 0.006;
+    $headingBottom = ($manual ? 0.172 : ($boxHeads ? min($boxHeads) : 0.19)) - 0.006;
     $toBangla = static fn (int $number): string => strtr((string) $number, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']);
 @endphp
 <!doctype html>
@@ -36,18 +43,19 @@
         .omr-page { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #ffffff; }
         /* qbank's sheet: markers and the code bar at the top, the title and the exam-type boxes under them, the code boxes (head cell,
            write-in row, bubble rows) or the manual candidate panel, the instructions column, then the answer tables */
-        .heading { position: absolute; top: 6.2%; left: 24%; width: 52%; text-align: center; line-height: 1.2; }
+        .heading { position: absolute; top: {{ $headingTop * 100 }}%; height: {{ max(0.03, $headingBottom - $headingTop) * 100 }}%; left: 22%; width: 56%; display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.2; overflow: hidden; }
         .heading h1 { margin: 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; font-weight: 700; color: {{ $color }}; }
         .heading p { margin: .3mm 0 0; font-size: 10px; }
+        .heading p.details { margin: .8mm 0 0; font-size: 8px; color: #333333; }
         .heading p.exam { font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; font-weight: 600; }
-        .heading .meta { position: absolute; left: -10%; right: -2%; display: flex; justify-content: space-between; margin-top: .5mm; font-size: 9px; }
+        .heading .meta { align-self: stretch; display: flex; justify-content: space-between; margin-top: .8mm; font-size: 9px; }
         .set-box { position: absolute; top: 7.8%; right: 4%; display: flex; flex-direction: column; align-items: flex-end; gap: 1mm; padding: 1.2mm 2mm; border: .4mm solid {{ $color }}; font-size: 8px; font-weight: 700; color: {{ $color }}; }
         .set-box .code-row { display: flex; align-items: center; gap: 1.5mm; }
         .set-box .digits { display: flex; }
         .set-box b { display: inline-flex; align-items: center; justify-content: center; width: 4.2mm; height: 4.6mm; margin-inline-start: -.3mm; border: .3mm solid {{ $color }}; font-size: 9px; color: #111111; }
         .set-box b.wide { width: 7mm; }
         .heading p.subtitle { margin: .5mm 0 0; font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; }
-        .exam-types { position: absolute; top: 14%; left: 35.5%; width: 34%; display: grid; grid-template-columns: 1.05fr 1.2fr 1fr; gap: 1.6mm 2mm; font-size: 6.5pt; }
+        .exam-types { margin-top: 2mm; display: grid; grid-template-columns: 1.05fr 1.2fr 1fr; gap: 1.6mm 2mm; font-size: 6.5pt; }
         .exam-types label { display: flex; align-items: center; gap: 1.5mm; white-space: nowrap; }
         .exam-types i { display: inline-block; flex: none; width: 3.6mm; height: 3.6mm; border: .25mm solid {{ $color }}; }
         .marker { position: absolute; width: 8mm; height: 8mm; transform: translate(-50%, -50%); background: #000000; }
@@ -92,16 +100,20 @@
         $digits = static fn ($v) => $locale === 'bn' ? strtr((string) $v, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']) : (string) $v;
         $marks = isset($head['total_marks']) && $head['total_marks'] !== null ? rtrim(rtrim((string) $head['total_marks'], '0'), '.') : '';
     @endphp
+    {{-- owner layout 2026-10-24 (qbank's sheet): the exam title, one small line of the paper's details, then the exam-type boxes --}}
+    @php
+        $details = array_filter([$head['institution'] ?? '', $subtitle, $head['class'] ?? '', $head['subjects'] ?? '',
+            !empty($head['duration_minutes']) ? __('pdf.qb_paper.time') . ': ' . $digits($head['duration_minutes']) . ' ' . __('pdf.qb_paper.minutes') : '',
+            $marks !== '' ? __('pdf.qb_paper.full_marks') . ': ' . $digits($marks) : ''], fn ($v) => trim((string) $v) !== '');
+    @endphp
     <header class="heading">
-        @if (($head['institution'] ?? '') !== '')<h1>{{ $head['institution'] }}</h1>@endif
-        <p class="exam">{{ $exam }}</p>
-        @if ($subtitleShown)<p>{{ $subtitle }}</p>@endif
-        @if (($head['class'] ?? '') !== '')<p>{{ $head['class'] }}</p>@endif
-        @if (($head['subjects'] ?? '') !== '')<p>{{ $head['subjects'] }}</p>@endif
-        <div class="meta">
-            <span>{{ __('pdf.qb_paper.time') }} : {{ !empty($head['duration_minutes']) ? $digits($head['duration_minutes']) . ' ' . __('pdf.qb_paper.minutes') : '' }}</span>
-            <span>{{ __('pdf.qb_paper.full_marks') }} : {{ $digits($marks) }}</span>
-        </div>
+        <h1>{{ $exam !== '' ? $exam : ($head['institution'] ?? '') }}</h1>
+        @if ($details)<p class="details">{{ implode(' · ', $details) }}</p>@endif
+        <section class="exam-types" aria-label="{{ __('pdf.qb_omr.exam_type') }}">
+            @foreach (__('pdf.qb_omr.exam_types') as $examType)
+                <label><i></i>{{ $examType }}</label>
+            @endforeach
+        </section>
     </header>
     {{-- the board paper's framed box: each subject's code in digit boxes (one row per subject), then the set --}}
     <div class="set-box">
@@ -111,11 +123,6 @@
         <div class="code-row">{{ __('pdf.qb_omr.set') }} :<span class="digits"><b class="wide">{{ $variant->code }}</b></span></div>
     </div>
 
-    <section class="exam-types" aria-label="{{ __('pdf.qb_omr.exam_type') }}">
-        @foreach (__('pdf.qb_omr.exam_types') as $examType)
-            <label><i></i>{{ $examType }}</label>
-        @endforeach
-    </section>
 
     @foreach ([['left', 'top'], ['right', 'top'], ['left', 'bottom'], ['right', 'bottom']] as [$x, $y])
         <span class="marker" style="left:{{ $geometry['markers'][$x] * 100 }}%;top:{{ $geometry['markers'][$y] * 100 }}%"></span>
