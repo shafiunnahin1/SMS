@@ -86,7 +86,8 @@
    "teacher_attendance",
    "inventory",
    "accounting",
-   "donations"
+   "donations",
+   "ai_assistant"
   ],
   "roles": [
  "super_admin",
