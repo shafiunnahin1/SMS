@@ -85,6 +85,7 @@ class PdfService
             // start", owner's PC 2026-10-24); `--headless=new` works on Windows and Linux alike, so the library's own switch is dropped
             'customFlags' => ['--headless=new', '--disable-dev-shm-usage', '--disable-gpu', '--allow-file-access-from-files'],
             'excludedSwitches' => ['--headless'],
+            'envVariables' => self::chromeEnv(getenv(), PHP_OS_FAMILY, PHP_SAPI),
             'enableImages' => true,
         ]);
         try {
@@ -157,6 +158,20 @@ JS;
         return $path;
     }
 
+    /** OS variables Chrome needs to start on Windows. Symfony Process (chrome-php's launcher) gives a child process only the
+     *  variables that are also in $_SERVER; under a web SAPI such as `php -S` $_SERVER holds the request and Laravel's .env values,
+     *  not SystemRoot / TEMP / LOCALAPPDATA / PATH, so Chrome exits at once ("Devtools could not start", owner's PC 2026-10-24).
+     *  On Windows web requests these are passed explicitly - only OS variables, never .env secrets; CLI and other systems keep
+     *  the library's default (null). */
+    public static function chromeEnv(array $env, string $os, string $sapi): ?array
+    {
+        if ($os !== 'Windows' || in_array($sapi, ['cli', 'phpdbg', 'embed'], true)) return null;
+        $keep = ['SYSTEMROOT', 'SYSTEMDRIVE', 'WINDIR', 'TEMP', 'TMP', 'LOCALAPPDATA', 'APPDATA', 'USERPROFILE', 'HOMEDRIVE', 'HOMEPATH',
+            'PATH', 'PATHEXT', 'COMSPEC', 'PROGRAMDATA', 'PROGRAMFILES', 'PROGRAMFILES(X86)', 'PROGRAMW6432', 'COMMONPROGRAMFILES',
+            'COMMONPROGRAMFILES(X86)', 'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'USERNAME', 'USERDOMAIN', 'COMPUTERNAME', 'PUBLIC', 'OS'];
+        return array_filter($env, fn ($value, $key) => in_array(strtoupper((string) $key), $keep, true) && is_string($value), ARRAY_FILTER_USE_BOTH) ?: null;
+    }
+
     private function print(string $html, string $paper, string $orientation, float $margin = 0.4): string
     {
         [$w, $h] = self::PAPER[$paper] ?? self::PAPER['a4'];
@@ -168,6 +183,7 @@ JS;
             // start", owner's PC 2026-10-24); `--headless=new` works on Windows and Linux alike, so the library's own switch is dropped
             'customFlags' => ['--headless=new', '--disable-dev-shm-usage', '--disable-gpu'],
             'excludedSwitches' => ['--headless'],
+            'envVariables' => self::chromeEnv(getenv(), PHP_OS_FAMILY, PHP_SAPI),
             'enableImages' => true,
         ]);
         try {
