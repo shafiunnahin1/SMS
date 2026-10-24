@@ -29,6 +29,9 @@
     foreach (['class', 'roll', 'student_id', 'subject', 'set'] as $k) if (isset($geometry[$k]) && ($settings['info_boxes'][$k]['visible'] ?? true) === true) $boxHeads[] = $geometry[$k]['top'] - 0.0455;
     $headingTop = $barBottom < 0.07 ? 0.062 : $barBottom + 0.006;
     $headingBottom = ($manual ? 0.10 : ($boxHeads ? min($boxHeads) : 0.19)) - 0.006;
+    // owner 2026-10-24: the content keeps its own size; on a page it does not fit (A5, sideways) it is drawn at A4 upright and runs over
+    $sheetMm = \App\Services\QuestionBank\QbOmrFormService::pageFits($settings)
+        ? (($settings['page_size'] ?? 'a4') === 'legal' ? [215.9, 355.6] : [210, 297]) : [210, 297];
     $toBangla = static fn (int $number): string => strtr((string) $number, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']);
 @endphp
 <!doctype html>
@@ -37,10 +40,10 @@
     <meta charset="utf-8">
     <style>
         @page { size: {{ $settings['page_size'] }} {{ $settings['page_orientation'] }}; margin: 0; }
-        html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; }   /* an oversize sheet runs over the page edge, never onto a second page */
         * { box-sizing: border-box; }
         body { color: #111111; background: #ffffff; font-family: {!! $font !!}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .omr-page { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #ffffff; }
+        .omr-page { position: relative; width: {{ $sheetMm[0] }}mm; height: {{ $sheetMm[1] }}mm; overflow: hidden; background: #ffffff; }
         /* qbank's sheet: markers and the code bar at the top, the title and the exam-type boxes under them, the code boxes (head cell,
            write-in row, bubble rows) or the manual candidate panel, the instructions column, then the answer tables */
         .heading { position: absolute; top: {{ $headingTop * 100 }}%; height: {{ max(0.03, $headingBottom - $headingTop) * 100 }}%; left: 15%; width: 70%; display: flex; flex-flow: row wrap; justify-content: center; align-items: baseline; align-content: flex-start; column-gap: 2mm; text-align: center; line-height: 1.3; overflow: hidden; }

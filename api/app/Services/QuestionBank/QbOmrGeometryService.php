@@ -46,6 +46,8 @@ class QbOmrGeometryService
 
     private function pageDimensions(array $settings): array
     {
+        // owner 2026-10-24: the sheet's content never shrinks to a page it does not fit - it keeps A4 upright size and runs over the page
+        if (!\App\Services\QuestionBank\QbOmrFormService::pageFits($settings)) return [210.0, 297.0];
         $dimensions = match ($settings['page_size'] ?? 'a4') {
             'a5' => [148.0, 210.0],
             'legal' => [215.9, 355.6],
