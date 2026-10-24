@@ -29,6 +29,7 @@ const FeeCategories = lazy(() => import('../pages/admin/fees/FeeCategories'))
 const FeeLedger   = lazy(() => import('../pages/admin/fees/FeeLedger'))
 const ExamList    = lazy(() => import('../pages/admin/exams/ExamList'))
 const ExamDetail  = lazy(() => import('../pages/admin/exams/ExamDetail'))
+const ResultsWorkspace = lazy(() => import('../pages/admin/exams/ResultsWorkspace'))
 const MarksEntry  = lazy(() => import('../pages/exams/MarksEntry'))
 const MyMarks     = lazy(() => import('../pages/teacher/MyMarks'))
 const ParentResults = lazy(() => import('../pages/parent/Results'))
@@ -130,6 +131,7 @@ export const tenantRoutes = [
     { path: 'settings/sms', element: S(SmsSettings) },
     { path: 'reports', element: S(Reports) },
     { path: 'exams', element: S(ExamList) },
+    { path: 'exams/results', element: S(ResultsWorkspace) },
     { path: 'exams/:id', element: S(ExamDetail) },
     { path: 'exams/:examId/entry/:subjectId', element: S(MarksEntry) },
     { path: 'attendance', element: S(Attendance) },

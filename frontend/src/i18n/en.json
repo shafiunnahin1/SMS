@@ -539,6 +539,7 @@
     "studying_at": "Studies at"
    }
   },
+  "results_ws": {"title": "Results", "breadcrumb": "Result folders", "empty": "No exams here", "exam_count": "{{n}} exams"},
   "exams": {
    "title": "Exams & results",
    "add": "New exam",
@@ -1943,6 +1944,7 @@
   "নম্বর এন্ট্রি": "Mark entry",
   "ফি ও পেমেন্ট": "Fees & payments",
   "ফলাফল": "Results",
+  "পরীক্ষা": "Exams",
   "আদায়": "Collection",
   "বকেয়া তালিকা": "Due list",
   "খরচ": "Expenses",
