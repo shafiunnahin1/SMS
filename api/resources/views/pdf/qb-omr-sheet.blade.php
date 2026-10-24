@@ -29,9 +29,14 @@
     foreach (['class', 'roll', 'student_id', 'subject', 'set'] as $k) if (isset($geometry[$k]) && ($settings['info_boxes'][$k]['visible'] ?? true) === true) $boxHeads[] = $geometry[$k]['top'] - 0.0455;
     $headingTop = $barBottom < 0.07 ? 0.062 : $barBottom + 0.006;
     $headingBottom = ($manual ? 0.10 : ($boxHeads ? min($boxHeads) : 0.19)) - 0.006;
-    // owner 2026-10-24: the content keeps its own size; on a page it does not fit (A5, sideways) it is drawn at A4 upright and runs over
-    $sheetMm = \App\Services\QuestionBank\QbOmrFormService::pageFits($settings)
-        ? (($settings['page_size'] ?? 'a4') === 'legal' ? [215.9, 355.6] : [210, 297]) : [210, 297];
+    // owner 2026-10-24 (qbank's print view): a version 3 geometry is laid out in mm for its own page size and orientation - the page is
+    // drawn at that size and every part takes the place the geometry gives it; older forms keep their page-relative layout
+    $v3 = isset($geometry['page_mm']);
+    $pageMm = $geometry['page_mm'] ?? null;
+    $mmY = static fn (float $mm): float => $pageMm ? $mm / $pageMm[1] : $mm / 297;
+    $writeHeight = $v3 ? $mmY(7) : 0.0235;
+    $headHeightBox = $v3 ? $mmY(6) : 0.022;
+    $tableHeadHeight = $v3 ? $mmY(6) : 0.024;
     $toBangla = static fn (int $number): string => strtr((string) $number, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']);
 @endphp
 <!doctype html>
@@ -43,10 +48,10 @@
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; }   /* an oversize sheet runs over the page edge, never onto a second page */
         * { box-sizing: border-box; }
         body { color: #111111; background: #ffffff; font-family: {!! $font !!}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .omr-page { position: relative; width: {{ $sheetMm[0] }}mm; height: {{ $sheetMm[1] }}mm; overflow: hidden; background: #ffffff; }
+        .omr-page { position: relative; width: {{ $pageMm ? $pageMm[0] . 'mm' : '100vw' }}; height: {{ $pageMm ? $pageMm[1] . 'mm' : '100vh' }}; overflow: hidden; background: #ffffff; }
         /* qbank's sheet: markers and the code bar at the top, the title and the exam-type boxes under them, the code boxes (head cell,
            write-in row, bubble rows) or the manual candidate panel, the instructions column, then the answer tables */
-        .heading { position: absolute; top: {{ $headingTop * 100 }}%; height: {{ max(0.03, $headingBottom - $headingTop) * 100 }}%; left: 15%; width: 70%; display: flex; flex-flow: row wrap; justify-content: center; align-items: baseline; align-content: flex-start; column-gap: 2mm; text-align: center; line-height: 1.3; overflow: hidden; }
+        .heading { position: absolute; top: {{ ($v3 ? $geometry['heading']['top'] : $headingTop) * 100 }}%; height: {{ ($v3 ? $geometry['heading']['height'] : max(0.03, $headingBottom - $headingTop)) * 100 }}%; left: {{ $v3 ? $geometry['heading']['left'] * 100 : 15 }}%; width: {{ $v3 ? $geometry['heading']['width'] * 100 : 70 }}%; display: flex; flex-flow: row wrap; justify-content: center; align-items: baseline; align-content: flex-start; column-gap: 2mm; text-align: center; line-height: 1.3; overflow: hidden; }
         .heading .sep { color: {{ $color }}; }   /* owner 2026-10-24: institution · title · subtitle on one line */
         .heading h1 { margin: 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; font-weight: 700; color: {{ $color }}; }
         .heading p { margin: .3mm 0 0; font-size: 10px; }
@@ -133,30 +138,30 @@
     @endforeach
 
     @if ($manual)
-        <section class="manual-info">
+        <section class="manual-info" @if ($v3) style="{{ $rectStyle($geometry['panel']) }}" @endif>
             <h2>{{ __('pdf.qb_omr.candidate_info') }}</h2>
             <div class="line single"><span>{{ __('pdf.qb_omr.name') }}:</span><span class="fill"></span></div>
             <div class="line triple"><span>{{ __('pdf.qb_omr.class') }}:</span><span class="fill"></span><span>{{ __('pdf.qb_omr.roll') }}:</span><span class="fill"></span><span>{{ __('pdf.qb_omr.department') }}:</span><span class="fill"></span></div>
             <div class="line triple"><span>{{ __('pdf.qb_omr.subject_name') }}:</span><span class="fill"></span><span>{{ __('pdf.qb_omr.paper') }}:</span><span class="fill"></span><span>{{ __('pdf.qb_omr.subject') }}:</span><span class="fill"></span></div>
             <div class="line triple"><span>{{ __('pdf.qb_omr.date') }}:</span><span class="fill"></span><span>{{ __('pdf.qb_omr.set') }}:</span><span class="fill"></span><span></span><span></span></div>
         </section>
-        <section class="manual-notes">
+        @php $wideNotes = $v3 && $geometry['notes']['width'] * $pageMm[0] > 70; @endphp
+        <section class="manual-notes" @if ($v3) style="{{ $rectStyle($geometry['notes']) }};display:flex;flex-direction:column" @endif>
             <h2>{{ __('pdf.qb_omr.instructions') }}</h2>
-            <ol>@foreach (__('pdf.qb_omr.rules') as $i => $rule)<li>{{ $locale === 'bn' ? $toBangla($i + 1) : $i + 1 }}। {{ $rule }}</li>@endforeach</ol>
-            <div class="signature" style="left:6%;top:74%;width:88%">{{ __('pdf.qb_omr.invigilator') }}</div>
+            <ol @if ($wideNotes) style="columns:2;column-gap:4mm" @endif>@foreach (__('pdf.qb_omr.rules') as $i => $rule)<li>{{ $locale === 'bn' ? $toBangla($i + 1) : $i + 1 }}। {{ $rule }}</li>@endforeach</ol>
+            <div class="signature" style="{{ $v3 ? 'position:static;margin:auto auto 0;width:' . ($wideNotes ? '45%' : '88%') : 'left:6%;top:74%;width:88%' }}">{{ __('pdf.qb_omr.invigilator') }}</div>
         </section>
     @else
         @foreach (['class' => 'class', 'roll' => 'roll_number', ...(isset($geometry['student_id']) ? ['student_id' => 'student_id'] : ['subject' => 'subject']), 'set' => 'set_code'] as $key => $label)
             @continue (($settings['info_boxes'][$key]['visible'] ?? true) !== true)
             @php
                 $box = $geometry[$key];
-                $headWidth = max($box['width'], min(0.095, $box['width'] + 0.03));   // a narrow box's head grows a little, never over its neighbour
+                $headWidth = $v3 ? $box['width'] : max($box['width'], min(0.095, $box['width'] + 0.03));   // a narrow box's head grows a little, never over its neighbour
                 $headLeft = $box['left'] + ($box['width'] / 2) - ($headWidth / 2);
-                $writeHeight = 0.0235;
                 $tinted = in_array($key, ['roll', 'subject', 'student_id'], true);
             @endphp
             {{-- head cell, one write-in box per digit, then a ruled cell around each bubble (cell lines only clear of the reader's ring) --}}
-            <strong class="head-cell" style="{{ $rectStyle(['left' => $headLeft, 'top' => $box['top'] - $writeHeight - 0.022, 'width' => $headWidth, 'height' => 0.022]) }}{{ $headWidth < 0.075 ? ';font-size:6.5pt;padding:0 .6mm' : '' }}">{{ __('pdf.qb_omr.' . $label) }}</strong>
+            <strong class="head-cell" style="{{ $rectStyle(['left' => $headLeft, 'top' => $box['top'] - $writeHeight - $headHeightBox, 'width' => $headWidth, 'height' => $headHeightBox]) }}{{ $v3 && $headWidth * $pageMm[0] < 16 ? ';font-size:6pt;padding:0 .3mm;white-space:normal;line-height:1;text-align:center' : ($headWidth < 0.075 ? ';font-size:6.5pt;padding:0 .6mm' : '') }}">{{ __('pdf.qb_omr.' . $label) }}</strong>
             @foreach ($box['rows'][0] as $first)
                 <span class="write-cell" style="{{ $rectStyle(['left' => $first['cell']['left'], 'top' => $box['top'] - $writeHeight, 'width' => $first['cell']['width'], 'height' => $writeHeight]) }}"></span>
             @endforeach
@@ -168,7 +173,14 @@
             @endforeach
         @endforeach
 
-        @if ($notesLeft < 0.85)
+        @if ($v3)
+            {{-- the instructions and the invigilator's signature where the layout puts them: beside the code boxes, or under them --}}
+            <section class="notes" style="{{ $rectStyle($geometry['notes']) }};display:flex;flex-direction:column">
+                <h2>{{ __('pdf.qb_omr.instructions') }}</h2>
+                <ol @if ($geometry['notes']['width'] * $pageMm[0] > 70) style="columns:2;column-gap:4mm" @endif>@foreach (__('pdf.qb_omr.rules') as $rule)<li>{{ $rule }}</li>@endforeach</ol>
+                <div class="signature" style="position:static;margin-top:auto">{{ __('pdf.qb_omr.invigilator') }}</div>
+            </section>
+        @elseif ($notesLeft < 0.85)
             {{-- qbank's instructions column and the invigilator's signature, beside the code boxes --}}
             <section class="notes" style="left:{{ $notesLeft * 100 }}%;top:{{ ($geometry['set']['top'] - 0.0455) * 100 }}%;width:{{ (0.94 - $notesLeft) * 100 }}%">
                 <h2>{{ __('pdf.qb_omr.instructions') }}</h2>
@@ -177,13 +189,13 @@
             <div class="signature" style="left:{{ $notesLeft * 100 }}%;top:{{ ($geometry['set']['top'] + $geometry['set']['height'] - 0.012) * 100 }}%;width:{{ (0.94 - $notesLeft) * 100 }}%">{{ __('pdf.qb_omr.invigilator') }}</div>
         @endif
     @endif
-    <div class="answers-title" style="top:{{ max(0, ($geometry['answers']['top'] * 100) - 4.4) }}%">{{ __('pdf.qb_omr.mcq_answers') }}</div>
+    <div class="answers-title" style="{{ $v3 ? $rectStyle($geometry['answers_title']) : 'top:' . max(0, ($geometry['answers']['top'] * 100) - 4.4) . '%' }}">{{ __('pdf.qb_omr.mcq_answers') }}</div>
     @foreach ($geometry['answers']['columns'] as $column)
         @php
             $firstNumber = $column['rows'][0]['number'] ?? null;
             $numberWidth = $firstNumber['width'] ?? 0;
             $tableLeft = $column['left'] - $numberWidth;
-            $headHeight = 0.024;
+            $headHeight = $tableHeadHeight;
         @endphp
         @if ($firstNumber)
             <span class="head-cell" style="{{ $rectStyle(['left' => $tableLeft, 'top' => $column['top'] - $headHeight, 'width' => $numberWidth, 'height' => $headHeight]) }}">{{ __('pdf.qb_omr.question') }}</span>
@@ -206,7 +218,7 @@
             @endforeach
         @endforeach
     @endforeach
-    <div class="footer-note" style="top:{{ min(92, (($geometry['answers']['top'] ?? 0.47) + max(array_map(fn ($c) => $c['height'], $geometry['answers']['columns']))) * 100 + 1.4) }}%">{{ __('pdf.qb_omr.footer') }}</div>
+    <div class="footer-note" style="top:{{ min(92, (($geometry['answers']['top'] ?? 0.47) + max(array_map(fn ($c) => $c['height'], $geometry['answers']['columns']))) * 100 + ($v3 ? $mmY(2) * 100 : 1.4)) }}%">{{ __('pdf.qb_omr.footer') }}</div>
 </main>
 </body>
 </html>

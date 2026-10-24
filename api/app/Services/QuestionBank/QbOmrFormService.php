@@ -96,10 +96,12 @@ class QbOmrFormService
         });
     }
 
-    /** owner 2026-10-24 (as qbank): the sheet is laid out for a tall page - A4 or Legal upright; A5 or sideways warns and is not generated */
-    public static function pageFits(array $settings): bool
+    /** owner 2026-10-24 (as qbank): whether the saved settings' content fits their page at full size (the geometry decides); null = cannot tell */
+    public function fits(QbOmrForm $form): ?bool
     {
-        return in_array($settings['page_size'] ?? 'a4', ['a4', 'legal'], true) && ($settings['page_orientation'] ?? 'portrait') === 'portrait';
+        if (is_array($form->settings_json['geometry'] ?? null)) return (bool) ($form->settings_json['geometry']['fits'] ?? true);
+        try { return (bool) app(QbOmrGeometryService::class)->build((int) $form->qb_paper_id, $form->settings_json ?? [])['fits']; }
+        catch (\InvalidArgumentException) { return null; }
     }
 
     public function generate(User $actor, int $paperId, QbOmrGeometryService $geometryBuilder): QbOmrForm
@@ -109,8 +111,8 @@ class QbOmrFormService
             $form = QbOmrForm::where('qb_paper_id', $paper->id)->lockForUpdate()->firstOrFail();
             if ($form->locked_at === null) {
                 $settings = is_array($form->settings_json) ? $form->settings_json : [];
-                if (!self::pageFits($settings)) throw new BusinessException('the OMR sheet does not fit this page', 'omr_page_too_small', 422);
                 $settings['geometry'] = $geometryBuilder->build($paper->id, $settings);
+                if (!$settings['geometry']['fits']) throw new BusinessException('the OMR sheet does not fit this page', 'omr_page_too_small', 422);
                 $settings['is_generated'] = true;
                 $settings['generated_at'] = now()->toIso8601String();
                 $form->settings_json = $settings;

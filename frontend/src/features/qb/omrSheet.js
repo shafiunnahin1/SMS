@@ -1,4 +1,4 @@
-import { classifyBubbleScores, findRegistrationMarkers, homographyFromMarkers, scoreBubble } from './omrReader'
+import { classifyBubbleScores, findRegistrationMarkers, homographyFromMarkers, markerTargets, scoreBubble } from './omrReader'
 
 // D127 (3): one scanned page read with the form's own persisted geometry (the same numbers the printed sheet was drawn from).
 // Nothing is decided here: an unreadable digit becomes "?", blanks and multiple marks keep their status, and the server keeps
@@ -321,7 +321,7 @@ export function candidates(imageData) {
 
 export function scoresWith(img, markers, settings) {
   const g = settings.geometry
-  const h = homographyFromMarkers(markers, img.width, img.height)
+  const h = homographyFromMarkers(markers, img.width, img.height, markerTargets(g.markers))
   const grid = (gr) => Array.from({ length: gr.digit_count }, (_, c) => rowScores(img, h, gr.rows.map(row => row[c])))
   const scores = {
     roll: grid(g.roll),

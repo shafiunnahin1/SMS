@@ -174,17 +174,19 @@ class QbOmrFormApiTest extends TestCase
         $this->assertArrayNotHasKey('geometry', Tenancy::as($institution, fn () => \App\Models\QbOmrForm::where('qb_paper_id', $paperId)->first()->settings_json));
     }
 
-    public function test_a5_or_sideways_page_warns_and_is_not_generated(): void
+    /** owner 2026-10-24 (as qbank): every page size and orientation has its own full-size layout; only content that does not fit is refused */
+    public function test_a_page_the_content_does_not_fit_warns_and_is_not_generated(): void
     {
         $institution = $this->makeInstitution('omr-form-fit');
         $teacher = $this->makeUser($institution, 'teacher');
+        $host = $this->hostOf($institution);
         $url = 'question-bank/papers/' . $this->paper($institution, $teacher) . '/omr-form';
-        foreach ([['a5', 'portrait'], ['a4', 'landscape']] as [$size, $orientation]) {
-            $this->api('PUT', $this->hostOf($institution), $url, $teacher, ['settings' => $this->settings(['page_size' => $size, 'page_orientation' => $orientation])])->assertOk();
-            $this->api('POST', $this->hostOf($institution), "{$url}/generate", $teacher)->assertStatus(422)->assertJsonPath('error', 'omr_page_too_small');
-        }
-        $this->api('PUT', $this->hostOf($institution), $url, $teacher, ['settings' => $this->settings(['page_size' => 'legal', 'page_orientation' => 'portrait'])])->assertOk();
-        $this->api('POST', $this->hostOf($institution), "{$url}/generate", $teacher)->assertOk();
+        // A5 upright is 128 mm wide inside its margins: class, a 6-digit roll, the 10-digit ID and the set need 145 mm at full size
+        $this->api('PUT', $host, $url, $teacher, ['settings' => $this->settings(['page_size' => 'a5', 'page_orientation' => 'portrait'])])->assertOk()->assertJsonPath('data.fits', false);
+        $this->api('POST', $host, "{$url}/generate", $teacher)->assertStatus(422)->assertJsonPath('error', 'omr_page_too_small');
+        // A4 sideways: the boxes on the left, the answers beside them - it fits and is generated
+        $this->api('PUT', $host, $url, $teacher, ['settings' => $this->settings(['page_size' => 'a4', 'page_orientation' => 'landscape'])])->assertOk()->assertJsonPath('data.fits', true);
+        $this->api('POST', $host, "{$url}/generate", $teacher)->assertOk()->assertJsonPath('data.settings.geometry.page_mm', [297, 210]);
     }
 
     public function test_the_sheet_template_draws_the_controller_settings(): void

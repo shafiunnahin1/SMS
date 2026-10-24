@@ -4,8 +4,34 @@ namespace App\Services\QuestionBank;
 
 use InvalidArgumentException;
 
+/**
+ * The OMR sheet's geometry - one source for the printed sheet and the browser reader. Owner 2026-10-24, after qbank's print view: every
+ * page size and orientation (A5, A4, Legal x portrait, landscape) has its own layout, and nothing shrinks to a page - every bubble, cell
+ * and box keeps its physical size in mm; the layout moves the parts instead (landscape: the code boxes left and the answer tables right;
+ * a narrow page: the instructions under the code boxes) and picks as many answer columns as it needs. When the content does not fit the
+ * chosen page, `fits` is false and the form cannot be generated. Coordinates are stored normalized to the page (0..1), and the four
+ * corner markers' centres are part of the geometry, so the reader maps a photo onto this layout whatever the page.
+ */
 class QbOmrGeometryService
 {
+    private const DIGIT_W = 7.0;        // one code-box digit column
+    private const DIGIT_H = 7.0;        // one bubble row of a code box (ten rows); 7 x 7 mm keeps the ruled cell clear of the reader's ring
+    private const BUBBLE = 5.0;         // every bubble's diameter
+    private const HEAD_H = 6.0;         // a code box's head cell
+    private const WRITE_H = 7.0;        // the write-in row under it
+    private const BOX_GAP = 3.0;        // roll 6 + ID 10 + set 1 at 7 mm fit A5 upright (128 mm) exactly
+    private const NOTES_W = 42.0;       // the instructions column
+    private const NOTES_BELOW_H = 24.0; // the instructions laid out under the code boxes (narrow page)
+    private const ROW_H = 7.0;          // one answer row (qbank 7 mm)
+    private const NUMBER_W = 8.0;       // the question-number cell (qbank 8 mm)
+    private const OPTION_W = 10.0;      // one answer option cell
+    private const TABLE_GAP = 3.0;
+    private const TITLE_H = 6.0;        // "MCQ answers" over the tables
+    private const TABLE_HEAD_H = 6.0;   // each table's head row (question | answer)
+    private const PANEL_W = 112.0;      // manual mode: the write-in candidate panel
+    private const PANEL_H = 52.0;
+    private const MANUAL_NOTES_W = 50.0;
+
     public function build(int $paperId, array $settings): array
     {
         $questionCount = (int) ($settings['question_count'] ?? 0);
@@ -16,38 +42,118 @@ class QbOmrGeometryService
         $classDigits = max(1, min(3, (int) ($infoBoxes['class']['digits'] ?? 2)));
         $subjectDigits = max(1, min(4, (int) ($infoBoxes['subject']['digits'] ?? 3)));
         $idBox = isset($infoBoxes['student_id']);                  // D159 (4): new forms print the student ID box where the subject code was
-        [$pageWidth, $pageHeight] = $this->pageDimensions($settings);
         $manual = ($settings['entry_mode'] ?? 'digital') === 'manual';
 
         if ($paperId < 1 || $questionCount < 1 || $optionCount < 2 || $optionCount > 5 || $rollDigits < 1 || $rollDigits > 12 || $setDigits < 1 || $setDigits > 4) {
             throw new InvalidArgumentException('Invalid OMR geometry inputs.');
         }
 
+        [$W, $H] = $this->pageDimensions($settings);
+        $small = ($settings['page_size'] ?? 'a4') === 'a5';
+        $margin = $small ? 5.0 : 10.0;                             // qbank: the printable page inside the paper
+        $pad = $small ? 5.0 : 7.0;                                 // and the sheet's own padding
+        $landscape = $W > $H;
+        $innerLeft = $margin + $pad;
+        $innerRight = $W - $margin - $pad;
+        $innerW = $innerRight - $innerLeft;
+        $markerX = [$margin + 8, $W - $margin - 8];                // 8 mm square markers 4 mm in from the page's corners
+        $markerY = [$margin + 8, $H - $margin - 8];
+        $bottomLimit = $markerY[1] - 6;                            // the answers end clear of the bottom markers
+        $fits = true;
+        $n = fn (float $l, float $t, float $w, float $h): array => $this->rect($l / $W, $t / $H, $w / $W, $h / $H);
+
+        // the code bar on the marker line, between the top markers; the one-line heading under it
         $code = '1010' . str_pad(decbin($paperId & 0xFFFFF), 20, '0', STR_PAD_LEFT) . '0101';
-        $codeWidth = 2.2 / $pageWidth;
-        $codeGap = 0.4 / $pageWidth;
-        $codeTotalWidth = (28 * $codeWidth) + (27 * $codeGap);
-        // qbank's code bar sits on the line of the top markers, between them
-        $codeBits = array_map(fn (int $index): array => $this->rect(0.5 - ($codeTotalWidth / 2) + ($index * ($codeWidth + $codeGap)), 0.05 - (1.1 / $pageHeight), $codeWidth, 2.2 / $pageHeight), range(0, 27));
-        $answerColumns = $this->answerColumns($questionCount, $optionCount, $settings['answer_columns'] ?? 'auto');
-        $answerGeometry = $this->answerGeometry($questionCount, $optionCount, $answerColumns, $pageWidth, $pageHeight, $settings['subject_blocks'] ?? [], $manual ? 0.37 : 0.448);   // owner 2026-10-24: the one-line heading frees the top - the boxes and answers move up
+        $codeTotal = (28 * 2.2) + (27 * 0.4);
+        $codeBits = array_map(fn (int $i): array => $n(($W - $codeTotal) / 2 + $i * 2.6, $markerY[0] - 1.1, 2.2, 2.2), range(0, 27));
+        $heading = $n($innerLeft, $markerY[0] + 5, $innerW, 6);
+        $infoTop = $markerY[0] + 12;
+
+        // the info block: code boxes (head, write-in row, ten bubble rows) and the instructions beside them, or under them when narrow
+        $digits = [...(($infoBoxes['class']['visible'] ?? true) === false ? [] : ['class' => $classDigits]),   // a hidden class box takes no room
+            'roll' => $rollDigits, ...($idBox ? ['student_id' => 10] : ['subject' => $subjectDigits]), 'set' => $setDigits];
+        $boxesH = self::HEAD_H + self::WRITE_H + 10 * self::DIGIT_H;
+        if ($manual) {
+            $codesW = self::PANEL_W;
+            $codesH = self::PANEL_H;
+            $notesW = self::MANUAL_NOTES_W;
+        } else {
+            $codesW = array_sum($digits) * self::DIGIT_W + self::BOX_GAP * (count($digits) - 1);
+            $codesH = $boxesH;
+            $notesW = self::NOTES_W;
+        }
+        // qbank: sideways, the instructions go under the code boxes so the answer tables get the width beside them
+        $notesBeside = !$landscape && $codesW + self::BOX_GAP + $notesW <= $innerW;
+        if ($codesW > $innerW) $fits = false;
+        $infoW = $notesBeside ? $codesW + self::BOX_GAP + $notesW : $codesW;
+        $infoH = $notesBeside ? $codesH : $codesH + 3 + self::NOTES_BELOW_H;
+
+        // the answer tables: one table per column, as many columns as the area needs (or as asked)
+        $tableW = self::NUMBER_W + self::OPTION_W * $optionCount;
+        $answersBeside = $landscape && $infoW + 5 + $tableW <= $innerW;
+        if ($answersBeside) {
+            $infoLeft = $innerLeft;
+            $area = ['left' => $infoLeft + $infoW + 5, 'right' => $innerRight, 'top' => $infoTop];
+        } else {
+            $infoLeft = $innerLeft + ($innerW - $infoW) / 2;
+            $area = ['left' => $innerLeft, 'right' => $innerRight, 'top' => $infoTop + $infoH + 4];
+        }
+        $codesLeft = $infoLeft;
+        $notes = $notesBeside ? $n($codesLeft + $codesW + self::BOX_GAP, $infoTop, $notesW, $codesH)
+            : $n($codesLeft, $infoTop + $codesH + 3, $codesW, self::NOTES_BELOW_H);
+
+        $grids = [];
+        if ($manual) {
+            $panel = $n($codesLeft, $infoTop, self::PANEL_W, self::PANEL_H);
+        }
+        $left = $codesLeft;
+        foreach ($digits as $key => $count) {                      // manual mode keeps the boxes' geometry (never printed) under the panel
+            $grids[$key] = $this->numericGrid($left, $infoTop + self::HEAD_H + self::WRITE_H, $count, $W, $H);
+            $left += $count * self::DIGIT_W + self::BOX_GAP;
+        }
+
+        $slotCount = $questionCount + count($settings['subject_blocks'] ?? []);
+        $areaW = $area['right'] - $area['left'];
+        $areaH = $bottomLimit - ($area['top'] + self::TITLE_H + self::TABLE_HEAD_H);
+        $maxColumns = max(1, min(8, (int) floor(($areaW + self::TABLE_GAP) / ($tableW + self::TABLE_GAP))));
+        if ($tableW > $areaW) $fits = false;
+        $rowsFor = fn (int $c): int => (int) ceil($slotCount / $c) + (!empty($settings['subject_blocks']) && $c > 1 ? 1 : 0);
+        $requested = $settings['answer_columns'] ?? 'auto';
+        if ($requested !== 'auto') {
+            $columns = min($questionCount, 8, max(1, (int) $requested));
+            if ($columns > $maxColumns || $rowsFor($columns) * self::ROW_H > $areaH) $fits = false;
+        } else {
+            $columns = null;
+            for ($c = 1; $c <= min($maxColumns, $questionCount); $c++) {
+                if ($rowsFor($c) * self::ROW_H <= $areaH) { $columns = $c; break; }
+            }
+            if ($columns === null) { $columns = min($maxColumns, $questionCount); $fits = false; }
+        }
+        $tablesW = $columns * $tableW + ($columns - 1) * self::TABLE_GAP;
+        $tablesLeft = $area['left'] + max(0, ($areaW - $tablesW) / 2);
+        $answers = $this->answerGeometry($questionCount, $optionCount, $columns, $tablesLeft, $area['top'] + self::TITLE_H + self::TABLE_HEAD_H, $tableW, $W, $H, $settings['subject_blocks'] ?? []);
+        if ($answers['bottom_mm'] > $bottomLimit + 0.01) $fits = false;
+        unset($answers['bottom_mm']);
 
         return [
-            'version' => 2,
+            'version' => 2,                                         // the reader's contract (page-normalized rects) is unchanged; page_mm marks the mm layout
             'coordinate_space' => 'omr-page-normalized',
             'bubble_only' => true,
-            'markers' => ['left' => 0.119, 'right' => 0.881, 'top' => 0.050, 'bottom' => 0.882],
+            'page_mm' => [$W, $H],
+            'fits' => $fits,
+            'markers' => ['left' => $markerX[0] / $W, 'right' => $markerX[1] / $W, 'top' => $markerY[0] / $H, 'bottom' => $markerY[1] / $H],
             'code' => $this->bounds($codeBits) + ['bits' => $codeBits, 'value' => $code],
-            ...$this->codeGrids([...(($infoBoxes['class']['visible'] ?? true) === false ? [] : ['class' => $classDigits]),   // owner 2026-10-24: a hidden class box takes no room
-                'roll' => $rollDigits, ...($idBox ? ['student_id' => 10] : ['subject' => $subjectDigits]), 'set' => $setDigits], $pageWidth, $pageHeight),
-            'answers' => $answerGeometry,
+            'heading' => $heading,
+            'notes' => $notes,
+            ...($manual ? ['panel' => $panel] : []),
+            'answers_title' => $n($tablesLeft, $area['top'], $tablesW, self::TITLE_H),
+            ...$grids,
+            'answers' => $answers,
         ];
     }
 
     private function pageDimensions(array $settings): array
     {
-        // owner 2026-10-24: the sheet's content never shrinks to a page it does not fit - it keeps A4 upright size and runs over the page
-        if (!\App\Services\QuestionBank\QbOmrFormService::pageFits($settings)) return [210.0, 297.0];
         $dimensions = match ($settings['page_size'] ?? 'a4') {
             'a5' => [148.0, 210.0],
             'legal' => [215.9, 355.6],
@@ -56,14 +162,8 @@ class QbOmrGeometryService
         return ($settings['page_orientation'] ?? 'portrait') === 'landscape' ? [$dimensions[1], $dimensions[0]] : $dimensions;
     }
 
-    private function answerColumns(int $questionCount, int $optionCount, string|int $requested): int
-    {
-        if ($requested !== 'auto') return min($questionCount, 8, max(1, (int) $requested));
-        return $questionCount <= 3 ? max(1, $questionCount) : min(4, max(1, (int) ceil(sqrt($questionCount))));
-    }
-
     /** D128: a grouped paper gets one heading slot (a row's height) before each subject block; question rows keep their index */
-    private function answerGeometry(int $questionCount, int $optionCount, int $columnCount, float $pageWidth, float $pageHeight, array $subjectBlocks = [], float $top = 0.66): array
+    private function answerGeometry(int $questionCount, int $optionCount, int $columnCount, float $leftMm, float $topMm, float $tableW, float $W, float $H, array $subjectBlocks = []): array
     {
         $starts = array_column($subjectBlocks, 'name', 'start');
         $slots = [];
@@ -71,107 +171,74 @@ class QbOmrGeometryService
             if (array_key_exists($q, $starts)) $slots[] = ['heading' => (string) $starts[$q]];
             $slots[] = ['question' => $q];
         }
-        $left = 0.06;
-        $width = 0.88;
-        $gap = $columnCount > 1 ? 0.015 : 0.0;                    // qbank's answer tables stand apart
-        $rowsPerColumn = (int) ceil(count($slots) / $columnCount) + ($subjectBlocks ? 1 : 0);   // room for a heading moved down
-        $height = min(0.36, (8 * $rowsPerColumn) / $pageHeight);
-        $columnWidth = ($width - ($gap * ($columnCount - 1))) / $columnCount;
-        $numberWidth = $columnWidth * 0.165;
-        $bubbleWidth = $columnWidth - $numberWidth;
-        $rowHeight = $height / $rowsPerColumn;
-        $groups = array_chunk($slots, max(1, $rowsPerColumn - ($subjectBlocks ? 1 : 0)));
+        $perColumn = (int) ceil(count($slots) / $columnCount);
+        $groups = array_chunk($slots, max(1, $perColumn));
         for ($g = 0; $g < count($groups) - 1; $g++) {             // a heading never ends a column: it moves to the top of the next one
             if (isset(end($groups[$g])['heading'])) array_unshift($groups[$g + 1], array_pop($groups[$g]));
         }
+        $n = fn (float $l, float $t, float $w, float $h): array => $this->rect($l / $W, $t / $H, $w / $W, $h / $H);
         $columns = [];
-
-        foreach ($groups as $columnIndex => $questionIndexes) {
-            $columnLeft = $left + ($columnIndex * ($columnWidth + $gap));
-            $bubbleLeft = $columnLeft + $numberWidth;
+        $rowsMax = 0;
+        foreach ($groups as $columnIndex => $group) {
+            $columnLeft = $leftMm + $columnIndex * ($tableW + self::TABLE_GAP);
+            $bubbleLeft = $columnLeft + self::NUMBER_W;
             $columnRows = [];
             $headings = [];
-            foreach ($questionIndexes as $rowIndex => $slot) {
-                $rowTop = $top + ($rowIndex * $rowHeight);
-                if (isset($slot['heading'])) { $headings[] = ['label' => $slot['heading'], 'rect' => $this->rect($columnLeft, $rowTop, $columnWidth, $rowHeight)]; continue; }
-                $questionIndex = $slot['question'];
+            foreach ($group as $rowIndex => $slot) {
+                $rowTop = $topMm + $rowIndex * self::ROW_H;
+                if (isset($slot['heading'])) { $headings[] = ['label' => $slot['heading'], 'rect' => $n($columnLeft, $rowTop, $tableW, self::ROW_H)]; continue; }
                 $cells = [];
-                for ($optionIndex = 0; $optionIndex < $optionCount; $optionIndex++) {
-                    $cell = $this->rect($bubbleLeft + ($optionIndex * $bubbleWidth / $optionCount), $rowTop, $bubbleWidth / $optionCount, $rowHeight);
-                    $cells[] = ['cell' => $cell, 'bubble' => $this->centeredBubble($cell, $pageWidth, $pageHeight)];
+                for ($o = 0; $o < $optionCount; $o++) {
+                    $cell = [$bubbleLeft + $o * self::OPTION_W, $rowTop, self::OPTION_W, self::ROW_H];
+                    $cells[] = ['cell' => $n(...$cell), 'bubble' => $this->bubbleIn($cell, $W, $H)];
                 }
-                $columnRows[] = ['question_index' => $questionIndex, 'number' => $this->rect($columnLeft, $rowTop, $numberWidth, $rowHeight), 'options' => $cells];
+                $columnRows[] = ['question_index' => $slot['question'], 'number' => $n($columnLeft, $rowTop, self::NUMBER_W, self::ROW_H), 'options' => $cells];
             }
-            $columnBounds = $this->rect($bubbleLeft, $top, $bubbleWidth, count($questionIndexes) * $rowHeight);
-            $columns[] = $columnBounds + ['bubbles' => $columnBounds, 'rows' => $columnRows] + ($headings ? ['headings' => $headings] : []);
+            $rowsMax = max($rowsMax, count($group));
+            $bounds = $n($bubbleLeft, $topMm, self::OPTION_W * $optionCount, count($group) * self::ROW_H);
+            $columns[] = $bounds + ['bubbles' => $bounds, 'rows' => $columnRows] + ($headings ? ['headings' => $headings] : []);
         }
-
         $first = $columns[0];
         $last = $columns[array_key_last($columns)];
         return [
             'left' => $first['left'],
-            'top' => $top,
+            'top' => $topMm / $H,
             'width' => ($last['left'] + $last['width']) - $first['left'],
-            'height' => $height,
-            'column_count' => $columnCount,
+            'height' => $rowsMax * self::ROW_H / $H,
+            'column_count' => count($columns),
             'columns' => $columns,
+            'bottom_mm' => $topMm + $rowsMax * self::ROW_H,
         ];
     }
 
-    /**
-     * qbank's code boxes side by side between the left margin and the instructions column (x 0.077 - 0.70 of the page), never
-     * overlapping: one digit column is at most 8 mm wide, narrower when many digits must fit, and the space left over is spread
-     * evenly between the boxes; ten bubble rows from 23.5% of the page height, under a head cell and a write-in row
-     */
-    private function codeGrids(array $digits, float $pageWidth, float $pageHeight): array
+    private function numericGrid(float $leftMm, float $topMm, int $digitCount, float $W, float $H): array
     {
-        $left = 0.077 * $pageWidth;
-        $right = 0.70 * $pageWidth;
-        $minGap = 4.0;
-        $digitWidth = min(8.0, ($right - $left - ($minGap * (count($digits) - 1))) / array_sum($digits));
-        $gap = ($right - $left - ($digitWidth * array_sum($digits))) / (count($digits) - 1);
-        $grids = [];
-        foreach ($digits as $key => $count) {
-            $grids[$key] = $this->numericGrid($left, 0.145 * $pageHeight, $digitWidth * $count, 0.245 * $pageHeight, $count, $pageWidth, $pageHeight);
-            $left += ($digitWidth * $count) + $gap;
-        }
-        return $grids;
-    }
-
-    private function numericGrid(float $leftMm, float $topMm, float $widthMm, float $heightMm, int $digitCount, float $pageWidth, float $pageHeight): array
-    {
-        $left = $leftMm / $pageWidth;
-        $top = $topMm / $pageHeight;
-        $width = $widthMm / $pageWidth;
-        $height = $heightMm / $pageHeight;
-        $cellWidth = $width / $digitCount;
-        $cellHeight = $height / 10;
         $rows = [];
         $cells = [];
-
         for ($digit = 0; $digit < 10; $digit++) {
             $row = [];
             for ($column = 0; $column < $digitCount; $column++) {
-                $cell = $this->rect($left + ($column * $cellWidth), $top + ($digit * $cellHeight), $cellWidth, $cellHeight);
-                $row[] = ['cell' => $cell, 'bubble' => $this->centeredBubble($cell, $pageWidth, $pageHeight)];
+                $mm = [$leftMm + $column * self::DIGIT_W, $topMm + $digit * self::DIGIT_H, self::DIGIT_W, self::DIGIT_H];
+                $cell = $this->rect($mm[0] / $W, $mm[1] / $H, $mm[2] / $W, $mm[3] / $H);
+                $row[] = ['cell' => $cell, 'bubble' => $this->bubbleIn($mm, $W, $H)];
                 $cells[] = $cell;
             }
             $rows[] = $row;
         }
-
         return $this->bounds($cells) + ['digit_count' => $digitCount, 'column_count' => $digitCount, 'rows' => $rows];
+    }
+
+    /** a 5 mm bubble centred in a cell given in mm, normalized to the page */
+    private function bubbleIn(array $mm, float $W, float $H): array
+    {
+        [$l, $t, $w, $h] = $mm;
+        $d = min(self::BUBBLE, $w, $h);
+        return $this->rect(($l + ($w - $d) / 2) / $W, ($t + ($h - $d) / 2) / $H, $d / $W, $d / $H);
     }
 
     private function rect(float $left, float $top, float $width, float $height): array
     {
         return compact('left', 'top', 'width', 'height');
-    }
-
-    private function centeredBubble(array $rect, float $pageWidth, float $pageHeight): array
-    {
-        $width = min($rect['width'], 5 / $pageWidth);
-        $height = min($rect['height'], 5 / $pageHeight);
-        return $this->rect($rect['left'] + (($rect['width'] - $width) / 2), $rect['top'] + (($rect['height'] - $height) / 2), $width, $height);
     }
 
     private function bounds(array $rects): array

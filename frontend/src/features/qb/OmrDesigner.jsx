@@ -82,7 +82,8 @@ export default function OmrDesigner({ id, form, onSaved }) {
   }
   const [w, h] = PAGE_MM[v.page_size] ?? PAGE_MM.a4
   const dims = v.page_orientation === 'landscape' ? [h, w] : [w, h]
-  const fits = ['a4', 'legal'].includes(v.page_size) && v.page_orientation === 'portrait'   // as the server's QbOmrFormService::pageFits
+  // owner 2026-10-24 (as qbank): the server lays the sheet out at full size for the saved page and says whether it fits
+  const fits = form?.fits !== false
   const questions = form?.settings?.question_count ?? (paper.data?.sections ?? []).reduce((n, s) => n + s.items.length, 0)
   const status = locked ? 'generated' : form ? 'ready' : 'draft'
   const field = 'w-full rounded-token border px-3 py-2 text-sm'
@@ -128,7 +129,7 @@ export default function OmrDesigner({ id, form, onSaved }) {
                   className={`rounded-token px-2 py-1.5 text-sm font-semibold ${v.page_orientation === x ? 'bg-primary text-on-primary' : 'text-content-muted'}`}>{t(`qbomr.${x}`)}</button>)}
               </div>
             </Labelled>
-            {fits ? <p className="text-xs text-content-muted">✓ {t('qbomr.fit_note', { size: v.page_size.toUpperCase(), orientation: t(`qbomr.${v.page_orientation}`) })}</p>
+            {dirty ? <p className="text-xs text-content-muted">{t('qbomr.fit_after_save')}</p> : fits ? <p className="text-xs text-content-muted">✓ {t('qbomr.fit_note', { size: v.page_size.toUpperCase(), orientation: t(`qbomr.${v.page_orientation}`) })}</p>
               : <p className="text-xs text-red-600" role="alert" data-testid="omr-no-fit">⚠ {t('qbomr.no_fit', { size: v.page_size.toUpperCase(), orientation: t(`qbomr.${v.page_orientation}`) })}</p>}
           </Section>
         </fieldset>

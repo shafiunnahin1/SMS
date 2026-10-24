@@ -98,12 +98,18 @@ const solve = (matrix, values) => {
   return rows.map(row => row[size])
 }
 
-export function homographyFromMarkers(markers, imageWidth, imageHeight) {
+/** `at` is the form's own marker centres ({left, right, top, bottom} of the page) - each page layout has its own (owner 2026-10-24) */
+export function markerTargets(at) {
+  if (!at || ![at.left, at.right, at.top, at.bottom].every(Number.isFinite)) return MARKER_TARGETS
+  return { topLeft: [at.left, at.top], topRight: [at.right, at.top], bottomLeft: [at.left, at.bottom], bottomRight: [at.right, at.bottom] }
+}
+
+export function homographyFromMarkers(markers, imageWidth, imageHeight, targets = MARKER_TARGETS) {
   if (!markers?.valid || !imageWidth || !imageHeight) throw new Error('Four registration markers are required.')
   const matrix = []
   const values = []
 
-  for (const [corner, [u, v]] of Object.entries(MARKER_TARGETS)) {
+  for (const [corner, [u, v]] of Object.entries(targets)) {
     const [xRatio, yRatio] = markers.points[corner]
     const x = xRatio * imageWidth
     const y = yRatio * imageHeight

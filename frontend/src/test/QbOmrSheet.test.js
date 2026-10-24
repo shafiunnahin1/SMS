@@ -16,7 +16,7 @@ const geometry = {
   ] },
 }
 
-const image = (fills) => {
+const image = (fills, at = [[0.119, 0.05], [0.881, 0.05], [0.119, 0.882], [0.881, 0.882]]) => {
   const data = new Uint8ClampedArray(W * H * 4).fill(255)
   const dot = (cx, cy, r, hole = 0) => {
     for (let y = Math.round(cy - r); y <= cy + r; y++) for (let x = Math.round(cx - r); x <= cx + r; x++) {
@@ -24,7 +24,7 @@ const image = (fills) => {
       data.set([0, 0, 0, 255], (y * W + x) * 4)
     }
   }
-  for (const [x, y] of [[0.119, 0.05], [0.881, 0.05], [0.119, 0.882], [0.881, 0.882]]) dot(W * x, H * y, 16, 6)
+  for (const [x, y] of at) dot(W * x, H * y, 16, 6)
   for (const b of fills) {
     const cx = (b.left + b.width / 2) * W
     const cy = (b.top + b.height / 2) * H
@@ -49,6 +49,16 @@ describe('readSheet (D127)', () => {
     expect(r.roll).toBe('4?')
     expect(r.set_code).toBe('B')
     expect(r.answers).toEqual([{ status: 'marked', selected: [2] }, { status: 'ambiguous', selected: [0, 3] }])
+  })
+
+  // owner 2026-10-24: each page layout puts its corner markers where its own margins are; the reader maps from the form's markers
+  it('reads a layout whose markers sit elsewhere, using the markers stored with the geometry', () => {
+    const markers = { left: 0.09, right: 0.91, top: 0.08, bottom: 0.92 }
+    const fills = [geometry.roll.rows[7][0].bubble, geometry.roll.rows[2][1].bubble, geometry.set.rows[0][0].bubble, geometry.answers.columns[1].rows[0].options[1].bubble]
+    const at = [[markers.left, markers.top], [markers.right, markers.top], [markers.left, markers.bottom], [markers.right, markers.bottom]]
+    const r = readSheet(image(fills, at), { geometry: { ...geometry, markers }, info_boxes: { set: { visible: true } } }, ['A', 'B'])
+    expect(r.ok).toBe(true)
+    expect([r.roll, r.set_code, r.answers[0]]).toEqual(['72', 'A', { status: 'marked', selected: [1] }])
   })
 
   it('refuses a page without its four markers', () => {
