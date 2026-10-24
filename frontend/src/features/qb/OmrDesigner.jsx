@@ -133,7 +133,8 @@ export default function OmrDesigner({ id, form, onSaved }) {
         <Card className="flex flex-col gap-2">
           {!locked && <Button onClick={() => act('generate')} disabled={!form || dirty || saving} data-action="generate"><Lock aria-hidden="true" className="h-4 w-4" />{t('qbomr.generate')}</Button>}
           {locked && <>
-            <div className="flex flex-wrap gap-2">{(form.set_codes ?? []).map(code => <PrintButton key={code} variant="primary" url={`/question-bank/papers/${id}/omr-form/pdf`} params={{ set: code }} filename={`omr-${form.code}-${code}.pdf`} label={t('qbomr.print_set', { set: code })} />)}</div>
+            {/* owner 2026-10-24: one sheet for every set - the student bubbles the set code, the sheet names no set */}
+            {firstSet && <div className="flex flex-wrap gap-2"><PrintButton variant="primary" url={`/question-bank/papers/${id}/omr-form/pdf`} params={{ set: firstSet }} filename={`omr-${form.code}.pdf`} label={t('qbomr.print_sheet')} /></div>}
             <Button variant="secondary" onClick={() => act('unlock')} data-action="unlock"><Unlock aria-hidden="true" className="h-4 w-4" />{t('qbomr.unlock')}</Button>
             <p className="text-xs text-content-muted">{t('qbomr.locked_hint', { version: form.layout_version })}</p>
           </>}

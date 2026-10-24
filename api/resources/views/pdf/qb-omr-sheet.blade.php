@@ -103,8 +103,7 @@
     {{-- owner layout 2026-10-24 (qbank's sheet): the exam title, one small line of the paper's details, then the exam-type boxes --}}
     @php
         $details = array_filter([$head['institution'] ?? '', $subtitle, $head['class'] ?? '', $head['subjects'] ?? '',
-            !empty($head['duration_minutes']) ? __('pdf.qb_paper.time') . ': ' . $digits($head['duration_minutes']) . ' ' . __('pdf.qb_paper.minutes') : '',
-            $marks !== '' ? __('pdf.qb_paper.full_marks') . ': ' . $digits($marks) : ''], fn ($v) => trim((string) $v) !== '');
+], fn ($v) => trim((string) $v) !== '');
     @endphp
     <header class="heading">
         <h1>{{ $exam !== '' ? $exam : ($head['institution'] ?? '') }}</h1>
@@ -116,12 +115,14 @@
         </section>
     </header>
     {{-- the board paper's framed box: each subject's code in digit boxes (one row per subject), then the set --}}
+    {{-- owner 2026-10-24: one sheet serves every set - the student marks the set code; the header names no set, time or full marks --}}
+    @if (!empty($head['subject_codes']))
     <div class="set-box">
         @foreach ($head['subject_codes'] ?? [] as $subjectCode)
             <div class="code-row">{{ __('pdf.qb_omr.subject') }} :<span class="digits">@foreach (mb_str_split($subjectCode) as $ch)<b>{{ $digits($ch) }}</b>@endforeach</span></div>
         @endforeach
-        <div class="code-row">{{ __('pdf.qb_omr.set') }} :<span class="digits"><b class="wide">{{ $variant->code }}</b></span></div>
     </div>
+    @endif
 
 
     @foreach ([['left', 'top'], ['right', 'top'], ['left', 'bottom'], ['right', 'bottom']] as [$x, $y])

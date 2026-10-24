@@ -1157,6 +1157,7 @@
    },
    "generate": "Generate and lock",
    "unlock": "Unlock (new version)",
+   "print_sheet": "Print sheet (all sets)",
    "print_set": "Print sheet - set {{set}}",
    "locked_hint": "Layout version {{version}} is locked; scans are read with it.",
    "scan_hint": "Photos (JPEG, PNG, WebP, HEIC, up to 10 MB) or a PDF of scanned sheets, at most {{n}} sheets per batch. Sheets are read in this browser; nothing is sent to another service.",
