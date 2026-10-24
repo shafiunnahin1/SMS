@@ -624,6 +624,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/parent/children/{id}/results',   [ResultController::class, 'forParent'])->whereNumber('id')->middleware('role:parent');
         });
 
+        // ── AI assistant (D164 P1): teachers and the head of the institution, own chats only ──
+        Route::middleware(['module:ai_assistant', 'role:admin,teacher'])->group(function () {
+            Route::get('/ai/conversations',           [\App\Http\Controllers\Ai\AiConversationController::class, 'index']);
+            Route::post('/ai/conversations',          [\App\Http\Controllers\Ai\AiConversationController::class, 'store']);
+            Route::get('/ai/conversations/{id}',      [\App\Http\Controllers\Ai\AiConversationController::class, 'show'])->whereNumber('id');
+        });
+
         // ── Parent (Step 4.7) ──
         Route::middleware('role:parent')->group(function () {
             Route::get('/parent/children',                [DashboardController::class, 'parentChildren']);

@@ -3690,3 +3690,69 @@ CREATE TABLE exam_mark_submissions (                           -- D162: an exam 
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (exam_subject_id) REFERENCES exam_subjects(id)
 );
+
+CREATE TABLE ai_conversations (                                -- D164: a teacher's or the head's chat with the AI assistant (own chats only)
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_ai_conversations_user (institution_id, user_id, updated_at),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE ai_messages (                                     -- D164 (2): a question or the assistant's answer with its sources
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    ai_conversation_id BIGINT UNSIGNED NOT NULL,
+    role VARCHAR(10) NOT NULL,                                   -- question | answer
+    body TEXT NOT NULL,
+    kind VARCHAR(12) NULL,                                       -- answer: direct | composed | not_found
+    sources JSON NULL,                                           -- [{type, id, title}]
+    rating TINYINT NULL,                                         -- -1 | 1
+    model_version VARCHAR(40) NULL,                              -- D164 (6): the CPU model that phrased it; NULL = template
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_ai_messages_conversation (institution_id, ai_conversation_id, id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (ai_conversation_id) REFERENCES ai_conversations(id)
+);
+
+CREATE TABLE ai_reviews (                                      -- D164 (3): the writers'/moderators' review of one answer
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    ai_message_id BIGINT UNSIGNED NOT NULL,
+    status VARCHAR(12) NOT NULL DEFAULT 'unreviewed',            -- unreviewed | approved | corrected | rewritten
+    reviewer_text TEXT NULL,
+    weight TINYINT UNSIGNED NOT NULL DEFAULT 0,                  -- approved 1, corrected 2, rewritten 3
+    reviewed_by BIGINT UNSIGNED NULL,
+    reviewed_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY uq_ai_reviews_message (ai_message_id),
+    INDEX idx_ai_reviews_queue (status, id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (ai_message_id) REFERENCES ai_messages(id)
+);
+
+CREATE TABLE ai_answer_bank (                                  -- D164 (3): reviewed answers given directly; NULL institution = open to all
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NULL,
+    question_text TEXT NOT NULL,
+    answer_text TEXT NOT NULL,
+    weight TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    ai_review_id BIGINT UNSIGNED NULL,
+    sources JSON NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_ai_answer_bank_scope (institution_id),
+    FULLTEXT INDEX ft_ai_answer_bank (question_text, answer_text) WITH PARSER ngram,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id)
+);
+-- D164 (4): FULLTEXT (ngram) on the question bank and curriculum text for the assistant's search
+ALTER TABLE qb_questions ADD FULLTEXT INDEX ft_qb_questions_text (question_text, explanation_text) WITH PARSER ngram;
+ALTER TABLE qb_question_options ADD FULLTEXT INDEX ft_qb_question_options_text (content_text) WITH PARSER ngram;
+ALTER TABLE qb_creative_parts ADD FULLTEXT INDEX ft_qb_creative_parts_text (question_text) WITH PARSER ngram;
+ALTER TABLE qb_curriculum_nodes ADD FULLTEXT INDEX ft_qb_curriculum_nodes_name (name_bn, name_en) WITH PARSER ngram;

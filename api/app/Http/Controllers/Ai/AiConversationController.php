@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Http\Controllers\Ai;
+
+use App\Http\Controllers\Controller;
+use App\Models\AiConversation;
+use Illuminate\Http\Request;
+
+// D164 AI-P1.1: a teacher's or the head's own chats with the assistant - list, start, read. Another user's chat is a 404, like
+// another institution's (the tenant scope and the user filter). Asking and answering come in AI-P1.2.
+class AiConversationController extends Controller
+{
+    public function index(Request $request)
+    {
+        $rows = AiConversation::where('user_id', $request->user()->id)->orderByDesc('updated_at')->orderByDesc('id')->limit(100)->get(['id', 'title', 'updated_at']);
+        return response()->json(['success' => true, 'data' => $rows->map(fn ($c) => ['id' => $c->id, 'title' => $c->title, 'updated_at' => $c->updated_at?->toIso8601String()])]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate(['title' => 'required|string|max:200']);
+        $c = AiConversation::create(['user_id' => $request->user()->id, 'title' => $data['title']]);
+        return response()->json(['success' => true, 'data' => ['id' => $c->id, 'title' => $c->title, 'messages' => []]], 201);
+    }
+
+    public function show(Request $request, int $id)
+    {
+        $c = AiConversation::where('user_id', $request->user()->id)->with('messages.review')->findOrFail($id);
+        return response()->json(['success' => true, 'data' => ['id' => $c->id, 'title' => $c->title, 'messages' => $c->messages->map(fn ($m) => [
+            'id' => $m->id, 'role' => $m->role, 'body' => $m->body, 'kind' => $m->kind, 'sources' => $m->sources ?? [], 'rating' => $m->rating,
+            'review' => $m->role === 'answer' ? ($m->review?->status ?? 'unreviewed') : null, 'created_at' => $m->created_at?->toIso8601String()])]]);
+    }
+}

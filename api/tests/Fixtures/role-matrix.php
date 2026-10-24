@@ -114,6 +114,9 @@ return [
     'POST api/v1/exams/{id}/subjects/{subjectId}/mcq-import' => ['admin', 'teacher'],   // D158 (5)(6)
     'GET api/v1/exams/{id}/merit-list' => ['admin'],                                    // D158 (2)
     'POST api/v1/exams/{id}/subjects/{subjectId}/submission' => ['admin', 'teacher'],   // D162
+    'GET api/v1/ai/conversations' => ['admin', 'teacher'],                          // D164 AI-P1.1
+    'POST api/v1/ai/conversations' => ['admin', 'teacher'],
+    'GET api/v1/ai/conversations/{id}' => ['admin', 'teacher'],
     'GET api/v1/exams/{id}/result-sms' => ['admin'],                                    // D161 (2)
     'POST api/v1/exams/{id}/result-sms' => ['admin'],
     'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => ['admin', 'institution_staff', 'teacher'],
