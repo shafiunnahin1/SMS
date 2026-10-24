@@ -144,6 +144,35 @@ class ExamService
             $this->results->score($es, $r->marks_obtained !== null ? (float) $r->marks_obtained : null, $r->component_marks, (bool) $r->is_absent)));
     }
 
+    /**
+     * docs/modules/coaching-private-batch.md "Merit List" + grading.md: every student who sits the exam (optionally one batch), total of
+     * their marks and the percentage over the sum of the exam subjects' full marks; ranked by percentage, a tie shares the rank (1, 1, 3).
+     * A student with no marks yet is listed last without a rank.
+     */
+    public function meritList(Exam $exam, ?int $batchId = null): array
+    {
+        $full = (float) ExamSubject::where('exam_id', $exam->id)->sum('full_marks');
+        $sitters = Enrollment::where('program_id', $exam->program_id)->where('status', 'active')
+            ->when($exam->batch_id, fn ($q) => $q->where('batch_id', $exam->batch_id))->when($batchId, fn ($q) => $q->where('batch_id', $batchId))
+            ->with(['student:id,student_id,user_id', 'student.user:id,name', 'batch:id,name'])->get()->unique('student_id');
+        $totals = Result::where('exam_id', $exam->id)->whereIn('student_id', $sitters->pluck('student_id'))
+            ->selectRaw('student_id, SUM(COALESCE(marks_obtained, 0)) AS total, COUNT(*) AS n')->groupBy('student_id')->get()->keyBy('student_id');
+        $rows = $sitters->map(function ($e) use ($totals, $full) {
+            $t = $totals->get($e->student_id);
+            return ['student_id' => $e->student_id, 'code' => $e->student?->student_id, 'name' => $e->student?->user?->name, 'roll_no' => $e->roll_no,
+                'batch' => $e->batch?->name, 'total' => $t ? round((float) $t->total, 2) : null,
+                'percentage' => $t && $full > 0 ? round((float) $t->total / $full * 100, 2) : null, 'rank' => null];
+        })->sortBy([fn ($a, $b) => ($b['percentage'] ?? -1) <=> ($a['percentage'] ?? -1), fn ($a, $b) => ((int) $a['roll_no']) <=> ((int) $b['roll_no'])])->values()->all();
+        $rank = 0;
+        foreach ($rows as $i => &$r) {
+            if ($r['percentage'] === null) continue;
+            if ($i === 0 || $r['percentage'] !== $rows[$i - 1]['percentage']) $rank = $i + 1;
+            $r['rank'] = $rank;
+        }
+        unset($r);
+        return ['full_marks' => round($full, 2), 'rows' => $rows];
+    }
+
     private function assertOpen(Exam $exam): void
     {
         if ($exam->status === 'published') throw new BusinessException('exam is published', 'exam_published', 422);

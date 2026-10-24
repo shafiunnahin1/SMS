@@ -152,6 +152,7 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/exams/{id}/publish'               => fn (array $other) => $this->seedExam($other),
             'GET api/v1/exams/{id}/subjects'               => fn (array $other) => $this->seedExam($other),
             'PUT api/v1/exams/{id}/subjects'               => fn (array $other) => $this->seedExam($other),
+            'GET api/v1/exams/{id}/merit-list'             => fn (array $other) => $this->seedExam($other),   // D158 (2)
             'PUT api/v1/results/{id}'                      => fn (array $other) => $this->seedResult($other),
             'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => null,   // two ids: ExamSubjectsTest checks a foreign exam is a 404
             'PUT api/v1/exams/{id}/subjects/{subjectId}/paper' => null,      // D158: two ids - CrossTenantRouteTest plans it

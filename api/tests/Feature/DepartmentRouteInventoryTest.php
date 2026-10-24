@@ -98,15 +98,16 @@ class DepartmentRouteInventoryTest extends TestCase
     public function test_d158_exam_paper_link_routes_are_admin_only_and_match_live_routes(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);
-        $this->assertCount(3, DepartmentRouteCatalog::D158);
+        $this->assertCount(4, DepartmentRouteCatalog::D158);
         foreach (DepartmentRouteCatalog::D158 as $entry) {
             $roles = str_ends_with($entry['uri'], '/mcq-import') ? ['admin', 'teacher'] : ['admin'];   // D158 (5): teachers import their own subjects' MCQ marks
             $this->assertSame(['D158', 'preserve_nonstaff_boundary', [], $roles], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
+            $method = explode('|', $entry['method'])[0];
             $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
-                ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array($entry['method'], $candidate->methods(), true));
-            $this->assertNotNull($route, $entry['method'] . ' ' . $entry['uri']);
+                ->first(fn ($candidate) => $candidate->uri() === $entry['uri'] && in_array($method, $candidate->methods(), true));
+            $this->assertNotNull($route, $method . ' ' . $entry['uri']);
             $this->assertSame($entry['action'], ltrim($route->getActionName(), '\\'));
-            $this->assertSame('preserve_nonstaff_boundary', $resolver->resolve($this->request($route, $entry['method']))['resolved_mode']);
+            $this->assertSame('preserve_nonstaff_boundary', $resolver->resolve($this->request($route, $method))['resolved_mode']);
         }
     }
 

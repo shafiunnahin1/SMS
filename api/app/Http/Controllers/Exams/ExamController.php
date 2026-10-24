@@ -87,6 +87,14 @@ class ExamController extends Controller
         return $this->subjects($id);
     }
 
+    /** GET /exams/{id}/merit-list?batch_id= - rank, student, total, percentage; a tie shares the rank */
+    public function meritList(Request $request, int $id)
+    {
+        $exam = Exam::findOrFail($id);
+        $batchId = $request->validate(['batch_id' => 'nullable|integer'])['batch_id'] ?? null;
+        return response()->json(['success' => true, 'data' => $this->exams->meritList($exam, $batchId ? (int) $batchId : null)]);
+    }
+
     private function load(Exam $exam): Exam
     {
         return $exam->load(['program:id,name', 'batch:id,name'])->loadCount('subjects')->loadExists('results');

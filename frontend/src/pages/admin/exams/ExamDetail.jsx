@@ -52,11 +52,12 @@ export default function ExamDetail() {
       <PageHeader title={<span className="inline-flex items-center gap-2"><span dir="auto">{e.name}</span> <StatusBadge status={e.status} /></span>}
         actions={!locked && <Button onClick={publish}><Send aria-hidden="true" className="h-4 w-4" />{t('exams.publish')}</Button>} />
       <p className="text-sm text-content-muted" dir="auto">{e.program?.name}{e.batch ? ` — ${e.batch.name}` : ''} · {t(`exams.types.${e.exam_type}`)} · <Ltr>{e.academic_year}</Ltr></p>
-      <Tabs items={[{ key: 'subjects', label: t('exams.subjects') }, { key: 'papers', label: t('exam_paper.tab') }, { key: 'marks', label: t('exams.marks') }]} value={tab} onChange={setTab} label={e.name} />
+      <Tabs items={[{ key: 'subjects', label: t('exams.subjects') }, { key: 'papers', label: t('exam_paper.tab') }, { key: 'marks', label: t('exams.marks') }, { key: 'merit', label: t('merit.tab') }]} value={tab} onChange={setTab} label={e.name} />
       {tab === 'subjects' && (subjects.isPending ? <Card><Loader type="form" fields={4} /></Card> : subjects.isError ? <ErrorState onRetry={subjects.refetch} />
         : !subjects.data.length ? <EmptyState title={t('exams.no_subjects', { unit: term('program') })} />
         : <Card><SubjectsEditor examId={id} subjects={subjects.data} locked={locked} onSaved={refresh} /></Card>)}
       {tab === 'papers' && <PaperLinks examId={id} subjects={subjects.data ?? []} locked={locked} onChanged={() => qc.invalidateQueries({ queryKey: ['exams', 'subjects', id] })} />}
+      {tab === 'merit' && <MeritList examId={id} programId={e.program_id ?? e.program?.id} fixedBatch={e.batch_id ?? e.batch?.id} />}
       {tab === 'marks' && <MarksOverview examId={id} subjects={subjects.data ?? []} locked={locked} />}
     </div>
   )
@@ -127,6 +128,37 @@ function PaperLinks({ examId, subjects, locked, onChanged }) {
         ))}
       </ul>
       <PaperPicker open={picking !== null} onClose={() => setPicking(null)} onPick={(paper, block) => link(picking, paper, block)} />
+    </Card>
+  )
+}
+
+// D158 (2) / coaching-private-batch.md "Merit List": rank, student, total and percentage over all the exam's full marks; a tie shares
+// the rank; a whole-class exam can be narrowed to one batch
+function MeritList({ examId, programId, fixedBatch }) {
+  const { t } = useTranslation()
+  const term = useTerms()
+  const [batch, setBatch] = useState('')
+  const batches = useQuery({ queryKey: ['batches', { program_id: programId }], enabled: Boolean(programId) && !fixedBatch,
+    queryFn: () => api.get('/batches', { params: { program_id: programId } }).then(r => r.data.data) })
+  const merit = useQuery({ queryKey: ['merit', examId, batch], queryFn: () => api.get(`/exams/${examId}/merit-list`, { params: batch ? { batch_id: batch } : {} }).then(r => r.data.data) })
+  const columns = [
+    { key: 'rank', label: t('merit.rank'), numeric: true, render: r => (r.rank ? <Ltr>{r.rank}</Ltr> : '—') },
+    { key: 'name', label: t('students.name'), render: r => <span><bdi>{r.name}</bdi> <span className="text-xs text-content-muted"><Ltr>{r.code}</Ltr></span></span> },
+    { key: 'roll', label: t('mcq_import.roll'), numeric: true, render: r => <Ltr>{r.roll_no ?? ''}</Ltr> },
+    { key: 'batch', label: term('batch'), render: r => <span dir="auto">{r.batch ?? ''}</span> },
+    { key: 'total', label: t('merit.total'), numeric: true, render: r => (r.total == null ? '—' : <Ltr>{Number(r.total)}</Ltr>) },
+    { key: 'pct', label: t('merit.percentage'), numeric: true, render: r => (r.percentage == null ? '—' : <Ltr>{Number(r.percentage)}%</Ltr>) },
+  ]
+  return (
+    <Card className="flex flex-col gap-3" data-testid="merit-list">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        {!fixedBatch && <label className="flex flex-col gap-1 text-sm"><span>{term('batch')}</span>
+          <select className="rounded-token border px-2 py-1" value={batch} onChange={e => setBatch(e.target.value)} name="merit_batch">
+            <option value="">{t('merit.all')}</option>{(batches.data ?? []).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}
+        {merit.data && <span className="text-sm text-content-muted">{t('exams.full_marks')}: <Ltr>{Number(merit.data.full_marks)}</Ltr></span>}
+      </div>
+      <DataTable columns={columns} data={merit.data?.rows ?? []} rowKey="student_id" loading={merit.isPending} error={merit.isError} onRetry={merit.refetch}
+        empty={<EmptyState title={t('exams.no_marks')} />} />
     </Card>
   )
 }
