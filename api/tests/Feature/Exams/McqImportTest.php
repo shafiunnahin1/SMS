@@ -82,4 +82,31 @@ class McqImportTest extends TestCase
         $this->assertEquals(['mcq' => 12], $marks[$s['mine']->id]);
         $this->assertEquals(['mcq' => 14], $marks[$s['sister']->id]);
     }
+
+    // D159 (5): one class-test sheet of two subjects - each exam subject linked to its block takes only its own rows' marks
+    public function test_a_multi_subject_omr_sheet_is_graded_per_subject(): void
+    {
+        $s = $this->school('mcqblocks');
+        $exam = $this->exam($s);
+        $paper = $this->blockPaper($s);                                  // Math 2 MCQ, then Physics 3 MCQ, 1 mark each
+        $blocks = ['গণিত' => $s['bangla'], 'পদার্থবিজ্ঞান' => $s['physics']];
+        foreach ($blocks as $name => $subject) {
+            $this->api('PUT', $s['host'], "exams/{$exam}/subjects/{$subject->id}/paper", $s['admin'], ['qb_paper_id' => $paper, 'qb_subject_id' => \App\Models\QbSubject::where('name_bn', $name)->value('id')])->assertOk();
+        }
+        Tenancy::as($s['i'], function () use ($s, $paper) {
+            $variant = \App\Models\QbPaperVariant::where('qb_paper_id', $paper)->orderBy('variant_number')->first();
+            $labels = ['ক', 'খ', 'গ', 'ঘ'];
+            $right = collect($variant->layout_json)->flatMap(fn ($sec) => $sec['items'])->map(fn ($it) => array_search($it['correct'][0], $labels, true))->values()->all();
+            // rows 1-2 math, 3-5 physics; the student gets math 2/2 and physics 1/3
+            $answers = array_map(fn ($i) => ['status' => 'marked', 'selected' => [$i === 0 || $i === 1 || $i === 2 ? $right[$i] : ($right[$i] + 1) % 4]], range(0, 4));
+            $form = QbOmrForm::create(['qb_paper_id' => $paper, 'code' => 'F2', 'settings_json' => ['marking' => ['question_mark' => '1.00', 'negative_mark_enabled' => false, 'negative_mark' => '0', 'multiple_answer_policy' => 'wrong']], 'layout_version' => 1, 'locked_at' => now()]);
+            QbOmrScan::create(['qb_omr_form_id' => $form->id, 'layout_version' => 1, 'set_code' => $variant->code, 'roll' => '2', 'matched_student_id' => $s['other']->id,
+                'answers_json' => $answers, 'answered_count' => 5, 'correct_count' => 3, 'obtained_marks' => '3.00', 'status' => 'graded', 'source' => 'upload']);
+        });
+        foreach (['bangla' => 2, 'physics' => 1] as $key => $expected) {
+            $out = $this->api('POST', $s['host'], "exams/{$exam}/subjects/{$s[$key]->id}/mcq-import", $s['admin'], ['source' => 'omr', 'save' => true])->assertOk()->json('data');
+            $this->assertSame(1, $out['saved']);
+            $this->assertEquals(['mcq' => $expected], Tenancy::as($s['i'], fn () => Result::where('subject_id', $s[$key]->id)->sole()->component_marks), "{$key}: only its own block");
+        }
+    }
 }

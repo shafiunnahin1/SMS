@@ -133,7 +133,9 @@ class QbOmrReviewService
     }
 
     /** qbank's grading against the frozen set's key; OMR row n = the n-th MCQ in that set's printed order */
-    public function grade(QbOmrForm $form, QbPaper $paper, QbOmrScan $scan): array
+    /** D159 (5): with $qbSubjectId only that subject block's rows count (a multi-subject sheet graded per subject; the frozen set
+     *  says which subject each row belongs to - sets shuffle only inside a block) */
+    public function grade(QbOmrForm $form, QbPaper $paper, QbOmrScan $scan, ?int $qbSubjectId = null): array
     {
         $variants = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->get();
         $variant = ($scan->comparison_json['set_resolution'] ?? null) === 'main' ? $variants->first() : $variants->firstWhere('code', $scan->set_code);
@@ -141,8 +143,12 @@ class QbOmrReviewService
         $mcq = QbPaperItem::whereHas('section', fn ($q) => $q->where('qb_paper_id', $paper->id))->whereHas('question.type', fn ($q) => $q->where('slug', 'mcq'))
             ->pluck('qb_question_id')->map(fn ($v) => (int) $v)->flip();
         $key = [];
+        $rowSubject = [];
+        // an ungrouped paper's frozen layout carries no subject: the question's own subject decides the row's block
+        $subjectOf = $qbSubjectId === null ? collect() : \App\Models\QbQuestion::whereIn('id', $mcq->keys())->pluck('qb_subject_id', 'id');
         foreach ($variant->layout_json as $s) foreach ($s['items'] as $it) {
             if (!$mcq->has((int) $it['qb_question_id'])) continue;
+            $rowSubject[] = isset($it['qb_subject_id']) ? (int) $it['qb_subject_id'] : (isset($subjectOf[(int) $it['qb_question_id']]) ? (int) $subjectOf[(int) $it['qb_question_id']] : null);
             $key[] = array_values(array_filter(array_map(fn ($l) => array_search($l, self::LABELS, true), $it['correct'] ?? []), fn ($v) => $v !== false));
         }
         $m = $form->settings_json['marking'] ?? [];
@@ -151,6 +157,7 @@ class QbOmrReviewService
         $wrong = 0;
         $per = [];
         foreach ($scan->answers_json ?? [] as $i => $a) {
+            if ($qbSubjectId !== null && ($rowSubject[$i] ?? null) !== $qbSubjectId) continue;
             $sel = $a['selected'] ?? [];
             $right = $key[$i] ?? [];
             if ($sel === []) { $per[] = 'blank'; continue; }

@@ -49,26 +49,6 @@ class ExamPaperLinkTest extends TestCase
         $this->api('PUT', $s['host'], $url, $s['admin'], ['qb_paper_id' => $this->paper($s)])->assertStatus(422)->assertJsonPath('error', 'exam_paper_has_marks');
     }
 
-    /** D159 (1): a final paper of two subject blocks - Math 2 MCQ x 1 mark, Physics 3 MCQ x 1 mark */
-    private function blockPaper(array $s): int
-    {
-        $super = User::firstOrCreate(['phone' => '01700000099'], ['institution_id' => null, 'name' => 's', 'role' => 'super_admin', 'password' => 'Super-pass-2026', 'is_active' => true]);
-        $type = QbQuestionType::firstOrCreate(['slug' => 'mcq'], ['name_bn' => 'বহুনির্বাচনী', 'name_en' => 'MCQ', 'family' => 'mcq'])->id;
-        $items = [];
-        foreach (['গণিত' => 2, 'পদার্থবিজ্ঞান' => 3] as $name => $n) {
-            $subject = QbSubject::firstOrCreate(['name_bn' => $name], ['name_en' => $name])->id;
-            for ($k = 0; $k < $n; $k++) {
-                $q = QbQuestion::create(['qb_question_type_id' => $type, 'qb_subject_id' => $subject, 'question_text' => 'q' . uniqid(), 'status' => 'published', 'created_by' => $super->id]);
-                foreach ([true, false, false, false] as $o => $ok) QbQuestionOption::create(['qb_question_id' => $q->id, 'label' => 'x', 'content_text' => "o{$o}", 'is_correct' => $ok]);
-                Tenancy::as($s['i'], fn () => QbUnlock::create(['item_type' => 'question', 'item_id' => $q->id, 'unlocked_by' => $s['admin']->id, 'price' => '0.00', 'reason' => 'free']));
-                $items[] = ['qb_question_id' => $q->id, 'marks' => '1'];
-            }
-        }
-        $id = $this->api('POST', $s['host'], 'question-bank/papers', $s['admin'], ['title' => 'Class test', 'sets_count' => 1, 'sections' => [['title' => 'MCQ', 'items' => $items]]])->assertCreated()->json('data.id');
-        $this->api('POST', $s['host'], "question-bank/papers/{$id}/finalize", $s['admin'], ['strategy' => 'serial'])->assertOk();
-        return $id;
-    }
-
     public function test_a_multi_subject_paper_links_by_block_and_one_subject_takes_several_papers(): void
     {
         $s = $this->school('exampaper4');

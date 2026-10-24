@@ -5,6 +5,7 @@ namespace App\Services\Exams;
 use App\Exceptions\BusinessException;
 use App\Models\{AuditLog, Exam, ExamPaper, ExamSubject, QbOmrForm, QbOmrScan, Result, Student};
 use App\Services\ExamService;
+use App\Services\QuestionBank\QbOmrReviewService;
 
 /**
  * D158 (5)(6): an exam subject's MCQ part filled from pasted JSON or from the linked paper's graded OMR sheets. Every row is checked
@@ -13,7 +14,7 @@ use App\Services\ExamService;
  */
 class McqImportService
 {
-    public function __construct(private ExamService $exams) {}
+    public function __construct(private ExamService $exams, private QbOmrReviewService $review) {}
 
     /** $input = [['id' => 'DHA-2025-0001'? | 'roll' => '12', 'batch' => 'A'?, 'mcq' => 18.5], ...] -> checked rows; $save writes the valid ones.
      *  D159 (3): the permanent student ID wins; without it, roll (+ batch) as before */
@@ -49,19 +50,29 @@ class McqImportService
         return ['mcq_full' => $full, 'rows' => $rows, 'saved' => $saved];
     }
 
-    /** the linked paper's graded OMR sheets (D127 review done) whose student sits the subject -> the same checked rows */
+    /** the linked papers' graded OMR sheets (D127 review done) whose student sits the subject -> the same checked rows. D159 (5): a link
+     *  to one subject block of a multi-subject paper takes only that block's marks from each sheet; marks of several linked papers add up */
     public function fromOmr(Exam $exam, ExamSubject $es, ?array $batchIds, bool $save): array
     {
-        $paperId = ExamPaper::where('exam_subject_id', $es->id)->value('qb_paper_id');
-        if (!$paperId) throw new BusinessException('no linked paper', 'exam_no_paper', 422);
-        $form = QbOmrForm::where('qb_paper_id', $paperId)->first();
-        $scans = $form ? QbOmrScan::where('qb_omr_form_id', $form->id)->where('status', 'graded')->whereNotNull('matched_student_id')->orderBy('id')->get() : collect();
+        $links = ExamPaper::where('exam_subject_id', $es->id)->with('paper')->get();
+        if ($links->isEmpty()) throw new BusinessException('no linked paper', 'exam_no_paper', 422);
+        $marks = [];
+        $sheets = 0;
+        foreach ($links as $link) {
+            $form = QbOmrForm::where('qb_paper_id', $link->qb_paper_id)->first();
+            if (!$form) continue;
+            $scans = QbOmrScan::where('qb_omr_form_id', $form->id)->where('status', 'graded')->whereNotNull('matched_student_id')->orderBy('id')->get();
+            $sheets += $scans->count();
+            foreach ($scans as $scan) {
+                $got = $link->qb_subject_id ? $this->review->grade($form, $link->paper, $scan, (int) $link->qb_subject_id)['marks'] : (string) $scan->obtained_marks;
+                $marks[$scan->matched_student_id] = round(($marks[$scan->matched_student_id] ?? 0) + (float) $got, 2);
+            }
+        }
         // the scan's matched student (D127 review) is known: pass that student's permanent ID, so the same roll in two sections never
         // clashes and a student who does not sit this subject is "unknown", never another student with the same roll (D159 (3))
-        $ids = Student::whereIn('id', $scans->pluck('matched_student_id'))->pluck('student_id', 'id');
-        $input = $scans->map(fn ($s) => ['id' => (string) ($ids[$s->matched_student_id] ?? ('#' . $s->matched_student_id)), 'mcq' => $s->obtained_marks])->all();
-        $result = $this->fromRows($exam, $es, $input, $batchIds, $save);
-        return $result + ['sheets' => $scans->count()];
+        $ids = Student::whereIn('id', array_keys($marks))->pluck('student_id', 'id');
+        $input = array_map(fn ($sid, $m) => ['id' => (string) ($ids[$sid] ?? ('#' . $sid)), 'mcq' => $m], array_keys($marks), $marks);
+        return $this->fromRows($exam, $es, $input, $batchIds, $save) + ['sheets' => $sheets];
     }
 
     private function save(Exam $exam, ExamSubject $es, array $rows, ?array $batchIds): int

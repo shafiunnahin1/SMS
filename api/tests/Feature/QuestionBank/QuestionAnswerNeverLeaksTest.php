@@ -34,6 +34,7 @@ class QuestionAnswerNeverLeaksTest extends TestCase
         'app/Console/Commands/QbImportAcceptance.php' => "D123 (8): the acceptance run reads back the drafts it made to compare texts, then rolls everything back; prints counts only",
         'app/Services/QbBlueprintPlanner.php' => "D126 (3): picks eligible published questions for a blueprint rule; returns question ids, marks and question text only, never an answer",
         'app/Services/QuestionBank/QbPaperHeader.php' => "owner 2026-10-24: reads the paper's questions' subject and class for the printed heading; returns subject names/codes and a class name only",
+        'app/Services/QuestionBank/QbOmrReviewService.php' => "D159 (5): grading one subject block of a multi-subject OMR sheet reads each MCQ's subject; returns marks and counts only",
         'app/Services/Exams/ExamPaperService.php' => "D158 (4): reads the paper's questions' type family to size the exam's mark parts; returns kinds and marks only",
         'app/Services/QbPaperSets.php' => "D126 (2): freezing a final paper's sets reads which option is correct to store each set's answer key; the key is printed only with the answers copy and only for bought questions (QbPaperController::printable)",
         'app/Services/QbImportService.php' => "R2.1.3 (D123): duplicate check reads existing question texts of the same subject and type; staged records keep only the import's own content",
