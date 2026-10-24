@@ -16,7 +16,7 @@ import { pdfPages } from './omrSheet'
 // server's own sheet PDF drawn from the saved settings (`pdf?preview=1`), so what is seen is exactly what "Generate" prints and
 // what the scanner reads. A generated form is locked; "edit again" unlocks it (a new layout version, as before).
 export const OMR_DEFAULTS = { title: '', subtitle: '', title_size: 20, subtitle_size: 14, font: 'default', theme_color: 'black', entry_mode: 'digital',
-  roll_digits: 6, digits: { class: 2, subject: 3, set: 1 }, option_count: 4, option_language: 'bangla', info_boxes: { class: true, roll: true, student_id: true, set: true },
+  roll_digits: 6, digits: { class: 2, subject: 3, set: 1 }, option_count: 4, option_language: 'bangla', info_boxes: { class: false, roll: true, student_id: true, set: true },   // owner 2026-10-24: roll, 10-digit ID and set; class off by default
   page_size: 'a4', page_orientation: 'portrait', answer_columns: 'auto', question_mark: '1.00', negative_mark_enabled: false, negative_mark: '0.00', multiple_answer_policy: 'wrong' }
 // the swatches only point at the colour; the sheet itself uses the server's exact colour for the same key
 const SWATCH = { black: 'black', blue: 'royalblue', red: 'crimson', slate: 'slategray', sky: 'dodgerblue', green: 'forestgreen', purple: 'darkorchid',

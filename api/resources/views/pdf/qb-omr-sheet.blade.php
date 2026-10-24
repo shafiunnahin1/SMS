@@ -102,11 +102,13 @@
     @endphp
     {{-- owner layout 2026-10-24 (qbank's sheet): the exam title, one small line of the paper's details, then the exam-type boxes --}}
     @php
-        $details = array_filter([$head['institution'] ?? '', $subtitle, $head['class'] ?? '', $head['subjects'] ?? '',
+        $details = array_filter([$subtitle, $head['class'] ?? '', $head['subjects'] ?? '',
 ], fn ($v) => trim((string) $v) !== '');
     @endphp
     <header class="heading">
-        <h1>{{ $exam !== '' ? $exam : ($head['institution'] ?? '') }}</h1>
+        {{-- owner 2026-10-24: the institution's name large, the exam's name smaller under it --}}
+        @if (($head['institution'] ?? '') !== '')<h1>{{ $head['institution'] }}</h1>@endif
+        @if ($exam !== '')<p class="exam">{{ $exam }}</p>@endif
         @if ($details)<p class="details">{{ implode(' · ', $details) }}</p>@endif
         <section class="exam-types" aria-label="{{ __('pdf.qb_omr.exam_type') }}">
             @foreach (__('pdf.qb_omr.exam_types') as $examType)

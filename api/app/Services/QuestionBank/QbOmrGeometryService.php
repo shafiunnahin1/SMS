@@ -38,7 +38,8 @@ class QbOmrGeometryService
             'bubble_only' => true,
             'markers' => ['left' => 0.119, 'right' => 0.881, 'top' => 0.050, 'bottom' => 0.882],
             'code' => $this->bounds($codeBits) + ['bits' => $codeBits, 'value' => $code],
-            ...$this->codeGrids(['class' => $classDigits, 'roll' => $rollDigits, ...($idBox ? ['student_id' => 10] : ['subject' => $subjectDigits]), 'set' => $setDigits], $pageWidth, $pageHeight),
+            ...$this->codeGrids([...(($infoBoxes['class']['visible'] ?? true) === false ? [] : ['class' => $classDigits]),   // owner 2026-10-24: a hidden class box takes no room
+                'roll' => $rollDigits, ...($idBox ? ['student_id' => 10] : ['subject' => $subjectDigits]), 'set' => $setDigits], $pageWidth, $pageHeight),
             'answers' => $answerGeometry,
         ];
     }
