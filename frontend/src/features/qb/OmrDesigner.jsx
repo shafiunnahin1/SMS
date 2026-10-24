@@ -155,7 +155,7 @@ export default function OmrDesigner({ id, form, onSaved }) {
 
           <Section title={t('qbomr.sec_title')}>
             <Labelled label={t('qbomr.form_title')}><input className={field} dir="auto" name="title" value={v.title} onChange={e => set({ title: e.target.value })} /></Labelled>
-            <Slider label={t('qbomr.title_size')} name="title_size" min={12} max={32} value={v.title_size} onChange={n => set({ title_size: n })} />
+            <Slider label={t('qbomr.title_size')} name="title_size" min={10} max={32} value={v.title_size} onChange={n => set({ title_size: n })} />
             <Labelled label={t('qbomr.subtitle')}><input className={field} dir="auto" name="subtitle" placeholder={t('qbomr.subtitle_ph')} value={v.subtitle} onChange={e => set({ subtitle: e.target.value })} /></Labelled>
             <Slider label={t('qbomr.subtitle_size')} name="subtitle_size" min={10} max={24} value={v.subtitle_size} onChange={n => set({ subtitle_size: n })} />
           </Section>

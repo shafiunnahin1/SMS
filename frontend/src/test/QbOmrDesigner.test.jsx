@@ -32,6 +32,7 @@ describe('qbank OMR designer (D133)', () => {
     expect(await screen.findByTestId('omr-preview-frame')).toHaveAttribute('src', 'data:image/png;base64,AA')
     expect(api.get).toHaveBeenCalledWith('/question-bank/papers/9/omr-form/pdf', { params: { preview: 1 }, responseType: 'blob' })
     for (const title of ['Output', 'Marking', 'Title & Subtitle', 'Appearance', 'Candidate Info', 'Candidate Codes', 'Answer Layout']) expect(screen.getByText(title)).toBeInTheDocument()
+    expect(screen.getByRole('slider', { name: /^টাইটেলের সাইজ/ })).toHaveAttribute('min', '10')
     fireEvent.change(screen.getByRole('textbox', { name: 'সাব টাইটেল' }), { target: { value: 'অর্ধ-বার্ষিক' } })
     fireEvent.click(screen.getByRole('radio', { name: 'নীল' }))
     fireEvent.click(screen.getByRole('button', { name: 'MANUAL' }))
