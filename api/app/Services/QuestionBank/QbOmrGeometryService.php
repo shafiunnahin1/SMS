@@ -16,6 +16,7 @@ class QbOmrGeometryService
         $classDigits = max(1, min(3, (int) ($infoBoxes['class']['digits'] ?? 2)));
         $subjectDigits = max(1, min(4, (int) ($infoBoxes['subject']['digits'] ?? 3)));
         [$pageWidth, $pageHeight] = $this->pageDimensions($settings);
+        $manual = ($settings['entry_mode'] ?? 'digital') === 'manual';
 
         if ($paperId < 1 || $questionCount < 1 || $optionCount < 2 || $optionCount > 5 || $rollDigits < 1 || $rollDigits > 12 || $setDigits < 1 || $setDigits > 4) {
             throw new InvalidArgumentException('Invalid OMR geometry inputs.');
@@ -27,7 +28,7 @@ class QbOmrGeometryService
         $codeTotalWidth = (28 * $codeWidth) + (27 * $codeGap);
         $codeBits = array_map(fn (int $index): array => $this->rect(0.5 - ($codeTotalWidth / 2) + ($index * ($codeWidth + $codeGap)), 0.095, $codeWidth, 2.2 / $pageHeight), range(0, 27));
         $answerColumns = $this->answerColumns($questionCount, $optionCount, $settings['answer_columns'] ?? 'auto');
-        $answerGeometry = $this->answerGeometry($questionCount, $optionCount, $answerColumns, $pageWidth, $pageHeight, $settings['subject_blocks'] ?? []);
+        $answerGeometry = $this->answerGeometry($questionCount, $optionCount, $answerColumns, $pageWidth, $pageHeight, $settings['subject_blocks'] ?? [], $manual ? 0.59 : 0.66);
 
         return [
             'version' => 2,
@@ -35,10 +36,10 @@ class QbOmrGeometryService
             'bubble_only' => true,
             'markers' => ['left' => 0.119, 'right' => 0.881, 'top' => 0.050, 'bottom' => 0.882],
             'code' => $this->bounds($codeBits) + ['bits' => $codeBits, 'value' => $code],
-            'class' => $this->numericGrid(0.05 * $pageWidth, 0.17 * $pageHeight, 9 * $classDigits, 65, $classDigits, $pageWidth, $pageHeight),
-            'roll' => $this->numericGrid(0.20 * $pageWidth, 0.17 * $pageHeight, min(8, max(4, 45 / $rollDigits)) * $rollDigits, 65, $rollDigits, $pageWidth, $pageHeight),
-            'subject' => $this->numericGrid(0.52 * $pageWidth, 0.17 * $pageHeight, 7 * $subjectDigits, 65, $subjectDigits, $pageWidth, $pageHeight),
-            'set' => $this->numericGrid(0.70 * $pageWidth, 0.17 * $pageHeight, 8 * $setDigits, 65, $setDigits, $pageWidth, $pageHeight),
+            'class' => $this->numericGrid(0.14 * $pageWidth, 0.26 * $pageHeight, 0.115 * $pageWidth, 0.35 * $pageHeight, $classDigits, $pageWidth, $pageHeight),
+            'roll' => $this->numericGrid(0.30 * $pageWidth, 0.26 * $pageHeight, 0.16 * $pageWidth, 0.35 * $pageHeight, $rollDigits, $pageWidth, $pageHeight),
+            'subject' => $this->numericGrid(0.465 * $pageWidth, 0.26 * $pageHeight, 0.16 * $pageWidth, 0.35 * $pageHeight, $subjectDigits, $pageWidth, $pageHeight),
+            'set' => $this->numericGrid(0.585 * $pageWidth, 0.26 * $pageHeight, 0.07 * $pageWidth, 0.35 * $pageHeight, $setDigits, $pageWidth, $pageHeight),
             'answers' => $answerGeometry,
         ];
     }
@@ -60,7 +61,7 @@ class QbOmrGeometryService
     }
 
     /** D128: a grouped paper gets one heading slot (a row's height) before each subject block; question rows keep their index */
-    private function answerGeometry(int $questionCount, int $optionCount, int $columnCount, float $pageWidth, float $pageHeight, array $subjectBlocks = []): array
+    private function answerGeometry(int $questionCount, int $optionCount, int $columnCount, float $pageWidth, float $pageHeight, array $subjectBlocks = [], float $top = 0.66): array
     {
         $starts = array_column($subjectBlocks, 'name', 'start');
         $slots = [];
@@ -68,9 +69,8 @@ class QbOmrGeometryService
             if (array_key_exists($q, $starts)) $slots[] = ['heading' => (string) $starts[$q]];
             $slots[] = ['question' => $q];
         }
-        $left = 0.08;
-        $top = 0.50;
-        $width = 0.84;
+        $left = 0.13;
+        $width = 0.74;
         $rowsPerColumn = (int) ceil(count($slots) / $columnCount) + ($subjectBlocks ? 1 : 0);   // room for a heading moved down
         $height = min(0.36, (7 * $rowsPerColumn) / $pageHeight);
         $columnWidth = $width / $columnCount;

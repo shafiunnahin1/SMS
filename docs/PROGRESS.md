@@ -1,3 +1,4 @@
+  - 2026-10-24 R2.1.6 / D127, OMR reference layout follow-up: digital code grids and answer tables repositioned to qbank's sheet geometry; manual mode now renders the candidate-information write-in panel and bordered instructions panel; exam-type checkbox row and bilingual labels added. `php artisan test --filter='QbOmrGeometryTest|QbOmrSheetViewTest|QbOmrFormApiTest'` 9 passed (624 assertions); diagnostics and `git diff --check` clean. Browser paper 11 still has a pre-existing 422 because its seeded MCQ option counts do not match the selected OMR option count; fixture-backed layout tests pass.
 # Progress (agent-maintained)
 
 Rules (checked by `infra/guard/agent_guard.py`, C9/C10): one task per commit, in plan order; flip ONLY your own task from `[ ]` to `[x]` in the same commit as the code; NEVER delete or un-check a line; 

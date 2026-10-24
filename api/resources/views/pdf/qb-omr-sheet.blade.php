@@ -34,6 +34,9 @@
         .heading h1 { margin: 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; color: {{ $color }}; }
         .heading p { margin: 1.5mm 0 0; font-size: 9pt; }
         .heading p.subtitle { font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; }
+        .exam-types { position: absolute; top: 20%; left: 30%; width: 40%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1mm 3mm; font-size: 6.5pt; }
+        .exam-types label { display: flex; align-items: center; gap: 1mm; white-space: nowrap; }
+        .exam-types i { display: inline-block; width: 3.5mm; height: 3.5mm; border: .25mm solid {{ $color }}; }
         .form-code { position: absolute; top: 13.3%; left: 30%; width: 40%; text-align: center; font-size: 9pt; font-weight: 700; }
         .marker { position: absolute; width: 8mm; height: 8mm; transform: translate(-50%, -50%); background: #000000; }
         .marker::after { position: absolute; top: 2.5mm; left: 2.5mm; width: 3mm; height: 3mm; content: ""; background: #ffffff; }
@@ -50,6 +53,13 @@
         .notes ol { margin: 0; padding-inline-start: 4mm; }
         .signature { position: absolute; border-top: .25mm solid {{ $color }}; padding-top: 1mm; font-size: 7pt; text-align: center; }
         .footer-note { position: absolute; left: 8%; width: 84%; text-align: center; font-size: 7pt; }
+        .manual-info { position: absolute; left: 13%; top: 28%; width: 51%; height: 25%; border: .3mm solid {{ $color }}; padding: 5mm; }
+        .manual-info h2 { margin: 0 auto 5mm; width: 36%; border-bottom: .2mm solid {{ $color }}; text-align: center; font-size: 9pt; color: {{ $color }}; }
+        .manual-info .line { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 2mm; margin: 4mm 0; font-size: 7.5pt; }
+        .manual-info .line.single { grid-template-columns: auto 1fr; }
+        .manual-info .fill { border-bottom: .2mm dotted #111111; min-width: 12mm; }
+        .manual-notes { position: absolute; left: 67%; top: 28%; width: 25%; height: 25%; border: .3mm solid {{ $color }}; padding: 4mm; }
+        .manual-notes h2 { margin: -4mm -4mm 2mm; padding: 2mm; background: {{ $color }}; color: #ffffff; text-align: center; font-size: 8pt; }
         .bubble { position: absolute; display: flex; align-items: center; justify-content: center; border: .3mm solid {{ $color }}; border-radius: 50%; font-size: 6.5pt; line-height: 1; }
         .answers-title { position: absolute; top: 45.5%; left: 8%; width: 84%; text-align: center; font-size: 10pt; font-weight: 700; color: {{ $color }}; }
         .question-number { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: 700; }
@@ -65,6 +75,12 @@
         <p>{{ __('pdf.qb_omr.form_code') }}: {{ $form->code }} · {{ __('pdf.qb_omr.set') }}: {{ $variant->code }}</p>
     </header>
 
+    <section class="exam-types" aria-label="{{ __('pdf.qb_omr.instructions') }}">
+        @foreach (__('pdf.qb_omr.exam_types') as $examType)
+            <label><i></i>{{ $examType }}</label>
+        @endforeach
+    </section>
+
     @foreach ([['left', 'top'], ['right', 'top'], ['left', 'bottom'], ['right', 'bottom']] as [$x, $y])
         <span class="marker" style="left:{{ $geometry['markers'][$x] * 100 }}%;top:{{ $geometry['markers'][$y] * 100 }}%"></span>
     @endforeach
@@ -73,7 +89,23 @@
         <span class="code-bit {{ $geometry['code']['value'][$index] === '1' ? 'is-on' : '' }}" style="{{ $rectStyle($bit) }}"></span>
     @endforeach
 
+    @if ($manual)
+        <section class="manual-info">
+            <h2>{{ __('pdf.qb_omr.candidate_info') }}</h2>
+            <div class="line single"><strong>{{ __('pdf.qb_omr.name') }}:</strong><span class="fill"></span></div>
+            <div class="line"><strong>{{ __('pdf.qb_omr.class') }}:</strong><span class="fill"></span><strong>{{ __('pdf.qb_omr.roll') }}:</strong><span class="fill"></span></div>
+            <div class="line"><strong>{{ __('pdf.qb_omr.subject') }}:</strong><span class="fill"></span><strong>{{ __('pdf.qb_omr.set') }}:</strong><span class="fill"></span></div>
+            <div class="line single"><strong>{{ __('pdf.qb_omr.date') }}:</strong><span class="fill"></span></div>
+        </section>
+        <section class="manual-notes">
+            <h2>{{ __('pdf.qb_omr.instructions') }}</h2>
+            <ol>@foreach (__('pdf.qb_omr.rules') as $rule)<li>{{ $rule }}</li>@endforeach</ol>
+            <div class="signature" style="left:8%;top:78%;width:84%">{{ __('pdf.qb_omr.invigilator') }}</div>
+        </section>
+    @endif
+
     @foreach (['class' => 'class', 'roll' => 'roll', 'subject' => 'subject', 'set' => 'set'] as $key => $label)
+        @if (!$manual)
         @if (($settings['info_boxes'][$key]['visible'] ?? true) === true)
             <strong class="head-cell" style="left:{{ $geometry[$key]['left'] * 100 }}%;top:{{ max(0, ($geometry[$key]['top'] * 100) - 2.6) }}%;width:{{ max($geometry[$key]['width'] * 100, 6) }}%;height:2.4%">{{ __('pdf.qb_omr.' . $label) }}</strong>
             @unless ($manual)
@@ -95,17 +127,18 @@
             @endforeach
             @endif
         @endif
+        @endif
     @endforeach
 
-    @if ($notesLeft < 0.83)
+    @if (!$manual && $notesLeft < 0.83)
         {{-- qbank's instructions column and the invigilator's signature, beside the code boxes --}}
-        <section class="notes" style="left:{{ $notesLeft * 100 }}%;top:17%;width:{{ (0.955 - $notesLeft) * 100 }}%">
+        <section class="notes" style="left:{{ $notesLeft * 100 }}%;top:28%;width:{{ (0.955 - $notesLeft) * 100 }}%">
             <h2>{{ __('pdf.qb_omr.instructions') }}</h2>
             <ol>@foreach (__('pdf.qb_omr.rules') as $rule)<li>{{ $rule }}</li>@endforeach</ol>
         </section>
-        <div class="signature" style="left:{{ $notesLeft * 100 }}%;top:40.5%;width:{{ (0.955 - $notesLeft) * 100 }}%">{{ __('pdf.qb_omr.invigilator') }}</div>
+        <div class="signature" style="left:{{ $notesLeft * 100 }}%;top:59%;width:{{ (0.955 - $notesLeft) * 100 }}%">{{ __('pdf.qb_omr.invigilator') }}</div>
     @endif
-    <div class="answers-title">{{ __('pdf.qb_omr.mcq_answers') }}</div>
+    <div class="answers-title" style="top:{{ max(0, ($geometry['answers']['top'] * 100) - 3.5) }}%">{{ __('pdf.qb_omr.mcq_answers') }}</div>
     @foreach ($geometry['answers']['columns'] as $column)
         @php
             $firstNumber = $column['rows'][0]['number'] ?? null;
