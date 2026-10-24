@@ -546,6 +546,11 @@ final class DepartmentRouteCatalog
         ['method' => 'GET|HEAD', 'uri' => 'api/v1/exams/{id}/merit-list', 'action' => 'App\\Http\\Controllers\\Exams\\ExamController@meritList', 'current_roles' => ['admin'], 'preserve_nonstaff_roles' => ['admin'], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:exams'], 'selector_variants' => [], 'resource_scope' => 'tenant exam; no department-staff permission', 'approval' => 'D158', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
     ];
 
+    /** D162: the marks submission flow - the subject's teacher submits / asks, the admin approves / rejects / reopens; no department-staff permission. */
+    public const D162 = [
+        ['method' => 'POST', 'uri' => 'api/v1/exams/{id}/subjects/{subjectId}/submission', 'action' => 'App\\Http\\Controllers\\Exams\\ResultController@submission', 'current_roles' => ['admin', 'teacher'], 'preserve_nonstaff_roles' => ['admin', 'teacher'], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:exams'], 'selector_variants' => [], 'resource_scope' => 'tenant exam subject; a teacher only their own subject batches (ExamService::batchesFor); approve/reject/reopen the admin only (D162 (3)(5)); no department-staff permission', 'approval' => 'D162', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
+    ];
+
     /** D161 (2): the result SMS run and its report - the admin only; no department-staff permission. */
     public const D161 = [
         ['method' => 'GET|HEAD', 'uri' => 'api/v1/exams/{id}/result-sms', 'action' => 'App\\Http\\Controllers\\Exams\\ExamController@resultSmsReport', 'current_roles' => ['admin'], 'preserve_nonstaff_roles' => ['admin'], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:exams'], 'selector_variants' => [], 'resource_scope' => 'tenant exam; the head of the institution only (D161 (5)); no department-staff permission', 'approval' => 'D161', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],

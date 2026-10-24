@@ -3669,3 +3669,24 @@ CREATE TABLE leave_substitution_events (
     FOREIGN KEY (substitute_teacher_id, institution_id) REFERENCES teachers(id, institution_id),
     FOREIGN KEY (department_id, institution_id) REFERENCES institution_departments(id, institution_id)
 );
+
+CREATE TABLE exam_mark_submissions (                           -- D162: an exam subject's marks - draft / submitted to the head / update request
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    exam_subject_id BIGINT UNSIGNED NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft',                 -- draft | submitted | unlock_requested | unlocked (no row = draft)
+    submitted_by BIGINT UNSIGNED NULL,
+    submitted_at TIMESTAMP NULL,
+    request_reason VARCHAR(500) NULL,                            -- the teacher's reason for an update request
+    requested_by BIGINT UNSIGNED NULL,
+    requested_at TIMESTAMP NULL,
+    decided_by BIGINT UNSIGNED NULL,                             -- the head who approved / rejected
+    decided_at TIMESTAMP NULL,
+    decision_note VARCHAR(500) NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY uq_exam_mark_submissions_subject (exam_subject_id),
+    INDEX idx_exam_mark_submissions_status (institution_id, status),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (exam_subject_id) REFERENCES exam_subjects(id)
+);

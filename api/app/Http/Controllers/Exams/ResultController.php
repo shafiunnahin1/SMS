@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Exams;
 
-use App\Services\Exams\McqImportService;
+use App\Services\Exams\{MarkSubmissionService, McqImportService};
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Exams\BulkResultsRequest;
@@ -54,6 +54,7 @@ class ResultController extends Controller
         $saved = Result::where('exam_id', $exam->id)->where('subject_id', $subjectId)->get()->keyBy('student_id');
         return response()->json(['success' => true, 'data' => [
             'exam' => ['id' => $exam->id, 'name' => $exam->name, 'status' => $exam->status],
+            'submission' => app(MarkSubmissionService::class)->stateOf($es),   // D162
             'subject' => ['subject_id' => $es->subject_id, 'name' => $es->subject?->name, 'full_marks' => $es->full_marks, 'pass_marks' => $es->pass_marks, 'components' => $es->components],
             'rows' => $this->exams->sitters($exam, $es, $batchIds)->map(fn ($e) => ['student_id' => $e->student_id, 'code' => $e->student?->student_id,
                 'name' => $e->student?->user?->name, 'roll_no' => $e->roll_no, 'batch' => $e->batch?->name, 'result' => $this->resultRow($saved->get($e->student_id))])->values(),
@@ -68,8 +69,18 @@ class ResultController extends Controller
             'rows.*' => 'array', 'rows.*.id' => 'nullable|string|max:20', 'rows.*.roll' => 'nullable', 'rows.*.batch' => 'nullable|string|max:100', 'rows.*.mcq' => 'nullable']);
         if ($exam->status === 'published') throw new BusinessException('exam is published', 'exam_published', 422);
         $save = (bool) ($data['save'] ?? false);
+        if ($save) app(MarkSubmissionService::class)->assertEditable($es, $request->user());   // D162 (2)
         $out = $data['source'] === 'omr' ? $import->fromOmr($exam, $es, $batchIds, $save) : $import->fromRows($exam, $es, $data['rows'], $batchIds, $save);
         return response()->json(['success' => true, 'data' => $out]);
+    }
+
+    /** D162: POST {action: submit|request|approve|reject|reopen, reason?, note?} - the subject's marks to the head and back */
+    public function submission(Request $request, int $id, int $subjectId, MarkSubmissionService $flow)
+    {
+        [$exam, $es] = $this->entryScope($request, $id, $subjectId);             // another institution's exam is 404; another teacher's subject 403
+        $data = $request->validate(['action' => 'required|in:submit,request,approve,reject,reopen', 'reason' => 'required_if:action,request|nullable|string|max:500',
+            'note' => 'nullable|string|max:500']);
+        return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $flow->act($exam, $es, $data['action'], $request->user(), $data)]);
     }
 
     /** POST /results/bulk - one subject of one exam; answers with the server's grades */
@@ -77,6 +88,7 @@ class ResultController extends Controller
     {
         $data = $request->validated();
         [$exam, $es, $batchIds] = $this->entryScope($request, (int) $data['exam_id'], (int) $data['subject_id']);
+        app(MarkSubmissionService::class)->assertEditable($es, $request->user());   // D162 (2): a submitted subject is the head's until unlocked
         $saved = $this->exams->saveMarks($exam, $es, $data['rows'], $batchIds);
         foreach ($data['rows'] as $r) {
             if (array_key_exists('teacher_remarks', $r)) Result::where('exam_id', $exam->id)->where('subject_id', $es->subject_id)->where('student_id', $r['student_id'])->update(['teacher_remarks' => $r['teacher_remarks']]);
@@ -95,6 +107,7 @@ class ResultController extends Controller
             throw new BusinessException('not your subject', 'forbidden', 403);
         }
         if ($exam->status === 'published' && $request->user()->role !== 'admin') throw new BusinessException('published', 'exam_published', 422);
+        app(MarkSubmissionService::class)->assertEditable($es, $request->user());   // D162 (2)
         $data = $request->validate(['marks_obtained' => 'nullable|numeric|min:0|max:1000', 'components' => 'nullable|array', 'components.*' => 'nullable|numeric|min:0|max:1000',
             'is_absent' => 'nullable|boolean', 'teacher_remarks' => 'nullable|string|max:255']);
         $before = ['marks_obtained' => $result->marks_obtained, 'grade' => $result->grade];

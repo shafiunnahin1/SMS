@@ -160,6 +160,7 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/exams/{id}/subjects/{subjectId}/paper' => null,      // D158: two ids - CrossTenantRouteTest plans it
             'DELETE api/v1/exams/{id}/subjects/{subjectId}/paper' => null,
             'POST api/v1/exams/{id}/subjects/{subjectId}/mcq-import' => null,
+            'POST api/v1/exams/{id}/subjects/{subjectId}/submission' => null,   // D162: two ids - CrossTenantRouteTest plans it
             'GET api/v1/results/marksheet/{studentId}'     => null,       // MarksheetAccessTest: a foreign student is a 404
             'GET api/v1/parent/children/{id}/results'      => null,       // parent-only route (the admin is 403); ParentResultAccessTest: foreign child 404
             'PUT api/v1/fees/categories/{id}'              => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeCategory::value('id')

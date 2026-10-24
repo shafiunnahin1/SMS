@@ -52,14 +52,17 @@ class ExamController extends Controller
 
     public function publish(int $id)
     {
-        return (new ExamResource($this->load($this->exams->publish(Exam::findOrFail($id)))))->additional(['success' => true, 'message' => __('messages.saved')]);
+        $exam = Exam::findOrFail($id);
+        $unsubmitted = app(\App\Services\Exams\MarkSubmissionService::class)->unsubmitted($exam);   // D162 (4): a warning, never a block
+        return (new ExamResource($this->load($this->exams->publish($exam))))->additional(['success' => true, 'message' => __('messages.saved'), 'unsubmitted' => $unsubmitted]);
     }
 
     public function subjects(int $id)
     {
         $exam = Exam::findOrFail($id);
         $links = app(ExamPaperService::class)->linksOf($exam);
-        return response()->json(['success' => true, 'data' => $this->exams->subjectsOf($exam)->map(fn ($es) => $this->subjectRow($es) + ['papers' => $links[$es->subject_id] ?? []])]);
+        $flow = app(\App\Services\Exams\MarkSubmissionService::class);
+        return response()->json(['success' => true, 'data' => $this->exams->subjectsOf($exam)->map(fn ($es) => $this->subjectRow($es) + ['papers' => $links[$es->subject_id] ?? [], 'submission' => $flow->stateOf($es)])]);
     }
 
     public function updateSubjects(int $id)

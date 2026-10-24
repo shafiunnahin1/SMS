@@ -125,6 +125,18 @@ class DepartmentRouteInventoryTest extends TestCase
         }
     }
 
+    public function test_d162_marks_submission_route_is_admin_and_teacher_and_matches_the_live_route(): void
+    {
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        $this->assertCount(1, DepartmentRouteCatalog::D162);
+        $entry = DepartmentRouteCatalog::D162[0];
+        $this->assertSame(['D162', 'preserve_nonstaff_boundary', [], ['admin', 'teacher']], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
+        $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())->first(fn ($c) => $c->uri() === $entry['uri'] && in_array('POST', $c->methods(), true));
+        $this->assertNotNull($route, $entry['uri']);
+        $this->assertSame($entry['action'], ltrim($route->getActionName(), '\\'));
+        $this->assertSame('preserve_nonstaff_boundary', $resolver->resolve($this->request($route, 'POST'))['resolved_mode']);
+    }
+
     public function test_d127_omr_form_routes_are_principal_only_and_match_live_routes(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);
