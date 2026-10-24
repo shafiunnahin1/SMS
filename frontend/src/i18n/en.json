@@ -1,6 +1,8 @@
 {
  "app": {
   "qbpv": {
+   "image_busy": "Making...",
+   "image_failed": "Could not make the JPG",
    "align": "Text alignment",
    "aligns": {"left": "Left", "center": "Center", "right": "Right", "justify": "Justify"},
    "wrap": "Wrap Text (pick a box)",

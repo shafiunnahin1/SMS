@@ -1,6 +1,8 @@
 {
  "app": {
   "qbpv": {
+   "image_busy": "তৈরি হচ্ছে...",
+   "image_failed": "ছবি (JPG) তৈরি করা যায়নি",
    "align": "লেখার অবস্থান",
    "aligns": {"left": "বামে", "center": "মাঝে", "right": "ডানে", "justify": "জাস্টিফাই"},
    "wrap": "Wrap Text (বক্স বেছে নিন)",

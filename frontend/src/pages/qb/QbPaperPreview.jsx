@@ -8,6 +8,8 @@ import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
 import MathText from '../../features/qb/MathText'
 import { loadFont } from '../../theme/fonts'
+import { downloadPaperJpg } from '../../features/qb/paperImage'
+import { useUiStore } from '../../store/uiStore'
 
 // D133 / D110: qbank's question-paper print preview with its Paper Controller (resources/views/question-paper/preview.blade.php at
 // 40f769c) - export bar, language, section controls and order, header settings with a size ruler per line, content visibility,
@@ -69,6 +71,7 @@ export default function QbPaperPreview() {
   const [activeBox, setActiveBox] = useState(null)
   const [drop, setDrop] = useState(null)
   const ghostRef = useRef(null)
+  const [jpgBusy, setJpgBusy] = useState(false)
   const paperRef = useRef(null)
   const drag = useRef(null)
   const imageInput = useRef(null)
@@ -95,6 +98,10 @@ export default function QbPaperPreview() {
 
   const move = (i, dir) => setOrder(list => { const next = [...list]; const j = i + dir; if (j < 0 || j >= next.length) return list; [next[i], next[j]] = [next[j], next[i]]; return next })
   const print = () => { window.focus(); window.print() }
+  const saveJpg = async () => {
+    setJpgBusy(true)
+    try { await downloadPaperJpg(paperRef.current, `paper-${id}-${set}.jpg`) } catch { useUiStore.getState().addToast(t('qbpv.image_failed'), 'error') } finally { setJpgBusy(false) }
+  }
   const addBox = (extra = {}) => { const box = { id: Date.now(), kind: 'text', wrap: 'topBottom', anchor: 'top', side: 'start', x: 40, y: 40, width: 240, height: 0, html: '', ...extra }; setBoxes(b => [...b, box]); setActiveBox(box.id) }
   const addImage = (e) => {
     const file = e.target.files?.[0]
@@ -269,7 +276,7 @@ export default function QbPaperPreview() {
           <div className="grid grid-cols-3 gap-2">
             <button type="button" onClick={print} className="flex items-center justify-center gap-1 rounded-token bg-primary px-2 py-2 text-sm font-medium text-on-primary" data-action="print"><Printer aria-hidden="true" className="h-4 w-4" />{t('qbpv.print')}</button>
             <button type="button" onClick={print} title={t('qbpv.pdf_hint')} className="flex items-center justify-center gap-1 rounded-token bg-primary px-2 py-2 text-sm font-medium text-on-primary" data-action="pdf"><FileText aria-hidden="true" className="h-4 w-4" />PDF</button>
-            <button type="button" disabled title={t('qbpv.image_off')} className="flex items-center justify-center gap-1 rounded-token bg-primary px-2 py-2 text-sm font-medium text-on-primary opacity-50" data-action="image"><ImageIcon aria-hidden="true" className="h-4 w-4" />{t('qbpv.image')}</button>
+            <button type="button" onClick={saveJpg} disabled={jpgBusy} className="flex items-center justify-center gap-1 rounded-token bg-primary px-2 py-2 text-sm font-medium text-on-primary disabled:opacity-60" data-action="image"><ImageIcon aria-hidden="true" className="h-4 w-4" />{jpgBusy ? t('qbpv.image_busy') : t('qbpv.image')}</button>
           </div>
         </div>
 

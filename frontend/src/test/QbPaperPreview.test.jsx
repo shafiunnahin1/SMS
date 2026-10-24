@@ -5,7 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../i18n'
 import api from '../api/axios'
 import QbPaperPreview from '../pages/qb/QbPaperPreview'
+import { downloadPaperJpg } from '../features/qb/paperImage'
 
+vi.mock('../features/qb/paperImage', () => ({ downloadPaperJpg: vi.fn(() => Promise.resolve()) }))
 vi.mock('../api/axios', () => ({ default: { get: vi.fn() }, bindAuthStore: () => {} }))
 
 const mcq = (no, text) => ({ no, marks: '1.00', subject: null, question: { id: 100 + no, question_text: text, media: [], answer_text: 'x', explanation_text: `why ${no}`,
@@ -145,5 +147,13 @@ describe('D133 paper print preview', () => {
     }
     fireEvent.click(screen.getByRole('button', { name: 'মাঝে' }))
     expect(JSON.parse(window.localStorage.getItem('qb-paper-preview:7:A')).boxes[0].align).toBe('center')
+  })
+
+  it('saves the paper as a JPG named after the paper and set', async () => {
+    window.localStorage.clear()
+    renderPage()
+    const paper = await screen.findByTestId('qb-paper')
+    fireEvent.click(screen.getByRole('button', { name: 'ইমেজ' }))
+    expect(downloadPaperJpg).toHaveBeenCalledWith(paper, 'paper-7-A.jpg')
   })
 })
