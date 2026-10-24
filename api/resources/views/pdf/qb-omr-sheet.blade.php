@@ -43,18 +43,19 @@
         .omr-page { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #ffffff; }
         /* qbank's sheet: markers and the code bar at the top, the title and the exam-type boxes under them, the code boxes (head cell,
            write-in row, bubble rows) or the manual candidate panel, the instructions column, then the answer tables */
-        .heading { position: absolute; top: {{ $headingTop * 100 }}%; height: {{ max(0.03, $headingBottom - $headingTop) * 100 }}%; left: 22%; width: 56%; display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.2; overflow: hidden; }
+        .heading { position: absolute; top: {{ $headingTop * 100 }}%; height: {{ max(0.03, $headingBottom - $headingTop) * 100 }}%; left: 15%; width: 70%; display: flex; flex-flow: row wrap; justify-content: center; align-items: baseline; align-content: flex-start; column-gap: 2mm; text-align: center; line-height: 1.3; overflow: hidden; }
+        .heading .sep { color: {{ $color }}; }   /* owner 2026-10-24: institution · title · subtitle on one line */
         .heading h1 { margin: 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; font-weight: 700; color: {{ $color }}; }
         .heading p { margin: .3mm 0 0; font-size: 10px; }
         .heading p.details { margin: .8mm 0 0; font-size: 8px; color: #333333; }
-        .heading p.exam { margin: .3mm 0 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; font-weight: 600; }
+        .heading p.exam { margin: 0; font-size: {{ (int) ($settings['title_size'] ?? 20) }}px; font-weight: 600; }
         .heading .meta { align-self: stretch; display: flex; justify-content: space-between; margin-top: .8mm; font-size: 9px; }
         .set-box { position: absolute; top: 7.8%; right: 4%; display: flex; flex-direction: column; align-items: flex-end; gap: 1mm; padding: 1.2mm 2mm; border: .4mm solid {{ $color }}; font-size: 8px; font-weight: 700; color: {{ $color }}; }
         .set-box .code-row { display: flex; align-items: center; gap: 1.5mm; }
         .set-box .digits { display: flex; }
         .set-box b { display: inline-flex; align-items: center; justify-content: center; width: 4.2mm; height: 4.6mm; margin-inline-start: -.3mm; border: .3mm solid {{ $color }}; font-size: 9px; color: #111111; }
         .set-box b.wide { width: 7mm; }
-        .heading p.subtitle { margin: .3mm 0 0; font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; }
+        .heading p.subtitle { margin: 0; font-size: {{ (int) ($settings['subtitle_size'] ?? 14) }}px; }
         .marker { position: absolute; width: 8mm; height: 8mm; transform: translate(-50%, -50%); background: #000000; }
         .marker::after { position: absolute; top: 2.5mm; left: 2.5mm; width: 3mm; height: 3mm; content: ""; background: #ffffff; }
         .code-bit { position: absolute; border: .25mm solid #111111; background: #ffffff; }
@@ -105,8 +106,8 @@
     @endphp
     <header class="heading">
         @if (($head['institution'] ?? '') !== '')<h1>{{ $head['institution'] }}</h1>@endif
-        @if (trim((string) $title) !== '')<p class="exam">{{ $title }}</p>@endif
-        @if (trim((string) $sub) !== '')<p class="subtitle">{{ $sub }}</p>@endif
+        @if (trim((string) $title) !== '')@if (($head['institution'] ?? '') !== '')<span class="sep">·</span>@endif<p class="exam">{{ $title }}</p>@endif
+        @if (trim((string) $sub) !== '')<span class="sep">·</span><p class="subtitle">{{ $sub }}</p>@endif
     </header>
     {{-- the board paper's framed box: each subject's code in digit boxes (one row per subject), then the set --}}
     {{-- owner 2026-10-24: one sheet serves every set - the student marks the set code; the header names no set, time or full marks --}}
