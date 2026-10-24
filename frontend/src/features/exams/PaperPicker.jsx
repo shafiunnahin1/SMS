@@ -26,7 +26,12 @@ export default function PaperPicker({ open, onClose, onPick }) {
   const childFolders = (folders.data ?? []).filter(f => (f.parent_id ?? null) === folderId)
   const files = (papers.data ?? []).filter(p => p.status === 'final' && (p.qb_paper_folder_id ?? null) === folderId)
   const close = () => { setFolderId(null); setMulti(null); onClose() }
-  const pick = (p) => ((p.subjects ?? []).length > 1 ? setMulti(p) : (onPick(p, null), close()))
+  // the paper list carries no subjects: the picked paper's own record says whether it has several subject blocks (D128/D159 (1))
+  const pick = async (p) => {
+    let subjects = p.subjects
+    if (!subjects) { try { subjects = (await api.get(`/question-bank/papers/${p.id}`)).data.data.subjects ?? [] } catch { subjects = [] } }
+    if (subjects.length > 1) setMulti({ ...p, subjects }); else { onPick(p, null); close() }
+  }
 
   return (
     <Modal open={open} onClose={close} title={t('exam_paper.pick_title')}>

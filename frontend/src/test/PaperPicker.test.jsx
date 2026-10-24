@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../i18n'
 import api from '../api/axios'
@@ -26,11 +26,14 @@ describe('PaperPicker', () => {
     expect(screen.getByText('Physics final')).toBeInTheDocument()
     expect(screen.queryByText('Physics draft')).toBeNull()
     fireEvent.click(screen.getByText('Physics final'))
-    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }), null)
+    await waitFor(() => expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }), null))
   })
 
   it('asks which subject block of a multi-subject paper to take (D159)', async () => {
-    api.get.mockImplementation(path => Promise.resolve({ data: { data: path.endsWith('paper-folders') ? [] : [{ id: 5, title: 'Class test', status: 'final', qb_paper_folder_id: null, subjects: [{ id: 1, name: 'গণিত' }, { id: 2, name: 'বিজ্ঞান' }] }] } }))
+    // the list has no subjects (as the API answers); the picker asks the paper itself
+    api.get.mockImplementation(path => Promise.resolve({ data: { data: path.endsWith('paper-folders') ? []
+      : path.endsWith('/papers/5') ? { id: 5, subjects: [{ id: 1, name: 'গণিত' }, { id: 2, name: 'বিজ্ঞান' }] }
+      : [{ id: 5, title: 'Class test', status: 'final', qb_paper_folder_id: null }] } }))
     const onPick = vi.fn()
     render(<QueryClientProvider client={new QueryClient()}><PaperPicker open onClose={() => {}} onPick={onPick} /></QueryClientProvider>)
     fireEvent.click(await screen.findByText('Class test'))
