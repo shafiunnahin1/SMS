@@ -35,4 +35,12 @@ describe('question bank all questions design', () => {
     selectAll.click()
     expect(screen.getByTestId('qb-create-paper')).toHaveTextContent('1')
   })
+
+  it('opens the paper name field when a new paper is created from the picked questions', async () => {
+    renderPage()
+    await waitFor(() => expect(screen.getByTestId('qb-filter')).toBeInTheDocument())
+    screen.getAllByRole('checkbox')[1].click()
+    screen.getByTestId('qb-create-paper').querySelector('[data-action="create-paper"]').click()
+    expect(await screen.findByRole('textbox', { name: /প্রশ্নপত্রের নাম|নাম/ })).toBeInTheDocument()
+  })
 })
