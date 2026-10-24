@@ -33,7 +33,8 @@ export default function SubjectsEditor({ examId, subjects, locked, onSaved }) {
     } catch (e) {
       const d = e.response?.data
       if (d?.errors) setErrors(d.errors)
-      else if (e.response?.status === 422 && d?.message) useUiStore.getState().addToast(d.message, 'error')   // e.g. parts do not add up
+      // a rule over the whole subject (e.g. the parts do not add up to the full marks) has no field of its own: always say it
+      if (e.response?.status === 422 && d?.message) useUiStore.getState().addToast(d.error === 'components_total' ? t('exams.parts_total') : d.message, 'error')
     } finally { setSaving(false) }
   }
   const err = (i, k) => errors[`subjects.${i}.${k}`]?.[0]
@@ -51,8 +52,8 @@ export default function SubjectsEditor({ examId, subjects, locked, onSaved }) {
           <Input label={t('exams.room')} value={r.room ?? ''} onChange={e => set(i, 'room', e.target.value)} />
           <div className="sm:col-span-6 flex flex-col gap-2">
             {(r.components ?? []).map((c, p) => (
-              <div key={p} className="grid gap-2 grid-cols-[1fr_5rem_5rem_auto] items-end">
-                <span className="flex flex-col gap-2 sm:flex-row">
+              <div key={p} className="grid grid-cols-2 items-end gap-2 rounded-token p-2 [border:1px_dashed_var(--line)] sm:grid-cols-[1fr_5rem_5rem_auto] sm:border-0 sm:p-0">
+                <span className="col-span-2 flex flex-col gap-2 sm:col-span-1 sm:flex-row">
                   <label className="flex flex-col gap-1 text-sm"><span>{t('exams.part_kind')}</span>
                     <select className="h-10 rounded-token px-2 bg-surface text-content [border:1px_solid_var(--line)]" name={`part_kind_${i}_${p}`} value={KINDS.includes(c.key) ? c.key : ''}
                       onChange={e => { const k = e.target.value; set(i, 'components', rows[i].components.map((x, j) => (j === p ? { ...x, key: k || `part${p + 1}`, label: k ? t(`exams.kind.${k}`) : x.label } : x))) }}>

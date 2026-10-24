@@ -28,7 +28,7 @@ export default function NotificationBell() {
         {unread > 0 && <span className="absolute -top-0.5 -end-0.5 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-red-600 text-white text-[10px] leading-[1.1rem] text-center">{unread > 9 ? '9+' : unread}</span>}
       </button>
       {open && (
-        <div className="absolute end-0 top-11 z-50 w-72 max-w-[90vw] bg-surface text-content rounded-token shadow-card [border:var(--card-border)] p-2">
+        <div data-testid="bell-panel" className="fixed end-2 top-14 z-50 w-72 max-w-[calc(100vw-1rem)] sm:absolute sm:end-0 sm:top-11 bg-surface text-content rounded-token shadow-card [border:var(--card-border)] p-2">
           <div className="flex items-center justify-between px-2 pb-2">
             <span className="text-sm font-semibold">{t('notifications.heading')}</span>
             {unread > 0 && <button type="button" onClick={readAll} className="text-xs text-primary-fg">{t('notifications.read_all')}</button>}
