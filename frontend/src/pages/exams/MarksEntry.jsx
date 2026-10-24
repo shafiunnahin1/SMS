@@ -83,7 +83,7 @@ export default function MarksEntry() {
               const err = rowErrors[`rows.${i}.marks_obtained`]?.[0]
               return (
                 <li key={r.student_id} data-row={r.student_id} className="py-2 flex flex-wrap items-center gap-3">
-                  <span className="flex-1 min-w-40"><bdi>{r.name}</bdi> <span className="text-xs text-content-muted"><Ltr>{r.roll_no ?? r.code}</Ltr>{r.batch ? ` · ${r.batch}` : ''}</span></span>
+                  <span className="flex-1 min-w-40"><bdi>{r.name}</bdi> <span className="text-xs text-content-muted" data-testid="student-id">{/* D159 (3): the permanent ID beside the roll */}{r.roll_no != null && <>{t('mcq_import.roll')} <Ltr>{r.roll_no}</Ltr> · </>}{t('mcq_import.id')} <Ltr>{r.code}</Ltr>{r.batch ? ` · ${r.batch}` : ''}</span></span>
                   {!m.absent && (parts.length
                     ? parts.map(p => <label key={p.key} className="inline-flex items-center gap-1 text-sm">{p.label}
                         {numberInput(m.parts[p.key] ?? '', p.full, v => set(r.student_id, { parts: { ...m.parts, [p.key]: v } }), `${r.name} ${p.label}`)}</label>)

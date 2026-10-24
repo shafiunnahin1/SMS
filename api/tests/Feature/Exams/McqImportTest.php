@@ -66,4 +66,20 @@ class McqImportTest extends TestCase
         $this->api('POST', $s['host'], "exams/{$exam}/subjects/{$s['physics']->id}/mcq-import", $s['admin'], ['source' => 'omr'])->assertStatus(422)->assertJsonPath('error', 'exam_no_paper');
         $this->api('POST', $s['host'], "exams/{$exam}/subjects/{$s['physics']->id}/mcq-import", $s['otherUser'], ['source' => 'json', 'rows' => [['roll' => '1', 'mcq' => 1]]])->assertStatus(403);
     }
+
+    // D159 (3): the permanent ID resolves the same roll in two sections; an unknown ID is shown, never matched by roll
+    public function test_the_permanent_id_resolves_a_roll_shared_by_two_sections(): void
+    {
+        $s = $this->school('mcqid');
+        [, , $url] = $this->linked($s);
+        $mineId = Tenancy::as($s['i'], fn () => $s['mine']->fresh()->student_id);
+        $sisterId = Tenancy::as($s['i'], fn () => $s['sister']->fresh()->student_id);
+        $rows = [['id' => $mineId, 'mcq' => 12], ['id' => strtolower($sisterId), 'roll' => '2', 'mcq' => 14], ['id' => 'NOPE-1', 'roll' => '1', 'mcq' => 3], ['roll' => '1', 'mcq' => 9]];
+        $out = $this->api('POST', $s['host'], $url, $s['admin'], ['source' => 'json', 'rows' => $rows, 'save' => true])->assertOk()->json('data');
+        $this->assertSame(['ok', 'ok', 'unknown_id', 'ambiguous_roll'], array_column($out['rows'], 'status'));
+        $this->assertSame([$mineId, $sisterId], array_slice(array_column($out['rows'], 'id'), 0, 2));
+        $marks = Tenancy::as($s['i'], fn () => Result::pluck('component_marks', 'student_id'));
+        $this->assertEquals(['mcq' => 12], $marks[$s['mine']->id]);
+        $this->assertEquals(['mcq' => 14], $marks[$s['sister']->id]);
+    }
 }

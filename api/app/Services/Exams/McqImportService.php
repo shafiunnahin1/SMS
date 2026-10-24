@@ -3,7 +3,7 @@
 namespace App\Services\Exams;
 
 use App\Exceptions\BusinessException;
-use App\Models\{AuditLog, Exam, ExamPaper, ExamSubject, QbOmrForm, QbOmrScan, Result};
+use App\Models\{AuditLog, Exam, ExamPaper, ExamSubject, QbOmrForm, QbOmrScan, Result, Student};
 use App\Services\ExamService;
 
 /**
@@ -15,7 +15,8 @@ class McqImportService
 {
     public function __construct(private ExamService $exams) {}
 
-    /** $input = [['roll' => '12', 'batch' => 'A'?, 'mcq' => 18.5], ...] -> checked rows; $save writes the valid ones */
+    /** $input = [['id' => 'DHA-2025-0001'? | 'roll' => '12', 'batch' => 'A'?, 'mcq' => 18.5], ...] -> checked rows; $save writes the valid ones.
+     *  D159 (3): the permanent student ID wins; without it, roll (+ batch) as before */
     public function fromRows(Exam $exam, ExamSubject $es, array $input, ?array $batchIds, bool $save): array
     {
         $full = $this->mcqFull($es);
@@ -23,22 +24,25 @@ class McqImportService
         $seen = [];
         $rows = [];
         foreach (array_values($input) as $line => $r) {
+            $id = trim((string) ($r['id'] ?? ''));
             $roll = trim((string) ($r['roll'] ?? ''));
             $batch = trim((string) ($r['batch'] ?? ''));
             $mcq = $r['mcq'] ?? null;
-            $match = $sitters->filter(fn ($e) => (string) $e->roll_no === $roll && ($batch === '' || $e->batch?->name === $batch))->values();
+            $match = $id !== ''
+                ? $sitters->filter(fn ($e) => strcasecmp((string) $e->student?->student_id, $id) === 0)->values()
+                : $sitters->filter(fn ($e) => (string) $e->roll_no === $roll && ($batch === '' || $e->batch?->name === $batch))->values();
             $status = match (true) {
-                $roll === '' => 'no_roll',
+                $id === '' && $roll === '' => 'no_roll',
                 !is_numeric($mcq) => 'not_number',
                 (float) $mcq < 0 || (float) $mcq > $full => 'out_of_range',
-                $match->count() === 0 => 'unknown_roll',
+                $match->count() === 0 => $id !== '' ? 'unknown_id' : 'unknown_roll',
                 $match->count() > 1 => 'ambiguous_roll',
                 isset($seen[$match[0]->student_id]) => 'duplicate',
                 default => 'ok',
             };
             $student = $match->count() === 1 ? $match[0] : null;
             if ($status === 'ok') $seen[$student->student_id] = true;
-            $rows[] = ['line' => $line + 1, 'roll' => $roll, 'batch' => $student?->batch?->name ?? ($batch ?: null), 'student_id' => $student?->student_id,
+            $rows[] = ['line' => $line + 1, 'id' => $student?->student?->student_id ?? ($id ?: null), 'roll' => $student ? (string) $student->roll_no : $roll, 'batch' => $student?->batch?->name ?? ($batch ?: null), 'student_id' => $student?->student_id,
                 'name' => $student?->student?->user?->name, 'mcq' => is_numeric($mcq) ? round((float) $mcq, 2) : $mcq, 'status' => $status];
         }
         $saved = $save ? $this->save($exam, $es, array_filter($rows, fn ($r) => $r['status'] === 'ok'), $batchIds) : 0;
@@ -52,8 +56,10 @@ class McqImportService
         if (!$paperId) throw new BusinessException('no linked paper', 'exam_no_paper', 422);
         $form = QbOmrForm::where('qb_paper_id', $paperId)->first();
         $scans = $form ? QbOmrScan::where('qb_omr_form_id', $form->id)->where('status', 'graded')->whereNotNull('matched_student_id')->orderBy('id')->get() : collect();
-        $rolls = $this->exams->sitters($exam, $es, $batchIds)->keyBy('student_id');
-        $input = $scans->map(fn ($s) => ['roll' => (string) ($rolls[$s->matched_student_id]->roll_no ?? $s->roll), 'batch' => $rolls[$s->matched_student_id]?->batch?->name, 'mcq' => $s->obtained_marks])->all();
+        // the scan's matched student (D127 review) is known: pass that student's permanent ID, so the same roll in two sections never
+        // clashes and a student who does not sit this subject is "unknown", never another student with the same roll (D159 (3))
+        $ids = Student::whereIn('id', $scans->pluck('matched_student_id'))->pluck('student_id', 'id');
+        $input = $scans->map(fn ($s) => ['id' => (string) ($ids[$s->matched_student_id] ?? ('#' . $s->matched_student_id)), 'mcq' => $s->obtained_marks])->all();
         $result = $this->fromRows($exam, $es, $input, $batchIds, $save);
         return $result + ['sheets' => $scans->count()];
     }

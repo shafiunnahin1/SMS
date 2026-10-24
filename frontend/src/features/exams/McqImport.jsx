@@ -56,10 +56,10 @@ export default function McqImport({ examId, subjectId, exam, subject, rows, full
         <div className="overflow-x-auto">
           {preview.sheets !== undefined && <p className="mb-2 text-sm">{t('mcq_import.sheets', { n: preview.sheets })}</p>}
           <table className="w-full text-sm" data-testid="mcq-preview">
-            <thead><tr className="text-start text-content-muted"><th className="p-1 text-start">#</th><th className="p-1 text-start">{t('mcq_import.roll')}</th><th className="p-1 text-start">{t('students.name')}</th><th className="p-1 text-end">MCQ</th><th className="p-1 text-start">{t('mcq_import.status')}</th></tr></thead>
+            <thead><tr className="text-start text-content-muted"><th className="p-1 text-start">#</th><th className="p-1 text-start">{t('mcq_import.id')}</th><th className="p-1 text-start">{t('mcq_import.roll')}</th><th className="p-1 text-start">{t('students.name')}</th><th className="p-1 text-end">MCQ</th><th className="p-1 text-start">{t('mcq_import.status')}</th></tr></thead>
             <tbody>{preview.rows.map(r => (
               <tr key={r.line} className="border-t border-line" data-status={r.status}>
-                <td className="p-1"><Ltr>{r.line}</Ltr></td><td className="p-1"><Ltr>{r.roll}</Ltr>{r.batch ? ` · ${r.batch}` : ''}</td>
+                <td className="p-1"><Ltr>{r.line}</Ltr></td><td className="p-1"><Ltr>{r.id ?? ''}</Ltr></td><td className="p-1"><Ltr>{r.roll}</Ltr>{r.batch ? ` · ${r.batch}` : ''}</td>
                 <td className="p-1"><bdi>{r.name ?? '—'}</bdi></td><td className="p-1 text-end"><Ltr>{String(r.mcq ?? '')}</Ltr></td>
                 <td className={`p-1 ${r.status === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{t(`mcq_import.st.${r.status}`)}</td>
               </tr>))}</tbody>
