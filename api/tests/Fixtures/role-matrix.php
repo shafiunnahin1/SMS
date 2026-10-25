@@ -118,6 +118,7 @@ return [
     'POST api/v1/ai/conversations' => ['admin', 'teacher'],
     'GET api/v1/ai/conversations/{id}' => ['admin', 'teacher'],
     'POST api/v1/ai/conversations/{id}/messages' => ['admin', 'teacher'],          // AI-P1.2
+    'PUT api/v1/ai/messages/{id}/rating' => ['admin', 'teacher'],                   // AI-P1.3
     'GET api/v1/exams/{id}/result-sms' => ['admin'],                                    // D161 (2)
     'POST api/v1/exams/{id}/result-sms' => ['admin'],
     'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => ['admin', 'institution_staff', 'teacher'],

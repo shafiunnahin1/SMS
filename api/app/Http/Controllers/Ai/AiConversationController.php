@@ -34,6 +34,15 @@ class AiConversationController extends Controller
             'free_left' => $assistant->quotaLeft()]], 201);
     }
 
+    /** D164 (3) AI-P1.3: 👍 / 👎 (or clear) on an answer in an own chat; a thumbs-down answer comes first in the review queue */
+    public function rate(Request $request, int $id)
+    {
+        $m = \App\Models\AiMessage::where('role', 'answer')->whereHas('conversation', fn ($c) => $c->where('user_id', $request->user()->id))->findOrFail($id);
+        $rating = $request->validate(['rating' => 'nullable|integer|in:-1,1'])['rating'] ?? null;
+        $m->update(['rating' => $rating]);
+        return response()->json(['success' => true, 'data' => ['id' => $m->id, 'rating' => $m->rating]]);
+    }
+
     public function show(Request $request, int $id)
     {
         $c = AiConversation::where('user_id', $request->user()->id)->with('messages.review')->findOrFail($id);

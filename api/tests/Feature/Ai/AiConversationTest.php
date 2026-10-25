@@ -29,6 +29,13 @@ class AiConversationTest extends TestCase
         $this->api('POST', $host, 'ai/conversations', $teacher, ['title' => ''])->assertStatus(422);
         foreach (['accountant', 'parent'] as $role) $this->api('GET', $host, 'ai/conversations', $this->makeUser($i, $role))->assertForbidden();
 
+        // AI-P1.3: rating an answer in an own chat only
+        $answer = Tenancy::as($i, fn () => \App\Models\AiMessage::create(['ai_conversation_id' => $id, 'role' => 'answer', 'body' => 'x'])->id);
+        $this->api('PUT', $host, "ai/messages/{$answer}/rating", $teacher, ['rating' => -1])->assertOk()->assertJsonPath('data.rating', -1);
+        $this->api('PUT', $host, "ai/messages/{$answer}/rating", $teacher, ['rating' => 5])->assertStatus(422);
+        $this->api('PUT', $host, "ai/messages/{$answer}/rating", $admin, ['rating' => 1])->assertNotFound();
+        $this->api('PUT', $host, "ai/messages/{$answer}/rating", $teacher, ['rating' => null])->assertOk()->assertJsonPath('data.rating', null);
+
         $other = $this->makeInstitution('aichat2', 'school');
         $this->api('GET', $this->hostOf($other), "ai/conversations/{$id}", $this->makeUser($other, 'admin'))->assertNotFound();
     }

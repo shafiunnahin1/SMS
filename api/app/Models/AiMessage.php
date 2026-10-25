@@ -14,4 +14,6 @@ class AiMessage extends Model
     protected $casts = ['sources' => 'array', 'rating' => 'integer'];
 
     public function review() { return $this->hasOne(AiReview::class); }
+
+    public function conversation() { return $this->belongsTo(AiConversation::class, 'ai_conversation_id'); }
 }

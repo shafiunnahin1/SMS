@@ -1,0 +1,51 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import '../i18n'
+import api from '../api/axios'
+import AiChat from '../pages/ai/AiChat'
+import { buildNav } from '../nav/menu'
+
+vi.mock('../api/axios', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() }, bindAuthStore: () => {} }))
+
+const page = () => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+  <MemoryRouter><AiChat /></MemoryRouter></QueryClientProvider>)
+
+const answer = { id: 11, role: 'answer', body: '1. ৪ ও ৬ এর লসাগু কত\n   উত্তর দেখতে প্রশ্নটি unlock করুন', kind: 'composed', rating: null, review: 'unreviewed',
+  sources: [{ type: 'question', id: 7, locked: true }, { type: 'curriculum', id: 3, title: 'লসাগু' }] }
+
+// D164 AI-P1.3: ask in a new chat, see the answer marked "not yet reviewed" with its sources, unlock a hidden answer, rate it
+describe('AI assistant chat (D164)', () => {
+  afterEach(() => vi.clearAllMocks())
+
+  it('starts a chat with the first question and shows the answer with sources, unlock and rating', async () => {
+    let convo = null
+    api.get.mockImplementation((url) => Promise.resolve({ data: { data: url === '/ai/conversations' ? (convo ? [convo] : [])
+      : { id: 5, title: 'লসাগু', messages: [{ id: 10, role: 'question', body: '৪ ও ৬ এর লসাগু কত' }, answer] } } }))
+    api.post.mockImplementation((url) => {
+      if (url === '/ai/conversations') { convo = { id: 5, title: 'লসাগু' }; return Promise.resolve({ data: { data: { id: 5 } } }) }
+      return Promise.resolve({ data: { data: { answer, questions: [{ id: 7, free_reveal: false }], free_left: 0 } } })
+    })
+    api.put.mockResolvedValue({ data: { data: { id: 11, rating: -1 } } })
+    const { container } = page()
+    await screen.findByTestId('ai-chat')
+    fireEvent.change(container.querySelector('textarea[name="ai_question"]'), { target: { value: '৪ ও ৬ এর লসাগু কত' } })
+    fireEvent.click(container.querySelector('[data-action="ask"]'))
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/ai/conversations/5/messages', { text: '৪ ও ৬ এর লসাগু কত' }))
+    expect(api.post).toHaveBeenCalledWith('/ai/conversations', { title: '৪ ও ৬ এর লসাগু কত' })
+    await screen.findByText(/এখনো যাচাই হয়নি|Not yet reviewed/)
+    expect(container.querySelector('[data-answer="11"]').textContent).toMatch(/লসাগু/)
+    expect(screen.getAllByText(/#7/).length).toBeGreaterThan(0)                // the source list and the unlock button
+    expect(container.querySelector('[data-answer="11"] button').textContent).toMatch(/#7/)
+    fireEvent.click(container.querySelector('[data-action="rate-down"]'))
+    await waitFor(() => expect(api.put).toHaveBeenCalledWith('/ai/messages/11/rating', { rating: -1 }))
+  })
+
+  it('appears in the admin and teacher menus only with the ai_assistant module', () => {
+    const paths = (role, modules) => buildNav(role, { modules }).flatMap(i => i.children ?? [i]).map(i => i.path)
+    expect(paths('admin', ['ai_assistant'])).toContain('/admin/ai')
+    expect(paths('teacher', ['ai_assistant'])).toContain('/teacher/ai')
+    expect(paths('teacher', ['exams'])).not.toContain('/teacher/ai')
+  })
+})

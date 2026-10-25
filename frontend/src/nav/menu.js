@@ -29,6 +29,7 @@ export const MENU = {
       it('results',  '/admin/exams/results', 'ফলাফল', { icon: 'Trophy', module: 'exams' }),
       it('exams',      '/admin/exams',      'পরীক্ষা ও ফলাফল', { icon: 'FileText', module: 'exams' }),
       it('question-bank','/admin/question-bank','প্রশ্নব্যাংক', { icon: 'Library', module: 'question_bank' }),
+      it('ai','/admin/ai','AI সহকারী', { icon: 'MessageCircle', module: 'ai_assistant' }),   // D164 AI-P1.3
       it('qb-papers','/admin/question-bank/papers','প্রশ্নপত্র', { icon: 'FileText', module: 'question_bank' }),
       it('study-materials','/admin/study-materials','শিক্ষা-উপকরণ', { icon: 'Folder', module: 'question_bank' }),
       it('qb-spending','/admin/question-bank/spending','প্রশ্নব্যাংকের খরচ', { icon: 'Wallet', module: 'question_bank' }),
@@ -140,6 +141,7 @@ export const MENU = {
     { key: 'exam-group', label: 'পরীক্ষা', icon: 'FileText', children: [   // D158 (1)
       it('marks','/teacher/marks','নম্বর এন্ট্রি',{icon:'FileText',module:'exams',primary:true}),
       it('question-bank','/teacher/question-bank','প্রশ্নব্যাংক',{icon:'Library',module:'question_bank'}),
+      it('ai','/teacher/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant'}),   // D164 AI-P1.3
       it('qb-papers','/teacher/question-bank/papers','প্রশ্নপত্র',{icon:'FileText',module:'question_bank'}),
     ]},
     it('homework','/teacher/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework'}),
