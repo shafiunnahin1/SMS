@@ -320,6 +320,8 @@ return [
     'GET api/v1/question-bank/blueprints/{id}/candidates' => ['admin', 'teacher'],
     'GET api/v1/learner/profile' => ['student'],                                    // D165 ST.1: learners host only (404 elsewhere)
     'PUT api/v1/learner/profile' => ['student'],
+    'POST api/v1/learner/move' => ['student'],                                       // D165 ST.5
+    'POST api/v1/learner/move/verify' => ['student'],
     'GET api/v1/student/qb/validity' => ['student'],                                // D165 ST.2
     'GET api/v1/student/qb/packs' => ['student'],                                   // D165 ST.3
     'GET api/v1/student/qb/resources' => ['student'],                               // D165 ST.4

@@ -561,10 +561,13 @@ Route::prefix('v1')->group(function () {
             });
         });
         // ── Question bank (D65, QB.9): the student portal - own unlocks, bKash orders to the platform merchant ──
-        // D165 (1) ST.1: a self-registered student's own class (learners host only)
+        // D165 ST.1/ST.5: a student's own class and exam batch; moving purchases to the student's own account
         Route::middleware('role:student')->group(function () {
             Route::get('/learner/profile',                [\App\Http\Controllers\Learner\LearnerProfileController::class, 'show']);
             Route::put('/learner/profile',                [\App\Http\Controllers\Learner\LearnerProfileController::class, 'update']);
+            // D165 ST.5: an institution's student moves valid purchases to their own learners account
+            Route::post('/learner/move',                  [\App\Http\Controllers\Learner\StudentMoveController::class, 'start'])->middleware('throttle:5,1');
+            Route::post('/learner/move/verify',           [\App\Http\Controllers\Learner\StudentMoveController::class, 'verify'])->middleware('throttle:10,1');
         });
         Route::middleware(['role:student', 'module:question_bank'])->prefix('student/qb')->group(function () {
             Route::get('/curriculum',                     [QbStudentController::class, 'curriculum']);

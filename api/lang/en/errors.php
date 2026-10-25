@@ -173,5 +173,6 @@ return [
     'learner_batch_invalid' => 'This exam batch is not for your class or is already over.',
     'practice_nothing_open' => 'You have no open multiple-choice questions here. Buy questions or a pack to practise.',
     'practice_submitted' => 'This practice round is already submitted.',
+    'learner_move_password' => 'This number has no own account yet - give a password for the new account.',
     'learner_not_pending' => 'This registration was not found or is already verified.',
 ];

@@ -61,7 +61,7 @@ class LearnerRegistrationTest extends TestCase
         $this->register(['name' => 'Other'])->assertStatus(422)->assertJsonPath('error', 'learner_phone_taken');
     }
 
-    public function test_pending_is_replaced_validation_and_only_learners_host_has_a_profile(): void
+    public function test_pending_is_replaced_validation_and_class_editable_only_on_the_learners_host(): void
     {
         $a = $this->register()->assertCreated()->json('data.id');
         $b = $this->register(['name' => 'Rafi Ahmed', 'phone' => '+8801712345678'])->assertCreated()->json('data.id');
@@ -73,7 +73,7 @@ class LearnerRegistrationTest extends TestCase
             ->assertJsonValidationErrors(['phone', 'accept_terms', 'password']);
 
         $school = $this->makeInstitution('lrnschool', 'school');
-        $this->api('GET', $this->hostOf($school), 'learner/profile', $this->makeUser($school, 'student'))->assertNotFound();
+        $this->api('GET', $this->hostOf($school), 'learner/profile', $this->makeUser($school, 'student'))->assertOk()->assertJsonPath('data.class_editable', false);   // ST.5: an institution's student - batch only
         $this->api('GET', LearnerRegistrationService::host(), 'learner/profile')->assertUnauthorized();
         $this->getJson('http://' . $this->central() . '/api/v1/public/learners/class-levels')->assertOk()->assertJsonPath('data.0.name_en', 'Class 8');
     }

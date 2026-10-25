@@ -144,7 +144,7 @@ class DepartmentRouteInventoryTest extends TestCase
     public function test_d165_learner_routes_are_public_or_student_and_match_live_routes(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);
-        $this->assertCount(16, DepartmentRouteCatalog::D165);
+        $this->assertCount(18, DepartmentRouteCatalog::D165);
         foreach (DepartmentRouteCatalog::D165 as $entry) {
             // ST.1: registration is public on the central host; the profile is the self-registered student's own
             $roles = str_contains($entry['uri'], 'public/learners') ? [] : (str_contains($entry['uri'], 'super/') ? ['super_admin'] : ['student']);   // ST.2: the Super Admin's exam batches

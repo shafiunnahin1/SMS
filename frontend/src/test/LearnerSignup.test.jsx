@@ -55,7 +55,7 @@ describe('student self-registration (D165)', () => {
     await screen.findByText('ভুল নম্বর')
   })
 
-  it('changes the class on the profile and shows the menu item only on the learners host', async () => {
+  it('changes the class on the profile and shows the menu item with the question bank', async () => {
     api.get.mockImplementation((url) => Promise.resolve({ data: { data: url === '/learner/profile' ? { qb_class_level_id: 8, class_level: classes[0] } : classes } }))
     api.put.mockResolvedValue({ data: { data: { qb_class_level_id: 9 } } })
     const { container } = wrap(<LearnerProfile />)
@@ -65,6 +65,7 @@ describe('student self-registration (D165)', () => {
     await waitFor(() => expect(api.put).toHaveBeenCalledWith('/learner/profile', { qb_class_level_id: 9, qb_exam_batch_id: null }))   // ST.2: a new class drops the batch
     const paths = (type) => buildNav('student', { modules: ['question_bank', 'quiz'], institutionType: type }).map(i => i.path)
     expect(paths('learners')).toContain('/student/my-class')
-    expect(paths('school')).not.toContain('/student/my-class')
+    expect(paths('school')).toContain('/student/my-class')   // ST.5: an institution's student picks the exam batch there too
+    expect(buildNav('student', { modules: [], institutionType: 'school' }).map(i => i.path)).not.toContain('/student/my-class')
   })
 })
