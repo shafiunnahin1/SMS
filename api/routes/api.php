@@ -113,6 +113,9 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['tenant:central', 'locale', 'auth:sanctum', 'role:content_writer,content_moderator,super_admin', 'password.fresh'])->prefix('writer')->group(function () {
         Route::patch('/change-password',              [QbWriterController::class, 'changePassword']);
         Route::get('/dashboard',                      [QbWriterController::class, 'dashboard']);   // R2.1.1 (D110)
+        // D164 (3) AI-P1.4: the review of the AI assistant's answers
+        Route::get('/ai-reviews',                     [\App\Http\Controllers\Ai\AiReviewController::class, 'index']);
+        Route::put('/ai-reviews/{id}',                [\App\Http\Controllers\Ai\AiReviewController::class, 'update'])->whereNumber('id');
         // QB.10b: the writer's own earnings and withdrawal requests
         Route::middleware('role:content_writer')->group(function () {
             Route::get('/earnings',                   [QbEarningController::class, 'summary']);
@@ -630,6 +633,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/ai/conversations',          [\App\Http\Controllers\Ai\AiConversationController::class, 'store']);
             Route::get('/ai/conversations/{id}',      [\App\Http\Controllers\Ai\AiConversationController::class, 'show'])->whereNumber('id');
             Route::post('/ai/conversations/{id}/messages', [\App\Http\Controllers\Ai\AiConversationController::class, 'ask'])->whereNumber('id');   // AI-P1.2
+            Route::get('/ai/settings',                [\App\Http\Controllers\Ai\AiConversationController::class, 'settings'])->middleware('role:admin');   // AI-P1.4
+            Route::put('/ai/settings',                [\App\Http\Controllers\Ai\AiConversationController::class, 'settings'])->middleware('role:admin');
             Route::put('/ai/messages/{id}/rating',    [\App\Http\Controllers\Ai\AiConversationController::class, 'rate'])->whereNumber('id');   // AI-P1.3
         });
 

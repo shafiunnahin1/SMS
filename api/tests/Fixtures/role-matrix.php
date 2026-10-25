@@ -119,6 +119,10 @@ return [
     'GET api/v1/ai/conversations/{id}' => ['admin', 'teacher'],
     'POST api/v1/ai/conversations/{id}/messages' => ['admin', 'teacher'],          // AI-P1.2
     'PUT api/v1/ai/messages/{id}/rating' => ['admin', 'teacher'],                   // AI-P1.3
+    'GET api/v1/ai/settings' => ['admin'],                                          // AI-P1.4
+    'PUT api/v1/ai/settings' => ['admin'],
+    'GET api/v1/writer/ai-reviews' => ['content_writer', 'content_moderator', 'super_admin'],
+    'PUT api/v1/writer/ai-reviews/{id}' => ['content_writer', 'content_moderator', 'super_admin'],
     'GET api/v1/exams/{id}/result-sms' => ['admin'],                                    // D161 (2)
     'POST api/v1/exams/{id}/result-sms' => ['admin'],
     'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => ['admin', 'institution_staff', 'teacher'],

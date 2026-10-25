@@ -128,9 +128,11 @@ class DepartmentRouteInventoryTest extends TestCase
     public function test_d164_ai_assistant_routes_are_admin_and_teacher_and_match_live_routes(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);
-        $this->assertCount(5, DepartmentRouteCatalog::D164);
+        $this->assertCount(9, DepartmentRouteCatalog::D164);
         foreach (DepartmentRouteCatalog::D164 as $entry) {
-            $this->assertSame(['D164', 'preserve_nonstaff_boundary', [], ['admin', 'teacher']], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
+            // AI-P1.4: the head's review switch is admin-only; the review queue is the platform writers' / moderators' (central host)
+            $roles = str_contains($entry['uri'], 'writer/') ? ['content_moderator', 'content_writer', 'super_admin'] : (str_ends_with($entry['uri'], 'ai/settings') ? ['admin'] : ['admin', 'teacher']);
+            $this->assertSame(['D164', 'preserve_nonstaff_boundary', [], $roles], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
             $method = explode('|', $entry['method'])[0];
             $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())->first(fn ($c) => $c->uri() === $entry['uri'] && in_array($method, $c->methods(), true));
             $this->assertNotNull($route, $method . ' ' . $entry['uri']);

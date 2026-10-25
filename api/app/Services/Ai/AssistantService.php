@@ -55,7 +55,13 @@ class AssistantService
         $best = $rows->map(fn ($r) => ['r' => $r, 'score' => QbQuestionFinderService::score($norm, QbQuestionFinderService::normalize($r->question_text)) + $r->weight])
             ->sortByDesc('score')->first();
         if (!$best || $best['score'] < self::DIRECT_SCORE) return null;
-        return ['kind' => 'direct', 'body' => $best['r']->answer_text, 'sources' => [['type' => 'answer_bank', 'id' => $best['r']->id]]];
+        // AI-P1.4: a reviewed answer built from questions this institution has not unlocked may state their answers - it is given only
+        // while the daily free quota covers those questions (each counted once a day), else the composed answer (with hiding) is used
+        $qids = collect($best['r']->sources ?? [])->where('type', 'question')->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $locked = $qids ? array_values(array_diff($qids, $this->openIds(QbQuestion::whereIn('id', $qids)->get()))) : [];
+        $toCount = array_values(array_filter($locked, fn ($id) => !$this->revealedToday($id)));
+        if (count($toCount) > $this->quotaLeft()) return null;
+        return ['kind' => 'direct', 'body' => $best['r']->answer_text, 'sources' => [['type' => 'answer_bank', 'id' => $best['r']->id]], 'reveal' => $toCount];
     }
 
     private function composed(string $norm, User $user): array

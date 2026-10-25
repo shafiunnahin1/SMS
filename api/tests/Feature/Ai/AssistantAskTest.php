@@ -78,6 +78,14 @@ class AssistantAskTest extends TestCase
         $r = $this->ask($a, 'লসাগু কাকে বলে?')->json('data.answer');
         $this->assertSame(['direct', 'লঘিষ্ঠ সাধারণ গুণিতক হলো ...'], [$r['kind'], $r['body']]);
         $this->assertSame('not_found', $this->ask($a, 'zzqx wwvy')->json('data.answer.kind'));
+
+        // AI-P1.4: a reviewed answer built from a question this institution has not unlocked is not a way round the free quota
+        $q = $this->question('বর্গমূল কাকে বলে');
+        Tenancy::withoutTenancy(fn () => AiAnswerBank::create(['question_text' => 'বর্গমূল কাকে বলে', 'answer_text' => 'SECRET-ANSWER from the bank', 'weight' => 3,
+            'sources' => [['type' => 'question', 'id' => $q->id]]]));
+        PlatformSetting::write(AssistantService::QUOTA_KEY, 0);
+        $r = $this->ask($a, 'বর্গমূল কাকে বলে')->getContent();
+        $this->assertStringNotContainsString('SECRET-ANSWER', $r, 'quota used up: the bank answer naming a locked question is not given');
         $this->api('POST', $a['host'], 'ai/conversations/999999/messages', $a['t'], ['text' => 'x'])->assertNotFound();
     }
 }

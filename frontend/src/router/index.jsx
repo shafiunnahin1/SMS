@@ -74,6 +74,7 @@ const QbPapers          = lazy(() => import('../pages/qb/QbPapers'))
 const QbPaperEdit       = lazy(() => import('../pages/qb/QbPaperEdit'))
 const QbOmr             = lazy(() => import('../pages/qb/QbOmr'))
 const AiChat            = lazy(() => import('../pages/ai/AiChat'))   // D164 AI-P1.3
+const AiReviews         = lazy(() => import('../pages/writer/AiReviews'))   // D164 AI-P1.4
 const QbPaperPreview    = lazy(() => import('../pages/qb/QbPaperPreview'))
 const QbAllQuestions    = lazy(() => import('../pages/qb/QbAllQuestions'))
 const QbStudy           = lazy(() => import('../pages/student/QbStudy'))
@@ -199,6 +200,7 @@ export const centralRoutes = [
   area('/writer', ['content_writer', 'content_moderator', 'super_admin'], [
     { path: 'dashboard', element: S(QbDashboard) },
     { path: 'questions', element: S(QbQuestions) },
+    { path: 'ai-reviews', element: S(AiReviews) },   // D164 AI-P1.4
     { path: 'finder', element: S(QbFinder) },
     { path: 'imports', element: S(QbImports) },
     { path: 'imports/:id', element: S(QbImportReview) },

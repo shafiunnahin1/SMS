@@ -8,4 +8,6 @@ return [
     'explanation' => 'Explanation',
     'locked' => 'Unlock the question to see its answer (today\'s free answers are used up).',
     'chapters' => 'Related chapters',
+    'review_title' => 'An answer was updated',
+    'review_body' => 'A reviewer corrected an AI assistant answer. See the new answer in your chat.',
 ];

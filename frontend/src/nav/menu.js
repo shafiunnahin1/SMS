@@ -210,6 +210,7 @@ export const MENU = {
     it('concepts','/writer/concepts','কনসেপ্ট',{icon:'Sparkles'}),
     it('resources','/writer/resources','স্লাইড, বই ও PDF',{icon:'Folder'}),
     it('earnings','/writer/earnings','আয় ও টাকা তোলা',{icon:'Wallet'}),
+    it('ai-reviews','/writer/ai-reviews','AI উত্তর যাচাই',{icon:'MessageCircle'}),   // D164 AI-P1.4
   ],
   content_moderator: [
     it('dashboard','/writer/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard'}),
@@ -217,6 +218,7 @@ export const MENU = {
     it('finder','/writer/finder','প্রশ্ন খুঁজুন',{icon:'Search'}),
     it('review-concepts','/writer/concepts','কনসেপ্ট যাচাই',{icon:'Sparkles'}),
     it('review-resources','/writer/resources','স্লাইড, বই ও PDF যাচাই',{icon:'Folder'}),
+    it('ai-reviews','/writer/ai-reviews','AI উত্তর যাচাই',{icon:'MessageCircle'}),   // D164 AI-P1.4
   ],
   super_admin: [
     it('dashboard','/super-admin/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard'}),

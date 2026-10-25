@@ -10,6 +10,7 @@ import Button from '../../components/Button'
 import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import BuyButton from '../../features/qb/BuyButton'
+import { useAuthStore } from '../../store/authStore'
 
 // D164 AI-P1.3: the teacher's / head's chat with the assistant - own chats on the side, the question box, each answer with its
 // sources, a "not yet reviewed" or "reviewed answer" mark, an unlock button for a question whose answer is hidden, and 👍 / 👎
@@ -22,6 +23,8 @@ export default function AiChat() {
   const [freeLeft, setFreeLeft] = useState(null)
   const [shown, setShown] = useState({})                       // answer id -> the questions it showed (from the ask response)
   const end = useRef(null)
+  const isHead = useAuthStore(s => s.role) === 'admin'
+  const review = useQuery({ queryKey: ['ai-settings'], enabled: isHead, queryFn: () => api.get('/ai/settings').then(r => r.data.data) })   // AI-P1.4
   const list = useQuery({ queryKey: ['ai-conversations'], queryFn: () => api.get('/ai/conversations').then(r => r.data.data) })
   const chat = useQuery({ queryKey: ['ai-conversation', active], enabled: Boolean(active), queryFn: () => api.get(`/ai/conversations/${active}`).then(r => r.data.data) })
   const toast = (m, k) => useUiStore.getState().addToast(m, k)
@@ -52,9 +55,18 @@ export default function AiChat() {
     } catch { toast(t('common.error'), 'error') }
   }
 
+  const setReview = async (on) => {
+    try { await api.put('/ai/settings', { send_to_review: on }); qc.invalidateQueries({ queryKey: ['ai-settings'] }) } catch { toast(t('common.error'), 'error') }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title={t('ai.title')} />
+      {isHead && review.data && (
+        <label className="flex items-center gap-2 text-sm" data-testid="ai-review-setting">
+          <input type="checkbox" checked={review.data.send_to_review} onChange={e => setReview(e.target.checked)} name="send_to_review" />
+          {t('ai.send_to_review')}
+        </label>)}
       <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <Card className="flex flex-col gap-2" data-testid="ai-conversations">
           <Button variant="secondary" onClick={() => setActive(null)} data-action="new-chat"><MessageSquarePlus aria-hidden="true" className="h-4 w-4" />{t('ai.new_chat')}</Button>
@@ -80,6 +92,7 @@ export default function AiChat() {
                       : <><Clock aria-hidden="true" className="h-4 w-4" />{t('ai.not_reviewed')}</>}
                   </span>
                   <div className="whitespace-pre-wrap" dir="auto">{m.body}</div>
+                  {m.original && <details className="text-xs text-content-muted"><summary>{t('ai.original')}</summary><div className="whitespace-pre-wrap" dir="auto">{m.original}</div></details>}
                   {(m.sources ?? []).some(s => s.type === 'question' && s.locked) && (
                     <div className="flex flex-wrap gap-2">{m.sources.filter(s => s.type === 'question' && s.locked).map(s => (
                       <BuyButton key={s.id} type="question" id={s.id} label={t('ai.unlock_q', { id: s.id })} />))}</div>)}

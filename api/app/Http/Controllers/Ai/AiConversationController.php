@@ -43,11 +43,24 @@ class AiConversationController extends Controller
         return response()->json(['success' => true, 'data' => ['id' => $m->id, 'rating' => $m->rating]]);
     }
 
+    /** AI-P1.4 (D164 (3)): the head decides whether this institution's answers go to the platform reviewers (default yes) */
+    public function settings(Request $request)
+    {
+        $i = \App\Support\Tenancy::current();
+        if ($request->isMethod('put')) {
+            $on = (bool) $request->validate(['send_to_review' => 'required|boolean'])['send_to_review'];
+            $i->forceFill(['settings' => array_merge($i->settings ?? [], [\App\Services\Ai\AiReviewService::SETTING => $on])])->save();
+            \App\Models\AuditLog::record('ai.review_setting', $i, ['send_to_review' => $on]);
+        }
+        return response()->json(['success' => true, 'data' => ['send_to_review' => \App\Services\Ai\AiReviewService::sendsToReview($i->fresh())]]);
+    }
+
     public function show(Request $request, int $id)
     {
         $c = AiConversation::where('user_id', $request->user()->id)->with('messages.review')->findOrFail($id);
         return response()->json(['success' => true, 'data' => ['id' => $c->id, 'title' => $c->title, 'messages' => $c->messages->map(fn ($m) => [
-            'id' => $m->id, 'role' => $m->role, 'body' => $m->body, 'kind' => $m->kind, 'sources' => $m->sources ?? [], 'rating' => $m->rating,
+            // AI-P1.4: a corrected or rewritten answer is shown instead of the first one, which stays as history
+            'id' => $m->id, 'role' => $m->role, 'body' => $m->review?->reviewer_text ?: $m->body, 'original' => $m->review?->reviewer_text ? $m->body : null, 'kind' => $m->kind, 'sources' => $m->sources ?? [], 'rating' => $m->rating,
             'review' => $m->role === 'answer' ? ($m->review?->status ?? 'unreviewed') : null, 'created_at' => $m->created_at?->toIso8601String()])]]);
     }
 }
