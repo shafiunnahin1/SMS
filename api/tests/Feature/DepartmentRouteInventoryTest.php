@@ -144,10 +144,10 @@ class DepartmentRouteInventoryTest extends TestCase
     public function test_d165_learner_routes_are_public_or_student_and_match_live_routes(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);
-        $this->assertCount(6, DepartmentRouteCatalog::D165);
+        $this->assertCount(10, DepartmentRouteCatalog::D165);
         foreach (DepartmentRouteCatalog::D165 as $entry) {
             // ST.1: registration is public on the central host; the profile is the self-registered student's own
-            $roles = str_contains($entry['uri'], 'public/learners') ? [] : ['student'];
+            $roles = str_contains($entry['uri'], 'public/learners') ? [] : (str_contains($entry['uri'], 'super/') ? ['super_admin'] : ['student']);   // ST.2: the Super Admin's exam batches
             $this->assertSame(['D165', 'preserve_nonstaff_boundary', [], $roles], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
             $method = explode('|', $entry['method'])[0];
             $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())->first(fn ($c) => $c->uri() === $entry['uri'] && in_array($method, $c->methods(), true));

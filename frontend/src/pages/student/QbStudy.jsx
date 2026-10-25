@@ -14,6 +14,7 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Select } from '../../components/FormField'
 import Tabs from '../../ui/variants/Tabs'
 import MathText from '../../features/qb/MathText'
+import { fmtDate } from '../../i18n/format'
 
 // QB.9 /student/question-bank (D65/D66 §5): the student's own class first; questions free to read, an answer or a concept bought
 // by the student with bKash (the server prices it; the page sends only the item). Back from bKash, ?payment= says how it went.
@@ -25,6 +26,7 @@ export default function QbStudy() {
   const [place, setPlace] = useState({ subject: '', chapter: '', topic: '' })
   const [open, setOpen] = useState(null)
   const [busy, setBusy] = useState(false)
+  const validity = useQuery({ queryKey: ['qb-study', 'validity'], queryFn: () => api.get('/student/qb/validity').then(r => r.data.data) })   // D165 ST.2
   const tree = useQuery({ queryKey: ['qb-study', 'curriculum'], queryFn: () => api.get('/student/qb/curriculum').then(r => r.data.data) })
   const q = place.topic ? { qb_topic_id: place.topic } : place.chapter ? { qb_chapter_id: place.chapter } : place.subject ? { qb_subject_id: place.subject } : {}
   const list = useQuery({ queryKey: ['qb-study', tab, q], queryFn: () => api.get(`/student/qb/${tab}`, { params: q }).then(r => r.data.data), enabled: tab === 'questions' || Boolean(place.topic) })
@@ -60,6 +62,10 @@ export default function QbStudy() {
   return (
     <div className="flex flex-col gap-4" data-testid="qb-study">
       <PageHeader title={t('qbst.title')} />
+      {validity.data && (   // D165 (3): how long a purchase made today lasts, before paying
+        <p className={`text-sm ${validity.data.days_left < 30 ? 'font-semibold' : 'text-content-muted'}`} data-testid="qb-validity" role="note">
+          {t('qbst.validity', { date: fmtDate(validity.data.expires_at, locale) })}{validity.data.days_left < 30 ? ` ${t('qbst.validity_short', { n: validity.data.days_left })}` : ''}
+        </p>)}
       <Card className="grid gap-3 sm:grid-cols-3">
         <Select label={t('qb.subject')} placeholder={t('qb.pick')} value={place.subject} name="subject"
           options={subjects.map(s => ({ value: String(s.id), label: name(s) + (s.class_level_ids.includes(mine) ? ` ★` : '') }))} onChange={e => pick({ subject: e.target.value, chapter: '', topic: '' })} />

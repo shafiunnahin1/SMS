@@ -62,7 +62,7 @@ describe('student self-registration (D165)', () => {
     await screen.findByTestId('learner-profile')
     const select = await waitFor(() => { const s = container.querySelector('[name="qb_class_level_id"]'); expect(s.value).toBe('8'); return s })
     fireEvent.change(select, { target: { value: '9' } })
-    await waitFor(() => expect(api.put).toHaveBeenCalledWith('/learner/profile', { qb_class_level_id: 9 }))
+    await waitFor(() => expect(api.put).toHaveBeenCalledWith('/learner/profile', { qb_class_level_id: 9, qb_exam_batch_id: null }))   // ST.2: a new class drops the batch
     const paths = (type) => buildNav('student', { modules: ['question_bank', 'quiz'], institutionType: type }).map(i => i.path)
     expect(paths('learners')).toContain('/student/my-class')
     expect(paths('school')).not.toContain('/student/my-class')

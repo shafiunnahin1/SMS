@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\{QbContentPublicResource, QbQuestionPublicResource};
 use App\Models\{PlatformSetting, Program, QbConcept, QbQuestion, QbQuizPackage, QbStudentOrder, QbStudentPackageAccess, QbStudentUnlock, Student, User};
 use App\Services\Billing\BkashService;
+use App\Services\Learner\StudentValidityService;
 use App\Services\{QbEarningService, QbPricingService};
 use App\Support\{Money, Tenancy};
 use Illuminate\Http\Request;
@@ -121,7 +122,15 @@ class QbStudentController extends Controller
         return response()->json(['success' => true, 'data' => $o->only(['ref', 'amount', 'status', 'items'])]);
     }
 
-    /** One student unlock (UNIQUE per student and item: a second one is ignored). A quiz package (QB.10) grants access for its
+    /** GET /student/qb/validity: D165 (3) how long a purchase made now would last - shown before payment */
+    public function validity(Request $request, StudentValidityService $validity)
+    {
+        $v = $validity->forUser($request->user());
+        return response()->json(['success' => true, 'data' => ['expires_at' => $v['expires_at']->toIso8601String(), 'rule' => $v['rule'],
+            'days_left' => (int) now()->diffInDays($v['expires_at'])]]);
+    }
+
+    /** One student unlock while one is valid (a second is ignored; D165 (3): after expiry it can be bought again, with a new validity). A quiz package (QB.10) grants access for its
      *  validity_days from now - or from the end of an access still running, so a renewal never loses days. */
     public static function unlock(User $user, array $p, ?int $orderId): void
     {
@@ -138,16 +147,18 @@ class QbStudentController extends Controller
             return;
         }
         DB::transaction(function () use ($user, $p, $orderId) {
-            if (QbStudentUnlock::where('student_user_id', $user->id)->where('item_type', $p['item_type'])->where('item_id', $p['item_id'])->lockForUpdate()->exists()) return;
+            if ($orderId && QbStudentUnlock::where('qb_student_order_id', $orderId)->where('item_type', $p['item_type'])->where('item_id', $p['item_id'])->lockForUpdate()->exists()) return;
+            if (QbStudentUnlock::active()->where('student_user_id', $user->id)->where('item_type', $p['item_type'])->where('item_id', $p['item_id'])->lockForUpdate()->exists()) return;
+            $valid = app(StudentValidityService::class)->forUser($user);      // D165 (3): fixed now; an exam batch's date may move it later
             $unlock = QbStudentUnlock::create(['student_user_id' => $user->id, 'item_type' => $p['item_type'], 'item_id' => $p['item_id'], 'price' => $p['price'],
-                'reason' => $p['reason'], 'qb_student_order_id' => $orderId]);
+                'reason' => $p['reason'], 'qb_student_order_id' => $orderId, 'expires_at' => $valid['expires_at'], 'qb_exam_batch_id' => $valid['qb_exam_batch_id']]);
             app(QbEarningService::class)->credit('student_unlock', $unlock->id, $p['item_type'], (int) $p['item_id'], (string) $p['price']);   // QB.10b
         });
     }
 
     private function owned(User $user, string $type, array $ids): array
     {
-        return $ids ? QbStudentUnlock::where('student_user_id', $user->id)->where('item_type', $type)->whereIn('item_id', $ids)->pluck('item_id')->map(fn ($v) => (int) $v)->all() : [];
+        return $ids ? QbStudentUnlock::active()->where('student_user_id', $user->id)->where('item_type', $type)->whereIn('item_id', $ids)->pluck('item_id')->map(fn ($v) => (int) $v)->all() : [];
     }
 
     public function quote(User $user, string $type, $item): array
@@ -156,9 +167,10 @@ class QbStudentController extends Controller
         return $this->pricing->quote('student', $type, $item, ['class_level_ids' => $class ? [$class] : []]);
     }
 
-    /** The platform class of the student's program (programs.qb_class_level_id), or null */
+    /** The self-registered student's own class (D165), else the platform class of the student's program (programs.qb_class_level_id), or null */
     private function myClass(User $user): ?int
     {
+        if ($own = \App\Models\LearnerProfile::where('user_id', $user->id)->value('qb_class_level_id')) return (int) $own;
         $programId = Student::where('user_id', $user->id)->value('program_id');
         return $programId ? Program::whereKey($programId)->value('qb_class_level_id') : null;
     }

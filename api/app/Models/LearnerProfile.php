@@ -10,5 +10,5 @@ class LearnerProfile extends Model
 {
     use BelongsToInstitution;
 
-    protected $fillable = ['institution_id', 'user_id', 'qb_class_level_id'];
+    protected $fillable = ['institution_id', 'user_id', 'qb_class_level_id', 'qb_exam_batch_id'];
 }

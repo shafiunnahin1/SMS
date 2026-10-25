@@ -2726,7 +2726,8 @@ CREATE TABLE qb_chapter_class_level (
     qb_class_level_id BIGINT UNSIGNED NOT NULL,
     PRIMARY KEY (qb_chapter_id, qb_class_level_id),
     FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id),
-    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
+    FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
 );
 CREATE TABLE qb_topics (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -2835,7 +2836,8 @@ CREATE TABLE qb_question_class_level (
     qb_class_level_id BIGINT UNSIGNED NOT NULL,
     PRIMARY KEY (qb_question_id, qb_class_level_id),
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id),
-    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
+    FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
 );
 CREATE TABLE qb_question_occurrences (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -2965,6 +2967,16 @@ CREATE TABLE qb_unlocks (                                    -- one purchase per
 );
 ALTER TABLE teachers ADD COLUMN qb_monthly_cap DECIMAL(10,2) NULL;   -- D66: per-teacher monthly question-bank spending cap (NULL = the institution default)
 
+CREATE TABLE qb_exam_batches (                                 -- D165 (3) ST.2: SSC/HSC exam batches (platform; the Super Admin's)
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    kind ENUM('ssc','hsc') NOT NULL,
+    class_level_ids JSON NOT NULL,                               -- the qb_class_levels it covers (e.g. Class 9, Class 10)
+    exam_ends_on DATE NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
 CREATE TABLE qb_student_orders (                             -- bKash to the platform merchant (D58 BkashService); items and amount computed by the server
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
@@ -2989,12 +3001,15 @@ CREATE TABLE qb_student_unlocks (
     item_id BIGINT UNSIGNED NOT NULL,
     price DECIMAL(10,2) NOT NULL,
     reason ENUM('paid','free','partial_free') NOT NULL,
+    expires_at TIMESTAMP NULL,                                   -- D165 (3) ST.2: NULL = bought before validity existed
+    qb_exam_batch_id BIGINT UNSIGNED NULL,                       -- the batch whose exam end set expires_at (moves with it)
     qb_student_order_id BIGINT UNSIGNED NULL,
     created_at TIMESTAMP NULL,
-    UNIQUE KEY unique_qb_student_unlock (student_user_id, item_type, item_id),
+    INDEX idx_qb_student_unlock_item (student_user_id, item_type, item_id, expires_at),   -- ST.2: no longer unique (an expired item can be bought again)
     INDEX idx_qb_student_unlocks_inst (institution_id, student_user_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
-    FOREIGN KEY (qb_student_order_id) REFERENCES qb_student_orders(id)
+    FOREIGN KEY (qb_student_order_id) REFERENCES qb_student_orders(id),
+    FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
 );
 
 CREATE TABLE qb_writer_earnings (                            -- D66: a share of every sale, written in the sale's transaction; never deleted (D32)
@@ -3351,7 +3366,8 @@ CREATE TABLE qb_curriculum_version_class_level (             -- D145: class appl
     PRIMARY KEY (qb_curriculum_version_id, qb_class_level_id),
     INDEX idx_qb_curriculum_version_classes (qb_class_level_id, qb_curriculum_version_id),
     FOREIGN KEY (qb_curriculum_version_id) REFERENCES qb_curriculum_versions(id),
-    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
+    FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
 );
 
 CREATE TABLE qb_curriculum_nodes (                            -- D138/D139: arbitrary-depth Part/Unit/Lesson/Text/Topic/Other tree
@@ -3779,11 +3795,13 @@ CREATE TABLE learner_profiles (                                -- D165 (1) ST.1:
     institution_id BIGINT UNSIGNED NOT NULL,
     user_id BIGINT UNSIGNED NOT NULL,
     qb_class_level_id BIGINT UNSIGNED NULL,
+    qb_exam_batch_id BIGINT UNSIGNED NULL,                       -- D165 (3) ST.2: the SSC/HSC batch the student chose
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     UNIQUE KEY uq_learner_profiles_user (user_id),
     INDEX idx_learner_profiles_institution (institution_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
+    FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
 );

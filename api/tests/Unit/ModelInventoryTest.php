@@ -18,7 +18,7 @@ class ModelInventoryTest extends TestCase
     private const PLATFORM_CATALOGUE = ['QbClassLevel', 'QbSubject', 'QbClassLevelSubject', 'QbChapter', 'QbChapterClassLevel', 'QbTopic', 'QbQuestionType',
         'QbQuestion', 'QbQuestionOption', 'QbCreativePart', 'QbQuestionStimulus', 'QbQuestionItem', 'QbQuestionClassLevel', 'QbQuestionOccurrence',
         'QbQuestionRevision', 'QbCurriculumVersion', 'QbCurriculumNode', 'QbQuestionCurriculumNode', 'QbGraphDataset', 'QbMedia', 'QbMediaLink', 'QbConcept', 'QbResource', 'QbPrice', 'QbPriceRule', 'QbWriterEarning', 'QbWriterWallet',
-        'QbWriterWalletTxn', 'QbWithdrawalRequest', 'QbQuizPackage', 'QbQuiz', 'QbQuizQuestion', 'QbImportMap', 'QbImportBatch', 'QbImportRecord', 'QbBlueprint', 'QbBlueprintItem'];   // QbImportMap: D69; QbImport*: D123
+        'QbWriterWalletTxn', 'QbWithdrawalRequest', 'QbQuizPackage', 'QbQuiz', 'QbQuizQuestion', 'QbImportMap', 'QbImportBatch', 'QbImportRecord', 'QbBlueprint', 'QbBlueprintItem', 'QbExamBatch'];   // QbImportMap: D69; QbImport*: D123
 
     /** content an institution may read only once published; platform-private rows it may not read at all */
     private const CATALOGUE_PUBLISHED = ['QbQuestion', 'QbConcept', 'QbResource'];

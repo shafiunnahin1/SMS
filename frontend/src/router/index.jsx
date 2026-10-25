@@ -76,6 +76,7 @@ const QbPapers          = lazy(() => import('../pages/qb/QbPapers'))
 const QbPaperEdit       = lazy(() => import('../pages/qb/QbPaperEdit'))
 const QbOmr             = lazy(() => import('../pages/qb/QbOmr'))
 const AiChat            = lazy(() => import('../pages/ai/AiChat'))   // D164 AI-P1.3
+const QbExamBatches     = lazy(() => import('../pages/super/QbExamBatches'))   // D165 ST.2
 const AiPlatform        = lazy(() => import('../pages/super/AiPlatform'))   // D164 AI-P1.5
 const AiReviews         = lazy(() => import('../pages/writer/AiReviews'))   // D164 AI-P1.4
 const QbPaperPreview    = lazy(() => import('../pages/qb/QbPaperPreview'))
@@ -200,6 +201,7 @@ export const centralRoutes = [
     { path: 'qb/quizzes', element: S(QbQuizAdmin) },   // QB.10
     { path: 'qb/withdrawals', element: S(QbWithdrawals) },   // QB.10b
     { path: 'ai', element: S(AiPlatform) },   // D164 AI-P1.5
+    { path: 'qb/exam-batches', element: S(QbExamBatches) },   // D165 ST.2
   ]),
   // D65 QB.2: the question-bank writers' panel (writers, moderators and the Super Admin)
   area('/writer', ['content_writer', 'content_moderator', 'super_admin'], [

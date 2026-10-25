@@ -72,6 +72,10 @@ Route::prefix('v1')->group(function () {
         Route::patch('/institutions/{id}/toggle',     [InstitutionController::class, 'toggleStatus'])->whereNumber('id');
         Route::post('/institutions/{id}/sms-credits', [SmsCreditController::class, 'adjust'])->whereNumber('id');
         Route::get('/sms-settings',                   [UniversalSmsController::class, 'show']);
+        // D165 ST.2: SSC / HSC exam batches (moving the exam end date moves every purchase made under the batch)
+        Route::get('/qb/exam-batches',                [\App\Http\Controllers\SuperAdmin\QbExamBatchController::class, 'index']);
+        Route::post('/qb/exam-batches',               [\App\Http\Controllers\SuperAdmin\QbExamBatchController::class, 'store']);
+        Route::put('/qb/exam-batches/{id}',           [\App\Http\Controllers\SuperAdmin\QbExamBatchController::class, 'update'])->whereNumber('id');
         // D164 AI-P1.5: the assistant's free answers and daily limit, and its usage report
         Route::get('/ai-settings',                    [\App\Http\Controllers\Ai\AiPlatformController::class, 'settings']);
         Route::put('/ai-settings',                    [\App\Http\Controllers\Ai\AiPlatformController::class, 'update']);
@@ -570,6 +574,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/concepts/{id}',                  [QbStudentController::class, 'concept'])->whereNumber('id');
             Route::post('/orders',                        [QbStudentController::class, 'order'])->middleware('throttle:10,1');
             Route::get('/orders/{ref}',                   [QbStudentController::class, 'orderStatus']);
+            Route::get('/validity',                       [QbStudentController::class, 'validity']);   // D165 ST.2
         });
         // ── Question bank (D66, QB.10): the student's quizzes - free / public / package (while access lasts); marked on the server ──
         Route::middleware(['role:student', 'module:quiz'])->prefix('student/qb')->group(function () {
