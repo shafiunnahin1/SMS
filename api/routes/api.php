@@ -575,6 +575,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/orders',                        [QbStudentController::class, 'order'])->middleware('throttle:10,1');
             Route::get('/orders/{ref}',                   [QbStudentController::class, 'orderStatus']);
             Route::get('/validity',                       [QbStudentController::class, 'validity']);   // D165 ST.2
+            Route::get('/packs',                          [QbStudentController::class, 'packs']);      // D165 ST.3
         });
         // ── Question bank (D66, QB.10): the student's quizzes - free / public / package (while access lasts); marked on the server ──
         Route::middleware(['role:student', 'module:quiz'])->prefix('student/qb')->group(function () {

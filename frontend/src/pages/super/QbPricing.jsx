@@ -18,7 +18,7 @@ import { EmptyState } from '../../components/StateViews'
 
 const KEY = ['super', 'qb-pricing']
 const AUDIENCES = ['institution', 'student']
-const KINDS = ['question_answer', 'concept', 'resource_slide', 'resource_book', 'resource_pdf', 'quiz_package']
+const KINDS = ['question_answer', 'concept', 'resource_slide', 'resource_book', 'resource_pdf', 'quiz_package', 'class_pack', 'subject_pack', 'chapter_pack']   // D165 ST.3: *_pack - students only
 const TARGETS = ['all', 'item', 'question_type', 'topic', 'chapter', 'subject', 'class_level', 'resource_kind', 'quiz_package']
 const METHODS = ['free', 'first_n_items_free', 'first_n_pages_free', 'percent_off', 'amount_off', 'fixed_price', 'free_for_class_level', 'free_first_n_per_buyer']
 const NO_VALUE = ['free', 'free_for_class_level']

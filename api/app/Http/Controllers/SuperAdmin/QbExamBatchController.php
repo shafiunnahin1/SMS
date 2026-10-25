@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
-use App\Models\{AuditLog, QbExamBatch, QbStudentUnlock};
+use App\Models\{AuditLog, QbExamBatch, QbStudentScopeAccess, QbStudentUnlock};
 use App\Services\Learner\StudentValidityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -34,7 +34,8 @@ class QbExamBatchController extends Controller
         $n = 0;
         if ($moved) {
             $end = Carbon::parse($f['exam_ends_on'], StudentValidityService::TZ)->endOfDay()->utc();
-            $n = QbStudentUnlock::anyInstitution()->where('qb_exam_batch_id', $b->id)->update(['expires_at' => $end]);
+            $n = QbStudentUnlock::anyInstitution()->where('qb_exam_batch_id', $b->id)->update(['expires_at' => $end])
+                + QbStudentScopeAccess::anyInstitution()->where('qb_exam_batch_id', $b->id)->update(['expires_at' => $end]);   // ST.3: packs too
         }
         AuditLog::record('qb.exam_batch_updated', $b, ['exam_ends_on' => $f['exam_ends_on'], 'purchases_moved' => $n]);
         return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $b->fresh()->toArray() + ['purchases_moved' => $n]]);

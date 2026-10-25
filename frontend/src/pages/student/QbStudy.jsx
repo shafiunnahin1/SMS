@@ -27,6 +27,8 @@ export default function QbStudy() {
   const [open, setOpen] = useState(null)
   const [busy, setBusy] = useState(false)
   const validity = useQuery({ queryKey: ['qb-study', 'validity'], queryFn: () => api.get('/student/qb/validity').then(r => r.data.data) })   // D165 ST.2
+  const packs = useQuery({ queryKey: ['qb-study', 'packs', place.subject, place.chapter],   // D165 ST.3: whole class / class subject / chapter
+    queryFn: () => api.get('/student/qb/packs', { params: { qb_subject_id: place.subject || undefined, qb_chapter_id: place.chapter || undefined } }).then(r => r.data.data) })
   const tree = useQuery({ queryKey: ['qb-study', 'curriculum'], queryFn: () => api.get('/student/qb/curriculum').then(r => r.data.data) })
   const q = place.topic ? { qb_topic_id: place.topic } : place.chapter ? { qb_chapter_id: place.chapter } : place.subject ? { qb_subject_id: place.subject } : {}
   const list = useQuery({ queryKey: ['qb-study', tab, q], queryFn: () => api.get(`/student/qb/${tab}`, { params: q }).then(r => r.data.data), enabled: tab === 'questions' || Boolean(place.topic) })
@@ -51,8 +53,9 @@ export default function QbStudy() {
   const buy = async (kind, id) => {
     setBusy(true)
     try {
-      const { data } = await api.post('/student/qb/orders', { items: [{ item_type: kind === 'questions' ? 'question' : 'concept', item_id: id }] })
-      if (data.data.paid) { useUiStore.getState().addToast(t('qbst.opened')); item.refetch(); list.refetch(); return }
+      const itemType = kind === 'questions' ? 'question' : kind === 'concepts' ? 'concept' : kind
+      const { data } = await api.post('/student/qb/orders', { items: [{ item_type: itemType, item_id: id }] })
+      if (data.data.paid) { useUiStore.getState().addToast(t('qbst.opened')); if (open) item.refetch(); list.refetch(); packs.refetch(); return }
       window.location.assign(data.data.bkash_url)              // bKash's page; it sends the student back here
     } catch (e) {
       useUiStore.getState().addToast(e.response?.data?.message ?? t('qbst.payment.failed'), 'error')
@@ -74,6 +77,19 @@ export default function QbStudy() {
         <Select label={t('qb.topic')} placeholder={t('qb.pick')} value={place.topic} name="topic"
           options={(chapter?.topics ?? []).map(tp => ({ value: String(tp.id), label: name(tp) }))} onChange={e => pick({ ...place, topic: e.target.value })} />
       </Card>
+      {(packs.data ?? []).length > 0 && (
+        <Card className="flex flex-col gap-2" data-testid="qb-packs">
+          <h2 className="text-sm font-semibold">{t('qbst.packs')}</h2>
+          <ul className="flex flex-col gap-2">
+            {packs.data.map(p => (
+              <li key={p.item_type} className="flex flex-wrap items-center justify-between gap-2 text-sm" data-pack={p.item_type}>
+                <span>{t(`qbst.pack.${p.item_type}`, { name: name(p) })}</span>
+                {p.owned_until ? <span className="text-content-muted">{t('qbst.pack_owned', { date: fmtDate(p.owned_until, locale) })}</span>
+                  : p.price != null ? <Button variant="secondary" onClick={() => buy(p.item_type, p.item_id)} loading={busy} data-action="buy-pack">{t('qbst.pack_buy', { price: p.price })}</Button>
+                  : <span className="text-content-muted">{t('qbst.pack_not_for_sale')}</span>}
+              </li>))}
+          </ul>
+        </Card>)}
       <Tabs label={t('qbst.title')} value={tab} onChange={(k) => { setOpen(null); setTab(k) }} items={[{ key: 'questions', label: t('qb.questions') }, { key: 'concepts', label: t('qb.concepts') }]} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

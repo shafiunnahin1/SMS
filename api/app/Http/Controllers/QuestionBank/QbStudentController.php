@@ -5,9 +5,9 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\{QbContentPublicResource, QbQuestionPublicResource};
-use App\Models\{PlatformSetting, Program, QbConcept, QbQuestion, QbQuizPackage, QbStudentOrder, QbStudentPackageAccess, QbStudentUnlock, Student, User};
+use App\Models\{PlatformSetting, Program, QbConcept, QbQuestion, QbQuizPackage, QbStudentOrder, QbStudentPackageAccess, QbStudentScopeAccess, QbStudentUnlock, Student, User};
 use App\Services\Billing\BkashService;
-use App\Services\Learner\StudentValidityService;
+use App\Services\Learner\{StudentPackService, StudentValidityService};
 use App\Services\{QbEarningService, QbPricingService};
 use App\Support\{Money, Tenancy};
 use Illuminate\Http\Request;
@@ -23,7 +23,7 @@ class QbStudentController extends Controller
 {
     public const TYPES = ['question' => QbQuestion::class, 'concept' => QbConcept::class];
 
-    public function __construct(private QbPricingService $pricing) {}
+    public function __construct(private QbPricingService $pricing, private StudentPackService $packs) {}
 
     /** GET /student/qb/curriculum: the tree, and the student's own platform class (their program's link) */
     public function curriculum(Request $request)
@@ -76,11 +76,20 @@ class QbStudentController extends Controller
     /** POST /student/qb/orders {items: [{item_type, item_id}]}: free items open now; the rest become one bKash payment */
     public function order(Request $request, BkashService $bkash)
     {
-        $f = $request->validate(['items' => 'required|array|min:1|max:20', 'items.*.item_type' => 'required|in:question,concept', 'items.*.item_id' => 'required|integer',
+        $f = $request->validate(['items' => 'required|array|min:1|max:20', 'items.*.item_type' => 'required|in:question,concept,class_pack,subject_pack,chapter_pack', 'items.*.item_id' => 'required|integer',
             'amount' => 'prohibited', 'price' => 'prohibited']);
         $user = $request->user();
         $priced = [];
         foreach ($f['items'] as $it) {
+            if (isset(StudentPackService::TYPES[$it['item_type']])) {                           // D165 ST.3: a whole class / class subject / chapter
+                [$model, $key] = $this->packs->resolve($it['item_type'], (int) $it['item_id'], $this->myClass($user));
+                if ($this->packs->owns($user, $it['item_type'], $key)) continue;
+                $q = $this->quote($user, $it['item_type'], $model);
+                if ($q['price'] === null) throw new BusinessException('this item has no price yet', 'qb_not_for_sale', 422);
+                $priced["{$it['item_type']}:{$model->id}"] = ['item_type' => $it['item_type'], 'item_id' => $model->id, 'scope_key' => $key, 'price' => $q['price'],
+                    'reason' => Money::toPaisa($q['price']) === 0 ? 'free' : ($q['rule_id'] !== null ? 'partial_free' : 'paid')];
+                continue;
+            }
             $item = (self::TYPES[$it['item_type']])::findOrFail($it['item_id']);                 // the catalogue scope: published only
             if ($this->owned($user, $it['item_type'], [$item->id]) !== []) continue;
             $q = $this->quote($user, $it['item_type'], $item);
@@ -146,6 +155,18 @@ class QbStudentController extends Controller
             });
             return;
         }
+        if (isset(StudentPackService::TYPES[$p['item_type']])) {                                // D165 ST.3: a pack - one scope row while valid
+            DB::transaction(function () use ($user, $p, $orderId) {
+                $type = StudentPackService::TYPES[$p['item_type']];
+                if ($orderId && QbStudentScopeAccess::where('qb_student_order_id', $orderId)->where('scope', $type)->where($p['scope_key'])->lockForUpdate()->exists()) return;
+                if (QbStudentScopeAccess::active()->where('student_user_id', $user->id)->where('scope', $type)->where($p['scope_key'])->lockForUpdate()->exists()) return;
+                $valid = app(StudentValidityService::class)->forUser($user);
+                QbStudentScopeAccess::create(['student_user_id' => $user->id, 'scope' => $type, 'price' => $p['price'], 'starts_at' => now(), 'expires_at' => $valid['expires_at'],
+                    'qb_exam_batch_id' => $valid['qb_exam_batch_id'], 'qb_student_order_id' => $orderId] + $p['scope_key']);
+                // writers' share of a pack: not yet - qb_writer_earnings has no pack source (owner question, docs/DECISIONS.md 2026-10-28)
+            });
+            return;
+        }
         DB::transaction(function () use ($user, $p, $orderId) {
             if ($orderId && QbStudentUnlock::where('qb_student_order_id', $orderId)->where('item_type', $p['item_type'])->where('item_id', $p['item_id'])->lockForUpdate()->exists()) return;
             if (QbStudentUnlock::active()->where('student_user_id', $user->id)->where('item_type', $p['item_type'])->where('item_id', $p['item_id'])->lockForUpdate()->exists()) return;
@@ -158,7 +179,19 @@ class QbStudentController extends Controller
 
     private function owned(User $user, string $type, array $ids): array
     {
-        return $ids ? QbStudentUnlock::active()->where('student_user_id', $user->id)->where('item_type', $type)->whereIn('item_id', $ids)->pluck('item_id')->map(fn ($v) => (int) $v)->all() : [];
+        if (!$ids) return [];
+        $own = QbStudentUnlock::active()->where('student_user_id', $user->id)->where('item_type', $type)->whereIn('item_id', $ids)->pluck('item_id')->map(fn ($v) => (int) $v)->all();
+        return array_values(array_unique([...$own, ...$this->packs->opened($user, $type, array_values(array_diff($ids, $own)))]));   // D165 ST.3: packs open their content
+    }
+
+    /** GET /student/qb/packs?qb_subject_id=&qb_chapter_id=: D165 ST.3 the whole class (own class), class subject and chapter packs here */
+    public function packs(Request $request)
+    {
+        $f = $request->validate(['qb_subject_id' => 'nullable|integer', 'qb_chapter_id' => 'nullable|integer']);
+        $user = $request->user();
+        $class = $this->myClass($user);
+        return response()->json(['success' => true, 'data' => $this->packs->offers($user, $class, $f['qb_subject_id'] ?? null, $f['qb_chapter_id'] ?? null,
+            ['class_level_ids' => $class ? [$class] : []])]);
     }
 
     public function quote(User $user, string $type, $item): array

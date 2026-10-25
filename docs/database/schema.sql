@@ -2923,7 +2923,7 @@ CREATE TABLE qb_resources (
 CREATE TABLE qb_prices (                                     -- a change is a NEW row (effective_from); old purchases keep their price
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     audience ENUM('institution','student') NOT NULL,
-    item_kind ENUM('question_answer','concept','resource_slide','resource_book','resource_pdf','quiz_package') NOT NULL,
+    item_kind ENUM('question_answer','concept','resource_slide','resource_book','resource_pdf','quiz_package','class_pack','subject_pack','chapter_pack') NOT NULL,   -- D165 ST.3: *_pack = a student's whole class / class subject / chapter
     qb_question_type_id BIGINT UNSIGNED NULL,                -- question_answer: per question type
     amount DECIMAL(10,2) NOT NULL,
     effective_from TIMESTAMP NOT NULL,
@@ -3010,6 +3010,29 @@ CREATE TABLE qb_student_unlocks (
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_student_order_id) REFERENCES qb_student_orders(id),
     FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
+);
+
+CREATE TABLE qb_student_scope_access (                         -- D165 (2) ST.3: a whole class / one subject of a class / one chapter; never deleted (D32)
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    student_user_id BIGINT UNSIGNED NOT NULL,
+    scope ENUM('class','subject','chapter') NOT NULL,
+    qb_class_level_id BIGINT UNSIGNED NULL,                      -- class: the class; subject: the class the subject is bought for
+    qb_subject_id BIGINT UNSIGNED NULL,
+    qb_chapter_id BIGINT UNSIGNED NULL,
+    price DECIMAL(10,2) NOT NULL,
+    starts_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP NOT NULL,                               -- D165 (3): set at purchase; a moved exam date moves it
+    qb_exam_batch_id BIGINT UNSIGNED NULL,
+    qb_student_order_id BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    INDEX idx_qb_scope_access_student (institution_id, student_user_id, expires_at),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id),
+    FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id),
+    FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id),
+    FOREIGN KEY (qb_student_order_id) REFERENCES qb_student_orders(id)
 );
 
 CREATE TABLE qb_writer_earnings (                            -- D66: a share of every sale, written in the sale's transaction; never deleted (D32)

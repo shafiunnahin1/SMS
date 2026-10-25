@@ -1015,6 +1015,9 @@
    "rule_off_hint": "It stays in the list for the record; prices go back to what the other rules give.",
    "kinds": {
     "question_answer": "Question answer",
+    "class_pack": "Whole class (students)",
+    "subject_pack": "Whole subject (students)",
+    "chapter_pack": "Whole chapter (students)",
     "concept": "Concept",
     "resource_slide": "Slides",
     "resource_book": "Book",
@@ -1355,7 +1358,7 @@
    "unbought_title": "{{n}} questions are not bought yet - buy them for ৳{{total}}?",
    "unbought_hint": "From the institution wallet; every teacher can use them afterwards. Then the paper is saved."
   },
-  "qbst": {"validity": "Bought today, it lasts until {{date}}.", "validity_short": "Only {{n}} days left.", 
+  "qbst": {"packs": "Buy a whole pack", "pack": {"class_pack": "Whole class: {{name}}", "subject_pack": "Whole subject: {{name}}", "chapter_pack": "Whole chapter: {{name}}"}, "pack_buy": "Buy ৳{{price}}", "pack_owned": "Bought, until {{date}}", "pack_not_for_sale": "Not for sale yet", "validity": "Bought today, it lasts until {{date}}.", "validity_short": "Only {{n}} days left.", 
    "title": "Question bank",
    "opened": "Opened.",
    "buy_concept": "Read the concept (৳{{price}})",

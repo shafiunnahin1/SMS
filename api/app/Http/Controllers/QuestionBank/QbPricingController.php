@@ -32,8 +32,8 @@ class QbPricingController extends Controller
     public function storePrice(Request $request)
     {
         $f = $request->validate([
-            'audience' => 'required|in:institution,student',
-            'item_kind' => 'required|in:question_answer,concept,resource_slide,resource_book,resource_pdf,quiz_package',
+            'audience' => ['required', 'in:institution,student', Rule::prohibitedIf(fn () => str_ends_with((string) $request->input('item_kind'), '_pack') && $request->input('audience') !== 'student')],
+            'item_kind' => 'required|in:question_answer,concept,resource_slide,resource_book,resource_pdf,quiz_package,class_pack,subject_pack,chapter_pack',   // D165 ST.3: *_pack only for students
             'qb_question_type_id' => ['nullable', 'integer', Rule::requiredIf($request->input('item_kind') === 'question_answer'),
                 Rule::prohibitedIf($request->input('item_kind') !== 'question_answer'), 'exists:qb_question_types,id'],
             'amount' => ['required', 'regex:/^\d{1,8}(\.\d{1,2})?$/'],

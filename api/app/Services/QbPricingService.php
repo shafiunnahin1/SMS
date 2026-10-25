@@ -18,7 +18,8 @@ use Illuminate\Support\Collection;
 // of a book / PDF / slides are free to read (free_pages).
 final class QbPricingService
 {
-    public const KINDS = ['question' => 'question_answer', 'concept' => 'concept', 'quiz_package' => 'quiz_package'];
+    public const KINDS = ['question' => 'question_answer', 'concept' => 'concept', 'quiz_package' => 'quiz_package',
+        'class_pack' => 'class_pack', 'subject_pack' => 'subject_pack', 'chapter_pack' => 'chapter_pack'];   // D165 ST.3: a student's whole class / class subject / chapter
     private const RANK = ['item' => 1, 'topic' => 2, 'chapter' => 3, 'subject' => 4, 'class_level' => 5, 'question_type' => 6, 'resource_kind' => 6, 'quiz_package' => 6, 'all' => 7];
     private const FREE = ['free', 'first_n_items_free', 'free_for_class_level', 'free_first_n_per_buyer'];
     private const PRICE_ORDER = ['fixed_price' => 0, 'percent_off' => 1, 'amount_off' => 2];
@@ -91,6 +92,10 @@ final class QbPricingService
     {
         $t = ['item' => ["{$type}:{$item->id}"]];
         if ($type === 'quiz_package') return $t + ['quiz_package' => [(string) $item->id]];
+        // D165 ST.3: a pack is priced as its own item; a rule on its class / subject / chapter covers it too (item = QbClassLevel / QbSubject / QbChapter)
+        if ($type === 'class_pack') return $t + ['class_level' => [(string) $item->id]];
+        if ($type === 'subject_pack') return $t + ['subject' => [(string) $item->id]];
+        if ($type === 'chapter_pack') return $t + ['chapter' => [(string) $item->id], 'subject' => [(string) $item->qb_subject_id]];
         $topic = $item->qb_topic_id ?? null;
         $chapter = $item->qb_chapter_id ?? null;
         $subject = $item->qb_subject_id ?? null;
