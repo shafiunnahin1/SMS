@@ -26,7 +26,8 @@ export default function AiChat() {
   const isHead = useAuthStore(s => s.role) === 'admin'
   const review = useQuery({ queryKey: ['ai-settings'], enabled: isHead, queryFn: () => api.get('/ai/settings').then(r => r.data.data) })   // AI-P1.4
   const list = useQuery({ queryKey: ['ai-conversations'], queryFn: () => api.get('/ai/conversations').then(r => r.data.data) })
-  const chat = useQuery({ queryKey: ['ai-conversation', active], enabled: Boolean(active), queryFn: () => api.get(`/ai/conversations/${active}`).then(r => r.data.data) })
+  const chat = useQuery({ queryKey: ['ai-conversation', active], enabled: Boolean(active), queryFn: () => api.get(`/ai/conversations/${active}`).then(r => r.data.data),
+    refetchInterval: q => (q.state.data?.messages ?? []).some(m => m.rephrasing) ? 3000 : false })   // AI-P1.6: until the model's wording arrives
   const toast = (m, k) => useUiStore.getState().addToast(m, k)
   useEffect(() => { end.current?.scrollIntoView?.({ block: 'end' }) }, [chat.data])
 
@@ -92,6 +93,7 @@ export default function AiChat() {
                       : <><Clock aria-hidden="true" className="h-4 w-4" />{t('ai.not_reviewed')}</>}
                   </span>
                   <div className="whitespace-pre-wrap" dir="auto">{m.body}</div>
+                  {m.rephrasing && <p className="text-xs text-content-muted" data-testid="ai-rephrasing">{t('ai.rephrasing')}</p>}
                   {m.original && <details className="text-xs text-content-muted"><summary>{t('ai.original')}</summary><div className="whitespace-pre-wrap" dir="auto">{m.original}</div></details>}
                   {(m.sources ?? []).some(s => s.type === 'question' && s.locked) && (
                     <div className="flex flex-wrap gap-2">{m.sources.filter(s => s.type === 'question' && s.locked).map(s => (

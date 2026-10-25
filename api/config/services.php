@@ -69,4 +69,11 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
     ],
 
+    // D164 (6) AI-P1.6: the small CPU model (llama.cpp `llama-server`, OpenAI-compatible) that rephrases composed answers.
+    // No URL = off: the template answer is shown as it is. Local: http://127.0.0.1:8080; later the VPS's internal address.
+    'ai_llm' => [
+        'url' => env('AI_LLM_URL'),
+        'model' => env('AI_LLM_MODEL', 'qwen3-1.7b-q4'),
+        'timeout' => (int) env('AI_LLM_TIMEOUT', 45),
+    ],
 ];

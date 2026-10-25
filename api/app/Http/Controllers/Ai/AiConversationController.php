@@ -61,6 +61,9 @@ class AiConversationController extends Controller
         return response()->json(['success' => true, 'data' => ['id' => $c->id, 'title' => $c->title, 'messages' => $c->messages->map(fn ($m) => [
             // AI-P1.4: a corrected or rewritten answer is shown instead of the first one, which stays as history
             'id' => $m->id, 'role' => $m->role, 'body' => $m->review?->reviewer_text ?: $m->body, 'original' => $m->review?->reviewer_text ? $m->body : null, 'kind' => $m->kind, 'sources' => $m->sources ?? [], 'rating' => $m->rating,
-            'review' => $m->role === 'answer' ? ($m->review?->status ?? 'unreviewed') : null, 'created_at' => $m->created_at?->toIso8601String()])]]);
+            'review' => $m->role === 'answer' ? ($m->review?->status ?? 'unreviewed') : null,
+            // AI-P1.6: still being rephrased (a worker that never ran stops counting after 2 minutes)
+            'rephrasing' => $m->model_version === \App\Jobs\RephraseAnswerJob::PENDING && $m->created_at?->gt(now()->subMinutes(2)),
+            'created_at' => $m->created_at?->toIso8601String()])]]);
     }
 }

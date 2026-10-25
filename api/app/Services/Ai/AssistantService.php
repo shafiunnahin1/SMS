@@ -3,6 +3,7 @@
 namespace App\Services\Ai;
 
 use App\Http\Resources\QbQuestionPublicResource;
+use App\Jobs\RephraseAnswerJob;
 use App\Models\{AiAnswerBank, AiAnswerReveal, AiConversation, AiMessage, AiReview, PlatformSetting, QbCurriculumNode, QbQuestion, QbQuestionOption, QbUnlock, User};
 use App\Services\QbPricingService;
 use App\Services\QbQuestionFinderService;
@@ -45,6 +46,10 @@ class AssistantService
                 AiAnswerReveal::firstOrCreate(['qb_question_id' => $qid, 'revealed_on' => today()->toDateString()], ['user_id' => $user->id, 'ai_message_id' => $msg->id]);
             }
             AiReview::create(['ai_message_id' => $msg->id, 'status' => 'unreviewed']);
+            if ($answer['kind'] === 'composed' && AnswerRephraser::enabled()) {          // AI-P1.6: the template is shown now, the model's text later
+                $msg->update(['model_version' => RephraseAnswerJob::PENDING]);
+                RephraseAnswerJob::dispatch($msg->id, (int) Tenancy::current()->id)->afterCommit();
+            }
             $conversation->touch();
             return ['question' => $question, 'answer' => $msg, 'questions' => $answer['questions'] ?? []];
         });
@@ -111,6 +116,12 @@ class AssistantService
         $sources = [...collect($shown)->map(fn ($q) => ['type' => 'question', 'id' => $q['id'], 'locked' => !$q['unlocked']])->all(),
             ...$nodes->map(fn ($n) => ['type' => 'curriculum', 'id' => $n->id, 'title' => $n->name_bn ?: $n->name_en])->all()];
         return ['kind' => 'composed', 'body' => implode("\n", $lines), 'sources' => $sources, 'questions' => $shown, 'reveal' => $reveal];
+    }
+
+    /** AI-P1.6 model comparison: the composed text an evaluation item would get - nothing saved, nothing counted */
+    public function composedPreview(string $text, User $user): string
+    {
+        return $this->composed(QbQuestionFinderService::normalize($text), $user)['body'];
     }
 
     /** AI-P1.5 evaluation: the ids the composed answer would show for a text, best first - no answer, no reveal, nothing saved */

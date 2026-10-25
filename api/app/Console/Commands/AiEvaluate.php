@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\{Institution, QbQuestion};
-use App\Services\Ai\AssistantService;
+use App\Models\{Institution, QbQuestion, User};
+use App\Services\Ai\{AnswerRephraser, AssistantService};
 use App\Services\QbQuestionFinderService;
 use App\Support\Tenancy;
 use Illuminate\Console\Command;
@@ -16,7 +16,7 @@ use Illuminate\Console\Command;
  */
 class AiEvaluate extends Command
 {
-    protected $signature = 'ai:evaluate {file : JSON [{question, expect_question_id}]} {--make= : first write a set of this many items} {--institution= : the institution slug to ask as} {--bar=70}';
+    protected $signature = 'ai:evaluate {file : JSON [{question, expect_question_id}]} {--make= : first write a set of this many items} {--institution= : the institution slug to ask as} {--bar=70} {--rephrase= : AI-P1.6 also send this many composed answers to the configured model}';
     protected $description = 'D164 quality gate for the AI assistant: top-3 source hit rate and no cross-institution answers';
 
     public function handle(AssistantService $assistant): int
@@ -50,6 +50,29 @@ class AiEvaluate extends Command
         $this->line(sprintf('items %d · top-3 hits %d (%.1f%%, bar %s%%)', count($set), $hits, $rate, $this->option('bar')));
         $this->line("cross-institution answers {$leaks}");
         $this->line($pass ? 'PASS' : 'FAIL');
+        if ($n = (int) $this->option('rephrase')) $this->rephraseReport(array_slice($set, 0, $n), $institution, $assistant);
         return $pass ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * AI-P1.6 comparison of models: run once per model (change AI_LLM_MODEL / the llama-server model) on the same set. Prints how
+     * many replies the trust rule accepted and the average seconds - counts only, no text.
+     */
+    private function rephraseReport(array $items, Institution $institution, AssistantService $assistant): void
+    {
+        if (!AnswerRephraser::enabled()) { $this->line('model: off (set AI_LLM_URL)'); return; }
+        $rephraser = app(AnswerRephraser::class);
+        [$ok, $secs] = Tenancy::as($institution, function () use ($items, $assistant, $rephraser) {
+            $user = User::where('role', 'admin')->first() ?? User::first();
+            $ok = 0; $secs = 0.0;
+            foreach ($items as $item) {
+                $text = $assistant->composedPreview((string) $item['question'], $user);
+                $t = microtime(true);
+                if ($rephraser->rephrase($text) !== null) $ok++;
+                $secs += microtime(true) - $t;
+            }
+            return [$ok, $secs];
+        });
+        $this->line(sprintf('model %s · rephrased %d of %d · avg %.1f s', AnswerRephraser::model(), $ok, count($items), $secs / max(1, count($items))));
     }
 }
