@@ -31,7 +31,7 @@ export default function QbStudy() {
     queryFn: () => api.get('/student/qb/packs', { params: { qb_subject_id: place.subject || undefined, qb_chapter_id: place.chapter || undefined } }).then(r => r.data.data) })
   const tree = useQuery({ queryKey: ['qb-study', 'curriculum'], queryFn: () => api.get('/student/qb/curriculum').then(r => r.data.data) })
   const q = place.topic ? { qb_topic_id: place.topic } : place.chapter ? { qb_chapter_id: place.chapter } : place.subject ? { qb_subject_id: place.subject } : {}
-  const list = useQuery({ queryKey: ['qb-study', tab, q], queryFn: () => api.get(`/student/qb/${tab}`, { params: q }).then(r => r.data.data), enabled: tab === 'questions' || Boolean(place.topic) })
+  const list = useQuery({ queryKey: ['qb-study', tab, q], queryFn: () => api.get(`/student/qb/${tab}`, { params: q }).then(r => r.data.data), enabled: tab === 'questions' || (tab === 'resources' ? Boolean(place.subject) : Boolean(place.topic)) })
   const item = useQuery({ queryKey: ['qb-study', 'item', open], queryFn: () => api.get(`/student/qb/${open.kind}/${open.id}`).then(r => r.data.data), enabled: Boolean(open) })
 
   useEffect(() => {                                          // back from bKash
@@ -53,7 +53,7 @@ export default function QbStudy() {
   const buy = async (kind, id) => {
     setBusy(true)
     try {
-      const itemType = kind === 'questions' ? 'question' : kind === 'concepts' ? 'concept' : kind
+      const itemType = { questions: 'question', concepts: 'concept', resources: 'resource' }[kind] ?? kind
       const { data } = await api.post('/student/qb/orders', { items: [{ item_type: itemType, item_id: id }] })
       if (data.data.paid) { useUiStore.getState().addToast(t('qbst.opened')); if (open) item.refetch(); list.refetch(); packs.refetch(); return }
       window.location.assign(data.data.bkash_url)              // bKash's page; it sends the student back here
@@ -90,19 +90,20 @@ export default function QbStudy() {
               </li>))}
           </ul>
         </Card>)}
-      <Tabs label={t('qbst.title')} value={tab} onChange={(k) => { setOpen(null); setTab(k) }} items={[{ key: 'questions', label: t('qb.questions') }, { key: 'concepts', label: t('qb.concepts') }]} />
+      <Tabs label={t('qbst.title')} value={tab} onChange={(k) => { setOpen(null); setTab(k) }} items={[{ key: 'questions', label: t('qb.questions') }, { key: 'concepts', label: t('qb.concepts') }, { key: 'resources', label: t('qbst.resources') }]} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           {tab === 'concepts' && !place.topic ? <EmptyState title={t('qb.pick_topic')} />
+            : tab === 'resources' && !place.subject ? <EmptyState title={t('qbst.pick_subject')} />
             : list.isPending ? <Loader /> : list.isError ? <ErrorState onRetry={list.refetch} />
-            : list.data.length === 0 ? <EmptyState title={t(tab === 'questions' ? 'qb.no_questions' : 'qb.no_concepts')} />
+            : list.data.length === 0 ? <EmptyState title={t(tab === 'questions' ? 'qb.no_questions' : tab === 'resources' ? 'qbst.no_resources' : 'qb.no_concepts')} />
             : (
               <ul className="flex flex-col divide-y" data-testid="qb-study-list">
                 {list.data.map(x => (
                   <li key={x.id}>
                     <button type="button" onClick={() => setOpen({ kind: tab, id: x.id })} className="w-full py-2 text-start flex items-center gap-2 hover:bg-surface-muted">
                       {!x.unlocked && <Lock aria-label={t('qb.locked')} className="h-4 w-4 text-content-muted" />}
-                      <span dir="auto" className="line-clamp-2"><MathText text={tab === 'questions' ? x.question_text : (locale === 'bn' ? x.title_bn : x.title_en) || x.title_bn} /></span>
+                      <span dir="auto" className="line-clamp-2"><MathText text={tab === 'questions' ? x.question_text : (locale === 'bn' ? x.title_bn : x.title_en) || x.title_bn} />{tab === 'resources' && <span className="text-xs text-content-muted"> · {t(`qbst.kind.${x.kind}`)}</span>}</span>
                     </button>
                   </li>
                 ))}
@@ -118,12 +119,16 @@ export default function QbStudy() {
                   <li key={o.label} className="flex gap-2"><span className="font-medium">{o.label}.</span><MathText text={o.content_text} />{o.is_correct && <span className="text-xs text-content-muted">({t('qb.correct')})</span>}</li>))}</ol>}
                 {item.data.unlocked && item.data.answer_text && <div className="text-sm" data-testid="qb-answer"><span className="font-medium">{t('qb.answer')}: </span><MathText text={item.data.answer_text} /></div>}
                 {item.data.unlocked && item.data.explanation_text && <div className="text-sm text-content-muted"><MathText text={item.data.explanation_text} /></div>}
+              </> : open.kind === 'resources' ? <>   {/* D165 ST.4: preview pages always, the file once bought / in a pack */}
+                <h2 className="text-lg font-semibold" dir="auto">{(locale === 'bn' ? item.data.title_bn : item.data.title_en) || item.data.title_bn}</h2>
+                {(item.data.previews ?? []).length > 0 && <div className="flex gap-2 overflow-x-auto">{item.data.previews.map(m => <img key={m.id} src={m.url} alt="" className="h-40 rounded-token" />)}</div>}
+                {item.data.unlocked && item.data.file && <a href={item.data.file.url} target="_blank" rel="noreferrer" className="text-primary-fg text-sm" data-action="open-file">{t('qbst.open_file')}</a>}
               </> : <>
                 <h2 className="text-lg font-semibold" dir="auto">{item.data.title_bn}</h2>
                 {item.data.unlocked && <MathText text={item.data.body_text} />}
               </>}
               {!item.data.unlocked && (item.data.price != null
-                ? <div><Button onClick={() => buy(open.kind, open.id)} loading={busy} data-action="buy">{t(open.kind === 'questions' ? 'qbb.see_answer' : 'qbst.buy_concept', { price: item.data.price })}</Button></div>
+                ? <div><Button onClick={() => buy(open.kind, open.id)} loading={busy} data-action="buy">{t(open.kind === 'questions' ? 'qbb.see_answer' : open.kind === 'resources' ? 'qbst.buy_resource' : 'qbst.buy_concept', { price: item.data.price })}</Button></div>
                 : <p className="text-sm text-content-muted">{t('qbb.not_for_sale')}</p>)}
             </>}
           </Card>

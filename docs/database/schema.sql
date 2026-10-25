@@ -3828,3 +3828,22 @@ CREATE TABLE learner_profiles (                                -- D165 (1) ST.1:
     FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
     FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
 );
+
+CREATE TABLE qb_practice_attempts (                            -- D165 ST.4: a student's practice round (MCQ they may open), marked on the server
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    student_user_id BIGINT UNSIGNED NOT NULL,
+    qb_subject_id BIGINT UNSIGNED NOT NULL,
+    qb_chapter_id BIGINT UNSIGNED NULL,
+    question_ids JSON NOT NULL,
+    answers JSON NULL,                                           -- {question id: chosen label}
+    total SMALLINT UNSIGNED NOT NULL,
+    correct SMALLINT UNSIGNED NULL,
+    submitted_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qb_practice_student (institution_id, student_user_id, qb_subject_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id),
+    FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id)
+);

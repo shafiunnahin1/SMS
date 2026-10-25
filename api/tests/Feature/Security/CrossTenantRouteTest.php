@@ -49,7 +49,7 @@ class CrossTenantRouteTest extends TestCase
         'POST api/v1/question-bank/blueprints/{id}/plan', 'GET api/v1/question-bank/blueprints/{id}/candidates',   // D126: platform blueprint ids; picks only this institution's own unlocks (QbBlueprintTest)
         'PUT api/v1/parent/consents/{type}',                                           // consent type of the caller's own children
         'GET api/v1/question-bank/concepts/{id}', 'GET api/v1/question-bank/resources/{id}', 'GET api/v1/question-bank/questions/{id}',
-        'GET api/v1/student/qb/questions/{id}', 'GET api/v1/student/qb/concepts/{id}', 'GET api/v1/student/qb/orders/{ref}',
+        'GET api/v1/student/qb/questions/{id}', 'GET api/v1/student/qb/concepts/{id}', 'GET api/v1/student/qb/resources/{id}', 'POST api/v1/student/qb/practice/{id}/submit', 'GET api/v1/student/qb/orders/{ref}',
         'POST api/v1/student/qb/quiz-packages/{id}/buy', 'POST api/v1/student/qb/quizzes/{id}/attempts',   // QB.10: catalogue rows
         'GET api/v1/student/qb/attempts/{id}', 'PUT api/v1/student/qb/attempts/{id}', 'POST api/v1/student/qb/attempts/{id}/submit',   // QB.10: own attempt (QbQuizTest: another student 404)   // QB.9: catalogue rows / own order by ref (QbStudentTest)   // QB.5: platform catalogue rows; QbLibraryTest: another institution's unlock opens nothing
     ];

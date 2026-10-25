@@ -322,6 +322,11 @@ return [
     'PUT api/v1/learner/profile' => ['student'],
     'GET api/v1/student/qb/validity' => ['student'],                                // D165 ST.2
     'GET api/v1/student/qb/packs' => ['student'],                                   // D165 ST.3
+    'GET api/v1/student/qb/resources' => ['student'],                               // D165 ST.4
+    'GET api/v1/student/qb/resources/{id}' => ['student'],
+    'GET api/v1/student/qb/practice' => ['student'],
+    'POST api/v1/student/qb/practice' => ['student'],
+    'POST api/v1/student/qb/practice/{id}/submit' => ['student'],
     'GET api/v1/super/qb/exam-batches' => ['super_admin'],
     'POST api/v1/super/qb/exam-batches' => ['super_admin'],
     'PUT api/v1/super/qb/exam-batches/{id}' => ['super_admin'],

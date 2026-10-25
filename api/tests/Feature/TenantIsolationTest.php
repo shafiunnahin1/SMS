@@ -213,6 +213,8 @@ class TenantIsolationTest extends TestCase
             // QB.9: catalogue rows and the student's own order ref; QbStudentTest: another student's / institution's ones never open
             'GET api/v1/student/qb/questions/{id}'         => null,
             'GET api/v1/student/qb/concepts/{id}'          => null,
+            'GET api/v1/student/qb/resources/{id}'         => null,   // D165 ST.4: platform catalogue (published); CrossTenantRouteTest plans it
+            'POST api/v1/student/qb/practice/{id}/submit'  => null,   // D165 ST.4: own round (StudentPracticeTest: another student 404)
             'GET api/v1/student/qb/orders/{ref}'           => null,
             // QB.10: student-only routes (the admin is 403); catalogue rows (packages, quizzes) and the student's own attempts -
             // QbQuizTest: another student's attempt is a 404

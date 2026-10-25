@@ -5,7 +5,7 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\{QbContentPublicResource, QbQuestionPublicResource};
-use App\Models\{PlatformSetting, Program, QbConcept, QbQuestion, QbQuizPackage, QbStudentOrder, QbStudentPackageAccess, QbStudentScopeAccess, QbStudentUnlock, Student, User};
+use App\Models\{PlatformSetting, Program, QbConcept, QbQuestion, QbQuizPackage, QbResource, QbStudentOrder, QbStudentPackageAccess, QbStudentScopeAccess, QbStudentUnlock, Student, User};
 use App\Services\Billing\BkashService;
 use App\Services\Learner\{StudentPackService, StudentValidityService};
 use App\Services\{QbEarningService, QbPricingService};
@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
 // trusts only that record. A free item opens at once without a payment.
 class QbStudentController extends Controller
 {
-    public const TYPES = ['question' => QbQuestion::class, 'concept' => QbConcept::class];
+    public const TYPES = ['question' => QbQuestion::class, 'concept' => QbConcept::class, 'resource' => QbResource::class];   // D165 ST.4: PDFs / books
 
     public function __construct(private QbPricingService $pricing, private StudentPackService $packs) {}
 
@@ -73,10 +73,32 @@ class QbStudentController extends Controller
         return response()->json(['success' => true, 'data' => QbContentPublicResource::concept($c, $open) + ['price' => $open ? null : $this->quote($request->user(), 'concept', $c)['price']]]);
     }
 
+    /** GET /student/qb/resources?kind=&qb_subject_id=&qb_chapter_id=&qb_topic_id=: D165 ST.4 the published PDFs / books / slides at a place */
+    public function resources(Request $request)
+    {
+        $f = $request->validate(['kind' => 'nullable|in:slide,book,pdf', 'qb_subject_id' => 'nullable|integer', 'qb_chapter_id' => 'nullable|integer', 'qb_topic_id' => 'nullable|integer']);
+        $rows = QbResource::query()
+            ->when($f['kind'] ?? null, fn ($q, $v) => $q->where('kind', $v))
+            ->when($f['qb_subject_id'] ?? null, fn ($q, $v) => $q->where('qb_subject_id', $v))
+            ->when($f['qb_chapter_id'] ?? null, fn ($q, $v) => $q->where('qb_chapter_id', $v))
+            ->when($f['qb_topic_id'] ?? null, fn ($q, $v) => $q->where('qb_topic_id', $v))
+            ->orderByDesc('id')->limit(500)->get();
+        $open = $this->owned($request->user(), 'resource', $rows->pluck('id')->all());
+        return response()->json(['success' => true, 'data' => $rows->map(fn ($r) => QbContentPublicResource::resource($r, in_array($r->id, $open, true), full: false))->values()]);
+    }
+
+    /** GET /student/qb/resources/{id}: the preview pages always; the file only while this student owns it; otherwise the student price */
+    public function resource(Request $request, int $id)
+    {
+        $r = QbResource::findOrFail($id);
+        $open = $this->owned($request->user(), 'resource', [$r->id]) !== [];
+        return response()->json(['success' => true, 'data' => QbContentPublicResource::resource($r, $open) + ['price' => $open ? null : $this->quote($request->user(), 'resource', $r)['price']]]);
+    }
+
     /** POST /student/qb/orders {items: [{item_type, item_id}]}: free items open now; the rest become one bKash payment */
     public function order(Request $request, BkashService $bkash)
     {
-        $f = $request->validate(['items' => 'required|array|min:1|max:20', 'items.*.item_type' => 'required|in:question,concept,class_pack,subject_pack,chapter_pack', 'items.*.item_id' => 'required|integer',
+        $f = $request->validate(['items' => 'required|array|min:1|max:20', 'items.*.item_type' => 'required|in:question,concept,resource,class_pack,subject_pack,chapter_pack', 'items.*.item_id' => 'required|integer',
             'amount' => 'prohibited', 'price' => 'prohibited']);
         $user = $request->user();
         $priced = [];
@@ -177,7 +199,7 @@ class QbStudentController extends Controller
         });
     }
 
-    private function owned(User $user, string $type, array $ids): array
+    public function owned(User $user, string $type, array $ids): array
     {
         if (!$ids) return [];
         $own = QbStudentUnlock::active()->where('student_user_id', $user->id)->where('item_type', $type)->whereIn('item_id', $ids)->pluck('item_id')->map(fn ($v) => (int) $v)->all();

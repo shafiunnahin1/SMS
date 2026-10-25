@@ -160,6 +160,7 @@ export const MENU = {
   student: [
     it('question-bank','/student/question-bank','প্রশ্নব্যাংক',{icon:'Library',module:'question_bank'}),
     it('qb-quizzes','/student/quizzes','কুইজ',{icon:'ClipboardCheck',module:'quiz'}),
+    it('practice','/student/practice','প্র্যাক্টিস',{icon:'ListChecks',module:'question_bank'}),   // D165 ST.4
     it('my-class','/student/my-class','আমার শ্রেণি',{icon:'GraduationCap',onlyType:'learners'}),   // D165 ST.1: self-registered students only
     it('dashboard','/student/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard',primary:true, since: 'R1.1' }),
     it('routine','/student/routine','রুটিন',{icon:'Clock',module:'routine',primary:true, since: 'R1.1' }),

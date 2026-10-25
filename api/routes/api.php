@@ -576,6 +576,12 @@ Route::prefix('v1')->group(function () {
             Route::get('/orders/{ref}',                   [QbStudentController::class, 'orderStatus']);
             Route::get('/validity',                       [QbStudentController::class, 'validity']);   // D165 ST.2
             Route::get('/packs',                          [QbStudentController::class, 'packs']);      // D165 ST.3
+            // D165 ST.4: PDFs / books, and practice rounds over the questions the student may open
+            Route::get('/resources',                      [QbStudentController::class, 'resources']);
+            Route::get('/resources/{id}',                 [QbStudentController::class, 'resource'])->whereNumber('id');
+            Route::get('/practice',                       [\App\Http\Controllers\Learner\QbPracticeController::class, 'stats']);
+            Route::post('/practice',                      [\App\Http\Controllers\Learner\QbPracticeController::class, 'start'])->middleware('throttle:30,1');
+            Route::post('/practice/{id}/submit',          [\App\Http\Controllers\Learner\QbPracticeController::class, 'submit'])->whereNumber('id');
         });
         // ── Question bank (D66, QB.10): the student's quizzes - free / public / package (while access lasts); marked on the server ──
         Route::middleware(['role:student', 'module:quiz'])->prefix('student/qb')->group(function () {

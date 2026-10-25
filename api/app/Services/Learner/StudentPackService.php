@@ -2,7 +2,7 @@
 
 namespace App\Services\Learner;
 
-use App\Models\{QbChapter, QbClassLevel, QbClassLevelSubject, QbConcept, QbQuestion, QbQuestionClassLevel, QbStudentScopeAccess, QbSubject, QbTopic, User};
+use App\Models\{QbChapter, QbClassLevel, QbClassLevelSubject, QbConcept, QbQuestion, QbQuestionClassLevel, QbResource, QbStudentScopeAccess, QbSubject, QbTopic, User};
 use App\Services\QbPricingService;
 
 /**
@@ -29,7 +29,7 @@ class StudentPackService
     {
         $packs = $ids ? $this->active($user) : collect();
         if ($packs->isEmpty()) return [];
-        return $type === 'question' ? $this->openQuestions($packs, $ids) : ($type === 'concept' ? $this->openConcepts($packs, $ids) : []);
+        return match ($type) { 'question' => $this->openQuestions($packs, $ids), 'concept' => $this->openConcepts($packs, $ids), 'resource' => $this->openResources($packs, $ids), default => [] };
     }
 
     /** the three packs a student can buy at a place in the tree, each with its price and how long a valid one of theirs still runs */
@@ -93,6 +93,22 @@ class StudentPackService
             return $chapter && $packs->contains(fn ($p) => match ($p->scope) {
                 'chapter' => (int) $p->qb_chapter_id === $chapter,
                 'subject' => (int) $p->qb_subject_id === $subject,
+                'class' => in_array($subject, $taught[(int) $p->qb_class_level_id] ?? [], true),
+            });
+        })->pluck('id')->map(fn ($v) => (int) $v)->values()->all();
+    }
+
+    /** ST.4: a PDF / book filed at a topic, chapter or subject - its chapter and subject decide */
+    private function openResources($packs, array $ids): array
+    {
+        $rows = QbResource::whereIn('id', $ids)->get(['id', 'qb_subject_id', 'qb_chapter_id', 'qb_topic_id']);
+        $taught = $this->subjectsTaught($packs->where('scope', 'class')->pluck('qb_class_level_id')->all());
+        return $rows->filter(function ($r) use ($packs, $taught) {
+            $chapter = (int) ($r->qb_chapter_id ?: ($r->qb_topic_id ? QbTopic::whereKey($r->qb_topic_id)->value('qb_chapter_id') : 0));
+            $subject = (int) ($r->qb_subject_id ?: ($chapter ? QbChapter::whereKey($chapter)->value('qb_subject_id') : 0));
+            return $packs->contains(fn ($p) => match ($p->scope) {
+                'chapter' => $chapter && (int) $p->qb_chapter_id === $chapter,
+                'subject' => $subject && (int) $p->qb_subject_id === $subject,
                 'class' => in_array($subject, $taught[(int) $p->qb_class_level_id] ?? [], true),
             });
         })->pluck('id')->map(fn ($v) => (int) $v)->values()->all();
