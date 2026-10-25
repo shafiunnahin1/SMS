@@ -23,6 +23,17 @@ class AiConversationController extends Controller
         return response()->json(['success' => true, 'data' => ['id' => $c->id, 'title' => $c->title, 'messages' => []]], 201);
     }
 
+    /** D164 (2) AI-P1.2: ask in an own chat; answers with the question, the assistant's answer and the questions it showed */
+    public function ask(Request $request, int $id, \App\Services\Ai\AssistantService $assistant)
+    {
+        $c = AiConversation::where('user_id', $request->user()->id)->findOrFail($id);   // another user's or institution's chat is a 404 first
+        $text = $request->validate(['text' => 'required|string|max:1000'])['text'];
+        $out = $assistant->ask($c, $text, $request->user());
+        $row = fn ($m) => ['id' => $m->id, 'role' => $m->role, 'body' => $m->body, 'kind' => $m->kind, 'sources' => $m->sources ?? [], 'rating' => $m->rating, 'review' => $m->role === 'answer' ? 'unreviewed' : null];
+        return response()->json(['success' => true, 'data' => ['question' => $row($out['question']), 'answer' => $row($out['answer']), 'questions' => $out['questions'],
+            'free_left' => $assistant->quotaLeft()]], 201);
+    }
+
     public function show(Request $request, int $id)
     {
         $c = AiConversation::where('user_id', $request->user()->id)->with('messages.review')->findOrFail($id);

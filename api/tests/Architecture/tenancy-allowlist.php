@@ -19,4 +19,5 @@ return [
     'app/Services/QuestionBank/QbPaperHeader.php' => 'reads the platform curriculum pivots qb_question_class_level / qb_class_level_subject (no institution_id) for the paper heading\'s class; the question ids come from the tenant\'s own paper',
     'app/Services/StudentService.php' => 'D160: the student ID serial is shared by every institution - reads the highest ID of the day across tenants (anyInstitution, IDs only) under a named lock',
     'app/Console/Commands/StudentNumericIds.php' => 'D160 (3): the owner-run one-time ID conversion goes over every institution (withoutTenancy), each audit row written inside its own tenant',
+    'app/Services/Ai/AssistantService.php' => 'D164 (3): the reviewed answer bank holds rows open to every institution (institution_id NULL) - AiAnswerBank::anyInstitution() limited to whereNull(institution_id) or the bound tenant',
 ];

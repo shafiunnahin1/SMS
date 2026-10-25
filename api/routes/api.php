@@ -629,6 +629,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/ai/conversations',           [\App\Http\Controllers\Ai\AiConversationController::class, 'index']);
             Route::post('/ai/conversations',          [\App\Http\Controllers\Ai\AiConversationController::class, 'store']);
             Route::get('/ai/conversations/{id}',      [\App\Http\Controllers\Ai\AiConversationController::class, 'show'])->whereNumber('id');
+            Route::post('/ai/conversations/{id}/messages', [\App\Http\Controllers\Ai\AiConversationController::class, 'ask'])->whereNumber('id');   // AI-P1.2
         });
 
         // ── Parent (Step 4.7) ──

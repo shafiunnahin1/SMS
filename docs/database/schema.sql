@@ -3756,3 +3756,19 @@ ALTER TABLE qb_questions ADD FULLTEXT INDEX ft_qb_questions_text (question_text,
 ALTER TABLE qb_question_options ADD FULLTEXT INDEX ft_qb_question_options_text (content_text) WITH PARSER ngram;
 ALTER TABLE qb_creative_parts ADD FULLTEXT INDEX ft_qb_creative_parts_text (question_text) WITH PARSER ngram;
 ALTER TABLE qb_curriculum_nodes ADD FULLTEXT INDEX ft_qb_curriculum_nodes_name (name_bn, name_en) WITH PARSER ngram;
+
+CREATE TABLE ai_answer_reveals (                               -- D164 (2): a free answer of a locked question shown by the assistant
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    qb_question_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    ai_message_id BIGINT UNSIGNED NULL,
+    revealed_on DATE NOT NULL,                                   -- counted per institution per day (default 20)
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY uq_ai_answer_reveals_day (institution_id, qb_question_id, revealed_on),
+    INDEX idx_ai_answer_reveals_day (institution_id, revealed_on),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
