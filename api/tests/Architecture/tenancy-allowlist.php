@@ -20,5 +20,7 @@ return [
     'app/Services/StudentService.php' => 'D160: the student ID serial is shared by every institution - reads the highest ID of the day across tenants (anyInstitution, IDs only) under a named lock',
     'app/Console/Commands/StudentNumericIds.php' => 'D160 (3): the owner-run one-time ID conversion goes over every institution (withoutTenancy), each audit row written inside its own tenant',
     'app/Services/Ai/AiReviewService.php' => 'D164 (3): the platform reviewers (central host) read every institution\'s answers de-identified (withoutTenancy) and write each decision inside that answer\'s own tenant (Tenancy::as); the answer bank row is a platform row (institution_id NULL)',
+    'app/Http/Controllers/Ai/AiPlatformController.php' => 'D164 AI-P1.5: the Super Admin\'s usage report counts the assistant\'s rows over every institution (anyInstitution, counts by day only; central host, tenancy.bypass)',
+    'app/Console/Commands/AiEvaluate.php' => 'D164 (5): the owner-run quality gate asks as one named institution (Tenancy::as) and counts only',
     'app/Services/Ai/AssistantService.php' => 'D164 (3): the reviewed answer bank holds rows open to every institution (institution_id NULL) - AiAnswerBank::anyInstitution() limited to whereNull(institution_id) or the bound tenant',
 ];

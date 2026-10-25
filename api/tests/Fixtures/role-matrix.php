@@ -191,6 +191,9 @@ return [
     'POST api/v1/super/institutions/{id}/sms-credits' => ['super_admin'],
     'PATCH api/v1/super/institutions/{id}/toggle' => ['super_admin'],
     'GET api/v1/super/sms-settings' => ['super_admin'],
+    'GET api/v1/super/ai-settings' => ['super_admin'],                              // D164 AI-P1.5
+    'PUT api/v1/super/ai-settings' => ['super_admin'],
+    'GET api/v1/super/ai-report' => ['super_admin'],
     'PUT api/v1/super/sms-settings' => ['super_admin'],
     'GET api/v1/super/qb/curriculum' => ['super_admin'],                       // QB.1 (D65): the platform curriculum is the Super Admin's
     'POST api/v1/super/qb/{kind}' => ['super_admin'],

@@ -26,11 +26,16 @@ class AssistantService
     public const MAX_NODES = 3;
     public const QUOTA_KEY = 'ai_free_answers_per_day';
     public const QUOTA_DEFAULT = 20;
+    public const LIMIT_KEY = 'ai_daily_question_limit';   // AI-P1.5: questions per institution per day; null = no limit (D164 owner answer 4)
 
     public function __construct(private QbPricingService $pricing) {}
 
     public function ask(AiConversation $conversation, string $text, User $user): array
     {
+        $limit = PlatformSetting::read(self::LIMIT_KEY);
+        if ($limit !== null && $limit !== '' && AiMessage::where('role', 'question')->where('created_at', '>=', today())->count() >= (int) $limit) {
+            throw new \App\Exceptions\BusinessException('the daily question limit is reached', 'ai_daily_limit', 422, ['limit' => (int) $limit]);
+        }
         return DB::transaction(function () use ($conversation, $text, $user) {
             $question = AiMessage::create(['ai_conversation_id' => $conversation->id, 'role' => 'question', 'body' => $text]);
             $norm = QbQuestionFinderService::normalize($text);
@@ -49,9 +54,7 @@ class AssistantService
     private function fromBank(string $norm): ?array
     {
         if ($norm === '') return null;
-        $tenant = (int) Tenancy::current()->id;
-        $rows = AiAnswerBank::anyInstitution()->where(fn ($q) => $q->whereNull('institution_id')->orWhere('institution_id', $tenant))
-            ->whereRaw('MATCH(question_text, answer_text) AGAINST (? IN NATURAL LANGUAGE MODE)', [$norm])->limit(20)->get();
+        $rows = $this->bankCandidates($norm);
         $best = $rows->map(fn ($r) => ['r' => $r, 'score' => QbQuestionFinderService::score($norm, QbQuestionFinderService::normalize($r->question_text)) + $r->weight])
             ->sortByDesc('score')->first();
         if (!$best || $best['score'] < self::DIRECT_SCORE) return null;
@@ -62,6 +65,14 @@ class AssistantService
         $toCount = array_values(array_filter($locked, fn ($id) => !$this->revealedToday($id)));
         if (count($toCount) > $this->quotaLeft()) return null;
         return ['kind' => 'direct', 'body' => $best['r']->answer_text, 'sources' => [['type' => 'answer_bank', 'id' => $best['r']->id]], 'reveal' => $toCount];
+    }
+
+    /** the answer-bank rows a text can reach: open to all (NULL) or this institution's own - the AI-P1.5 leak check uses it too */
+    public function bankCandidates(string $norm)
+    {
+        $tenant = (int) Tenancy::current()->id;
+        return AiAnswerBank::anyInstitution()->where(fn ($q) => $q->whereNull('institution_id')->orWhere('institution_id', $tenant))
+            ->whereRaw('MATCH(question_text, answer_text) AGAINST (? IN NATURAL LANGUAGE MODE)', [$norm])->limit(20)->get();
     }
 
     private function composed(string $norm, User $user): array
@@ -100,6 +111,13 @@ class AssistantService
         $sources = [...collect($shown)->map(fn ($q) => ['type' => 'question', 'id' => $q['id'], 'locked' => !$q['unlocked']])->all(),
             ...$nodes->map(fn ($n) => ['type' => 'curriculum', 'id' => $n->id, 'title' => $n->name_bn ?: $n->name_en])->all()];
         return ['kind' => 'composed', 'body' => implode("\n", $lines), 'sources' => $sources, 'questions' => $shown, 'reveal' => $reveal];
+    }
+
+    /** AI-P1.5 evaluation: the ids the composed answer would show for a text, best first - no answer, no reveal, nothing saved */
+    public function rankedQuestionIds(string $text): array
+    {
+        $norm = QbQuestionFinderService::normalize($text);
+        return $norm === '' ? [] : $this->questions($norm)->pluck('id')->map(fn ($v) => (int) $v)->all();
     }
 
     /** the platform's published questions whose text, explanation or options match, rescored by the finder; at most 5 */

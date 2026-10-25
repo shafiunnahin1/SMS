@@ -67,6 +67,10 @@ Route::prefix('v1')->group(function () {
         Route::patch('/institutions/{id}/toggle',     [InstitutionController::class, 'toggleStatus'])->whereNumber('id');
         Route::post('/institutions/{id}/sms-credits', [SmsCreditController::class, 'adjust'])->whereNumber('id');
         Route::get('/sms-settings',                   [UniversalSmsController::class, 'show']);
+        // D164 AI-P1.5: the assistant's free answers and daily limit, and its usage report
+        Route::get('/ai-settings',                    [\App\Http\Controllers\Ai\AiPlatformController::class, 'settings']);
+        Route::put('/ai-settings',                    [\App\Http\Controllers\Ai\AiPlatformController::class, 'update']);
+        Route::get('/ai-report',                      [\App\Http\Controllers\Ai\AiPlatformController::class, 'report']);
         Route::put('/sms-settings',                   [UniversalSmsController::class, 'update']);
         // Step 8.1 (D27, privacy-and-consent.md 5.3): remove an institution for good - manual, two steps
         Route::get('/tenant-purge/candidates',                      [TenantPurgeController::class, 'candidates']);

@@ -39,6 +39,7 @@ class QuestionAnswerNeverLeaksTest extends TestCase
         'app/Services/QbPaperSets.php' => "D126 (2): freezing a final paper's sets reads which option is correct to store each set's answer key; the key is printed only with the answers copy and only for bought questions (QbPaperController::printable)",
         'app/Services/QbImportService.php' => "R2.1.3 (D123): duplicate check reads existing question texts of the same subject and type; staged records keep only the import's own content",
         'app/Services/QbQuestionFinderService.php' => "R2.1.2 (D114 (3)): the finder reads published question texts to score them; returns the question text, ids and names, never an answer",
+        'app/Console/Commands/AiEvaluate.php' => "D164 (5): the owner-run quality gate samples published question texts for its set and counts hits; prints counts only, never an answer",
         'app/Services/Ai/AssistantService.php' => "D164 (2): the assistant finds matching published questions (FULLTEXT ids, finder score); every question goes out through QbQuestionPublicResource, answers only when unlocked, free or within the daily free quota",
         'app/Http/Controllers/QuestionBank/QbPublicQuizController.php' => "QB.10: the public page filters question ids to the quiz and to published ones; questions go out through QbQuizService::paper, marks only",
     ];
