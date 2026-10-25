@@ -10,7 +10,7 @@ class AiMessage extends Model
 {
     use BelongsToInstitution;
 
-    protected $fillable = ['institution_id', 'ai_conversation_id', 'role', 'body', 'kind', 'sources', 'rating', 'model_version'];
+    protected $fillable = ['institution_id', 'ai_conversation_id', 'role', 'body', 'kind', 'sources', 'rating', 'model_version', 'template_body'];
     protected $casts = ['sources' => 'array', 'rating' => 'integer'];
 
     public function review() { return $this->hasOne(AiReview::class); }

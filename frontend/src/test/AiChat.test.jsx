@@ -42,6 +42,19 @@ describe('AI assistant chat (D164)', () => {
     await waitFor(() => expect(api.put).toHaveBeenCalledWith('/ai/messages/11/rating', { rating: -1 }))
   })
 
+  it('shows the model-rephrased answer with the template it replaced (AI-P1.6.1)', async () => {
+    const rephrased = { ...answer, body: '৪ আর ৬-এর লসাগু খুঁজতে প্রশ্নটি unlock করুন', template: answer.body, rephrasing: false }
+    api.get.mockImplementation((url) => Promise.resolve({ data: { data: url === '/ai/conversations' ? [{ id: 5, title: 'লসাগু' }]
+      : { id: 5, title: 'লসাগু', messages: [{ id: 10, role: 'question', body: '৪ ও ৬ এর লসাগু কত' }, rephrased] } } }))
+    const { container } = page()
+    fireEvent.click(await screen.findByText('লসাগু', { selector: 'button' }))
+    const details = await screen.findByTestId('ai-template')
+    expect(details.textContent).toMatch(/কাঠামো-মাফিক উত্তর|Template answer/)
+    expect(details.textContent).toContain('উত্তর দেখতে প্রশ্নটি unlock করুন')
+    expect(container.querySelector('[data-answer="11"]').textContent).toContain('৪ আর ৬-এর লসাগু খুঁজতে')
+    expect(screen.queryByTestId('ai-rephrasing')).toBeNull()
+  })
+
   it('appears in the admin and teacher menus only with the ai_assistant module', () => {
     const paths = (role, modules) => buildNav(role, { modules }).flatMap(i => i.children ?? [i]).map(i => i.path)
     expect(paths('admin', ['ai_assistant'])).toContain('/admin/ai')

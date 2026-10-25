@@ -10,9 +10,9 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
-// reply with a new number or an extra ✓ is rejected, a stopped model leaves the template, no URL = no call, and a locked answer
-// is never sent to the model. FULLTEXT sees only committed rows, so this test commits and truncates.
-// reply with a new number or an extra ✓ is rejected, a stopped model leaves the template, no URL = no call, and a locked answer is never sent to the model. FULLTEXT sees only committed rows, so this test commits and truncates.
+// D164 (6) AI-P1.6: a composed answer is shown at once and then rephrased by the small model; a trusted reply replaces it (the
+// template kept, AI-P1.6.1), a reply with a new number or an extra ✓ is rejected, a stopped model leaves the template, no URL = no
+// call, and a locked answer is never sent to the model. FULLTEXT sees only committed rows, so this test commits and truncates.
 class AnswerRephraseTest extends TestCase
 {
     use DatabaseTruncation;
@@ -53,6 +53,7 @@ class AnswerRephraseTest extends TestCase
         [$i, $m] = $this->askAndShow('airp1');
         $this->assertSame('৪ আর ৬-এর লসাগু ১২ ✓', $m['body']);
         $this->assertFalse($m['rephrasing']);
+        $this->assertStringContainsString('লসাগু', (string) $m['template'], 'the template kept as history');
         $this->assertSame('qwen3-1.7b-q4', Tenancy::as($i, fn () => AiMessage::find($m['id'])->model_version));
         Http::assertSent(fn (Request $r) => $r->url() === 'http://llm.test/v1/chat/completions');
     }
@@ -65,6 +66,7 @@ class AnswerRephraseTest extends TestCase
         $this->assertStringNotContainsString('২৪', $m['body']);
         $this->assertStringContainsString('লসাগু', $m['body']);
         $this->assertNull(Tenancy::as($i, fn () => AiMessage::find($m['id'])->model_version), 'NULL = the template stays');
+        $this->assertNull($m['template'], 'nothing replaced, no history');
 
         Http::fake(['llm.test/*' => Http::response('down', 503)]);
         [, $m] = $this->askAndShow('airp3');

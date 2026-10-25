@@ -3709,6 +3709,7 @@ CREATE TABLE ai_messages (                                     -- D164 (2): a qu
     ai_conversation_id BIGINT UNSIGNED NOT NULL,
     role VARCHAR(10) NOT NULL,                                   -- question | answer
     body TEXT NOT NULL,
+    template_body TEXT NULL,                                     -- D164 (6) AI-P1.6.1: the template answer the model rephrased
     kind VARCHAR(12) NULL,                                       -- answer: direct | composed | not_found
     sources JSON NULL,                                           -- [{type, id, title}]
     rating TINYINT NULL,                                         -- -1 | 1

@@ -94,6 +94,7 @@ export default function AiChat() {
                   </span>
                   <div className="whitespace-pre-wrap" dir="auto">{m.body}</div>
                   {m.rephrasing && <p className="text-xs text-content-muted" data-testid="ai-rephrasing">{t('ai.rephrasing')}</p>}
+                  {m.template && <details className="text-xs text-content-muted" data-testid="ai-template"><summary>{t('ai.template')}</summary><div className="whitespace-pre-wrap" dir="auto">{m.template}</div></details>}
                   {m.original && <details className="text-xs text-content-muted"><summary>{t('ai.original')}</summary><div className="whitespace-pre-wrap" dir="auto">{m.original}</div></details>}
                   {(m.sources ?? []).some(s => s.type === 'question' && s.locked) && (
                     <div className="flex flex-wrap gap-2">{m.sources.filter(s => s.type === 'question' && s.locked).map(s => (
