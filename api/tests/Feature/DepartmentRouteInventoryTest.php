@@ -131,7 +131,7 @@ class DepartmentRouteInventoryTest extends TestCase
         $this->assertCount(12, DepartmentRouteCatalog::D164);
         foreach (DepartmentRouteCatalog::D164 as $entry) {
             // AI-P1.4: the head's review switch is admin-only; the review queue is the platform writers' / moderators' (central host)
-            $roles = str_contains($entry['uri'], 'super/') ? ['super_admin'] : (str_contains($entry['uri'], 'writer/') ? ['content_moderator', 'content_writer', 'super_admin'] : (str_ends_with($entry['uri'], 'ai/settings') ? ['admin'] : ['admin', 'teacher']));   // AI-P1.5: the Super Admin's settings and report
+            $roles = str_contains($entry['uri'], 'super/') ? ['super_admin'] : (str_contains($entry['uri'], 'writer/') ? ['content_moderator', 'content_writer', 'super_admin'] : (str_ends_with($entry['uri'], 'ai/settings') ? ['admin'] : ['admin', 'teacher', 'student']));   // D165 ST.6: students chat too   // AI-P1.5: the Super Admin's settings and report
             $this->assertSame(['D164', 'preserve_nonstaff_boundary', [], $roles], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
             $method = explode('|', $entry['method'])[0];
             $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())->first(fn ($c) => $c->uri() === $entry['uri'] && in_array($method, $c->methods(), true));
@@ -144,10 +144,10 @@ class DepartmentRouteInventoryTest extends TestCase
     public function test_d165_learner_routes_are_public_or_student_and_match_live_routes(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);
-        $this->assertCount(18, DepartmentRouteCatalog::D165);
+        $this->assertCount(19, DepartmentRouteCatalog::D165);
         foreach (DepartmentRouteCatalog::D165 as $entry) {
             // ST.1: registration is public on the central host; the profile is the self-registered student's own
-            $roles = str_contains($entry['uri'], 'public/learners') ? [] : (str_contains($entry['uri'], 'super/') ? ['super_admin'] : ['student']);   // ST.2: the Super Admin's exam batches
+            $roles = str_contains($entry['uri'], 'public/learners') ? [] : (str_contains($entry['uri'], 'super/') ? ['super_admin'] : (str_contains($entry['uri'], 'ai/') ? ['admin', 'teacher', 'student'] : ['student']));   // ST.6: deleting an own chat   // ST.2: the Super Admin's exam batches
             $this->assertSame(['D165', 'preserve_nonstaff_boundary', [], $roles], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
             $method = explode('|', $entry['method'])[0];
             $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())->first(fn ($c) => $c->uri() === $entry['uri'] && in_array($method, $c->methods(), true));

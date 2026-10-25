@@ -108,7 +108,7 @@ return [
             'enrollment'    => ['bn' => 'নিবন্ধন',     'en' => 'Registration', 'ar' => 'التسجيل'],
             'tuition_fee'   => ['bn' => 'ফি',          'en' => 'Fee', 'ar' => 'الرسوم'],
         ],
-        'modules' => ['question_bank', 'quiz'],
+        'modules' => ['question_bank', 'quiz', 'ai_assistant'],   // D165 ST.6: the student AI assistant
         'onboarding' => ['public_site' => false, 'programs' => 'none', 'batches' => [], 'fee_categories' => []],
     ],
 

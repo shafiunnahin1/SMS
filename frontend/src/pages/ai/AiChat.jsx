@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { MessageSquarePlus, Send, ThumbsUp, ThumbsDown, BadgeCheck, Clock } from 'lucide-react'
+import { MessageSquarePlus, Send, ThumbsUp, ThumbsDown, BadgeCheck, Clock, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
 import PageHeader from '../../components/PageHeader'
@@ -56,6 +56,15 @@ export default function AiChat() {
     } catch { toast(t('common.error'), 'error') }
   }
 
+  const remove = async (c) => {                                  // D165 ST.6: delete an own chat for good
+    if (!window.confirm(t('ai.delete_confirm'))) return
+    try {
+      await api.delete(`/ai/conversations/${c.id}`)
+      if (active === c.id) setActive(null)
+      qc.invalidateQueries({ queryKey: ['ai-conversations'] })
+    } catch { toast(t('common.error'), 'error') }
+  }
+
   const setReview = async (on) => {
     try { await api.put('/ai/settings', { send_to_review: on }); qc.invalidateQueries({ queryKey: ['ai-settings'] }) } catch { toast(t('common.error'), 'error') }
   }
@@ -74,8 +83,9 @@ export default function AiChat() {
           {list.isPending ? <Loader type="skeleton" rows={3} /> : list.isError ? <ErrorState onRetry={list.refetch} /> : (
             <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto lg:max-h-[60vh]">
               {(list.data ?? []).map(c => (
-                <li key={c.id}><button type="button" onClick={() => setActive(c.id)} aria-current={active === c.id}
-                  className={`w-full truncate rounded-token px-2 py-1 text-start text-sm ${active === c.id ? 'bg-primary-soft font-semibold text-primary-fg' : 'hover:bg-surface-muted'}`} dir="auto">{c.title}</button></li>
+                <li key={c.id} className="flex items-center gap-1"><button type="button" onClick={() => setActive(c.id)} aria-current={active === c.id}
+                  className={`min-w-0 flex-1 truncate rounded-token px-2 py-1 text-start text-sm ${active === c.id ? 'bg-primary-soft font-semibold text-primary-fg' : 'hover:bg-surface-muted'}`} dir="auto">{c.title}</button>
+                  <Button variant="ghost" onClick={() => remove(c)} aria-label={t('ai.delete')} data-action="delete-chat"><Trash2 aria-hidden="true" className="h-4 w-4" /></Button></li>
               ))}
             </ul>)}
         </Card>

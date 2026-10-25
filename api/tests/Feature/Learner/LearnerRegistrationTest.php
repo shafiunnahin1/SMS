@@ -86,7 +86,7 @@ class LearnerRegistrationTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors(['slug']);
         $this->api('POST', 'admin.' . config('tenancy.base_domain'), 'super/institutions', $super, ['name' => 'X', 'slug' => 'lrnx', 'institution_type' => 'learners'])
             ->assertStatus(422)->assertJsonValidationErrors(['institution_type']);
-        $this->assertSame(['question_bank', 'quiz'], config('institution_types.learners.modules'));
+        $this->assertSame(['question_bank', 'quiz', 'ai_assistant'], config('institution_types.learners.modules'));   // ST.6 adds the assistant
         $this->assertSame(['student'], config('institution_types.learners.roles'));
     }
 }

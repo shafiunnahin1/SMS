@@ -163,6 +163,7 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/exams/{id}/subjects/{subjectId}/submission' => null,
             'PUT api/v1/ai/messages/{id}/rating'           => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AiMessage::create(['ai_conversation_id' => \App\Models\AiConversation::create(['user_id' => $other['admin']->id, 'title' => 'x'])->id, 'role' => 'answer', 'body' => 'x'])->id),   // AI-P1.3
             'POST api/v1/ai/conversations/{id}/messages'   => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AiConversation::create(['user_id' => $other['admin']->id, 'title' => 'x'])->id),   // AI-P1.2
+            'DELETE api/v1/ai/conversations/{id}'          => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AiConversation::create(['user_id' => $other['admin']->id, 'title' => 'x'])->id),   // D165 ST.6
             'GET api/v1/ai/conversations/{id}'             => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AiConversation::create(['user_id' => $other['admin']->id, 'title' => 'x'])->id),   // D164   // D162: two ids - CrossTenantRouteTest plans it
             'GET api/v1/results/marksheet/{studentId}'     => null,       // MarksheetAccessTest: a foreign student is a 404
             'GET api/v1/parent/children/{id}/results'      => null,       // parent-only route (the admin is 403); ParentResultAccessTest: foreign child 404

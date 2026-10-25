@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AiConversation;
 use Illuminate\Http\Request;
 
-// D164 AI-P1.1: a teacher's or the head's own chats with the assistant - list, start, read. Another user's chat is a 404, like
+// D164 AI-P1.1 / D165 ST.6: a teacher's, the head's or a student's own chats with the assistant - list, start, read. Another user's chat is a 404, like
 // another institution's (the tenant scope and the user filter). Asking and answering come in AI-P1.2.
 class AiConversationController extends Controller
 {
@@ -32,6 +32,21 @@ class AiConversationController extends Controller
         $row = fn ($m) => ['id' => $m->id, 'role' => $m->role, 'body' => $m->body, 'kind' => $m->kind, 'sources' => $m->sources ?? [], 'rating' => $m->rating, 'review' => $m->role === 'answer' ? 'unreviewed' : null];
         return response()->json(['success' => true, 'data' => ['question' => $row($out['question']), 'answer' => $row($out['answer']), 'questions' => $out['questions'],
             'free_left' => $assistant->quotaLeft()]], 201);
+    }
+
+    /** D165 ST.6: delete an own chat for good - its messages and their reviews; the de-identified answer bank and the day's free-answer
+     *  count stay (a deleted chat does not give the free answers back) */
+    public function destroy(Request $request, int $id)
+    {
+        $c = AiConversation::where('user_id', $request->user()->id)->findOrFail($id);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($c) {
+            $ids = \App\Models\AiMessage::where('ai_conversation_id', $c->id)->pluck('id');
+            \App\Models\AiReview::whereIn('ai_message_id', $ids)->delete();
+            \App\Models\AiAnswerReveal::whereIn('ai_message_id', $ids)->update(['ai_message_id' => null]);
+            \App\Models\AiMessage::whereIn('id', $ids)->delete();
+            $c->delete();
+        });
+        return response()->json(['success' => true, 'message' => __('messages.deleted')]);
     }
 
     /** D164 (3) AI-P1.3: 👍 / 👎 (or clear) on an answer in an own chat; a thumbs-down answer comes first in the review queue */

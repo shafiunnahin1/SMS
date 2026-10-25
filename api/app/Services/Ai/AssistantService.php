@@ -4,7 +4,7 @@ namespace App\Services\Ai;
 
 use App\Http\Resources\QbQuestionPublicResource;
 use App\Jobs\RephraseAnswerJob;
-use App\Models\{AiAnswerBank, AiAnswerReveal, AiConversation, AiMessage, AiReview, PlatformSetting, QbCurriculumNode, QbQuestion, QbQuestionOption, QbUnlock, User};
+use App\Models\{AiAnswerBank, AiAnswerReveal, AiConversation, AiMessage, AiReview, PlatformSetting, QbCurriculumNode, QbQuestion, QbQuestionOption, QbQuizAttempt, QbQuizQuestion, QbUnlock, User};
 use App\Services\QbPricingService;
 use App\Services\QbQuestionFinderService;
 use App\Support\Tenancy;
@@ -28,13 +28,26 @@ class AssistantService
     public const QUOTA_KEY = 'ai_free_answers_per_day';
     public const QUOTA_DEFAULT = 20;
     public const LIMIT_KEY = 'ai_daily_question_limit';   // AI-P1.5: questions per institution per day; null = no limit (D164 owner answer 4)
+    public const STUDENT_QUOTA_KEY = 'ai_student_free_answers_per_day';   // D165 (4) ST.6: per student, not per institution
+    public const STUDENT_QUOTA_DEFAULT = 20;
+
+    /** D165 ST.6: the asker - a student is counted alone, opens what they bought, and never sees a running quiz's answers */
+    private ?User $user = null;
 
     public function __construct(private QbPricingService $pricing) {}
 
+    private function student(): bool
+    {
+        return $this->user?->role === 'student';
+    }
+
     public function ask(AiConversation $conversation, string $text, User $user): array
     {
+        $this->user = $user;
         $limit = PlatformSetting::read(self::LIMIT_KEY);
-        if ($limit !== null && $limit !== '' && AiMessage::where('role', 'question')->where('created_at', '>=', today())->count() >= (int) $limit) {
+        $asked = AiMessage::where('role', 'question')->where('created_at', '>=', today())
+            ->when($this->student(), fn ($q) => $q->whereHas('conversation', fn ($c) => $c->where('user_id', $user->id)));   // a student: their own questions
+        if ($limit !== null && $limit !== '' && $asked->count() >= (int) $limit) {
             throw new \App\Exceptions\BusinessException('the daily question limit is reached', 'ai_daily_limit', 422, ['limit' => (int) $limit]);
         }
         return DB::transaction(function () use ($conversation, $text, $user) {
@@ -43,7 +56,8 @@ class AssistantService
             $answer = $this->fromBank($norm) ?? $this->composed($norm, $user);
             $msg = AiMessage::create(['ai_conversation_id' => $conversation->id, 'role' => 'answer', 'body' => $answer['body'], 'kind' => $answer['kind'], 'sources' => $answer['sources']]);
             foreach ($answer['reveal'] ?? [] as $qid) {
-                AiAnswerReveal::firstOrCreate(['qb_question_id' => $qid, 'revealed_on' => today()->toDateString()], ['user_id' => $user->id, 'ai_message_id' => $msg->id]);
+                AiAnswerReveal::firstOrCreate(['qb_question_id' => $qid, 'revealed_on' => today()->toDateString()] + ($this->student() ? ['user_id' => $user->id] : []),
+                    ['user_id' => $user->id, 'ai_message_id' => $msg->id]);
             }
             AiReview::create(['ai_message_id' => $msg->id, 'status' => 'unreviewed']);
             if ($answer['kind'] === 'composed' && AnswerRephraser::enabled()) {          // AI-P1.6: the template is shown now, the model's text later
@@ -66,6 +80,7 @@ class AssistantService
         // AI-P1.4: a reviewed answer built from questions this institution has not unlocked may state their answers - it is given only
         // while the daily free quota covers those questions (each counted once a day), else the composed answer (with hiding) is used
         $qids = collect($best['r']->sources ?? [])->where('type', 'question')->pluck('id')->map(fn ($v) => (int) $v)->all();
+        if (array_intersect($qids, $this->runningQuiz())) return null;                      // ST.6: never a running quiz's answer
         $locked = $qids ? array_values(array_diff($qids, $this->openIds(QbQuestion::whereIn('id', $qids)->get()))) : [];
         $toCount = array_values(array_filter($locked, fn ($id) => !$this->revealedToday($id)));
         if (count($toCount) > $this->quotaLeft()) return null;
@@ -88,7 +103,7 @@ class AssistantService
             return ['kind' => 'not_found', 'body' => __('ai.not_found'), 'sources' => []];
         }
 
-        $open = $this->openIds($questions);
+        $open = array_values(array_diff($this->openIds($questions), $blocked = $this->runningQuiz()));
         $left = $this->quotaLeft();
         $reveal = [];
         $shown = [];
@@ -96,7 +111,7 @@ class AssistantService
         if ($questions->isNotEmpty()) $lines[] = __('ai.matches');
         foreach ($questions->values() as $i => $q) {
             $visible = in_array($q->id, $open, true);
-            if (!$visible && ($left > 0 || $this->revealedToday($q->id))) {
+            if (!$visible && !in_array($q->id, $blocked, true) && ($left > 0 || $this->revealedToday($q->id))) {
                 if (!$this->revealedToday($q->id)) { $left--; $reveal[] = $q->id; }
                 $visible = true;
             }
@@ -143,10 +158,18 @@ class AssistantService
             ->filter(fn ($r) => $r['score'] >= self::MIN_SCORE)->sortByDesc('score')->take(self::MAX_QUESTIONS)->pluck('q')->values();
     }
 
-    /** unlocked by the institution, or free for it now (a free price rule) */
+    /** unlocked by the institution, or free for it now (a free price rule); ST.6: a student's own purchases and student-free items */
     private function openIds($questions): array
     {
         $ids = $questions->pluck('id')->all();
+        if ($this->student()) {
+            $controller = app(\App\Http\Controllers\QuestionBank\QbStudentController::class);
+            $open = $ids ? $controller->owned($this->user, 'question', $ids) : [];
+            foreach ($questions as $q) {
+                if (!in_array($q->id, $open, true) && ($controller->quote($this->user, 'question', $q)['price'] ?? null) === '0.00') $open[] = (int) $q->id;
+            }
+            return $open;
+        }
         $open = QbUnlock::where('item_type', 'question')->whereIn('item_id', $ids)->pluck('item_id')->map(fn ($v) => (int) $v)->all();
         foreach ($questions as $q) {
             if (!in_array($q->id, $open, true) && ($this->pricing->quote('institution', 'question', $q)['price'] ?? null) === '0.00') $open[] = (int) $q->id;
@@ -154,14 +177,28 @@ class AssistantService
         return $open;
     }
 
-    public function quotaLeft(): int
+    public function quotaLeft(?User $user = null): int
     {
+        if ($user) $this->user = $user;
+        if ($this->student()) {
+            $limit = (int) (PlatformSetting::read(self::STUDENT_QUOTA_KEY, self::STUDENT_QUOTA_DEFAULT) ?? self::STUDENT_QUOTA_DEFAULT);
+            return max(0, $limit - AiAnswerReveal::where('user_id', $this->user->id)->where('revealed_on', today()->toDateString())->count());
+        }
         $limit = (int) (PlatformSetting::read(self::QUOTA_KEY, self::QUOTA_DEFAULT) ?? self::QUOTA_DEFAULT);
-        return max(0, $limit - AiAnswerReveal::where('revealed_on', today()->toDateString())->count());
+        return max(0, $limit - AiAnswerReveal::where('revealed_on', today()->toDateString())->distinct()->count('qb_question_id'));
     }
 
     private function revealedToday(int $questionId): bool
     {
-        return AiAnswerReveal::where('qb_question_id', $questionId)->where('revealed_on', today()->toDateString())->exists();
+        return AiAnswerReveal::where('qb_question_id', $questionId)->where('revealed_on', today()->toDateString())
+            ->when($this->student(), fn ($q) => $q->where('user_id', $this->user->id))->exists();
+    }
+
+    /** ST.6: the questions of a quiz this student is taking right now (started, not submitted) - their answers stay hidden meanwhile */
+    private function runningQuiz(): array
+    {
+        if (!$this->student()) return [];
+        $quizzes = QbQuizAttempt::where('student_user_id', $this->user->id)->whereNull('submitted_at')->pluck('qb_quiz_id');
+        return $quizzes->isEmpty() ? [] : QbQuizQuestion::whereIn('qb_quiz_id', $quizzes)->pluck('qb_question_id')->map(fn ($v) => (int) $v)->unique()->values()->all();
     }
 }

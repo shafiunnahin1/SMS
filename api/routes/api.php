@@ -657,10 +657,11 @@ Route::prefix('v1')->group(function () {
         });
 
         // ── AI assistant (D164 P1): teachers and the head of the institution, own chats only ──
-        Route::middleware(['module:ai_assistant', 'role:admin,teacher'])->group(function () {
+        Route::middleware(['module:ai_assistant', 'role:admin,teacher,student'])->group(function () {   // D165 ST.6: students too
             Route::get('/ai/conversations',           [\App\Http\Controllers\Ai\AiConversationController::class, 'index']);
             Route::post('/ai/conversations',          [\App\Http\Controllers\Ai\AiConversationController::class, 'store']);
             Route::get('/ai/conversations/{id}',      [\App\Http\Controllers\Ai\AiConversationController::class, 'show'])->whereNumber('id');
+            Route::delete('/ai/conversations/{id}',   [\App\Http\Controllers\Ai\AiConversationController::class, 'destroy'])->whereNumber('id');   // D165 ST.6: delete an own chat
             Route::post('/ai/conversations/{id}/messages', [\App\Http\Controllers\Ai\AiConversationController::class, 'ask'])->whereNumber('id');   // AI-P1.2
             Route::get('/ai/settings',                [\App\Http\Controllers\Ai\AiConversationController::class, 'settings'])->middleware('role:admin');   // AI-P1.4
             Route::put('/ai/settings',                [\App\Http\Controllers\Ai\AiConversationController::class, 'settings'])->middleware('role:admin');

@@ -29,10 +29,10 @@ class AiPlatformTest extends TestCase
     {
         $central = 'admin.' . config('tenancy.base_domain');
         $sa = $this->superAdmin();
-        $this->api('GET', $central, 'super/ai-settings', $sa)->assertOk()->assertJsonPath('data', ['free_answers_per_day' => 20, 'daily_question_limit' => null]);
+        $this->api('GET', $central, 'super/ai-settings', $sa)->assertOk()->assertJsonPath('data', ['free_answers_per_day' => 20, 'daily_question_limit' => null, 'student_free_answers_per_day' => 20]);   // D165 ST.6 adds the student quota
         $this->api('PUT', $central, 'super/ai-settings', $sa, ['free_answers_per_day' => -1])->assertStatus(422);
         $this->api('PUT', $central, 'super/ai-settings', $sa, ['free_answers_per_day' => 5, 'daily_question_limit' => 1])->assertOk()
-            ->assertJsonPath('data', ['free_answers_per_day' => 5, 'daily_question_limit' => 1]);
+            ->assertJsonPath('data', ['free_answers_per_day' => 5, 'daily_question_limit' => 1, 'student_free_answers_per_day' => 20]);
 
         $i = $this->makeInstitution('aiplat', 'school');
         $t = $this->makeUser($i, 'teacher');

@@ -55,6 +55,18 @@ describe('AI assistant chat (D164)', () => {
     expect(screen.queryByTestId('ai-rephrasing')).toBeNull()
   })
 
+  it('deletes an own chat after confirming (D165 ST.6)', async () => {
+    api.get.mockImplementation((url) => Promise.resolve({ data: { data: url === '/ai/conversations' ? [{ id: 5, title: 'লসাগু' }] : { id: 5, title: 'লসাগু', messages: [] } } }))
+    api.delete.mockResolvedValue({ data: { success: true } })
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const { container } = page()
+    await screen.findByText('লসাগু')
+    fireEvent.click(container.querySelector('[data-action="delete-chat"]'))
+    await waitFor(() => expect(api.delete).toHaveBeenCalledWith('/ai/conversations/5'))
+    confirm.mockRestore()
+    expect(buildNav('student', { modules: ['ai_assistant'] }).map(i => i.path)).toContain('/student/ai')
+  })
+
   it('appears in the admin and teacher menus only with the ai_assistant module', () => {
     const paths = (role, modules) => buildNav(role, { modules }).flatMap(i => i.children ?? [i]).map(i => i.path)
     expect(paths('admin', ['ai_assistant'])).toContain('/admin/ai')

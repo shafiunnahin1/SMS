@@ -62,11 +62,12 @@ export default function AiPlatform() {
 function Settings({ data, onSaved }) {
   const { t } = useTranslation()
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm({
-    defaultValues: { free_answers_per_day: data.free_answers_per_day, daily_question_limit: data.daily_question_limit ?? '' } })
+    defaultValues: { free_answers_per_day: data.free_answers_per_day, daily_question_limit: data.daily_question_limit ?? '', student_free_answers_per_day: data.student_free_answers_per_day ?? 20 } })
   const submit = async (v) => {
     try {
       await api.put('/super/ai-settings', { free_answers_per_day: Number(v.free_answers_per_day),
-        daily_question_limit: v.daily_question_limit === '' || v.daily_question_limit === null ? null : Number(v.daily_question_limit) })
+        daily_question_limit: v.daily_question_limit === '' || v.daily_question_limit === null ? null : Number(v.daily_question_limit),
+        student_free_answers_per_day: Number(v.student_free_answers_per_day) })   // D165 ST.6
       useUiStore.getState().addToast(t('common.saved'))
       onSaved()
     } catch (e) { Object.entries(e.response?.data?.errors ?? {}).forEach(([k, m]) => setError(k, { message: m[0] })) }
@@ -78,6 +79,8 @@ function Settings({ data, onSaved }) {
           {...register('free_answers_per_day', { required: t('super.required') })} />
         <Input label={t('ai_platform.daily_limit')} ltr inputMode="numeric" hint={t('ai_platform.daily_limit_hint')} error={errors.daily_question_limit?.message}
           {...register('daily_question_limit')} />
+        <Input label={t('ai_platform.student_free')} ltr inputMode="numeric" hint={t('ai_platform.student_free_hint')} error={errors.student_free_answers_per_day?.message}
+          {...register('student_free_answers_per_day', { required: t('super.required') })} />
         <div><Button type="submit" loading={isSubmitting}>{t('common.save')}</Button></div>
       </form>
     </Card>

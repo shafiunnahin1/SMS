@@ -3806,8 +3806,9 @@ CREATE TABLE ai_answer_reveals (                               -- D164 (2): a fr
     revealed_on DATE NOT NULL,                                   -- counted per institution per day (default 20)
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    UNIQUE KEY uq_ai_answer_reveals_day (institution_id, qb_question_id, revealed_on),
+    UNIQUE KEY uq_ai_answer_reveals_user_day (institution_id, user_id, qb_question_id, revealed_on),   -- D165 ST.6: a student's free answers per student
     INDEX idx_ai_answer_reveals_day (institution_id, revealed_on),
+    INDEX idx_ai_answer_reveals_user_day (institution_id, user_id, revealed_on),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id),
     FOREIGN KEY (user_id) REFERENCES users(id)

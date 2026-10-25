@@ -18,9 +18,11 @@ class AiPlatformController extends Controller
 
     public function update(Request $request)
     {
-        $f = $request->validate(['free_answers_per_day' => 'required|integer|min:0|max:1000', 'daily_question_limit' => 'nullable|integer|min:1|max:100000']);
+        $f = $request->validate(['free_answers_per_day' => 'required|integer|min:0|max:1000', 'daily_question_limit' => 'nullable|integer|min:1|max:100000',
+            'student_free_answers_per_day' => 'nullable|integer|min:0|max:1000']);   // D165 ST.6
         PlatformSetting::write(AssistantService::QUOTA_KEY, (int) $f['free_answers_per_day'], $request->user()->id);
         PlatformSetting::write(AssistantService::LIMIT_KEY, $f['daily_question_limit'] ?? null, $request->user()->id);
+        if (array_key_exists('student_free_answers_per_day', $f) && $f['student_free_answers_per_day'] !== null) PlatformSetting::write(AssistantService::STUDENT_QUOTA_KEY, (int) $f['student_free_answers_per_day'], $request->user()->id);
         AuditLog::record('ai.platform_settings', $request->user(), $f);
         return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => self::current()]);
     }
@@ -52,6 +54,7 @@ class AiPlatformController extends Controller
     {
         $limit = PlatformSetting::read(AssistantService::LIMIT_KEY);
         return ['free_answers_per_day' => (int) (PlatformSetting::read(AssistantService::QUOTA_KEY, AssistantService::QUOTA_DEFAULT) ?? AssistantService::QUOTA_DEFAULT),
-            'daily_question_limit' => $limit === null || $limit === '' ? null : (int) $limit];
+            'daily_question_limit' => $limit === null || $limit === '' ? null : (int) $limit,
+            'student_free_answers_per_day' => (int) (PlatformSetting::read(AssistantService::STUDENT_QUOTA_KEY, AssistantService::STUDENT_QUOTA_DEFAULT) ?? AssistantService::STUDENT_QUOTA_DEFAULT)];
     }
 }
