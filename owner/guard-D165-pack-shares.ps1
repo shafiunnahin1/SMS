@@ -14,14 +14,14 @@ $g = [IO.File]::ReadAllText($guard)
 if ($g.Contains("'ST.3.1'")) { throw 'ST.3.1 is already in the guard.' }
 
 # 1. the task, after ST.3
-$t = "'ST.6': ('D165', ['ST.5'])}"
+$t = "'ST.6': ('D165', ['ST.5'])"
 if (-not $g.Contains($t)) { throw 'Guard validation failed (task map).' }
-$g = $g.Replace($t, "'ST.6': ('D165', ['ST.5']), 'ST.3.1': ('D165', ['ST.3'])}")
+$g = $g.Replace($t, "'ST.6': ('D165', ['ST.5']), 'ST.3.1': ('D165', ['ST.3'])")
 
 # 2. its table
-$t = "'ST.6': {'ai_answer_reveals': 'D165', 'ai_conversations': 'D165'}}"
+$t = "'ST.6': {'ai_answer_reveals': 'D165', 'ai_conversations': 'D165'}"
 if (-not $g.Contains($t)) { throw 'Guard validation failed (table map).' }
-$g = $g.Replace($t, "'ST.6': {'ai_answer_reveals': 'D165', 'ai_conversations': 'D165'}, 'ST.3.1': {'qb_writer_earnings': 'D165'}}")
+$g = $g.Replace($t, "'ST.6': {'ai_answer_reveals': 'D165', 'ai_conversations': 'D165'}, 'ST.3.1': {'qb_writer_earnings': 'D165'}")
 
 # 3. its commit carries Change-Request: D165
 $t = "R21_REQUIRED_TRAILERS = {"
