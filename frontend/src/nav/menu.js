@@ -160,6 +160,7 @@ export const MENU = {
   student: [
     it('question-bank','/student/question-bank','প্রশ্নব্যাংক',{icon:'Library',module:'question_bank'}),
     it('qb-quizzes','/student/quizzes','কুইজ',{icon:'ClipboardCheck',module:'quiz'}),
+    it('my-class','/student/my-class','আমার শ্রেণি',{icon:'GraduationCap',onlyType:'learners'}),   // D165 ST.1: self-registered students only
     it('dashboard','/student/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard',primary:true, since: 'R1.1' }),
     it('routine','/student/routine','রুটিন',{icon:'Clock',module:'routine',primary:true, since: 'R1.1' }),
     it('results','/student/results','ফলাফল',{icon:'FileText',module:'exams',primary:true, since: 'R1.1' }),
@@ -254,9 +255,9 @@ export const MENU = {
 // buildNav (docs/THEMING.md "nav/menu.js"): drop what the institution's modules / settings / this release hide, resolve {term} labels.
 // `roleNeeds` hides an item when the institution type has no such role (a private batch has no teachers); `feature` items stay
 // hidden in the spike (plan features are an open owner question, PM-1).
-export function buildNav(role, { modules = [], settings = {}, roles = [], release = 'R1', features = {} } = {}, term = (k) => k, translate = (l) => l) {
+export function buildNav(role, { modules = [], settings = {}, roles = [], release = 'R1', features = {}, institutionType = null } = {}, term = (k) => k, translate = (l) => l) {
   const ok = (i) => (!i.module || modules.includes(i.module)) && !(i.hideWhen && i.hideWhen(settings))
-    && shipped(i.since, release) && (!i.roleNeeds || roles.includes(i.roleNeeds)) && (!i.feature || Boolean(features[i.feature]))
+    && shipped(i.since, release) && (!i.onlyType || i.onlyType === institutionType) && (!i.roleNeeds || roles.includes(i.roleNeeds)) && (!i.feature || Boolean(features[i.feature]))
   const label = (l) => (l && typeof l === 'object' && l.term ? term(l.term) : translate(l))
   const map = (i) => ({ ...i, label: label(i.label), children: i.children?.filter(ok).map(map) })
   return (MENU[role] ?? []).filter(ok).map(map).filter((i) => !i.children || i.children.length)

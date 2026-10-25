@@ -52,6 +52,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/public/institutions', [\App\Http\Controllers\Auth\PublicInstitutionSignupController::class, 'store'])->middleware('throttle:signup');
         Route::post('/public/institutions/{id}/verify', [\App\Http\Controllers\Auth\PublicInstitutionSignupController::class, 'verify'])->middleware('throttle:activation-verify')->whereNumber('id');
         Route::post('/public/institutions/{id}/verification', [\App\Http\Controllers\Auth\PublicInstitutionSignupController::class, 'resend'])->middleware('throttle:activation-resend')->whereNumber('id');
+        // D165 (1) ST.1: a student's own registration (the account lives on learn.<base domain>, active once the mobile code is entered)
+        Route::get('/public/learners/class-levels', [\App\Http\Controllers\Learner\LearnerSignupController::class, 'classLevels'])->middleware('throttle:30,1');
+        Route::post('/public/learners', [\App\Http\Controllers\Learner\LearnerSignupController::class, 'store'])->middleware('throttle:signup');
+        Route::post('/public/learners/{id}/verify', [\App\Http\Controllers\Learner\LearnerSignupController::class, 'verify'])->middleware('throttle:activation-verify')->whereNumber('id');
+        Route::post('/public/learners/{id}/resend', [\App\Http\Controllers\Learner\LearnerSignupController::class, 'resend'])->middleware('throttle:activation-resend')->whereNumber('id');
     });
 
     // ─── 2. Central host only: Super Admin (Step 4.7 dashboard, Step 5.3 panel) ───
@@ -552,6 +557,11 @@ Route::prefix('v1')->group(function () {
             });
         });
         // ── Question bank (D65, QB.9): the student portal - own unlocks, bKash orders to the platform merchant ──
+        // D165 (1) ST.1: a self-registered student's own class (learners host only)
+        Route::middleware('role:student')->group(function () {
+            Route::get('/learner/profile',                [\App\Http\Controllers\Learner\LearnerProfileController::class, 'show']);
+            Route::put('/learner/profile',                [\App\Http\Controllers\Learner\LearnerProfileController::class, 'update']);
+        });
         Route::middleware(['role:student', 'module:question_bank'])->prefix('student/qb')->group(function () {
             Route::get('/curriculum',                     [QbStudentController::class, 'curriculum']);
             Route::get('/questions',                      [QbStudentController::class, 'questions']);

@@ -168,4 +168,7 @@ return [
     // D161
     'consent_guardian_revoked' => 'The guardian switched SMS off - the institution cannot switch it on.',
     'exam_not_published' => 'Publish (finalise) the result first.',
+    // D165
+    'learner_phone_taken' => 'This mobile number already has an account. Log in, or reset the password if you forgot it.',
+    'learner_not_pending' => 'This registration was not found or is already verified.',
 ];

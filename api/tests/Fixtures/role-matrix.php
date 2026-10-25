@@ -318,6 +318,8 @@ return [
     'GET api/v1/question-bank/blueprints' => ['admin', 'teacher'],
     'POST api/v1/question-bank/blueprints/{id}/plan' => ['admin', 'teacher'],
     'GET api/v1/question-bank/blueprints/{id}/candidates' => ['admin', 'teacher'],
+    'GET api/v1/learner/profile' => ['student'],                                    // D165 ST.1: learners host only (404 elsewhere)
+    'PUT api/v1/learner/profile' => ['student'],
     'GET api/v1/student/qb/curriculum' => ['student'],   // QB.9: the student portal
     'GET api/v1/student/qb/questions' => ['student'],
     'GET api/v1/student/qb/questions/{id}' => ['student'],

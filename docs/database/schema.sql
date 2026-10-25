@@ -30,7 +30,7 @@ CREATE TABLE institutions (
     name VARCHAR(150) NOT NULL,
     slug VARCHAR(100) UNIQUE NOT NULL,           -- default subdomain: {slug}.APP_BASE_DOMAIN
     -- R6: custom domains live in institution_domains (see docs/modules/custom-domain.md)
-    institution_type ENUM('school','college','coaching','private_batch') NOT NULL DEFAULT 'school',
+    institution_type ENUM('school','college','coaching','private_batch','learners') NOT NULL DEFAULT 'school',   -- D165: learners = the platform's self-registered students
     enabled_modules JSON NULL,                   -- Super Admin overrides: {"hostel": true, "library": false}
     terminology JSON NULL,                       -- label overrides: {"batch": {"bn": "শাখা", "en": "Section"}}
     settings JSON NULL,                          -- {"fee_proration": "none", "use_programs": true, ...}
@@ -3772,4 +3772,18 @@ CREATE TABLE ai_answer_reveals (                               -- D164 (2): a fr
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE learner_profiles (                                -- D165 (1) ST.1: a self-registered student's own class
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    qb_class_level_id BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY uq_learner_profiles_user (user_id),
+    INDEX idx_learner_profiles_institution (institution_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
 );

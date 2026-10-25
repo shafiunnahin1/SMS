@@ -27,6 +27,10 @@ class RouteMiddlewareContractTest extends TestCase
         'POST api/v1/public/institutions' => 'D90 pending signup, central host, gated exposure and signup limiter; no token',
         'POST api/v1/public/institutions/{id}/verify' => 'D90 recipient proof, central host and challenge limiter; no token',
         'POST api/v1/public/institutions/{id}/verification' => 'D90 central resend, generic 202 and tracking/contact limiters',
+        'GET api/v1/public/learners/class-levels' => 'D165 ST.1: central host; the active class names only, throttle 30/min',
+        'POST api/v1/public/learners' => 'D165 ST.1: central host; an inactive student account in the learners institution until the mobile code, signup limiter',
+        'POST api/v1/public/learners/{id}/verify' => 'D165 ST.1: central host; the mobile code switches the pending account on, challenge limiter',
+        'POST api/v1/public/learners/{id}/resend' => 'D165 ST.1: central host; a new code to the pending account\'s own mobile, resend limiter',
         'GET api/v1/bootstrap' => 'theme, terms, enabled modules - allow-listed settings only',
         'GET api/v1/health' => 'status only',
         'POST api/v1/auth/login' => 'throttle:login', 'POST api/v1/auth/verify-otp' => 'throttle:otp',   // D68 (4)

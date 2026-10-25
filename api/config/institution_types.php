@@ -92,6 +92,26 @@ return [
         'onboarding' => ['public_site' => false, 'programs' => 'default_general', 'batches' => [], 'fee_categories' => ['মাসিক ফি']],
     ],
 
+    // D165 (1): the one platform institution of every self-registered student - no admin, no institutional modules
+    'learners' => [
+        'label'          => ['bn' => 'শিক্ষার্থী (নিজে নিবন্ধিত)', 'en' => 'Self-registered students', 'ar' => 'طلاب مسجلون ذاتيا'],
+        'default_layout' => 'mobile-compact',
+        'default_preset' => 'tutor-lite',
+        'roles'          => ['student'],
+        'terms' => [
+            'institution'   => ['bn' => 'প্ল্যাটফর্ম', 'en' => 'Platform', 'ar' => 'المنصة'],
+            'program'       => ['bn' => 'শ্রেণি',     'en' => 'Class', 'ar' => 'الصف'],
+            'programs'      => ['bn' => 'শ্রেণিসমূহ', 'en' => 'Classes', 'ar' => 'الصفوف'],
+            'batch'         => ['bn' => 'ব্যাচ',       'en' => 'Batch', 'ar' => 'الدفعة'],
+            'batches'       => ['bn' => 'ব্যাচসমূহ',   'en' => 'Batches', 'ar' => 'الدفعات'],
+            'academic_year' => ['bn' => 'বছর',         'en' => 'Year', 'ar' => 'السنة'],
+            'enrollment'    => ['bn' => 'নিবন্ধন',     'en' => 'Registration', 'ar' => 'التسجيل'],
+            'tuition_fee'   => ['bn' => 'ফি',          'en' => 'Fee', 'ar' => 'الرسوم'],
+        ],
+        'modules' => ['question_bank', 'quiz'],
+        'onboarding' => ['public_site' => false, 'programs' => 'none', 'batches' => [], 'fee_categories' => []],
+    ],
+
     // Modules a type may include but an institution must switch on itself (institutions.settings.opt_in_modules)
     'opt_in' => ['hifz', 'donations'],
 ];

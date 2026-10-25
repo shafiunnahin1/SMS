@@ -25,7 +25,7 @@ class PrincipalProvisioningService
         $this->keys($principal, $provisioner ? ['name', 'contact'] : ['name', 'contact', 'password', 'password_confirmation']);
         Validator::make($institution, [
             'name' => 'required|string|max:150',
-            'slug' => ['required', 'string', 'min:3', 'max:50', 'regex:/^[a-z0-9]+(-[a-z0-9]+)*$/', Rule::notIn(config('tenancy.reserved_slugs')), 'unique:institutions,slug'],
+            'slug' => ['required', 'string', 'min:3', 'max:50', 'regex:/^[a-z0-9]+(-[a-z0-9]+)*$/', Rule::notIn([...config('tenancy.reserved_slugs'), config('tenancy.learners_slug')]), 'unique:institutions,slug'],
             'institution_type' => ['required', Rule::in(['school', 'college', 'coaching', 'private_batch'])],
             'phone' => 'nullable|string|max:20', 'email' => 'nullable|email|max:100', 'address' => 'nullable|string|max:500',
         ])->validate();

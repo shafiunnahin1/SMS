@@ -51,6 +51,8 @@ const MyBatches   = lazy(() => import('../pages/teacher/MyBatches'))
 const Landing     = lazy(() => import('../pages/central/Landing'))
 const LegalPage   = lazy(() => import('../pages/legal/LegalPage'))
 const Signup      = lazy(() => import('../pages/central/Signup'))
+const LearnerSignup = lazy(() => import('../pages/central/LearnerSignup'))   // D165 ST.1
+const LearnerProfile = lazy(() => import('../pages/learner/LearnerProfile'))   // D165 ST.1
 const Institutions      = lazy(() => import('../pages/super/Institutions'))
 const InstitutionDetail = lazy(() => import('../pages/super/InstitutionDetail'))
 const PlatformSettings  = lazy(() => import('../pages/super/PlatformSettings'))
@@ -166,7 +168,7 @@ export const tenantRoutes = [
   ]),
   area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbAllQuestions) }, { path: 'materials', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/all-questions', element: S(QbAllQuestions) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }, { path: 'question-bank/papers/:id/omr', element: S(QbOmr) }, { path: 'question-bank/papers/:id/preview', element: S(QbPaperPreview) }, { path: 'salary', element: S(MySalary) }, { path: 'ai', element: S(AiChat) }]),
   area('/staff', 'institution_staff', [{ path: 'departments', element: S(MyDepartments) }, { path: 'profile', element: S(MyProfile) }]),   // R3.12 / D88-D91
-  area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }]),   // QB.9 / QB.10: the student portal (other student screens: R1.1)
+  area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }, { path: 'my-class', element: S(LearnerProfile) }]),   // QB.9 / QB.10: the student portal (other student screens: R1.1)
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },
     { path: 'fees', element: S(ParentFees) },
@@ -181,6 +183,7 @@ export const tenantRoutes = [
 export const centralRoutes = [
   { path: '/', element: S(Landing) },
   { path: '/signup', element: S(Signup) },
+  { path: '/learner-signup', element: S(LearnerSignup) },   // D165 ST.1
   // QB.10: the platform's public quizzes, no login
   { path: '/quizzes', element: S(QbPublicQuiz) },
   { path: '/quizzes/:id', element: S(QbPublicQuiz) },

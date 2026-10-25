@@ -11,6 +11,8 @@ return [
     // Who may call /api/internal/* (Caddy's on-demand TLS "ask"). Host install: loopback. Docker compose: add the compose network, e.g. 172.16.0.0/12
     'internal_ips'    => array_filter(explode(',', env('INTERNAL_IPS', '127.0.0.1,::1'))),
     // A tenant can never take these slugs
+    // D165 (1): the host of the self-registered students' platform institution (learn.<base domain>); no other institution may take it
+    'learners_slug'   => 'learn',
     'reserved_slugs'  => ['www','admin','api','app','mail','smtp','ftp','domains','cdn','static',
                           'assets','status','support','help','blog','docs','demo','test','staging','dev'],
 ];

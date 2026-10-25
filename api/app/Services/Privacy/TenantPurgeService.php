@@ -19,7 +19,7 @@ class TenantPurgeService
     public const ORDER = [
         'account_activation_requests', 'institution_registrations',
         'department_duty_assignments', 'department_memberships', 'department_duties', 'institution_departments',
-        'ai_answer_reveals', 'ai_reviews', 'ai_messages', 'ai_conversations', 'ai_answer_bank', 'exam_result_sms', 'exam_mark_submissions', 'exam_papers', 'qb_paper_items', 'qb_paper_sections', 'qb_paper_variants', 'qb_omr_scans', 'qb_omr_forms', 'qb_papers', 'qb_paper_folders', 'qb_quiz_attempts', 'qb_student_package_access', 'qb_student_unlocks',   // D65 question bank; D127 scans/forms before papers
+        'learner_profiles', 'ai_answer_reveals', 'ai_reviews', 'ai_messages', 'ai_conversations', 'ai_answer_bank', 'exam_result_sms', 'exam_mark_submissions', 'exam_papers', 'qb_paper_items', 'qb_paper_sections', 'qb_paper_variants', 'qb_omr_scans', 'qb_omr_forms', 'qb_papers', 'qb_paper_folders', 'qb_quiz_attempts', 'qb_student_package_access', 'qb_student_unlocks',   // D165 learner profiles; D65 question bank; D127 scans/forms before papers
         'qb_student_orders', 'qb_unlocks',
         'salary_adjustments', 'salary_advances', 'donations', 'donation_campaigns', 'donation_funds', 'donors', 'budget_lines', 'budgets', 'voucher_lines', 'vouchers', 'ledger_accounts', 'provident_fund_entries', 'payroll_items', 'payroll_runs', 'salary_structure_lines', 'salary_structures', 'salary_revisions', 'salary_components', 'salary_pay_accounts', 'bonus_schemes',
         'leave_applications', 'leave_types', 'staff_mapping_reviews', 'staff_attendances', 'teacher_attendances', 'staff_members',
