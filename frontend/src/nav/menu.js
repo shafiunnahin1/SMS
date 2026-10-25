@@ -246,6 +246,7 @@ export const MENU = {
     it('qb-blueprints','/super-admin/qb/blueprints','প্রশ্নব্যাংক: ব্লুপ্রিন্ট',{icon:'ListChecks'}),
     it('qb-quizzes','/super-admin/qb/quizzes','প্রশ্নব্যাংক: কুইজ ও প্যাকেজ',{icon:'ClipboardCheck'}),
     it('qb-withdrawals','/super-admin/qb/withdrawals','প্রশ্নব্যাংক: লেখকের টাকা তোলা',{icon:'Wallet'}),
+    it('ai-platform','/super-admin/ai','AI সহকারী: সেটিং ও রিপোর্ট',{icon:'Sparkles'}),   // D164 AI-P1.5
     it('settings','/super-admin/settings','সেটিংস',{icon:'Settings'}),
   ],
 }
