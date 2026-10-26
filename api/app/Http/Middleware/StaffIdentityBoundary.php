@@ -141,13 +141,18 @@ class StaffIdentityBoundary
         $attendance = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Academic\AttendanceController::class.'@')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/attendance', 'HEAD api/v1/attendance', 'POST api/v1/attendance', 'PUT api/v1/attendance/{id}',
                 'GET api/v1/attendance/report', 'HEAD api/v1/attendance/report', 'GET api/v1/attendance/summary/{id}', 'HEAD api/v1/attendance/summary/{id}'], true);
+        // D169 STW.2: the read-only student view - exactly these three reads; every other student route stays closed to staff
+        $studentView = in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/students', 'HEAD api/v1/students', 'GET api/v1/students/{id}', 'HEAD api/v1/students/{id}',
+                'GET api/v1/students/{id}/enrollments', 'HEAD api/v1/students/{id}/enrollments'], true)
+            && in_array(ltrim($request->route()->getActionName(), '\\'), [\App\Http\Controllers\Academic\StudentController::class.'@index', \App\Http\Controllers\Academic\StudentController::class.'@show',
+                \App\Http\Controllers\Academic\EnrollmentController::class.'@forStudent'], true);
         // D168 (1) AI-Q4S: the assistant's own-chat routes (own chats only, the help guide only); its settings and help articles stay admin-only
         $aiChat = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Ai\AiConversationController::class.'@')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/ai/conversations', 'HEAD api/v1/ai/conversations', 'POST api/v1/ai/conversations',
                 'GET api/v1/ai/conversations/{id}', 'HEAD api/v1/ai/conversations/{id}', 'DELETE api/v1/ai/conversations/{id}', 'POST api/v1/ai/conversations/{id}/messages',
                 'PUT api/v1/ai/messages/{id}/rating'], true);
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money && !$hr && !$inventory && !$aiChat) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money && !$hr && !$inventory && !$aiChat && !$studentView) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         // D101 money routes: context and exact duty key are checked here, before any FormRequest validation can answer 422

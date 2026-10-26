@@ -22,12 +22,15 @@ class EnrollmentController extends Controller
     }
 
     /** GET /students/{id}/enrollments - the full history, newest first */
-    public function forStudent(int $id)
+    public function forStudent(\Illuminate\Http\Request $request, int $id)
     {
+        $staff = $request->user()?->role === 'institution_staff';
+        if ($staff) app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);   // D169 STW.2 (D91)
         $student = Student::findOrFail($id);
         $rows = Enrollment::with(['batch:id,name', 'program:id,name'])->where('student_id', $student->id)
             ->orderByRaw("status = 'active' desc")->orderByDesc('enrolled_at')->orderByDesc('id')->get();
-        return response()->json(['success' => true, 'data' => $rows->map(fn ($e) => $this->row($e))->values()]);
+        // D169 (3): staff never see a fee override
+        return response()->json(['success' => true, 'data' => $rows->map(fn ($e) => $staff ? collect($this->row($e))->except('fee_override')->all() : $this->row($e))->values()]);
     }
 
     public function update(EnrollmentActionRequest $request, int $id)

@@ -32,8 +32,8 @@ class StudentResource extends JsonResource
             'batch'          => $this->whenLoaded('batch', fn () => $this->batch ? ['id' => $this->batch->id, 'name' => $this->batch->name] : null),
             'enrollments'    => $this->whenLoaded('activeEnrollments', fn () => $this->activeEnrollments->map(fn ($e) => [
                 'id' => $e->id, 'batch' => ['id' => $e->batch_id, 'name' => $e->batch?->name], 'program' => ['id' => $e->program_id, 'name' => $e->program?->name],
-                'roll_no' => $e->roll_no, 'is_primary' => (bool) $e->is_primary, 'fee_override' => $e->fee_override,
-            ])),
+                'roll_no' => $e->roll_no, 'is_primary' => (bool) $e->is_primary,
+            ] + ($request->user()?->role === 'institution_staff' ? [] : ['fee_override' => $e->fee_override]))),   // D169 (3): never to staff
         ];
     }
 }

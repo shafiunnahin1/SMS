@@ -227,6 +227,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/teachers',                  [TeacherController::class, 'index'])->middleware('role:admin,institution_staff');
 
         // ── Institution Admin ─────────────────────────────────
+        // D169 STW.2: the student view (read only) - the head, and staff whose SELECTED department holds the key (D91, checked in the controller)
+        Route::middleware(['role:admin,institution_staff', 'module:students'])->group(function () {
+            Route::get('/students',                   [StudentController::class, 'index']);
+            Route::get('/students/{id}',              [StudentController::class, 'show'])->whereNumber('id');
+        });
+        Route::get('/students/{id}/enrollments',      [EnrollmentController::class, 'forStudent'])->whereNumber('id')->middleware(['role:admin,institution_staff', 'module:enrollments']);
         Route::middleware('role:admin')->group(function () {
             Route::post('/admin/departments/{department}/members', [\App\Http\Controllers\DepartmentMembershipController::class, 'store'])->whereNumber('department');
             Route::patch('/admin/department-memberships/{id}', [\App\Http\Controllers\DepartmentMembershipController::class, 'update'])->whereNumber('id');
@@ -287,9 +293,7 @@ Route::prefix('v1')->group(function () {
 
             // Students & enrollment (Step 4.2; the walking-skeleton slice builds these first)
             Route::middleware('module:students')->group(function () {
-                Route::get('/students',                   [StudentController::class, 'index']);
                 Route::post('/students',                  [StudentController::class, 'store']);
-                Route::get('/students/{id}',              [StudentController::class, 'show'])->whereNumber('id');
                 Route::put('/students/{id}',              [StudentController::class, 'update'])->whereNumber('id');
                 Route::delete('/students/{id}',           [StudentController::class, 'destroy'])->whereNumber('id');
                 Route::get('/students/{id}/consents',     [ConsentController::class, 'index'])->whereNumber('id');
@@ -299,7 +303,6 @@ Route::prefix('v1')->group(function () {
             });
             Route::middleware('module:enrollments')->group(function () {
                 Route::post('/enrollments',               [EnrollmentController::class, 'store']);
-                Route::get('/students/{id}/enrollments',  [EnrollmentController::class, 'forStudent'])->whereNumber('id');
                 Route::put('/enrollments/{id}',           [EnrollmentController::class, 'update'])->whereNumber('id');
                 Route::post('/enrollments/{id}/end',      [EnrollmentController::class, 'end'])->whereNumber('id');
                 Route::post('/enrollments/{id}/transfer', [EnrollmentController::class, 'transfer'])->whereNumber('id');

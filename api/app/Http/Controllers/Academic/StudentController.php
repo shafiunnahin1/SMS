@@ -19,6 +19,7 @@ class StudentController extends Controller
 
     public function index(Request $request)
     {
+        $this->staffContext($request);   // D169 STW.2: staff only with the key in the selected department (D91)
         $request->validate(['q' => 'nullable|string|max:50', 'batch_id' => 'nullable|integer', 'per_page' => 'nullable|integer|min:1|max:100']);
         $page = Student::with(['user:id,name', 'program:id,name', 'batch:id,name'])
             ->when($request->input('batch_id'), fn ($q, $b) => $q->inBatch((int) $b))
@@ -49,9 +50,16 @@ class StudentController extends Controller
         return (new StudentResource($student->load(self::DETAIL)))->additional(['success' => true, 'message' => __('messages.admitted')])->response()->setStatusCode(201);
     }
 
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
+        $this->staffContext($request);
         return (new StudentResource(Student::with(self::DETAIL)->findOrFail($id)))->additional(['success' => true]);
+    }
+
+    /** D169 STW.2 (D91): a staff request must name a selected department holding this route's exact key; the head is unaffected */
+    private function staffContext(Request $request): void
+    {
+        if ($request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
     }
 
     public function update(UpdateStudentRequest $request, int $id)

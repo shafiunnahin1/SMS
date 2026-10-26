@@ -189,6 +189,25 @@ class DepartmentRouteInventoryTest extends TestCase
         }
     }
 
+    public function test_d169_student_view_routes_admit_staff_by_exact_key_and_match_live_routes(): void
+    {
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        $this->assertCount(3, DepartmentRouteCatalog::D169);
+        $keys = ['api/v1/students' => 'staff.student.index', 'api/v1/students/{id}' => 'staff.student.show', 'api/v1/students/{id}/enrollments' => 'staff.enrollment.for_student'];
+        foreach (DepartmentRouteCatalog::D169 as $entry) {
+            // STW.2: the same exact key as the approved D90 matrix; only the live roles gain institution_staff
+            $captured = collect(DepartmentRouteCatalog::CAPTURED)->first(fn ($c) => $c['uri'] === $entry['uri'] && $c['method'] === $entry['method']);
+            $this->assertSame([$captured['permission_options'], $captured['current_module_feature_gates']], [$entry['permission_options'], $entry['current_module_feature_gates']]);
+            $this->assertSame(['D169', 'exact_duty_permission', [$keys[$entry['uri']]], ['admin', 'institution_staff']], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
+            $method = explode('|', $entry['method'])[0];
+            $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())->first(fn ($c) => $c->uri() === $entry['uri'] && in_array($method, $c->methods(), true));
+            $this->assertNotNull($route, $method . ' ' . $entry['uri']);
+            $this->assertSame($entry['action'], ltrim($route->getActionName(), '\\'));
+            $resolved = $resolver->resolve($this->request($route, $method));
+            $this->assertSame(['exact_duty_permission', $keys[$entry['uri']], 'D169'], [$resolved['resolved_mode'], $resolved['permission'], $resolved['contract']['approval']]);
+        }
+    }
+
     public function test_d162_marks_submission_route_is_admin_and_teacher_and_matches_the_live_route(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);
