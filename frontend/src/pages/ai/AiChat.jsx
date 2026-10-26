@@ -5,7 +5,7 @@ import { AlertCircle, BadgeCheck, BookOpen, Clock, FileQuestion, FileText, LifeB
 import DirIcon from '../../components/DirIcon'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
-import PageHeader from '../../components/PageHeader'
+import { fmtNumber } from '../../i18n/format'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
 import Loader from '../../components/Loader'
@@ -174,7 +174,7 @@ export default function AiChat() {
   const inChat = Boolean(active) || composing
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={t('ai.title')} />
+      <h1 className="sr-only">{t('ai.title')}</h1>   {/* owner (2026-10-26): no visible page title - the chat itself is the page */}
       {isHead && review.data && (
         <label className="flex items-center gap-2 text-sm" data-testid="ai-review-setting">
           <input type="checkbox" checked={review.data.send_to_review} onChange={e => setReview(e.target.checked)} name="send_to_review" />
@@ -193,8 +193,10 @@ export default function AiChat() {
               ))}
             </ul>)}
         </Card>
-        <Card className={`min-h-[70vh] flex-col gap-3 p-0 ${inChat ? 'flex' : 'hidden lg:flex'}`} data-testid="ai-chat">
-          <div className="flex items-center gap-2 px-3 pt-3 lg:hidden">
+        {/* owner (2026-10-26): on any phone an open chat fills the whole screen, like WhatsApp / Messenger (fixed, dynamic viewport
+            height so the keyboard and browser bars never hide the composer); a desktop keeps it beside the list */}
+        <Card className={`flex-col gap-3 p-0 max-lg:fixed max-lg:inset-0 max-lg:z-40 max-lg:h-[100dvh] max-lg:rounded-none lg:min-h-[70vh] ${inChat ? 'flex' : 'hidden lg:flex'}`} data-testid="ai-chat" data-fullscreen={inChat ? 'phone' : undefined}>
+          <div className="flex items-center gap-2 px-3 py-2 lg:hidden [border-bottom:1px_solid_var(--line)]">
             <Button variant="ghost" onClick={() => { setActive(null); setComposing(false); setPending(null) }} aria-label={t('ai.back_to_chats')} data-action="back"><DirIcon icon="back" className="h-4 w-4" /></Button>
             <span className="truncate text-sm font-semibold" dir="auto">{chat.data?.title ?? t('ai.new_chat')}</span>
           </div>
@@ -209,7 +211,7 @@ export default function AiChat() {
             <div ref={end} />
           </div>
           <div className="sticky bottom-0 flex flex-col gap-1 bg-surface px-3 pb-3 pt-2 [border-top:1px_solid_var(--line)]">
-            {freeLeft !== null && <p className="text-xs text-content-muted">{t('ai.free_left', { n: freeLeft })}</p>}
+            {freeLeft !== null && <p className="text-xs text-content-muted">{t('ai.free_left', { n: fmtNumber(freeLeft, i18n.language) })}</p>}
             <div className="flex items-end gap-2">
               <textarea rows={1} maxLength={1000} value={text} onChange={e => setText(e.target.value)} name="ai_question" dir="auto" placeholder={t('ai.placeholder')}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask() } }}

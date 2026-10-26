@@ -55,6 +55,10 @@ describe('AI chat layout (D166)', () => {
     fireEvent.click(await screen.findByText('ঢাল', { selector: 'button' }))
     await waitFor(() => expect(list.className).toContain('hidden lg:flex'))
     expect(chat.className).not.toMatch(/(^|\s)hidden(\s|$)/)
+    expect(chat.className).toContain('max-lg:fixed max-lg:inset-0')        // owner: an open chat fills any phone screen
+    expect(chat.getAttribute('data-fullscreen')).toBe('phone')
+    expect(screen.queryByTestId('page-header')).toBeNull()                  // owner: no visible "AI সহকারী" title
+    expect(container.querySelector('h1.sr-only')).not.toBeNull()
     fireEvent.click(container.querySelector('[data-action="back"]'))
     await waitFor(() => expect(list.className).not.toContain('hidden'))
   })
