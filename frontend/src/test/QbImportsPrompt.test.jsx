@@ -36,7 +36,7 @@ describe('writer import AI prompt', () => {
 
   it('builds the prompt from the latest selected curriculum and preserves import controls', async () => {
     api.get.mockImplementation(url => Promise.resolve({ data: url === '/writer/curriculum' ? { data: curriculum }
-      : url === '/writer/question-types' ? { data: [{ slug: 'mcq' }, { slug: 'creative' }] }
+      : url === '/writer/question-types' ? { data: [{ slug: 'mcq' }, { slug: 'creative' }, { slug: 'stimulus_mcq_group' }] }
         : { data: [] } }))
     renderPage()
 
@@ -53,7 +53,30 @@ describe('writer import AI prompt', () => {
     expect(output.value).toContain('Use \\( ... \\) for inline math and \\[ ... \\] for display math')
     expect(output.value).toContain('"question_number":"12"')
     expect(output.value).toContain('topic_proposals')
-    expect(output.value).toContain('["mcq","creative"]')
+    expect(output.value).toContain('["mcq","creative","stimulus_mcq_group"]')
+
+    // the syntax example is valid JSON: the ordinary MCQ stays, and a stimulus-based MCQ shows its required fields
+    const marker = 'replace every sample value and question with the requested content: '
+    const start = output.value.indexOf(marker) + marker.length
+    const example = JSON.parse(output.value.slice(start, output.value.indexOf('\n\nOnly transcribe', start)))
+    expect(example.schema_version).toBe('exam-management.universal-content-json.v5')
+    const [mcq, stimulusMcq] = example.questions
+    expect(mcq.question_type).toBe('mcq')
+    expect(mcq.options.filter(o => o.is_correct)).toHaveLength(1)
+    expect(stimulusMcq.question_type).toBe('stimulus_mcq_group')
+    expect(stimulusMcq.stimulus_text).toBeTruthy()
+    expect(stimulusMcq.options).toBeUndefined()
+    expect(stimulusMcq.settings).toEqual({ class_levels: [{ id: 8, name: 'অষ্টম শ্রেণী' }], subject: { id: 17, name: 'গণিত' } })
+    expect(stimulusMcq.items.length).toBeGreaterThanOrEqual(2)   // several MCQs under one stimulus, as printed (e.g. questions 22-24)
+    for (const item of stimulusMcq.items) {
+      expect(item).toMatchObject({ item_type: 'sub_mcq', stimulus_index: 0 })
+      expect(item.prompt_text).toBeTruthy()
+      expect(item.prompt_json.options.length).toBeGreaterThanOrEqual(2)
+      expect(Number.isInteger(item.answer_json.correct)).toBe(true)
+      expect(item.answer_json.correct).toBeGreaterThanOrEqual(0)
+      expect(item.answer_json.correct).toBeLessThan(item.prompt_json.options.length)
+    }
+    expect(output.value).toContain('question_type "stimulus_mcq_group"')
     expect(screen.getByRole('button', { name: 'Schema ডাউনলোড' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /JSON উদাহরণ/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /TOON উদাহরণ/ })).toBeInTheDocument()
