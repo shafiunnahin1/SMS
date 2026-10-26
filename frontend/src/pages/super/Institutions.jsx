@@ -16,6 +16,7 @@ import List from '../../ui/variants/List'
 import Modal from '../../ui/variants/Modal'
 import { Input, Select } from '../../components/FormField'
 import Ltr from '../../components/bidi/Ltr'
+import { takeCredentials } from '../../features/super/OneTimePassword'
 
 export const TYPES = ['school', 'college', 'coaching', 'private_batch']
 const STATUSES = ['active', 'trial', 'expired', 'suspended', 'inactive']
@@ -66,11 +67,11 @@ function CreateInstitution({ open, onClose, onCreated }) {
   const submit = async (v) => {
     try {
       const { data } = await api.post('/super/institutions', { name: v.name, slug: v.slug, institution_type: v.institution_type, phone: v.phone || null,
-        // D90: the first admin gets an activation code on one contact channel, no password is set here
+        // D170 (2): the first admin is active at once; the server makes a one-time temporary password, shown once on the detail page
         admin: { name: v.admin_name, contact: v.admin_phone ? { channel: 'phone', value: v.admin_phone } : { channel: 'email', value: v.admin_email } } })
       useUiStore.getState().addToast(t('common.saved'))
       qc.invalidateQueries({ queryKey: ['super'] })
-      reset(); onClose(); onCreated(data.data)
+      reset(); onClose(); onCreated(takeCredentials(data.data))
     } catch (e) {
       Object.entries(e.response?.data?.errors ?? {}).forEach(([k, m]) => setError(k.startsWith('admin.contact') ? (v.admin_phone ? 'admin_phone' : 'admin_email') : k.replace('admin.', 'admin_'), { message: m[0] }))
     }

@@ -38,14 +38,24 @@ class InstitutionController extends Controller
             'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(), 'per_page' => $page->perPage()]]);
     }
 
-    /** D90: approved review, pending recipient verification/password setup. */
+    /** D170 (2): the institution and its first admin are active at once; the one-time temporary password is in THIS response only */
     public function store(StoreInstitutionRequest $request, \App\Services\Auth\PrincipalProvisioningService $provisioning)
     {
         $in = $request->validated();
         $state = $provisioning->provision(collect($in)->except('admin')->all(), $in['admin'], $request->user());
         $i = Institution::findOrFail($state['institution_id']);
-        return response()->json(['success' => true, 'data' => $this->detail($i) + [
-            'activation' => new \App\Http\Resources\PrincipalActivationResource($state)], 'message' => __('messages.saved')], 201);
+        return response()->json(['success' => true, 'data' => $this->detail($i) + ['credentials' => ['temporary_password' => $state['temporary_password'], 'must_change_password' => true]],
+            'message' => __('messages.saved')], 201)->header('Cache-Control', 'no-store');
+    }
+
+    /** D170 (3) POST /super/institutions/{id}/direct-activation: an eligible existing pending first admin, once; the password shows once */
+    public function activateDirectly(Request $request, int $id, \App\Services\Auth\PrincipalProvisioningService $provisioning)
+    {
+        $state = $provisioning->activateExisting($id, $request->user());
+        $i = Institution::findOrFail($id);
+        app(ThemeService::class)->flush($i);
+        return response()->json(['success' => true, 'data' => $this->detail($i) + ['credentials' => ['temporary_password' => $state['temporary_password'], 'must_change_password' => true]],
+            'message' => __('messages.institution_activated_directly')])->header('Cache-Control', 'no-store');
     }
 
     /** GET /super/institutions/{id} */
@@ -105,7 +115,8 @@ class InstitutionController extends Controller
     {
         $overrides = $i->enabled_modules ?? [];
         $typeModules = config("institution_types.{$i->institution_type}.modules", []);
-        return Tenancy::as($i, fn () => $this->row($i) + [
+        $direct = app(\App\Services\Auth\PrincipalProvisioningService::class)->directActivation($i->id);   // D170 (3): offered only when eligible
+        return Tenancy::as($i, fn () => $this->row($i) + ['direct_activation' => $direct] + [
             'phone' => $i->phone, 'email' => $i->email, 'address' => $i->address,
             'students' => Student::where('status', 'active')->count(), 'teachers' => Teacher::count(),
             'admins' => User::where('institution_id', $i->id)->where('role', 'admin')->orderBy('id')->get(['id', 'name', 'phone', 'email', 'last_login_at'])

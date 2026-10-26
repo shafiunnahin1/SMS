@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\{DB, Validator};
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
-/** D90 principal lifecycle only. No public route, token, staff grant or shared-data backfill. */
+/** D90 principal lifecycle only (D170: the Super Admin-created first admin activates directly). No public route, token, staff grant or shared-data backfill. */
 class PrincipalProvisioningService
 {
     private const PURPOSE = 'principal_activation';
@@ -46,7 +46,10 @@ class PrincipalProvisioningService
                     'review_status' => $provisioner ? 'approved' : 'pending', 'reviewed_by' => $provisioner?->id,
                     'reviewed_at' => $provisioner ? now() : null]);
                 $this->audit('institution.created', $i, $provisioner?->id ?? $user->id, ['type' => $i->institution_type, 'state' => 'inactive']);
-                return $this->issue($i, $user, $channel, $contact, $provisioner?->id);
+                if (!$provisioner) return $this->issue($i, $user, $channel, $contact, null);
+                // D170 (2): a Super Admin-created first admin is active at once - no OTP, a one-time temporary password, change at first login
+                $registration = InstitutionRegistration::where('institution_id', $i->id)->first();
+                return ['institution_id' => $i->id, 'status' => 'activated', 'temporary_password' => $this->activateDirectly($i, $registration, $user, $provisioner->id)];
             });
         });
     }
@@ -146,6 +149,74 @@ class PrincipalProvisioningService
         });
     }
 
+    /**
+     * D170 (3): the Super Admin's separate "activate directly" action for an EXISTING pending Super Admin-created first admin.
+     * Eligibility is rechecked under the institution / registration / user row locks; a repeat or an ineligible account is refused
+     * (409) without changing anything. Returns the new one-time temporary password - shown once, never stored in clear or logged.
+     */
+    public function activateExisting(int $institutionId, User $actor): array
+    {
+        $result = $this->locked($institutionId, function ($i, $registration, $user) use ($actor) {
+            $this->reviewer($actor->id);
+            if ($this->ineligibility($i, $registration, $user) !== null) throw $this->conflict();
+            return ['institution_id' => $i->id, 'status' => 'activated', 'temporary_password' => $this->activateDirectly($i, $registration, $user, $actor->id)];
+        }, $this->conflict());
+        if ($result instanceof BusinessException) throw $result;
+        return $result;
+    }
+
+    /** D170 (3): read-only - whether the direct activation is offered, and why not (a reason code, never contact data) */
+    public function directActivation(int $institutionId): array
+    {
+        $i = Institution::findOrFail($institutionId);
+        return Tenancy::as($i, function () use ($i) {
+            $registration = InstitutionRegistration::where('institution_id', $i->id)->first();
+            $user = $registration ? User::where('institution_id', $i->id)->whereKey($registration->first_admin_id)->first() : null;
+            $reason = !$registration || !$user ? 'no_registration' : $this->ineligibility($i, $registration, $user);
+            return ['eligible' => $reason === null, 'reason' => $reason];
+        });
+    }
+
+    /** null when eligible; else why not. Public, rejected, already or previously active accounts keep D89/D90 (D170 (1)). */
+    private function ineligibility(Institution $i, InstitutionRegistration $registration, User $user): ?string
+    {
+        if ($registration->source !== 'super_admin') return 'not_super_admin_created';
+        if ($registration->review_status !== 'approved') return 'not_approved';
+        if ($registration->first_admin_id !== $user->id || $user->role !== 'admin' || $user->deleted_at) return 'not_first_admin';
+        if ($user->is_active || $i->status !== 'inactive') return 'already_active';
+        // previously active, then deactivated: a login, a verified/consumed request or an earlier activation in the audit trail
+        $wasActive = $user->last_login_at
+            || AccountActivationRequest::where('user_id', $user->id)->where('purpose', self::PURPOSE)
+                ->where(fn ($q) => $q->whereIn('status', ['verified', 'consumed'])->orWhereNotNull('contact_verified_at'))->exists()
+            || AuditLog::where('institution_id', $i->id)->whereIn('action', ['institution.activated', 'institution.suspended'])->exists();
+        return $wasActive ? 'previously_active' : null;
+    }
+
+    /** D170 (2)(3): cancel pending activation requests, set a one-time temporary password (hashed), activate, audit - no OTP record */
+    private function activateDirectly(Institution $i, InstitutionRegistration $registration, User $user, int $by): string
+    {
+        $pending = AccountActivationRequest::where('user_id', $user->id)->where('purpose', self::PURPOSE)->whereIn('status', ['pending', 'verified', 'expired']);
+        $tokenIds = (clone $pending)->pluck('otp_token_id')->filter()->all();
+        $pending->update(['status' => 'cancelled']);
+        if ($tokenIds) OtpToken::where('user_id', $user->id)->whereIn('id', $tokenIds)->whereNull('used_at')->update(['used_at' => now()]);
+        $password = $this->temporaryPassword($user);
+        $user->forceFill(['password' => $password, 'must_change_password' => true, 'is_active' => true])->save();
+        app(TokenService::class)->revokeAll($user);
+        $i->forceFill(['status' => 'active'])->save();
+        $this->audit('institution.activated', $i, $by, ['reason' => 'super_admin_provisioning', 'first_admin_id' => $user->id]);
+        return $password;
+    }
+
+    /** a strong random password that passes the admin policy (letters and digits, no symbols to mistype); never logged */
+    private function temporaryPassword(User $user): string
+    {
+        for ($try = 0; $try < 10; $try++) {
+            $password = Str::password(16, true, true, false, false);
+            if (Validator::make(['p' => $password], ['p' => [new PolicyPassword($user)]])->passes()) return $password;
+        }
+        throw new \RuntimeException('could not generate a policy-compliant temporary password');
+    }
+
     /** Called under the institution lock; legacy institutions have no D90 registration. */
     public function assertToggleAllowed(int $institutionId): void
     {
@@ -153,8 +224,10 @@ class PrincipalProvisioningService
             if (!InstitutionRegistration::where('institution_id', $institutionId)->exists()) return;
             $result = $this->locked($institutionId, function ($i, $registration, $user) {
                 $request = $this->latest($user);
-                if ($registration->review_status !== 'approved' || !$user->is_active || !$request
-                    || $request->status !== 'consumed' || !$this->bound($request, $user)) throw $this->conflict();
+                $direct = $registration->source === 'super_admin' && AuditLog::where('institution_id', $i->id)->where('action', 'institution.activated')
+                    ->where('new_data->reason', 'super_admin_provisioning')->exists();   // D170: activated without an OTP request
+                if ($registration->review_status !== 'approved' || !$user->is_active
+                    || (!$direct && (!$request || $request->status !== 'consumed' || !$this->bound($request, $user)))) throw $this->conflict();
             }, $this->conflict());
             if ($result instanceof BusinessException) throw $result;
         });

@@ -74,23 +74,30 @@ class PrincipalProvisioningTest extends TestCase
         $this->assertSame(0, PersonalAccessToken::count());
     }
 
-    public function test_super_admin_provisioning_requires_recipient_password_and_proof_in_every_type(): void
+    public function test_super_admin_provisioning_activates_directly_with_a_one_time_password_in_every_type(): void
     {
+        // D170 (2) amends D90 for this path only: active at once, no OTP request or token, a hashed one-time password, change at first login
         $actor = $this->makeUser(null, 'super_admin');
         foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
-            $state = $this->provision('principal-'.str_replace('_', '-', $type), $actor, $type); $user = $this->user($state);
-            $this->assertFalse($user->is_active);
-            $this->assertFalse(Hash::check('Secure-private-42', $user->password));
-            try { $this->service()->verify($state['institution_id'], $state['public_id'], $this->code()); $this->fail('Missing recipient password accepted'); }
-            catch (ValidationException $e) { $this->assertArrayHasKey('password', $e->errors()); }
-            $verified = $this->service()->verify($state['institution_id'], $state['public_id'], $this->code(), ['password' => 'My-private-pass-42', 'password_confirmation' => 'My-private-pass-42']);
-            $this->assertSame('consumed', $verified['status']);
-            $this->assertTrue(Hash::check('My-private-pass-42', $user->fresh()->password));
-            $this->assertTrue($user->fresh()->is_active);
-            $this->assertFalse($user->fresh()->must_change_password);
-            Tenancy::as(Institution::findOrFail($state['institution_id']), function () use ($actor) {
+            $state = $this->provision('principal-'.str_replace('_', '-', $type), $actor, $type);
+            $this->assertSame('activated', $state['status']);
+            $temporary = $state['temporary_password'];
+            $this->assertGreaterThanOrEqual(16, strlen($temporary));
+            $i = Institution::findOrFail($state['institution_id']);
+            $this->assertSame('active', $i->status);
+            Tenancy::as($i, function () use ($actor, $temporary, $i) {
                 $registration = InstitutionRegistration::sole();
                 $this->assertSame(['super_admin', 'approved', $actor->id], [$registration->source, $registration->review_status, $registration->reviewed_by]);
+                $user = User::findOrFail($registration->first_admin_id);
+                $this->assertSame([true, true], [(bool) $user->is_active, (bool) $user->must_change_password]);
+                $this->assertTrue(Hash::check($temporary, $user->password));
+                $this->assertSame(0, AccountActivationRequest::count(), 'no OTP request and no fake verification');
+                $this->assertSame(0, \App\Models\OtpToken::where('user_id', $user->id)->count());
+                $log = AuditLog::where('institution_id', $i->id)->where('action', 'institution.activated')->sole();
+                $this->assertSame('super_admin_provisioning', $log->new_data['reason']);
+                $this->assertSame($actor->id, $log->user_id);
+                $this->assertStringNotContainsString($temporary, json_encode(AuditLog::where('institution_id', $i->id)->get()->toArray()));
+                $this->assertStringNotContainsString('01712345678', json_encode($log->new_data), 'no contact in the audit');
                 $this->assertSame([0, 0, 0], [InstitutionDepartment::count(), DepartmentDutyAssignment::count(), StaffMember::count()]);
             });
         }

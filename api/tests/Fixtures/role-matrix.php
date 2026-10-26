@@ -194,6 +194,7 @@ return [
     'PUT api/v1/super/institutions/{id}' => ['super_admin'],
     'DELETE api/v1/super/institutions/{id}' => ['super_admin'],
     'POST api/v1/super/institutions/{id}/sms-credits' => ['super_admin'],
+    'POST api/v1/super/institutions/{id}/direct-activation' => ['super_admin'],   // D170 (3)
     'PATCH api/v1/super/institutions/{id}/toggle' => ['super_admin'],
     'GET api/v1/super/sms-settings' => ['super_admin'],
     'GET api/v1/super/ai-settings' => ['super_admin'],                              // D164 AI-P1.5

@@ -16,6 +16,7 @@ import { Input, Select } from '../../components/FormField'
 import Ltr from '../../components/bidi/Ltr'
 import StatCard from '../../ui/variants/StatCard'
 import { TYPES } from './Institutions'
+import { OneTimePasswordCard, takeCredentials } from '../../features/super/OneTimePassword'
 
 // Step 5.3 /super-admin/institutions/:id: numbers, suspend / activate, type, module overrides (default / on / off - the tenant's
 // menu follows at once), and the SMS wallet: add or correct money by hand (D58) with its ledger.
@@ -29,7 +30,7 @@ export default function InstitutionDetail() {
   if (q.isPending) return <Loader type="page" />
   if (q.isError) return <ErrorState onRetry={q.refetch} />
   const d = q.data
-  const apply = (r) => { qc.setQueryData(['super', 'institution', id], r.data.data); qc.invalidateQueries({ queryKey: ['super', 'institutions'] }); useUiStore.getState().addToast(t('common.saved')) }
+  const apply = (r) => { qc.setQueryData(['super', 'institution', id], takeCredentials(r.data.data)); qc.invalidateQueries({ queryKey: ['super', 'institutions'] }); useUiStore.getState().addToast(t('common.saved')) }
   const call = async (fn) => {
     setBusy(true)
     try { apply(await fn()) } catch (e) { const m = e.response?.data?.message; if (m) useUiStore.getState().addToast(m, 'error') } finally { setBusy(false) }
@@ -38,12 +39,21 @@ export default function InstitutionDetail() {
     title: t(d.status === 'suspended' ? 'super.activate' : 'super.suspend'), description: t(d.status === 'suspended' ? 'super.activate_hint' : 'super.suspend_hint'),
     type: d.status === 'suspended' ? undefined : 'danger', onConfirm: () => call(() => api.patch(`/super/institutions/${id}/toggle`)),
   })
+  // D170 (3): only for an eligible pending Super Admin-created first admin; the server rechecks and refuses a repeat
+  const activateDirectly = () => useUiStore.getState().openConfirm({
+    title: t('super.direct_activate'), description: t('super.direct_activate_hint'),
+    onConfirm: () => call(() => api.post(`/super/institutions/${id}/direct-activation`)),
+  })
   const setModule = (key, value) => call(() => api.put(`/super/institutions/${id}`, { modules: { [key]: value === '' ? null : value === 'on' } }))
 
   return (
     <div className="flex flex-col gap-4" data-testid="institution-detail">
       <PageHeader title={<span dir="auto">{d.name}</span>} actions={
-        <Button variant={d.status === 'suspended' ? 'primary' : 'danger'} onClick={toggle} loading={busy} data-action="toggle">{t(d.status === 'suspended' ? 'super.activate' : 'super.suspend')}</Button>} />
+        <div className="flex flex-wrap gap-2">
+          {d.direct_activation?.eligible && <Button onClick={activateDirectly} loading={busy} data-action="direct-activate">{t('super.direct_activate')}</Button>}
+          <Button variant={d.status === 'suspended' ? 'primary' : 'danger'} onClick={toggle} loading={busy} data-action="toggle">{t(d.status === 'suspended' ? 'super.activate' : 'super.suspend')}</Button>
+        </div>} />
+      <OneTimePasswordCard institutionId={d.id} />
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <StatusBadge status={d.status} /><Ltr>{d.host}</Ltr><span>{t(`dashboard.types.${d.institution_type}`)}</span>
       </div>

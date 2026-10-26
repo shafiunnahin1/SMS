@@ -176,8 +176,8 @@ class InstitutionSignupTest extends TestCase
         $body = $this->payload(); $body['admin'] = $body['principal']; unset($body['principal']);
         $this->api('POST', self::CENTRAL, 'super/institutions', $super, $body)->assertStatus(422);
         unset($body['admin']['password'], $body['admin']['password_confirmation']);
-        $state = $this->api('POST', self::CENTRAL, 'super/institutions', $super, $body)->assertCreated()->json('data.activation');
-        $id = $state['institution_id']; $i = Institution::findOrFail($id); $actor = $this->makeUser($i, 'accountant');
+        $id = $this->api('POST', self::CENTRAL, 'super/institutions', $super, $body)->assertCreated()->json('data.id');   // D170: no OTP tracking in this response
+        $i = Institution::findOrFail($id); $actor = $this->makeUser($i, 'accountant');
         $this->api('POST', self::CENTRAL, "super/institutions/$id/approve-registration", $actor, ['decision' => 'approve'])->assertForbidden();
         $this->api('POST', $this->hostOf($i), "super/institutions/$id/approve-registration", $super, ['decision' => 'approve'])->assertNotFound();
         $this->api('POST', self::CENTRAL, "super/institutions/$id/approve-registration", null, ['decision' => 'approve'])->assertUnauthorized();

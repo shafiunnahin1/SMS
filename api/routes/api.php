@@ -70,6 +70,7 @@ Route::prefix('v1')->group(function () {
         Route::put('/institutions/{id}',              [InstitutionController::class, 'update'])->whereNumber('id');
         Route::delete('/institutions/{id}',           [InstitutionController::class, 'destroy'])->whereNumber('id');
         Route::patch('/institutions/{id}/toggle',     [InstitutionController::class, 'toggleStatus'])->whereNumber('id');
+        Route::post('/institutions/{id}/direct-activation', [InstitutionController::class, 'activateDirectly'])->whereNumber('id')->middleware('throttle:10,1');   // D170 (3)
         Route::post('/institutions/{id}/sms-credits', [SmsCreditController::class, 'adjust'])->whereNumber('id');
         Route::get('/sms-settings',                   [UniversalSmsController::class, 'show']);
         // D165 ST.2: SSC / HSC exam batches (moving the exam end date moves every purchase made under the batch)

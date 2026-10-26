@@ -570,6 +570,11 @@ final class DepartmentRouteCatalog
         ['method' => 'POST', 'uri' => 'api/v1/ai/help-articles/{id}/approve', 'action' => 'App\\Http\\Controllers\\Ai\\AiHelpArticleController@approve', 'current_roles' => ['admin'], 'preserve_nonstaff_roles' => ['admin'], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:ai_assistant'], 'selector_variants' => [], 'resource_scope' => 'tenant; the institution\'s own wording of an approved platform help article; the head only; audited', 'approval' => 'D166', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
     ];
 
+    /** D170 (3): the Super Admin's direct activation of an existing pending first admin (central host). */
+    public const D170 = [
+        ['method' => 'POST', 'uri' => 'api/v1/super/institutions/{id}/direct-activation', 'action' => 'App\\Http\\Controllers\\SuperAdmin\\InstitutionController@activateDirectly', 'current_roles' => ['super_admin'], 'preserve_nonstaff_roles' => ['super_admin'], 'current_module_feature_gates' => [], 'selector_variants' => [], 'resource_scope' => 'central host; one eligible pending Super Admin-created first admin; rechecked under row locks; audited without secrets', 'approval' => 'D170', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
+    ];
+
     /** D169 STW.2: the read-only student view also admits staff (exact key in the selected department); looked up before CAPTURED. */
     public const D169 = [
         ['method' => 'GET|HEAD', 'uri' => 'api/v1/students', 'action' => 'App\\Http\\Controllers\\Academic\\StudentController@index', 'current_roles' => ['admin', 'institution_staff'], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:students'], 'selector_variants' => [], 'resource_scope' => 'tenant; read only; staff need the exact key in the SELECTED department (D91, controller forRoute); never fee_override', 'approval' => 'D169', 'staff_mode' => 'exact_duty_permission', 'permission_options' => ['staff.student.index']],

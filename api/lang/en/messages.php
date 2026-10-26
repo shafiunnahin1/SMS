@@ -20,4 +20,5 @@ return [
     'locale_saved'       => 'Language saved.',
     'deleted'            => 'Deleted.',
     'activation_resent' => 'If the request is eligible, a new verification message will be sent.',
+    'institution_activated_directly' => 'The institution and its first admin are active. Pass on the temporary password safely now; it will not be shown again.',   // D170
 ];

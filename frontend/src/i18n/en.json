@@ -680,6 +680,7 @@
    "pick_scope": "Choose a {{unit}}."
   },
   "super": {
+    "direct_activate": "Activate directly", "direct_activate_hint": "This institution and its first admin become active now, without a code. A temporary password is shown once; the admin must change it at first login.", "otp_title": "First admin's temporary password", "otp_hint": "It will never be shown again. Give it to the admin safely now; they must change it at first login.", "otp_copy": "Copy", "otp_copied": "Copied", "otp_done": "I have saved it",
    "institutions": "Institutions",
    "new": "Open an institution",
    "name": "Name",

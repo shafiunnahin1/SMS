@@ -208,6 +208,18 @@ class DepartmentRouteInventoryTest extends TestCase
         }
     }
 
+    public function test_d170_direct_activation_is_super_admin_only_and_matches_the_live_route(): void
+    {
+        $resolver = app(DepartmentRoutePermissionResolver::class);
+        $this->assertCount(1, DepartmentRouteCatalog::D170);
+        $entry = DepartmentRouteCatalog::D170[0];
+        $this->assertSame(['D170', 'preserve_nonstaff_boundary', [], ['super_admin']], [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
+        $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())->first(fn ($c) => $c->uri() === $entry['uri'] && in_array('POST', $c->methods(), true));
+        $this->assertNotNull($route);
+        $this->assertSame($entry['action'], ltrim($route->getActionName(), '\\'));
+        $this->assertSame('preserve_nonstaff_boundary', $resolver->resolve($this->request($route, 'POST'))['resolved_mode']);
+    }
+
     public function test_d162_marks_submission_route_is_admin_and_teacher_and_matches_the_live_route(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);

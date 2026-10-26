@@ -41,33 +41,37 @@ class SuperInstitutionTest extends TestCase
     public function test_opening_an_institution_creates_its_admin_and_its_type_defaults(): void
     {
         $delivery = new class extends \App\Services\Auth\ActivationDelivery {
-            public string $code = '';
-            public function send(string $channel, string $contact, string $code): bool { $this->code = $code; return true; }
+            public int $sent = 0;
+            public function send(string $channel, string $contact, string $code): bool { $this->sent++; return true; }
         };
         app()->instance(\App\Services\Auth\ActivationDelivery::class, $delivery);
         $res = $this->api('POST', $this->central, 'super/institutions', $this->super, ['name' => 'Alo Coaching', 'slug' => 'alo-coaching', 'institution_type' => 'school',
             'admin' => ['name' => 'Rina', 'contact' => ['channel' => 'phone', 'value' => '+8801712345678']]])->assertCreated();
         $i = Institution::where('slug', 'alo-coaching')->firstOrFail();
-        $this->assertSame(['inactive', 'school', null], [$i->status, $i->institution_type, $i->subscription_plan_id], 'D90: pending recipient proof, still no plan');
+        $this->assertSame(['active', 'school', null], [$i->status, $i->institution_type, $i->subscription_plan_id], 'D170 (2): active at once, still no plan');
         $this->assertSame('alo-coaching.' . config('tenancy.base_domain'), $res->json('data.host'));
+        $this->assertStringContainsString('no-store', (string) $res->headers->get('Cache-Control'), 'the one-time password is never cached');
+        $temporary = $res->json('data.credentials.temporary_password');
+        $this->assertTrue($res->json('data.credentials.must_change_password'));
+        $this->assertSame(0, $delivery->sent, 'D170: no contact OTP on this path');
 
         $admin = User::where('institution_id', $i->id)->where('role', 'admin')->firstOrFail();
-        $this->assertSame(['01712345678', true], [$admin->phone, (bool) $admin->must_change_password]);
-        $this->assertFalse($admin->is_active);
-        $this->assertFalse(Hash::check('first-pass-1', $admin->password));
+        $this->assertSame(['01712345678', true, true], [$admin->phone, (bool) $admin->must_change_password, (bool) $admin->is_active]);
+        $this->assertTrue(Hash::check($temporary, $admin->password));
+        $this->assertNotSame($temporary, $admin->getRawOriginal('password'), 'hashed at rest');
         $this->assertSame(10, Tenancy::as($i, fn () => Program::count()), 'school onboarding defaults: Class 1-10');
         $this->assertSame(1, Tenancy::as($i, fn () => AuditLog::where('action', 'institution.created')->count()));
+        $this->assertNull($this->api('GET', $this->central, "super/institutions/{$i->id}", $this->super)->json('data.credentials'), 'shown once: never again');
 
-        // D90: no login before recipient proof and recipient-owned password setup.
-        $this->json('POST', 'http://' . $res->json('data.host') . '/api/v1/auth/login', ['login' => '01712345678', 'password' => 'first-pass-1'])->assertUnauthorized();
-        $this->api('POST', $this->central, "public/institutions/{$i->id}/verify", null, [
-            'public_id' => $res->json('data.activation.public_id'), 'code' => $delivery->code,
-            'password' => 'first-pass-1', 'password_confirmation' => 'first-pass-1'])->assertOk();
-        $this->assertTrue($admin->fresh()->is_active);
-        $this->assertTrue(Hash::check('first-pass-1', $admin->fresh()->password));
-        $this->assertSame('active', $i->fresh()->status);
-        // the new admin can now log in on the institution's own host
-        $this->json('POST', 'http://' . $res->json('data.host') . '/api/v1/auth/login', ['login' => '01712345678', 'password' => 'first-pass-1'])->assertOk();
+        // D170 (2): the temporary password logs in, but nothing else works until the recipient changes it
+        $this->app['auth']->forgetGuards();
+        $this->json('POST', 'http://' . $res->json('data.host') . '/api/v1/auth/login', ['login' => '01712345678', 'password' => $temporary])->assertOk();
+        $this->api('GET', $this->hostOf($i), 'students', $admin->fresh())->assertStatus(403)->assertJsonPath('error', 'must_change_password');
+        $this->api('PATCH', $this->hostOf($i), 'auth/change-password', $admin->fresh(), ['current_password' => $temporary,
+            'password' => 'Strong-own-pass-42', 'password_confirmation' => 'Strong-own-pass-42'])->assertOk();
+        $this->api('GET', $this->hostOf($i), 'students', $admin->fresh())->assertOk();
+        $this->assertFalse((bool) $admin->fresh()->must_change_password);
+        $this->assertTrue(Hash::check('Strong-own-pass-42', $admin->fresh()->password));
 
         $this->api('POST', $this->central, 'super/institutions', $this->super, ['name' => 'X', 'slug' => 'alo-coaching', 'institution_type' => 'school',
             'admin' => ['name' => 'A', 'phone' => '01712345679', 'password' => 'xxxxxxxx']])->assertStatus(422)->assertJsonValidationErrors('slug');
