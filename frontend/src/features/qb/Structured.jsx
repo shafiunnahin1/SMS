@@ -49,6 +49,8 @@ export const romanOptionLabel = (index) => {
   }
   return label
 }
+const MCQ_OPTION_LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
+const mcqOptionLabel = (index) => MCQ_OPTION_LABELS[index] ?? String(index + 1)
 
 /** A table typed as lines of cells split by "|"; a cell in [brackets] is one to fill, its answers inside (comma-separated) */
 export function parseTable(columns, rows) {
@@ -374,8 +376,13 @@ export function StructuredPreview({ structure, s, questionText = '', media = [],
     <div className="flex flex-col gap-2" data-testid="qb-structured-preview">
       {s.box && <div className="rounded-token bg-surface-muted p-2 text-sm">{rich(s.box, 'structured.box')}</div>}
       {structure === 'gap' && questionText && <div className="text-base" data-testid="qb-gap-passage-preview">{inlineGapPassage()}</div>}
-      {has('mcqs') && <div>{head('mcqs')}<ol className="flex flex-col gap-2 list-none">{s.mcqs.map((q, i) => <li key={i}><span className="font-medium">({alphabeticLabel(i)})</span> {rich(q.prompt, `structured.mcqs.${i}.prompt`)}
-        <ul className="flex flex-col gap-1 ps-4">{q.options.map((option, k) => option.text.trim() && <li key={k}><span className="font-medium">({romanOptionLabel(k)})</span> {rich(option.text, `structured.mcqs.${i}.options.${k}.text`)}{showAnswers && String(k) === String(q.correct) && <span className={muted}> ({t('qb.correct')})</span>}</li>)}</ul></li>)}</ol></div>}
+      {has('mcqs') && <div>{head('mcqs')}<ol className="flex flex-col gap-3 list-none">{s.mcqs.map((q, i) => <li key={i}>
+        <div><span className="font-medium">({alphabeticLabel(i)})</span> {rich(q.prompt, `structured.mcqs.${i}.prompt`)}</div>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">{q.options.map((option, k) => option.text.trim() && <div key={k} data-option-label={mcqOptionLabel(k)} className="flex min-h-12 items-center gap-3 rounded-token border border-border-subtle bg-surface-muted/30 px-3 py-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs">{mcqOptionLabel(k)}</span>
+          <span className="min-w-0">{rich(option.text, `structured.mcqs.${i}.options.${k}.text`)}{showAnswers && String(k) === String(q.correct) && <span className={muted}> ({t('qb.correct')})</span>}</span>
+        </div>)}</div>
+      </li>)}</ol></div>}
       {has('subs') && <div>{head('subs')}<ol className="flex flex-col gap-1 list-none">{s.subs.map((q, i) => <li key={i}><span className="font-medium">({alphabeticLabel(i)})</span> {rich(q.prompt, `structured.subs.${i}.prompt`)} {showAnswers && <span className={muted}>— {rich(q.answer, `structured.subs.${i}.answer`)}</span>}</li>)}</ol></div>}
       {has('gaps') && (structure !== 'gap' || showAnswers) && <div>{structure === 'gap' ? <h4 className="text-sm font-semibold">{t('qb.answer')}</h4> : head('gaps')}<ol className="flex flex-col gap-1 list-none">{s.gaps.map((g, i) => <li key={i}>
         {structure === 'gap' ? <><strong>({gapLabel(i)}) <span className="inline-block w-16 border-b-2 border-current align-baseline" aria-label="blank" /></strong>{g.prompt && <> {rich(g.prompt, `structured.gaps.${i}.prompt`)}</>}</> : rich(g.prompt, `structured.gaps.${i}.prompt`)}
@@ -420,7 +427,7 @@ export function StructuredAnswers({ s, media = [], sectionTitles = {} }) {
   return <div className="flex flex-col gap-3" data-testid="qb-structured-answers">
     {s.mcqs.length > 0 && list('mcqs', s.mcqs.map(question => {
       const correct = question.options[Number(question.correct)]?.text
-      return correct ? <><span className="font-medium">({romanOptionLabel(Number(question.correct))})</span> {rich(correct)}</> : '—'
+      return correct ? <><span className="font-medium">({mcqOptionLabel(Number(question.correct))})</span> {rich(correct)}</> : '—'
     }))}
     {s.subs.length > 0 && list('subs', s.subs.map(question => question.answer ? rich(question.answer) : '—'))}
     {s.gaps.length > 0 && list('gaps', s.gaps.map(gap => gap.answers ? gap.answers.split(',').map(answer => answer.trim()).filter(Boolean).join(', ') : '—'))}

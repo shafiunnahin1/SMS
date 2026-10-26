@@ -106,8 +106,7 @@ describe('structured passage MCQs', () => {
     expect(text).toContain('A.')
     expect(text).toContain('B.')
     expect(text).toContain('(a)')
-    expect(text).toContain('(i)')
-    expect(text).toContain('(ii)')
+    expect([...screen.getByTestId('qb-structured-preview').querySelectorAll('[data-option-label]')].map(option => option.dataset.optionLabel)).toEqual(['ক', 'খ'])
     expect(text.indexOf('A.')).toBeLessThan(text.indexOf('B.'))
   })
 

@@ -159,7 +159,7 @@ describe('writer question list cards', () => {
       expect(genericCard).toHaveTextContent('A. বহুনির্বাচনী (MCQ)')
       expect(genericCard).toHaveTextContent('B. প্রশ্নের উত্তর')
     }
-    expect(card).toHaveTextContent('(i) A queen')
+    expect([...card.querySelectorAll('[data-option-label]')].map(option => option.dataset.optionLabel)).toEqual(['ক', 'খ'])
     expect(card).toHaveTextContent('Behula was (a)')
     expect(card).toHaveTextContent('Behula gave up her journey.')
     expect(card).toHaveTextContent('Person')
@@ -177,7 +177,7 @@ describe('writer question list cards', () => {
     const answer = await screen.findByTestId('qb-answer')
     expect(answer).toHaveTextContent('A. Choose the correct answer from the alternatives:')
     expect(answer).toHaveTextContent('B. Answer the following questions:')
-    expect(answer).toHaveTextContent('(ii) A heroine')
+    expect(answer).toHaveTextContent('(খ) A heroine')
     expect(answer).toHaveTextContent('She endured a dangerous journey.')
     expect(answer).toHaveTextContent('brave')
     expect(answer).toHaveTextContent('She continued her journey.')
@@ -190,5 +190,31 @@ describe('writer question list cards', () => {
     expect(answer).not.toHaveTextContent(/\\{\\\"/)
     expect(answer).not.toHaveTextContent('{"correct"')
     expect(answer).not.toHaveTextContent('[object Object]')
+  })
+
+  it('does not repeat a passage embedded in the parent question text', async () => {
+    const passage = 'একদল শিকারি গ্রামে এসে পাখি দেখতে পেল।'
+    const question = {
+      id: 113, qb_question_type_id: 9, qb_subject_id: 3, qb_chapter_id: null, qb_topic_id: null,
+      class_level_ids: [4], marks: '1.00', difficulty: 2, status: 'draft', author: 'লেখক',
+      question_text: `উদ্দীপকটি পড়ে উত্তর দাও: ${passage} কোন চরণে এই ভাবটি আছে?`,
+      answer_text: null, explanation_text: null, creative_parts: [], options: [], media: [], occurrences: [], curriculum_breadcrumbs: [],
+      stimuli: [{ label: 'stimulus', content_text: passage }],
+      items: [{ item_type: 'sub_mcq', prompt_text: 'কোন চরণে এই ভাবটি আছে?',
+        prompt_json: { options: ['প্রথম চরণ', 'দ্বিতীয় চরণ'] }, answer_json: { correct: 0 }, marks: '1.00' }],
+    }
+    api.get.mockImplementation(url => url === '/writer/curriculum'
+      ? Promise.resolve({ data: { data: { class_levels: [{ id: 4, name_bn: 'অষ্টম শ্রেণি' }], subjects: [{ id: 3, name_bn: 'বাংলা ১ম পত্র', class_level_ids: [4], chapters: [] }], curriculum_versions: [] } } })
+      : url === '/writer/question-types'
+        ? Promise.resolve({ data: { data: [{ id: 9, slug: 'stimulus_mcq_group', name_bn: 'উদ্দীপকভিত্তিক বহুনির্বাচনী প্রশ্ন', structure: 'passage_mcq' }] } })
+        : Promise.resolve({ data: { data: [question], meta: { current_page: 1, last_page: 1, total: 1, per_page: 16, facets: { question_types: [], source_types: [], years: [] } } } }))
+    renderPage()
+
+    await screen.findByText('প্রথম চরণ')
+    const card = document.querySelector('[data-question="113"]')
+    expect(card.textContent.split(passage).length - 1).toBe(1)
+    expect(card).toHaveTextContent('উদ্দীপকটি পড়ে উত্তর দাও:')
+    expect(card).toHaveTextContent('কোন চরণে এই ভাবটি আছে?')
+    expect(card).not.toHaveTextContent('সঠিক')
   })
 })

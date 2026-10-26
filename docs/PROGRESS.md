@@ -21,6 +21,10 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 - [ ] M7.A — বাহ্যিক সংযোগ: বাংলা QR, Nagad, ব্যাংক-API (বাইরের নথি ছাড়া শুরু করা যায় না) (release R6): owner-signed acceptance
 - [ ] M8.A — মোবাইল-অ্যাপ, AI, GPS (release R7): owner-signed acceptance
 
+## D171 — Stimulus-based MCQ
+
+- [ ] STIM.3 — D171 — Writer question-list UI: show each stimulus once and render child MCQ choices with Bengali labels. Focused Vitest: 12 passed; `npm run lint:theme`: 186 files, 0 violations; touched-file oxlint: 0 errors. Full `npm test` remains blocked by 6 unrelated baseline failures (vendor manifests, `qb.class_level`, attendance PackContract timeout); task not checked off.
+
 ## Release R1  (`docs/AGENT-PLAN-R1.md`)
 
 - [x] 0.1 — this commit — tests: Laravel default ExampleTests (2) — `php artisan test` 2 passed; `php artisan serve` → GET / 200, GET /up 200; tinker: `config('tenancy.base_domain')` = schoolapp.com, `config('institution_types.coaching.terms.batch.bn')` = ব্যাচ

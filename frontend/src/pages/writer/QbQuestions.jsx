@@ -34,6 +34,18 @@ function questionTextWithGapHints(text, items = []) {
   })
 }
 
+function questionTextWithoutRepeatedParts(question, structure) {
+  let text = String(question.question_text ?? '')
+  if (!['passage', 'passage_mcq'].includes(structure)) return text
+  const repeatedParts = [
+    ...(question.stimuli ?? []).filter(stimulus => stimulus.label !== 'word_box').map(stimulus => stimulus.content_text),
+    ...(question.items ?? []).map(item => item.prompt_text),
+  ].map(value => String(value ?? '').trim()).filter(Boolean)
+  if (!repeatedParts.some(part => text.includes(part))) return text
+  for (const part of repeatedParts) text = text.replaceAll(part, ' ')
+  return text.replace(/\s{2,}/g, ' ').trim()
+}
+
 // QB.2 /writer/questions (D65): a writer's own questions, a moderator's and the Super Admin's view of everyone's - by status. A
 // moderator lands on the review tab (?status=review). Opening a row goes to the editor / review page.
 export default function QbQuestions() {
@@ -140,6 +152,7 @@ export default function QbQuestions() {
             const questionType = typeById[row.qb_question_type_id]
             const structure = questionType?.structure
             const structured = structure ? fromQuestion(row) : null
+            const cardQuestionText = structured ? questionTextWithoutRepeatedParts(row, structure) : row.question_text
             const sectionTitles = questionType?.slug === 'seen_passage' && structure === 'passage' && /^english\b/i.test(subjectById[row.qb_subject_id]?.name_en ?? '')
               ? { mcqs: t('qbaq.english_mcq_instructions'), subs: t('qbaq.english_written_instructions') }
               : undefined
@@ -167,8 +180,8 @@ export default function QbQuestions() {
               </header>
               <div className="flex flex-col gap-3 border-t border-border-subtle px-5 py-4">
                 {structured ? <>
-                  {structure !== 'gap' && <button type="button" onClick={() => navigate(`/writer/questions/${row.id}`)} className="text-start text-base leading-8" dir="auto">
-                    <span className="whitespace-normal [overflow-wrap:anywhere]"><MathText text={row.question_text} media={row.media ?? []} /></span>
+                  {structure !== 'gap' && cardQuestionText && <button type="button" onClick={() => navigate(`/writer/questions/${row.id}`)} className="text-start text-base leading-8" dir="auto">
+                    <span className="whitespace-normal [overflow-wrap:anywhere]"><MathText text={cardQuestionText} media={row.media ?? []} /></span>
                   </button>}
                   <StructuredPreview structure={structure} s={structured} questionText={structure === 'gap' ? row.question_text : ''} media={row.media ?? []} showAnswers={false} sectionTitles={sectionTitles} />
                 </> : <>
