@@ -1,6 +1,6 @@
 # খসড়া সিদ্ধান্ত D168: প্রতিষ্ঠানের কর্মীদের (`institution_staff`) সফটওয়্যার-সহায়িকা
 
-> এজেন্টের খসড়া — কোনো কোড লেখা হয়নি। মালিক §৩-এর প্রশ্নের উত্তর দিলে এজেন্ট অনুমোদন-স্ক্রিপ্ট বানাবে; তার আগে staff help-এর কোনো কাজ নয়, AI-Q5-ও নয়।
+> এজেন্টের খসড়া — কোনো কোড লেখা হয়নি। মালিকের উত্তর §৫-এ। অনুমোদন করলে `owner\approve-D168.ps1` চালাবেন (দুটি commit: সিদ্ধান্তের সারি ও guard-এ task AI-Q4S; push করে না)।
 
 ## ১. এখনকার অবস্থা (কোড থেকে যাচাই করা)
 - D166 (৬) সহায়িকা সব portal-এর জন্য; AI-Q4-এ admin, teacher, student, parent, accountant ও Super Admin পেয়েছে।
@@ -26,5 +26,12 @@
 3. (ক হলে) প্রথম কোন ২–৩টি কাজের নির্দেশনা লিখব? (যেমন: ফি আদায়, হাজিরা, শিক্ষার্থী তথ্য দেখা)
 4. AI-Q4-এর গ্রহণ: ক হলে AI-Q4 শেষ ধরা হবে staff অংশ (নতুন task trailer, `Change-Request: D168`) শেষ হলে; খ হলে এখনই।
 
-## ৪. সিদ্ধান্তের সারি (উত্তর পেলে এজেন্ট পূরণ করবে)
-`| D168 | institution_staff software help scope (follows D166 (6), D91) | … |`
+## ৪. সিদ্ধান্তের সারি
+| D168 | institution_staff software help by duty permission (follows D166 (6); D90/D91 unchanged) | Owner approved (2026-10-26). (1) The AI chat's own-chat routes (list, open, ask, delete, rate) also admit institution_staff, catalogued as active_identity_self: own chats only, `ai_assistant` module on; staff get the help guide only, never question-bank answers. (2) An approved article is shown to a staff member only if its roles include institution_staff AND every route it names is catalogued exact_duty_permission AND the staff member holds that permission in ANY of their active departments (active membership, active duty; the same rules as DepartmentDutyPermissionService). A principal_only, preserve_nonstaff_boundary, unknown or uncatalogued route hides the article (fail closed). This only decides which help text is shown; every page and action still enforces D90/D91 (selected department, X-Department-Id) as before. (3) First staff articles, verified against the pages and approved in the Super Admin panel like all others: student admission, fee collection, attendance, viewing student information. (4) Task AI-Q4S (after AI-Q4, trailers Change-Request: D166 and D168); AI-Q4 is accepted only when AI-Q4S is done, and AI-Q5 follows AI-Q4S. No new table. |
+
+## ৫. মালিকের উত্তর (2026-10-26)
+1. **ক** — দায়িত্ব-অনুযায়ী সহায়িকা।
+2. কর্মীর **যেকোনো** সক্রিয় বিভাগের permission গণ্য হবে (এজেন্টের সুপারিশ ছিল শুধু নির্বাচিত বিভাগ)। এটি শুধু কোন নির্দেশনা দেখাবে তা ঠিক করে; আসল পাতা ও কাজে D91-এর নির্বাচিত বিভাগের পরীক্ষা আগের মতোই থাকে।
+3. প্রথম নির্দেশনা: শিক্ষার্থী ভর্তি, ফি আদায়, হাজিরা, শিক্ষার্থীর তথ্য দেখা।
+4. হ্যাঁ — AI-Q4 গৃহীত ধরা হবে staff অংশ (AI-Q4S) শেষ হলে; তারপর AI-Q5।
+
