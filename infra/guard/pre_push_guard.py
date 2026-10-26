@@ -49,8 +49,13 @@ def main():
             continue
         if remote_oid == '0' * 40 or remote_oid == local_oid:
             continue
-        if git('merge-base', '--is-ancestor', remote_oid, local_oid) != '':
+        # D167: --is-ancestor answers by exit code only (0 = the remote tip is in the pushed commit, 1 = it is not); any other
+        # code is a real Git error (an unknown object, a broken repository) and is shown as it is
+        check = subprocess.run(['git', 'merge-base', '--is-ancestor', remote_oid, local_oid], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        if check.returncode == 0:
             continue
+        if check.returncode != 1:
+            fail(f"git merge-base --is-ancestor failed (exit {check.returncode}): {check.stderr.strip() or 'no message'}")
         remote_branch = remote_ref.removeprefix('refs/heads/')
         fail(f"remote branch {remote_branch} has commits missing from {local_oid[:12]}; fetch and resolve before pushing")
 
