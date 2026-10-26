@@ -107,7 +107,9 @@ class AssistantRelevanceTest extends TestCase
         $a = $this->ask('নিচের লেখচিত্রে ঢাল কত', 'airel2');
         $json = json_encode($a, JSON_UNESCAPED_UNICODE);
         $this->assertSame('composed', $a['kind']);
-        foreach (['qmx-graph', 'eyJ4IjpbMSwyXX0', 'LOCKED-ANSWER', 'LOCKED-EXPLANATION', '✓'] as $bad) $this->assertStringNotContainsString($bad, $json, $bad);
+        foreach (['LOCKED-ANSWER', 'LOCKED-EXPLANATION', '✓', 'is_correct'] as $bad) $this->assertStringNotContainsString($bad, $json, $bad);
+        // AI-Q2: the token travels only in `items`, for the chat's safe renderer - never in the answer text or the sources
+        foreach (['qmx-graph', 'eyJ4IjpbMSwyXX0'] as $bad) $this->assertStringNotContainsString($bad, $a['body'] . json_encode($a['sources']), $bad);
         $this->assertStringContainsString('[চিত্র]', $a['body']);
         $other = $this->ask('নিচের লেখচিত্রে ঢাল কত', 'airel3');                     // another institution: the same platform question, no tenant data
         $this->assertSame($this->ids($a), $this->ids($other));

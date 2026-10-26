@@ -10,7 +10,30 @@ import Button from '../../components/Button'
 import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import BuyButton from '../../features/qb/BuyButton'
+import MathText from '../../features/qb/MathText'
 import { useAuthStore } from '../../store/authStore'
+
+// D166 AI-Q2: a graph / diagram token the renderer would not accept (wrong shape, truncated, unknown kind) becomes a plain placeholder
+// before rendering, so a raw or encoded payload is never shown as text; valid ones go to MathText's own safe renderer
+const VALID_TOKEN = /^\[\[qmx-(graph:[A-Za-z0-9_-]{10,60000}|diagram:[A-Za-z0-9_-]{10,200000})\]\]$/
+export const safeTokens = (text, placeholder) => String(text ?? '').replace(/\[\[qmx-[^\]]*\]\]/g, (tok) => (VALID_TOKEN.test(tok) ? tok : placeholder))
+
+// D166 AI-Q2: one question the answer showed - maths, graphs and pictures through MathText; a locked one has no answer side at all
+function Item({ q, n }) {
+  const { t } = useTranslation()
+  const ph = `[${t('ai.figure_unreadable')}]`
+  return (
+    <div className="flex flex-col gap-1 rounded-token px-2 py-2 [border:1px_solid_var(--line)]" data-item={q.id}>
+      <div className="flex gap-1"><span className="font-medium">{n}.</span><MathText text={safeTokens(q.question_text, ph)} media={q.media ?? []} /></div>
+      {q.options?.length > 0 && <ol className="flex flex-col gap-1 ps-4">{q.options.map(o => (
+        <li key={o.label} className="flex gap-1"><span className="font-medium">{o.label})</span><MathText text={safeTokens(o.content_text, ph)} media={q.media ?? []} />{o.is_correct && <span aria-label={t('qb.correct')}>✓</span>}</li>))}</ol>}
+      {q.unlocked ? <>
+        {q.answer_text && <div><span className="font-medium">{t('qb.answer')}: </span><MathText text={safeTokens(q.answer_text, ph)} media={q.media ?? []} /></div>}
+        {q.explanation_text && <div className="text-content-muted"><MathText text={safeTokens(q.explanation_text, ph)} media={q.media ?? []} /></div>}
+      </> : <p className="text-xs text-content-muted">{t('ai.locked_item')}</p>}
+    </div>
+  )
+}
 
 // D164 AI-P1.3: the teacher's / head's chat with the assistant - own chats on the side, the question box, each answer with its
 // sources, a "not yet reviewed" or "reviewed answer" mark, an unlock button for a question whose answer is hidden, and 👍 / 👎
@@ -102,7 +125,12 @@ export default function AiChat() {
                       ? <><BadgeCheck aria-hidden="true" className="h-4 w-4 text-primary-fg" />{t('ai.reviewed')}</>
                       : <><Clock aria-hidden="true" className="h-4 w-4" />{t('ai.not_reviewed')}</>}
                   </span>
-                  <div className="whitespace-pre-wrap" dir="auto">{m.body}</div>
+                  {m.items?.length > 0 && !m.original && !m.template && m.kind === 'composed'
+                    ? <div className="flex flex-col gap-2" data-testid="ai-items">{m.items.map((q, i) => <Item key={q.id} q={q} n={i + 1} />)}</div>   // D166 AI-Q2
+                    : <>
+                      <div className="whitespace-pre-wrap" dir="auto">{m.body}</div>
+                      {m.items?.length > 0 && <details className="text-xs"><summary>{t('ai.source_questions')}</summary><div className="flex flex-col gap-2 pt-1">{m.items.map((q, i) => <Item key={q.id} q={q} n={i + 1} />)}</div></details>}
+                    </>}
                   {m.rephrasing && <p className="text-xs text-content-muted" data-testid="ai-rephrasing">{t('ai.rephrasing')}</p>}
                   {m.template && <details className="text-xs text-content-muted" data-testid="ai-template"><summary>{t('ai.template')}</summary><div className="whitespace-pre-wrap" dir="auto">{m.template}</div></details>}
                   {m.original && <details className="text-xs text-content-muted"><summary>{t('ai.original')}</summary><div className="whitespace-pre-wrap" dir="auto">{m.original}</div></details>}

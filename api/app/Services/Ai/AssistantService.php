@@ -142,6 +142,24 @@ class AssistantService
         return ['kind' => 'composed', 'body' => implode("\n", $lines), 'sources' => $sources, 'questions' => $shown, 'reveal' => $reveal];
     }
 
+    /**
+     * D166 AI-Q2: the questions an answer showed, rebuilt for the chat's safe renderer (maths, graphs, diagrams, pictures) through
+     * QbQuestionPublicResource - each exactly as open as it was shown then (`locked` in the answer's sources), so a locked
+     * question carries no answer, explanation, `is_correct` or answer-only picture; a question no longer published is skipped
+     */
+    public static function items(array $sources): array
+    {
+        $shown = collect($sources)->where('type', 'question')->keyBy(fn ($s) => (int) $s['id']);
+        if ($shown->isEmpty()) return [];
+        $rows = QbQuestion::where('status', 'published')->whereIn('id', $shown->keys())->get()->keyBy('id');
+        return $shown->filter(fn ($s, $id) => isset($rows[$id]))->map(function ($s, $id) use ($rows) {
+            $p = QbQuestionPublicResource::make($rows[$id], empty($s['locked']));
+            return ['id' => $id, 'unlocked' => $p['unlocked'], 'question_text' => $p['question_text'], 'media' => $p['media'],
+                'options' => array_map(fn ($o) => array_intersect_key($o, array_flip(['label', 'content_text', 'is_correct'])), $p['options']),
+                'answer_text' => $p['answer_text'] ?? null, 'explanation_text' => $p['explanation_text'] ?? null];
+        })->values()->all();
+    }
+
     /** AI-P1.6 model comparison: the composed text an evaluation item would get - nothing saved, nothing counted */
     public function composedPreview(string $text, User $user): string
     {

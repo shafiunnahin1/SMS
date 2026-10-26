@@ -29,7 +29,9 @@ class AiConversationController extends Controller
         $c = AiConversation::where('user_id', $request->user()->id)->findOrFail($id);   // another user's or institution's chat is a 404 first
         $text = $request->validate(['text' => 'required|string|max:1000'])['text'];
         $out = $assistant->ask($c, $text, $request->user());
-        $row = fn ($m) => ['id' => $m->id, 'role' => $m->role, 'body' => $m->body, 'kind' => $m->kind, 'sources' => $m->sources ?? [], 'rating' => $m->rating, 'review' => $m->role === 'answer' ? 'unreviewed' : null];
+        $row = fn ($m) => ['id' => $m->id, 'role' => $m->role, 'body' => $m->body, 'kind' => $m->kind, 'sources' => $m->sources ?? [],
+            'items' => $m->role === 'answer' ? \App\Services\Ai\AssistantService::items($m->sources ?? []) : [],   // D166 AI-Q2: for the safe renderer
+            'rating' => $m->rating, 'review' => $m->role === 'answer' ? 'unreviewed' : null];
         return response()->json(['success' => true, 'data' => ['question' => $row($out['question']), 'answer' => $row($out['answer']), 'questions' => $out['questions'],
             'free_left' => $assistant->quotaLeft()]], 201);
     }
@@ -75,7 +77,7 @@ class AiConversationController extends Controller
         $c = AiConversation::where('user_id', $request->user()->id)->with('messages.review')->findOrFail($id);
         return response()->json(['success' => true, 'data' => ['id' => $c->id, 'title' => $c->title, 'messages' => $c->messages->map(fn ($m) => [
             // AI-P1.4: a corrected or rewritten answer is shown instead of the first one, which stays as history
-            'id' => $m->id, 'role' => $m->role, 'body' => $m->review?->reviewer_text ?: $m->body, 'original' => $m->review?->reviewer_text ? $m->body : null, 'kind' => $m->kind, 'sources' => $m->sources ?? [], 'rating' => $m->rating,
+            'id' => $m->id, 'role' => $m->role, 'body' => $m->review?->reviewer_text ?: $m->body, 'original' => $m->review?->reviewer_text ? $m->body : null, 'items' => $m->role === 'answer' ? \App\Services\Ai\AssistantService::items($m->sources ?? []) : [], 'kind' => $m->kind, 'sources' => $m->sources ?? [], 'rating' => $m->rating,
             'review' => $m->role === 'answer' ? ($m->review?->status ?? 'unreviewed') : null,
             // AI-P1.6: still being rephrased (a worker that never ran stops counting after 2 minutes); AI-P1.6.1: the template it replaced
             'rephrasing' => $m->model_version === \App\Jobs\RephraseAnswerJob::PENDING && $m->created_at?->gt(now()->subMinutes(2)),
