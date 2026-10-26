@@ -175,4 +175,5 @@ return [
     'practice_submitted' => 'This practice round is already submitted.',
     'learner_move_password' => 'This number has no own account yet - give a password for the new account.',
     'learner_not_pending' => 'This registration was not found or is already verified.',
+    'staff_grant_not_staff' => 'A grant can only be given to an active staff member of this institution.',   // D169 STW.5
 ];

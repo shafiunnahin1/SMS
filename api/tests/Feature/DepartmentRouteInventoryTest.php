@@ -192,10 +192,21 @@ class DepartmentRouteInventoryTest extends TestCase
     public function test_d169_student_view_routes_admit_staff_by_exact_key_and_match_live_routes(): void
     {
         $resolver = app(DepartmentRoutePermissionResolver::class);
-        $this->assertCount(4, DepartmentRouteCatalog::D169);   // STW.2 reads + STW.3 admission
+        $this->assertCount(8, DepartmentRouteCatalog::D169);   // STW.2 reads + STW.3 admission + STW.5 attendance grants
         $keys = ['GET|HEAD api/v1/students' => 'staff.student.index', 'GET|HEAD api/v1/students/{id}' => 'staff.student.show',
             'GET|HEAD api/v1/students/{id}/enrollments' => 'staff.enrollment.for_student', 'POST api/v1/students' => 'staff.student.store'];
         foreach (DepartmentRouteCatalog::D169 as $entry) {
+            if (str_contains($entry['uri'], 'attendance-')) {
+                // STW.5: grants are the head's / class teacher's (no staff key); staff list only their own grants
+                $own = $entry['uri'] === 'api/v1/staff/attendance-batches';
+                $this->assertSame(['D169', $own ? 'active_identity_self' : 'preserve_nonstaff_boundary', [], $own ? ['institution_staff'] : ['admin', 'teacher']],
+                    [$entry['approval'], $entry['staff_mode'], $entry['permission_options'], $entry['current_roles']]);
+                $method = explode('|', $entry['method'])[0];
+                $route = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())->first(fn ($c) => $c->uri() === $entry['uri'] && in_array($method, $c->methods(), true));
+                $this->assertNotNull($route, $method . ' ' . $entry['uri']);
+                $this->assertSame($entry['action'], ltrim($route->getActionName(), '\\'));
+                continue;
+            }
             // STW.2: the same exact key as the approved D90 matrix; only the live roles gain institution_staff
             $captured = collect(DepartmentRouteCatalog::CAPTURED)->first(fn ($c) => $c['uri'] === $entry['uri'] && $c['method'] === $entry['method']);
             $this->assertSame([$captured['permission_options'], $captured['current_module_feature_gates']], [$entry['permission_options'], $entry['current_module_feature_gates']]);

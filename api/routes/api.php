@@ -410,6 +410,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/attendance/report',              [AttendanceController::class, 'report']);   // ?batch_id=&month=
             Route::get('/attendance/summary/{id}',        [AttendanceController::class, 'summary'])->whereNumber('id');
         });
+        // D169 (4) STW.5: attendance grants - the head / admin or the batch's teacher in charge (checked in the service); staff see their own
+        Route::middleware(['role:admin,teacher', 'module:attendance'])->group(function () {
+            Route::get('/batches/{id}/attendance-grants',  [\App\Http\Controllers\Academic\AttendanceGrantController::class, 'index'])->whereNumber('id');
+            Route::post('/batches/{id}/attendance-grants', [\App\Http\Controllers\Academic\AttendanceGrantController::class, 'store'])->whereNumber('id');
+            Route::delete('/attendance-grants/{id}',       [\App\Http\Controllers\Academic\AttendanceGrantController::class, 'destroy'])->whereNumber('id');
+        });
+        Route::get('/staff/attendance-batches', [\App\Http\Controllers\Academic\AttendanceGrantController::class, 'mine'])->middleware(['role:institution_staff', 'module:attendance']);
 
         Route::middleware(['module:cashbook'])->group(function () {
             Route::middleware('role:admin,accountant,institution_staff')->group(function () {

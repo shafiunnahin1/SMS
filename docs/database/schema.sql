@@ -3874,3 +3874,22 @@ CREATE TABLE ai_help_articles (                                -- D166 (6) AI-Q4
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (base_article_id) REFERENCES ai_help_articles(id)
 );
+
+CREATE TABLE staff_attendance_grants (                         -- D169 (4) STW.5: a staff member may take a batch's attendance while a grant is active
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    batch_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,                            -- the institution_staff member
+    granted_by BIGINT UNSIGNED NOT NULL,                         -- the head / admin, or the batch's teacher in charge
+    revoked_by BIGINT UNSIGNED NULL,
+    revoked_at TIMESTAMP NULL,                                   -- NULL = active; one active grant per batch and staff member (service, batch row lock)
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_staff_att_grants_active (institution_id, batch_id, user_id, revoked_at),
+    INDEX idx_staff_att_grants_user (institution_id, user_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (batch_id) REFERENCES batches(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (granted_by) REFERENCES users(id),
+    FOREIGN KEY (revoked_by) REFERENCES users(id)
+);

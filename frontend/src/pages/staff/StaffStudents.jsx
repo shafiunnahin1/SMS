@@ -16,6 +16,7 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import Button from '../../components/Button'
 import StudentAdd from '../admin/students/StudentAdd'
 import FeeCollect from '../admin/fees/FeeCollect'
+import AttendanceTakePage from '../attendance/Take'
 
 // D169 STW.2: the staff student view - read only, the selected department's key (staff.student.index / .show), the full core
 // profile (D169 (3)); no edit, delete, consent, file or enrollment actions, and never a fee override (the API leaves it out too)
@@ -58,6 +59,11 @@ export function StaffStudentAdd() {
 /** D169 STW.4: fee collection by staff - the counter page, with every key it uses held in the selected department */
 export function StaffFeeCollect() {
   return <RequireDepartment permission={['staff.student.index', 'staff.fee.dues', 'staff.fee.collect', 'staff.fee.receipt']}><FeeCollect /></RequireDepartment>
+}
+
+/** D169 STW.5: attendance by staff - granted batches (and own batches as a teacher, D101), with the selected department's keys */
+export function StaffAttendance() {
+  return <RequireDepartment permission={['staff.attendance.index', 'staff.attendance.store']}><AttendanceTakePage /></RequireDepartment>
 }
 
 export function StaffStudentProfile() {

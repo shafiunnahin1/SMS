@@ -16,6 +16,7 @@ class StaffIdentityBoundary
         'GET api/v1/staff/departments', 'HEAD api/v1/staff/departments',
         'GET api/v1/staff/departments/{id}/portal', 'HEAD api/v1/staff/departments/{id}/portal',
         'GET api/v1/teachers', 'HEAD api/v1/teachers',
+        'GET api/v1/staff/attendance-batches', 'HEAD api/v1/staff/attendance-batches',   // D169 STW.5: own active grants only
     ];
     public function handle(Request $request, Closure $next)
     {

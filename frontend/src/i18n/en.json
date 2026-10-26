@@ -337,6 +337,7 @@
    "rejected": "Rejected"
   },
   "attendance": {
+    "grants": {"title": "Attendance grants (staff)", "hint": "A staff member listed here may take and correct this {{unit}}'s attendance while the grant lasts; they also need the attendance duty in their department.", "none": "No staff member has a grant yet.", "staff": "Staff member", "pick": "Choose a staff member", "give": "Give access", "revoke": "Revoke", "revoke_name": "Revoke {{name}}'s access"},
    "title": "Take attendance",
    "date": "Date",
    "all_present": "All present",

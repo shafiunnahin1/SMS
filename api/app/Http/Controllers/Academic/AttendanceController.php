@@ -39,17 +39,22 @@ class AttendanceController extends Controller
 
     public function store(StoreAttendanceRequest $request)
     {
-        $this->authorizeBatch($request, Batch::findOrFail($request->input('batch_id')));
-        return response()->json(['success' => true, 'data' => $this->attendance->saveBulk($request->validated())], 201);
+        $batch = Batch::findOrFail($request->input('batch_id'));
+        $context = $this->authorizeBatch($request, $batch);
+        $saved = $this->attendance->saveBulk($request->validated());
+        $this->auditStaff($context, 'attendance.staff_saved', $batch, ['date' => $request->input('date')]);
+        return response()->json(['success' => true, 'data' => $saved], 201);
     }
 
     /** PUT /attendance/{id} { status, note? } - correct one record (no new SMS for a correction) */
     public function update(Request $request, int $id)
     {
         $record = Attendance::findOrFail($id);
-        $this->authorizeBatch($request, Batch::findOrFail($record->batch_id));
+        $batch = Batch::findOrFail($record->batch_id);
+        $context = $this->authorizeBatch($request, $batch);
         $data = $request->validate(['status' => 'required|in:present,absent,late,leave', 'note' => 'nullable|string|max:255']);
         $record->update($data + ['taken_by' => $request->user()->id]);
+        $this->auditStaff($context, 'attendance.staff_corrected', $batch, ['record_id' => $record->id]);
         return response()->json(['success' => true, 'data' => $record->only(['id', 'student_id', 'batch_id', 'status', 'note']) + ['date' => $record->date->toDateString()],
             'message' => __('messages.saved')]);
     }
@@ -59,7 +64,7 @@ class AttendanceController extends Controller
     {
         $data = $request->validate(['batch_id' => 'required|integer', 'month' => 'required|date_format:Y-m']);
         $batch = Batch::findOrFail($data['batch_id']);
-        $this->authorizeBatch($request, $batch);
+        $this->authorizeBatch($request, $batch, false);   // a report is not taking attendance: staff keep D101's own-batch reach
         $rows = $this->attendance->getBatchReport($batch->id, $data['month'])->map(fn ($r) => ['student_id' => $r['student']->id,
             'code' => $r['student']->student_id, 'name' => $r['student']->user?->name] + $r['summary'])->sortBy('name')->values();
         return response()->json(['success' => true, 'data' => ['batch' => ['id' => $batch->id, 'name' => $batch->name], 'month' => $data['month'], 'rows' => $rows]]);
@@ -96,13 +101,31 @@ class AttendanceController extends Controller
         return ['student' => ['id' => $student->id, 'name' => $student->user?->name, 'code' => $student->student_id]] + $sum;
     }
 
-    private function authorizeBatch(Request $request, Batch $batch): void
+    private function authorizeBatch(Request $request, Batch $batch, bool $take = true): ?array
     {
         if ($request->user()?->role === 'institution_staff') {
+            if ($take) {
+                // D169 (4) STW.5 + D101 (owner 2026-10-27: both): the selected department's key (D91), then either the staff member's own
+                // batch as its class / subject teacher (D101) or an active grant for this batch (D169)
+                $department = app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
+                try { $own = $this->staffBatches($request)->whereKey($batch->id)->exists(); }
+                catch (BusinessException) { $own = false; }   // a staff member who teaches nothing has no D101 batches - only grants
+                if ($own) return ['department_id' => $department, 'grant_id' => null];
+                $grant = app(\App\Services\StaffAttendanceGrantService::class)->activeGrant($request->user(), $batch->id);
+                if (!$grant) throw new BusinessException('no attendance grant for this batch', 'forbidden', 403);
+                return ['department_id' => $department, 'grant_id' => $grant->id];
+            }
             if (!$this->staffBatches($request)->whereKey($batch->id)->exists()) throw new BusinessException('not your batch', 'forbidden', 403);
-            return;
+            return null;
         }
         if (!$this->attendance->canTake($request->user(), $batch)) throw new BusinessException('not your batch', 'forbidden', 403);
+        return null;
+    }
+
+    /** D169 (4): the audit names the staff member, the department and the grant (no student data) */
+    private function auditStaff(?array $context, string $action, Batch $batch, array $extra = []): void
+    {
+        if ($context) \App\Models\AuditLog::record($action, $batch, $context + ['batch_id' => $batch->id] + $extra);
     }
 
     /** D101: department staff reach only their own (class or subject teacher) upcoming/running batches, via D91 context + the route's exact key */

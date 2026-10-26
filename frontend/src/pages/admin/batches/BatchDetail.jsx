@@ -18,6 +18,7 @@ import List from '../../../ui/variants/List'
 import Modal from '../../../ui/variants/Modal'
 import Ltr from '../../../components/bidi/Ltr'
 import BatchForm from '../../../features/academic/BatchForm'
+import AttendanceGrants from '../../../features/attendance/AttendanceGrants'
 import { useCrud } from '../../../features/academic/useCrud'
 
 // Step 4.1 /admin/batches/:id: details, teacher in charge and subject teachers, and the members (active enrollments)
@@ -29,6 +30,7 @@ export default function BatchDetail() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const hasTeachers = (useInstitutionStore(s => s.roles) ?? []).includes('teacher')
+  const modules = useInstitutionStore(s => s.modules)   // D169 STW.5: attendance grants only with the attendance module
   const { remove } = useCrud('batches')
   const [editing, setEditing] = useState(false)
   const batch = useQuery({ queryKey: ['batches', 'one', id], queryFn: () => api.get(`/batches/${id}`).then(r => r.data.data) })
@@ -64,6 +66,7 @@ export default function BatchDetail() {
           ]} rows={(b.subject_teachers ?? []).map((r, i) => ({ ...r, id: i }))} />
         </Card>
       )}
+      {modules?.includes('attendance') && <Card><AttendanceGrants batchId={b.id} /></Card>}   {/* D169 STW.5 */}
       <Card>
         <h2 className="font-semibold mb-2">{t('academic.members', { unit: term('batch') })}</h2>
         <List columns={[

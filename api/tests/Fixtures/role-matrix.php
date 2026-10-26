@@ -172,6 +172,10 @@ return [
     'GET api/v1/sms-logs' => ['admin', 'accountant', 'institution_staff'],
     'GET api/v1/students' => ['admin', 'institution_staff'],   // D169 STW.2: staff, key in the selected department
     'POST api/v1/students' => ['admin', 'institution_staff'],   // D169 STW.3
+    'GET api/v1/batches/{id}/attendance-grants' => ['admin', 'teacher'],          // D169 STW.5
+    'POST api/v1/batches/{id}/attendance-grants' => ['admin', 'teacher'],
+    'DELETE api/v1/attendance-grants/{id}' => ['admin', 'teacher'],
+    'GET api/v1/staff/attendance-batches' => ['institution_staff'],
     'GET api/v1/students/{id}' => ['admin', 'institution_staff'],
     'PUT api/v1/students/{id}' => ['admin'],
     'DELETE api/v1/students/{id}' => ['admin'],

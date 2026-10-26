@@ -19,12 +19,20 @@ import { Input, Select } from '../../components/FormField'
 // (GET /teacher/batches; the API refuses any other with 403), and a second tab shows the month report.
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' })
 
+/** D169 (4) STW.5 + D101 (owner 2026-10-27, "both"): a staff member's granted batches plus their own batches as a teacher, if any */
+async function staffBatches() {
+  const [granted, own] = await Promise.allSettled([api.get('/staff/attendance-batches'), api.get('/teacher/batches')])
+  if (granted.status === 'rejected') throw granted.reason
+  const all = [...granted.value.data.data, ...(own.status === 'fulfilled' ? own.value.data.data : [])]
+  return all.filter((b, i) => all.findIndex(x => x.id === b.id) === i)
+}
+
 export default function AttendanceTakePage() {
   const { t } = useTranslation()
   const term = useTerms()
   const role = useAuthStore(s => s.role)
-  const source = role === 'teacher' ? '/teacher/batches' : '/batches'
-  const batches = useQuery({ queryKey: ['batches', source], queryFn: () => api.get(source).then(r => r.data.data) })
+  const source = role === 'teacher' ? '/teacher/batches' : role === 'institution_staff' ? 'staff' : '/batches'
+  const batches = useQuery({ queryKey: ['batches', source], queryFn: () => role === 'institution_staff' ? staffBatches() : api.get(source).then(r => r.data.data) })
   const [tab, setTab] = useState('take')
   const [batchId, setBatchId] = useState('')
   const [date, setDate] = useState(today)
