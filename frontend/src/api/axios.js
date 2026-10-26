@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { useUiStore } from '../store/uiStore'
 import i18n from '../i18n'
+import { useStaffDepartmentStore } from '../store/staffDepartmentStore'
 
 // docs/templates/react-core-files.md "src/api/axios.js". The tenant is resolved server-side from the Host; the base URL is relative.
 // D51: the web is authenticated by its same-origin session cookie (sent automatically) + Sanctum's XSRF-TOKEN cookie, which axios echoes
@@ -17,6 +18,9 @@ api.interceptors.request.use((config) => {
   const token = authStore?.getState().token
   if (token) config.headers.Authorization = `Bearer ${token}`
   config.headers['Accept-Language'] = i18n.language || 'bn'
+  // D169 STW.1 (D91): a staff member's request names the selected department; the API checks the duty key there
+  const department = useStaffDepartmentStore.getState().department
+  if (department && authStore?.getState().role === 'institution_staff') config.headers['X-Department-Id'] = String(department.id)
   return config
 })
 

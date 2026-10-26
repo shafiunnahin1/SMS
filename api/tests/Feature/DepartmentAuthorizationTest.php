@@ -1298,7 +1298,7 @@ class DepartmentAuthorizationTest extends TestCase
             $this->api('GET', $host, 'staff/departments', $user)->assertOk()->assertJsonPath('success', true)
                 ->assertJsonPath('data', [$expected])->assertJsonPath('meta.total', 1);
             $this->api('GET', $host, "staff/departments/{$department->id}/portal", $user)->assertOk()
-                ->assertExactJson(['success' => true, 'data' => $expected]);
+                ->assertExactJson(['success' => true, 'data' => $expected, 'permissions' => ['staff.report.dues']]);   // D169 STW.1 (owner-approved): own keys in this department only
             $this->api('HEAD', $host, 'staff/departments', $user)->assertOk();
             $this->api('HEAD', $host, "staff/departments/{$department->id}/portal", $user)->assertOk();
             foreach ([$foreign['department']->id, $unassigned->id, 999999] as $id) {

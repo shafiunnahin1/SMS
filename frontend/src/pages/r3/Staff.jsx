@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
 import { useAuthStore } from '../../store/authStore'
+import { useStaffDepartmentStore } from '../../store/staffDepartmentStore'
 import ResourcePage from '../../features/r3/ResourcePage'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
@@ -41,9 +42,16 @@ export function Departments() {
 // The staff member's own departments; choosing one shows that department's portal (its allowed work, from the API)
 export function MyDepartments() {
   const { t } = useTranslation()
-  const [current, setCurrent] = useState(null)
+  const selected = useStaffDepartmentStore(s => s.department)
+  const select = useStaffDepartmentStore(s => s.select)
+  const [current, setCurrent] = useState(selected?.id ?? null)
   const list = useQuery({ queryKey: ['staff/departments'], queryFn: () => api.get('/staff/departments').then(r => r.data.data) })
-  const portal = useQuery({ queryKey: ['staff/portal', current], queryFn: () => api.get(`/staff/departments/${current}/portal`).then(r => r.data.data), enabled: Boolean(current), retry: false })
+  // D169 STW.1: opening a department selects it for every staff page (with the duty keys held there); a refused one is cleared
+  const portal = useQuery({ queryKey: ['staff/portal', current], queryFn: () => api.get(`/staff/departments/${current}/portal`).then(r => r.data), enabled: Boolean(current), retry: false })
+  useEffect(() => {
+    if (portal.data) select({ id: portal.data.data.id, name: portal.data.data.name }, portal.data.permissions ?? [])
+    else if (portal.isError && selected?.id === current) useStaffDepartmentStore.getState().clear()
+  }, [portal.data, portal.isError])   // eslint-disable-line react-hooks/exhaustive-deps
   const rows = list.data ?? []
   return (
     <div>
@@ -65,7 +73,7 @@ export function MyDepartments() {
       {current && <Card data-testid="department-portal">
         {portal.isPending ? <Loader type="form" fields={2} /> : portal.isError ? <ErrorState onRetry={portal.refetch} message={t('r3.staff.no_access')} /> : (
           <div>
-            <h2 className="mb-2 font-medium" dir="auto">{portal.data.name}</h2>
+            <h2 className="mb-2 font-medium" dir="auto">{portal.data.data.name}</h2>
             <p className="text-sm text-content-muted">{t('r3.staff.portal_ready')}</p>
           </div>
         )}

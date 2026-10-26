@@ -8,7 +8,7 @@ use App\Services\DepartmentContextService;
 
 class DepartmentContextController extends Controller
 {
-    public function __construct(private DepartmentContextService $contexts) {}
+    public function __construct(private DepartmentContextService $contexts, private \App\Services\DepartmentDutyPermissionService $duties) {}
 
     public function index(DepartmentContextRequest $request)
     {
@@ -19,6 +19,8 @@ class DepartmentContextController extends Controller
 
     public function show(DepartmentContextRequest $request, int $id)
     {
-        return (new DepartmentContextResource($this->contexts->show($request->user(), $id)))->additional(['success' => true]);
+        // D169 STW.1: the keys held in this department, so the staff menu shows only the work it allows (every request is checked again)
+        $context = $this->contexts->show($request->user(), $id);
+        return (new DepartmentContextResource($context))->additional(['success' => true, 'permissions' => $this->duties->keys($request->user(), $id)]);
     }
 }

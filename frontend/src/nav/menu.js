@@ -263,8 +263,9 @@ export const MENU = {
 // buildNav (docs/THEMING.md "nav/menu.js"): drop what the institution's modules / settings / this release hide, resolve {term} labels.
 // `roleNeeds` hides an item when the institution type has no such role (a private batch has no teachers); `feature` items stay
 // hidden in the spike (plan features are an open owner question, PM-1).
-export function buildNav(role, { modules = [], settings = {}, roles = [], release = 'R1', features = {}, institutionType = null } = {}, term = (k) => k, translate = (l) => l) {
-  const ok = (i) => (!i.module || modules.includes(i.module)) && !(i.hideWhen && i.hideWhen(settings))
+export function buildNav(role, { modules = [], settings = {}, roles = [], release = 'R1', features = {}, institutionType = null, staffKeys = [] } = {}, term = (k) => k, translate = (l) => l) {
+  // D169: a staff item with staffKey shows only when the selected department holds that duty key (the API checks it again)
+  const ok = (i) => (!i.staffKey || staffKeys.includes(i.staffKey)) && (!i.module || modules.includes(i.module)) && !(i.hideWhen && i.hideWhen(settings))
     && shipped(i.since, release) && (!i.onlyType || i.onlyType === institutionType) && (!i.roleNeeds || roles.includes(i.roleNeeds)) && (!i.feature || Boolean(features[i.feature]))
   const label = (l) => (l && typeof l === 'object' && l.term ? term(l.term) : translate(l))
   const map = (i) => ({ ...i, label: label(i.label), children: i.children?.filter(ok).map(map) })
