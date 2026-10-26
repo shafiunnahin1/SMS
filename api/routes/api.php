@@ -232,6 +232,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['role:admin,institution_staff', 'module:students'])->group(function () {
             Route::get('/students',                   [StudentController::class, 'index']);
             Route::get('/students/{id}',              [StudentController::class, 'show'])->whereNumber('id');
+            Route::post('/students',                  [StudentController::class, 'store']);   // D169 STW.3: staff admit directly (no consent, no fee override)
         });
         Route::get('/students/{id}/enrollments',      [EnrollmentController::class, 'forStudent'])->whereNumber('id')->middleware(['role:admin,institution_staff', 'module:enrollments']);
         Route::middleware('role:admin')->group(function () {
@@ -294,7 +295,6 @@ Route::prefix('v1')->group(function () {
 
             // Students & enrollment (Step 4.2; the walking-skeleton slice builds these first)
             Route::middleware('module:students')->group(function () {
-                Route::post('/students',                  [StudentController::class, 'store']);
                 Route::put('/students/{id}',              [StudentController::class, 'update'])->whereNumber('id');
                 Route::delete('/students/{id}',           [StudentController::class, 'destroy'])->whereNumber('id');
                 Route::get('/students/{id}/consents',     [ConsentController::class, 'index'])->whereNumber('id');

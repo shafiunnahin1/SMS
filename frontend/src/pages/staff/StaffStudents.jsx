@@ -13,6 +13,8 @@ import Loader from '../../components/Loader'
 import Ltr from '../../components/bidi/Ltr'
 import { Input } from '../../components/FormField'
 import { EmptyState, ErrorState } from '../../components/StateViews'
+import Button from '../../components/Button'
+import StudentAdd from '../admin/students/StudentAdd'
 
 // D169 STW.2: the staff student view - read only, the selected department's key (staff.student.index / .show), the full core
 // profile (D169 (3)); no edit, delete, consent, file or enrollment actions, and never a fee override (the API leaves it out too)
@@ -25,6 +27,7 @@ function StudentList({ t }) {
   const nav = useNavigate()
   const term = useTerms()
   const department = useStaffDepartmentStore(s => s.department)
+  const permissions = useStaffDepartmentStore(s => s.permissions)
   const [q, setQ] = useState('')
   const list = useQuery({ queryKey: ['staff-students', department?.id, q], queryFn: () => api.get('/students', { params: { q: q || undefined, per_page: 50 } }).then(r => r.data.data) })
   const cols = [
@@ -36,7 +39,7 @@ function StudentList({ t }) {
   ]
   return (
     <div className="flex flex-col gap-4" data-testid="staff-students">
-      <PageHeader title={t('students.title')} />
+      <PageHeader title={t('students.title')} actions={permissions.includes('staff.student.store') && <Button onClick={() => nav('/staff/students/new')} data-action="admit">{t('students.add')}</Button>} />
       <Input label={t('students.search_hint')} value={q} onChange={e => setQ(e.target.value)} maxLength={50} className="sm:w-80" />
       <Card>
         <DataTable columns={cols} data={list.data ?? []} loading={list.isPending} error={list.isError} onRetry={list.refetch}
@@ -44,6 +47,11 @@ function StudentList({ t }) {
       </Card>
     </div>
   )
+}
+
+/** D169 STW.3: admission by staff - the admin form in staff mode, behind staff.student.store in the selected department */
+export function StaffStudentAdd() {
+  return <RequireDepartment permission="staff.student.store"><StudentAdd staff /></RequireDepartment>
 }
 
 export function StaffStudentProfile() {

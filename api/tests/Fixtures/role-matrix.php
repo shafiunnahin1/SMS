@@ -171,7 +171,7 @@ return [
     'PUT api/v1/settings' => ['admin'],
     'GET api/v1/sms-logs' => ['admin', 'accountant', 'institution_staff'],
     'GET api/v1/students' => ['admin', 'institution_staff'],   // D169 STW.2: staff, key in the selected department
-    'POST api/v1/students' => ['admin'],
+    'POST api/v1/students' => ['admin', 'institution_staff'],   // D169 STW.3
     'GET api/v1/students/{id}' => ['admin', 'institution_staff'],
     'PUT api/v1/students/{id}' => ['admin'],
     'DELETE api/v1/students/{id}' => ['admin'],

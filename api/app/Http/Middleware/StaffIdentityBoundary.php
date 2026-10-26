@@ -143,8 +143,8 @@ class StaffIdentityBoundary
                 'GET api/v1/attendance/report', 'HEAD api/v1/attendance/report', 'GET api/v1/attendance/summary/{id}', 'HEAD api/v1/attendance/summary/{id}'], true);
         // D169 STW.2: the read-only student view - exactly these three reads; every other student route stays closed to staff
         $studentView = in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/students', 'HEAD api/v1/students', 'GET api/v1/students/{id}', 'HEAD api/v1/students/{id}',
-                'GET api/v1/students/{id}/enrollments', 'HEAD api/v1/students/{id}/enrollments'], true)
-            && in_array(ltrim($request->route()->getActionName(), '\\'), [\App\Http\Controllers\Academic\StudentController::class.'@index', \App\Http\Controllers\Academic\StudentController::class.'@show',
+                'GET api/v1/students/{id}/enrollments', 'HEAD api/v1/students/{id}/enrollments', 'POST api/v1/students'], true)   // STW.3: admission
+            && in_array(ltrim($request->route()->getActionName(), '\\'), [\App\Http\Controllers\Academic\StudentController::class.'@index', \App\Http\Controllers\Academic\StudentController::class.'@show', \App\Http\Controllers\Academic\StudentController::class.'@store',
                 \App\Http\Controllers\Academic\EnrollmentController::class.'@forStudent'], true);
         // D168 (1) AI-Q4S: the assistant's own-chat routes (own chats only, the help guide only); its settings and help articles stay admin-only
         $aiChat = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Ai\AiConversationController::class.'@')
@@ -157,6 +157,8 @@ class StaffIdentityBoundary
         }
         // D101 money routes: context and exact duty key are checked here, before any FormRequest validation can answer 422
         if (($money || $hr || $inventory) && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
+        // D169 STW.3: admission too - the selected department's key is checked before validation can answer 422
+        if ($studentView && $request->isMethod('POST') && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
         // D101: staff never write their own pay row (a revision, adjustment or advance naming themselves as payee)
         if ($hr && $request->user()?->role === 'institution_staff' && $request->isMethod('POST') && $request->filled(['payee_type', 'payee_id'])) {
             $model = ['teacher' => \App\Models\Teacher::class, 'staff' => \App\Models\StaffMember::class][$request->input('payee_type')] ?? null;

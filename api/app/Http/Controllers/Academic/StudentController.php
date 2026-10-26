@@ -33,7 +33,12 @@ class StudentController extends Controller
 
     public function store(StoreStudentRequest $request)
     {
+        $staff = $request->user()?->role === 'institution_staff';
+        $this->staffContext($request);   // D169 STW.3: staff.student.store in the selected department (D91)
+        // D169 (2): staff may not set a fee override (only the head / admin) and record no guardian consent (it stays not recorded)
+        if ($staff && $request->filled('fee_override')) throw new \App\Exceptions\BusinessException(__('errors.forbidden'), 'forbidden', 403);
         $data = $request->validated();
+        if ($staff) unset($data['consent_data'], $data['consent_sms'], $data['consent_guardian_name']);
         $batch = isset($data['batch_id']) ? Batch::findOrFail($data['batch_id']) : null;
         $enrollment = array_filter(['roll_no' => $data['roll_no'] ?? null, 'fee_override' => $data['fee_override'] ?? null], fn ($v) => $v !== null);
         $profile = collect($data)->except(['batch_id', 'roll_no', 'fee_override', 'photo', 'consent_data', 'consent_sms', 'consent_guardian_name'])->all();
