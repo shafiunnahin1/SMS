@@ -4,7 +4,7 @@ namespace App\Services\Ai;
 
 use App\Http\Resources\QbQuestionPublicResource;
 use App\Jobs\RephraseAnswerJob;
-use App\Models\{AiAnswerBank, AiAnswerReveal, AiConversation, AiMessage, AiReview, PlatformSetting, QbCurriculumNode, QbQuestion, QbQuestionOption, QbQuizAttempt, QbQuizQuestion, QbUnlock, User};
+use App\Models\{AiAnswerBank, AiAnswerReveal, AiConversation, AiMessage, AiReview, PlatformSetting, QbConcept, QbCreativePart, QbCurriculumNode, QbQuestion, QbQuestionOption, QbResource, QbQuizAttempt, QbQuizQuestion, QbUnlock, User};
 use App\Services\QbPricingService;
 use App\Services\QbQuestionFinderService;
 use App\Support\Tenancy;
@@ -22,7 +22,6 @@ use Illuminate\Support\Facades\DB;
 class AssistantService
 {
     public const DIRECT_SCORE = 80.0;         // the finder's "high" match: a reviewed answer is given as it is
-    public const MIN_SCORE = 25.0;            // below this a question is not shown as a match
     public const MAX_QUESTIONS = 5;
     public const MAX_NODES = 3;
     public const QUOTA_KEY = 'ai_free_answers_per_day';
@@ -97,11 +96,17 @@ class AssistantService
 
     private function composed(string $norm, User $user): array
     {
+        // D166 AI-Q1: only exact / close matches; an exact match stands alone (no near questions, no curriculum); curriculum,
+        // concepts and resources only when their own names fit the question; nothing that fits = a clear "not found"
         $questions = $norm === '' ? collect() : $this->questions($norm);
-        $nodes = $norm === '' ? collect() : QbCurriculumNode::whereRaw('MATCH(name_bn, name_en) AGAINST (? IN NATURAL LANGUAGE MODE)', [$norm])->limit(self::MAX_NODES)->get(['id', 'name_bn', 'name_en']);
-        if ($questions->isEmpty() && $nodes->isEmpty()) {
+        $exact = $this->lastExact;
+        $nodes = $norm === '' || $exact ? collect() : $this->nodes($norm);
+        $concepts = $norm === '' || $exact ? collect() : $this->titled(QbConcept::class, ['title_bn', 'title_en'], $norm);
+        $resources = $norm === '' || $exact ? collect() : $this->titled(QbResource::class, ['title_bn', 'title_en'], $norm);
+        if ($questions->isEmpty() && $nodes->isEmpty() && $concepts->isEmpty() && $resources->isEmpty()) {
             return ['kind' => 'not_found', 'body' => __('ai.not_found'), 'sources' => []];
         }
+        $plain = fn ($html) => RelevanceService::withoutTokens(trim(strip_tags((string) $html)), __('ai.figure'));
 
         $open = array_values(array_diff($this->openIds($questions), $blocked = $this->runningQuiz()));
         $left = $this->quotaLeft();
@@ -117,19 +122,23 @@ class AssistantService
             }
             $public = QbQuestionPublicResource::make($q, $visible);
             $shown[] = $public + ['free_reveal' => $visible && !in_array($q->id, $open, true)];
-            $lines[] = ($i + 1) . '. ' . trim(strip_tags((string) $public['question_text']));
-            foreach ($public['options'] as $o) $lines[] = '   ' . $o['label'] . ') ' . trim(strip_tags((string) $o['content_text'])) . (!empty($o['is_correct']) ? ' ✓' : '');
+            $lines[] = ($i + 1) . '. ' . $plain($public['question_text']);
+            foreach ($public['options'] as $o) $lines[] = '   ' . $o['label'] . ') ' . $plain($o['content_text']) . (!empty($o['is_correct']) ? ' ✓' : '');
             if ($visible) {
-                if (!empty($public['answer_text'])) $lines[] = '   ' . __('ai.answer') . ': ' . trim(strip_tags($public['answer_text']));
-                if (!empty($public['explanation_text'])) $lines[] = '   ' . __('ai.explanation') . ': ' . trim(strip_tags($public['explanation_text']));
+                if (!empty($public['answer_text'])) $lines[] = '   ' . __('ai.answer') . ': ' . $plain($public['answer_text']);
+                if (!empty($public['explanation_text'])) $lines[] = '   ' . __('ai.explanation') . ': ' . $plain($public['explanation_text']);
             } else {
                 $lines[] = '   ' . __('ai.locked');
             }
         }
         if ($nodes->isNotEmpty()) $lines[] = __('ai.chapters') . ': ' . $nodes->map(fn ($n) => $n->name_bn ?: $n->name_en)->implode(', ');
+        if ($concepts->isNotEmpty()) $lines[] = __('ai.concepts') . ': ' . $concepts->map(fn ($c) => $c->title_bn ?: $c->title_en)->implode(', ');
+        if ($resources->isNotEmpty()) $lines[] = __('ai.resources') . ': ' . $resources->map(fn ($r) => $r->title_bn ?: $r->title_en)->implode(', ');
 
         $sources = [...collect($shown)->map(fn ($q) => ['type' => 'question', 'id' => $q['id'], 'locked' => !$q['unlocked']])->all(),
-            ...$nodes->map(fn ($n) => ['type' => 'curriculum', 'id' => $n->id, 'title' => $n->name_bn ?: $n->name_en])->all()];
+            ...$nodes->map(fn ($n) => ['type' => 'curriculum', 'id' => $n->id, 'title' => $n->name_bn ?: $n->name_en])->all(),
+            ...$concepts->map(fn ($c) => ['type' => 'concept', 'id' => $c->id, 'title' => $c->title_bn ?: $c->title_en])->all(),      // titles only: a concept's body stays paid
+            ...$resources->map(fn ($r) => ['type' => 'resource', 'id' => $r->id, 'title' => $r->title_bn ?: $r->title_en])->all()];
         return ['kind' => 'composed', 'body' => implode("\n", $lines), 'sources' => $sources, 'questions' => $shown, 'reveal' => $reveal];
     }
 
@@ -146,16 +155,47 @@ class AssistantService
         return $norm === '' ? [] : $this->questions($norm)->pluck('id')->map(fn ($v) => (int) $v)->all();
     }
 
-    /** the platform's published questions whose text, explanation or options match, rescored by the finder; at most 5 */
+    /** set by questions(): the best match was exact (then it stands alone) */
+    private bool $lastExact = false;
+
+    /** the platform's published questions whose text, explanation, options or creative parts match (FULLTEXT), classified by
+     *  RelevanceService: exact ones alone if any, else close ones by score; weak ones never; at most 5 */
     private function questions(string $norm)
     {
+        $this->lastExact = false;
         $ids = QbQuestion::where('status', 'published')->whereRaw('MATCH(question_text, explanation_text) AGAINST (? IN NATURAL LANGUAGE MODE)', [$norm])->limit(30)->pluck('id')
             ->merge(QbQuestionOption::whereRaw('MATCH(content_text) AGAINST (? IN NATURAL LANGUAGE MODE)', [$norm])->limit(30)->pluck('qb_question_id'))
+            ->merge(QbCreativePart::whereRaw('MATCH(question_text) AGAINST (? IN NATURAL LANGUAGE MODE)', [$norm])->limit(30)->pluck('qb_question_id'))
             ->unique()->values();
         if ($ids->isEmpty()) return collect();
-        return QbQuestion::where('status', 'published')->whereIn('id', $ids)->get()
-            ->map(fn ($q) => ['q' => $q, 'score' => QbQuestionFinderService::score($norm, QbQuestionFinderService::normalize((string) $q->question_text))])
-            ->filter(fn ($r) => $r['score'] >= self::MIN_SCORE)->sortByDesc('score')->take(self::MAX_QUESTIONS)->pluck('q')->values();
+        $options = QbQuestionOption::whereIn('qb_question_id', $ids)->get(['qb_question_id', 'content_text'])->groupBy('qb_question_id');
+        $parts = QbCreativePart::whereIn('qb_question_id', $ids)->get(['qb_question_id', 'question_text'])->groupBy('qb_question_id');
+        $rated = QbQuestion::where('status', 'published')->whereIn('id', $ids)->get()->map(function ($q) use ($norm, $options, $parts) {
+            $extra = collect($options[$q->id] ?? [])->pluck('content_text')->merge(collect($parts[$q->id] ?? [])->pluck('question_text'))->push($q->explanation_text)->implode(' ');
+            return ['q' => $q] + RelevanceService::classify($norm, QbQuestionFinderService::normalize((string) $q->question_text), QbQuestionFinderService::normalize((string) $extra));
+        });
+        $exact = $rated->where('class', RelevanceService::EXACT);
+        $this->lastExact = $exact->isNotEmpty();
+        $keep = $this->lastExact ? $exact : $rated->where('class', RelevanceService::CLOSE);
+        return $keep->sortByDesc(fn ($r) => [$r['coverage'], $r['score']])->take(self::MAX_QUESTIONS)->pluck('q')->values();
+    }
+
+    /** chapters / topics whose own name fits the question (FULLTEXT finds candidates, RelevanceService keeps the fitting ones) */
+    private function nodes(string $norm)
+    {
+        return QbCurriculumNode::whereRaw('MATCH(name_bn, name_en) AGAINST (? IN NATURAL LANGUAGE MODE)', [$norm])->limit(20)->get(['id', 'name_bn', 'name_en'])
+            ->filter(fn ($n) => RelevanceService::nameRelevant($norm, QbQuestionFinderService::normalize((string) $n->name_bn)) || RelevanceService::nameRelevant($norm, QbQuestionFinderService::normalize((string) $n->name_en)))->take(self::MAX_NODES)->values();
+    }
+
+    /** published concepts / resources whose title fits the question - titles only (no body, no file) */
+    private function titled(string $model, array $cols, string $norm)
+    {
+        $terms = collect(RelevanceService::terms($norm))->filter(fn ($t) => mb_strlen($t) >= 3)->sortByDesc(fn ($t) => mb_strlen($t))->take(3)->values();
+        if ($terms->isEmpty()) return collect();
+        return $model::where(fn ($w) => $terms->each(fn ($t) => collect($cols)->each(fn ($c) => $w->orWhere($c, 'like', '%' . addcslashes($t, '%_\\') . '%'))))
+            ->limit(20)->get(['id', ...$cols])
+            ->filter(fn ($x) => collect([$x->title_bn, $x->title_en])->contains(fn ($t) => RelevanceService::coverage(RelevanceService::terms($norm), QbQuestionFinderService::normalize((string) $t)) >= 0.6))
+            ->take(3)->values();
     }
 
     /** unlocked by the institution, or free for it now (a free price rule); ST.6: a student's own purchases and student-free items */

@@ -10,4 +10,7 @@ return [
     'chapters' => 'Related chapters',
     'review_title' => 'An answer was updated',
     'review_body' => 'A reviewer corrected an AI assistant answer. See the new answer in your chat.',
+    'figure' => '[figure]',   // D166 AI-Q1
+    'concepts' => 'Related concepts',   // D166 AI-Q1
+    'resources' => 'Related PDFs / books',   // D166 AI-Q1
 ];
