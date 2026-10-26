@@ -82,6 +82,7 @@ const AiPlatform        = lazy(() => import('../pages/super/AiPlatform'))   // D
 const HelpArticles      = lazy(() => import('../pages/ai/HelpArticles'))   // D166 AI-Q4 part 2
 const StaffStudents     = lazy(() => import('../pages/staff/StaffStudents').then(m => ({ default: m.StaffStudents })))   // D169 STW.2
 const StaffStudentAdd   = lazy(() => import('../pages/staff/StaffStudents').then(m => ({ default: m.StaffStudentAdd })))   // D169 STW.3
+const StaffFeeCollect   = lazy(() => import('../pages/staff/StaffStudents').then(m => ({ default: m.StaffFeeCollect })))   // D169 STW.4
 const StaffStudentProfile = lazy(() => import('../pages/staff/StaffStudents').then(m => ({ default: m.StaffStudentProfile })))
 const AiReviews         = lazy(() => import('../pages/writer/AiReviews'))   // D164 AI-P1.4
 const QbPaperPreview    = lazy(() => import('../pages/qb/QbPaperPreview'))
@@ -175,7 +176,7 @@ export const tenantRoutes = [
     { path: 'hr/payroll', element: S(HrPayroll) }, { path: 'hr/advances', element: S(HrAdvances) }, { path: 'hr/adjustments', element: S(HrAdjustments) }, { path: 'hr/revisions', element: S(HrRevisions) },
   ]),
   area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbAllQuestions) }, { path: 'materials', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/all-questions', element: S(QbAllQuestions) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }, { path: 'question-bank/papers/:id/omr', element: S(QbOmr) }, { path: 'question-bank/papers/:id/preview', element: S(QbPaperPreview) }, { path: 'salary', element: S(MySalary) }, { path: 'ai', element: S(AiChat) }]),
-  area('/staff', 'institution_staff', [{ path: 'departments', element: S(MyDepartments) }, { path: 'profile', element: S(MyProfile) }, { path: 'ai', element: S(AiChat) }, { path: 'students', element: S(StaffStudents) }, { path: 'students/new', element: S(StaffStudentAdd) }, { path: 'students/:id', element: S(StaffStudentProfile) }]),   // R3.12 / D88-D91; D168: the help guide; D169 STW.2
+  area('/staff', 'institution_staff', [{ path: 'departments', element: S(MyDepartments) }, { path: 'profile', element: S(MyProfile) }, { path: 'ai', element: S(AiChat) }, { path: 'students', element: S(StaffStudents) }, { path: 'students/new', element: S(StaffStudentAdd) }, { path: 'students/:id', element: S(StaffStudentProfile) }, { path: 'fees/collect', element: S(StaffFeeCollect) }]),   // R3.12 / D88-D91; D168: the help guide; D169 STW.2
   area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }, { path: 'my-class', element: S(LearnerProfile) }, { path: 'practice', element: S(QbPractice) }, { path: 'ai', element: S(AiChat) }]),   // D165 ST.6: the student assistant   // QB.9 / QB.10: the student portal (other student screens: R1.1)
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },

@@ -15,6 +15,7 @@ import { Input } from '../../components/FormField'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import Button from '../../components/Button'
 import StudentAdd from '../admin/students/StudentAdd'
+import FeeCollect from '../admin/fees/FeeCollect'
 
 // D169 STW.2: the staff student view - read only, the selected department's key (staff.student.index / .show), the full core
 // profile (D169 (3)); no edit, delete, consent, file or enrollment actions, and never a fee override (the API leaves it out too)
@@ -52,6 +53,11 @@ function StudentList({ t }) {
 /** D169 STW.3: admission by staff - the admin form in staff mode, behind staff.student.store in the selected department */
 export function StaffStudentAdd() {
   return <RequireDepartment permission="staff.student.store"><StudentAdd staff /></RequireDepartment>
+}
+
+/** D169 STW.4: fee collection by staff - the counter page, with every key it uses held in the selected department */
+export function StaffFeeCollect() {
+  return <RequireDepartment permission={['staff.student.index', 'staff.fee.dues', 'staff.fee.collect', 'staff.fee.receipt']}><FeeCollect /></RequireDepartment>
 }
 
 export function StaffStudentProfile() {

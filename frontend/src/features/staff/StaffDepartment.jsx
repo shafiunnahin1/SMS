@@ -22,7 +22,7 @@ export function StaffDepartmentBar() {
   )
 }
 
-/** D169 STW.1: a staff work page renders only with a selected department that holds `permission`; otherwise it says what is missing */
+/** D169 STW.1: a staff work page renders only with a selected department that holds `permission` (one key or a list); otherwise it says what is missing */
 export function RequireDepartment({ permission, children }) {
   const { t } = useTranslation()
   const { department, permissions } = useStaffDepartmentStore()
@@ -30,7 +30,8 @@ export function RequireDepartment({ permission, children }) {
     return <EmptyState title={t('staff_context.pick_first')} description={t('staff_context.pick_first_hint')}
       action={<Link to={PICKER}><Button variant="secondary">{t('staff_context.choose')}</Button></Link>} />
   }
-  if (permission && !permissions.includes(permission)) {
+  const needed = Array.isArray(permission) ? permission : permission ? [permission] : []   // STW.4: a page may need several keys
+  if (needed.some(key => !permissions.includes(key))) {
     return <EmptyState title={t('staff_context.no_permission')} description={t('staff_context.no_permission_hint')} />
   }
   return children

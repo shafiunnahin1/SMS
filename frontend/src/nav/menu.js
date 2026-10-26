@@ -135,6 +135,7 @@ export const MENU = {
     it('departments','/staff/departments','আমার বিভাগ',{since: 'R3',icon:'Building2',primary:true,staff_access:true}),
     it('profile','/staff/profile','আমার তথ্য',{since: 'R3',icon:'UserRound',staff_access:true}),
     it('students','/staff/students','ছাত্রছাত্রী',{icon:'Users',module:'students',staffKey:'staff.student.index',staff_access:true}),   // D169 STW.2
+    it('fees','/staff/fees/collect','ফি আদায়',{icon:'Wallet',module:'fees',staffKey:'staff.fee.collect',staff_access:true}),   // D169 STW.4
     it('ai','/staff/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant',staff_access:true}),   // D168 AI-Q4S: the help guide
   ],
   teacher: [
