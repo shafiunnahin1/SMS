@@ -288,10 +288,25 @@ def d155_probe():
     stash_after = subprocess.check_output(['git', '-C', d, 'stash', 'list', '--format=%gd%x09%gs'], text=True)
     good_stash_mutation = stash_after == stash_before
     git(d, 'stash', 'pop', '-q'); write(d, 'frontend/src/Feature.jsx', 'export const feature = true\n')
+    git(d, 'checkout', '-q', '--', 'frontend/src/Feature.jsx')
+    # D167: a fast-forward push (the remote tip is an ancestor) passes; a remote with commits the push lacks fails with the
+    # clear message; an unknown remote object is a real Git error, shown with its exit code
+    write(d, 'frontend/src/Next.jsx', 'export const next = true\n')
+    git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'feat: next')
+    ahead = subprocess.check_output(['git', '-C', d, 'rev-parse', 'HEAD'], text=True).strip()
+    r = push_guard(f'refs/heads/feature {ahead} refs/heads/feature {head}\n'); good_ff = r.returncode == 0
+    ff_error = r.stderr
+    git(d, 'checkout', '-q', '-b', 'other', head)
+    write(d, 'frontend/src/Other.jsx', 'export const other = true\n')
+    git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'feat: other')
+    other = subprocess.check_output(['git', '-C', d, 'rev-parse', 'HEAD'], text=True).strip()
+    git(d, 'checkout', '-q', 'feature')
+    r = push_guard(f'refs/heads/feature {ahead} refs/heads/feature {other}\n'); good_diverged = r.returncode != 0 and 'has commits missing' in r.stderr
+    r = push_guard(f'refs/heads/feature {ahead} refs/heads/feature {"1" * 40}\n'); good_git_error = r.returncode != 0 and 'merge-base --is-ancestor failed (exit' in r.stderr
     shutil.rmtree(d, ignore_errors=True)
-    good = good_clean and good_untracked and good_stash and good_stash_mutation
-    details = '' if good else f'clean={good_clean} untracked={good_untracked} stash={good_stash} clean_error={clean_error}'
-    return (0 if good else 1), details or 'D155 pre-push clean/dirty/stash cases'
+    good = good_clean and good_untracked and good_stash and good_stash_mutation and good_ff and good_diverged and good_git_error
+    details = '' if good else f'clean={good_clean} untracked={good_untracked} stash={good_stash} ff={good_ff} diverged={good_diverged} git_error={good_git_error} clean_error={clean_error} ff_error={ff_error}'
+    return (0 if good else 1), details or 'D155 pre-push clean/dirty/stash cases; D167 fast-forward, diverged and Git-error cases'
 
 
 def d148_probe():
