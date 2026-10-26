@@ -23,7 +23,7 @@ class HelpArticleApprovalTest extends TestCase
         $central = 'admin.' . config('tenancy.base_domain');
         $sa = User::create(['institution_id' => null, 'name' => 'SA', 'role' => 'super_admin', 'phone' => '01799000019', 'password' => 'Super-pass-2026', 'is_active' => true]);
         $rows = $this->api('GET', $central, 'super/ai-help-articles', $sa)->assertOk()->json('data');
-        $this->assertCount(16, $rows);
+        $this->assertCount(20, $rows);
         $super = collect($rows)->firstWhere(fn ($r) => $r['slug'] === 'super-approve-help' && $r['locale'] === 'bn');
 
         $this->assertSame('not_found', $this->api('POST', $central, 'super/ai-help', $sa, ['text' => 'নির্দেশনা কীভাবে অনুমোদন করব'])->assertOk()->json('data.kind'), 'a draft is not shown');

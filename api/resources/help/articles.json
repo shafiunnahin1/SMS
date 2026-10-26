@@ -542,6 +542,162 @@
           "limits": "The institution's admin; the AI assistant module must be on. Who sees it (roles) cannot be changed."
         }
       }
+    },
+    {
+      "slug": "assign-teacher",
+      "roles": [
+        "admin"
+      ],
+      "module": "enrollments",
+      "refs": {
+        "menus": [
+          "/admin/batches",
+          "/admin/academic/subjects"
+        ],
+        "keys": [
+          "academic.class_teacher",
+          "academic.subject_teachers",
+          "academic.subject",
+          "academic.teacher",
+          "academic.add_row",
+          "academic.all_subjects",
+          "common.edit",
+          "common.save"
+        ],
+        "routes": [
+          "PUT api/v1/batches/{id}",
+          "PUT api/v1/subjects/{id}"
+        ]
+      },
+      "bn": {
+        "title": "শিক্ষককে ব্যাচ/শাখা ও বিষয়ে যুক্ত করা",
+        "keywords": "শিক্ষক যুক্ত দায়িত্ব বিষয় ব্যাচ শাখা শ্রেণি শিক্ষক assign teacher subject",
+        "body": {
+          "purpose": "কোন শিক্ষক কোন ব্যাচ/শাখার দায়িত্বে এবং কোন বিষয় পড়ান তা ঠিক করা; এতেই শিক্ষক হাজিরা ও নম্বর এন্ট্রির সুযোগ পান।",
+          "where": "মেনু → ব্যাচ/শাখার তালিকা → একটি ব্যাচ/শাখা খুলুন → সম্পাদনা",
+          "steps": [
+            "মেনু থেকে ব্যাচ/শাখার তালিকা খুলে যে ব্যাচ/শাখায় শিক্ষক দিতে চান সেটি খুলুন।",
+            "\"সম্পাদনা\" চাপুন।",
+            "\"দায়িত্বপ্রাপ্ত শিক্ষক\" ঘরে একজন শিক্ষক বাছুন।",
+            "\"বিষয়-শিক্ষক\" অংশে \"সারি যোগ\" চেপে \"বিষয়\" আর \"শিক্ষক\" বাছুন; সব বিষয়ের জন্য একজন হলে \"সব বিষয়\" বাছুন।",
+            "\"সংরক্ষণ\" চাপুন।",
+            "কোনো বিষয়ের স্থায়ী শিক্ষক দিতে চাইলে মেনু → বিষয় পাতায় বিষয়টির \"সম্পাদনা\" খুলে \"শিক্ষক\" বাছুন ও \"সংরক্ষণ\" চাপুন।"
+          ],
+          "data": [
+            "ব্যাচ/শাখা",
+            "শিক্ষকের নাম (আগে থেকে শিক্ষক হিসেবে যোগ করা)",
+            "বিষয়"
+          ],
+          "result": "শিক্ষক নিজের প্যানেলে সেই ব্যাচ/শাখার হাজিরা আর সেই বিষয়ের নম্বর এন্ট্রি দেখতে পান।",
+          "errors": [
+            "শিক্ষকের নাম তালিকায় না থাকলে আগে মেনু → শিক্ষক থেকে তাকে যোগ করুন; নিষ্ক্রিয় শিক্ষক তালিকায় আসেন না।",
+            "বিষয় তালিকা খালি থাকলে আগে বিষয় পাতায় বিষয় যোগ করুন।"
+          ],
+          "limits": "প্রতিষ্ঠানের অ্যাডমিন; প্রতিষ্ঠানের ধরনে শিক্ষক না থাকলে শিক্ষকের ঘর দেখায় না।"
+        }
+      },
+      "en": {
+        "title": "Assigning a teacher to a batch / section and a subject",
+        "keywords": "assign teacher subject batch section class teacher in charge",
+        "body": {
+          "purpose": "Set which teacher is in charge of a batch / section and who teaches which subject; this gives the teacher attendance and mark entry.",
+          "where": "Menu → the batch / section list → open one → Edit",
+          "steps": [
+            "From the menu open the batch / section list and open the one you want.",
+            "Press \"Edit\".",
+            "Choose a teacher in \"Teacher in charge\".",
+            "Under \"Subject teachers\" press \"Add row\" and choose the \"Subject\" and the \"Teacher\"; for one teacher of every subject choose \"All subjects\".",
+            "Press \"Save\".",
+            "To give a subject its own teacher, open Menu → Subjects, \"Edit\" the subject, choose the \"Teacher\" and press \"Save\"."
+          ],
+          "data": [
+            "Batch / section",
+            "The teacher (already added as a teacher)",
+            "Subject"
+          ],
+          "result": "The teacher sees that batch's attendance and that subject's mark entry in their own panel.",
+          "errors": [
+            "If the teacher is not listed, add them first under Menu → Teachers; inactive teachers are not listed.",
+            "If the subject list is empty, add subjects on the Subjects page first."
+          ],
+          "limits": "The institution's admin; if the institution type has no teachers, the teacher fields are not shown."
+        }
+      }
+    },
+    {
+      "slug": "question-paper",
+      "roles": [
+        "admin",
+        "teacher"
+      ],
+      "module": "question_bank",
+      "refs": {
+        "menus": [
+          "/admin/question-bank/papers",
+          "/teacher/question-bank/papers"
+        ],
+        "keys": [
+          "qbpp.new",
+          "qbaq.select_all",
+          "qbaq.paper_name",
+          "qbaq.create_paper",
+          "qbaq.buy_to_select",
+          "qbaq.pick_first"
+        ],
+        "routes": [
+          "POST api/v1/question-bank/papers"
+        ]
+      },
+      "bn": {
+        "title": "প্রশ্নব্যাংক থেকে প্রশ্নপত্র তৈরি",
+        "keywords": "প্রশ্নপত্র প্রশ্ন পত্র তৈরি বানানো question paper create",
+        "body": {
+          "purpose": "প্রশ্নব্যাংকের প্রশ্ন বেছে একটি প্রশ্নপত্র বানানো।",
+          "where": "মেনু → প্রশ্নপত্র → নতুন প্রশ্নপত্র",
+          "steps": [
+            "মেনু থেকে \"প্রশ্নপত্র\" খুলে \"নতুন প্রশ্নপত্র\" চাপুন; সব প্রশ্নের পাতা খোলে।",
+            "ফিল্টার দিয়ে শ্রেণি, বিষয়, অধ্যায় বেছে প্রশ্ন খুঁজুন।",
+            "প্রশ্নের পাশের ঘরে টিক দিন, বা পাতার সব প্রশ্নের জন্য \"সব বাছাই\"।",
+            "\"প্রশ্নপত্রের নাম\" লিখুন।",
+            "\"প্রশ্নপত্র তৈরি\" চাপুন।"
+          ],
+          "data": [
+            "প্রশ্নপত্রের নাম",
+            "বাছাই করা প্রশ্ন"
+          ],
+          "result": "প্রশ্নপত্রটি তৈরি হয়ে তার সম্পাদনার পাতা খোলে; সেখানে সময়, নির্দেশনা ও সেট ঠিক করে প্রিভিউ ও প্রিন্ট করা যায়।",
+          "errors": [
+            "\"প্রথমে কমপক্ষে একটি প্রশ্ন নির্বাচন করুন।\" দেখালে অন্তত একটি প্রশ্নে টিক দিন।",
+            "কোনো প্রশ্নে টিক দেওয়া না গেলে সেটি কেনা হয়নি (\"নির্বাচনের আগে প্রশ্নটি কিনুন\"); কিনে নিন।"
+          ],
+          "limits": "অ্যাডমিন ও শিক্ষক; প্রশ্নব্যাংক মডিউল চালু থাকতে হবে।"
+        }
+      },
+      "en": {
+        "title": "Creating a question paper from the question bank",
+        "keywords": "question paper create make exam paper",
+        "body": {
+          "purpose": "Pick questions from the question bank and make a question paper.",
+          "where": "Menu → Question papers → New question paper",
+          "steps": [
+            "Open \"Question papers\" from the menu and press \"New question paper\"; the all-questions page opens.",
+            "Use the filter to choose the class, subject and chapter.",
+            "Tick the box beside a question, or \"Select all\" for the whole page.",
+            "Write the \"Question paper name\".",
+            "Press \"Create question paper\"."
+          ],
+          "data": [
+            "Question paper name",
+            "The chosen questions"
+          ],
+          "result": "The paper is created and its edit page opens; there you set the time, instructions and sets, then preview and print.",
+          "errors": [
+            "\"Select at least one question first.\" means tick at least one question.",
+            "If a question cannot be ticked it is not bought yet (\"Buy this question before selecting it\"); buy it."
+          ],
+          "limits": "Admins and teachers; the question bank module must be on."
+        }
+      }
     }
   ]
 }
