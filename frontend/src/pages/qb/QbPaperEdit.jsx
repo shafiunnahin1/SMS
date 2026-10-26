@@ -56,10 +56,16 @@ export default function QbPaperEdit() {
   const set = (patch) => setV(x => ({ ...x, ...patch }))
   const section = (i, patch) => set({ sections: v.sections.map((s, k) => (k === i ? { ...s, ...patch } : s)) })
   const used = new Set(v.sections.flatMap(s => s.items.map(i => i.qb_question_id)))
+  // D171 (4): a stimulus MCQ group's marks are its children's marks added up - shown, never typed (the server sets them too)
+  const groupMarks = (d) => {
+    const kids = (d?.items ?? []).filter(x => x.item_type === 'sub_mcq')
+    if (!kids.length || kids.length !== (d?.items ?? []).length) return null
+    return String(kids.reduce((sum, x) => sum + Math.round(Number(x.marks || 0) * 100), 0) / 100)
+  }
   const add = (q) => {
     setTexts(x => ({ ...x, [q.id]: q.question_text }))
     setDetails(x => ({ ...x, [q.id]: q }))
-    section(target, { items: [...v.sections[target].items, { qb_question_id: q.id, marks: String(Number(q.marks) || 1) }] })
+    section(target, { items: [...v.sections[target].items, { qb_question_id: q.id, marks: groupMarks(q) ?? String(Number(q.marks) || 1) }] })
   }
   const body = () => ({ title: v.title, exam_name: v.exam_name || null, duration_minutes: v.duration_minutes ? Number(v.duration_minutes) : null, sets_count: Number(v.sets_count),
     instructions_json: (v.instructions || v.group) ? { text: v.instructions || null, group_by_subject: v.group, subject_order: v.order } : null, sections: v.sections.map(s => ({ title: s.title, instruction: s.instruction || null, items: s.items.map(i => ({ qb_question_id: i.qb_question_id, marks: i.marks })) })) })
@@ -214,7 +220,7 @@ export default function QbPaperEdit() {
                           </div>
                         )}
                         {!final && <div className="flex flex-wrap items-end gap-2">
-                          <Input className="w-24" ltr inputMode="decimal" aria-label={t('qbpp.marks')} value={it.marks} name={`marks-${it.qb_question_id}`}
+                          <Input className="w-24" ltr inputMode="decimal" aria-label={t('qbpp.marks')} value={groupMarks(details[it.qb_question_id]) ?? it.marks} name={`marks-${it.qb_question_id}`} readOnly={groupMarks(details[it.qb_question_id]) !== null}
                             onChange={e => section(i, { items: s.items.map((x, j) => (j === k ? { ...x, marks: e.target.value } : x)) })} />
                           {planInfo && it.rule !== undefined && <Button variant="ghost" onClick={() => swap(i, k)} data-action="swap">{t('qbpp.swap')}</Button>}
                         </div>}

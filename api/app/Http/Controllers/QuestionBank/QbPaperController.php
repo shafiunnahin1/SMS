@@ -170,6 +170,18 @@ class QbPaperController extends Controller
         $ids = collect($in['sections'])->flatMap(fn ($s) => collect($s['items'])->pluck('qb_question_id'));
         if ($ids->duplicates()->isNotEmpty()) throw \Illuminate\Validation\ValidationException::withMessages(['sections' => __('errors.qb_paper_duplicate')]);
         if (QbQuestion::whereIn('id', $ids)->count() !== $ids->unique()->count()) throw \Illuminate\Validation\ValidationException::withMessages(['sections' => __('errors.qb_no_such_item')]);
+        // D171 (4): a stimulus MCQ group's paper marks are the sum of its children's own marks - set here, never the author's number;
+        // a group with a child without marks cannot be used
+        $groups = app(QbPaperSets::class)->groups([['items' => $ids->map(fn ($id) => ['qb_question_id' => (int) $id])->all()]]);
+        foreach ($in['sections'] as &$sec) foreach ($sec['items'] as &$it) {
+            $children = $groups[(int) $it['qb_question_id']] ?? null;
+            if ($children === null) continue;
+            if ($children === [] || collect($children)->contains(fn ($c) => Money::toPaisa((string) ($c['marks'] ?? '0')) <= 0)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['sections' => __('errors.qb_group_marks_missing')]);
+            }
+            $it['marks'] = Money::format(collect($children)->sum(fn ($c) => Money::toPaisa((string) $c['marks'])));
+        }
+        unset($sec, $it);
         $total = collect($in['sections'])->flatMap(fn ($s) => $s['items'])->sum(fn ($i) => Money::toPaisa((string) $i['marks']));   // marks: two decimals, same arithmetic
         return $in + ['total_marks' => Money::format($total), 'sets_count' => $in['sets_count'] ?? 1];
     }
@@ -235,19 +247,22 @@ class QbPaperController extends Controller
         $marks = collect($row['sections'])->flatMap(fn ($s) => collect($s['items'])->mapWithKeys(fn ($it) => [$it['qb_question_id'] => $it['marks']]));
         $bySection = collect($row['sections'])->keyBy('id');
         $n = ['mcq' => 0, 'other' => 0];                          // D129: MCQs and written questions have separate serials
+        $groups = $sets->groups($list);                           // D171: a stimulus MCQ group's children are numbered MCQs
         $mcq = QbQuestion::whereIn('id', $questions->keys())->whereHas('type', fn ($t) => $t->where('slug', 'mcq'))->pluck('id')->map(fn ($v) => (int) $v)->flip();
         $key = [];
         $subjectNames = collect($row['subjects'])->pluck('name', 'id');
-        $sections = collect($layout)->map(function ($ls) use ($questions, $open, $answers, $marks, $bySection, $subjectNames, $mcq, &$n, &$key) {
+        $sections = collect($layout)->map(function ($ls) use ($questions, $open, $answers, $marks, $bySection, $subjectNames, $mcq, $groups, &$n, &$key) {
             $s = $bySection[$ls['section_id']] ?? ['title' => '', 'instruction' => null];
             $prev = null;
-            return ['title' => $s['title'], 'instruction' => $s['instruction'], 'items' => collect($ls['items'])->filter(fn ($it) => isset($questions[$it['qb_question_id']]))->map(function ($it) use ($questions, $open, $answers, $marks, $subjectNames, $mcq, &$n, &$key, &$prev) {
+            return ['title' => $s['title'], 'instruction' => $s['instruction'], 'items' => collect($ls['items'])->filter(fn ($it) => isset($questions[$it['qb_question_id']]))->map(function ($it) use ($questions, $open, $answers, $marks, $subjectNames, $mcq, $groups, &$n, &$key, &$prev) {
                 $heading = null;                                 // D128: a subject block's heading over its first question
                 if (isset($it['qb_subject_id']) && $it['qb_subject_id'] !== $prev) { $prev = $it['qb_subject_id']; $heading = $subjectNames[$it['qb_subject_id']] ?? ''; }
                 $q = QbQuestionPublicResource::make($questions[$it['qb_question_id']], $answers && in_array($it['qb_question_id'], $open, true));
                 $opts = $it['options'] === [] ? $q['options'] : array_values(array_filter(array_map(fn ($k) => $q['options'][$k] ?? null, $it['options'])));
                 foreach ($opts as $k => &$o) $o['label'] = self::LABELS[$k] ?? (string) ($k + 1);   // relabelled by position
                 unset($o);
+                $shown = $answers && in_array($it['qb_question_id'], $open, true);
+                if (isset($groups[(int) $it['qb_question_id']])) return self::group($it, $q, $groups[(int) $it['qb_question_id']], $shown, $heading, $marks[$it['qb_question_id']] ?? $it['marks'], $n, $key);
                 $no = ++$n[isset($mcq[(int) $it['qb_question_id']]) ? 'mcq' : 'other'];
                 if (!empty($it['correct']) && $answers && in_array($it['qb_question_id'], $open, true)) $key[] = ['no' => $no, 'correct' => $it['correct']];   // bought only, like the answers
                 return ['no' => $no, 'marks' => $marks[$it['qb_question_id']] ?? $it['marks'], 'subject' => $heading, 'question' => ['options' => $opts] + $q];
@@ -261,6 +276,31 @@ class QbPaperController extends Controller
             'answer_key' => $answers ? $key : [],   // D126 (4): the set's own key (frozen sets only), with the answers copy
             // R2.1.2: only the pictures the printed questions may show (the public shape already left out answer-only ones)
             'media' => self::pictures($questions->keys()->all(), collect($sections)->flatMap(fn ($s) => collect($s['items'])->flatMap(fn ($it) => array_column($it['question']['media'], 'id')))->all())];
+    }
+
+    /** D171: a stimulus MCQ group prints its stimulus once, then each sub_mcq child in authored order as the next numbered MCQ (its
+     *  own marks, its choices in the set's order, the correct choice moved with them); the group itself takes no serial. A set
+     *  frozen before D171 (no child order) prints the children in their authored option order. */
+    private static function group(array $it, array $q, array $children, bool $shown, ?string $heading, $marks, array &$n, array &$key): array
+    {
+        $k = 0;
+        $q['items'] = array_map(function ($p) use ($it, $children, $shown, &$k, &$n, &$key) {
+            if ($p['item_type'] !== 'sub_mcq') return $p;
+            $c = $children[$k] ?? ['options' => count((array) ($p['prompt_json']['options'] ?? [])), 'correct' => null];
+            $order = $it['children'][$k] ?? range(0, max(0, $c['options'] - 1));
+            $options = array_values((array) ($p['prompt_json']['options'] ?? []));
+            $p['prompt_json']['options'] = array_values(array_filter(array_map(fn ($o) => $options[$o] ?? null, $order), fn ($v) => $v !== null));
+            if (isset($p['answer_json']['correct']) && is_int($p['answer_json']['correct'])) {
+                $pos = array_search($p['answer_json']['correct'], $order, true);
+                $p['answer_json']['correct'] = $pos === false ? -1 : $pos;
+            }
+            $p['no'] = ++$n['mcq'];
+            $correct = $it['children_correct'][$k] ?? [];
+            if ($correct !== [] && $shown) $key[] = ['no' => $p['no'], 'correct' => $correct];   // bought only, like the answers
+            $k++;
+            return $p;
+        }, $q['items'] ?? []);
+        return ['no' => null, 'marks' => $marks, 'subject' => $heading, 'question' => $q];
     }
 
     /** the paper's sections with their items in the order built (the input of every set) */

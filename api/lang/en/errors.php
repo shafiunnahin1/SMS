@@ -103,6 +103,7 @@ return [
     'qb_omr_student_outside' => 'This student is not enrolled in the program of this paper.',   // D127
     'qb_paper_empty'        => 'Add at least one question first.',   // QB.8
     'qb_paper_duplicate'    => 'A question appears twice in the paper.',   // QB.8
+    'qb_group_marks_missing' => 'Every question of this stimulus group needs its own marks before it can be used in a paper.',   // D171 (4)
     'qb_quiz_questions'     => 'A quiz takes only published, auto-marked questions (MCQ, true/false, fill in the gap, matching). :ids',   // QB.10
     'qb_quiz_scope'         => 'Pick a subject, chapter or topic for a random quiz.',   // QB.10
     'qb_quiz_closed'        => 'This quiz is not open now.',   // QB.10

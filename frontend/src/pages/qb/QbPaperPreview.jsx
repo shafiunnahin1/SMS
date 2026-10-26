@@ -262,7 +262,7 @@ export default function QbPaperPreview() {
                       <button type="button" onClick={() => setEditing(qid)} className="qb-no-print absolute -top-1 end-0 rounded-token bg-surface p-1 text-content-muted opacity-60 hover:opacity-100 group-hover:opacity-100 [border:1px_solid_var(--line)]" aria-label={t('qbpv.edit_question', { n: no })} data-action="edit-question"><Pencil aria-hidden="true" className="h-3.5 w-3.5" /></button>
                       {edits[it.question.id] && <span className="qb-no-print absolute -top-1 end-8 rounded-token bg-primary-soft px-1 text-xs text-primary-fg">{t('qbpv.edited')}</span>}
                       {it.subject && <p className="mb-1 font-semibold" dir="auto">{it.subject}</p>}
-                      {o.show.question && <div className="flex gap-2 font-semibold"><span>{num(no)}.</span><div className="min-w-0 flex-1" dir="auto"><MathText text={qn.question_text} media={qn.media ?? []} /></div></div>}
+                      {o.show.question && <div className="flex gap-2 font-semibold">{it.no !== null && <span>{num(no)}.</span>}<div className="min-w-0 flex-1" dir="auto"><MathText text={qn.question_text} media={qn.media ?? []} /></div></div>}
                       {o.show.question && (qn.creative_parts ?? []).length > 0 && <ol className="mt-1 flex flex-col gap-1 ps-6">{qn.creative_parts.map(p => <li key={p.part_label} dir="auto"><span>{p.part_label}.</span> <MathText text={p.question_text} /></li>)}</ol>}
                       {o.show.answer && qn.answer_text && <div className="mt-1" data-testid="qb-paper-answer"><p>{L('answer')}</p><div dir="auto"><MathText text={qn.answer_text} /></div></div>}
                       {o.show.question && opts.length > 0 && (
@@ -276,6 +276,22 @@ export default function QbPaperPreview() {
                           ))}
                         </div>
                       )}
+                      {/* D171: a stimulus MCQ group prints its stimulus once, then each child as a numbered MCQ */}
+                      {o.show.question && it.no === null && (qn.stimuli ?? []).map(st => <div key={st.id} className="mt-1" dir="auto" data-testid="qb-paper-stimulus"><MathText text={st.content_text} media={qn.media ?? []} /></div>)}
+                      {o.show.question && it.no === null && (qn.items ?? []).filter(p => p.no != null).map(p => (
+                        <div key={p.no} className="mt-2" data-testid="qb-paper-child">
+                          <div className="flex gap-2 font-semibold"><span>{num(p.no)}.</span><div className="min-w-0 flex-1" dir="auto"><MathText text={p.prompt_text} /></div></div>
+                          <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
+                            {(p.prompt_json?.options ?? []).map((op, k) => (
+                              <div key={k} className="flex min-w-0 items-start gap-2">
+                                <span className="font-semibold">{LABELS[o.language][k] ?? k + 1})</span>
+                                {o.show.answer && p.answer_json?.correct === k && <span aria-label={L('correct')} className="mt-2 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" />}
+                                <span className="min-w-0" dir="auto"><MathText text={String(op)} /></span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                       {o.show.explanation && qn.explanation_text && <div className="mt-1" data-testid="qb-paper-explanation"><p>{L('explanation')}</p><div dir="auto"><MathText text={qn.explanation_text} /></div></div>}
                     </div>,
                     ...renderBoxes(qid),

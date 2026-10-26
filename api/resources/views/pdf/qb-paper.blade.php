@@ -50,7 +50,7 @@
       @if (!empty($it['subject']))<h4 class="subject">{{ $it['subject'] }}</h4>@endif
       @php($q = $it['question'])
       <div class="q">
-        <div class="row"><strong>{{ $it['no'] }}.</strong><span class="text">{!! \App\Support\QbRichText::html($q['question_text'], $paper['media'] ?? []) !!}</span><span class="mk">[{{ $n($it['marks']) }}]</span></div>
+        <div class="row">@if ($it['no'] !== null)<strong>{{ $it['no'] }}.</strong>@endif<span class="text">{!! \App\Support\QbRichText::html($q['question_text'], $paper['media'] ?? []) !!}</span><span class="mk">[{{ $n($it['marks']) }}]</span></div>
         @if (count($q['options']))
           <div class="opts">@foreach ($q['options'] as $o)<div>{{ $o['label'] }}) {!! \App\Support\QbRichText::html($o['content_text']) !!}@if ($paper['answers'] && !empty($o['is_correct'])) ✓@endif</div>@endforeach</div>
         @endif
@@ -67,9 +67,10 @@
           @foreach ($q['items'] as $k => $p)
             @php($a = $p['answer_json'] ?? null)
             @php($kind = $p['item_type'])
-            <div>{{ $k + 1 }}.
+            <div>{{ $p['no'] ?? $k + 1 }}.
               @if ($kind === 'order_step') ( &nbsp; ) @endif
               {!! \App\Support\QbRichText::html($p['prompt_text'] ?? '') !!}
+              @if (isset($p['no']) && $p['marks'] !== null) <span class="mk">[{{ $n($p['marks']) }}]</span> @endif {{-- D171: a numbered child's own marks --}}
               @if ($kind === 'gap') ________ @endif
               @if ($kind === 'true_false') ({{ __('pdf.qb_paper.true_false') }}) @endif
               @if ($kind === 'sub_mcq')
