@@ -1,6 +1,6 @@
 # খসড়া সিদ্ধান্ত D169: কর্মীদের চারটি কাজের পাতা (ভর্তি, শিক্ষার্থীর তথ্য, ফি আদায়, হাজিরা)
 
-> এজেন্টের খসড়া — কোনো কোড, guard বা task-scope বদলানো হয়নি। মালিক §৫-এর প্রশ্নের উত্তর দিয়ে অনুমোদন করলে তবেই guard/task scope, তারপর কাজ।
+> এজেন্টের খসড়া — কোনো কোড, guard বা task-scope বদলানো হয়নি। মালিকের উত্তর §৭-এ; উত্তর অনুযায়ী বদলানো নকশা §৮-এ। অনুমোদন করলে `owner\approve-D169.ps1` চালাবেন (দুটি commit: সিদ্ধান্তের সারি ও guard-এ STW.1–STW.5; push করে না)।
 > ক্রম (মালিক, 2026-10-26): D169 খসড়া → মালিকের অনুমোদন → guard/task scope → অনুমোদিত staff পাতা ও route → চারটি নির্দেশনা যাচাই/অনুমোদন → AI-Q4S সম্পূর্ণ → AI-Q5।
 
 ## ০. মূল নিয়ম
@@ -79,5 +79,18 @@
 5. `fee_override` কর্মীর জন্য বন্ধ — ঠিক?
 6. task ভাগ: STW.1 বিভাগ-বাছাই ও `X-Department-Id`; STW.2 ছাত্র দেখা; STW.3 ভর্তি; STW.4 ফি আদায়; STW.5 হাজিরা; তারপর AI-Q4S-এর চারটি নির্দেশনা — ক্রম ঠিক?
 
-## ৬. সিদ্ধান্তের সারি (উত্তর পেলে এজেন্ট পূরণ করবে)
-`| D169 | Staff work pages: admission, student view, fee collection, attendance (follows D90/D91, D168) | … |`
+## ৬. সিদ্ধান্তের সারি
+| D169 | Staff work pages: student admission, student view, fee collection, attendance (follows D90/D91, D27, D168; amendable only by a later owner decision) | Owner approved (2026-10-26). (1) Four staff workflows under /staff/..., each shown only when the selected department holds its key; every real request carries X-Department-Id and is checked against the SELECTED department (D91) - D168's "any active department" stays for help articles only. Routes are opened one by one by method + URI + action in StaffIdentityBoundary, never the student routes as a whole: admission POST api/v1/students (staff.student.store); student view GET api/v1/students (staff.student.index), GET api/v1/students/{id} (staff.student.show), GET api/v1/students/{id}/enrollments (staff.enrollment.for_student); fee collection GET api/v1/students, GET api/v1/fees/dues (staff.fee.dues), POST api/v1/fees/collect (staff.fee.collect), GET api/v1/fees/receipt/{id} (staff.fee.receipt); attendance GET api/v1/batches (staff.batch.index), GET/POST api/v1/attendance (staff.attendance.index/store), PUT api/v1/attendance/{id} (staff.attendance.update). Student edit, delete, anonymize, consents, files, enrollment changes, refunds, fee categories/structures and reports stay closed to staff. (2) Admission: staff admit directly without recording guardian consent (consent fields sent by staff are ignored; consent stays not recorded until the head records it on the existing principal-only routes; D27 unchanged - non-transactional SMS still waits for consent). Staff may not set fee_override (rejected with 403); only the institution head/admin may. (3) Student view is read-only and shows the full student record the head sees (including date of birth, address, blood group, religion), without fee_override and without consent, file, delete, anonymize or enrollment-change actions. (4) Attendance: a staff member may take or correct attendance for a batch only while an active grant exists for that staff member and batch, given by the institution head/admin or by that batch's teacher in charge (class teacher), revocable by either; new tenant table staff_attendance_grants (institution_id, batch_id, user_id, granted_by, revoked_by, revoked_at, timestamps; one active grant per batch and staff member); the key staff.attendance.* in the selected department is still required; audit names staff, department and grant. (5) Pages in Bangla (default) and English via t(), useTerms() for class/batch words, loading/empty/error states, 360px and desktop, lint:theme green; tests per route: key in the selected department works, key only in another department 403, missing header the D91 error, inactive membership/duty 403, another institution 404, unlisted student routes 403, fee_override 403, attendance without a grant 403. (6) Tasks in order STW.1 department selection and X-Department-Id, STW.2 student view, STW.3 admission, STW.4 fee collection, STW.5 attendance grants and staff attendance; then the four staff help articles complete AI-Q4S; then AI-Q5. Scope can be widened later only by a new owner decision. |
+
+## ৭. মালিকের উত্তর (2026-10-26)
+1. চারটি কাজ, route ও permission — **অনুমোদিত**।
+2. ভর্তিতে অভিভাবকের সম্মতি **লাগবে না**; কর্মী সরাসরি ভর্তি করবেন।
+3. শিক্ষার্থীর তথ্য **লুকানো থাকবে না** (জন্মতারিখ, ঠিকানা, রক্তের গ্রুপ, ধর্ম দেখাবে)।
+4. হাজিরা: **প্রধান শিক্ষক বা ক্লাস টিচার অনুমতি দিলে** কর্মী সেই ব্যাচের হাজিরা নিতে পারবেন।
+5. ফি-ছাড় কর্মীর জন্য **বন্ধ**; প্রতিষ্ঠান-প্রধান বা অ্যাডমিন পারবেন।
+6. ক্রম **ঠিক**; পরে আপডেটের সুযোগ রাখতে হবে।
+
+## ৮. উত্তর থেকে নকশা (এজেন্টের ব্যাখ্যা — অনুমোদনের আগে দেখে নিন)
+- **সম্মতি (২):** এখনই প্রধানের ভর্তিতে সম্মতি ঐচ্ছিক (`sometimes|boolean`)। কর্মীর ভর্তিতে সম্মতির ঘর থাকবে না, পাঠালেও উপেক্ষিত; সম্মতি "রেকর্ড হয়নি" থাকবে। D27 বদলায় না: সম্মতি ছাড়া শুধু লেনদেনের SMS যায় (হাজিরা/ফি), প্রচারের SMS নয় — প্রধান পরে সম্মতি রেকর্ড করতে পারবেন।
+- **হাজিরার অনুমতি (৪):** এর জন্য একটি **নতুন টেবিল** লাগবে — `staff_attendance_grants`। প্রধান/অ্যাডমিন বা সেই ব্যাচের দায়িত্বপ্রাপ্ত শিক্ষক (ক্লাস টিচার) কোনো কর্মীকে ব্যাচে অনুমতি দেন বা তুলে নেন; অনুমতি চলাকালীন আর বাছাই করা বিভাগে `staff.attendance.*` key থাকলে তবেই কর্মী হাজিরা নেন। অনুমতি দেওয়ার জায়গা: প্রধানের ব্যাচ-পাতা আর শিক্ষকের "আমার ব্যাচ"। (এজেন্ট টেবিল নিজে যোগ করবে না — এই সারি অনুমোদন হলে তবেই, `schema.sql`-সহ।)
+- **পরে বদল (৬):** স্কোপ বাড়াতে বা বদলাতে নতুন সিদ্ধান্ত (D170…) — এই সারি সেটা বলে দেয়।
