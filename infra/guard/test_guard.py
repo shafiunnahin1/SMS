@@ -257,6 +257,37 @@ def d152_probe():
     details = '\n'.join(out for good, _, _, out in results if not good)
     return (0 if all(good for good, _, _, _ in results) else 1), details or 'D152 requires its trailer and accepts the committed decision row format'
 
+def d170_probe():
+    results = []
+    cases = [
+        ('D170.1 passes after STW.2 with D170 trailer', 'D170.1', True, True, '\nChange-Request: D170', None),
+        ('D170.1 requires Change-Request D170', 'D170.1', True, True, '', 'Change-Request'),
+        ('D170.1 requires STW.2 first', 'D170.1', False, False, '\nChange-Request: D170', 'STW.2'),
+        ('STW.3 waits for D170.1 even when STW.2 is done', 'STW.3', True, False, '\nChange-Request: D169', 'D170.1'),
+        ('STW.3 passes after D170.1', 'STW.3', True, True, '\nChange-Request: D169', None),
+    ]
+    for label, task_id, stw2_done, d170_done, trailers, expected in cases:
+        d = make_base()
+        decisions = DECISIONS + '| D169 | Staff work pages | approved |\n| D170 | Direct first-admin activation | approved |\n'
+        progress = re.sub(r'(?m)^- \[x\] STW\.2\b.*\n?', '', PROGRESS) + '\n- [x] STW.1 — accepted\n'
+        progress += '- [x] STW.2 — accepted\n' if stw2_done else '- [ ] STW.2 — pending\n'
+        progress += '- [x] D170.1 — accepted\n' if d170_done else '- [ ] D170.1 — pending\n'
+        progress += '- [ ] STW.3 — pending\n'
+        write(d, 'docs/LOCKED-DECISIONS.md', decisions)
+        write(d, 'docs/PROGRESS.md', progress)
+        git(d, 'add', '-A'); git(d, 'commit', '-q', '-m', 'owner: approve D169 and D170 base')
+        git(d, 'tag', 'd170base')
+        write(d, 'api/app/Services/Auth/PrincipalProvisioningService.php', '<?php\nclass PrincipalProvisioningService {}\n')
+        write(d, 'docs/PROGRESS.md', progress + '\nD170 guard probe evidence\n')
+        git(d, 'add', '-A')
+        git(d, 'commit', '-q', '-m', f'feat: activation scope probe\n\nTask: {task_id}' + trailers)
+        code, out = run_guard(d, 'd170base', 'HEAD')
+        good = code == 0 if expected is None else code == 1 and expected in out
+        results.append((good, label, code, out))
+        shutil.rmtree(d, ignore_errors=True)
+    details = '\n'.join(f'{label}: exit={code}\n{out}' for good, label, code, out in results if not good)
+    return (0 if all(good for good, _, _, _ in results) else 1), details or 'D170.1 requires STW.2 and D170; STW.3 waits for D170.1'
+
 def d155_probe():
     d = make_base()
     decisions = DECISIONS + '| D155 | Push worktree safety | approved |\n'
@@ -359,6 +390,11 @@ def main():
     code, out = d139_probe()
     good = code == 0
     print(('ok    ' if good else 'WRONG ') + 'D145 custom task, dependency and new-table allowlist' + ('' if good else f' (exit {code})\n' + out[-500:]))
+    bad += 0 if good else 1
+    n += 1
+    code, out = d170_probe()
+    good = code == 0
+    print(('ok    ' if good else 'WRONG ') + 'D170.1 follows STW.2 and blocks STW.3 until accepted' + ('' if good else f' (exit {code})\n' + out[-500:]))
     bad += 0 if good else 1
     n += 1
     code, out = d142_probe()
