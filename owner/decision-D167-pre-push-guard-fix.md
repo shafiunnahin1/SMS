@@ -21,3 +21,13 @@
 
 ## ৪. সিদ্ধান্তের সারি
 | D167 | pre-push guard: ancestor check by exit code (fixes D155) | Owner approved (2026-10-26). `infra/guard/pre_push_guard.py` decides `git merge-base --is-ancestor` by its exit code only: 0 = the remote tip is an ancestor of the pushed commit (allowed), 1 = it is not (rejected with the existing "has commits missing" message), any other code = a real Git error shown with its exit code and stderr. D155's clean-worktree and branch-stash rules are unchanged and stashes are never mutated. `infra/guard/test_guard.py` adds fast-forward, diverged and Git-error cases. No other guard change; agents still never push with `--no-verify`. |
+
+## ৫. push (স্ক্রিপ্ট push করে না)
+হুক না থাকা checkout-এ push guard ছাড়াই চলে যেত, তাই স্ক্রিপ্ট শুধু দুটি commit করে থামে। push-এর আগে সংশোধিত guard হাতে চালান:
+```powershell
+$local = (git rev-parse HEAD).Trim(); $remote = (git rev-parse origin/claude/r216-omr-d127).Trim()
+"refs/heads/claude/r216-omr-d127 $local refs/heads/claude/r216-omr-d127 $remote" | python infra/guard/pre_push_guard.py
+```
+- untracked ফাইল (packet, `api/storage/ai-eval.json`) বা এই branch-এর stash (যেমন `stash@{9}`) থাকলে guard থামাবে — D155 অনুযায়ী এটাই ঠিক। কোনটি রাখবেন, সরাবেন বা মুছবেন তা মালিকের সিদ্ধান্ত; guard stash কখনো বদলায় না।
+- guard পাস করলে তবেই `git push origin claude/r216-omr-d127` — কখনো `--no-verify` নয়। স্থায়ী সুরক্ষার জন্য Git Bash-এ `bash infra/guard/install-hooks.sh`।
+

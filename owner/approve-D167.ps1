@@ -35,6 +35,6 @@ git add -- infra/guard/pre_push_guard.py infra/guard/test_guard.py
 git commit -m "guard: pre-push ancestor check by exit code (D167)" -m "Change-Request: D167"
 if ($LASTEXITCODE -ne 0) { throw 'Fix commit did not complete; inspect git status.' }
 
-# 3. a normal push - the fixed guard runs if the hooks are installed (never --no-verify)
-git pull --no-rebase origin claude/r216-omr-d127
-git push origin claude/r216-omr-d127
+# 3. no push here: a checkout without the pre-push hook would push unguarded. Push by hand only after the fixed guard passes:
+#    python infra/guard/pre_push_guard.py  (with the push line on stdin; see the D167 packet), then git push - never --no-verify
+Write-Host 'D167 committed locally. Not pushed. Run the fixed pre-push guard first (see owner/decision-D167-pre-push-guard-fix.md section 5).'
