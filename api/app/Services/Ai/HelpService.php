@@ -2,8 +2,8 @@
 
 namespace App\Services\Ai;
 
-use App\Models\{AiHelpArticle, Institution, User};
-use App\Services\ModuleGate;
+use App\Models\{AiHelpArticle, DepartmentMembership, Institution, User};
+use App\Services\{DepartmentDutyPermissionService, DepartmentRoutePermissionResolver, ModuleGate};
 use App\Services\QbQuestionFinderService;
 use App\Support\Tenancy;
 use Illuminate\Support\Facades\Route;
@@ -24,7 +24,7 @@ final class HelpService
     /** roles that also get question-bank answers; the rest (parent, accountant, ...) get the help guide only */
     public const EDU_ROLES = ['admin', 'teacher', 'student'];
 
-    public function __construct(private ModuleGate $gate) {}
+    public function __construct(private ModuleGate $gate, private DepartmentDutyPermissionService $duties) {}
 
     public static function intent(string $norm): bool
     {
@@ -60,7 +60,30 @@ final class HelpService
         if (!in_array($user->role, $a->roles ?? [], true)) return false;
         if ($inst && $a->module && !$this->gate->allows($inst, $a->module)) return false;
         if ($inst && $a->institution_types && !in_array($inst->institution_type, $a->institution_types, true)) return false;
-        return self::routesExist($a->refs['routes'] ?? []);
+        if (!self::routesExist($a->refs['routes'] ?? [])) return false;
+        return $user->role !== 'institution_staff' || $this->staffMayUse($user, $a->refs['routes'] ?? []);
+    }
+
+    /**
+     * D168 (2): a staff member sees an article only if EVERY route it names is catalogued exact_duty_permission and they hold that
+     * permission in ANY of their active departments (DepartmentDutyPermissionService - active membership and duty). No route, a
+     * principal-only / non-staff / uncatalogued route: hidden (fail closed). This decides only which help text is shown; the pages
+     * themselves still enforce D90/D91 for the selected department.
+     */
+    private function staffMayUse(User $user, array $routes): bool
+    {
+        if ($routes === []) return false;
+        $catalog = DepartmentRoutePermissionResolver::entries();
+        $departments = null;
+        foreach ($routes as $ref) {
+            [$method, $uri] = array_pad(explode(' ', $ref, 2), 2, '');
+            $entry = collect($catalog)->first(fn ($e) => $e['uri'] === $uri && in_array($method, explode('|', $e['method']), true));
+            if (!$entry || $entry['staff_mode'] !== 'exact_duty_permission' || count($entry['permission_options']) !== 1) return false;
+            $departments ??= DepartmentMembership::where('user_id', $user->id)->where('status', 'active')->pluck('department_id')->unique()->all();
+            $permission = $entry['permission_options'][0];
+            if (!collect($departments)->contains(fn ($d) => $this->duties->has($user, (int) $d, $permission))) return false;
+        }
+        return true;
     }
 
     /** "METHOD api/v1/uri" entries all exist in the live route table */

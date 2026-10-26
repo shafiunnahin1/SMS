@@ -94,6 +94,6 @@ class StudentAssistantTest extends TestCase
             ->assertOk()->assertJsonPath('data.student_free_answers_per_day', 7);
         $school = $this->makeInstitution('aistud', 'school');
         $this->api('GET', $this->hostOf($school), 'ai/conversations', $this->makeUser($school, 'student'))->assertOk();   // an institution's student too
-        $this->api('GET', $this->hostOf($school), 'ai/conversations', $this->makeUser($school, 'institution_staff'))->assertForbidden();   // D166 AI-Q4: parents now get the help guide
+        $this->api('GET', $this->hostOf($school), 'ai/conversations', $this->makeUser($school, 'institution_staff'))->assertOk();   // D166 AI-Q4: parents now get the help guide; D168: staff too (help only)
     }
 }

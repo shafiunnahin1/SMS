@@ -134,6 +134,7 @@ export const MENU = {
   institution_staff: [
     it('departments','/staff/departments','আমার বিভাগ',{since: 'R3',icon:'Building2',primary:true,staff_access:true}),
     it('profile','/staff/profile','আমার তথ্য',{since: 'R3',icon:'UserRound',staff_access:true}),
+    it('ai','/staff/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant',staff_access:true}),   // D168 AI-Q4S: the help guide
   ],
   teacher: [
     it('dashboard','/teacher/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard',primary:true}),

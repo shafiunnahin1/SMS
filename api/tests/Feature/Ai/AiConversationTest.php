@@ -28,7 +28,7 @@ class AiConversationTest extends TestCase
         $this->api('GET', $host, 'ai/conversations', $admin)->assertOk()->assertJsonCount(0, 'data');
         $this->api('POST', $host, 'ai/conversations', $teacher, ['title' => ''])->assertStatus(422);
         foreach (['accountant', 'parent'] as $role) $this->api('GET', $host, 'ai/conversations', $this->makeUser($i, $role))->assertOk();   // D166 AI-Q4: the help guide
-        $this->api('GET', $host, 'ai/conversations', $this->makeUser($i, 'institution_staff'))->assertForbidden();
+        $this->api('GET', $host, 'ai/conversations', $this->makeUser($i, 'institution_staff'))->assertOk();   // D168 AI-Q4S: staff get the help guide (StaffHelpTest)
 
         // AI-P1.3: rating an answer in an own chat only
         $answer = Tenancy::as($i, fn () => \App\Models\AiMessage::create(['ai_conversation_id' => $id, 'role' => 'answer', 'body' => 'x'])->id);

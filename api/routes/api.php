@@ -663,7 +663,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // ── AI assistant (D164 P1): teachers and the head of the institution, own chats only ──
-        Route::middleware(['module:ai_assistant', 'role:admin,teacher,student,parent,accountant'])->group(function () {   // D165 ST.6: students; D166 AI-Q4: parents and accountants (the help guide only)
+        Route::middleware(['module:ai_assistant', 'role:admin,teacher,student,parent,accountant,institution_staff'])->group(function () {   // D165 ST.6: students; D166 AI-Q4: parents and accountants (the help guide only); D168: staff (help only)
             Route::get('/ai/conversations',           [\App\Http\Controllers\Ai\AiConversationController::class, 'index']);
             Route::post('/ai/conversations',          [\App\Http\Controllers\Ai\AiConversationController::class, 'store']);
             Route::get('/ai/conversations/{id}',      [\App\Http\Controllers\Ai\AiConversationController::class, 'show'])->whereNumber('id');

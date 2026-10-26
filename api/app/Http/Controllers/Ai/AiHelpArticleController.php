@@ -33,7 +33,7 @@ class AiHelpArticleController extends Controller
     public function superStore(Request $request)
     {
         $f = $request->validate(self::TEXT + ['slug' => 'required|string|max:100|regex:/^[a-z0-9-]+$/', 'locale' => 'required|in:bn,en',
-            'roles' => 'required|array|min:1', 'roles.*' => 'in:super_admin,admin,teacher,student,parent,accountant',
+            'roles' => 'required|array|min:1', 'roles.*' => 'in:super_admin,admin,teacher,student,parent,accountant,institution_staff',
             'module' => 'nullable|string|max:60', 'routes' => 'nullable|array', 'routes.*' => 'string|max:200']);
         if (AiHelpArticle::anyInstitution()->whereNull('institution_id')->where('slug', $f['slug'])->where('locale', $f['locale'])->exists()) {
             return response()->json(['success' => false, 'message' => __('ai.help.slug_taken')], 422);
