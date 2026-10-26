@@ -13,4 +13,14 @@ return [
     'figure' => '[figure]',   // D166 AI-Q1
     'concepts' => 'Related concepts',   // D166 AI-Q1
     'resources' => 'Related PDFs / books',   // D166 AI-Q1
+    'help' => [   // D166 AI-Q4: the software help answer's headings
+        'purpose' => 'Purpose',
+        'where' => 'Where to go',
+        'steps' => 'Step by step',
+        'data' => 'What you need',
+        'result' => 'After saving',
+        'errors' => 'Possible problems and fixes',
+        'limits' => 'Your role and module limits',
+        'not_found' => 'No verified information about this workflow was found in the current system. Please contact your institution\'s admin or support.',
+    ],
 ];

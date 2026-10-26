@@ -3749,7 +3749,7 @@ CREATE TABLE ai_messages (                                     -- D164 (2): a qu
     role VARCHAR(10) NOT NULL,                                   -- question | answer
     body TEXT NOT NULL,
     template_body TEXT NULL,                                     -- D164 (6) AI-P1.6.1: the template answer the model rephrased
-    kind VARCHAR(12) NULL,                                       -- answer: direct | composed | not_found
+    kind VARCHAR(12) NULL,                                       -- answer: direct | composed | not_found | help (D166 AI-Q4)
     sources JSON NULL,                                           -- [{type, id, title}]
     rating TINYINT NULL,                                         -- -1 | 1
     model_version VARCHAR(40) NULL,                              -- D164 (6): the CPU model that phrased it; NULL = template
@@ -3847,4 +3847,30 @@ CREATE TABLE qb_practice_attempts (                            -- D165 ST.4: a s
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (qb_subject_id) REFERENCES qb_subjects(id),
     FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id)
+);
+
+CREATE TABLE ai_help_articles (                                -- D166 (6) AI-Q4: software help; NULL institution = platform; shown only when approved
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NULL,
+    base_article_id BIGINT UNSIGNED NULL,                        -- an institution's own wording of a platform article
+    slug VARCHAR(80) NOT NULL,
+    locale VARCHAR(5) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    keywords TEXT NOT NULL,
+    roles JSON NOT NULL,                                         -- who it is for
+    module VARCHAR(40) NULL,                                     -- the module it needs (ModuleGate)
+    institution_types JSON NULL,                                 -- NULL = every type
+    body JSON NOT NULL,                                          -- purpose, where, steps[], data[], result, errors[], limits
+    refs JSON NOT NULL,                                          -- menus[], keys[], routes[] - checked by a test; routes re-checked by the server
+    status ENUM('draft','approved') NOT NULL DEFAULT 'draft',
+    created_by BIGINT UNSIGNED NULL,
+    approved_by BIGINT UNSIGNED NULL,
+    approved_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_ai_help_scope (institution_id, status, locale),
+    INDEX idx_ai_help_slug (slug),
+    FULLTEXT INDEX ft_ai_help_articles (title, keywords) WITH PARSER ngram,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (base_article_id) REFERENCES ai_help_articles(id)
 );

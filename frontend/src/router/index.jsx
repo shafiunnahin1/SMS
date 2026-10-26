@@ -161,6 +161,7 @@ export const tenantRoutes = [
   ]),
   area('/accountant', 'accountant', [
     { path: 'dashboard', element: S(Dashboard) },
+    { path: 'ai', element: S(AiChat) },   // D166 AI-Q4: the help guide
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'reports', element: S(Reports) },
@@ -176,6 +177,7 @@ export const tenantRoutes = [
     { path: 'fees', element: S(ParentFees) },
     { path: 'attendance', element: S(ParentAttendance) },
     { path: 'results', element: S(ParentResults) },
+    { path: 'ai', element: S(AiChat) },   // D166 AI-Q4
   ]),
   { path: '/', element: <Navigate to="/login" replace /> },
   { path: '*', element: <Navigate to="/login" replace /> },

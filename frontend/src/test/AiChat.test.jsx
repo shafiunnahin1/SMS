@@ -67,6 +67,17 @@ describe('AI assistant chat (D164)', () => {
     expect(buildNav('student', { modules: ['ai_assistant'] }).map(i => i.path)).toContain('/student/ai')
   })
 
+  it('marks a help answer as the approved software guide (D166 AI-Q4)', async () => {
+    const help = { id: 21, role: 'answer', kind: 'help', body: 'নতুন শিক্ষার্থী ভর্তি করা\n\nউদ্দেশ্য: ...', rating: null, review: null, items: [], sources: [{ type: 'help', id: 3, title: 'নতুন শিক্ষার্থী ভর্তি করা' }] }
+    api.get.mockImplementation((url) => Promise.resolve({ data: { data: url === '/ai/conversations' ? [{ id: 5, title: 'ভর্তি' }] : { id: 5, title: 'ভর্তি', messages: [help] } } }))
+    page()
+    fireEvent.click(await screen.findByText('ভর্তি', { selector: 'button' }))
+    const chips = await screen.findByTestId('ai-source-chips')
+    expect(chips.querySelector('[data-source="help"]').textContent).toMatch(/সফটওয়্যার-সহায়িকা|Software guide/)
+    expect(screen.getByTestId('ai-review-mark').textContent).toMatch(/যাচাই-করা উত্তর|Reviewed answer/)
+    for (const role of ['parent', 'accountant']) expect(buildNav(role, { modules: ['ai_assistant', 'fees', 'exams'] }).flatMap(i => i.children ?? [i]).map(i => i.path)).toContain(`/${role}/ai`)
+  })
+
   it('appears in the admin and teacher menus only with the ai_assistant module', () => {
     const paths = (role, modules) => buildNav(role, { modules }).flatMap(i => i.children ?? [i]).map(i => i.path)
     expect(paths('admin', ['ai_assistant'])).toContain('/admin/ai')

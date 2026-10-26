@@ -1,0 +1,282 @@
+{
+  "_note": "D166 AI-Q4: the agent's first drafts of platform help articles, written from the current menu (frontend/src/nav/menu.js), translations (frontend/src/i18n) and routes (api/routes/api.php). `php artisan ai:help-seed` loads them as DRAFTS - nothing is shown until a Super Admin panel user approves it. HelpArticleSourceTest fails if a menu path, a translation key or a route named in refs disappears, or if a label quoted in the text no longer matches its translation.",
+  "articles": [
+    {
+      "slug": "admit-student",
+      "roles": [
+        "admin"
+      ],
+      "module": "students",
+      "refs": {
+        "menus": [
+          "/admin/students"
+        ],
+        "keys": [
+          "students.add",
+          "students.name",
+          "students.guardian_phone",
+          "students.roll",
+          "common.save"
+        ],
+        "routes": [
+          "POST api/v1/students"
+        ]
+      },
+      "bn": {
+        "title": "নতুন শিক্ষার্থী ভর্তি করা",
+        "keywords": "শিক্ষার্থী ছাত্র ছাত্রী ভর্তি যোগ নতুন admission student add",
+        "body": {
+          "purpose": "প্রতিষ্ঠানে একজন নতুন শিক্ষার্থী যোগ করা।",
+          "where": "মেনু → ছাত্রছাত্রী",
+          "steps": [
+            "মেনু থেকে \"ছাত্রছাত্রী\" খুলুন।",
+            "উপরের \"নতুন ভর্তি\" বোতামে চাপুন।",
+            "\"নাম\" আর \"অভিভাবকের ফোন\" লিখুন (দুটিই বাধ্যতামূলক)।",
+            "শাখা বা ব্যাচ বাছুন, চাইলে \"রোল\" দিন; আইডি খালি রাখলে সিস্টেম নিজে দেবে।",
+            "সম্মতির ঘর দুটি দেখে নিন, তারপর \"সংরক্ষণ\" চাপুন।"
+          ],
+          "data": [
+            "নাম",
+            "অভিভাবকের ফোন (01XXXXXXXXX)",
+            "শাখা/ব্যাচ (ঐচ্ছিক)",
+            "রোল (ঐচ্ছিক)",
+            "ছবি (ঐচ্ছিক, JPG/PNG/WebP, ২ MB পর্যন্ত)"
+          ],
+          "result": "শিক্ষার্থী তালিকায় যোগ হয় আর একটি বার্তায় তার আইডি দেখায়।",
+          "errors": [
+            "কোনো ঘর লাল হলে তার নিচের লেখা অনুযায়ী ঠিক করে আবার \"সংরক্ষণ\" চাপুন।",
+            "আইডি নিজে দিলে তা ঠিক ১০ অঙ্কের আর পুরো সিস্টেমে আলাদা হতে হবে; নইলে ঘরটি খালি রাখুন।"
+          ],
+          "limits": "শুধু প্রতিষ্ঠান প্রধান (admin) এটি করতে পারেন, আর \"ছাত্রছাত্রী\" মডিউল চালু থাকতে হবে।"
+        }
+      },
+      "en": {
+        "title": "Admitting a new student",
+        "keywords": "student admission add new enrol pupil",
+        "body": {
+          "purpose": "Add a new student to the institution.",
+          "where": "Menu → Students",
+          "steps": [
+            "Open \"Students\" from the menu.",
+            "Press the \"New admission\" button at the top.",
+            "Enter \"Name\" and \"Guardian phone\" (both required).",
+            "Pick the section or batch and, if you like, a \"Roll\"; leave the ID empty and the system gives one.",
+            "Check the two consent boxes, then press \"Save\"."
+          ],
+          "data": [
+            "Name",
+            "Guardian phone (01XXXXXXXXX)",
+            "Section / batch (optional)",
+            "Roll (optional)",
+            "Photo (optional, JPG/PNG/WebP up to 2 MB)"
+          ],
+          "result": "The student appears in the list and a message shows their ID.",
+          "errors": [
+            "If a field turns red, fix it as the text under it says and press \"Save\" again.",
+            "If you give the ID yourself it must be exactly 10 digits and unused anywhere in the system; otherwise leave it empty."
+          ],
+          "limits": "Only the head of the institution (admin) can do this, and the Students module must be on."
+        }
+      }
+    },
+    {
+      "slug": "fee-category",
+      "roles": [
+        "admin"
+      ],
+      "module": "fees",
+      "refs": {
+        "menus": [
+          "/admin/fees/categories"
+        ],
+        "keys": [
+          "fees.add_category",
+          "fees.category",
+          "fees.amount",
+          "fees.frequency",
+          "fees.applies_to",
+          "common.save"
+        ],
+        "routes": [
+          "POST api/v1/fees/categories"
+        ]
+      },
+      "bn": {
+        "title": "ফি-র নতুন খাত তৈরি করা",
+        "keywords": "ফি খাত বেতন ক্যাটাগরি তৈরি নতুন fee category",
+        "body": {
+          "purpose": "মাসিক বেতন, পরীক্ষা ফি ইত্যাদির মতো একটি ফি-র খাত তৈরি করা।",
+          "where": "মেনু → ফি → ফি-র খাত",
+          "steps": [
+            "মেনুতে \"ফি\" খুলে \"ফি-র খাত\" চাপুন।",
+            "\"নতুন খাত\" বোতামে চাপুন।",
+            "\"খাত\" (নাম), \"পরিমাণ\", \"কতবার\" আর \"কার জন্য\" পূরণ করুন।",
+            "\"সংরক্ষণ\" চাপুন।"
+          ],
+          "data": [
+            "খাতের নাম",
+            "পরিমাণ (টাকা)",
+            "কতবার নেওয়া হবে",
+            "কার জন্য প্রযোজ্য"
+          ],
+          "result": "খাতটি তালিকায় যোগ হয় আর ফি আদায়ে ব্যবহার করা যায়।",
+          "errors": [
+            "নাম বা পরিমাণ খালি থাকলে ঘরটি লাল হয় - পূরণ করে আবার চেষ্টা করুন।",
+            "কোনো খাত আগেই ব্যবহার হয়ে থাকলে তার \"কতবার\" আর বদলানো যায় না।"
+          ],
+          "limits": "শুধু প্রতিষ্ঠান প্রধান (admin); \"ফি\" মডিউল চালু থাকতে হবে। টাকার রেকর্ড মোছা যায় না।"
+        }
+      },
+      "en": {
+        "title": "Creating a fee head",
+        "keywords": "fee head category create new tuition charge",
+        "body": {
+          "purpose": "Create a fee head such as monthly tuition or an exam fee.",
+          "where": "Menu → Fees → Fee categories",
+          "steps": [
+            "Open \"Fees\" in the menu and choose \"Fee categories\".",
+            "Press \"New fee head\".",
+            "Fill \"Category\" (the name), \"Amount\", \"How often\" and \"Applies to\".",
+            "Press \"Save\"."
+          ],
+          "data": [
+            "Name of the head",
+            "Amount (taka)",
+            "How often it is charged",
+            "Who it applies to"
+          ],
+          "result": "The head joins the list and can be used when collecting fees.",
+          "errors": [
+            "An empty name or amount turns the field red - fill it and try again.",
+            "Once a head has been used, its \"How often\" cannot change."
+          ],
+          "limits": "Head of the institution (admin) only; the Fees module must be on. Money records are never deleted."
+        }
+      }
+    },
+    {
+      "slug": "student-buy-practise",
+      "roles": [
+        "student"
+      ],
+      "module": "question_bank",
+      "refs": {
+        "menus": [
+          "/student/question-bank",
+          "/student/practice"
+        ],
+        "keys": [
+          "qbst.packs",
+          "practice.start",
+          "practice.submit"
+        ],
+        "routes": [
+          "POST api/v1/student/qb/orders",
+          "POST api/v1/student/qb/practice"
+        ]
+      },
+      "bn": {
+        "title": "প্রশ্ন কিনে প্র্যাক্টিস করা",
+        "keywords": "প্র্যাক্টিস অনুশীলন কেনা কিনব প্যাকেজ প্রশ্ন practice buy",
+        "body": {
+          "purpose": "প্রশ্ন বা পুরো প্যাকেজ কিনে নিজে প্র্যাক্টিস করা।",
+          "where": "মেনু → প্রশ্নব্যাংক, তারপর মেনু → প্র্যাক্টিস",
+          "steps": [
+            "মেনু থেকে \"প্রশ্নব্যাংক\" খুলুন, বিষয় আর অধ্যায় বাছুন।",
+            "\"পুরো প্যাকেজ কিনুন\" অংশ থেকে শ্রেণি, বিষয় বা অধ্যায়ের প্যাকেজ কিনুন, বা কোনো প্রশ্ন খুলে আলাদা কিনুন (bKash)।",
+            "মেনু থেকে \"প্র্যাক্টিস\" খুলে বিষয় ও প্রশ্নের সংখ্যা বাছুন, \"শুরু করুন\" চাপুন।",
+            "উত্তর বেছে \"জমা দিন\" চাপুন।"
+          ],
+          "data": [
+            "bKash একাউন্ট (পেমেন্টের জন্য)"
+          ],
+          "result": "জমা দেওয়ার পর কয়টি ঠিক হলো, ঠিক উত্তর আর ব্যাখ্যা দেখায়; ফলাফল \"আমার ফলাফল\"-এ জমা থাকে।",
+          "errors": [
+            "কিছুই কেনা না থাকলে প্র্যাক্টিস শুরু হয় না - আগে প্রশ্ন বা প্যাকেজ কিনুন।",
+            "পেমেন্ট ব্যর্থ হলে টাকা কাটা হয় না, আবার চেষ্টা করুন।"
+          ],
+          "limits": "শিক্ষার্থীদের জন্য; কেনা জিনিস মেয়াদ পর্যন্ত খোলা থাকে।"
+        }
+      },
+      "en": {
+        "title": "Buying questions and practising",
+        "keywords": "practice practise buy pack question purchase",
+        "body": {
+          "purpose": "Buy questions or a whole pack and practise on your own.",
+          "where": "Menu → Question bank, then Menu → Practice",
+          "steps": [
+            "Open \"Question bank\" from the menu and pick a subject and chapter.",
+            "From \"Buy a whole pack\" buy a class, subject or chapter pack, or open a question and buy it alone (bKash).",
+            "Open \"Practice\" from the menu, pick the subject and how many questions, and press \"Start\".",
+            "Choose your answers and press \"Submit\"."
+          ],
+          "data": [
+            "A bKash account (to pay)"
+          ],
+          "result": "After submitting you see how many were right, the right answers and explanations; the result is kept under \"My results\".",
+          "errors": [
+            "With nothing bought a round cannot start - buy questions or a pack first.",
+            "If a payment fails nothing is charged; try again."
+          ],
+          "limits": "For students; what you buy stays open until it expires."
+        }
+      }
+    },
+    {
+      "slug": "parent-results",
+      "roles": [
+        "parent"
+      ],
+      "module": "exams",
+      "refs": {
+        "menus": [
+          "/parent/results"
+        ],
+        "keys": [
+          "exams.marksheet"
+        ],
+        "routes": [
+          "GET api/v1/parent/children/{id}/results"
+        ]
+      },
+      "bn": {
+        "title": "সন্তানের পরীক্ষার ফল দেখা",
+        "keywords": "ফলাফল ফল রেজাল্ট পরীক্ষা নম্বর সন্তান result",
+        "body": {
+          "purpose": "আপনার সন্তানের প্রকাশিত পরীক্ষার ফল দেখা।",
+          "where": "মেনু → ফলাফল",
+          "steps": [
+            "মেনু থেকে \"ফলাফল\" খুলুন।",
+            "একাধিক সন্তান থাকলে যার ফল দেখতে চান তাকে বাছুন।",
+            "প্রতিটি প্রকাশিত পরীক্ষার নিচে বিষয়ভিত্তিক নম্বর আর গ্রেড দেখায়; \"মার্কশিট\" বোতামে মার্কশিট (PDF) খোলে।"
+          ],
+          "data": [],
+          "result": "প্রতিষ্ঠান যে পরীক্ষার ফল প্রকাশ করেছে, শুধু সেগুলো দেখায়।",
+          "errors": [
+            "ফল না দেখালে প্রতিষ্ঠান সম্ভবত এখনো প্রকাশ করেনি - প্রতিষ্ঠানে যোগাযোগ করুন।"
+          ],
+          "limits": "অভিভাবক শুধু নিজের সন্তানের ফল দেখেন; \"পরীক্ষা\" মডিউল চালু থাকতে হবে।"
+        }
+      },
+      "en": {
+        "title": "Seeing your child's exam results",
+        "keywords": "result results marks exam child grade",
+        "body": {
+          "purpose": "See your child's published exam results.",
+          "where": "Menu → Results",
+          "steps": [
+            "Open \"Results\" from the menu.",
+            "With more than one child, pick the one you want.",
+            "Each published exam lists the marks and grade by subject; the \"Marksheet\" button opens the marksheet (PDF)."
+          ],
+          "data": [],
+          "result": "Only the exams whose results the institution has published are shown.",
+          "errors": [
+            "If no result shows, the institution has probably not published it yet - contact the institution."
+          ],
+          "limits": "A parent sees only their own child's results; the Exams module must be on."
+        }
+      }
+    }
+  ]
+}

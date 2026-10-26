@@ -178,6 +178,7 @@ export const MENU = {
     it('dashboard','/parent/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard',primary:true}),
     it('fees','/parent/fees','ফি ও পেমেন্ট',{icon:'Wallet',module:'fees',primary:true}),
     it('results','/parent/results','ফলাফল',{icon:'FileText',module:'exams',primary:true}),
+    it('ai','/parent/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant'}),   // D166 AI-Q4: the help guide
     it('attendance','/parent/attendance','উপস্থিতি',{icon:'CalendarCheck',module:'attendance',primary:true}),
     it('homework','/parent/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework'}),
     it('meetings','/parent/meetings','সভা',{icon:'Users',module:'parent_meeting'}),
@@ -192,6 +193,7 @@ export const MENU = {
     it('dashboard','/accountant/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard',primary:true}),
     it('collect','/accountant/fees/collect','ফি আদায়',{icon:'Wallet',module:'fees',primary:true}),
     it('dues','/accountant/fees/dues','বকেয়া',{icon:'AlertCircle',module:'fees',primary:true}),
+    it('ai','/accountant/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant'}),   // D166 AI-Q4: the help guide
     it('online','/admin/payments','অনলাইন পেমেন্ট',{icon:'CreditCard',module:'online_payment'}),
     it('expenses','/accountant/expenses','আয়-ব্যয়',{icon:'Receipt',module:'expenses'}),
     it('payroll','/accountant/hr/payroll','বেতন প্রদান',{icon:'Banknote',module:'hr_payroll'}),

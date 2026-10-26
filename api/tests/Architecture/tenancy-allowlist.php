@@ -20,6 +20,8 @@ return [
     'app/Services/StudentService.php' => 'D160: the student ID serial is shared by every institution - reads the highest ID of the day across tenants (anyInstitution, IDs only) under a named lock',
     'app/Console/Commands/StudentNumericIds.php' => 'D160 (3): the owner-run one-time ID conversion goes over every institution (withoutTenancy), each audit row written inside its own tenant',
     'app/Services/Ai/AiReviewService.php' => 'D164 (3): the platform reviewers (central host) read every institution\'s answers de-identified (withoutTenancy) and write each decision inside that answer\'s own tenant (Tenancy::as); the answer bank row is a platform row (institution_id NULL)',
+    'app/Console/Commands/AiHelpSeed.php' => 'D166 AI-Q4: the owner-run command adds the platform\'s help articles (institution NULL) as drafts (withoutTenancy; platform rows only)',
+    'app/Services/Ai/HelpService.php' => 'D166 AI-Q4: reads approved help articles - the platform\'s (institution NULL) and the caller\'s own institution\'s only (anyInstitution with an explicit "NULL or this institution" condition)',
     'app/Http/Controllers/SuperAdmin/QbExamBatchController.php' => 'D165 (3) ST.2: moving a batch\'s exam end date moves the validity of every institution\'s purchases made under it (anyInstitution, one column; central host, tenancy.bypass)',
     'app/Http/Controllers/Ai/AiPlatformController.php' => 'D164 AI-P1.5: the Super Admin\'s usage report counts the assistant\'s rows over every institution (anyInstitution, counts by day only; central host, tenancy.bypass)',
     'app/Console/Commands/AiEvaluate.php' => 'D164 (5): the owner-run quality gate asks as one named institution (Tenancy::as) and counts only',

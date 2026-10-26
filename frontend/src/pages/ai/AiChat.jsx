@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertCircle, BadgeCheck, BookOpen, Clock, FileQuestion, FileText, Lightbulb, Lock, MessageSquarePlus, RotateCcw, Send, Sparkles, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react'
+import { AlertCircle, BadgeCheck, BookOpen, Clock, FileQuestion, FileText, LifeBuoy, Lightbulb, Lock, MessageSquarePlus, RotateCcw, Send, Sparkles, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react'
 import DirIcon from '../../components/DirIcon'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
@@ -40,7 +40,7 @@ function Item({ q, n }) {
 // phone), message bubbles (yours at the end, the assistant's at the start with its sources as chips, a reviewed / not-yet-reviewed
 // marker, a "the reviewer updated this answer" note, 👍 / 👎), and a composer that keeps the question while it is sending and
 // offers "try again" when sending failed. Theme tokens, translations, logical (RTL-safe) classes only.
-const SOURCE_ICON = { question: FileQuestion, curriculum: BookOpen, concept: Lightbulb, resource: FileText, answer_bank: BadgeCheck }
+const SOURCE_ICON = { question: FileQuestion, curriculum: BookOpen, concept: Lightbulb, resource: FileText, answer_bank: BadgeCheck, help: LifeBuoy }   // D166 AI-Q4: help = software guide
 const time = (iso, locale) => { try { return iso ? new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }).format(new Date(iso)) : '' } catch { return '' } }
 
 function SourceChips({ sources }) {
@@ -50,7 +50,7 @@ function SourceChips({ sources }) {
     <ul className="flex flex-wrap gap-1" aria-label={t('ai.sources')} data-testid="ai-source-chips">
       {sources.map(s => {
         const Icon = SOURCE_ICON[s.type] ?? FileText
-        const label = s.type === 'answer_bank' ? t('ai.bank') : s.type === 'question' ? t('ai.chip_question', { id: s.id }) : s.title
+        const label = s.type === 'answer_bank' ? t('ai.bank') : s.type === 'question' ? t('ai.chip_question', { id: s.id }) : s.type === 'help' ? `${t('ai.help_guide')}: ${s.title}` : s.title
         return (
           <li key={`${s.type}:${s.id}`} className="inline-flex max-w-full items-center gap-1 rounded-token bg-surface-muted px-2 py-0.5 text-xs" data-source={s.type}>
             <Icon aria-hidden="true" className="h-3 w-3 shrink-0" /><span className="truncate" dir="auto">{label}</span>
@@ -62,7 +62,7 @@ function SourceChips({ sources }) {
 
 function Answer({ m, shown, rate, locale }) {
   const { t } = useTranslation()
-  const reviewed = m.kind === 'direct' || ['approved', 'corrected', 'rewritten'].includes(m.review)
+  const reviewed = m.kind === 'direct' || m.kind === 'help' || ['approved', 'corrected', 'rewritten'].includes(m.review)   // a help article is approved before it shows
   return (
     <div className="flex max-w-[92%] items-end gap-2 self-start sm:max-w-[80%]">
       <span className="mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary-fg" aria-hidden="true"><Sparkles className="h-4 w-4" /></span>

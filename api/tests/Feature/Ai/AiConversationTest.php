@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 // D164 AI-P1.1: teachers and the head keep their own chats with the assistant; another user's or another institution's chat is a
-// 404; students, parents and accountants are refused; the module can be switched off per institution; the answer bank's NULL rows
+// 404; parents and accountants get the help guide (D166 AI-Q4), department staff are refused; the module can be switched off per institution; the answer bank's NULL rows
 // are open to all; the question bank and curriculum carry the n-gram FULLTEXT indexes the search needs
 class AiConversationTest extends TestCase
 {
@@ -27,7 +27,8 @@ class AiConversationTest extends TestCase
         $this->api('GET', $host, "ai/conversations/{$id}", $admin)->assertNotFound();           // another user's chat, even the head's view
         $this->api('GET', $host, 'ai/conversations', $admin)->assertOk()->assertJsonCount(0, 'data');
         $this->api('POST', $host, 'ai/conversations', $teacher, ['title' => ''])->assertStatus(422);
-        foreach (['accountant', 'parent'] as $role) $this->api('GET', $host, 'ai/conversations', $this->makeUser($i, $role))->assertForbidden();
+        foreach (['accountant', 'parent'] as $role) $this->api('GET', $host, 'ai/conversations', $this->makeUser($i, $role))->assertOk();   // D166 AI-Q4: the help guide
+        $this->api('GET', $host, 'ai/conversations', $this->makeUser($i, 'institution_staff'))->assertForbidden();
 
         // AI-P1.3: rating an answer in an own chat only
         $answer = Tenancy::as($i, fn () => \App\Models\AiMessage::create(['ai_conversation_id' => $id, 'role' => 'answer', 'body' => 'x'])->id);

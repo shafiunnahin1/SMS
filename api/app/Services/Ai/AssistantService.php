@@ -52,13 +52,13 @@ class AssistantService
         return DB::transaction(function () use ($conversation, $text, $user) {
             $question = AiMessage::create(['ai_conversation_id' => $conversation->id, 'role' => 'question', 'body' => $text]);
             $norm = QbQuestionFinderService::normalize($text);
-            $answer = $this->fromBank($norm) ?? $this->composed($norm, $user);
+            $answer = $this->help($norm, $user) ?? $this->fromBank($norm) ?? $this->composed($norm, $user);
             $msg = AiMessage::create(['ai_conversation_id' => $conversation->id, 'role' => 'answer', 'body' => $answer['body'], 'kind' => $answer['kind'], 'sources' => $answer['sources']]);
             foreach ($answer['reveal'] ?? [] as $qid) {
                 AiAnswerReveal::firstOrCreate(['qb_question_id' => $qid, 'revealed_on' => today()->toDateString()] + ($this->student() ? ['user_id' => $user->id] : []),
                     ['user_id' => $user->id, 'ai_message_id' => $msg->id]);
             }
-            AiReview::create(['ai_message_id' => $msg->id, 'status' => 'unreviewed']);
+            if ($answer['kind'] !== 'help') AiReview::create(['ai_message_id' => $msg->id, 'status' => 'unreviewed']);   // D166 AI-Q4: a help article is already approved
             if ($answer['kind'] === 'composed' && AnswerRephraser::enabled()) {          // AI-P1.6: the template is shown now, the model's text later
                 $msg->update(['model_version' => RephraseAnswerJob::PENDING]);
                 RephraseAnswerJob::dispatch($msg->id, (int) Tenancy::current()->id)->afterCommit();
@@ -66,6 +66,22 @@ class AssistantService
             $conversation->touch();
             return ['question' => $question, 'answer' => $msg, 'questions' => $answer['questions'] ?? []];
         });
+    }
+
+    /**
+     * D166 AI-Q4: the software help guide first - an approved article that fits the caller answers directly (kind "help", its article
+     * as the only source, nothing counted); a workflow question with no fitting article, or any question from a role without
+     * question-bank answers (parent, accountant, ...), gets the fixed "no verified information" reply instead of a guess
+     */
+    private function help(string $norm, User $user): ?array
+    {
+        $article = app(HelpService::class)->find($user, $norm);
+        if ($article) return ['kind' => 'help', 'body' => HelpService::render($article), 'sources' => [['type' => 'help', 'id' => $article->id, 'title' => $article->title]]];
+        $eduRole = in_array($user->role, HelpService::EDU_ROLES, true);
+        if (!$eduRole || (HelpService::intent($norm) && !$this->questions($norm)->isNotEmpty())) {
+            return ['kind' => 'not_found', 'body' => __('ai.help.not_found'), 'sources' => []];
+        }
+        return null;
     }
 
     /** reviewed answers open to all (NULL) or this institution's own; the closest by the finder's score, given directly at 80+ */
