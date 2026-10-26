@@ -21,6 +21,9 @@ return [
         'result' => 'After saving',
         'errors' => 'Possible problems and fixes',
         'limits' => 'Your role and module limits',
+        'slug_taken' => 'This article already exists.',
+        'route_missing' => 'A page or action this article names no longer exists in the system; it cannot be approved.',
+        'approved_msg' => 'The article is approved.',
         'not_found' => 'No verified information about this workflow was found in the current system. Please contact your institution\'s admin or support.',
     ],
 ];

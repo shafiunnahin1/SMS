@@ -122,6 +122,10 @@ return [
     'PUT api/v1/ai/messages/{id}/rating' => ['admin', 'teacher', 'student', 'parent', 'accountant'],                   // AI-P1.3
     'GET api/v1/ai/settings' => ['admin'],                                          // AI-P1.4
     'PUT api/v1/ai/settings' => ['admin'],
+    'GET api/v1/ai/help-articles' => ['admin'],                                     // D166 AI-Q4 part 2
+    'POST api/v1/ai/help-articles' => ['admin'],
+    'PUT api/v1/ai/help-articles/{id}' => ['admin'],
+    'POST api/v1/ai/help-articles/{id}/approve' => ['admin'],
     'GET api/v1/writer/ai-reviews' => ['content_writer', 'content_moderator', 'super_admin'],
     'PUT api/v1/writer/ai-reviews/{id}' => ['content_writer', 'content_moderator', 'super_admin'],
     'GET api/v1/exams/{id}/result-sms' => ['admin'],                                    // D161 (2)
@@ -195,6 +199,11 @@ return [
     'GET api/v1/super/ai-settings' => ['super_admin'],                              // D164 AI-P1.5
     'PUT api/v1/super/ai-settings' => ['super_admin'],
     'GET api/v1/super/ai-report' => ['super_admin'],
+    'GET api/v1/super/ai-help-articles' => ['super_admin'],                         // D166 AI-Q4 part 2
+    'POST api/v1/super/ai-help-articles' => ['super_admin'],
+    'PUT api/v1/super/ai-help-articles/{id}' => ['super_admin'],
+    'POST api/v1/super/ai-help-articles/{id}/approve' => ['super_admin'],
+    'POST api/v1/super/ai-help' => ['super_admin'],
     'PUT api/v1/super/sms-settings' => ['super_admin'],
     'GET api/v1/super/qb/curriculum' => ['super_admin'],                       // QB.1 (D65): the platform curriculum is the Super Admin's
     'POST api/v1/super/qb/{kind}' => ['super_admin'],

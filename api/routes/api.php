@@ -80,6 +80,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/ai-settings',                    [\App\Http\Controllers\Ai\AiPlatformController::class, 'settings']);
         Route::put('/ai-settings',                    [\App\Http\Controllers\Ai\AiPlatformController::class, 'update']);
         Route::get('/ai-report',                      [\App\Http\Controllers\Ai\AiPlatformController::class, 'report']);
+        // D166 AI-Q4 part 2: the platform help articles (write, edit -> draft, approve) and the Super Admin panel's own help question
+        Route::get('/ai-help-articles',               [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'superIndex']);
+        Route::post('/ai-help-articles',              [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'superStore']);
+        Route::put('/ai-help-articles/{id}',          [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'superUpdate'])->whereNumber('id');
+        Route::post('/ai-help-articles/{id}/approve', [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'superApprove'])->whereNumber('id');
+        Route::post('/ai-help',                       [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'superAsk'])->middleware('throttle:60,1');
         Route::put('/sms-settings',                   [UniversalSmsController::class, 'update']);
         // Step 8.1 (D27, privacy-and-consent.md 5.3): remove an institution for good - manual, two steps
         Route::get('/tenant-purge/candidates',                      [TenantPurgeController::class, 'candidates']);
@@ -666,6 +672,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/ai/settings',                [\App\Http\Controllers\Ai\AiConversationController::class, 'settings'])->middleware('role:admin');   // AI-P1.4
             Route::put('/ai/settings',                [\App\Http\Controllers\Ai\AiConversationController::class, 'settings'])->middleware('role:admin');
             Route::put('/ai/messages/{id}/rating',    [\App\Http\Controllers\Ai\AiConversationController::class, 'rate'])->whereNumber('id');   // AI-P1.3
+            // D166 AI-Q4 part 2: the head's own wording of an approved platform help article (edit -> draft, approve)
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/ai/help-articles',               [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'index']);
+                Route::post('/ai/help-articles',              [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'store']);
+                Route::put('/ai/help-articles/{id}',          [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'update'])->whereNumber('id');
+                Route::post('/ai/help-articles/{id}/approve', [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'approve'])->whereNumber('id');
+            });
         });
 
         // ── Parent (Step 4.7) ──

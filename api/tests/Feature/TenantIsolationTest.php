@@ -161,6 +161,8 @@ class TenantIsolationTest extends TestCase
             'DELETE api/v1/exams/{id}/subjects/{subjectId}/paper' => null,
             'POST api/v1/exams/{id}/subjects/{subjectId}/mcq-import' => null,
             'POST api/v1/exams/{id}/subjects/{subjectId}/submission' => null,
+            'PUT api/v1/ai/help-articles/{id}'             => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AiHelpArticle::create(['slug' => 'x', 'locale' => 'bn', 'title' => 'x', 'keywords' => '', 'roles' => ['admin'], 'body' => [], 'refs' => [], 'status' => 'draft'])->id),   // D166 AI-Q4 part 2
+            'POST api/v1/ai/help-articles/{id}/approve'    => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AiHelpArticle::create(['slug' => 'x', 'locale' => 'bn', 'title' => 'x', 'keywords' => '', 'roles' => ['admin'], 'body' => [], 'refs' => [], 'status' => 'draft'])->id),
             'PUT api/v1/ai/messages/{id}/rating'           => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AiMessage::create(['ai_conversation_id' => \App\Models\AiConversation::create(['user_id' => $other['admin']->id, 'title' => 'x'])->id, 'role' => 'answer', 'body' => 'x'])->id),   // AI-P1.3
             'POST api/v1/ai/conversations/{id}/messages'   => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AiConversation::create(['user_id' => $other['admin']->id, 'title' => 'x'])->id),   // AI-P1.2
             'DELETE api/v1/ai/conversations/{id}'          => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AiConversation::create(['user_id' => $other['admin']->id, 'title' => 'x'])->id),   // D165 ST.6

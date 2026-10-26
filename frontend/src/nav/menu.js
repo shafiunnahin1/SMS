@@ -115,6 +115,7 @@ export const MENU = {
     it('analytics','/admin/analytics','বিশ্লেষণ', { icon: 'LineChart', module: 'analytics' }),
     it('risk','/admin/risk','সহায়তা প্রয়োজন (ছাত্র-সতর্কতা)', { icon: 'LifeBuoy', module: 'risk_alerts' }),
     it('ai','/admin/ai','AI সহকারী', { icon: 'Sparkles', module: 'ai_assistant' }),
+    it('ai-help','/admin/ai-help','AI নির্দেশনা', { icon: 'LifeBuoy', module: 'ai_assistant' }),   // D166 AI-Q4 part 2
     { key: 'settings', label: 'সেটিংস', icon: 'Settings', children: [
       it('general',   '/admin/settings/general',   'সাধারণ'),
       it('branches',  '/admin/settings/branches',  'শাখা/ক্যাম্পাস', { module: 'multi_branch' }),
@@ -252,6 +253,7 @@ export const MENU = {
     it('qb-quizzes','/super-admin/qb/quizzes','প্রশ্নব্যাংক: কুইজ ও প্যাকেজ',{icon:'ClipboardCheck'}),
     it('qb-withdrawals','/super-admin/qb/withdrawals','প্রশ্নব্যাংক: লেখকের টাকা তোলা',{icon:'Wallet'}),
     it('qb-exam-batches','/super-admin/qb/exam-batches','প্রশ্নব্যাংক: পরীক্ষা-ব্যাচ (SSC/HSC)',{icon:'CalendarCheck'}),   // D165 ST.2
+    it('ai-help','/super-admin/ai-help','AI সহকারী: নির্দেশনা',{icon:'LifeBuoy'}),   // D166 AI-Q4 part 2
     it('ai-platform','/super-admin/ai','AI সহকারী: সেটিং ও রিপোর্ট',{icon:'Sparkles'}),   // D164 AI-P1.5
     it('settings','/super-admin/settings','সেটিংস',{icon:'Settings'}),
   ],

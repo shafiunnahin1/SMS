@@ -79,6 +79,7 @@ const QbOmr             = lazy(() => import('../pages/qb/QbOmr'))
 const AiChat            = lazy(() => import('../pages/ai/AiChat'))   // D164 AI-P1.3
 const QbExamBatches     = lazy(() => import('../pages/super/QbExamBatches'))   // D165 ST.2
 const AiPlatform        = lazy(() => import('../pages/super/AiPlatform'))   // D164 AI-P1.5
+const HelpArticles      = lazy(() => import('../pages/ai/HelpArticles'))   // D166 AI-Q4 part 2
 const AiReviews         = lazy(() => import('../pages/writer/AiReviews'))   // D164 AI-P1.4
 const QbPaperPreview    = lazy(() => import('../pages/qb/QbPaperPreview'))
 const QbAllQuestions    = lazy(() => import('../pages/qb/QbAllQuestions'))
@@ -91,7 +92,7 @@ const QbEarnings        = lazy(() => import('../pages/writer/QbEarnings'))
 const QbWithdrawals     = lazy(() => import('../pages/super/QbWithdrawals'))
 const DevComponents = import.meta.env.DEV ? lazy(() => import('../pages/dev/Components')) : null   // not in production builds
 
-const S = (C) => <Suspense fallback={<Loader type="page" />}><C /></Suspense>
+const S = (C, props) => <Suspense fallback={<Loader type="page" />}><C {...props} /></Suspense>
 // Step 3.5: the auth pages exist on both hosts; /change-password needs a login (any role)
 const authRoutes = [
   { path: '/login', element: <Login /> },
@@ -120,6 +121,7 @@ export const tenantRoutes = [
   area('/admin', 'admin', [
     { path: 'question-bank', element: S(QbAllQuestions) },   // D133/D134: Question Bank opens on All Questions
     { path: 'ai', element: S(AiChat) },   // D164 AI-P1.3
+    { path: 'ai-help', element: S(HelpArticles) },   // D166 AI-Q4 part 2
     { path: 'study-materials', element: S(QbLibrary) },   // D134: concepts and resources
     { path: 'question-bank/spending', element: S(QbSpending) },   // QB.7
     { path: 'question-bank/papers', element: S(QbPapers) },   // QB.8
@@ -204,6 +206,7 @@ export const centralRoutes = [
     { path: 'qb/quizzes', element: S(QbQuizAdmin) },   // QB.10
     { path: 'qb/withdrawals', element: S(QbWithdrawals) },   // QB.10b
     { path: 'ai', element: S(AiPlatform) },   // D164 AI-P1.5
+    { path: 'ai-help', element: S(HelpArticles, { mode: 'super' }) },   // D166 AI-Q4 part 2
     { path: 'qb/exam-batches', element: S(QbExamBatches) },   // D165 ST.2
   ]),
   // D65 QB.2: the question-bank writers' panel (writers, moderators and the Super Admin)

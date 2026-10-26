@@ -277,6 +277,271 @@
           "limits": "A parent sees only their own child's results; the Exams module must be on."
         }
       }
+    },
+    {
+      "slug": "teacher-attendance",
+      "roles": [
+        "teacher"
+      ],
+      "module": "attendance",
+      "refs": {
+        "menus": [
+          "/teacher/attendance"
+        ],
+        "keys": [
+          "attendance.take",
+          "attendance.date",
+          "attendance.all_present",
+          "common.save"
+        ],
+        "routes": [
+          "POST api/v1/attendance"
+        ]
+      },
+      "bn": {
+        "title": "শিক্ষক হিসেবে হাজিরা নেওয়া",
+        "keywords": "হাজিরা উপস্থিতি অনুপস্থিত attendance শিক্ষক নেওয়া দেওয়া",
+        "body": {
+          "purpose": "নিজের ব্যাচের শিক্ষার্থীদের দিনের হাজিরা নেওয়া।",
+          "where": "মেনু → উপস্থিতি → হাজিরা নিন",
+          "steps": [
+            "মেনু থেকে \"উপস্থিতি\" খুলুন; \"হাজিরা নিন\" অংশটি খোলা থাকে।",
+            "ব্যাচ বাছুন।",
+            "\"তারিখ\" দেখে নিন (আজকের পরের তারিখ বাছা যায় না)।",
+            "সবাই এলে \"সবাই উপস্থিত\" চাপুন, তারপর যারা আসেনি তাদের বদলে দিন।",
+            "\"সংরক্ষণ\" চাপুন।"
+          ],
+          "data": [
+            "ব্যাচ",
+            "তারিখ",
+            "প্রত্যেক শিক্ষার্থীর অবস্থা"
+          ],
+          "result": "সেই দিনের হাজিরা সংরক্ষিত হয়; একই দিনে আবার খুললে আগের হাজিরা দেখায় আর সংরক্ষণ করলে তা হালনাগাদ হয়।",
+          "errors": [
+            "ব্যাচটি তালিকায় না থাকলে আপনি সেই ব্যাচের দায়িত্বে বা শিক্ষক হিসেবে নেই; প্রতিষ্ঠানের অ্যাডমিনকে জানান।",
+            "ছুটির দিনে ছুটির বার্তা দেখায়; সেদিনের হাজিরা নেওয়ার দরকার নেই।"
+          ],
+          "limits": "শিক্ষক শুধু নিজের দায়িত্বের বা নিজে পড়ানো ব্যাচের হাজিরা নিতে পারেন; উপস্থিতি মডিউল চালু থাকতে হবে।"
+        }
+      },
+      "en": {
+        "title": "Taking attendance as a teacher",
+        "keywords": "attendance present absent take teacher roll call",
+        "body": {
+          "purpose": "Take the day's attendance of your own batch.",
+          "where": "Menu → Attendance → Take attendance",
+          "steps": [
+            "Open \"Attendance\" from the menu; the \"Take attendance\" part opens.",
+            "Choose the batch.",
+            "Check the \"Date\" (a date after today cannot be chosen).",
+            "If everyone came, press \"All present\", then change those who did not.",
+            "Press \"Save\"."
+          ],
+          "data": [
+            "Batch",
+            "Date",
+            "Each student's status"
+          ],
+          "result": "The day's attendance is saved; opening the same day again shows it, and saving updates it.",
+          "errors": [
+            "If the batch is not listed, you are not in charge of it or teaching it; tell your institution's admin.",
+            "On a holiday a holiday message shows; no attendance is needed that day."
+          ],
+          "limits": "A teacher takes attendance only for batches they are in charge of or teach; the attendance module must be on."
+        }
+      }
+    },
+    {
+      "slug": "teacher-marks-entry",
+      "roles": [
+        "teacher"
+      ],
+      "module": "exams",
+      "refs": {
+        "menus": [
+          "/teacher/marks"
+        ],
+        "keys": [
+          "exams.full_marks",
+          "exams.pass_marks",
+          "exams.save_draft",
+          "marks_flow.submit",
+          "marks_flow.request",
+          "status.absent"
+        ],
+        "routes": [
+          "POST api/v1/results/bulk",
+          "POST api/v1/exams/{id}/subjects/{subjectId}/submission"
+        ]
+      },
+      "bn": {
+        "title": "পরীক্ষার নম্বর এন্ট্রি ও জমা দেওয়া",
+        "keywords": "নম্বর মার্কস এন্ট্রি পরীক্ষা ফল জমা marks entry result",
+        "body": {
+          "purpose": "নিজের বিষয়ের পরীক্ষার নম্বর লিখে প্রধানের কাছে জমা দেওয়া।",
+          "where": "মেনু → নম্বর এন্ট্রি",
+          "steps": [
+            "মেনু থেকে \"নম্বর এন্ট্রি\" খুলুন।",
+            "পরীক্ষার কার্ডে নিজের বিষয়ের নামে চাপুন।",
+            "উপরে \"পূর্ণমান\" ও \"পাস নম্বর\" দেখে প্রত্যেকের নম্বর লিখুন; কেউ না এলে \"অনুপস্থিত\" দিন।",
+            "\"খসড়া সংরক্ষণ\" চাপুন।",
+            "সব ঠিক থাকলে \"প্রধানের কাছে জমা দিন\" চাপুন।"
+          ],
+          "data": [
+            "প্রত্যেক শিক্ষার্থীর নম্বর (পূর্ণমানের মধ্যে)"
+          ],
+          "result": "নম্বর খসড়া হিসেবে থাকে; জমা দিলে তা প্রধানের হাতে যায় আর আপনি আর বদলাতে পারেন না।",
+          "errors": [
+            "জমা দেওয়ার পর ভুল পেলে \"বদলের অনুরোধ\" চাপুন ও কারণ লিখুন; প্রধান অনুমোদন করলে আবার লিখতে পারবেন।",
+            "ফল প্রকাশের পর নম্বর আর এখানে বদলানো যায় না।",
+            "বিষয়টি তালিকায় না থাকলে প্রতিষ্ঠানের অ্যাডমিনকে জানান।"
+          ],
+          "limits": "শিক্ষক শুধু নিজের বিষয়ের নম্বর লেখেন; পরীক্ষা মডিউল চালু থাকতে হবে।"
+        }
+      },
+      "en": {
+        "title": "Entering and submitting exam marks",
+        "keywords": "marks entry exam result submit score",
+        "body": {
+          "purpose": "Enter your subject's exam marks and submit them to the head.",
+          "where": "Menu → Mark entry",
+          "steps": [
+            "Open \"Mark entry\" from the menu.",
+            "On the exam's card press your subject's name.",
+            "Check \"Full marks\" and \"Pass marks\" at the top and enter each student's marks; mark \"Absent\" for anyone who did not sit.",
+            "Press \"Save draft\".",
+            "When all is right, press \"Submit to head\"."
+          ],
+          "data": [
+            "Each student's marks (within the full marks)"
+          ],
+          "result": "The marks stay a draft; once submitted they are the head's and you can no longer change them.",
+          "errors": [
+            "If you find a mistake after submitting, press \"Request update\" and give a reason; once the head approves you can edit again.",
+            "After the result is published marks can no longer change here.",
+            "If the subject is not listed, tell your institution's admin."
+          ],
+          "limits": "A teacher enters marks only for their own subjects; the exams module must be on."
+        }
+      }
+    },
+    {
+      "slug": "super-approve-help",
+      "roles": [
+        "super_admin"
+      ],
+      "module": null,
+      "refs": {
+        "menus": [
+          "/super-admin/ai-help"
+        ],
+        "keys": [
+          "ai_help.approve",
+          "common.edit",
+          "common.save"
+        ],
+        "routes": [
+          "PUT api/v1/super/ai-help-articles/{id}",
+          "POST api/v1/super/ai-help-articles/{id}/approve"
+        ]
+      },
+      "bn": {
+        "title": "AI সহায়িকার নির্দেশনা অনুমোদন",
+        "keywords": "নির্দেশনা সহায়িকা অনুমোদন খসড়া help article approve",
+        "body": {
+          "purpose": "প্ল্যাটফর্মের সফটওয়্যার-নির্দেশনা যাচাই করে চ্যাটে দেখানোর অনুমতি দেওয়া।",
+          "where": "মেনু → AI সহকারী: নির্দেশনা",
+          "steps": [
+            "মেনু থেকে \"AI সহকারী: নির্দেশনা\" খুলুন।",
+            "প্রতিটি নির্দেশনার লেখা পড়ে দেখুন।",
+            "বদলাতে হলে \"সম্পাদনা\" চেপে ঠিক করুন ও \"সংরক্ষণ\" চাপুন।",
+            "ঠিক থাকলে \"অনুমোদন\" চাপুন।"
+          ],
+          "result": "অনুমোদিত নির্দেশনা সংশ্লিষ্ট role-এর চ্যাটে দেখানো হয়; সম্পাদনা করলে আবার খসড়া হয়ে যায়।",
+          "errors": [
+            "\"পাতা বদলে গেছে\" দেখালে নির্দেশনায় উল্লেখ করা পাতা বা কাজ আর নেই; অনুমোদন করা যাবে না।"
+          ],
+          "limits": "শুধু Super Admin প্যানেল থেকে; প্রতিটি সম্পাদনা ও অনুমোদন audit-এ থাকে।"
+        }
+      },
+      "en": {
+        "title": "Approving the AI help guide's articles",
+        "keywords": "help guide article approve draft",
+        "body": {
+          "purpose": "Check the platform's software help articles and allow them to be shown in chats.",
+          "where": "Menu → AI assistant: help guide",
+          "steps": [
+            "Open \"AI assistant: help guide\" from the menu.",
+            "Read each article's text.",
+            "To change one, press \"Edit\", fix it and press \"Save\".",
+            "If it is right, press \"Approve\"."
+          ],
+          "result": "An approved article is shown in the chats of its roles; an edit makes it a draft again.",
+          "errors": [
+            "\"Page changed\" means a page or action the article names no longer exists; it cannot be approved."
+          ],
+          "limits": "Super Admin panel only; every edit and approval is audited."
+        }
+      }
+    },
+    {
+      "slug": "admin-own-help-wording",
+      "roles": [
+        "admin"
+      ],
+      "module": "ai_assistant",
+      "refs": {
+        "menus": [
+          "/admin/ai-help"
+        ],
+        "keys": [
+          "ai_help.write_own",
+          "ai_help.approve",
+          "common.save"
+        ],
+        "routes": [
+          "POST api/v1/ai/help-articles",
+          "POST api/v1/ai/help-articles/{id}/approve"
+        ]
+      },
+      "bn": {
+        "title": "নির্দেশনা নিজের প্রতিষ্ঠানের ভাষায় লেখা",
+        "keywords": "নির্দেশনা সহায়িকা নিজের ভাষা অনুমোদন help wording",
+        "body": {
+          "purpose": "প্ল্যাটফর্মের কোনো নির্দেশনা নিজের প্রতিষ্ঠানের মতো করে লেখা।",
+          "where": "মেনু → AI নির্দেশনা",
+          "steps": [
+            "মেনু থেকে \"AI নির্দেশনা\" খুলুন।",
+            "যে নির্দেশনা বদলাতে চান তার নিচে \"নিজের ভাষায় লিখুন\" চাপুন।",
+            "লেখা ঠিক করে \"সংরক্ষণ\" চাপুন; এটি খসড়া হয়।",
+            "দেখে নিয়ে \"অনুমোদন\" চাপুন।"
+          ],
+          "result": "অনুমোদনের পর আপনার প্রতিষ্ঠানে প্ল্যাটফর্মের লেখার বদলে আপনার লেখা দেখানো হয়; অন্য প্রতিষ্ঠানে নয়।",
+          "errors": [
+            "সম্পাদনা করলে লেখা আবার খসড়া হয়; আবার অনুমোদন না করা পর্যন্ত প্ল্যাটফর্মের লেখাই দেখায়।"
+          ],
+          "limits": "প্রতিষ্ঠানের অ্যাডমিন; AI সহকারী মডিউল চালু থাকতে হবে। কে দেখবে (role) তা বদলানো যায় না।"
+        }
+      },
+      "en": {
+        "title": "Writing a help article in your institution's words",
+        "keywords": "help guide own wording approve article",
+        "body": {
+          "purpose": "Write a platform help article the way your institution says it.",
+          "where": "Menu → AI help guide",
+          "steps": [
+            "Open \"AI help guide\" from the menu.",
+            "Under the article press \"Write in own words\".",
+            "Fix the text and press \"Save\"; it becomes a draft.",
+            "Check it and press \"Approve\"."
+          ],
+          "result": "Once approved your wording is shown in your institution instead of the platform's; not in other institutions.",
+          "errors": [
+            "An edit makes the text a draft again; until it is approved again the platform's text is shown."
+          ],
+          "limits": "The institution's admin; the AI assistant module must be on. Who sees it (roles) cannot be changed."
+        }
+      }
     }
   ]
 }
