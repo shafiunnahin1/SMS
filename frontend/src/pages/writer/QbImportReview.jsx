@@ -339,6 +339,8 @@ export default function QbImportReview() {
   )
 }
 
+const OPTION_LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
+
 function QuestionContent({ payload, t, showAnswers, onToggleAnswers }) {
   const valueText = value => typeof value === 'string' ? value : value == null ? '' : JSON.stringify(value, null, 2)
   const hasAnswer = (payload.options ?? []).some(option => option.is_correct) || (payload.creative_parts ?? []).some(part => part.answer_text)
@@ -372,6 +374,15 @@ function QuestionContent({ payload, t, showAnswers, onToggleAnswers }) {
     {!!payload.items?.length && <section><h3 className="mb-1 text-sm font-semibold">{t('qbi.question_parts')}</h3><ol className="flex flex-col gap-2">
       {payload.items.map((item, index) => <li key={`item-${index}`} className="rounded-token [border:1px_solid_var(--line)] p-3">
         <MathText text={valueText(item.prompt_text ?? item.prompt_json)} />
+        {/* a stimulus MCQ's choices live in prompt_json.options; the right one is marked only after "উত্তর দেখুন" */}
+        {item.item_type === 'sub_mcq' && Array.isArray(item.prompt_json?.options) && <ol className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="qbi-sub-mcq-options">
+          {item.prompt_json.options.map((option, optionIndex) => {
+            const correct = showAnswers && item.answer_json?.correct === optionIndex
+            return <li key={`item-${index}-option-${optionIndex}`} className={`flex min-h-12 items-center gap-3 rounded-token border border-border-subtle bg-surface-muted/30 px-3 py-2 ${correct ? 'bg-primary-soft' : ''}`} dir="auto" data-correct={correct ? 'true' : undefined}>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs">{OPTION_LABELS[optionIndex] || optionIndex + 1}</span><MathText text={valueText(option)} />
+            </li>
+          })}
+        </ol>}
         {item.marks != null && <p className="text-sm text-content-muted">{t('qbi.marks')}: {item.marks}</p>}
       </li>)}
     </ol></section>}
@@ -383,7 +394,12 @@ function QuestionContent({ payload, t, showAnswers, onToggleAnswers }) {
         {(payload.options ?? []).some(option => option.is_correct) && <div><p className="font-semibold">{t('qbaq.correct')}</p><div className="flex flex-wrap gap-2">{payload.options.map((option, index) => option.is_correct && <span key={index}>{option.label || ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ'][index] || index + 1} <MathText text={valueText(option.content_text ?? option.text)} /></span>)}</div></div>}
         {payload.answer_text && <div><p className="font-semibold">{t('qbi.answer')}</p><MathText text={valueText(payload.answer_text)} /></div>}
         {(payload.creative_parts ?? []).filter(part => part.answer_text).map((part, index) => <div key={`answer-part-${index}`}><p className="font-semibold">{part.part_label || part.label} {t('qbi.answer')}</p><MathText text={valueText(part.answer_text)} /></div>)}
-        {(payload.items ?? []).filter(item => item.answer_text || item.answer_json != null).map((item, index) => <div key={`answer-item-${index}`}><p className="font-semibold">{t('qbi.answer')}</p><MathText text={valueText(item.answer_text ?? item.answer_json)} /></div>)}
+        {(payload.items ?? []).filter(item => item.answer_text || item.answer_json != null).map((item, index) => {
+          const choice = item.item_type === 'sub_mcq' && Number.isInteger(item.answer_json?.correct) ? item.prompt_json?.options?.[item.answer_json.correct] : undefined
+          return <div key={`answer-item-${index}`}><p className="font-semibold">{t('qbi.answer')}</p>
+            {choice !== undefined ? <span>{OPTION_LABELS[item.answer_json.correct] || item.answer_json.correct + 1} <MathText text={valueText(choice)} /></span>
+              : <MathText text={valueText(item.answer_text ?? item.answer_json)} />}</div>
+        })}
         {payload.explanation_text && <div><p className="font-semibold">{t('qbi.explanation')}</p><MathText text={valueText(payload.explanation_text)} /></div>}
       </section>}
     </>}

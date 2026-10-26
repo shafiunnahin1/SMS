@@ -177,6 +177,34 @@ describe('D150 import source bulk settings', () => {
     expect(screen.getByText('ব্যাখ্যার লেখা')).toBeInTheDocument()
   })
 
+  it('shows a stimulus MCQ\'s choices and marks the right one only after disclosure', async () => {
+    const stimulusRecord = { ...record, type: 'stimulus_mcq_group', payload: { question_text: 'উদ্দীপকটি পড়ে প্রশ্নের উত্তর দাও।', occurrences: [],
+      stimuli: [{ label: 'stimulus', content_text: 'একবার শহর থেকে এক ভদ্রলোক বন্দুক নিয়ে গ্রামে এসেছিল।' }],
+      items: [{ item_type: 'sub_mcq', stimulus_index: 0, prompt_text: 'উদ্দীপকের রাফি কার প্রতিচ্ছবি?',
+        prompt_json: { options: ['মালির', 'লেখকের', 'মালির বউর', 'পা ফোলা রোগীর'] }, answer_json: { correct: 1 } }] } }
+    api.get.mockImplementation(path => {
+      if (path === `/writer/imports/${id}`) return Promise.resolve({ data: { data: batch } })
+      if (path === '/writer/curriculum') return Promise.resolve({ data: { data: { subjects: [] } } })
+      if (path === '/writer/question-types') return Promise.resolve({ data: { data: [{ id: 4, slug: 'stimulus_mcq_group', name_bn: 'উদ্দীপকভিত্তিক বহুনির্বাচনী প্রশ্ন', name_en: 'Stimulus Based MCQ' }] } })
+      if (path.startsWith(`/writer/imports/${id}/records`)) return Promise.resolve({ data: { data: [stimulusRecord], meta: { last_page: 1 } } })
+      return Promise.resolve({ data: { data: [] } })
+    })
+    renderPage()
+    expect(await screen.findByText('একবার শহর থেকে এক ভদ্রলোক বন্দুক নিয়ে গ্রামে এসেছিল।')).toBeInTheDocument()
+    expect(screen.getByText('উদ্দীপকের রাফি কার প্রতিচ্ছবি?')).toBeInTheDocument()
+    const options = within(screen.getByTestId('qbi-sub-mcq-options')).getAllByRole('listitem')
+    expect(options.map(o => o.textContent)).toEqual(['কমালির', 'খলেখকের', 'গমালির বউর', 'ঘপা ফোলা রোগীর'])
+    // before disclosure: every choice is visible, none is marked, and no answer block
+    expect(options.filter(o => o.dataset.correct)).toHaveLength(0)
+    expect(screen.queryByTestId('qbi-answer')).not.toBeInTheDocument()
+    expect(document.body.textContent).not.toContain('"correct"')
+    fireEvent.click(screen.getByTestId('qbi-toggle-answer'))
+    const after = within(screen.getByTestId('qbi-sub-mcq-options')).getAllByRole('listitem')
+    expect(after.filter(o => o.dataset.correct).map(o => o.textContent)).toEqual(['খলেখকের'])
+    expect(within(screen.getByTestId('qbi-answer')).getByText('লেখকের')).toBeInTheDocument()
+    expect(screen.getByTestId('qbi-answer').textContent).toContain('খ')
+  })
+
   it('opens the canonical editor for just the requested staged record', async () => {
     api.get.mockImplementation(path => {
       if (path === `/writer/imports/${id}`) return Promise.resolve({ data: { data: batch } })
