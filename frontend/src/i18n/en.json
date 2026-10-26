@@ -783,6 +783,7 @@
   "qb": {
    "curriculum": "Question bank: curriculum",
    "curriculum_hint": "One curriculum for every institution - class → subject → chapter → topic. Questions, concepts and resources hang on this tree; a part in use cannot be deleted, only switched off.",
+   "class_level": "Class",
    "class_levels": "Classes",
    "subjects": "Subjects",
    "chapters": "Chapters",

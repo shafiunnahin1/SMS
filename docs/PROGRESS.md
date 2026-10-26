@@ -24,6 +24,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 ## D171 — Stimulus-based MCQ
 
 - [ ] STIM.3 — D171 — Writer question-list UI: show each stimulus once and render child MCQ choices with Bengali labels. Focused Vitest: 12 passed; `npm run lint:theme`: 186 files, 0 violations; touched-file oxlint: 0 errors. Full `npm test` remains blocked by 6 unrelated baseline failures (vendor manifests, `qb.class_level`, attendance PackContract timeout); task not checked off.
+- [x] STIM.3 — D171 — completes the entry above: added the missing `qb.class_level` bn/en key (QbFinder) that kept the full suite red. Full `npx vitest run`: 69 files, 263 tests passed; `npm run lint:theme`: 186 files, 0 violations.
 
 ## Release R1  (`docs/AGENT-PLAN-R1.md`)
 
