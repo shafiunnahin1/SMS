@@ -1,6 +1,6 @@
 # খসড়া সিদ্ধান্ত D171: উদ্দীপকভিত্তিক বহুনির্বাচনী প্রশ্নের নম্বর, OMR ও নম্বর-বণ্টন (D129-এর সংকীর্ণ সংশোধন)
 
-> এজেন্টের খসড়া — কোনো কোড, guard বা D129 বদলানো হয়নি। মালিক §৪-এর প্রশ্নের উত্তর দিলে এজেন্ট সিদ্ধান্তের সারি ও অনুমোদন-স্ক্রিপ্ট বানাবে; তার আগে কাজ নয়।
+> এজেন্টের খসড়া — কোনো কোড, guard বা D129 বদলানো হয়নি। মালিকের উত্তর §৬-এ। অনুমোদন করলে `owner\approve-D171.ps1` চালাবেন (দুটি commit: সিদ্ধান্তের সারি ও guard-এ STIM.3 → STIM.1 → STIM.2; push করে না)।
 > মালিকের বাছাই (2026-10-27): **বিকল্প B** — `stimulus_mcq_group` প্রশ্নব্যাংকে একটি রেকর্ডই থাকবে, কিন্তু প্রশ্নপত্রে তার প্রতিটি `sub_mcq` আলাদা নম্বরের MCQ।
 
 ## ১. কোড থেকে যাচাই করা অবস্থা (কিছু বদলানো হয়নি)
@@ -38,5 +38,11 @@
 3. **OMR বিকল্প-সংখ্যা:** উপ-প্রশ্নের বিকল্প-সংখ্যা বাকি MCQ-র সমান না হলে (যেমন সব ৪টি, একটির ৫টি) OMR আগের মতো তৈরি হবে না ও কারণ দেখাবে — ঠিক?
 4. টাস্ক ভাগ ও ক্রম STIM.1 → STIM.2 → STIM.3 ঠিক? (STIM.3 আগে করতে চাইলে বলুন — আপনার PC-র পরিবর্তনগুলো তখনই commit হতে পারে।)
 
-## ৫. সিদ্ধান্তের সারি (উত্তর পেলে এজেন্ট পূরণ করবে)
-`| D171 | Stimulus-based MCQ: one bank record, child MCQs numbered in papers, keys and OMR (narrowly amends D129) | … |`
+## ৫. সিদ্ধান্তের সারি
+| D171 | Stimulus-based MCQ: one bank record, child MCQs numbered in papers, keys and OMR (narrowly amends D129; D126/D128 unchanged) | Owner approved (2026-10-27). (1) A `stimulus_mcq_group` stays one question-bank record and one paper item; in a paper its stimulus prints once, followed by its `sub_mcq` children together in authored order, each with ordinary MCQ choice labels. (2) The parent takes no serial; every child takes the next MCQ serial; D129's separate MCQ / written serials still run on across sections and subject blocks; the answer key and the OMR rows use the same child serials. (3) Set shuffling: "serial" moves the whole group as one unit (children stay attached and in order); "options" shuffles each child's choices and the correct answer follows them consistently in print, answer key and OMR; final sets stay frozen (D126). (4) Marks: every child's `items[].marks` is required for a group to be used in a paper (a group without them cannot be added); the group's paper marks = the sum of its children's marks, set automatically and not editable by the paper author; the paper total counts the group once (the children's marks are its parts, never added on top); OMR grades each child with its own marks. (5) A child whose option count differs from the paper's MCQ option count blocks OMR generation with the reason shown, as for ordinary MCQs. (6) Answers stay hidden unless bought, children's `answer_json.correct` included. (7) Ordinary MCQs and written questions keep their behaviour; no new table. (8) Tasks in order STIM.3 (question-list / writer cards: stimulus once, each child as an ordinary MCQ — includes the owner's local UI edits), STIM.1 (paper: serials, sets, answer key, print / preview, marks), STIM.2 (OMR rows, option-count check, grading); commits carry `Change-Request: D171`. |
+
+## ৬. মালিকের উত্তর (2026-10-27)
+1. **গ১** — প্রতিটি উপ-প্রশ্নের নম্বর প্রশ্নব্যাংকের `items[].marks` থেকে (বাধ্যতামূলক); গ্রুপের নম্বর = তাদের যোগফল, প্রশ্নপত্রে নিজে থেকে বসে, নির্মাতা বদলাতে পারেন না।
+2. হ্যাঁ — গ্রুপের নম্বর মোটে একবারই; উপ-প্রশ্নের নম্বর তার ভাগ, বাড়তি নয়।
+3. হ্যাঁ — বিকল্প-সংখ্যা না মিললে OMR তৈরি হবে না, কারণ দেখাবে।
+4. আগে STIM.3 (মালিকের PC-র চারটি UI পরিবর্তনসহ), তারপর STIM.1 → STIM.2।
