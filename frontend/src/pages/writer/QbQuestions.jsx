@@ -109,10 +109,14 @@ export default function QbQuestions() {
   // the version's actual parent/child order at any depth.
   const curriculumVersions = filters.class_level_ids.length && filters.subject_ids.length
     ? [...new Map(filters.subject_ids.flatMap(subjectId => versionsForSubject(
-      curriculum.data?.curriculum_versions, subjectId, filters.class_level_ids,
+      (curriculum.data?.curriculum_versions ?? []).filter(version => version.is_active), subjectId, filters.class_level_ids,
     )).map(version => [version.id, version])).values()]
     : []
   const curriculumOptions = curriculumVersions.flatMap(version => flattenCurriculum(version.nodes, [], localizedName, version))
+  const languageSubjectIds = new Set(filters.subject_ids.filter(subjectId => versionsForSubject(
+    (curriculum.data?.curriculum_versions ?? []).filter(version => version.is_active), subjectId, filters.class_level_ids,
+  ).length > 0))
+  const onlyLanguageSubjects = filters.subject_ids.length > 0 && languageSubjectIds.size === filters.subject_ids.length
   // a writer submits drafts / returned questions; a moderator or the Super Admin publishes or returns questions in review (D174 (1))
   const canSelect = row => (role !== 'content_moderator' && ['draft', 'rejected'].includes(row.status)) || (isReviewer && row.status === 'review')
   const selectableRows = rows.filter(canSelect)
@@ -289,9 +293,11 @@ export default function QbQuestions() {
             <Input label={t('qbaq.search')} value={filters.q} onChange={e => setFilter('q', e.target.value)} name="q" placeholder={t('qbaq.search_hint')} />
             <Multi label={t('qbaq.class')} name="class" value={filters.class_level_ids} onChange={v => setFilter('class_level_ids', v)} options={(curriculum.data?.class_levels ?? []).map(c => ({ value: c.id, label: localizedName(c) }))} />
             <Multi label={t('qbaq.subject')} name="subject" value={filters.subject_ids} onChange={v => setFilter('subject_ids', v)} options={availableSubjects.map(s => ({ value: s.id, label: localizedName(s) }))} />
-            <Multi label={t('qbaq.chapter')} name="chapter" value={filters.chapter_ids} onChange={v => setFilter('chapter_ids', v)} disabled={!filters.subject_ids.length} options={availableChapters.map(c => ({ value: c.id, label: localizedName(c) }))} />
-            <Multi label={t('qbaq.topic')} name="topic" value={filters.topic_ids} onChange={v => setFilter('topic_ids', v)} disabled={!filters.chapter_ids.length} options={availableTopics.map(item => ({ value: item.id, label: localizedName(item) }))} />
-            {curriculumOptions.length > 0 && <CurriculumPicker label={t('qbed.curriculum_path')} name="curriculum"
+            {!onlyLanguageSubjects && <>
+              <Multi label={t('qbaq.chapter')} name="chapter" value={filters.chapter_ids} onChange={v => setFilter('chapter_ids', v)} disabled={!filters.subject_ids.length} options={availableChapters.map(c => ({ value: c.id, label: localizedName(c) }))} />
+              <Multi label={t('qbaq.topic')} name="topic" value={filters.topic_ids} onChange={v => setFilter('topic_ids', v)} disabled={!filters.chapter_ids.length} options={availableTopics.map(item => ({ value: item.id, label: localizedName(item) }))} />
+            </>}
+            {languageSubjectIds.size > 0 && <CurriculumPicker label={t('qbed.curriculum_path')} name="curriculum"
               rows={curriculumOptions} versions={curriculumVersions.map(version => ({ ...version, label: localizedName(version) || version.version_key }))}
               value={filters.curriculum_node_ids.map(String)} onChange={v => setFilter('curriculum_node_ids', v)} />}
             <Multi label={t('qbaq.type')} name="type" value={filters.question_type_ids} onChange={v => setFilter('question_type_ids', v)} options={facets.question_types.map(item => ({ value: item.id, label: localizedName(item) }))} />

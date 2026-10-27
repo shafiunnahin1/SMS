@@ -17,7 +17,9 @@ class QbLibraryController extends Controller
     public function curriculum(Request $request)
     {
         $this->staffGate($request);
-        return response()->json(['success' => true, 'data' => QbCurriculumController::treeData()]);
+        $data = QbCurriculumController::treeData();
+        $data['curriculum_versions'] = collect($data['curriculum_versions'])->where('is_active', true)->values();
+        return response()->json(['success' => true, 'data' => $data]);
     }
 
     /** GET /question-bank/concepts?qb_topic_id=: a topic's published concepts (titles; unlocked ones say so) */

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\QuestionBank;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\QbQuestionPublicResource;
-use App\Models\{QbQuestion, QbUnlock, Teacher, User};
+use App\Models\{QbCurriculumNode, QbQuestion, QbUnlock, Teacher, User};
 use App\Services\{InstitutionSettings, QbPurchaseService};
 use App\Support\{Money, Tenancy};
 use Illuminate\Http\Request;
@@ -30,13 +30,16 @@ class QbPurchaseController extends Controller
             'qb_question_type_id' => 'nullable|integer', 'difficulty' => 'nullable|integer|min:1|max:5', 'q' => 'nullable|string|max:100', 'per_page' => 'nullable|integer|min:1|max:50',
             'class_level_ids' => $ids(), 'class_level_ids.*' => 'integer', 'subject_ids' => $ids(), 'subject_ids.*' => 'integer',
             'chapter_ids' => $ids(), 'chapter_ids.*' => 'integer', 'topic_ids' => $ids(), 'topic_ids.*' => 'integer',
+            'curriculum_node_ids' => $ids(), 'curriculum_node_ids.*' => 'integer|distinct|exists:qb_curriculum_nodes,id',
             'question_type_ids' => $ids(), 'question_type_ids.*' => 'integer', 'source_types' => $ids(), 'source_types.*' => 'string|max:50',
             'years' => $ids(), 'years.*' => 'integer|min:1900|max:2100', 'facets' => 'nullable|boolean']);
         $many = fn (string $list, ?string $one) => array_values(array_unique(array_merge($f[$list] ?? [], isset($one, $f[$one]) ? [$f[$one]] : [])));
+        $curriculumNodeIds = $this->curriculumFilterNodeIds($f['curriculum_node_ids'] ?? []);
         $page = QbQuestion::query()
             ->when($many('subject_ids', 'qb_subject_id'), fn ($q, $v) => $q->whereIn('qb_subject_id', $v))
             ->when($many('chapter_ids', 'qb_chapter_id'), fn ($q, $v) => $q->whereIn('qb_chapter_id', $v))
             ->when($many('topic_ids', 'qb_topic_id'), fn ($q, $v) => $q->whereIn('qb_topic_id', $v))
+            ->when($curriculumNodeIds, fn ($q) => $q->whereHas('curriculumNodes', fn ($nodes) => $nodes->whereIn('qb_curriculum_nodes.id', $curriculumNodeIds)))
             ->when($many('question_type_ids', 'qb_question_type_id'), fn ($q, $v) => $q->whereIn('qb_question_type_id', $v))
             ->when($f['class_level_ids'] ?? null, fn ($q, $v) => $q->whereHas('classLevels', fn ($c) => $c->whereIn('qb_class_levels.id', $v)))
             ->when($f['source_types'] ?? null, fn ($q, $v) => $q->whereHas('occurrences', fn ($o) => $o->whereIn('exam_type', $v)))
@@ -141,6 +144,27 @@ class QbPurchaseController extends Controller
     private function priceOnly(array $q): array
     {
         return ['price' => $q['price'], 'base' => $q['base'], 'free_pages' => $q['free_pages']];
+    }
+
+    /** A selected syllabus part includes questions linked to any descendant node. */
+    private function curriculumFilterNodeIds(array $selected): array
+    {
+        $nodes = QbCurriculumNode::whereIn('id', $selected)->get(['id', 'qb_curriculum_version_id']);
+        $allIds = $nodes->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $frontier = $nodes->groupBy('qb_curriculum_version_id')->map(fn ($rows) => $rows->pluck('id')->all());
+
+        while ($frontier->isNotEmpty()) {
+            $next = collect();
+            foreach ($frontier as $versionId => $parentIds) {
+                $children = QbCurriculumNode::where('qb_curriculum_version_id', $versionId)
+                    ->whereIn('parent_id', $parentIds)->pluck('id')->map(fn ($id) => (int) $id);
+                $allIds = [...$allIds, ...$children->all()];
+                if ($children->isNotEmpty()) $next->put($versionId, $children->all());
+            }
+            $frontier = $next;
+        }
+
+        return array_values(array_unique($allIds));
     }
 
     /** D101: department staff need their X-Department-Id context and this route's exact duty key on every request */

@@ -15,6 +15,8 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input } from '../../components/FormField'
 import MathText from '../../features/qb/MathText'
 import BuyButton from '../../features/qb/BuyButton'
+import CurriculumPicker from '../../features/qb/CurriculumPicker'
+import { flattenCurriculum, versionsForSubject } from '../../features/qb/curriculum'
 
 // R2.1.5 / D133 (D110) /admin|teacher/question-bank/all-questions: qbank's All Questions - the question cards beside qbank's
 // "Search questions" filter (search, class, subject, chapter, topic, question type, source, year; many at a time, each narrowing
@@ -31,7 +33,7 @@ export default function QbAllQuestions() {
   const area = useLocation().pathname.replace(/\/question-bank(?:\/all-questions)?\/?$/, '')
   const [params] = useSearchParams()
   const paperId = params.get('paper')
-  const [f, setF] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], question_type_ids: [], source_types: [], years: [] })
+  const [f, setF] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] })
   const [page, setPage] = useState(1)
   const [picked, setPicked] = useState(() => new Map())     // id -> the question row (type and marks are needed to build the paper)
   const [naming, setNaming] = useState(false)
@@ -53,17 +55,27 @@ export default function QbAllQuestions() {
   const toast = (m, k) => useUiStore.getState().addToast(m, k)
   const set = (k, v) => { setPage(1); setF(x => {
     const next = { ...x, [k]: v }
-    if (k === 'class_level_ids') { next.subject_ids = []; next.chapter_ids = []; next.topic_ids = [] }   // qbank cascades
-    if (k === 'subject_ids') { next.chapter_ids = []; next.topic_ids = [] }
+    if (k === 'class_level_ids') { next.subject_ids = []; next.chapter_ids = []; next.topic_ids = []; next.curriculum_node_ids = [] }   // qbank cascades
+    if (k === 'subject_ids') { next.chapter_ids = []; next.topic_ids = []; next.curriculum_node_ids = [] }
     if (k === 'chapter_ids') next.topic_ids = []
     return next
   }) }
-  const reset = () => { setPage(1); setF({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], question_type_ids: [], source_types: [], years: [] }) }
+  const reset = () => { setPage(1); setF({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] }) }
 
   const subjects = useMemo(() => (tree.data?.subjects ?? []).filter(s => !f.class_level_ids.length || s.class_level_ids.some(id => f.class_level_ids.includes(id))), [tree.data, f.class_level_ids])
   const chapters = subjects.filter(s => f.subject_ids.includes(s.id)).flatMap(s => s.chapters)
     .filter(c => !f.class_level_ids.length || !c.class_level_ids.length || c.class_level_ids.some(id => f.class_level_ids.includes(id)))
   const topics = chapters.filter(c => f.chapter_ids.includes(c.id)).flatMap(c => c.topics)
+  const activeVersions = (tree.data?.curriculum_versions ?? []).filter(version => version.is_active)
+  const languageSubjectIds = new Set(f.class_level_ids.length
+    ? f.subject_ids.filter(subjectId => versionsForSubject(activeVersions, subjectId, f.class_level_ids).length > 0)
+    : [])
+  const hasLanguageSubjects = languageSubjectIds.size > 0
+  const onlyLanguageSubjects = f.subject_ids.length > 0 && languageSubjectIds.size === f.subject_ids.length
+  const curriculumVersions = [...new Map([...languageSubjectIds].flatMap(subjectId =>
+    versionsForSubject(activeVersions, subjectId, f.class_level_ids),
+  ).map(version => [version.id, version])).values()]
+  const curriculumRows = flattenCurriculum(curriculumVersions, nm)
   const facets = list.data?.meta?.facets ?? { question_types: [], source_types: [], years: [] }
   const byId = (arr) => Object.fromEntries((arr ?? []).map(x => [x.id, x]))
   const allSubjects = byId(tree.data?.subjects)
@@ -71,7 +83,7 @@ export default function QbAllQuestions() {
   const allTopics = byId((tree.data?.subjects ?? []).flatMap(s => s.chapters.flatMap(c => c.topics)))
   const classes = byId(tree.data?.class_levels)
   const types = byId(facets.question_types)
-  const active = ['class_level_ids', 'subject_ids', 'chapter_ids', 'topic_ids', 'question_type_ids', 'source_types', 'years'].reduce((n, k) => n + f[k].length, 0) + (f.q ? 1 : 0)
+  const active = ['class_level_ids', 'subject_ids', 'chapter_ids', 'topic_ids', 'curriculum_node_ids', 'question_type_ids', 'source_types', 'years'].reduce((n, k) => n + f[k].length, 0) + (f.q ? 1 : 0)
 
   const rows = list.data?.data ?? []
   const meta = list.data?.meta
@@ -209,8 +221,13 @@ export default function QbAllQuestions() {
             <Input label={t('qbaq.search')} name="q" value={f.q} onChange={e => set('q', e.target.value)} placeholder={t('qbaq.search_hint')} />
             <Multi label={t('qbaq.class')} name="class" value={f.class_level_ids} onChange={v => set('class_level_ids', v)} options={(tree.data.class_levels ?? []).map(c => ({ value: c.id, label: nm(c) }))} />
             <Multi label={t('qbaq.subject')} name="subject" value={f.subject_ids} onChange={v => set('subject_ids', v)} options={subjects.map(s => ({ value: s.id, label: nm(s) }))} />
-            <Multi label={t('qbaq.chapter')} name="chapter" value={f.chapter_ids} onChange={v => set('chapter_ids', v)} disabled={f.subject_ids.length === 0} options={chapters.map(c => ({ value: c.id, label: nm(c) }))} />
-            <Multi label={t('qbaq.topic')} name="topic" value={f.topic_ids} onChange={v => set('topic_ids', v)} disabled={f.chapter_ids.length === 0} options={topics.map(x => ({ value: x.id, label: nm(x) }))} />
+            {!onlyLanguageSubjects && <>
+              <Multi label={t('qbaq.chapter')} name="chapter" value={f.chapter_ids} onChange={v => set('chapter_ids', v)} disabled={f.subject_ids.length === 0} options={chapters.map(c => ({ value: c.id, label: nm(c) }))} />
+              <Multi label={t('qbaq.topic')} name="topic" value={f.topic_ids} onChange={v => set('topic_ids', v)} disabled={f.chapter_ids.length === 0} options={topics.map(x => ({ value: x.id, label: nm(x) }))} />
+            </>}
+            {hasLanguageSubjects && <CurriculumPicker label={t('qbed.curriculum_path')} name="curriculum-filter"
+              rows={curriculumRows} versions={curriculumVersions.map(version => ({ ...version, label: nm(version) || version.version_key }))}
+              value={f.curriculum_node_ids.map(String)} onChange={ids => set('curriculum_node_ids', ids)} />}
             <Multi label={t('qbaq.type')} name="type" value={f.question_type_ids} onChange={v => set('question_type_ids', v)} options={facets.question_types.map(x => ({ value: x.id, label: nm(x) }))} />
             <Multi label={t('qbaq.source')} name="source" value={f.source_types} onChange={v => set('source_types', v)} options={facets.source_types.map(x => ({ value: x, label: x }))} />
             <Multi label={t('qbaq.year')} name="year" value={f.years} onChange={v => set('years', v)} options={facets.years.map(x => ({ value: x, label: String(x) }))} />

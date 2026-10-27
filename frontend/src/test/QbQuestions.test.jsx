@@ -89,8 +89,8 @@ describe('writer question list cards', () => {
         class_levels: [{ id: 9, name_bn: 'নবম শ্রেণি' }, { id: 10, name_bn: 'দশম শ্রেণি' }],
         subjects: [{ id: 22, name_bn: 'ইংরেজি ১ম পত্র', name_en: 'English 1st Paper', class_level_ids: [9, 10], chapters: [] }],
         curriculum_versions: [
-          { id: 101, qb_subject_id: 22, version_key: 'grade-9-10', name_bn: 'নবম-দশম', name_en: 'Classes 9–10', class_level_ids: [9, 10], nodes: [{ id: 201, kind: 'Part', name_bn: 'গদ্য', name_en: 'Prose', children: [{ id: 202, kind: 'Lesson', name_bn: 'পাঠ ১', name_en: 'Lesson 1', parent_id: 201, children: [{ id: 203, kind: 'Topic', name_bn: 'মূলভাব', name_en: 'Main idea', parent_id: 202, children: [] }] }] }] },
-          { id: 102, qb_subject_id: 22, version_key: 'grade-6-8', name_bn: 'ষষ্ঠ-অষ্টম', name_en: 'Classes 6–8', class_level_ids: [6, 7, 8], nodes: [{ id: 301, kind: 'Part', name_bn: 'পুরনো কাঠামো', name_en: 'Other structure', children: [] }] },
+          { id: 101, qb_subject_id: 22, version_key: 'grade-9-10', name_bn: 'নবম-দশম', name_en: 'Classes 9–10', is_active: true, class_level_ids: [9, 10], nodes: [{ id: 201, kind: 'Part', name_bn: 'গদ্য', name_en: 'Prose', children: [{ id: 202, kind: 'Lesson', name_bn: 'পাঠ ১', name_en: 'Lesson 1', parent_id: 201, children: [{ id: 203, kind: 'Topic', name_bn: 'মূলভাব', name_en: 'Main idea', parent_id: 202, children: [] }] }] }] },
+          { id: 102, qb_subject_id: 22, version_key: 'grade-6-8', name_bn: 'ষষ্ঠ-অষ্টম', name_en: 'Classes 6–8', is_active: true, class_level_ids: [6, 7, 8], nodes: [{ id: 301, kind: 'Part', name_bn: 'পুরনো কাঠামো', name_en: 'Other structure', children: [] }] },
         ],
       } } })
       if (url === '/writer/question-types') return Promise.resolve({ data: { data: [] } })

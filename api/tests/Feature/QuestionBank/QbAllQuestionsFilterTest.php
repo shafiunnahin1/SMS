@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\QuestionBank;
 
-use App\Models\{QbClassLevel, QbChapter, QbQuestion, QbQuestionOccurrence, QbQuestionOption, QbQuestionType, QbSubject, QbUnlock, User};
+use App\Models\{QbClassLevel, QbChapter, QbCurriculumNode, QbCurriculumVersion, QbQuestion, QbQuestionOccurrence, QbQuestionOption, QbQuestionType, QbSubject, QbUnlock, User};
 use App\Support\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -59,5 +59,42 @@ class QbAllQuestionsFilterTest extends TestCase
         $this->assertArrayHasKey('is_correct', $rows[$a->id]['options'][0]);         // bought: which option is right
         $this->assertFalse($rows[$c->id]['unlocked']);
         $this->assertArrayNotHasKey('is_correct', $rows[$c->id]['options'][0]);      // not bought: never the answer
+    }
+
+    public function test_language_curriculum_filter_returns_active_versions_and_matches_descendants(): void
+    {
+        $super = User::create(['institution_id' => null, 'name' => 's', 'role' => 'super_admin', 'phone' => '01700000019', 'password' => 'Super-pass-2026', 'is_active' => true]);
+        $type = QbQuestionType::create(['slug' => 'language-short', 'name_bn' => 'সংক্ষিপ্ত', 'name_en' => 'Short', 'family' => 'short']);
+        $class = QbClassLevel::create(['name_bn' => 'অষ্টম', 'name_en' => 'Class 8']);
+        $subject = QbSubject::create(['name_bn' => 'বাংলা ১ম পত্র', 'name_en' => 'Bangla 1st Paper']);
+        $subject->classLevels()->attach($class->id);
+        $active = QbCurriculumVersion::create(['qb_subject_id' => $subject->id, 'version_key' => 'active', 'name_bn' => 'চলতি', 'name_en' => 'Current', 'is_active' => true]);
+        $active->classLevels()->attach($class->id);
+        $inactive = QbCurriculumVersion::create(['qb_subject_id' => $subject->id, 'version_key' => 'inactive', 'name_bn' => 'পুরনো', 'name_en' => 'Old', 'is_active' => false]);
+        $inactive->classLevels()->attach($class->id);
+        $part = QbCurriculumNode::create(['qb_curriculum_version_id' => $active->id, 'kind' => 'Part', 'name_bn' => 'গদ্য', 'name_en' => 'Prose', 'sort_order' => 1]);
+        $lesson = QbCurriculumNode::create(['qb_curriculum_version_id' => $active->id, 'parent_id' => $part->id, 'kind' => 'Lesson', 'name_bn' => 'পাঠ ১', 'name_en' => 'Lesson 1', 'sort_order' => 1]);
+        QbCurriculumNode::create(['qb_curriculum_version_id' => $inactive->id, 'kind' => 'Part', 'name_bn' => 'পুরনো অংশ', 'name_en' => 'Old part']);
+        $make = function (string $text, int $nodeId) use ($super, $type, $subject, $class) {
+            $question = QbQuestion::create(['qb_question_type_id' => $type->id, 'qb_subject_id' => $subject->id, 'question_text' => $text,
+                'status' => 'published', 'created_by' => $super->id, 'published_at' => now()]);
+            $question->classLevels()->attach($class->id);
+            $question->curriculumNodes()->attach($nodeId);
+            return $question;
+        };
+        $nested = $make('Nested question', $lesson->id);
+        $other = $make('Other question', QbCurriculumNode::create(['qb_curriculum_version_id' => $active->id, 'kind' => 'Part', 'name_bn' => 'পদ্য', 'name_en' => 'Poetry'])->id);
+
+        $institution = $this->makeInstitution('language-filter');
+        $admin = $this->makeUser($institution, 'admin');
+        $host = $this->hostOf($institution);
+        $versions = $this->api('GET', $host, 'question-bank/curriculum', $admin)->assertOk()->json('data.curriculum_versions');
+        $this->assertSame([$active->id], array_column($versions, 'id'));
+
+        $ids = fn (int $nodeId) => collect($this->api('GET', $host, "question-bank/questions?curriculum_node_ids[]={$nodeId}", $admin)
+            ->assertOk()->json('data'))->pluck('id')->sort()->values()->all();
+        $this->assertSame([$nested->id], $ids($part->id), 'selecting a parent part includes questions linked to its descendants');
+        $this->assertSame([$nested->id], $ids($lesson->id));
+        $this->assertNotContains($other->id, $ids($part->id));
     }
 }
