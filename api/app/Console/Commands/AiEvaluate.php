@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\{Institution, QbQuestion, User};
+use App\Models\{AiHelpArticle, Institution, QbQuestion, User};
 use App\Services\Ai\{AnswerRephraser, AssistantService};
 use App\Services\QbQuestionFinderService;
 use App\Support\Tenancy;
@@ -13,10 +13,13 @@ use Illuminate\Console\Command;
  * text, without its last words (about 80% kept) the way a teacher asks, with the question's id as the expected source). Then
  * the set is run as one institution: the expected question must be in the assistant's top 3 for at least 70% of the items, and no
  * other institution's answer-bank row may ever come back. Prints counts only; writes nothing but the set file.
+ * D166 AI-Q6: reported separately - the source set (the 200-question gate only when it has 200 items, a smaller set is labelled
+ * so), a "not found" set (resources/ai/eval-not-found.json: questions with no source must get not_found, never a guess), a help set
+ * (every approved platform article's title asked as a user of its role, which must get that article), and the model off / on.
  */
 class AiEvaluate extends Command
 {
-    protected $signature = 'ai:evaluate {file : JSON [{question, expect_question_id}]} {--make= : first write a set of this many items} {--institution= : the institution slug to ask as} {--bar=70} {--rephrase= : AI-P1.6 also send this many composed answers to the configured model}';
+    protected $signature = 'ai:evaluate {file : JSON [{question, expect_question_id}]} {--make= : first write a set of this many items} {--institution= : the institution slug to ask as} {--bar=70} {--rephrase= : AI-P1.6 also send this many composed answers to the configured model} {--not-found= : D166 AI-Q6 the not-found set (default resources/ai/eval-not-found.json)} {--nf-bar=90} {--help-bar=90}';
     protected $description = 'D164 quality gate for the AI assistant: top-3 source hit rate and no cross-institution answers';
 
     public function handle(AssistantService $assistant): int
@@ -46,12 +49,59 @@ class AiEvaluate extends Command
             return [$hits, $leaks];
         });
         $rate = round(100 * $hits / count($set), 1);
-        $pass = $rate >= (float) $this->option('bar') && $leaks === 0;
+        $sourcePass = $rate >= (float) $this->option('bar') && $leaks === 0;
+        $published = QbQuestion::where('status', 'published')->count();
+        $label = count($set) >= 200 ? '200-question gate' : sprintf('small set (%d < 200, not the 200-question gate; %d published)', count($set), $published);
+        $this->line("[sources] {$label}");
         $this->line(sprintf('items %d · top-3 hits %d (%.1f%%, bar %s%%)', count($set), $hits, $rate, $this->option('bar')));
         $this->line("cross-institution answers {$leaks}");
+        $nfPass = $this->notFoundReport($institution, $assistant);
+        $helpPass = $this->helpReport($institution, $assistant);
+        $this->line(\App\Services\Ai\AnswerRephraser::enabled() ? '[model] on (' . AnswerRephraser::model() . ') - the results above are the deterministic answers; see the rephrase line'
+            : '[model] off - every answer above is deterministic');
+        $pass = $sourcePass && $nfPass && $helpPass;
         $this->line($pass ? 'PASS' : 'FAIL');
         if ($n = (int) $this->option('rephrase')) $this->rephraseReport(array_slice($set, 0, $n), $institution, $assistant);
         return $pass ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** D166 AI-Q6: questions with no source must be answered not_found (asked as the institution's head) */
+    private function notFoundReport(Institution $institution, AssistantService $assistant): bool
+    {
+        $file = (string) ($this->option('not-found') ?: resource_path('ai/eval-not-found.json'));
+        $items = json_decode((string) @file_get_contents($file), true)['items'] ?? [];
+        [$ok, $asked] = Tenancy::as($institution, function () use ($items, $assistant) {
+            $user = User::where('role', 'admin')->first();
+            if (!$user || $items === []) return [0, 0];
+            return [collect($items)->filter(fn ($q) => $assistant->preview((string) $q, $user)['kind'] === 'not_found')->count(), count($items)];
+        });
+        if ($asked === 0) { $this->line('[not found] no set or no admin to ask as - skipped'); return true; }
+        $rate = round(100 * $ok / $asked, 1);
+        $this->line(sprintf('[not found] items %d · answered not found %d (%.1f%%, bar %s%%)', $asked, $ok, $rate, $this->option('nf-bar')));
+        return $rate >= (float) $this->option('nf-bar');
+    }
+
+    /** D166 AI-Q6: every approved platform article, asked by its title as an existing user of its first role here, finds that article */
+    private function helpReport(Institution $institution, AssistantService $assistant): bool
+    {
+        $articles = Tenancy::withoutTenancy(fn () => AiHelpArticle::whereNull('institution_id')->where('status', 'approved')->get());
+        [$ok, $asked, $skipped] = Tenancy::as($institution, function () use ($articles, $assistant) {
+            $ok = 0; $asked = 0; $skipped = 0;
+            foreach ($articles as $a) {
+                $role = collect($a->roles ?? [])->first(fn ($r) => $r !== 'super_admin');
+                $user = $role ? User::where('role', $role)->where('is_active', true)->first() : null;
+                if (!$user) { $skipped++; continue; }
+                app()->setLocale($a->locale);
+                $answer = $assistant->preview((string) $a->title, $user);
+                $asked++;
+                if ($answer['kind'] === 'help' && in_array($answer['sources'][0]['id'] ?? null, [$a->id, ...AiHelpArticle::where('base_article_id', $a->id)->pluck('id')->all()], true)) $ok++;
+            }
+            return [$ok, $asked, $skipped];
+        });
+        if ($asked === 0) { $this->line("[help] no approved article with a user of its role here - skipped ({$skipped})"); return true; }
+        $rate = round(100 * $ok / $asked, 1);
+        $this->line(sprintf('[help] articles %d · found %d (%.1f%%, bar %s%%) · skipped (no user of the role) %d', $asked, $ok, $rate, $this->option('help-bar'), $skipped));
+        return $rate >= (float) $this->option('help-bar');
     }
 
     /**

@@ -176,6 +176,15 @@ class AssistantService
         })->values()->all();
     }
 
+    /** D166 AI-Q6 evaluation: the kind and sources the full pipeline (help, reviewed bank, composed) would give - nothing saved or counted */
+    public function preview(string $text, User $user): array
+    {
+        $this->user = $user;
+        $norm = QbQuestionFinderService::normalize($text);
+        $answer = $this->help($norm, $user) ?? $this->fromBank($norm) ?? $this->composed($norm, $user);
+        return ['kind' => $answer['kind'], 'sources' => $answer['sources']];
+    }
+
     /** AI-P1.6 model comparison: the composed text an evaluation item would get - nothing saved, nothing counted */
     public function composedPreview(string $text, User $user): string
     {

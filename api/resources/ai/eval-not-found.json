@@ -1,0 +1,25 @@
+{
+  "_note": "D166 AI-Q6: questions the platform has no source for - the assistant must answer \"not found\" instead of guessing. `php artisan ai:evaluate` runs this set by default.",
+  "items": [
+    "আজ ঢাকার আবহাওয়া কেমন থাকবে",
+    "বিরিয়ানি রান্নার সহজ উপায় কী",
+    "২০২২ সালের ফুটবল বিশ্বকাপ কে জিতেছে",
+    "সবচেয়ে ভালো মোবাইল ফোন কোনটি",
+    "শেয়ার বাজারে কোন কোম্পানির শেয়ার কিনব",
+    "আমার কম্পিউটার চালু হচ্ছে না কেন",
+    "কাল কি স্কুল বন্ধ থাকবে",
+    "একটি ভালো সিনেমার নাম বলো",
+    "ট্রেনের টিকিট কীভাবে কাটব",
+    "আমার জন্মদিনে কী উপহার দেওয়া যায়",
+    "What is the weather in Dhaka tomorrow",
+    "Who won the 2022 football world cup",
+    "Recommend a good laptop under 50000 taka",
+    "How do I bake a chocolate cake",
+    "Which bank gives the highest interest rate",
+    "Tell me a joke about cats",
+    "What time does the market open",
+    "How do I fix my wifi router",
+    "Which movie should I watch tonight",
+    "Book a bus ticket to Chattogram"
+  ]
+}
