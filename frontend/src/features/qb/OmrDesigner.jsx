@@ -64,6 +64,7 @@ export default function OmrDesigner({ id, form, onSaved }) {
   }, [v, dirty, locked])   // eslint-disable-line react-hooks/exhaustive-deps
 
   const firstSet = form?.set_codes?.[0]
+  const setColumns = firstSet ? [...firstSet].length : 1   // D173: one A-J column per letter of the paper's set codes - not chosen here
   const previewKey = JSON.stringify([form?.settings ?? null, form?.locked_at ?? null, form?.layout_version ?? null])
   useEffect(() => {
     if (!form) return undefined
@@ -184,7 +185,7 @@ export default function OmrDesigner({ id, form, onSaved }) {
                 <label className="flex flex-col gap-1 text-sm"><span className="font-semibold">{t(`qbomr.box.${k}`)}</span>
                   <span className="flex items-center gap-2"><input type="checkbox" name={`box-${k}`} checked={v.info_boxes[k]} onChange={e => set({ info_boxes: { ...v.info_boxes, [k]: e.target.checked } })} />{t('qbomr.show')}</span></label>
                 <label className="flex flex-col gap-1 text-xs text-content-muted">{t('qbomr.digits')}
-                  <input className={field} type="number" dir="ltr" min={1} max={MAX_DIGITS[k]} name={`digits-${k}`} value={k === 'roll' ? v.roll_digits : k === 'student_id' ? 10 : v.digits[k]} disabled={k === 'student_id'}
+                  <input className={field} type="number" dir="ltr" min={1} max={MAX_DIGITS[k]} name={`digits-${k}`} value={k === 'roll' ? v.roll_digits : k === 'student_id' ? 10 : k === 'set' ? setColumns : v.digits[k]} disabled={k === 'student_id' || k === 'set'}
                     onChange={e => { const n = Math.max(1, Math.min(MAX_DIGITS[k], Number(e.target.value) || 1)); if (k === 'roll') set({ roll_digits: n }); else set({ digits: { ...v.digits, [k]: n } }) }} /></label>
               </div>
             ))}

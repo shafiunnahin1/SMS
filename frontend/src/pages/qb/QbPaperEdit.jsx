@@ -14,6 +14,8 @@ import { ErrorState } from '../../components/StateViews'
 import { Input, Select, Textarea } from '../../components/FormField'
 import MathText from '../../features/qb/MathText'
 
+// D173: set codes use only A-J per letter (A, AA, AAA); at most 255 sets for now - the server checks it again
+const MAX_SETS = 255
 const EMPTY = { title: '', exam_name: '', duration_minutes: '', sets_count: '1', instructions: '', group: false, order: [], sections: [{ title: '', instruction: '', items: [] }] }
 
 // QB.8 /admin|teacher/question-bank/papers/:id and /new (D66, question-bank.md §5): sections, questions searched from the bank with
@@ -124,7 +126,6 @@ export default function QbPaperEdit() {
   }
   const ordered = [...v.order.map(sid => subjects.find(x => x.id === sid)).filter(Boolean), ...subjects.filter(x => !v.order.includes(x.id))]
   const move = (k, d) => { const ids = ordered.map(x => x.id); [ids[k], ids[k + d]] = [ids[k + d], ids[k]]; set({ order: ids }) }
-  const setLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4" data-testid="qb-paper-edit">
@@ -154,7 +155,7 @@ export default function QbPaperEdit() {
           <Input label={t('qbpp.title')} value={v.title} onChange={e => set({ title: e.target.value })} name="title" />
           <Input label={t('qbpp.exam_name')} value={v.exam_name} onChange={e => set({ exam_name: e.target.value })} name="exam_name" />
           <Input label={t('qbpp.duration')} ltr inputMode="numeric" value={v.duration_minutes} onChange={e => set({ duration_minutes: e.target.value })} name="duration_minutes" />
-          <Select label={t('qbpp.sets')} options={setLetters.map((_, k) => ({ value: String(k + 1), label: t('qbpp.n_sets', { n: k + 1 }) }))} value={v.sets_count} onChange={e => set({ sets_count: e.target.value })} name="sets_count" />
+          <Select label={t('qbpp.sets')} options={Array.from({ length: MAX_SETS }, (_, k) => ({ value: String(k + 1), label: t('qbpp.n_sets', { n: k + 1 }) }))} value={v.sets_count} onChange={e => set({ sets_count: e.target.value })} name="sets_count" />
           <Textarea className="sm:col-span-2" label={t('qbpp.instructions')} rows={2} value={v.instructions} onChange={e => set({ instructions: e.target.value })} name="instructions" />
           <div className="flex flex-col gap-2 sm:col-span-2" data-testid="paper-subject-group">
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="group_by_subject" checked={v.group} onChange={e => set({ group: e.target.checked })} />{t('qbpp.group_by_subject')}</label>
@@ -304,10 +305,10 @@ function PaperSets({ paperId, paper, base, onChanged }) {
         <div><h2 className="font-semibold">{t('qbpp.sets_title')}</h2><p className="text-sm text-content-muted">{t('qbpp.sets_hint')}</p></div>
         <div className="flex flex-wrap items-end gap-2" data-testid="paper-create-sets">
           <Select label={t('qbpp.sets_count')} name="add_count" value={form.count} onChange={e => setForm({ ...form, count: e.target.value })}
-            options={Array.from({ length: Math.max(1, 26 - sets.length) }, (_, k) => ({ value: String(k + 1), label: String(k + 1) }))} />
+            options={Array.from({ length: Math.max(1, MAX_SETS - sets.length) }, (_, k) => ({ value: String(k + 1), label: String(k + 1) }))} />
           <Select label={t('qbpp.strategy')} name="add_strategy" value={form.strategy} onChange={e => setForm({ ...form, strategy: e.target.value })}
             options={['both', 'options', 'serial'].map(x => ({ value: x, label: t(`qbpp.strategies.${x}`) }))} />
-          <Button onClick={add} loading={busy} disabled={sets.length >= 26} data-action="create-sets"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.create_sets')}</Button>
+          <Button onClick={add} loading={busy} disabled={sets.length >= MAX_SETS} data-action="create-sets"><Plus aria-hidden="true" className="h-4 w-4" />{t('qbpp.create_sets')}</Button>
         </div>
       </div>
       {sets.length > 1 && <div className="flex flex-wrap items-center gap-2 text-sm">
