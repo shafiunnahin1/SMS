@@ -139,10 +139,11 @@ class QbPaperController extends Controller
     public function pdf(Request $request, int $id, PdfService $pdf)
     {
         $this->staffGate($request);
-        $f = $request->validate(['set' => 'nullable|in:' . implode(',', QbPaperSets::LATIN), 'answers' => 'nullable|boolean', 'format' => 'nullable|in:json',
+        $f = $request->validate(['set' => ['nullable', 'regex:/^(?:[A-Z]|[1-9]\d{0,2})$/'], 'answers' => 'nullable|boolean', 'format' => 'nullable|in:json',
             'strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES), 'columns' => 'nullable|integer|in:1,2']);
         $paper = $this->find($request->user(), $id);
-        $number = array_search($f['set'] ?? 'A', QbPaperSets::LATIN, true) + 1;
+        $set = (string) ($f['set'] ?? '1');                       // D173: a set number; the old A-Z letters still work (A = 1 ... Z = 26)
+        $number = ctype_digit($set) ? (int) $set : array_search($set, QbPaperSets::LATIN, true) + 1;
         if ($number > max(1, (int) $paper->sets_count)) throw new BusinessException('this paper has no such set', 'qb_no_such_set', 422);
         $data = $this->printable($paper, $number, (bool) ($f['answers'] ?? false), $f['strategy'] ?? 'both') + ['columns' => (int) ($f['columns'] ?? 1)];
         if (($f['format'] ?? null) === 'json') return response()->json(['success' => true, 'data' => $data]);
@@ -229,7 +230,7 @@ class QbPaperController extends Controller
             + ['updated_at' => $p->updated_at?->toIso8601String(),
                'subjects' => $this->subjects($p),   // D128: the paper's subjects, in the order the paper groups them
                // D126 (2): the frozen sets (set = the Latin letter the print takes, code = the printed name)
-               'sets' => QbPaperVariant::where('qb_paper_id', $p->id)->orderBy('variant_number')->get()->map(fn ($v) => ['number' => $v->variant_number, 'set' => QbPaperSets::LATIN[$v->variant_number - 1], 'code' => $v->code, 'strategy' => $v->strategy])->values(),
+               'sets' => QbPaperVariant::where('qb_paper_id', $p->id)->orderBy('variant_number')->get()->map(fn ($v) => ['number' => $v->variant_number, 'set' => self::address($v->variant_number), 'code' => $v->code, 'strategy' => $v->strategy])->values(),
                'sections' => QbPaperSection::where('qb_paper_id', $p->id)->orderBy('sort_order')->get()->map(fn ($s) => ['id' => $s->id, 'title' => $s->title, 'instruction' => $s->instruction,
                    'items' => ($items[$s->id] ?? collect())->sortBy('sort_order')->map(fn ($i) => ['qb_question_id' => (int) $i->qb_question_id, 'marks' => $i->marks])->values()])->values()];
     }
@@ -269,7 +270,7 @@ class QbPaperController extends Controller
             })->values()->all()];
         })->all();
         return $paper->only(['id', 'title', 'exam_name', 'duration_minutes', 'total_marks']) + ['instructions' => $paper->instructions_json['text'] ?? null,
-            'set' => QbPaperSets::LATIN[$number - 1], 'set_code' => $frozen?->code ?? QbPaperSets::LATIN[$number - 1], 'sets_count' => (int) $paper->sets_count,
+            'set' => self::address($number), 'set_code' => $frozen?->code ?? QbPaperSets::code($number, max(1, (int) $paper->sets_count)), 'sets_count' => (int) $paper->sets_count,
             'answers' => $answers, 'institution' => Tenancy::current()->name, 'sections' => $sections,
             // owner request 2026-10-24: the heading's class and subjects load by themselves
             'class_name' => app(QbPaperHeader::class)->className($paper), 'subject_names' => implode(', ', array_filter(array_column($row['subjects'], 'name'))), 'subject_codes' => QbPaperHeader::codes($row['subjects']),
@@ -349,6 +350,12 @@ class QbPaperController extends Controller
             $out[$m->id] = 'data:' . $m->mime . ';base64,' . base64_encode(\Illuminate\Support\Facades\Storage::disk('private')->get($m->path));
         }
         return $out;
+    }
+
+    /** D173: how a set is addressed in links - its old A-Z letter up to 26 (unchanged links), its number above */
+    private static function address(int $number): string
+    {
+        return QbPaperSets::LATIN[$number - 1] ?? (string) $number;
     }
 
     /** D101: department staff need their X-Department-Id context and this route's exact duty key on every request */

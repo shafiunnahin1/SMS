@@ -39,6 +39,7 @@ class QbOmrFormService
 
             $form = QbOmrForm::where('qb_paper_id', $lockedPaper->id)->lockForUpdate()->first();
             if ($form?->locked_at !== null) throw new BusinessException(__('errors.qb_omr_locked'), 'qb_omr_locked', 422);
+            $this->refuseLegacyCodes($lockedPaper);
 
             $mcqIds = $this->mcqIds($lockedPaper);
             $children = $this->groups($lockedPaper);              // D171: each stimulus group child is one more MCQ row
@@ -74,7 +75,7 @@ class QbOmrFormService
                     // D159 (4): the student's 10-digit OMR ID replaces the subject-code box (a request with the old `subject` key shows it the same way)
                     'student_id' => ['visible' => (bool) ($input['info_boxes']['student_id'] ?? $input['info_boxes']['subject']), 'digits' => 10],
                     // the set box never has fewer digits than the paper's sets need
-                    'set' => ['visible' => (bool) $input['info_boxes']['set'], 'digits' => max($this->setDigits((int) $lockedPaper->sets_count), (int) ($input['digits']['set'] ?? 1))],
+                    'set' => ['visible' => (bool) $input['info_boxes']['set'], 'digits' => $this->setDigits($lockedPaper)],   // D173: exactly one column per code letter
                 ],
                 'marking' => [
                     'question_mark' => (string) $input['question_mark'],
@@ -113,7 +114,10 @@ class QbOmrFormService
             $paper = $this->paper($actor, $paperId, true);
             $form = QbOmrForm::where('qb_paper_id', $paper->id)->lockForUpdate()->firstOrFail();
             if ($form->locked_at === null) {
+                $this->refuseLegacyCodes($paper);
                 $settings = is_array($form->settings_json) ? $form->settings_json : [];
+                // D173: one set-code column per code letter - the sets may have been added or deleted since the settings were saved
+                if (isset($settings['info_boxes']['set'])) $settings['info_boxes']['set']['digits'] = $this->setDigits($paper);
                 $settings['geometry'] = $geometryBuilder->build($paper->id, $settings);
                 if (!$settings['geometry']['fits']) throw new BusinessException('the OMR sheet does not fit this page', 'omr_page_too_small', 422);
                 $settings['is_generated'] = true;
@@ -189,11 +193,20 @@ class QbOmrFormService
         return array_map(fn ($b) => $b + ['name' => $names->get($b['subject_id'])?->name_bn ?? $names->get($b['subject_id'])?->name_en ?? ''], $blocks);
     }
 
-    private function setDigits(int $setCount): int
+    /** D173: the set-code box has one A-J (or ক-ঞ) column per letter of the paper's set codes */
+    private function setDigits(QbPaper $paper): int
     {
-        $digits = 1;
-        while ($setCount > (10 ** $digits)) $digits++;
-        return $digits;
+        $code = (string) QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->value('code');
+        return $code === '' ? 1 : mb_strlen($code);
+    }
+
+    /** D173: a paper whose sets still use letters after J (made before D173) gets no OMR until its sets are next added or deleted */
+    private function refuseLegacyCodes(QbPaper $paper): void
+    {
+        $codes = QbPaperVariant::where('qb_paper_id', $paper->id)->pluck('code');
+        if ($codes->contains(fn ($c) => \App\Services\QbPaperSets::legacy((string) $c))) {
+            throw new BusinessException(__('errors.qb_omr_legacy_set_codes'), 'qb_omr_legacy_set_codes', 422);
+        }
     }
 
     /** D171: the paper's stimulus MCQ groups => their sub_mcq children (option count, correct index, marks) in authored order */

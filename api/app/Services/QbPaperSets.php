@@ -14,11 +14,43 @@ use App\Models\{QbPaper, QbPaperVariant, QbQuestion, QbQuestionItem, QbQuestionO
 // children stay attached and in order); "options" shuffles each child's choices, frozen per set with the child's correct labels.
 class QbPaperSets
 {
-    public const MAX = 26;
+    public const MAX = 255;   // D173: codes up to three A-J letters; 255 for now (owner 2026-10-28: no variant_number migration yet)
     public const STRATEGIES = ['options', 'serial', 'both'];
     public const LATIN = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
     public const BANGLA = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ', 'ঞ', 'ট', 'ঠ', 'ড', 'ঢ', 'ণ', 'ত', 'থ', 'দ', 'ধ', 'ন', 'প', 'ফ', 'ব', 'ভ', 'ম', 'য'];
     private const LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ'];
+    /** D173: an OMR set-code column holds these ten letters - a code is a number written with them */
+    public const OMR_LATIN = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+    public const OMR_BANGLA = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ', 'ঞ'];
+
+    /** D173: the n-th set's code on a paper of $count sets - n-1 written with one A-J (or ক-ঞ) letter per decimal digit, one letter
+     *  up to 10 sets, two up to 100, three above; every code of a paper has the same length (15 sets: set 1 = AA, set 15 = BE) */
+    public static function code(int $n, int $count, bool $bangla = false): string
+    {
+        $len = $count <= 10 ? 1 : ($count <= 100 ? 2 : 3);
+        $digits = $bangla ? self::OMR_BANGLA : self::OMR_LATIN;
+        return implode('', array_map(fn ($d) => $digits[(int) $d], str_split(str_pad((string) ($n - 1), $len, '0', STR_PAD_LEFT))));
+    }
+
+    /** D173: a code made before D173 with a letter after J (or ঞ) - such a paper's OMR cannot be generated until it is renamed */
+    public static function legacy(string $code): bool
+    {
+        return array_diff(mb_str_split($code), self::OMR_LATIN, self::OMR_BANGLA) !== [];
+    }
+
+    private static function bangla(?string $code): bool
+    {
+        return $code !== null && $code !== '' && (in_array(mb_substr($code, 0, 1), self::OMR_BANGLA, true) || in_array($code, self::BANGLA, true));
+    }
+
+    /** D173: give every set of the paper the code of its place for the current count (after sets are added or deleted) */
+    private function rename(QbPaper $paper): int
+    {
+        $all = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->get();
+        $bangla = self::bangla($all->first()?->code);
+        foreach ($all as $k => $v) $v->update(['code' => self::code($k + 1, $all->count(), $bangla)]);
+        return $all->count();
+    }
 
     /** @param array $sections the paper's sections: [['id' => .., 'items' => [['qb_question_id' => ..], ..]], ..] */
     public function layout(QbPaper $paper, array $sections, int $number, string $strategy, array $optionCounts): array
@@ -62,20 +94,19 @@ class QbPaperSets
         QbPaperVariant::where('qb_paper_id', $paper->id)->delete();
         for ($n = 1; $n <= $count; $n++) {
             $layout = $this->withKey($this->layout($paper, $sections, $n, $strategy, $counts), $correct, $sections);
-            QbPaperVariant::create(['qb_paper_id' => $paper->id, 'variant_number' => $n, 'code' => ($names === 'bangla' ? self::BANGLA : self::LATIN)[$n - 1],
+            QbPaperVariant::create(['qb_paper_id' => $paper->id, 'variant_number' => $n, 'code' => self::code($n, $count, $names === 'bangla'),
                 'strategy' => $strategy, 'layout_json' => $layout]);
         }
     }
 
     /** qbank's "create subsets" on a final paper (QuestionSetController::storeSubsets): `$count` more sets after the frozen ones, never
-     *  repeating an order already printed; the earlier sets are left exactly as they are; names follow the first set's scheme */
+     *  repeating an order already printed; the earlier sets keep their order and key; D173: all codes are then renamed for the new total in the first set's scheme */
     public function append(QbPaper $paper, array $sections, int $count, string $strategy): void
     {
         $existing = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->get();
         $counts = $this->optionCounts($sections);
         $max = min(self::MAX, $this->capacity($sections, $strategy, $counts));
         if ($existing->count() + $count > $max) throw new BusinessException("at most {$max} sets are possible with this strategy", 'qb_sets_capacity', 422, ['max' => $max]);
-        $names = in_array($existing->first()?->code, self::BANGLA, true) ? self::BANGLA : self::LATIN;
         $plain = fn (array $layout) => json_encode(array_map(fn ($s) => array_map(fn ($it) => [$it['qb_question_id'], $it['options'], $it['children'] ?? []], $s['items']), $layout));
         $seen = $existing->map(fn ($v) => $plain($v->layout_json))->all();
         $correct = $this->correctFlags($sections);
@@ -85,9 +116,10 @@ class QbPaperSets
                 if (!in_array($plain($layout), $seen, true)) break;
             }
             $seen[] = $plain($layout);
-            QbPaperVariant::create(['qb_paper_id' => $paper->id, 'variant_number' => $n, 'code' => $names[$n - 1], 'strategy' => $strategy,
+            QbPaperVariant::create(['qb_paper_id' => $paper->id, 'variant_number' => $n, 'code' => 'tmp' . $n, 'strategy' => $strategy,
                 'layout_json' => $this->withKey($layout, $correct, $sections)]);
         }
+        $this->rename($paper);   // D173: a new total may need longer codes - every set takes its place's code, its order and key unchanged
     }
 
     /** D157: delete the given sets (never the main set 1); the rest are renumbered in order and take the names of their new
@@ -99,12 +131,11 @@ class QbPaperSets
         $existing = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->get();
         $missing = array_diff($numbers, $existing->pluck('variant_number')->map(fn ($n) => (int) $n)->all());
         if ($numbers === [] || $missing !== []) throw new BusinessException('this paper has no such set', 'qb_no_such_set', 422);
-        $names = in_array($existing->first()?->code, self::BANGLA, true) ? self::BANGLA : self::LATIN;
         QbPaperVariant::where('qb_paper_id', $paper->id)->whereIn('variant_number', $numbers)->delete();
         $left = $existing->reject(fn ($v) => in_array((int) $v->variant_number, $numbers, true))->values();
         // ascending: each new number is at most the old one and already free (deleted or vacated), so the unique (paper, number) holds
-        foreach ($left as $k => $v) $v->update(['variant_number' => $k + 1, 'code' => $names[$k]]);
-        return $left->count();
+        foreach ($left as $k => $v) $v->update(['variant_number' => $k + 1]);
+        return $this->rename($paper);   // D173: codes follow the new total (a pre-D173 K-Z paper is renamed here too)
     }
 
     private function correctFlags(array $sections)
@@ -167,7 +198,7 @@ class QbPaperSets
     /** one set's order; the QB.8 seed string (paper, set letter, section / question) so the old set B prints exactly as before */
     private function arrange(QbPaper $paper, array $sections, int $number, string $strategy, array $optionCounts, int $attempt): array
     {
-        $set = self::LATIN[$number - 1];
+        $set = self::LATIN[$number - 1] ?? "N{$number}";   // the seed: sets 1-26 keep their old A-Z salt, so a set prints as before
         $shuffle = function (array $list, string $salt) use ($set, $paper, $attempt) {
             if ($set === 'A' || count($list) < 2) return $list;
             mt_srand(crc32("qb-paper:{$paper->id}:{$set}:{$salt}" . ($attempt ? ":{$attempt}" : '')));
