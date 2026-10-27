@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertCircle, BadgeCheck, BookOpen, Clock, FileQuestion, FileText, LifeBuoy, Lightbulb, Lock, MessageSquarePlus, RotateCcw, Send, Sparkles, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react'
+import { AlertCircle, BadgeCheck, Camera, BookOpen, Clock, FileQuestion, FileText, LifeBuoy, Lightbulb, Lock, MessageSquarePlus, RotateCcw, Send, Sparkles, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react'
 import DirIcon from '../../components/DirIcon'
 import api from '../../api/axios'
 import { useUiStore } from '../../store/uiStore'
@@ -13,6 +13,7 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import BuyButton from '../../features/qb/BuyButton'
 import MathText from '../../features/qb/MathText'
 import { useAuthStore } from '../../store/authStore'
+import MathInsert from '../../features/qb/MathInsert'
 
 // D166 AI-Q2: a graph / diagram token the renderer would not accept (wrong shape, truncated, unknown kind) becomes a plain placeholder
 // before rendering, so a raw or encoded payload is never shown as text; valid ones go to MathText's own safe renderer
@@ -120,7 +121,12 @@ export default function AiChat() {
   const [freeLeft, setFreeLeft] = useState(null)
   const [shown, setShown] = useState({})                       // answer id -> the questions it showed (from the ask response)
   const end = useRef(null)
-  const isHead = useAuthStore(s => s.role) === 'admin'
+  const role = useAuthStore(s => s.role)
+  const isHead = role === 'admin'
+  const canPhoto = ['admin', 'teacher', 'student'].includes(role)   // D166 (5) AI-Q5: question askers; parents and staff get the help guide only
+  const photo = useRef(null)
+  const [reading, setReading] = useState(false)
+  const [formulas, setFormulas] = useState([])
   const review = useQuery({ queryKey: ['ai-settings'], enabled: isHead, queryFn: () => api.get('/ai/settings').then(r => r.data.data) })   // AI-P1.4
   const list = useQuery({ queryKey: ['ai-conversations'], queryFn: () => api.get('/ai/conversations').then(r => r.data.data) })
   const chat = useQuery({ queryKey: ['ai-conversation', active], enabled: Boolean(active), queryFn: () => api.get(`/ai/conversations/${active}`).then(r => r.data.data),
@@ -150,7 +156,26 @@ export default function AiChat() {
       toast(e.response?.data?.message ?? t('common.error'), 'error')
     }
   }
-  const ask = () => send(text.trim())
+  const ask = () => { setFormulas([]); send(text.trim()) }
+  // D166 (5) AI-Q5: the server reads the photo; its text lands in the box to be corrected before sending, formulas in MathLive
+  const readPhoto = async (file) => {
+    if (!file) return
+    setReading(true)
+    try {
+      const form = new FormData()
+      form.append('image', file)
+      const { data } = await api.post('/ai/attachments', form)
+      if (data.data.status === 'done') { setText(data.data.text); setFormulas(data.data.formulas ?? []); toast(t('ai.photo_check'), 'info') }
+      else toast(data.message ?? t('common.error'), 'error')
+    } catch (e) { toast(e.response?.data?.message ?? t('common.error'), 'error') }
+    finally { setReading(false); if (photo.current) photo.current.value = '' }
+  }
+  const fixFormula = (f, value) => {
+    const lines = text.split('\n')
+    if (lines[f.line] !== undefined) lines[f.line] = value
+    setText(lines.join('\n'))
+    setFormulas(list => list.filter(x => x !== f))
+  }
   const rate = async (m, value) => {
     try {
       await api.put(`/ai/messages/${m.id}/rating`, { rating: m.rating === value ? null : value })
@@ -212,7 +237,20 @@ export default function AiChat() {
           </div>
           <div className="sticky bottom-0 flex flex-col gap-1 bg-surface px-3 pb-3 pt-2 [border-top:1px_solid_var(--line)]">
             {freeLeft !== null && <p className="text-xs text-content-muted">{t('ai.free_left', { n: fmtNumber(freeLeft, i18n.language) })}</p>}
+            {formulas.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="ai-formulas">
+                <span className="text-content-muted">{t('ai.formulas')}:</span>
+                {formulas.map(f => (
+                  <span key={f.line} className="inline-flex items-center gap-1 rounded-token bg-surface-muted px-2 py-1">
+                    <MathText text={`$${f.latex}$`} />
+                    <MathInsert compact initial={f.latex} label={t('ai.formula_fix')} onInsert={v => fixFormula(f, v)} />
+                  </span>))}
+              </div>)}
             <div className="flex items-end gap-2">
+              {canPhoto && <>
+                <input ref={photo} type="file" accept="image/png,image/jpeg,image/webp" capture="environment" className="hidden" name="ai_photo" onChange={e => readPhoto(e.target.files?.[0])} data-testid="ai-photo-input" />
+                <Button variant="ghost" onClick={() => photo.current?.click()} loading={reading} disabled={reading} aria-label={reading ? t('ai.photo_reading') : t('ai.photo')} data-action="photo"><Camera aria-hidden="true" className="h-4 w-4" /></Button>
+              </>}
               <textarea rows={1} maxLength={1000} value={text} onChange={e => setText(e.target.value)} name="ai_question" dir="auto" placeholder={t('ai.placeholder')}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask() } }}
                 className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-token bg-surface-muted px-3 py-2 text-sm text-content [field-sizing:content] [border:1px_solid_var(--line)]" aria-label={t('ai.placeholder')} />

@@ -119,6 +119,7 @@ return [
     'POST api/v1/ai/conversations' => ['admin', 'teacher', 'student', 'parent', 'accountant', 'institution_staff'],
     'GET api/v1/ai/conversations/{id}' => ['admin', 'teacher', 'student', 'parent', 'accountant', 'institution_staff'],
     'POST api/v1/ai/conversations/{id}/messages' => ['admin', 'teacher', 'student', 'parent', 'accountant', 'institution_staff'],          // AI-P1.2
+    'POST api/v1/ai/attachments' => ['admin', 'teacher', 'student'],   // D166 (5) AI-Q5: photo → OCR text
     'PUT api/v1/ai/messages/{id}/rating' => ['admin', 'teacher', 'student', 'parent', 'accountant', 'institution_staff'],                   // AI-P1.3
     'GET api/v1/ai/settings' => ['admin'],                                          // AI-P1.4
     'PUT api/v1/ai/settings' => ['admin'],

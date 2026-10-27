@@ -3875,6 +3875,24 @@ CREATE TABLE ai_help_articles (                                -- D166 (6) AI-Q4
     FOREIGN KEY (base_article_id) REFERENCES ai_help_articles(id)
 );
 
+CREATE TABLE ai_attachments (                                  -- D166 (5) AI-Q5: a chat photo read by self-hosted OCR; file kept one day, deleted on erasure
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    path VARCHAR(255) NOT NULL,                                  -- private disk, under institutions/{id}/ai-attachments/
+    mime VARCHAR(50) NOT NULL,
+    size_bytes INT UNSIGNED NOT NULL,
+    ocr_status ENUM('done','unsupported','failed') NOT NULL DEFAULT 'failed',   -- unsupported: handwriting / too unclear to trust
+    ocr_confidence DECIMAL(5,2) NULL,
+    expires_at TIMESTAMP NOT NULL,                               -- created + 1 day; ai:attachments-purge deletes the row and the file
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_ai_attachments_user (institution_id, user_id),
+    INDEX idx_ai_attachments_expiry (expires_at),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 CREATE TABLE staff_attendance_grants (                         -- D169 (4) STW.5: a staff member may take a batch's attendance while a grant is active
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,

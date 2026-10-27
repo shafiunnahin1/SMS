@@ -26,4 +26,8 @@ return [
         'approved_msg' => 'The article is approved.',
         'not_found' => 'No verified information about this workflow was found in the current system. Please contact your institution\'s admin or support.',
     ],
+    'ocr' => [   // D166 (5) AI-Q5
+        'unsupported' => 'The text in the photo could not be read reliably. Handwriting and blurred photos are not supported yet; send a clear photo of printed text or type the question.',
+        'failed' => 'The photo could not be read. Try again or type the question.',
+    ],
 ];

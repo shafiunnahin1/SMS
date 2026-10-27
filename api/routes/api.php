@@ -682,6 +682,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/ai/conversations/{id}/messages', [\App\Http\Controllers\Ai\AiConversationController::class, 'ask'])->whereNumber('id');   // AI-P1.2
             Route::get('/ai/settings',                [\App\Http\Controllers\Ai\AiConversationController::class, 'settings'])->middleware('role:admin');   // AI-P1.4
             Route::put('/ai/settings',                [\App\Http\Controllers\Ai\AiConversationController::class, 'settings'])->middleware('role:admin');
+            Route::post('/ai/attachments',          [\App\Http\Controllers\Ai\AiAttachmentController::class, 'store'])->middleware(['role:admin,teacher,student', 'throttle:10,1']);   // D166 (5) AI-Q5: photo → OCR text (question askers only)
             Route::put('/ai/messages/{id}/rating',    [\App\Http\Controllers\Ai\AiConversationController::class, 'rate'])->whereNumber('id');   // AI-P1.3
             // D166 AI-Q4 part 2: the head's own wording of an approved platform help article (edit -> draft, approve)
             Route::middleware('role:admin')->group(function () {

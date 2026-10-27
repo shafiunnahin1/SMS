@@ -28,3 +28,6 @@ Artisan::command('ops:alert-test', function () {
 
 // D86 / R3.5: only due approved revisions; no payroll execution.
 \Illuminate\Support\Facades\Schedule::command('payroll:apply-revisions')->dailyAt('00:15')->withoutOverlapping();
+
+// D166 (5) AI-Q5: chat photos are kept one day
+\Illuminate\Support\Facades\Schedule::command('ai:attachments-purge')->hourly()->withoutOverlapping();

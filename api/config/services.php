@@ -76,4 +76,11 @@ return [
         'model' => env('AI_LLM_MODEL', 'qwen3-1.7b-q4'),
         'timeout' => (int) env('AI_LLM_TIMEOUT', 45),
     ],
+
+    // D166 (5) AI-Q5: self-hosted Tesseract OCR (the owner installs tesseract-ocr with the ben and eng data; no outside service)
+    'ocr' => [
+        'binary' => env('OCR_TESSERACT_BINARY', 'tesseract'),
+        'timeout' => (int) env('OCR_TIMEOUT', 30),
+        'min_confidence' => (float) env('OCR_MIN_CONFIDENCE', 60),   // below this the photo is reported unsupported (handwriting / unclear)
+    ],
 ];

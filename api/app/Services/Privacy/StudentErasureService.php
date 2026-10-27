@@ -28,6 +28,7 @@ class StudentErasureService
                 $s->user->forceFill(['name' => 'Anonymized #' . $s->id, 'email' => null, 'phone' => null, 'username' => 'anon-' . $s->id,
                     'avatar' => null, 'is_active' => false, 'password' => Str::random(40)])->save();
                 app(TokenService::class)->revokeAll($s->user);
+                \App\Http\Controllers\Ai\AiAttachmentController::forget($s->user->id);   // D166 (5): chat photos at once
             }
             StudentFiles::deleteAll($s);                                                    // photo and every other file of this student
             Consent::where('student_id', $s->id)->delete();

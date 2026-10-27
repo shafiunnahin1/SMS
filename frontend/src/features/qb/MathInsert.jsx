@@ -31,7 +31,7 @@ export function applyMathFont(field, font, selection = null) {
 }
 
 // "Insert maths" (D66 QB.3): a mathlive <math-field> to build the formula; Insert hands back `$latex$` for the text field
-export default function MathInsert({ onInsert, disabled, compact = false }) {
+export default function MathInsert({ onInsert, disabled, compact = false, initial = '', label = null }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [ready, setReady] = useState(false)
@@ -39,7 +39,7 @@ export default function MathInsert({ onInsert, disabled, compact = false }) {
   const field = useRef(null)
   const savedSelection = useRef(null)
   useEffect(() => { if (open) loadMathlive().then(() => setReady(true)) }, [open])
-  useEffect(() => { if (ready) setTimeout(() => field.current?.focus(), 0) }, [ready])   // the writer types the formula at once
+  useEffect(() => { if (ready) setTimeout(() => { if (initial && field.current) field.current.value = initial; field.current?.focus() }, 0) }, [ready, initial])   // the writer types the formula at once; D166 AI-Q5: an OCR formula starts filled in
   useEffect(() => {
     const mathField = field.current
     if (!mathField) return
@@ -65,7 +65,7 @@ export default function MathInsert({ onInsert, disabled, compact = false }) {
   return (
     <>
       {compact
-        ? <button type="button" title={t('qb.math')} aria-label={t('qb.math')} onMouseDown={e => e.preventDefault()} onClick={() => setOpen(true)} disabled={disabled} data-action="math"
+        ? <button type="button" title={label ?? t('qb.math')} aria-label={label ?? t('qb.math')} onMouseDown={e => e.preventDefault()} onClick={() => setOpen(true)} disabled={disabled} data-action="math"
             className="inline-flex h-9 min-w-9 items-center justify-center rounded-token px-2 text-content hover:bg-primary-soft disabled:opacity-50"><Sigma aria-hidden="true" className="h-4 w-4" /></button>
         : <Button variant="secondary" onClick={() => setOpen(true)} disabled={disabled} data-action="math"><Sigma aria-hidden="true" className="h-4 w-4" />{t('qb.math')}</Button>}
       {open && (
