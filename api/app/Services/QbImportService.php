@@ -264,7 +264,9 @@ class QbImportService
                             $this->writer->children($q, $in, $user);
                             $this->writer->revision($q, $user);
                             $r->update(['qb_question_id' => $q->id, 'selected' => false]);
-                            AuditLog::record('qb.import.submitted', $q, ['batch_id' => $batchId, 'record_id' => $r->id, 'from' => 'draft', 'to' => 'review']);
+                            // D154 / D172: the importing writer is the actor, also when no request is logged in (a queued or console finalize)
+                            AuditLog::create(['institution_id' => $q->institution_id ?? null, 'user_id' => $user->id, 'action' => 'qb.import.submitted', 'model' => 'QbQuestion',
+                                'model_id' => $q->id, 'new_data' => ['batch_id' => $batchId, 'record_id' => $r->id, 'from' => 'draft', 'to' => 'review'], 'ip_address' => request()?->ip()]);
                         });
                         $result['imported']++;
                     } catch (ValidationException $e) {

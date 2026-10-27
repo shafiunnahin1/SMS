@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 
 // D123 (8): the R2.1.3 acceptance run - the same mixed questions as JSON and as TOON go through the real chunked staging;
 // exact counts, identical staged records, LaTeX unchanged, the expected failures reported, a quick edit kept, and only the
-// selected records become drafts. Everything it writes is rolled back (and its files removed), so it can run on a dev database.
+// selected records are sent for review (D154). Everything it writes is rolled back (and its files removed), so it can run on a dev database.
 class QbImportAcceptance extends Command
 {
     protected $signature = 'qb:import-acceptance {--count=10000}';
@@ -82,7 +82,7 @@ class QbImportAcceptance extends Command
             $report['finalize'] = $result + ['seconds' => round(microtime(true) - $t, 2)];
             if ($result['imported'] !== $chosen->count() || QbQuestion::count() - $before !== $chosen->count()) $problems[] = 'import selected: ' . json_encode($result);
             $draft = QbQuestion::find($fix->fresh()->qb_question_id);
-            if (!$draft || $draft->status !== 'draft' || $draft->question_text !== $fix->fresh()->payload['question_text']) $problems[] = 'the quick-edited record did not become its draft';
+            if (!$draft || $draft->status !== 'review' || $draft->question_text !== $fix->fresh()->payload['question_text']) $problems[] = 'the quick-edited record was not sent for review (D154)';
         } finally {
             DB::rollBack();
             foreach ($uuids as $u) Storage::disk('private')->deleteDirectory("platform/qb-imports/{$u}");

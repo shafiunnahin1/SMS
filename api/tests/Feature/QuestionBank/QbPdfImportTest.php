@@ -86,7 +86,7 @@ class QbPdfImportTest extends TestCase
         $this->api('POST', $this->central, "writer/imports/{$made['id']}/select", $this->writer, ['all_valid' => true, 'selected' => true])->assertJsonPath('changed', 3);
         $done = $this->api('POST', $this->central, "writer/imports/{$made['id']}/finalize", $this->writer)->assertOk()->json('result');
         $this->assertSame(3, $done['imported']);
-        $this->assertSame(['draft'], QbQuestion::pluck('status')->unique()->values()->all());
+        $this->assertSame(['review'], QbQuestion::pluck('status')->unique()->values()->all());   // D154: PDF imports go to moderation too (D172)
         $this->assertNull(QbImportRecord::find($rows[4]['id'])->qb_question_id, 'a rejected question is never imported');
         $this->api('POST', $this->central, "writer/imports/{$made['id']}/records/{$rows[4]['id']}/reject", $this->writer, ['rejected' => false])->assertOk()->assertJsonPath('data.errors', []);
 
