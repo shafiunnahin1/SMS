@@ -41,10 +41,13 @@ class QbOmrFormService
             if ($form?->locked_at !== null) throw new BusinessException(__('errors.qb_omr_locked'), 'qb_omr_locked', 422);
 
             $mcqIds = $this->mcqIds($lockedPaper);
-            if ($mcqIds === []) throw new BusinessException(__('errors.qb_omr_no_mcq'), 'qb_omr_no_mcq', 422);
+            $children = $this->groups($lockedPaper);              // D171: each stimulus group child is one more MCQ row
+            $childCount = array_sum(array_map('count', $children));
+            if ($mcqIds === [] && $childCount === 0) throw new BusinessException(__('errors.qb_omr_no_mcq'), 'qb_omr_no_mcq', 422);
             $optionCounts = QbPaperItem::whereIn('qb_question_id', $mcqIds)->with('question.options:id,qb_question_id')->get()
                 ->keyBy('qb_question_id')->map(fn ($item) => $item->question->options->count());
-            if ($optionCounts->count() !== count($mcqIds) || $optionCounts->contains(fn ($count) => (int) $count !== (int) $input['option_count'])) {
+            $childMismatch = collect($children)->flatten(1)->contains(fn ($c) => (int) $c['options'] !== (int) $input['option_count']);   // D171 (5)
+            if ($optionCounts->count() !== count($mcqIds) || $childMismatch || $optionCounts->contains(fn ($count) => (int) $count !== (int) $input['option_count'])) {
                 throw new BusinessException(__('errors.qb_omr_option_mismatch'), 'qb_omr_option_mismatch', 422);
             }
 
@@ -57,7 +60,7 @@ class QbOmrFormService
                 'page_size' => $input['page_size'],
                 'page_orientation' => $input['page_orientation'],
                 'answer_columns' => (string) $input['answer_columns'],
-                'question_count' => count($mcqIds),
+                'question_count' => count($mcqIds) + $childCount,
                 'subject_blocks' => $this->subjectBlocks($lockedPaper),   // D128: [] unless the paper is grouped by subject
                 'subtitle' => trim((string) ($input['subtitle'] ?? '')),
                 'title_size' => (int) ($input['title_size'] ?? 12),
@@ -169,15 +172,17 @@ class QbOmrFormService
     {
         $layout = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->value('layout_json') ?? [];
         $mcq = array_flip($this->mcqIds($paper));
+        $groups = $this->groups($paper);
         $blocks = [];
         $row = 0;
         foreach ($layout as $section) foreach ($section['items'] ?? [] as $it) {
-            if (!isset($mcq[(int) $it['qb_question_id']])) continue;
+            $rows = isset($mcq[(int) $it['qb_question_id']]) ? 1 : count($groups[(int) $it['qb_question_id']] ?? []);   // D171: a group's children
+            if ($rows === 0) continue;
             if (!isset($it['qb_subject_id'])) return [];
             $last = array_key_last($blocks);
-            if ($last !== null && $blocks[$last]['subject_id'] === (int) $it['qb_subject_id']) $blocks[$last]['count']++;
-            else $blocks[] = ['subject_id' => (int) $it['qb_subject_id'], 'start' => $row, 'count' => 1];
-            $row++;
+            if ($last !== null && $blocks[$last]['subject_id'] === (int) $it['qb_subject_id']) $blocks[$last]['count'] += $rows;
+            else $blocks[] = ['subject_id' => (int) $it['qb_subject_id'], 'start' => $row, 'count' => $rows];
+            $row += $rows;
         }
         if ($blocks === []) return [];
         $names = \App\Models\QbSubject::whereIn('id', array_column($blocks, 'subject_id'))->get()->keyBy('id');
@@ -189,6 +194,14 @@ class QbOmrFormService
         $digits = 1;
         while ($setCount > (10 ** $digits)) $digits++;
         return $digits;
+    }
+
+    /** D171: the paper's stimulus MCQ groups => their sub_mcq children (option count, correct index, marks) in authored order */
+    public function groups(QbPaper $paper): array
+    {
+        $ids = QbPaperItem::whereHas('section', fn ($query) => $query->where('qb_paper_id', $paper->id))->pluck('qb_question_id')
+            ->map(fn ($id) => ['qb_question_id' => (int) $id])->all();
+        return app(\App\Services\QbPaperSets::class)->groups([['items' => $ids]]);
     }
 
     private function mcqIds(QbPaper $paper): array

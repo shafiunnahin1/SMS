@@ -146,15 +146,30 @@ class QbOmrReviewService
         $rowSubject = [];
         // an ungrouped paper's frozen layout carries no subject: the question's own subject decides the row's block
         $subjectOf = $qbSubjectId === null ? collect() : \App\Models\QbQuestion::whereIn('id', $mcq->keys())->pluck('qb_subject_id', 'id');
-        foreach ($variant->layout_json as $s) foreach ($s['items'] as $it) {
-            if (!$mcq->has((int) $it['qb_question_id'])) continue;
-            $rowSubject[] = isset($it['qb_subject_id']) ? (int) $it['qb_subject_id'] : (isset($subjectOf[(int) $it['qb_question_id']]) ? (int) $subjectOf[(int) $it['qb_question_id']] : null);
-            $key[] = array_values(array_filter(array_map(fn ($l) => array_search($l, self::LABELS, true), $it['correct'] ?? []), fn ($v) => $v !== false));
-        }
+        $groups = $this->forms->groups($paper);                   // D171: a group's children are rows graded with their own marks
+        if ($qbSubjectId !== null && $groups !== []) $subjectOf = $subjectOf->union(\App\Models\QbQuestion::whereIn('id', array_keys($groups))->pluck('qb_subject_id', 'id'));
         $m = $form->settings_json['marking'] ?? [];
+        $rowMarks = [];
+        $labels = fn (array $correct) => array_values(array_filter(array_map(fn ($l) => array_search($l, self::LABELS, true), $correct), fn ($v) => $v !== false));
+        foreach ($variant->layout_json as $s) foreach ($s['items'] as $it) {
+            $q = (int) $it['qb_question_id'];
+            $subject = isset($it['qb_subject_id']) ? (int) $it['qb_subject_id'] : (isset($subjectOf[$q]) ? (int) $subjectOf[$q] : null);
+            if ($mcq->has($q)) {
+                $rowSubject[] = $subject;
+                $key[] = $labels($it['correct'] ?? []);
+                $rowMarks[] = Money::toPaisa((string) ($m['question_mark'] ?? '1'));
+                continue;
+            }
+            foreach ($groups[$q] ?? [] as $k => $child) {
+                $rowSubject[] = $subject;
+                $key[] = $labels($it['children_correct'][$k] ?? []);
+                $rowMarks[] = Money::toPaisa((string) ($child['marks'] ?? '0'));
+            }
+        }
         $policy = $m['multiple_answer_policy'] ?? 'wrong';
         $correct = 0;
         $wrong = 0;
+        $paisa = 0;
         $per = [];
         foreach ($scan->answers_json ?? [] as $i => $a) {
             if ($qbSubjectId !== null && ($rowSubject[$i] ?? null) !== $qbSubjectId) continue;
@@ -166,8 +181,8 @@ class QbOmrReviewService
             $ok = $policy === 'correct_if_any' ? count(array_intersect($sel, $right)) > 0 : $sel === $right;
             $per[] = $ok ? 'correct' : 'wrong';
             $ok ? $correct++ : $wrong++;
+            if ($ok) $paisa += $rowMarks[$i] ?? 0;
         }
-        $paisa = $correct * Money::toPaisa((string) ($m['question_mark'] ?? '1'));
         if (!empty($m['negative_mark_enabled'])) $paisa -= $wrong * Money::toPaisa((string) ($m['negative_mark'] ?? '0'));
         return ['correct' => $correct, 'marks' => Money::format($paisa), 'set' => $variant->code, 'per_question' => $per];
     }
