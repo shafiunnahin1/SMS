@@ -11,7 +11,7 @@ import Button from '../../components/Button'
 import QbStatus from '../../features/qb/QbStatus'
 import { EmptyState } from '../../components/StateViews'
 import Tabs from '../../ui/variants/Tabs'
-import { Input } from '../../components/FormField'
+import { Input, Select } from '../../components/FormField'
 import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
 import MathText from '../../features/qb/MathText'
@@ -19,7 +19,12 @@ import { breadcrumbLabel, sourceLabel, versionsForSubject } from '../../features
 import CurriculumPicker from '../../features/qb/CurriculumPicker'
 import { fromQuestion, StructuredAnswers, StructuredPreview } from '../../features/qb/Structured'
 
-const PER_PAGE = 16
+// D174 (2): 25, 50, 75 or 100 per page, remembered in this browser (a convenience only)
+const PER_PAGE_OPTIONS = [25, 50, 75, 100]
+const PER_PAGE_KEY = 'qb.questions.per_page'
+function storedPerPage() {
+  try { const n = Number(localStorage.getItem(PER_PAGE_KEY)); return PER_PAGE_OPTIONS.includes(n) ? n : 25 } catch { return 25 }
+}
 const LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
 
 const STATUSES = ['all', 'draft', 'review', 'rejected', 'published']
@@ -56,13 +61,16 @@ export default function QbQuestions() {
   const status = params.get('status') ?? (role === 'content_moderator' ? 'review' : 'all')
   const [filters, setFilters] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] })
   const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(storedPerPage)
   const [shown, setShown] = useState(() => new Set())
   const [selected, setSelected] = useState(() => new Set())
   const [bulkError, setBulkError] = useState('')
+  const [returnReason, setReturnReason] = useState('')
+  const isReviewer = ['content_moderator', 'super_admin'].includes(role)
   const qc = useQueryClient()
   const q = useQuery({
-    queryKey: ['writer', 'questions', status, filters, page],
-    queryFn: () => api.get('/writer/questions', { params: { ...filters, q: filters.q || undefined, status: status === 'all' ? undefined : status, page, per_page: PER_PAGE } }).then(r => r.data),
+    queryKey: ['writer', 'questions', status, filters, page, perPage],
+    queryFn: () => api.get('/writer/questions', { params: { ...filters, q: filters.q || undefined, status: status === 'all' ? undefined : status, page, per_page: perPage } }).then(r => r.data),
   })
   const rows = q.data?.data ?? []
   const meta = q.data?.meta
@@ -105,13 +113,37 @@ export default function QbQuestions() {
     )).map(version => [version.id, version])).values()]
     : []
   const curriculumOptions = curriculumVersions.flatMap(version => flattenCurriculum(version.nodes, [], localizedName, version))
-  const selectableRows = rows.filter(row => role !== 'content_moderator' && ['draft', 'rejected'].includes(row.status))
+  // a writer submits drafts / returned questions; a moderator or the Super Admin publishes or returns questions in review (D174 (1))
+  const canSelect = row => (role !== 'content_moderator' && ['draft', 'rejected'].includes(row.status)) || (isReviewer && row.status === 'review')
+  const selectableRows = rows.filter(canSelect)
+  const selectedRows = rows.filter(row => selected.has(row.id))
+  const submitIds = selectedRows.filter(row => row.status !== 'review').map(row => row.id)
+  const reviewIds = selectedRows.filter(row => row.status === 'review').map(row => row.id)
   const allSelectableSelected = selectableRows.length > 0 && selectableRows.every(row => selected.has(row.id))
   const someSelectableSelected = selectableRows.some(row => selected.has(row.id))
   const toggleSelected = id => setSelected(old => { const next = new Set(old); next.has(id) ? next.delete(id) : next.add(id); return next })
+  const clearSelection = () => { setSelected(new Set()); setBulkError('') }
+  const changePerPage = value => {
+    const n = Number(value)
+    setPerPage(n); setPage(1); clearSelection()
+    try { localStorage.setItem(PER_PAGE_KEY, String(n)) } catch { /* not stored: the choice holds for this visit */ }
+  }
+  // each question goes through its own endpoint, so roles, status rules and audit stay as they are; failures are counted
+  const runBulk = async (ids, post, partialKey) => {
+    const results = await Promise.allSettled(ids.map(post))
+    const failed = ids.filter((id, index) => results[index].status !== 'fulfilled')
+    await qc.invalidateQueries({ queryKey: ['writer', 'questions'] })
+    setSelected(new Set(failed))
+    setBulkError(failed.length ? t(partialKey, { count: failed.length }) : '')
+    return ids.length - failed.length
+  }
+  const reviewSelected = useMutation({
+    mutationFn: ({ action }) => runBulk(reviewIds, id => api.post(`/writer/questions/${id}/${action}`, action === 'reject' ? { reason: returnReason.trim() } : undefined), 'qbaq.bulk_review_partial'),
+    onSuccess: (_, { action }) => { if (action === 'reject') setReturnReason('') },
+  })
   const submitSelected = useMutation({
     mutationFn: async () => {
-      const ids = [...selected]
+      const ids = submitIds
       const results = await Promise.allSettled(ids.map(id => api.post(`/writer/questions/${id}/submit`)))
       const failed = results.map((result, index) => ({ id: ids[index], ok: result.status === 'fulfilled' })).filter(item => !item.ok)
       const succeeded = results.length - failed.length
@@ -138,13 +170,24 @@ export default function QbQuestions() {
               <p className="font-semibold"><bdi>{meta?.total ?? 0}</bdi> {t('qb.questions')}</p>
               {meta && meta.total > 0 && <p className="text-sm text-content-muted"><bdi>{(meta.current_page - 1) * meta.per_page + 1}–{(meta.current_page - 1) * meta.per_page + rows.length}</bdi> {t('qbaq.displayed')}</p>}
             </div>
-            {role !== 'content_moderator' && selectableRows.length > 0 && <div className="flex flex-wrap items-center gap-2">
+            <Select className="w-28" label={t('qbaq.per_page')} name="per_page" value={String(perPage)} onChange={e => changePerPage(e.target.value)}
+              options={PER_PAGE_OPTIONS.map(n => ({ value: String(n), label: String(n) }))} />
+            {selectableRows.length > 0 && <div className="flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={allSelectableSelected} ref={node => { if (node) node.indeterminate = someSelectableSelected && !allSelectableSelected }}
                   onChange={event => setSelected(old => { const next = new Set(old); selectableRows.forEach(row => event.target.checked ? next.add(row.id) : next.delete(row.id)); return next })} />
                 {t('qbaq.select_all')}
               </label>
-              <Button disabled={!selected.size || submitSelected.isPending} loading={submitSelected.isPending} onClick={() => submitSelected.mutate()} data-action="bulk-submit">{t('qb.submit')} {selected.size > 0 && `(${selected.size})`}</Button>
+              {role !== 'content_moderator' && rows.some(row => ['draft', 'rejected'].includes(row.status)) &&
+                <Button disabled={!submitIds.length || submitSelected.isPending} loading={submitSelected.isPending} onClick={() => submitSelected.mutate()} data-action="bulk-submit">{t('qb.submit')} {submitIds.length > 0 && `(${submitIds.length})`}</Button>}
+              {isReviewer && rows.some(row => row.status === 'review') && <>
+                <Button disabled={!reviewIds.length || reviewSelected.isPending} loading={reviewSelected.isPending && reviewSelected.variables?.action === 'publish'}
+                  onClick={() => reviewSelected.mutate({ action: 'publish' })} data-action="bulk-publish">{t('qbaq.bulk_publish')} {reviewIds.length > 0 && `(${reviewIds.length})`}</Button>
+                <Input className="w-64" label={t('qbaq.bulk_return_reason')} name="bulk_return_reason" value={returnReason} maxLength={500} onChange={e => setReturnReason(e.target.value)} />
+                <Button variant="secondary" disabled={!reviewIds.length || returnReason.trim().length < 3 || reviewSelected.isPending}
+                  loading={reviewSelected.isPending && reviewSelected.variables?.action === 'reject'}
+                  onClick={() => reviewSelected.mutate({ action: 'reject' })} data-action="bulk-return">{t('qbaq.bulk_return')} {reviewIds.length > 0 && `(${reviewIds.length})`}</Button>
+              </>}
             </div>}
             {bulkError && <p className="basis-full text-sm text-red-600" role="alert">{bulkError}</p>}
           </Card>
@@ -159,7 +202,7 @@ export default function QbQuestions() {
             return (
             <Card key={row.id} className="group flex flex-col gap-0 overflow-hidden p-0 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md" data-question={row.id}>
               <header className="flex flex-wrap items-start gap-3 border-b border-border-subtle bg-surface-muted/30 px-5 py-4">
-                {role !== 'content_moderator' && ['draft', 'rejected'].includes(row.status) && <input type="checkbox" className="mt-2" aria-label={t('qb.question_no', { id: row.id })}
+                {canSelect(row) && <input type="checkbox" className="mt-2" aria-label={t('qb.question_no', { id: row.id })}
                   checked={selected.has(row.id)} onChange={() => toggleSelected(row.id)} />}
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-token bg-primary font-semibold text-on-primary"><bdi>{(meta.current_page - 1) * meta.per_page + index + 1}</bdi></span>
                 <button type="button" onClick={() => navigate(`/writer/questions/${row.id}`)} className="flex min-w-0 flex-1 flex-col gap-2 text-start" aria-label={t('qb.question_no', { id: row.id })}>
