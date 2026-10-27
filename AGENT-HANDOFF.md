@@ -14,7 +14,7 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 
 ## Next Safe Action
 
-1. Approved but unfinished (still `[ ]` in `docs/PROGRESS.md`): `R2.1.2-gap-fill-authoring` (D142, implementation in progress), `R2.1.2-language-curriculum` (D145), `R2.1.2-ai-prompt-library` (D151; the 2026-10-27 `[x]` covers only the table-prompt follow-up). The owner picks which one is next; anything beyond these needs a new owner decision first (D83).
+1. Every approved task in the guard task map is `[x]` (D142, D145 and D151 accepted 2026-10-28). New work needs a new owner decision first (D83).
 2. Owner operations (not agent tasks): install `tesseract-ocr tesseract-ocr-ben tesseract-ocr-eng` on the server (`OCR_TESSERACT_BINARY` in `.env`); read and approve the 20 remaining draft help articles in the Super Admin panel (the 8 staff ones are approved); once 200 questions are published run `php artisan ai:evaluate eval.json --make=200 --institution=<slug>` (add `--rephrase=20` when the model is on).
 3. Agents never approve help articles or other owner reviews themselves, and never run owner `approve-*.ps1` scripts.
 4. Push only when the owner says "পুশ করো"; follow D155 before every push (clean tree, `git stash list`, `git fetch --prune`, only-ahead check, `infra/guard/pre_push_guard.py` with the refs on stdin).
