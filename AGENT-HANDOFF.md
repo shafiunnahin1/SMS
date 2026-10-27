@@ -4,6 +4,28 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 
 ## Current Handoff
 
+- Last checked: 2026-10-28 (cloud session)
+- Repository: `E:\Projects\School Management` (owner PC) and the cloud checkout; both on the same branch.
+- Branch: `claude/r216-omr-d127` — HEAD `b142870` on `origin`, local and remote matched, working tree clean. `claude/elegant-cori-gw2mw5` is the old branch; do not work there.
+- Runtime release R3 (`api/config/release.php`); R2.1 work runs only through owner-approved decisions and the guard task map (`R21_APPROVED` in `infra/guard/agent_guard.py`).
+- Done since the old snapshot (each `[x]` with evidence in `docs/PROGRESS.md`): D169 STW.1–STW.5 (staff work pages: department context, student view/admission, fee collection, attendance grants); D170.1 (Super Admin direct activation); D171 STIM.3, STIM.1, STIM.2 (stimulus MCQ group: one bank record, children numbered as MCQs in papers, sets, answer key, print, marks = sum of children, OMR rows and own-marks grading); D172 BASE.1–BASE.3 (seven baseline test failures repaired); D166/D168 AI-Q4S (four staff help articles), AI-Q5 (question from a photo, self-hosted Tesseract OCR, `ai_attachments`, one-day keep), AI-Q6 (`ai:evaluate` sources / not-found / help / model reported separately); D151 follow-up (import AI prompt asks for tables as `qmx-table` HTML).
+- Last verification (cloud, 2026-10-27/28): full `php artisan test` 1137 passed / 0 failed; `npx vitest run` 71 files / 267 passed; `npm run lint:theme` 186 files / 0 violations.
+- Owner PC note: the local checkout had broken refs (zero-OID branch ref, broken `ORIG_HEAD`) and was repaired by writing the branch ref to a known commit; a `.git` backup is at `E:\Projects\SMS-git-backup`. The local DB still has older pending migrations; run `php artisan migrate` there only on purpose.
+
+## Next Safe Action
+
+1. No approved implementation task is open. Every task in the guard task map up to AI-Q6 is `[x]`. New work needs a new owner decision (D-row in `docs/LOCKED-DECISIONS.md` + guard task map) first — D83: R2.1 feature work only through refined, owner-approved scope.
+2. Owner operations (not agent tasks): install `tesseract-ocr tesseract-ocr-ben tesseract-ocr-eng` on the server (`OCR_TESSERACT_BINARY` in `.env`); read and approve the 20 remaining draft help articles in the Super Admin panel (the 8 staff ones are approved); once 200 questions are published run `php artisan ai:evaluate eval.json --make=200 --institution=<slug>` (add `--rephrase=20` when the model is on).
+3. Agents never approve help articles or other owner reviews themselves, and never run owner `approve-*.ps1` scripts.
+4. Push only when the owner says "পুশ করো"; follow D155 before every push (clean tree, `git stash list`, `git fetch --prune`, only-ahead check, `infra/guard/pre_push_guard.py` with the refs on stdin).
+5. Preserve owner drafts, `text.txt` and existing caches; keep `E:\Projects\exam-management` read-only.
+
+## Event Log
+
+## 2026-10-16 — superseded snapshot (moved here on 2026-10-28)
+
+Current Handoff as it stood:
+
 - Last checked: 2026-10-16
 - Repository: `E:\Projects\School Management`
 - Branch: `claude/elegant-cori-gw2mw5`
@@ -41,14 +63,13 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 
 - QB.14 raster-transform slice (2026-10-13): rotation and near-white transparency are baked into raster bytes before the existing private-media upload; saved rich text still contains only the question media ID, width, and alignment. Focused QbFormatting/i18n tests 11 passed; full Vitest 104 passed; PHP rich-text/paper tests 10 passed/70 assertions; lint exit 0 with existing warnings; theme lint 142/0; build succeeded with the existing MathLive chunk warning; diagnostics clean. Browser synthetic 2x1 PNG became 1x2 PNG with the near-white pixel transparent. No API request or question save was made. QB.14 remains `[ ]`; persisted E2E/preview/library/PDF round-trip still needs an isolated DB.
 
-## Next Safe Action
+Next Safe Action as it stood:
 
 1. Confirm this R3.1 implementation checkpoint is pushed and local/remote match before the next update.
 2. Next planned task is R3.2 (cashbook/day-end close); read its specs, dependency and Done When before editing. R3.2 and later tasks remain incomplete.
 3. Expenses backend is verified in the test DB only. The app/demo DB migration was not run; before applying it, follow the explicit migration approval rule in docs/ops/agent-guardrails.md section 6 and verify the local target. Expense UI belongs to R3.12, not this checkpoint.
 4. Preserve owner drafts, text.txt and existing caches; keep exam-management read-only. D78 wallet remains unapproved.
 
-## Event Log
 - 2026-10-14 — Owner selected the D6/D47 behavior for R3.0: release gate → explicit Super Admin override → institution type → opt-in; no plan gate. Drafted an owner-review locked-decision proposal. R3.0 remains `[ ]`; no protected acceptance text, generated plan, release config, or application code changed. Next: owner authors/commits the decision row, then the protected R3.0 acceptance contract can be updated under that Change-Request.
 - 2026-10-14 — R3.0 G12 triage checkpoint `92844db` pushed: found the protected Done When's plan gate / override denial conflicts with D47 and D6/current `ModuleGate`. Baseline `php artisan test --filter=ReleaseGateTest`: 4 passed/11 assertions. Temporary R3 config/test probe passed 5/17 but was fully reverted; current `config/release.php` remains R1 and R3.0 stays `[ ]`. Fresh `uv run --offline --with PyYAML --no-project --python 3.14 infra/spec-verify/verify.py . --deep`: ALL CHECKS PASSED (3 warnings). Recorded blocker in `docs/BLOCKED.md`; no protected file changed. Post-push local/remote both equal `92844db`. Next: owner resolves the R3.0 acceptance conflict, then recheck single-agent ownership/remote before continuing.
 - 2026-10-14 — Drafted the wallet-payment owner decision proposal from the owner's request: separate owner wallets, wallet-funded project payments, gateway top-up only for a shortfall, refunds to the source wallet, institution gateway collections credited to institution wallets, and reviewed 48-hour payout requests with saved secure destinations. Read-only evidence: SMS/institution QB share the SMS ledger; student QB/quiz orders use direct bKash; fees retain cash/payment-method collection; writer earnings use a separate ledger. No plan/spec/schema/application code changed; tests are not applicable to this proposal; `git diff --check` passed. `git ls-remote` failed with `Empty reply from server`; not committed or pushed. Next: owner authors the approved row in `docs/LOCKED-DECISIONS.md`, then confirm exclusivity and remote state before any protected plan update.
