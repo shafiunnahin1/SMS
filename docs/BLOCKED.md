@@ -244,3 +244,5 @@ D168 (3) asks for verified staff articles on student admission, fee collection, 
 - **Two of the four APIs are closed to staff today.** The catalog lists `POST/GET api/v1/students…` as `exact_duty_permission` (`staff.student.store`, `staff.student.index`, `staff.student.show`), but `StaffIdentityBoundary` does not allowlist the student routes, so staff get 403 there. Attendance (`POST api/v1/attendance`) and fee collection (`POST api/v1/fees/collect`) are allowlisted.
 - Attempts: checked the staff menu, the router areas, the department portal page and the staff middleware — no staff screen exists for any of the four.
 Need from the owner: a decision and task for staff work pages (and, for admission / student info, opening the student routes to staff under D90/D91). Then the four articles are written against those pages, approved in the Super Admin panel, and AI-Q4S / AI-Q4 can be accepted. Until then staff asking about these get the fixed "no verified information" reply.
+
+2026-10-27 — resolved: the AI-Q4S (D168 (3)) entry above is unblocked by D169's staff pages; the four articles were written and checked off (AI-Q4S).

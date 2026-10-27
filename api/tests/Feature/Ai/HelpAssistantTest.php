@@ -17,7 +17,7 @@ class HelpAssistantTest extends TestCase
 
     private function seedArticles(): void
     {
-        $this->artisan('ai:help-seed')->expectsOutputToContain('drafts added 20')->assertSuccessful();
+        $this->artisan('ai:help-seed')->expectsOutputToContain('drafts added 28')->assertSuccessful();
         Tenancy::withoutTenancy(fn () => AiHelpArticle::query()->update(['status' => 'approved', 'approved_at' => now()]));
     }
 

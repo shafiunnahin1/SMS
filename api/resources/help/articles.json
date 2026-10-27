@@ -698,6 +698,301 @@
           "limits": "Admins and teachers; the question bank module must be on."
         }
       }
+    },
+    {
+      "slug": "staff-admit-student",
+      "roles": [
+        "institution_staff"
+      ],
+      "module": "students",
+      "refs": {
+        "menus": [
+          "/staff/students"
+        ],
+        "keys": [
+          "staff_context.working_in",
+          "staff_context.choose",
+          "students.add",
+          "students.name",
+          "students.guardian_phone",
+          "common.save"
+        ],
+        "routes": [
+          "POST api/v1/students"
+        ]
+      },
+      "bn": {
+        "title": "কর্মী হিসেবে নতুন শিক্ষার্থী ভর্তি",
+        "keywords": "ভর্তি নতুন শিক্ষার্থী ছাত্র ছাত্রী যোগ কর্মী admission",
+        "body": {
+          "purpose": "আপনার বিভাগের দায়িত্বে থাকলে একজন নতুন শিক্ষার্থী ভর্তি করা।",
+          "where": "মেনু → ছাত্রছাত্রী → নতুন ভর্তি",
+          "steps": [
+            "পাতার ওপরে \"কাজ করছেন:\" এর পাশে সঠিক বিভাগ আছে কিনা দেখুন; না থাকলে \"বিভাগ বাছুন\" চেপে বিভাগটি বাছুন।",
+            "মেনুতে \"ছাত্রছাত্রী\" খুলুন।",
+            "\"নতুন ভর্তি\" বোতামে চাপুন।",
+            "\"নাম\" আর \"অভিভাবকের ফোন\" পূরণ করুন; বাকি ঘর থাকলে পূরণ করুন।",
+            "\"সংরক্ষণ\" চাপুন।"
+          ],
+          "data": [
+            "শিক্ষার্থীর নাম",
+            "অভিভাবকের ফোন নম্বর"
+          ],
+          "result": "শিক্ষার্থী তালিকায় যোগ হয়; শ্রেণি/ব্যাচে যুক্ত করার কাজ প্রধান পরে করবেন।",
+          "errors": [
+            "নাম বা ফোন খালি থাকলে ঘরটি লাল হয় - পূরণ করে আবার চেষ্টা করুন।",
+            "\"অনুমতি নেই\" দেখালে নির্বাচিত বিভাগে ভর্তির দায়িত্ব নেই - সঠিক বিভাগ বাছুন বা প্রধানকে বলুন।"
+          ],
+          "limits": "শুধু সেই কর্মীর জন্য, যার কোনো সক্রিয় বিভাগে এই কাজের দায়িত্ব আছে; পাতাটি নির্বাচিত বিভাগের অনুমতি আবার যাচাই করে। ফি-ছাড় দেওয়া বা সম্মতির ঘর শুধু প্রধান দেখেন।"
+        }
+      },
+      "en": {
+        "title": "Admitting a new student as staff",
+        "keywords": "admission new student add enrol staff",
+        "body": {
+          "purpose": "Admit a new student when your department duty allows it.",
+          "where": "Menu → Students → New admission",
+          "steps": [
+            "Check that the right department shows after \"Working in:\" at the top; if not, press \"Choose a department\" and pick it.",
+            "Open \"Students\" in the menu.",
+            "Press \"New admission\".",
+            "Fill \"Name\" and \"Guardian phone\", and any other fields shown.",
+            "Press \"Save\"."
+          ],
+          "data": [
+            "Student's name",
+            "Guardian's phone number"
+          ],
+          "result": "The student joins the list; the head places them in a class or batch later.",
+          "errors": [
+            "An empty name or phone turns the field red - fill it and try again.",
+            "\"No permission\" means the selected department has no admission duty - choose the right department or ask the head."
+          ],
+          "limits": "Only for a staff member whose duty in an active department includes this work; the page checks the selected department's permission again. Fee waivers and consent fields are for the head only."
+        }
+      }
+    },
+    {
+      "slug": "staff-fee-collect",
+      "roles": [
+        "institution_staff"
+      ],
+      "module": "fees",
+      "refs": {
+        "menus": [
+          "/staff/fees/collect"
+        ],
+        "keys": [
+          "staff_context.working_in",
+          "staff_context.choose",
+          "fees.find_student",
+          "fees.dues",
+          "fees.method",
+          "fees.pay",
+          "fees.receipt"
+        ],
+        "routes": [
+          "POST api/v1/fees/collect"
+        ]
+      },
+      "bn": {
+        "title": "কর্মী হিসেবে ফি আদায়",
+        "keywords": "ফি আদায় বেতন টাকা জমা রসিদ কর্মী collect fee",
+        "body": {
+          "purpose": "শিক্ষার্থীর বকেয়া ফি আদায় করে রসিদ দেওয়া।",
+          "where": "মেনু → ফি আদায়",
+          "steps": [
+            "পাতার ওপরে \"কাজ করছেন:\" এর পাশে সঠিক বিভাগ আছে কিনা দেখুন; না থাকলে \"বিভাগ বাছুন\" চেপে বিভাগটি বাছুন।",
+            "মেনুতে \"ফি আদায়\" খুলুন।",
+            "\"ছাত্র খুঁজুন\" ঘরে নাম, আইডি বা ফোন লিখে শিক্ষার্থী বাছুন।",
+            "\"বকেয়া\" তালিকা থেকে যে ফি নেবেন তা বাছুন।",
+            "\"পদ্ধতি\" বাছুন (যেমন নগদ)।",
+            "\"আদায় করুন\" চাপুন।"
+          ],
+          "data": [
+            "শিক্ষার্থী",
+            "কোন বকেয়া",
+            "টাকা দেওয়ার পদ্ধতি"
+          ],
+          "result": "আদায় সম্পন্ন হয় এবং \"রসিদ\" নম্বর দেখায়; রসিদ PDF খুলে দিতে পারেন।",
+          "errors": [
+            "বকেয়া না থাকলে আদায়ের কিছু দেখাবে না।",
+            "\"অনুমতি নেই\" দেখালে নির্বাচিত বিভাগে ফি আদায়ের দায়িত্ব নেই।"
+          ],
+          "limits": "শুধু সেই কর্মীর জন্য, যার কোনো সক্রিয় বিভাগে এই কাজের দায়িত্ব আছে; পাতাটি নির্বাচিত বিভাগের অনুমতি আবার যাচাই করে। টাকার রেকর্ড মোছা যায় না; ভুল হলে প্রধান ফেরত/সংশোধন করবেন।"
+        }
+      },
+      "en": {
+        "title": "Collecting fees as staff",
+        "keywords": "collect fee payment money receipt staff tuition",
+        "body": {
+          "purpose": "Collect a student's due fees and give a receipt.",
+          "where": "Menu → Collect fee",
+          "steps": [
+            "Check that the right department shows after \"Working in:\" at the top; if not, press \"Choose a department\" and pick it.",
+            "Open \"Collect fee\" in the menu.",
+            "In \"Find student\" type a name, ID or phone and pick the student.",
+            "From \"Dues\" pick what you are collecting.",
+            "Choose the \"Method\" (for example cash).",
+            "Press \"Collect\"."
+          ],
+          "data": [
+            "The student",
+            "Which dues",
+            "How it is paid"
+          ],
+          "result": "The collection is saved and its \"Receipt\" number shows; you can open the receipt PDF.",
+          "errors": [
+            "With no dues there is nothing to collect.",
+            "\"No permission\" means the selected department has no fee-collection duty."
+          ],
+          "limits": "Only for a staff member whose duty in an active department includes this work; the page checks the selected department's permission again. Money records are never deleted; the head handles refunds or corrections."
+        }
+      }
+    },
+    {
+      "slug": "staff-attendance",
+      "roles": [
+        "institution_staff"
+      ],
+      "module": "attendance",
+      "refs": {
+        "menus": [
+          "/staff/attendance"
+        ],
+        "keys": [
+          "staff_context.working_in",
+          "staff_context.choose",
+          "attendance.take",
+          "attendance.date",
+          "attendance.all_present",
+          "common.save"
+        ],
+        "routes": [
+          "POST api/v1/attendance"
+        ]
+      },
+      "bn": {
+        "title": "কর্মী হিসেবে উপস্থিতি নেওয়া",
+        "keywords": "উপস্থিতি হাজিরা নেওয়া অনুপস্থিত কর্মী attendance",
+        "body": {
+          "purpose": "আপনাকে দেওয়া শ্রেণি/ব্যাচের দিনের উপস্থিতি নেওয়া।",
+          "where": "মেনু → উপস্থিতি → হাজিরা নিন",
+          "steps": [
+            "পাতার ওপরে \"কাজ করছেন:\" এর পাশে সঠিক বিভাগ আছে কিনা দেখুন; না থাকলে \"বিভাগ বাছুন\" চেপে বিভাগটি বাছুন।",
+            "মেনুতে \"উপস্থিতি\" খুলুন।",
+            "শ্রেণি/ব্যাচ আর \"তারিখ\" বাছুন।",
+            "প্রত্যেকের অবস্থা চিহ্নিত করুন, অথবা \"সবাই উপস্থিত\" চেপে পরে যারা আসেনি তাদের বদলান।",
+            "\"সংরক্ষণ\" চাপুন।"
+          ],
+          "data": [
+            "শ্রেণি/ব্যাচ",
+            "তারিখ",
+            "প্রত্যেকের উপস্থিতি"
+          ],
+          "result": "দিনের উপস্থিতি সংরক্ষিত হয়; পরে সংশোধনও এখানেই করা যায়।",
+          "errors": [
+            "তালিকায় শ্রেণি/ব্যাচ না দেখালে প্রধান বা শ্রেণিশিক্ষক আপনাকে সেটির উপস্থিতির দায়িত্ব দেননি।",
+            "ছুটির দিনে পাতায় ছুটির নাম দেখায়।"
+          ],
+          "limits": "শুধু সেই কর্মীর জন্য, যার কোনো সক্রিয় বিভাগে এই কাজের দায়িত্ব আছে; পাতাটি নির্বাচিত বিভাগের অনুমতি আবার যাচাই করে। শুধু যে শ্রেণি/ব্যাচের দায়িত্ব দেওয়া হয়েছে (অথবা শিক্ষক হিসেবে নিজের) সেগুলো দেখা যায়।"
+        }
+      },
+      "en": {
+        "title": "Taking attendance as staff",
+        "keywords": "attendance take mark absent present staff",
+        "body": {
+          "purpose": "Take the day's attendance for a class or batch you were given.",
+          "where": "Menu → Attendance → Take attendance",
+          "steps": [
+            "Check that the right department shows after \"Working in:\" at the top; if not, press \"Choose a department\" and pick it.",
+            "Open \"Attendance\" in the menu.",
+            "Choose the class or batch and the \"Date\".",
+            "Mark each student, or press \"All present\" and change those who are absent.",
+            "Press \"Save\"."
+          ],
+          "data": [
+            "Class or batch",
+            "Date",
+            "Each student's attendance"
+          ],
+          "result": "The day's attendance is saved; corrections are made on the same page.",
+          "errors": [
+            "If a class or batch is missing, the head or its class teacher has not given you its attendance.",
+            "On a holiday the page shows the holiday's name."
+          ],
+          "limits": "Only for a staff member whose duty in an active department includes this work; the page checks the selected department's permission again. Only the classes or batches you were given (or your own as a teacher) are listed."
+        }
+      }
+    },
+    {
+      "slug": "staff-student-info",
+      "roles": [
+        "institution_staff"
+      ],
+      "module": "students",
+      "refs": {
+        "menus": [
+          "/staff/students"
+        ],
+        "keys": [
+          "staff_context.working_in",
+          "staff_context.choose",
+          "students.search_hint",
+          "students.name",
+          "students.enrollments"
+        ],
+        "routes": [
+          "GET api/v1/students",
+          "GET api/v1/students/{id}"
+        ]
+      },
+      "bn": {
+        "title": "কর্মী হিসেবে শিক্ষার্থীর তথ্য দেখা",
+        "keywords": "শিক্ষার্থীর তথ্য দেখা খোঁজা প্রোফাইল ছাত্র কর্মী student info",
+        "body": {
+          "purpose": "শিক্ষার্থী খুঁজে তার তথ্য ও ভর্তি দেখা।",
+          "where": "মেনু → ছাত্রছাত্রী",
+          "steps": [
+            "পাতার ওপরে \"কাজ করছেন:\" এর পাশে সঠিক বিভাগ আছে কিনা দেখুন; না থাকলে \"বিভাগ বাছুন\" চেপে বিভাগটি বাছুন।",
+            "মেনুতে \"ছাত্রছাত্রী\" খুলুন।",
+            "খোঁজার ঘরে নাম, আইডি বা ফোন লিখুন।",
+            "তালিকা থেকে শিক্ষার্থীর \"নাম\" চেপে তার পাতা খুলুন; সেখানে \"ভর্তি\" অংশে শ্রেণি/ব্যাচ দেখা যায়।"
+          ],
+          "data": [
+            "নাম, আইডি বা ফোন"
+          ],
+          "result": "শিক্ষার্থীর তথ্য শুধু দেখা যায়।",
+          "errors": [
+            "কাউকে না পেলে বানান বা নম্বর আবার দেখুন।",
+            "\"অনুমতি নেই\" দেখালে নির্বাচিত বিভাগে শিক্ষার্থী দেখার দায়িত্ব নেই।"
+          ],
+          "limits": "শুধু সেই কর্মীর জন্য, যার কোনো সক্রিয় বিভাগে এই কাজের দায়িত্ব আছে; পাতাটি নির্বাচিত বিভাগের অনুমতি আবার যাচাই করে। এখানে তথ্য বদলানো যায় না; ফি-ছাড়ের তথ্য কর্মী দেখেন না।"
+        }
+      },
+      "en": {
+        "title": "Viewing student information as staff",
+        "keywords": "student information view search profile find staff",
+        "body": {
+          "purpose": "Find a student and see their details and enrollments.",
+          "where": "Menu → Students",
+          "steps": [
+            "Check that the right department shows after \"Working in:\" at the top; if not, press \"Choose a department\" and pick it.",
+            "Open \"Students\" in the menu.",
+            "Type a name, ID or phone in the search box.",
+            "Press the student's \"Name\" to open their page; the \"Enrollments\" part shows the class or batch."
+          ],
+          "data": [
+            "Name, ID or phone"
+          ],
+          "result": "The student's details are shown read-only.",
+          "errors": [
+            "If nobody is found, check the spelling or number.",
+            "\"No permission\" means the selected department has no student-viewing duty."
+          ],
+          "limits": "Only for a staff member whose duty in an active department includes this work; the page checks the selected department's permission again. Nothing can be changed here; staff do not see fee waivers."
+        }
+      }
     }
   ]
 }
