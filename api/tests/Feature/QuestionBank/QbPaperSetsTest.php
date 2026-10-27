@@ -88,7 +88,8 @@ class QbPaperSetsTest extends TestCase
             ->assertJsonPath('error', 'qb_sets_capacity');
         $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['strategy' => 'options'])->assertOk();
         [$host2, $admin2] = $this->paper(1);
-        $this->api('POST', $host2, 'question-bank/papers', $admin2, ['title' => 'x', 'sets_count' => 27,
+        $this->api('POST', $host2, 'question-bank/papers', $admin2, ['title' => 'x', 'sets_count' => 256,   // D173 (owner-approved 2026-10-28): the cap is now 255
+           
             'sections' => [['title' => 'ক', 'items' => [['qb_question_id' => $this->mcqs[0]->id, 'marks' => '1']]]]])->assertStatus(422);
     }
 
@@ -164,7 +165,7 @@ class QbPaperSetsTest extends TestCase
             }
         }
         $this->assertCount(4, array_unique($orders), 'an added set never repeats an earlier order');
-        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['count' => 30, 'strategy' => 'both'])->assertStatus(422);
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin, ['count' => 300, 'strategy' => 'both'])->assertStatus(422);   // D173 (owner-approved 2026-10-28): past the 255 cap
     }
 
     public function test_sets_are_not_added_once_an_omr_sheet_is_scanned_and_not_on_another_institutions_paper(): void

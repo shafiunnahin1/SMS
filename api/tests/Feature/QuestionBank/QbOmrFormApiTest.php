@@ -163,7 +163,7 @@ class QbOmrFormApiTest extends TestCase
         $saved = $this->api('PUT', $host, $baseUrl, $teacher, ['settings' => $this->settings(['subtitle' => 'Half yearly', 'title_size' => 10, 'subtitle_size' => 12,
             'font' => 'noto', 'theme_color' => 'blue', 'entry_mode' => 'manual', 'digits' => ['class' => 3, 'subject' => 2, 'set' => 2]])])->assertOk()->json('data.settings');
         $this->assertSame(['Half yearly', 10, 12, 'noto', 'blue', 'manual'], [$saved['subtitle'], $saved['title_size'], $saved['subtitle_size'], $saved['font'], $saved['theme_color'], $saved['entry_mode']]);
-        $this->assertSame([3, 6, 10, 2], array_map(fn ($k) => $saved['info_boxes'][$k]['digits'], ['class', 'roll', 'student_id', 'set']));   // MySQL JSON reorders keys; D159 (4): the 10-digit ID box replaces the subject code
+        $this->assertSame([3, 6, 10, 1], array_map(fn ($k) => $saved['info_boxes'][$k]['digits'], ['class', 'roll', 'student_id', 'set']));   // D173 (owner-approved 2026-10-28): one set column per code letter   // MySQL JSON reorders keys; D159 (4): the 10-digit ID box replaces the subject code
 
         $this->api('GET', $host, "{$baseUrl}/pdf", $teacher)->assertStatus(422)->assertJsonPath('error', 'qb_omr_not_generated');
         $renderer = $this->mock(PdfService::class);
