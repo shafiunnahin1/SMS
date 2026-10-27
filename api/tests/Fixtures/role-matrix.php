@@ -263,6 +263,7 @@ return [
     'GET api/v1/writer/imports/{id}/errors.csv' => ['content_writer', 'super_admin'],
     'POST api/v1/writer/imports/{id}/resume' => ['content_writer', 'super_admin'],
     'PATCH api/v1/writer/imports/{id}/records/{record}' => ['content_writer', 'super_admin'],
+    'POST api/v1/writer/imports/{id}/records/{record}/open-editor' => ['content_writer', 'super_admin'],   // D153 (registered by D172)
     'POST api/v1/writer/imports/{id}/records/{record}/duplicate' => ['content_writer', 'super_admin'],
     'POST api/v1/writer/imports/{id}/settings' => ['content_writer', 'super_admin'],
     'POST api/v1/writer/imports/{id}/select' => ['content_writer', 'super_admin'],
