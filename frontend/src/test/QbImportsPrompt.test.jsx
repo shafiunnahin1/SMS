@@ -54,6 +54,8 @@ describe('writer import AI prompt', () => {
     expect(output.value).toContain('"question_number":"12"')
     expect(output.value).toContain('topic_proposals')
     expect(output.value).toContain('["mcq","creative","stimulus_mcq_group"]')
+    expect(output.value).toContain('write it as a raw HTML table')   // owner 2026-10-27: tables come back as qmx tables
+    expect(output.value).toContain('<table class=\\"qmx-table\\">')
 
     // the syntax example is valid JSON: the ordinary MCQ stays, and a stimulus-based MCQ shows its required fields
     const marker = 'replace every sample value and question with the requested content: '
