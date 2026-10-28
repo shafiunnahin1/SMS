@@ -5,6 +5,10 @@
      Maths ($...$) prints as written - no maths engine runs inside the PDF page (docs/DECISIONS.md, QB.8). --}}
 @section('content')
 @php($optionLabels = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ'])
+@php($paperColumns = (string) ($paper['columns'] ?? 'auto'))
+@php($paperLayout = in_array($paperColumns, ['1', '2', '4', 'auto'], true) ? ('cols-' . $paperColumns) : 'cols-auto')
+@php($paperSize = strtoupper((string) ($paper['paper'] ?? 'a4')))
+@php($paperOrientation = (string) ($paper['orientation'] ?? 'portrait'))
 @php($itemAnswer = fn (string $kind, array $a) => match ($kind) {
     'gap' => e(implode(' / ', (array) ($a['answers'] ?? []))),
     'match_pair' => e($a['right'] ?? ''),
@@ -18,19 +22,29 @@
 })
 @php($n = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.'))
 <style>
+  @page { size: {{ $paperSize }} {{ $paperOrientation === 'landscape' ? 'landscape' : 'portrait' }}; margin: 0.5in; }
+  body { counter-reset: page; }
   .head { text-align: center; margin-bottom: 8px; } .head h2 { margin: 2px 0; font-size: 15px; }
   .meta { display: flex; justify-content: space-between; font-size: 11px; border-bottom: 1px solid #999999; padding-bottom: 4px; margin-bottom: 8px; }
   .section h3 { font-size: 13px; margin: 10px 0 2px; } .section h4.subject { font-size: 12px; margin: 8px 0 2px; text-decoration: underline; } .section .ins { font-size: 11px; font-style: italic; margin-bottom: 4px; }
   .q { margin: 6px 0; page-break-inside: avoid; } .q .row { display: flex; gap: 6px; } .q .mk { margin-inline-start: auto; font-size: 11px; white-space: nowrap; }
   .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; padding-inline-start: 22px; font-size: 12px; }
   .parts { padding-inline-start: 22px; } .ans { padding-inline-start: 22px; font-size: 11px; color: #333333; border-inline-start: 2px solid {{ $theme['primary_color'] }}; margin-top: 2px; }
-  .text { white-space: pre-wrap; }
-  .cols-2 { column-count: 2; column-gap: 18px; } .cols-2 .q { break-inside: avoid; }   {{-- D126 (4): qbank's two columns --}}
+  .text { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+  .cols-1, .cols-2, .cols-4, .cols-auto { column-gap: 18px; }
+  .cols-1 { column-count: 1; }
+  .cols-2 { column-count: 2; } .cols-2 .q { break-inside: avoid; }
+  .cols-4 { column-count: 4; } .cols-4 .q { break-inside: avoid; }
+  .cols-auto { column-count: 1; font-size: clamp(10px, 1.4vw, 12px); }
+  .cols-auto .q { break-inside: avoid; }
   .key { page-break-before: always; } .key table { border-collapse: collapse; } .key td, .key th { border: 1px solid #999999; padding: 2px 8px; font-size: 12px; }
   .qmx-align-center { text-align: center; } .qmx-align-right { text-align: right; } .qmx-align-justify { text-align: justify; }
   table.qmx-table { border-collapse: collapse; } table.qmx-table th, table.qmx-table td { border: 1px solid #999; padding: 2px 6px; }   {{-- D72 --}}
+  .paper-page { page-break-after: always; }
+  .paper-page:last-child { page-break-after: auto; }
+  .paper-page::after { content: counter(page); counter-increment: page; float: right; font-size: 10px; }
 </style>
-<div class="head">
+<div class="head" data-paper="{{ strtolower($paperSize) }}" data-orientation="{{ $paperOrientation }}" data-columns="{{ $paperColumns }}">
   <h2>{{ $paper['title'] }}</h2>
   @if ($paper['exam_name'])<div>{{ $paper['exam_name'] }}</div>@endif
 </div>
@@ -41,7 +55,7 @@
   @if ($paper['answers'])<span><strong>{{ __('pdf.qb_paper.with_answers') }}</strong></span>@endif
 </div>
 @if ($paper['instructions'])<div class="ins text">{{ $paper['instructions'] }}</div>@endif
-<div class="{{ ($paper['columns'] ?? 1) === 2 ? 'cols-2' : '' }}">
+<div class="{{ $paperLayout }}" data-paper="{{ strtolower($paperSize) }}" data-orientation="{{ $paperOrientation }}" data-columns="{{ $paperColumns }}" style="page-break-after: always;">
 @foreach ($paper['sections'] as $s)
   <div class="section">
     <h3>{{ $s['title'] }}</h3>

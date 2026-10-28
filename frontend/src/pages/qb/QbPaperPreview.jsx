@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation, useParams, useSearchParams } from 'react-router-dom'
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowUp, FileText, Image as ImageIcon, ImagePlus, Pencil, Printer, RotateCcw, Trash2 } from 'lucide-react'
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowUp, FileText, Image as ImageIcon, ImagePlus, Minus, Pencil, Plus, Printer, RotateCcw, Trash2 } from 'lucide-react'
 import api from '../../api/axios'
 import Loader from '../../components/Loader'
 import { ErrorState } from '../../components/StateViews'
 import MathText from '../../features/qb/MathText'
 import { loadFont } from '../../theme/fonts'
-import { downloadPaperJpg, downloadPaperPdf } from '../../features/qb/paperImage'
+import { downloadPaperJpg, downloadPaperPdf, paperDimensions } from '../../features/qb/paperImage'
+import { applyPreviewFontSize, optionColumnCount, resetPreviewFontSize } from '../../features/qb/paperOptions'
 import { useUiStore } from '../../store/uiStore'
 
 // D133 / D110: qbank's question-paper print preview with its Paper Controller (resources/views/question-paper/preview.blade.php at
@@ -67,19 +68,24 @@ export default function QbPaperPreview() {
   const saved = useMemo(() => readJson(paperStore(id, set), {}), [id, set])
   const [edits, setEdits] = useState(saved.edits ?? {})      // question id -> { question_text, options: [text], answer_text, explanation_text }
   const [boxes, setBoxes] = useState(saved.boxes ?? [])      // { id, kind: text|image, anchor: question id | 'top', width, height, html, src }
+  const [printPrefs, setPrintPrefs] = useState(() => ({ optionColumns: saved.optionColumns ?? 'auto', questionColumns: saved.questionColumns ?? {}, pageSize: saved.pageSize ?? 'A4', orientation: saved.orientation ?? 'portrait' }))
+  const [selectedQuestions, setSelectedQuestions] = useState([])
+  const [selectedOptionMode, setSelectedOptionMode] = useState('default')
+  const [fontSelection, setFontSelection] = useState(null)
   const [editing, setEditing] = useState(null)
   const [activeBox, setActiveBox] = useState(null)
   const [drop, setDrop] = useState(null)
   const ghostRef = useRef(null)
   const [jpgBusy, setJpgBusy] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
+  const [pageCount, setPageCount] = useState(1)
   const paperRef = useRef(null)
   const drag = useRef(null)
   const imageInput = useRef(null)
 
   useEffect(() => { try { window.localStorage.setItem(STORE, JSON.stringify(o)) } catch { /* private window: the settings just are not remembered */ } }, [o])
   useEffect(() => { const f = FONTS.find(x => x.value === o.font); if (f?.load) loadFont(f.load) }, [o.font])
-  useEffect(() => { writeJson(paperStore(id, set), { edits, boxes }) }, [id, set, edits, boxes])
+  useEffect(() => { writeJson(paperStore(id, set), { edits, boxes, ...printPrefs }) }, [id, set, edits, boxes, printPrefs])
   useEffect(() => {
     const d = paper.data
     if (!d) return
@@ -94,6 +100,21 @@ export default function QbPaperPreview() {
   const setOpt = (patch) => setO(p => ({ ...p, ...patch }))
   const codes = (header?.subjectCode ?? '').split(/[,،]/).map(c => c.trim()).filter(Boolean)
   const sections = useMemo(() => (order ?? []).map(i => paper.data?.sections[i]).filter(Boolean), [order, paper.data])
+  const paperSize = paperDimensions(printPrefs.pageSize, printPrefs.orientation)
+  const maxSelectedFontSize = Math.max(64, Math.round(paperSize.heightPt))
+  useEffect(() => {
+    const paperElement = paperRef.current
+    if (!paperElement || typeof ResizeObserver === 'undefined') return
+    const update = () => {
+      const pixelsPerMm = paperElement.getBoundingClientRect().width / paperSize.width
+      const pageHeight = paperSize.height * pixelsPerMm
+      setPageCount(Math.max(1, Math.ceil(paperElement.scrollHeight / pageHeight)))
+    }
+    const observer = new ResizeObserver(update)
+    observer.observe(paperElement)
+    const frame = requestAnimationFrame(update)
+    return () => { cancelAnimationFrame(frame); observer.disconnect() }
+  }, [paperSize.height, paperSize.width, o, sections, boxes, edits, header])
 
   if (paper.isPending || !header) return <Loader type="page" />
   if (paper.isError) return <ErrorState onRetry={paper.refetch} />
@@ -102,11 +123,11 @@ export default function QbPaperPreview() {
   const print = () => { window.focus(); window.print() }
   const savePdf = async () => {
     setPdfBusy(true)
-    try { await downloadPaperPdf(paperRef.current, `paper-${id}-${set}.pdf`) } catch { useUiStore.getState().addToast(t('qbpv.pdf_failed'), 'error') } finally { setPdfBusy(false) }
+    try { await downloadPaperPdf(paperRef.current, `paper-${id}-${set}.pdf`, printPrefs.pageSize, printPrefs.orientation) } catch { useUiStore.getState().addToast(t('qbpv.pdf_failed'), 'error') } finally { setPdfBusy(false) }
   }
   const saveJpg = async () => {
     setJpgBusy(true)
-    try { await downloadPaperJpg(paperRef.current, `paper-${id}-${set}.jpg`) } catch { useUiStore.getState().addToast(t('qbpv.image_failed'), 'error') } finally { setJpgBusy(false) }
+    try { await downloadPaperJpg(paperRef.current, `paper-${id}-${set}.jpg`, printPrefs.pageSize, printPrefs.orientation) } catch { useUiStore.getState().addToast(t('qbpv.image_failed'), 'error') } finally { setJpgBusy(false) }
   }
   const addBox = (extra = {}) => { const box = { id: Date.now(), kind: 'text', wrap: 'topBottom', anchor: 'top', side: 'start', x: 40, y: 40, width: 240, height: 0, html: '', ...extra }; setBoxes(b => [...b, box]); setActiveBox(box.id) }
   const addImage = (e) => {
@@ -178,7 +199,81 @@ export default function QbPaperPreview() {
     if (!FREE.includes(wrap) && FREE.includes(b.wrap)) return patchBox(boxId, { wrap, anchor: gapAt(r.top + r.height / 2) })
     return patchBox(boxId, { wrap })
   }
-  const q = (item) => ({ ...item.question, ...edits[item.question.id], options: (item.question.options ?? []).map((op, k) => ({ ...op, content_text: edits[item.question.id]?.options?.[k] ?? op.content_text })) })
+  const q = (item) => {
+    const savedEdit = edits[item.question.id] ?? {}
+    return { ...item.question, ...savedEdit,
+      options: (item.question.options ?? []).map((op, k) => ({ ...op, content_text: savedEdit.options?.[k] ?? op.content_text })),
+      items: (item.question.items ?? []).map(p => ({ ...p, prompt_json: { ...p.prompt_json, options: (p.prompt_json?.options ?? []).map((op, k) => savedEdit.childOptions?.[`${p.no}:${k}`] ?? op) } })) }
+  }
+  const optionColumnsFor = (questionId, options) => optionColumnCount(options, printPrefs.questionColumns[questionId] ?? printPrefs.optionColumns)
+  const questionItemFor = (questionId) => sections.flatMap(s => s.items).find(item => String(item.question.id) === String(questionId))
+  const sourceForSelection = (selection) => {
+    const item = questionItemFor(selection.questionId)
+    if (!item) return null
+    const question = q(item)
+    if (selection.field === 'option') return question.options?.[selection.optionIndex]?.content_text ?? null
+    if (selection.field === 'child_option') return question.items?.find(p => String(p.no) === String(selection.itemNo))?.prompt_json?.options?.[selection.optionIndex] ?? null
+    return question[selection.field] ?? null
+  }
+  const captureTextSelection = (event) => {
+    const selection = window.getSelection()
+    const metaFor = (node) => {
+      let current = node?.nodeType === 1 ? node : node?.parentElement
+      let formula = null
+      let size = null
+      while (current) {
+        if (current.matches?.('math-span[data-qb-latex]')) formula = current
+        if (current.matches?.('[data-qbp-font-size]')) size = Number(current.dataset.qbpFontSize)
+        if (current.matches?.('[data-qb-rich-text][data-qb-field]')) return { root: current, formula, size }
+        current = current.getRootNode?.().host ?? current.parentElement
+      }
+      return null
+    }
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null
+    const start = range ? metaFor(range.startContainer) : null
+    const end = range ? metaFor(range.endContainer) : null
+    const clickedFormula = event?.target?.closest?.('math-span[data-qb-latex]')
+    const fallback = clickedFormula ? metaFor(clickedFormula) : null
+    if ((!selection || selection.isCollapsed || !start || !end || start.root !== end.root) && !fallback?.formula) return
+    if (start?.formula && end?.formula !== start.formula) return
+    if (end?.formula && start?.formula !== end.formula) return
+    const root = start?.root ?? fallback?.root
+    const formula = start?.formula ?? fallback?.formula
+    if (!root) return
+    const selected = formula ? formula.dataset.qbLatexSource ?? formula.dataset.qbLatex : selection.toString()
+    if (!selected) return
+    const next = { questionId: root.dataset.qbQuestionId, field: root.dataset.qbField, optionIndex: Number(root.dataset.qbOptionIndex), itemNo: root.dataset.qbItemNo, text: selected,
+      size: Number(start?.size ?? fallback?.size ?? 14) }
+    if (sourceForSelection(next)?.includes(selected)) setFontSelection(next)
+  }
+  const updateSelectedFontSize = (size, reset = false) => {
+    if (!fontSelection) return
+    const source = sourceForSelection(fontSelection)
+    const changed = reset ? resetPreviewFontSize(source, fontSelection.text) : applyPreviewFontSize(source, fontSelection.text, size)
+    if (changed === null) return
+    const item = questionItemFor(fontSelection.questionId)
+    setEdits(current => {
+      const edit = { ...(current[fontSelection.questionId] ?? {}) }
+      if (fontSelection.field === 'option') {
+        edit.options = [...(edit.options ?? item.question.options.map(op => op.content_text))]
+        edit.options[fontSelection.optionIndex] = changed
+      } else if (fontSelection.field === 'child_option') {
+        edit.childOptions = { ...edit.childOptions, [`${fontSelection.itemNo}:${fontSelection.optionIndex}`]: changed }
+      } else edit[fontSelection.field] = changed
+      return { ...current, [fontSelection.questionId]: edit }
+    })
+    if (!reset) setFontSelection(current => ({ ...current, size }))
+  }
+  const toggleQuestionSelection = (questionId) => setSelectedQuestions(current => current.includes(questionId) ? current.filter(id => id !== questionId) : [...current, questionId])
+  const applyQuestionColumns = () => setPrintPrefs(current => {
+    const questionColumns = { ...current.questionColumns }
+    selectedQuestions.forEach(questionId => {
+      if (selectedOptionMode === 'default') delete questionColumns[questionId]
+      else questionColumns[questionId] = selectedOptionMode
+    })
+    return { ...current, questionColumns }
+  })
+  const optionGrid = (columns) => ({ display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` })
   const box = (b) => <PaperBox key={b.id} box={b} t={t} active={activeBox === b.id} onFocus={() => setActiveBox(b.id)} onChange={patch => patchBox(b.id, patch)}
     onDelete={() => setBoxes(list => list.filter(x => x.id !== b.id))} onGrab={e => startDrag(b, e)} />
   const renderBoxes = (anchor) => [
@@ -192,27 +287,40 @@ export default function QbPaperPreview() {
   return (
     <div className="qb-print-root flex flex-col gap-4 lg:flex-row lg:items-start" data-testid="qb-paper-preview">
       <style>{`
-        .qb-paper .qb-cols{column-count:${o.columns};column-gap:2rem;column-rule:${o.columnLine && o.columns > 1 ? '1px solid var(--line)' : 'none'}}
-        .qb-paper .qb-q{break-inside:avoid}
-        .qb-paper .qb-cols,.qb-paper header{display:flow-root}
+        .qb-paper .qb-cols{column-count:${o.columns};column-gap:2rem;column-fill:balance;column-rule:${o.columnLine && o.columns > 1 ? '1px solid var(--line)' : 'none'}}
+        .qb-paper .qb-q{break-inside:avoid-column;page-break-inside:avoid}
+        .qb-paper-section>h2{break-after:avoid}
+        .qb-paper .qb-option-grid{gap:.25rem 1rem;}
+        .qb-paper .qb-option-cell,.qb-paper math-span,.qb-paper code{min-width:0;max-width:100%;overflow-wrap:anywhere;}
+        .qb-paper math-span{display:inline-block;vertical-align:middle;}
         .qb-paper>:not(.qb-free):not(.qb-ghost){position:relative;z-index:1}
         .qb-paper .qb-free.qb-behind{z-index:0}
         .qb-paper .qb-free.qb-front{z-index:2}
         .qb-paper .qb-free.qb-behind.qb-active{z-index:3}
         .qb-paper .qb-box{border:${o.boxBorder ? '1px solid currentColor' : '0'};border-bottom:${o.boxBottomLine ? '1px solid currentColor' : o.boxBorder ? '1px solid currentColor' : '0'}}
         @media print{
-          @page{size:A4;margin:0}
-          html,body{background:white!important}
+          @page{size:${paperSize.width}mm ${paperSize.height}mm;margin:0}
+          html,body{background:white!important;margin:0!important}
+          body:has(.qb-print-root)>#root,body:has(.qb-print-root) #root *:has(.qb-print-root){display:contents!important}
           body *{visibility:hidden}
           .qb-paper,.qb-paper *{visibility:visible}
-          .qb-paper{position:absolute;inset-inline-start:0;top:0;width:100%;box-shadow:none;border:0;border-radius:0}
+          .qb-print-root{display:block!important;width:${paperSize.width}mm;margin:0 auto}
+          .qb-paper{position:static;width:${paperSize.width}mm;max-width:none;min-height:${paperSize.height}mm;margin:0;overflow:visible;box-shadow:none;border:0;border-radius:0}
+          .qb-paper .qb-cols{column-fill:auto}
           .qb-no-print{display:none!important}
           .qb-paper .qb-box{resize:none;box-shadow:none!important}
         }`}</style>
 
       <div className="flex min-w-0 flex-1 justify-center">
-        <article ref={paperRef} lang={o.language} className="qb-paper relative w-full max-w-[210mm] rounded-token bg-surface text-content shadow-card [border:1px_solid_var(--line)]"
-          style={paperStyle} data-testid="qb-paper">
+        <article ref={paperRef} lang={o.language} onMouseUp={captureTextSelection} className="qb-paper relative rounded-token bg-surface text-content shadow-card [border:1px_solid_var(--line)]"
+          style={{ ...paperStyle, width: `${paperSize.width}mm`, minHeight: `${paperSize.height}mm` }} data-testid="qb-paper" data-page-count={pageCount}>
+          <div className="qb-no-print qb-page-guides pointer-events-none absolute inset-0" aria-hidden="true" data-testid="qb-page-guides">
+            {Array.from({ length: pageCount }, (_, index) => (
+              <div key={index} className="qb-page-guide absolute inset-x-0 border border-dashed border-line" style={{ top: `${index * paperSize.height}mm`, height: `${paperSize.height}mm` }}>
+                <span className="absolute end-1 top-1 rounded-token bg-surface px-2 py-1 text-xs text-content-muted">{t('qbpv.page_number', { n: index + 1 })}</span>
+              </div>
+            ))}
+          </div>
           {renderBoxes('h-start')}
           <header className={`relative pb-2 text-center ${o.headerStyle === 'bordered' ? 'rounded-token p-3 [border:2px_solid_currentColor]' : ''} ${o.headerStyle === 'image' ? 'rounded-token bg-surface-muted p-3' : ''}`} data-testid="qb-paper-header">
             {/* three columns: an empty side, the heading lines in the middle, the code box at the end (board-paper layout) */}
@@ -243,12 +351,12 @@ export default function QbPaperPreview() {
           <div data-gap="top">{header.instructions.trim() && <p className="whitespace-pre-line pb-2 text-center text-sm" dir="auto" data-testid="qb-paper-instructions">{header.instructions}</p>}</div>
           {renderBoxes('top')}
 
-          {sections.map((s, si) => (
-            <section key={si} className="pt-3" style={{ breakBefore: o.pageBreak && si > 0 ? 'page' : 'auto' }} data-testid="qb-paper-section">
-              {o.showSections && s.title && <h2 className="mb-2 border-b border-line pb-1 text-center font-semibold" dir="auto" data-gap={`s-${si}`}>{s.title}</h2>}
-              {renderBoxes(`s-${si}`)}
-              {o.showSections && s.instruction && <p className="mb-2 text-center text-sm" dir="auto">{s.instruction}</p>}
-              <div className="qb-cols">
+          <div className="qb-cols" data-testid="qb-paper-columns">
+            {sections.map((s, si) => (
+              <section key={si} className="qb-paper-section pt-3" style={{ breakBefore: o.pageBreak && si > 0 ? 'page' : 'auto' }} data-testid="qb-paper-section">
+                {o.showSections && s.title && <h2 className="mb-2 border-b border-line pb-1 text-center font-semibold" dir="auto" data-gap={`s-${si}`}>{s.title}</h2>}
+                {renderBoxes(`s-${si}`)}
+                {o.showSections && s.instruction && <p className="mb-2 text-center text-sm" dir="auto">{s.instruction}</p>}
                 {s.items.map((it, ii) => {
                   running += 1
                   const no = o.restartNumbers ? ii + 1 : it.no
@@ -261,17 +369,21 @@ export default function QbPaperPreview() {
                     <div key={`${si}-${ii}`} className="qb-q group relative mb-4" data-testid="qb-paper-question" data-qid={qid} data-gap={qid} data-edited={edits[it.question.id] ? 'yes' : undefined}>
                       <button type="button" onClick={() => setEditing(qid)} className="qb-no-print absolute -top-1 end-0 rounded-token bg-surface p-1 text-content-muted opacity-60 hover:opacity-100 group-hover:opacity-100 [border:1px_solid_var(--line)]" aria-label={t('qbpv.edit_question', { n: no })} data-action="edit-question"><Pencil aria-hidden="true" className="h-3.5 w-3.5" /></button>
                       {edits[it.question.id] && <span className="qb-no-print absolute -top-1 end-8 rounded-token bg-primary-soft px-1 text-xs text-primary-fg">{t('qbpv.edited')}</span>}
+                      <label className="qb-no-print inline-flex items-center gap-1 text-xs text-content-muted">
+                        <input type="checkbox" checked={selectedQuestions.includes(qid)} onChange={() => toggleQuestionSelection(qid)} aria-label={t('qbpv.select_question', { n: num(no) })} data-action="select-question" />
+                        <span>{t('qbpv.select')}</span>
+                      </label>
                       {it.subject && <p className="mb-1 font-semibold" dir="auto">{it.subject}</p>}
-                      {o.show.question && <div className="flex gap-2 font-semibold">{it.no !== null && <span>{num(no)}.</span>}<div className="min-w-0 flex-1" dir="auto"><MathText text={qn.question_text} media={qn.media ?? []} /></div></div>}
+                      {o.show.question && <div className="flex gap-2 font-semibold">{it.no !== null && <span>{num(no)}.</span>}<div className="min-w-0 flex-1" dir="auto"><MathText text={qn.question_text} media={qn.media ?? []} allowPreviewFontSize questionId={qid} field="question_text" /></div></div>}
                       {o.show.question && (qn.creative_parts ?? []).length > 0 && <ol className="mt-1 flex flex-col gap-1 ps-6">{qn.creative_parts.map(p => <li key={p.part_label} dir="auto"><span>{p.part_label}.</span> <MathText text={p.question_text} /></li>)}</ol>}
-                      {o.show.answer && qn.answer_text && <div className="mt-1" data-testid="qb-paper-answer"><p>{L('answer')}</p><div dir="auto"><MathText text={qn.answer_text} /></div></div>}
+                      {o.show.answer && qn.answer_text && <div className="mt-1" data-testid="qb-paper-answer"><p>{L('answer')}</p><div dir="auto"><MathText text={qn.answer_text} allowPreviewFontSize questionId={qid} field="answer_text" /></div></div>}
                       {o.show.question && opts.length > 0 && (
-                        <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="qb-option-grid mt-1" style={optionGrid(optionColumnsFor(qid, opts))} data-testid="qb-paper-options" data-option-columns={optionColumnsFor(qid, opts)}>
                           {opts.map((op, k) => (
-                            <div key={k} className="flex min-w-0 items-start gap-2">
+                            <div key={k} className="qb-option-cell flex min-w-0 items-start gap-2">
                               <span className="font-semibold">{(LABELS[o.language][k] ?? op.label)})</span>
                               {o.show.answer && op.is_correct && <span aria-label={L('correct')} className="mt-2 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" />}
-                              <span className="min-w-0" dir="auto"><MathText text={op.content_text} /></span>
+                              <span className="qb-option-cell min-w-0" dir="auto"><MathText text={op.content_text} allowPreviewFontSize questionId={qid} field="option" optionIndex={k} /></span>
                             </div>
                           ))}
                         </div>
@@ -281,25 +393,29 @@ export default function QbPaperPreview() {
                       {o.show.question && it.no === null && (qn.items ?? []).filter(p => p.no != null).map(p => (
                         <div key={p.no} className="mt-2" data-testid="qb-paper-child">
                           <div className="flex gap-2 font-semibold"><span>{num(p.no)}.</span><div className="min-w-0 flex-1" dir="auto"><MathText text={p.prompt_text} /></div></div>
-                          <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
+                          <label className="qb-no-print inline-flex items-center gap-1 text-xs text-content-muted">
+                            <input type="checkbox" checked={selectedQuestions.includes(`${qid}:child:${p.no}`)} onChange={() => toggleQuestionSelection(`${qid}:child:${p.no}`)} aria-label={t('qbpv.select_question', { n: num(p.no) })} data-action="select-question" />
+                            <span>{t('qbpv.select')}</span>
+                          </label>
+                          <div className="qb-option-grid mt-1" style={optionGrid(optionColumnsFor(`${qid}:child:${p.no}`, p.prompt_json?.options ?? []))} data-testid="qb-paper-child-options" data-option-columns={optionColumnsFor(`${qid}:child:${p.no}`, p.prompt_json?.options ?? [])}>
                             {(p.prompt_json?.options ?? []).map((op, k) => (
-                              <div key={k} className="flex min-w-0 items-start gap-2">
+                              <div key={k} className="qb-option-cell flex min-w-0 items-start gap-2">
                                 <span className="font-semibold">{LABELS[o.language][k] ?? k + 1})</span>
                                 {o.show.answer && p.answer_json?.correct === k && <span aria-label={L('correct')} className="mt-2 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" />}
-                                <span className="min-w-0" dir="auto"><MathText text={String(op)} /></span>
+                                <span className="qb-option-cell min-w-0" dir="auto"><MathText text={String(op)} allowPreviewFontSize questionId={qid} field="child_option" optionIndex={k} itemNo={p.no} /></span>
                               </div>
                             ))}
                           </div>
                         </div>
                       ))}
-                      {o.show.explanation && qn.explanation_text && <div className="mt-1" data-testid="qb-paper-explanation"><p>{L('explanation')}</p><div dir="auto"><MathText text={qn.explanation_text} /></div></div>}
+                      {o.show.explanation && qn.explanation_text && <div className="mt-1" data-testid="qb-paper-explanation"><p>{L('explanation')}</p><div dir="auto"><MathText text={qn.explanation_text} allowPreviewFontSize questionId={qid} field="explanation_text" /></div></div>}
                     </div>,
                     ...renderBoxes(qid),
                   ]
                 })}
-              </div>
-            </section>
-          ))}
+              </section>
+            ))}
+          </div>
           {running === 0 && <p className="py-8 text-center text-content-muted">{t('qbpv.empty')}</p>}
           {boxes.filter(b => FREE.includes(b.wrap)).map(box)}
           <div ref={ghostRef} aria-hidden="true" className="qb-ghost qb-no-print pointer-events-none fixed top-0 z-50 hidden rounded-token bg-primary-soft opacity-70 [border:2px_dashed_var(--color-primary)]" style={{ left: 0 }} data-testid="qb-drag-ghost" />
@@ -371,8 +487,45 @@ export default function QbPaperPreview() {
           </div>
         </Panel>
 
+        <Panel title={t('qbpv.option_columns')}>
+          <label className="flex flex-col gap-1 text-sm"><span>{t('qbpv.option_columns')}</span>
+            <select className="rounded-token border px-2 py-1" value={printPrefs.optionColumns} name="option_columns" onChange={e => setPrintPrefs(p => ({ ...p, optionColumns: e.target.value }))}>
+              <option value="auto">{t('qbpv.columns_auto')}</option>
+              {[1, 2, 4].map(n => <option key={n} value={String(n)}>{t('qbpv.columns_n', { n })}</option>)}
+            </select>
+          </label>
+          <p className="text-xs text-content-muted">{t('qbpv.selected_count', { n: selectedQuestions.length })}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <select className="min-w-0 rounded-token border px-2 py-1 text-sm" value={selectedOptionMode} name="selected_option_columns" onChange={e => setSelectedOptionMode(e.target.value)} aria-label={t('qbpv.question_columns')}>
+              <option value="default">{t('qbpv.columns_auto')}</option>
+              {[1, 2, 4].map(n => <option key={n} value={String(n)}>{t('qbpv.columns_n', { n })}</option>)}
+            </select>
+            <button type="button" onClick={applyQuestionColumns} disabled={!selectedQuestions.length} className="rounded-token bg-primary px-2 py-1 text-sm font-medium text-on-primary disabled:opacity-50" data-action="apply-option-columns">{t('qbpv.apply_columns')}</button>
+          </div>
+        </Panel>
+
+        <Panel title={t('qbpv.font_adjust')}>
+          <p className="break-words text-sm text-content-muted" data-testid="selected-font-text">{fontSelection?.text ?? t('qbpv.select_text')}</p>
+          <div className="flex items-center justify-between gap-2">
+            <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => updateSelectedFontSize(Math.max(5, (fontSelection?.size ?? 14) - 1))} disabled={!fontSelection || fontSelection.size <= 5} aria-label={t('qbpv.decrease_font_size')} title={t('qbpv.decrease_font_size')} className="rounded-token p-2 [border:1px_solid_var(--line)] disabled:opacity-50"><Minus aria-hidden="true" className="h-4 w-4" /></button>
+            <span className="text-sm" dir="ltr">{fontSelection?.size ?? 14} pt</span>
+            <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => updateSelectedFontSize(Math.min(maxSelectedFontSize, (fontSelection?.size ?? 14) + 1))} disabled={!fontSelection || fontSelection.size >= maxSelectedFontSize} aria-label={t('qbpv.increase_font_size')} title={t('qbpv.increase_font_size')} className="rounded-token p-2 [border:1px_solid_var(--line)] disabled:opacity-50"><Plus aria-hidden="true" className="h-4 w-4" /></button>
+            <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => updateSelectedFontSize(14, true)} disabled={!fontSelection} className="rounded-token px-2 py-1 text-sm [border:1px_solid_var(--line)] disabled:opacity-50" data-action="reset-font-size">{t('qbpv.reset_font_size')}</button>
+          </div>
+        </Panel>
+
         <Panel title={t('qbpv.layout')}>
           <div className="grid grid-cols-2 gap-3 text-sm">
+            <label className="col-span-2 flex flex-col gap-1"><span>{t('qbpv.paper_size')}</span>
+              <select className="rounded-token border px-2 py-1" name="paper_size" value={printPrefs.pageSize} onChange={e => setPrintPrefs(p => ({ ...p, pageSize: e.target.value }))}>
+                {['A4', 'A5', 'Letter', 'Legal'].map(size => <option key={size} value={size}>{t(`qbpv.paper_sizes.${size}`)}</option>)}
+              </select>
+            </label>
+            <label className="col-span-2 flex flex-col gap-1"><span>{t('qbpv.orientation')}</span>
+              <select className="rounded-token border px-2 py-1" name="orientation" value={printPrefs.orientation} onChange={e => setPrintPrefs(p => ({ ...p, orientation: e.target.value }))}>
+                <option value="portrait">{t('qbpv.portrait')}</option><option value="landscape">{t('qbpv.landscape')}</option>
+              </select>
+            </label>
             <label className="flex items-center gap-2"><input type="checkbox" checked={o.columnLine} name="column_line" onChange={e => setOpt({ columnLine: e.target.checked })} />{t('qbpv.column_line')}</label>
             <Range label={t('qbpv.margin')} min={12} max={30} step={1} value={o.margin} shown={`${o.margin}mm`} onChange={v => setOpt({ margin: v })} />
             <label className="flex items-center gap-2"><input type="checkbox" checked={o.boxBorder} name="box_border" onChange={e => setOpt({ boxBorder: e.target.checked })} />{t('qbpv.box_border')}</label>

@@ -138,16 +138,23 @@ class QbPaperController extends Controller
     /** GET /question-bank/papers/{id}/pdf?set=A|B&answers=0|1[&format=json] */
     public function pdf(Request $request, int $id, PdfService $pdf)
     {
+        $institution = $request->user()?->institution()->first();
+        if ($institution && (!Tenancy::current() || Tenancy::current()->id !== $institution->id)) {
+            return Tenancy::as($institution, fn () => $this->pdf($request, $id, $pdf));
+        }
         $this->staffGate($request);
         $f = $request->validate(['set' => ['nullable', 'regex:/^(?:[A-Z]|[1-9]\d{0,2})$/'], 'answers' => 'nullable|boolean', 'format' => 'nullable|in:json',
-            'strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES), 'columns' => 'nullable|integer|in:1,2']);
+            'strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES), 'columns' => 'nullable|in:1,2,4,auto',
+            'paper' => 'nullable|in:a4,a5,letter,legal', 'orientation' => 'nullable|in:portrait,landscape']);
         $paper = $this->find($request->user(), $id);
         $set = (string) ($f['set'] ?? '1');                       // D173: a set number; the old A-Z letters still work (A = 1 ... Z = 26)
         $number = ctype_digit($set) ? (int) $set : array_search($set, QbPaperSets::LATIN, true) + 1;
         if ($number > max(1, (int) $paper->sets_count)) throw new BusinessException('this paper has no such set', 'qb_no_such_set', 422);
-        $data = $this->printable($paper, $number, (bool) ($f['answers'] ?? false), $f['strategy'] ?? 'both') + ['columns' => (int) ($f['columns'] ?? 1)];
+        $columns = $f['columns'] ?? 'auto';
+        $layout = ['columns' => $columns, 'paper' => $f['paper'] ?? 'a4', 'orientation' => $f['orientation'] ?? 'portrait'];
+        $data = $this->printable($paper, $number, (bool) ($f['answers'] ?? false), $f['strategy'] ?? 'both') + $layout;
         if (($f['format'] ?? null) === 'json') return response()->json(['success' => true, 'data' => $data]);
-        $bytes = $pdf->render('pdf.qb-paper', ['paper' => $data], qbankFigures: true);   // D118 (4): graphs and diagrams drawn
+        $bytes = $pdf->render('pdf.qb-paper', ['paper' => $data], $layout['paper'], $layout['orientation'], true);   // D118 (4): graphs and diagrams drawn
         return response($bytes, 200, ['Content-Type' => 'application/pdf',
             'Content-Length' => (string) strlen($bytes),
             'Content-Disposition' => 'inline; filename="paper-' . $paper->id . '-' . $data['set'] . '.pdf"']);

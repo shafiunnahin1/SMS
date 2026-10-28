@@ -5,7 +5,7 @@
 > Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.
 
 Placement: after R3.A, before R4/later; retain existing R1.1/R2 prerequisites.
-R2.1.0 requires R3.A. Executable task/schema/API scope and the runtime-switch task require owner refinement.
+R2.1.0 requires R3.A. Only explicitly listed owner-approved execution slices are executable; every other task and the runtime switch remain blocked.
 R2.1.9 is proposed acceptance, not an authorized release switch. R3.A and R2.1.9 alone do not authorize switching.
 The upstream qbank repository remains read-only under D109. Target-repository commands/tests are limited to an executable slice and its acceptance checks.
 
@@ -94,7 +94,46 @@ Routes: .
 Roles: content_writer, super_admin.
 Done when: Bulk source attribution is available in Bangla and English. Existing occurrences and question content remain unchanged; repeated application is idempotent; all occurrence fields round-trip through JSON/TOON staging, quick edit, bulk settings, draft finalization and the full question editor. Invalid values remain visible and do not alter unrelated rows. Rejected, invalid, unselected and imported rows cannot be changed or made importable. Existing role, duplicate, selected-only, audit, answer/privacy and no-publish contracts pass focused checks. Record exact evidence in docs/PROGRESS.md.
 Deferred from the parent task: all unrelated D123 acceptance scope; R2.1 runtime switch.
-The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.
+This task remains unchecked until its own Done When is passed; downstream QBO tasks remain dependency-gated.
+
+## Approved scoped implementation slice — QBO.1
+
+Task: QBO.1 (parent R2.1); decisions: D179.
+Authorization decision: D182.
+Depends on: QBS.1; status: executable slice, not accepted.
+Scope: Paper preview option columns (1/2/4/auto) for all MCQs and per-question overrides, including D171 stimulus children; selected print-only text/formula sizing from 5 pt up to the selected paper's long-edge point size; A4/A5/Letter/Legal portrait and landscape page guides; question-boundary print/PDF/JPG output; no change to the question bank, route, table, column, package or role.
+Authorized table: .
+Routes: .
+Roles: admin, teacher.
+Done when: Auto option-column thresholds are recorded in evidence; long formulas/options are not clipped and shrink only to 5 pt before breaking at a relation/operator; repeated selected-text resizing updates rather than nests its override and reset restores source text; settings are isolated to the current paper/set in this browser; page guides, print, PDF and JPG use the chosen paper dimensions and keep each question with its options unless taller than one page; the source question and answer key remain unchanged. Focused preview/PDF/stimulus/rich-text, full frontend, theme and build checks pass.
+Deferred from the parent task: final-paper settings revisions (QBO.2/D180); embedded image/table/graph/diagram layout controls (QBO.3/D181).
+This task remains unchecked until its own Done When is passed; downstream QBO tasks remain dependency-gated.
+
+## Approved scoped implementation slice — QBO.2
+
+Task: QBO.2 (parent R2.1); decisions: D180.
+Authorization decision: D182.
+Depends on: QBO.1; status: executable slice, not accepted.
+Scope: Allow only the D180 final-paper settings block to change through immutable revisions of the same logical paper. Add qb_paper_revisions and revision links/uniqueness changes for existing variants and OMR forms; retain old variants, answer keys, print output and scan/form layout history. Existing paper PUT accepts only the approved settings on a final paper; section, item, marks and answer content stay frozen. Add the revision list and optional revision selection to existing preview/print/OMR flows. No package.
+Authorized table: qb_paper_revisions.
+Routes: GET /question-bank/papers/{id}/revisions (admin, teacher).
+Roles: admin, teacher.
+Done when: Backfill every existing paper and variant/form to revision 1 without changing existing variants, OMR forms or scans; changed final-settings save creates exactly one immutable final revision, no-op creates none, and retry is safe; variants and forms are revision-scoped; old print output and scans remain bound to their original revision/form/layout; new revision OMR form is created only on request; tenant, admin/teacher ownership and audit changed-key rules hold; attempts to alter questions, sections, items, marks or answers are rejected; focused revision, variant, OMR, tenant, API and full required gates pass. Task cannot start until QBO.1 is accepted.
+Deferred from the parent task: QBO.3 embedded-object layout controls; R2.1 runtime switch.
+This task remains unchecked until its own Done When is passed; downstream QBO tasks remain dependency-gated.
+
+## Approved scoped implementation slice — QBO.3
+
+Task: QBO.3 (parent R2.1); decisions: D181.
+Authorization decision: D182.
+Depends on: QBO.1; status: executable slice, not accepted.
+Scope: Add paper/set-local browser controls to select and position/align, resize within the printable content area, and set a 1-3 pt current-text-color border on embedded images, tables, graphs and diagrams. Preserve image/diagram aspect ratio and table content; persist only in the current paper/set's browser preview settings. Apply to D171 stimulus children and D118/D115 renderers without changing source question/media/payload/answers or authorization. No route, API, table, column or package.
+Authorized table: .
+Routes: .
+Roles: admin, teacher.
+Done when: Object selection, bounded sizing, alignment/wrap, border, reset and per-paper/set isolation work in preview; preview, browser print, PDF and JPG match; screen handles never print; question plus objects stay together unless taller than a page; D171 stimulus children and graph/diagram rendering retain payload, answer and media privacy; focused UI/export/RTL and full required gates pass. Task cannot start until QBO.1 is accepted.
+Deferred from the parent task: any server-side persistence or question/media mutation; R2.1 runtime switch.
+This task remains unchecked until its own Done When is passed; downstream QBO tasks remain dependency-gated.
 
 ## R2.1.0 — Source/target inventory, fixtures and measured baseline
 

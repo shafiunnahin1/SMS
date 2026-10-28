@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { loadMathlive, UNSAFE_LATEX } from './mathlive'
 import { parseRich } from './richText'
@@ -14,7 +14,7 @@ const TABLE_WIDTH = { auto: 'auto', 50: '50%', 75: '75%', 100: '100%' }
 const CELL_SPACING = { compact: 'px-1 py-0', normal: 'px-2 py-1', comfortable: 'px-3 py-2' }
 const CELL = 'align-top [border:1px_solid_var(--line)]'
 
-function Maths({ text, ready }) {
+function Maths({ text, ready, fitMath = false, previewFontSize = null }) {
   const parts = String(text).split(/(\$[^$]+\$|\\\([\s\S]+?\\\))/g).filter(Boolean)
   return parts.map((p, i) => {
     const dollar = p.length > 2 && p.startsWith('$') && p.endsWith('$')
@@ -22,8 +22,40 @@ function Maths({ text, ready }) {
     const latex = dollar ? p.slice(1, -1) : paren ? p.slice(2, -2) : null
     if (latex === null) return <span key={i}>{p}</span>
     if (!ready || UNSAFE_LATEX.test(latex)) return <code key={i} dir="ltr">{latex}</code>
-    return <math-span key={i} dir="ltr">{latex}</math-span>
+    return fitMath ? <FittingMath key={i} latex={latex} source={p} previewFontSize={previewFontSize} /> : <math-span key={i} dir="ltr">{latex}</math-span>
   })
+}
+
+function FittingMath({ latex, source, previewFontSize }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const node = ref.current
+    const container = node?.closest('.qb-option-cell') ?? node?.closest('.qb-q') ?? node?.parentElement
+    if (!node || !container) return
+    const fit = () => {
+      const available = container.clientWidth
+      if (!available) return
+      node.style.removeProperty('font-size')
+      node.style.removeProperty('max-width')
+      node.style.removeProperty('white-space')
+      node.style.removeProperty('overflow-wrap')
+      if (previewFontSize) node.style.fontSize = `${previewFontSize}pt`
+      const base = Number.parseFloat(window.getComputedStyle(node).fontSize) || 14
+      const naturalWidth = Math.max(node.scrollWidth, node.getBoundingClientRect().width)
+      if (naturalWidth <= available) return
+      const size = Math.max(5, base * available / naturalWidth)
+      node.style.fontSize = `${size}px`
+      node.style.maxWidth = '100%'
+      node.style.whiteSpace = 'normal'
+      node.style.overflowWrap = 'anywhere'
+    }
+    fit()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(fit)
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [latex, previewFontSize])
+  return <math-span ref={ref} dir="ltr" data-qb-latex={latex} data-qb-latex-source={source} data-qb-preview-font-size={previewFontSize ?? undefined} className="qb-fitting-math">{latex}</math-span>
 }
 
 // D118: qbank's graph or diagram token, drawn by qbank's own renderer into an <img> (an SVG image runs no script)
@@ -43,16 +75,17 @@ function Graph({ token }) {
   return <img src={src} alt={t(`qbed.${kind}`)} data-qb-graph="drawn" data-kind={kind} className="my-2 block max-w-full" />
 }
 
-function Text({ text, ready }) {
+function Text({ text, ready, fitMath, previewFontSize }) {
   const parts = String(text).split(/(\[\[qmx-graph:[A-Za-z0-9_-]{10,60000}\]\]|\[\[qmx-diagram:[A-Za-z0-9_-]{10,200000}\]\])/g).filter(Boolean)
-  return parts.map((p, i) => /^\[\[qmx-(graph|diagram):/.test(p) ? <Graph key={i} token={p} /> : <Maths key={i} text={p} ready={ready} />)
+  return parts.map((p, i) => /^\[\[qmx-(graph|diagram):/.test(p) ? <Graph key={i} token={p} /> : <Maths key={i} text={p} ready={ready} fitMath={fitMath} previewFontSize={previewFontSize} />)
 }
 
-function Node({ n, ready, media, onImageClick, onTableClick }) {
+function Node({ n, ready, media, onImageClick, onTableClick, fitMath, previewFontSize = null }) {
   const { t } = useTranslation()
-  if (n.text !== undefined) return <Text text={n.text} ready={ready} />
-  const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} media={media} onImageClick={onImageClick} onTableClick={onTableClick} />)
+  if (n.text !== undefined) return <Text text={n.text} ready={ready} fitMath={fitMath} previewFontSize={previewFontSize} />
   const a = n.attrs
+  const childPreviewFontSize = n.tag === 'span' && a.printFontSize ? Number(a.printFontSize) : previewFontSize
+  const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} media={media} onImageClick={onImageClick} onTableClick={onTableClick} fitMath={fitMath} previewFontSize={childPreviewFontSize} />)
   switch (n.tag) {
     case 'img': {
       const src = media.get(a.media)
@@ -64,7 +97,7 @@ function Node({ n, ready, media, onImageClick, onTableClick }) {
         : image
     }
     case 'br': return <br />
-    case 'span': return <span style={{ color: a.color, backgroundColor: a.bg }}>{kids}</span>
+    case 'span': return <span data-qbp-font-size={a.printFontSize ?? undefined} style={{ color: a.color, backgroundColor: a.bg, fontSize: a.printFontSize ? `${a.printFontSize}pt` : undefined }}>{kids}</span>
     case 'div': return <div dir={a.dir} className={ALIGN[a.align] ?? ''}>{kids}</div>
     case 'ol':
     case 'ul': {
@@ -94,13 +127,13 @@ function Node({ n, ready, media, onImageClick, onTableClick }) {
   }
 }
 
-export default function MathText({ text, className = '', media = [], onImageClick, onTableClick }) {
+export default function MathText({ text, className = '', media = [], onImageClick, onTableClick, allowPreviewFontSize = false, questionId, field, optionIndex, itemNo }) {
   const [ready, setReady] = useState(false)
   const mediaById = new Map(media.filter((item) => item?.id != null && typeof item.url === 'string').map((item) => [String(item.id), item.url]))
   useEffect(() => { let on = true; loadMathlive().then(() => on && setReady(true)).catch(() => {}); return () => { on = false } }, [])
   return (
-    <span dir="auto" data-qb-rich-text className={`whitespace-pre-wrap ${className}`}>
-      {parseRich(text).map((n, i) => <Node key={i} n={n} ready={ready} media={mediaById} onImageClick={onImageClick} onTableClick={onTableClick} />)}
+    <span dir="auto" data-qb-rich-text data-qb-question-id={questionId} data-qb-field={field} data-qb-option-index={optionIndex} data-qb-item-no={itemNo} className={`whitespace-pre-wrap ${className}`}>
+      {parseRich(text, { allowPreviewFontSize }).map((n, i) => <Node key={i} n={n} ready={ready} media={mediaById} onImageClick={onImageClick} onTableClick={onTableClick} fitMath={allowPreviewFontSize} />)}
     </span>
   )
 }

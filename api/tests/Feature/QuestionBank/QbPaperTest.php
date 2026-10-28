@@ -158,6 +158,29 @@ class QbPaperTest extends TestCase
         $this->api('POST', $this->hostOf($i), 'question-bank/papers', $admin, $this->body(['instructions_json' => ['class_level_id' => 999999]]))->assertStatus(422);
     }
 
+    public function test_final_papers_create_immutable_revision_when_red_block_fields_change(): void
+    {
+        $i = $this->makeInstitution('qbpaper-revision');
+        $admin = $this->makeUser($i, 'admin');
+        Tenancy::as($i, function () use ($admin) {
+            foreach ([$this->mcq, $this->creative] as $q) QbUnlock::create(['item_type' => 'question', 'item_id' => $q->id, 'unlocked_by' => $admin->id, 'price' => '0.00', 'reason' => 'free']);
+        });
+
+        $id = $this->api('POST', $this->hostOf($i), 'question-bank/papers', $admin, $this->body())->assertCreated()->json('data.id');
+        $this->api('POST', $this->hostOf($i), "question-bank/papers/{$id}/finalize", $admin)->assertOk();
+
+        $this->api('PUT', $this->hostOf($i), "question-bank/papers/{$id}", $admin, ['title' => 'Updated title', 'exam_name' => 'Updated exam'])
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Updated title');
+
+        $paper = Tenancy::as($i, fn () => QbPaper::with('revisions')->findOrFail($id));
+        $this->assertCount(2, $paper->revisions);
+        $this->assertSame(2, $paper->revisions->max('revision_number'));
+        $this->assertSame('অর্ধবার্ষিক পরীক্ষা', $paper->revisions->first()->settings_json['title']);
+        $this->assertSame('Updated title', $paper->revisions->last()->settings_json['title']);
+        $this->assertSame('Updated exam', $paper->revisions->last()->settings_json['exam_name']);
+    }
+
     /** R2.1.2 (D114 (1)): structured questions print their passage and every part; answers (matching, order, gap, sub-MCQ)
      *  only on the answer copy */
     public function test_structured_questions_print_their_passage_and_parts(): void

@@ -6,7 +6,7 @@ import '../i18n'
 import api from '../api/axios'
 import QbPaperPreview from '../pages/qb/QbPaperPreview'
 
-vi.mock('../features/qb/paperImage', () => ({ downloadPaperJpg: vi.fn(() => Promise.resolve()), downloadPaperPdf: vi.fn(() => Promise.resolve()) }))
+vi.mock('../features/qb/paperImage', () => ({ downloadPaperJpg: vi.fn(() => Promise.resolve()), downloadPaperPdf: vi.fn(() => Promise.resolve()), paperDimensions: vi.fn(() => ({ width: 210, height: 297, widthPt: 595.28, heightPt: 841.89 })) }))
 vi.mock('../api/axios', () => ({ default: { get: vi.fn() }, bindAuthStore: () => {} }))
 
 // D171 STIM.1: a stimulus MCQ group prints its stimulus once and takes no number; its children are numbered MCQs with their choices

@@ -53,7 +53,7 @@ class R21PlanningTests(unittest.TestCase):
         self.assertFalse(slice_['accepted'])
         self.assertEqual(['qb_curriculum_versions', 'qb_curriculum_nodes',
                           'qb_question_curriculum_nodes',
-                          'qb_curriculum_version_class_level'],
+                          'qb_curriculum_version_class_level', 'qb_paper_revisions'],
                          self.scope['authorized_new_objects']['tables'])
         self.assertFalse(self.scope['runtime_switch']['authorized'])
 
@@ -77,13 +77,44 @@ class R21PlanningTests(unittest.TestCase):
         self.assertEqual([], slice_['tables'])
         self.assertEqual([], slice_['routes'])
         self.assertFalse(slice_['accepted'])
-        self.assertFalse(self.scope['authorized_new_objects']['routes'])
+        self.assertEqual(['GET /question-bank/papers/{id}/revisions'], self.scope['authorized_new_objects']['routes'])
         self.assertFalse(self.scope['runtime_switch']['authorized'])
         parent = next(t for t in self.scope['tasks'] if t['id'] == 'R2.1.3')
         self.assertFalse(parent['executable'])
         self.assertFalse(parent['accepted'])
         self.assertIn('question_number', slice_['scope'])
         self.assertIn('idempotent', slice_['done_when'])
+
+    def test_d182_qbo_tasks_are_narrow_and_dependency_gated(self):
+        self.assertEqual('D182', self.scope['scoped_execution_decision'])
+        self.assertFalse(self.scope['implementation_authorized'])
+        self.assertFalse(self.scope['runtime_switch']['authorized'])
+        slices = {s['id']: s for s in self.scope['approved_execution_slices']
+                  if s['id'] in {'QBO.1', 'QBO.2', 'QBO.3'}}
+        self.assertEqual({'QBO.1', 'QBO.2', 'QBO.3'}, set(slices))
+        self.assertEqual(['QBS.1'], slices['QBO.1']['depends_on'])
+        self.assertEqual(['QBO.1'], slices['QBO.2']['depends_on'])
+        self.assertEqual(['QBO.1'], slices['QBO.3']['depends_on'])
+        self.assertEqual(['D179'], slices['QBO.1']['decisions'])
+        self.assertEqual(['D180'], slices['QBO.2']['decisions'])
+        self.assertEqual(['D181'], slices['QBO.3']['decisions'])
+        self.assertEqual(['qb_paper_revisions'], slices['QBO.2']['tables'])
+        self.assertEqual([], slices['QBO.3']['tables'])
+        self.assertTrue(all(s['authorization_decision'] == 'D182' and
+                            s['executable'] and not s['accepted'] for s in slices.values()))
+
+    def test_d182_qbo_plan_requires_locked_authorization(self):
+        original_read = Path.read_text
+
+        def without_d182(path, *args, **kwargs):
+            text = original_read(path, *args, **kwargs)
+            if path == ROOT / 'docs/LOCKED-DECISIONS.md':
+                return text.replace('| D182 |', '| D183 |')
+            return text
+
+        with patch.object(Path, 'read_text', without_d182):
+            errors = G.validate(ROOT, self.scope, self.gaps)
+        self.assertTrue(any('D182 locked decision' in error for error in errors), errors)
 
     def test_approved_slice_cannot_gain_objects_or_scope(self):
         self.scope['approved_execution_slices'][0]['tables'].append('invented')

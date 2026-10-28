@@ -16,12 +16,14 @@ const TABLE_SPACING = /^qmx-table-(compact|normal|comfortable)$/
 
 const hasMarkup = (text) => /[<&]/.test(text)
 
-function attrsOf(tag, el) {
+function attrsOf(tag, el, options) {
   const a = {}
   const get = (name) => el.getAttribute(name)?.trim() ?? null
   if (tag === 'span') {
     if (COLOR.test(get('data-qmx-color') ?? '')) a.color = get('data-qmx-color')
     if (COLOR.test(get('data-qmx-bg') ?? '')) a.bg = get('data-qmx-bg')
+    const printSize = Number(get('data-qbp-font-size'))
+    if (options.allowPreviewFontSize && Number.isInteger(printSize) && printSize >= 5 && printSize <= 2048) a.printFontSize = printSize
   }
   if (tag === 'div') {
     const m = ALIGN.exec(get('class') ?? '')
@@ -56,7 +58,7 @@ function attrsOf(tag, el) {
   return a
 }
 
-function walk(node, tableSpacing = 'normal') {
+function walk(node, tableSpacing = 'normal', options = {}) {
   const out = []
   node.childNodes.forEach((n) => {
     if (n.nodeType === 3) { out.push({ text: n.data }); return }
@@ -65,21 +67,21 @@ function walk(node, tableSpacing = 'normal') {
     if (DROP.has(tag)) return
     tag = RENAME[tag] ?? tag
     if (!TAGS.has(tag)) { out.push(...walk(n)); return }
-    const attrs = attrsOf(tag, n)
+    const attrs = attrsOf(tag, n, options)
     if (tag === 'img' && !attrs.media) return
-    if (tag === 'span' && !attrs.color && !attrs.bg) { out.push(...walk(n)); return }
+    if (tag === 'span' && !attrs.color && !attrs.bg && !attrs.printFontSize) { out.push(...walk(n, tableSpacing, options)); return }
     if (tag === 'th' || tag === 'td') attrs.spacing = tableSpacing
-    out.push({ tag, attrs, children: tag === 'br' || tag === 'img' ? [] : walk(n, tag === 'table' ? attrs.spacing ?? tableSpacing : tableSpacing) })
+    out.push({ tag, attrs, children: tag === 'br' || tag === 'img' ? [] : walk(n, tag === 'table' ? attrs.spacing ?? tableSpacing : tableSpacing, options) })
   })
   return out
 }
 
 /** The text as safe nodes: { text } or { tag, attrs, children } - only the vocabulary, only checked attribute values */
-export function parseRich(text) {
+export function parseRich(text, options = {}) {
   const s = String(text ?? '')
   if (!hasMarkup(s)) return [{ text: s }]
   const doc = new DOMParser().parseFromString(`<!doctype html><body>${s}`, 'text/html')
-  return walk(doc.body)
+  return walk(doc.body, 'normal', options)
 }
 
 const BLOCK = new Set(['div', 'li', 'dt', 'dd', 'tr', 'ol', 'ul', 'dl', 'table'])

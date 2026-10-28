@@ -5,6 +5,18 @@
 // computer's own font of the same family when it is installed.
 
 const SKIP = new Set(['SCRIPT', 'STYLE', 'LINK', 'META'])
+const PAPER_SIZES = {
+  A4: { width: 210, height: 297, widthPt: 595.28, heightPt: 841.89 },
+  A5: { width: 148, height: 210, widthPt: 419.53, heightPt: 595.28 },
+  Letter: { width: 215.9, height: 279.4, widthPt: 612, heightPt: 792 },
+  Legal: { width: 215.9, height: 355.6, widthPt: 612, heightPt: 1008 },
+}
+
+export function paperDimensions(size = 'A4', orientation = 'portrait') {
+  const paper = PAPER_SIZES[size] ?? PAPER_SIZES.A4
+  if (orientation === 'landscape') return { width: paper.height, height: paper.width, widthPt: paper.heightPt, heightPt: paper.widthPt }
+  return paper
+}
 
 function inlineStyles(source, copy) {
   if (source.nodeType !== 1) return
@@ -22,6 +34,14 @@ function inlineStyles(source, copy) {
   const from = [...source.childNodes]
   const to = [...copy.childNodes]
   from.forEach((child, i) => inlineStyles(child, to[i]))
+}
+
+function questionRects(paper, scale) {
+  const top = paper.getBoundingClientRect().top
+  return [...paper.querySelectorAll('.qb-q')].map(question => {
+    const rect = question.getBoundingClientRect()
+    return { top: (rect.top - top) * scale, bottom: (rect.bottom - top) * scale }
+  })
 }
 
 const asDataUrl = (blob) => new Promise((resolve, reject) => {
@@ -81,9 +101,23 @@ function save(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(href), 10000)
 }
 
-/** saves the paper as `filename` (JPEG) */
-export async function downloadPaperJpg(paper, filename = 'question-paper.jpg') {
-  save(await jpegBlob(await paperCanvas(paper)), filename)
+/** saves the paper pages as one vertically stacked `filename` (JPEG) */
+export async function downloadPaperJpg(paper, filename = 'question-paper.jpg', size = 'A4', orientation = 'portrait') {
+  const scale = 2
+  const canvas = await paperCanvas(paper, scale)
+  const { width, height } = paperDimensions(size, orientation)
+  const pageHeight = Math.floor(canvas.width * height / width)
+  const rects = questionRects(paper, canvas.width / paper.getBoundingClientRect().width)
+  const slices = pageSlices(canvas, (from, to) => questionSafeCut(rects, from, to), size, orientation)
+  const gap = Math.max(12, Math.round(canvas.width * 0.03))
+  const pages = document.createElement('canvas')
+  pages.width = canvas.width
+  pages.height = pageHeight * slices.length + gap * Math.max(0, slices.length - 1)
+  const pageContext = pages.getContext('2d')
+  pageContext.fillStyle = 'white'
+  pageContext.fillRect(0, 0, pages.width, pages.height)
+  slices.forEach((slice, index) => pageContext.drawImage(canvas, 0, slice.top, canvas.width, slice.height, 0, index * (pageHeight + gap), canvas.width, slice.height))
+  save(await jpegBlob(pages), filename)
 }
 
 // Owner request 2026-10-24: the PDF button downloads a PDF file (the print dialog is only the print button's). The paper's canvas is
@@ -101,9 +135,19 @@ export function whiteRow(ctx, width, from, to) {
   return to
 }
 
+export function questionSafeCut(questionRects, from, to) {
+  const candidates = new Set()
+  questionRects.forEach(({ top, bottom }) => {
+    if (top >= from && top <= to) candidates.add(Math.ceil(top))
+    if (bottom >= from && bottom <= to) candidates.add(Math.floor(bottom))
+  })
+  return [...candidates].filter(y => !questionRects.some(rect => rect.top < y && rect.bottom > y)).sort((a, b) => b - a)[0] ?? to
+}
+
 /** A4 page slices of a canvas: [{ top, height }] in canvas pixels */
-export function pageSlices(canvas, cut = (from, to) => to) {
-  const pageHeight = Math.floor(canvas.width * 297 / 210)
+export function pageSlices(canvas, cut = (from, to) => to, size = 'A4', orientation = 'portrait') {
+  const { width, height } = paperDimensions(size, orientation)
+  const pageHeight = Math.floor(canvas.width * height / width)
   const slices = []
   let top = 0
   while (top < canvas.height) {
@@ -116,9 +160,8 @@ export function pageSlices(canvas, cut = (from, to) => to) {
 }
 
 /** a PDF (A4 pages, each one full-width JPEG placed at the top) from JPEG pages [{ bytes: Uint8Array, width, height }] */
-export function buildPdf(pages) {
-  const W = 595.28
-  const H = 841.89
+export function buildPdf(pages, size = 'A4', orientation = 'portrait') {
+  const { widthPt: W, heightPt: H } = paperDimensions(size, orientation)
   const enc = new TextEncoder()
   const parts = []
   const offsets = []
@@ -154,11 +197,12 @@ export function buildPdf(pages) {
 }
 
 /** saves the paper as `filename` (PDF, A4 pages) */
-export async function downloadPaperPdf(paper, filename = 'question-paper.pdf') {
-  const canvas = await paperCanvas(paper)
-  const ctx = canvas.getContext('2d')
+export async function downloadPaperPdf(paper, filename = 'question-paper.pdf', size = 'A4', orientation = 'portrait') {
+  const scale = 2
+  const canvas = await paperCanvas(paper, scale)
+  const rects = questionRects(paper, canvas.width / paper.getBoundingClientRect().width)
   const pages = []
-  for (const slice of pageSlices(canvas, (from, to) => whiteRow(ctx, canvas.width, from, to))) {
+  for (const slice of pageSlices(canvas, (from, to) => questionSafeCut(rects, from, to), size, orientation)) {
     const page = document.createElement('canvas')
     page.width = canvas.width
     page.height = slice.height
@@ -168,5 +212,5 @@ export async function downloadPaperPdf(paper, filename = 'question-paper.pdf') {
     pctx.drawImage(canvas, 0, slice.top, canvas.width, slice.height, 0, 0, canvas.width, slice.height)
     pages.push({ bytes: new Uint8Array(await (await jpegBlob(page)).arrayBuffer()), width: page.width, height: page.height })
   }
-  save(new Blob([buildPdf(pages)], { type: 'application/pdf' }), filename)
+  save(new Blob([buildPdf(pages, size, orientation)], { type: 'application/pdf' }), filename)
 }

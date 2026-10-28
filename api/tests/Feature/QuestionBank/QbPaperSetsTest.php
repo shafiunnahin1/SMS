@@ -81,6 +81,38 @@ class QbPaperSetsTest extends TestCase
         $this->api('GET', $host, "question-bank/papers/{$id}/pdf?set=F&format=json", $admin)->assertStatus(422)->assertJsonPath('error', 'qb_no_such_set');
     }
 
+    public function test_the_print_accepts_qbo1_layout_settings(): void
+    {
+        [$host, $admin, $id, $i] = $this->paper(1);
+        $this->bindTenant($i);
+        $this->actingAs($admin);
+        $fake = new class extends \App\Services\PdfService {
+            public ?string $html = null;
+            public function render(string $view, array $data = [], string $paper = 'a4', string $orientation = 'portrait', bool $qbankFigures = false): string
+            {
+                $this->html = view($view, $data + ['institution' => Tenancy::current(), 'theme' => app(\App\Services\ThemeService::class)->getTheme(Tenancy::current()),
+                    'locale' => 'bn', 'dir' => 'ltr', 'logo' => null])->render();
+                return '%PDF';
+            }
+        };
+        $print = function (array $q) use ($fake, $admin, $id) {
+            $request = \Illuminate\Http\Request::create('/', 'GET', $q);
+            $request->setUserResolver(fn () => $admin);
+            app(\App\Http\Controllers\QuestionBank\QbPaperController::class)->pdf($request, $id, $fake);
+            return $fake->html;
+        };
+        $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin)->assertOk();
+        $layout = $print(['set' => 'A', 'columns' => '4', 'paper' => 'a5', 'orientation' => 'landscape']);
+        $this->assertStringContainsString('class="cols-4"', $layout);
+        $this->assertStringContainsString('data-paper="a5"', $layout);
+        $this->assertStringContainsString('data-orientation="landscape"', $layout);
+        $this->assertStringContainsString('page-break', $layout);
+
+        $auto = $print(['set' => 'A', 'columns' => 'auto', 'paper' => 'letter', 'orientation' => 'portrait']);
+        $this->assertStringContainsString('class="cols-auto"', $auto);
+        $this->assertStringContainsString('font-size: clamp', $auto);
+    }
+
     public function test_qbanks_capacity_check_limits_the_sets(): void
     {
         [$host, $admin, $id] = $this->paper(3, [$this->mcqs[0]]);         // one question: serial has 1 order, options has 4! = 24

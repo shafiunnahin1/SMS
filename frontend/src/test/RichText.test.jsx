@@ -49,6 +49,18 @@ describe('rich question text', () => {
     expect(container.querySelector('th')).toHaveClass('px-3', 'py-2')
   })
 
+  it('only honors bounded print font sizes when the preview explicitly enables them', () => {
+    const text = '<span data-qbp-font-size="19">Large</span><span data-qbp-font-size="4">Too small</span><span data-qbp-font-size="65">Too large</span>'
+    const regular = render(<MathText text={text} />)
+    expect(regular.container.querySelector('[style*="font-size"]')).toBeNull()
+    expect(regular.container.textContent).toBe('LargeToo smallToo large')
+
+    const preview = render(<MathText text={text} allowPreviewFontSize />)
+    expect(preview.container.querySelector('[data-qb-rich-text] > span').style.fontSize).toBe('19pt')
+    expect(preview.container.querySelector('span[style*="4pt"]')).toBeNull()
+    expect(preview.container.querySelector('span[style*="65pt"]')).toHaveTextContent('Too large')
+  })
+
   it('drops scripts, handlers, links and bad colours', () => {
     const { container } = render(<MathText text={'a<script>alert(1)</script><img src=x onerror="alert(1)"><a href="javascript:x()">link</a><b onclick="x()">b</b><span data-qmx-color="red;x">c</span><style>*{}</style>'} />)
     expect(container.querySelector('script, img, a, style, [onclick], [onerror]')).toBeNull()

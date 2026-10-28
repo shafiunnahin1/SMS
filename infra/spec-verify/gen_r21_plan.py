@@ -94,6 +94,35 @@ APPROVED_EXECUTION_SLICES = [{
     'roles': ['content_writer', 'super_admin'],
     'done_when': 'Bulk source attribution is available in Bangla and English. Existing occurrences and question content remain unchanged; repeated application is idempotent; all occurrence fields round-trip through JSON/TOON staging, quick edit, bulk settings, draft finalization and the full question editor. Invalid values remain visible and do not alter unrelated rows. Rejected, invalid, unselected and imported rows cannot be changed or made importable. Existing role, duplicate, selected-only, audit, answer/privacy and no-publish contracts pass focused checks. Record exact evidence in docs/PROGRESS.md.',
     'deferred': ['all unrelated D123 acceptance scope', 'R2.1 runtime switch'],
+}, {
+    'id': 'QBO.1', 'parent_task': 'R2.1', 'authorization_decision': 'D182',
+    'decisions': ['D179'], 'depends_on': ['QBS.1'],
+    'executable': True, 'accepted': False,
+    'scope': 'Paper preview option columns (1/2/4/auto) for all MCQs and per-question overrides, including D171 stimulus children; selected print-only text/formula sizing from 5 pt up to the selected paper\'s long-edge point size; A4/A5/Letter/Legal portrait and landscape page guides; question-boundary print/PDF/JPG output; no change to the question bank, route, table, column, package or role.',
+    'tables': [], 'routes': [], 'roles': ['admin', 'teacher'],
+    'done_when': 'Auto option-column thresholds are recorded in evidence; long formulas/options are not clipped and shrink only to 5 pt before breaking at a relation/operator; repeated selected-text resizing updates rather than nests its override and reset restores source text; settings are isolated to the current paper/set in this browser; page guides, print, PDF and JPG use the chosen paper dimensions and keep each question with its options unless taller than one page; the source question and answer key remain unchanged. Focused preview/PDF/stimulus/rich-text, full frontend, theme and build checks pass.',
+    'deferred': ['final-paper settings revisions (QBO.2/D180)',
+                 'embedded image/table/graph/diagram layout controls (QBO.3/D181)'],
+}, {
+    'id': 'QBO.2', 'parent_task': 'R2.1', 'authorization_decision': 'D182',
+    'decisions': ['D180'], 'depends_on': ['QBO.1'],
+    'executable': True, 'accepted': False,
+    'scope': 'Allow only the D180 final-paper settings block to change through immutable revisions of the same logical paper. Add qb_paper_revisions and revision links/uniqueness changes for existing variants and OMR forms; retain old variants, answer keys, print output and scan/form layout history. Existing paper PUT accepts only the approved settings on a final paper; section, item, marks and answer content stay frozen. Add the revision list and optional revision selection to existing preview/print/OMR flows. No package.',
+    'tables': ['qb_paper_revisions'],
+    'routes': [{'method': 'GET', 'uri': '/question-bank/papers/{id}/revisions',
+                'roles': ['admin', 'teacher']}],
+    'roles': ['admin', 'teacher'],
+    'done_when': 'Backfill every existing paper and variant/form to revision 1 without changing existing variants, OMR forms or scans; changed final-settings save creates exactly one immutable final revision, no-op creates none, and retry is safe; variants and forms are revision-scoped; old print output and scans remain bound to their original revision/form/layout; new revision OMR form is created only on request; tenant, admin/teacher ownership and audit changed-key rules hold; attempts to alter questions, sections, items, marks or answers are rejected; focused revision, variant, OMR, tenant, API and full required gates pass. Task cannot start until QBO.1 is accepted.',
+    'deferred': ['QBO.3 embedded-object layout controls', 'R2.1 runtime switch'],
+}, {
+    'id': 'QBO.3', 'parent_task': 'R2.1', 'authorization_decision': 'D182',
+    'decisions': ['D181'], 'depends_on': ['QBO.1'],
+    'executable': True, 'accepted': False,
+    'scope': 'Add paper/set-local browser controls to select and position/align, resize within the printable content area, and set a 1-3 pt current-text-color border on embedded images, tables, graphs and diagrams. Preserve image/diagram aspect ratio and table content; persist only in the current paper/set\'s browser preview settings. Apply to D171 stimulus children and D118/D115 renderers without changing source question/media/payload/answers or authorization. No route, API, table, column or package.',
+    'tables': [], 'routes': [], 'roles': ['admin', 'teacher'],
+    'done_when': 'Object selection, bounded sizing, alignment/wrap, border, reset and per-paper/set isolation work in preview; preview, browser print, PDF and JPG match; screen handles never print; question plus objects stay together unless taller than a page; D171 stimulus children and graph/diagram rendering retain payload, answer and media privacy; focused UI/export/RTL and full required gates pass. Task cannot start until QBO.1 is accepted.',
+    'deferred': ['any server-side persistence or question/media mutation',
+                 'R2.1 runtime switch'],
 }]
 
 
@@ -118,6 +147,9 @@ def validate(root, scope, gaps):
             errors.append(message)
 
     require(scope.get('release') == 'R2.1' and scope.get('decision') == 'D83', 'identity/decision')
+    require(scope.get('scoped_execution_decision') == 'D182', 'D182 QBO planning authorization')
+    decisions = (root / 'docs/LOCKED-DECISIONS.md').read_text(encoding='utf-8')
+    require('| D182 |' in decisions, 'D182 locked decision must precede QBO plan generation')
     require(scope.get('phase') == 'planning_only', 'planning-only phase')
     require(scope.get('implementation_authorized') is False, 'implementation authorization')
     require(scope.get('runtime_switch') == {
@@ -130,20 +162,34 @@ def validate(root, scope, gaps):
                            if s['id'] == 'R2.1.2-language-curriculum'), None)
     gap_slice = next((s for s in APPROVED_EXECUTION_SLICES
                       if s['id'] == 'R2.1.2-gap-fill-authoring'), None)
+    qbo_revision_slice = next((s for s in APPROVED_EXECUTION_SLICES
+                               if s['id'] == 'QBO.2'), None)
     expected_objects = {
-        'tables': (language_slice['tables'] if language_slice else []) + (gap_slice['tables'] if gap_slice else []),
-        'routes': [],
+        'tables': (language_slice['tables'] if language_slice else []) +
+                  (gap_slice['tables'] if gap_slice else []) +
+                  (qbo_revision_slice['tables'] if qbo_revision_slice else []),
+        'routes': ['GET /question-bank/papers/{id}/revisions'],
         'modules': [], 'packages': [],
     }
     require(scope.get('authorized_new_objects') == expected_objects,
-            'only D139/D145 curriculum tables may be authorized; D142/D146/D149 add no new objects')
+            'only D139/D145 curriculum and D180 paper-revision objects may be authorized')
     require(scope.get('source_policy') == 'read_only_files_no_db_no_execution', 'source access policy')
     require(scope.get('approved_execution_slices') == APPROVED_EXECUTION_SLICES,
             'approved execution slices must match their owner-approved contracts')
-    decisions = (root / 'docs/LOCKED-DECISIONS.md').read_text(encoding='utf-8')
     require(all((f'| {decision} |' in decisions or re.search(rf'^{decision}\s*\|', decisions, re.M)) for active in APPROVED_EXECUTION_SLICES
                 for decision in active['decisions']),
             'approved slice decisions must precede execution')
+    qbo_slices = [s for s in APPROVED_EXECUTION_SLICES
+                  if s['id'] in {'QBO.1', 'QBO.2', 'QBO.3'}]
+    require([s['id'] for s in qbo_slices] == ['QBO.1', 'QBO.2', 'QBO.3'],
+            'D182 may authorize only the ordered QBO task set')
+    require(all(s.get('authorization_decision') == 'D182' and s['executable'] is True and
+                s['accepted'] is False for s in qbo_slices),
+            'QBO tasks require D182 and remain unaccepted')
+    require([s['depends_on'] for s in qbo_slices] == [['QBS.1'], ['QBO.1'], ['QBO.1']],
+            'QBO dependencies must follow D179-D181')
+    require(all(f'| {decision} |' in decisions for s in qbo_slices for decision in s['decisions']),
+            'QBO task decisions must be locked')
     progress = (root / 'docs/PROGRESS.md').read_text(encoding='utf-8')
     require(re.search(r'^- \[x\] R2\.1\.1\b', progress, re.M) is not None,
             'D114-D117 slice prerequisite R2.1.1 must be accepted')
@@ -220,15 +266,18 @@ def build(root):
              '> Generate: `py -3.14 infra/spec-verify/gen_r21_plan.py .`; check: append `--check`.',
              '> Do not edit generated files. Source: `docs/release/r21-scope.json` and `docs/release/r21-gap-map.json`.',
              '', 'Placement: after R3.A, before R4/later; retain existing R1.1/R2 prerequisites.',
-             'R2.1.0 requires R3.A. Executable task/schema/API scope and the runtime-switch task require owner refinement.',
+             'R2.1.0 requires R3.A. Only explicitly listed owner-approved execution slices are executable; every other task and the runtime switch remain blocked.',
              'R2.1.9 is proposed acceptance, not an authorized release switch. R3.A and R2.1.9 alone do not authorize switching.',
              'The upstream qbank repository remains read-only under D109. Target-repository commands/tests are limited to an executable slice and its acceptance checks.', '',
              'Existing route anchors name source declarations in the destination route file, not proposed new URLs.',
              'The imported root proposal, including its complete feature inventory, remains the requirements catalogue.', '']
     for active in scope.get('approved_execution_slices', []):
         routes = '; '.join(f"{r['method']} {r['uri']} ({', '.join(r['roles'])})" for r in active['routes'])
-        lines.extend([f"## Approved scoped implementation slice — {active['id']}", '',
-                      f"Task: {active['id']} (parent {active['parent_task']}); decisions: {', '.join(active['decisions'])}.",
+        slice_lines = [f"## Approved scoped implementation slice — {active['id']}", '',
+                      f"Task: {active['id']} (parent {active['parent_task']}); decisions: {', '.join(active['decisions'])}."]
+        if active.get('authorization_decision'):
+            slice_lines.append(f"Authorization decision: {active['authorization_decision']}.")
+        slice_lines.extend([
                       f"Depends on: {', '.join(active['depends_on'])}; status: executable slice, not accepted.",
                       f"Scope: {active['scope']}",
                       f"Authorized table: {', '.join(active['tables'])}.",
@@ -236,7 +285,10 @@ def build(root):
                       f"Roles: {', '.join(active['roles'])}.",
                       f"Done when: {active['done_when']}",
                       f"Deferred from the parent task: {'; '.join(active['deferred'])}.",
-                      'The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.', ''])
+                      ('The parent R2.1.2 task remains unchecked until its complete D114 acceptance scope is passed.'
+                       if active['id'].startswith('R2.1.2') else
+                       'This task remains unchecked until its own Done When is passed; downstream QBO tasks remain dependency-gated.'), ''])
+        lines.extend(slice_lines)
     for t in scope['tasks']:
         lines.extend([f"## {t['id']} — {t['title']}", '',
                       f"Depends on: {', '.join(t['depends_on'])}. Status: BLOCKED / unaccepted / non-executable.",

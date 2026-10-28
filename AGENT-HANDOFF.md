@@ -4,23 +4,30 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 
 ## Current Handoff
 
-- Last checked: 2026-10-28 (owner PC, `E:\Projects\School Management`)
-- Repository: `E:\Projects\School Management` (owner PC) and the cloud checkout; both on the same branch.
-- Branch: `claude/r216-omr-d127` — owner D175 commits `9c58f10` and `5f80a2c` are local ahead of origin; QBF.1 is the current unpushed implementation checkpoint. `claude/elegant-cori-gw2mw5` is the old branch; do not work there.
-- Runtime release R3 (`api/config/release.php`); R2.1 work runs only through owner-approved decisions and the guard task map (`R21_APPROVED` in `infra/guard/agent_guard.py`).
-- Done since the old snapshot (each `[x]` with evidence in `docs/PROGRESS.md`): D169 STW.1–STW.5 (staff work pages: department context, student view/admission, fee collection, attendance grants); D170.1 (Super Admin direct activation); D171 STIM.3, STIM.1, STIM.2 (stimulus MCQ group: one bank record, children numbered as MCQs in papers, sets, answer key, print, marks = sum of children, OMR rows and own-marks grading); D172 BASE.1–BASE.3 (seven baseline test failures repaired); D166/D168 AI-Q4S (four staff help articles), AI-Q5 (question from a photo, self-hosted Tesseract OCR, `ai_attachments`, one-day keep), AI-Q6 (`ai:evaluate` sources / not-found / help / model reported separately); D151 follow-up (import AI prompt asks for tables as `qmx-table` HTML).
-- Latest QBF.1 verification (2026-10-28): focused question-list Vitest 6/6 and isolated writer editor curriculum 1/1; theme lint 186/0; production build passed with existing MathLive chunk warning. Full Vitest 75 files / 271 passed / 8 failed (4 vendor manifests, 2 attendance PackContract, 1 OMR timeout, 1 editor timeout; editor passes isolated). Focused PHP test is blocked before assertions by `edu` lacking access to `edu_saas_test`; SQLite cannot run the MySQL FULLTEXT migration. QBF.1 stays `[ ]` in `docs/PROGRESS.md` and exact blocker is in `docs/BLOCKED.md`.
-- Owner PC note: the local checkout had broken refs (zero-OID branch ref, broken `ORIG_HEAD`) and was repaired by writing the branch ref to a known commit; a `.git` backup is at `E:\Projects\SMS-git-backup`. The local DB still has older pending migrations; run `php artisan migrate` there only on purpose.
+- Last checked: 2026-10-28 after D182 plan alignment verification.
+- Repository: `E:\Projects\School Management`; branch `claude/r216-omr-d127`, HEAD `5a83ec5` (D182 owner decision), 7 commits ahead of `origin/claude/r216-omr-d127`, 0 behind at last fetch.
+- Runtime remains R3. D182 is in the local locked registry and authorizes only QBO.1/D179 after QBS.1, QBO.2/D180 after QBO.1, and QBO.3/D181 after QBO.1; it does not authorize an R2.1 runtime switch. D182 scope source, generator, mutation tests and generated plan artifacts are aligned locally. No task is checked off.
+- D179 local UI work now normalizes repeated selected-text font wrappers and makes MathLive re-fit from the current selected print size instead of a stale shrunken size. Focused preview/PDF/stimulus/rich-text tests: 28/28; theme lint 188/0; build passed with existing MathLive chunk warning. Full Vitest: 76 files, 288 passed / 5 failed (four vendor-manifest checks and one attendance PackContract loader timeout). `php artisan test --filter=QbAllQuestionsFilterTest` still fails before assertions: `edu` is denied access to `edu_saas_test`.
+- D182 planning checks: `py -3.14 infra/spec-verify/test_r21_plan.py` 24/24; `py -3.14 infra/spec-verify/gen_r21_plan.py . --check` fresh; `py -3.14 infra/guard/test_guard.py` 75/75. Full `verify.py . --deep` is blocked by schema translator failures (`qb_exam_batch_id` missing in FK definitions), incomplete migration/DATABASE inventory and three global-unique findings; `plan_check.py` also fails loading that schema. Exact output was observed 2026-10-28. These files/checks are outside the D182 QBO alignment; do not weaken checks or claim full acceptance.
+- Worktree remains dirty with owner D179 implementation edits, docs edits, D180/D181 draft/scripts, D182 draft, and a generated Python bytecode change. Preserve all. `git diff --check` passed. No changes were staged or committed after D182; no push was attempted. D155 blocks pushing until the entire worktree is clean and the stash/fetch/divergence/pre-push checks pass.
 
 ## Next Safe Action
 
-1. QBF.1 (D175) is authorized after accepted SETC.2; its implementation checkpoint is incomplete pending focused API/full-suite gates and remains `[ ]`. Owner D175 commits `9c58f10` and `5f80a2c` are local ahead of origin; do not push unless the owner explicitly requests it.
-2. Owner operations (not agent tasks): install `tesseract-ocr tesseract-ocr-ben tesseract-ocr-eng` on the server (`OCR_TESSERACT_BINARY` in `.env`); read and approve the 20 remaining draft help articles in the Super Admin panel (the 8 staff ones are approved); once 200 questions are published run `php artisan ai:evaluate eval.json --make=200 --institution=<slug>` (add `--rephrase=20` when the model is on).
-3. Agents never approve help articles or other owner reviews themselves, and never run owner `approve-*.ps1` scripts.
-4. Push only when the owner says "পুশ করো"; follow D155 before every push (clean tree, `git stash list`, `git fetch --prune`, only-ahead check, `infra/guard/pre_push_guard.py` with the refs on stdin).
-5. Preserve owner drafts, `text.txt` and existing caches; keep `E:\Projects\exam-management` read-only.
+1. D182 plan alignment is locally fresh, but its required deep gate failed; do not treat this planning checkpoint as accepted or start QBO.2/QBO.3. Keep QBO.1 `[ ]` until its focused API and full required gates pass.
+2. Resolve/obtain the authorized MySQL test database access and the unrelated schema/deep-verifier blockers without weakening checks; rerun the documented focused and full gates on the exact candidate tree.
+3. Preserve all owner dirty files, drafts, scripts, stashes and generated caches. Agents never run owner `approve-*.ps1` scripts.
+4. Push only on owner instruction and only after D155: clean status, stash review, `git fetch --prune`, verified only-ahead range, and `infra/guard/pre_push_guard.py`.
+5. Keep `E:\Projects\exam-management` read-only.
 
 ## Event Log
+
+## 2026-10-28 — D182 QBO planning alignment (verification blocked)
+
+D182 owner commit `5a83ec5` is local. Updated only D182-scoped planning source/logic/tests and regenerated R2.1 plan artifacts to represent QBO.1/D179 after QBS.1, QBO.2/D180 after QBO.1 (one `qb_paper_revisions` table and the revision-list route), and QBO.3/D181 after QBO.1. Global runtime remains R3; `implementation_authorized` and `runtime_switch.authorized` remain false; the ten imported task order, gates and acceptance catalogue remain unchanged. No feature task was checked off and no application/schema/release-config change was made.
+
+Checks: `py -3.14 infra/spec-verify/test_r21_plan.py` 24/24; `py -3.14 infra/spec-verify/gen_r21_plan.py . --check` PASS; `py -3.14 infra/guard/test_guard.py` 75/75; `git diff --check` PASS. Full `uv run --offline --with PyYAML --no-project --python 3.14 infra/spec-verify/verify.py . --deep` failed in unchanged baseline areas: three schema translator failures referencing missing `qb_exam_batch_id`, CREATE TABLE completeness 213/218, migration/DATABASE inventory omissions, global unique findings, schema parity divergence, and tenant-export loader failure. `py -3.14 infra/spec-verify/plan_check.py .` also failed loading the schema with `unknown column qb_exam_batch_id in foreign key definition`. Do not repair or waive these outside-scope failures under D182 without a separate approved scope.
+
+The D179 implementation remains local/uncommitted; its focused frontend tests pass 28/28, full Vitest has 5 unrelated failures, and the focused PHP question filter is blocked before assertions by MySQL access denied for `edu_saas_test`. Worktree is intentionally dirty; no stage/commit/push performed. Next safe action: owner/team resolves the schema/export/full-suite gates and preserves/isolates all existing owner work, then rerun the exact required checks before accepting QBO.1 or attempting any D155-compliant push.
 
 ## 2026-10-28 — QBF.1 D175 implementation checkpoint
 
