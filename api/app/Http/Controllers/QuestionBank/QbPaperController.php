@@ -5,7 +5,7 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\QbQuestionPublicResource;
-use App\Models\{AuditLog, QbOmrForm, QbOmrScan, QbPaper, QbPaperItem, QbPaperSection, QbPaperVariant, QbQuestion, QbUnlock, User};
+use App\Models\{AuditLog, QbOmrForm, QbOmrScan, QbPaper, QbPaperItem, QbPaperRevision, QbPaperSection, QbPaperVariant, QbQuestion, QbUnlock, User};
 use App\Services\{PdfService, QbPaperSets, QbPricingService};
 use App\Services\QuestionBank\{QbOmrFormService, QbPaperHeader};
 use App\Support\{Money, Tenancy};
@@ -54,12 +54,13 @@ class QbPaperController extends Controller
         return response()->json(['success' => true, 'data' => $this->row($this->find($request->user(), $id))]);
     }
 
-    /** PUT /question-bank/papers/{id}: the whole paper again (sections and items replaced); drafts only */
-    public function update(Request $request, int $id)
+    /** PUT /question-bank/papers/{id}: the whole paper again (sections and items replaced); drafts only - on a final paper only the
+     *  settings change, as a new revision (D180) */
+    public function update(Request $request, int $id, QbPaperSets $sets)
     {
         $this->staffGate($request);
         $paper = $this->find($request->user(), $id);
-        if ($paper->status !== 'draft') throw new BusinessException('a final paper cannot be changed', 'qb_paper_final', 422);
+        if ($paper->status !== 'draft') return $this->revise($request, $paper, $sets);
         $in = $this->validated($request);
         if ($missing = $this->unbought($in)) return $missing;
         DB::transaction(function () use ($paper, $in) {
@@ -69,6 +70,52 @@ class QbPaperController extends Controller
             $this->sections($paper, $in['sections']);
         });
         return response()->json(['success' => true, 'data' => $this->row($paper->fresh()), 'message' => __('messages.saved')]);
+    }
+
+    /** D180 (1)(2)(6): a final paper's settings block (title, exam name, duration, set count, instructions with subject grouping and
+     *  order) stays editable. A changed save makes the next immutable revision with its own frozen sets (same strategy and naming as
+     *  the revision before; D126/D128/D173) - earlier revisions, their sets, OMR forms and scans never change; the same values make no
+     *  revision. Questions, sections and marks stay locked. */
+    private function revise(Request $request, QbPaper $paper, QbPaperSets $sets)
+    {
+        $in = $request->validate([
+            'title' => 'required|string|max:200', 'exam_name' => 'nullable|string|max:200', 'duration_minutes' => 'nullable|integer|min:1|max:600',
+            'sets_count' => 'nullable|integer|min:1|max:' . QbPaperSets::MAX, 'instructions_json' => 'nullable|array',
+            'instructions_json.text' => 'nullable|string|max:2000', 'instructions_json.group_by_subject' => 'nullable|boolean',
+            'instructions_json.subject_order' => 'nullable|array|max:50', 'instructions_json.subject_order.*' => 'integer',
+            'instructions_json.class_level_id' => 'nullable|integer|exists:qb_class_levels,id',
+            'sections' => 'sometimes', 'program_id' => 'sometimes', 'qb_subject_id' => 'sometimes',
+            'status' => 'prohibited', 'total_marks' => 'prohibited',
+        ]);
+        // questions, sections and marks are locked on a final paper: a save that sends them at all is refused (only the settings block)
+        if (array_key_exists('sections', $in)) throw new BusinessException('a final paper cannot be changed', 'qb_paper_final', 422);
+        $current = $paper->currentRevision();
+        $next = ['title' => $in['title'], 'exam_name' => $in['exam_name'] ?? null, 'duration_minutes' => isset($in['duration_minutes']) ? (int) $in['duration_minutes'] : null,
+            'sets_count' => (int) ($in['sets_count'] ?? $paper->sets_count), 'instructions_json' => $in['instructions_json'] ?? null];
+        $before = $current?->settings_json ?? $paper->settingsSnapshot();
+        $changed = array_values(array_filter(QbPaperRevision::SETTINGS, fn ($k) => json_encode($before[$k] ?? null) !== json_encode($next[$k] ?? null)));
+        if ($changed === []) return response()->json(['success' => true, 'data' => $this->row($paper), 'message' => __('messages.saved')]);
+        $first = $current ? QbPaperVariant::current($paper, $current->id)->orderBy('variant_number')->first() : null;
+        DB::transaction(function () use ($request, $paper, $sets, $next, $current, $first) {
+            $paper->update($next);
+            QbPaperRevision::create(['qb_paper_id' => $paper->id, 'revision_number' => ($current?->revision_number ?? 0) + 1, 'settings_json' => $next, 'created_by' => $request->user()->id]);
+            $sets->freeze($paper, $this->sectionList($paper), $next['sets_count'], $first?->strategy ?? 'both',
+                $first && preg_match('/^[\x{0995}-\x{099E}]/u', (string) $first->code) ? 'bangla' : 'latin');
+        });
+        AuditLog::record('qb.paper.revised', $paper, ['changed' => $changed, 'revision' => ($current?->revision_number ?? 0) + 1]);
+        return response()->json(['success' => true, 'data' => $this->row($paper->fresh()), 'message' => __('messages.saved')]);
+    }
+
+    /** GET /question-bank/papers/{id}/revisions: D180 (6) - the paper's revisions, newest first, with what each changed */
+    public function revisions(Request $request, int $id)
+    {
+        $this->staffGate($request);
+        $paper = $this->find($request->user(), $id);
+        $list = $paper->revisions()->get();
+        $authors = User::whereIn('id', $list->pluck('created_by')->unique())->pluck('name', 'id');
+        return response()->json(['success' => true, 'data' => $list->map(fn ($r, $k) => ['number' => $r->revision_number, 'settings' => $r->settings_json,
+            'changed' => $k === 0 ? [] : array_values(array_filter(QbPaperRevision::SETTINGS, fn ($key) => json_encode($list[$k - 1]->settings_json[$key] ?? null) !== json_encode($r->settings_json[$key] ?? null))),
+            'sets' => QbPaperVariant::current($paper, $r->id)->count(), 'author' => $authors[$r->created_by] ?? null, 'created_at' => $r->created_at?->toIso8601String()])->reverse()->values()]);
     }
 
     /** DELETE /question-bank/papers/{id}: drafts only */
@@ -97,7 +144,9 @@ class QbPaperController extends Controller
         if ($paper->status !== 'draft' && isset($in['count'])) return $this->addSets($request, $paper, $sets, (int) $in['count'], $in['strategy'] ?? 'both');
         if ($paper->status !== 'draft') throw new BusinessException('already final', 'qb_paper_final', 422);
         if ($this->items($paper)->isEmpty()) throw new BusinessException('a paper needs at least one question', 'qb_paper_empty', 422);
-        DB::transaction(function () use ($paper, $sets, $in) {
+        DB::transaction(function () use ($request, $paper, $sets, $in) {
+            // D180 (5): becoming final makes revision 1 - the settings snapshot that owns these sets
+            if (!$paper->currentRevision()) QbPaperRevision::create(['qb_paper_id' => $paper->id, 'revision_number' => 1, 'settings_json' => $paper->settingsSnapshot(), 'created_by' => $request->user()->id]);
             $sets->freeze($paper, $this->sectionList($paper), (int) $paper->sets_count, $in['strategy'] ?? 'both', $in['set_names'] ?? 'latin');
             $paper->update(['status' => 'final']);
         });
@@ -110,11 +159,11 @@ class QbPaperController extends Controller
      *  scanned (D133), and a generated OMR layout is unlocked so it is rebuilt with the new sets */
     private function addSets(Request $request, QbPaper $paper, QbPaperSets $sets, int $count, string $strategy)
     {
-        $form = QbOmrForm::where('qb_paper_id', $paper->id)->first();
+        $form = QbOmrForm::current($paper)->first();
         if ($form && QbOmrScan::where('qb_omr_form_id', $form->id)->exists()) throw new BusinessException('an OMR sheet of this paper is already scanned', 'qb_paper_scanned', 422);
         DB::transaction(function () use ($request, $paper, $sets, $count, $strategy, $form) {
             $sets->append($paper, $this->sectionList($paper), $count, $strategy);
-            $paper->update(['sets_count' => QbPaperVariant::where('qb_paper_id', $paper->id)->count()]);
+            $paper->update(['sets_count' => QbPaperVariant::current($paper)->count()]);
             if ($form?->locked_at !== null) app(QbOmrFormService::class)->unlock($request->user(), $paper->id);
         });
         AuditLog::record('qb.paper.sets_added', $paper, ['count' => $count, 'strategy' => $strategy]);
@@ -125,7 +174,7 @@ class QbPaperController extends Controller
      *  OMR sheet is scanned; the rest are renamed in order; a generated OMR layout is unlocked to be rebuilt */
     private function removeSets(Request $request, QbPaper $paper, QbPaperSets $sets, array $numbers)
     {
-        $form = QbOmrForm::where('qb_paper_id', $paper->id)->first();
+        $form = QbOmrForm::current($paper)->first();
         if ($form && QbOmrScan::where('qb_omr_form_id', $form->id)->exists()) throw new BusinessException('an OMR sheet of this paper is already scanned', 'qb_paper_scanned', 422);
         DB::transaction(function () use ($request, $paper, $sets, $numbers, $form) {
             $paper->update(['sets_count' => $sets->remove($paper, $numbers)]);
@@ -145,14 +194,18 @@ class QbPaperController extends Controller
         $this->staffGate($request);
         $f = $request->validate(['set' => ['nullable', 'regex:/^(?:[A-Z]|[1-9]\d{0,2})$/'], 'answers' => 'nullable|boolean', 'format' => 'nullable|in:json',
             'strategy' => 'nullable|in:' . implode(',', QbPaperSets::STRATEGIES), 'columns' => 'nullable|in:1,2,4,auto',
-            'paper' => 'nullable|in:a4,a5,letter,legal', 'orientation' => 'nullable|in:portrait,landscape']);
+            'paper' => 'nullable|in:a4,a5,letter,legal', 'orientation' => 'nullable|in:portrait,landscape', 'revision' => 'nullable|integer|min:1']);
         $paper = $this->find($request->user(), $id);
+        // D180 (6): an older revision prints with its own settings and sets; none named = the latest
+        $revision = isset($f['revision']) ? QbPaperRevision::where('qb_paper_id', $paper->id)->where('revision_number', (int) $f['revision'])->first() : $paper->currentRevision();
+        if (isset($f['revision']) && !$revision) throw new BusinessException('this paper has no such revision', 'qb_no_such_revision', 422);
+        if ($revision && isset($f['revision'])) $paper = (clone $paper)->forceFill($revision->settings_json);
         $set = (string) ($f['set'] ?? '1');                       // D173: a set number; the old A-Z letters still work (A = 1 ... Z = 26)
         $number = ctype_digit($set) ? (int) $set : array_search($set, QbPaperSets::LATIN, true) + 1;
         if ($number > max(1, (int) $paper->sets_count)) throw new BusinessException('this paper has no such set', 'qb_no_such_set', 422);
         $columns = $f['columns'] ?? 'auto';
         $layout = ['columns' => $columns, 'paper' => $f['paper'] ?? 'a4', 'orientation' => $f['orientation'] ?? 'portrait'];
-        $data = $this->printable($paper, $number, (bool) ($f['answers'] ?? false), $f['strategy'] ?? 'both') + $layout;
+        $data = $this->printable($paper, $number, (bool) ($f['answers'] ?? false), $f['strategy'] ?? 'both', $revision?->id) + $layout + ['revision' => $revision?->revision_number];
         if (($f['format'] ?? null) === 'json') return response()->json(['success' => true, 'data' => $data]);
         $bytes = $pdf->render('pdf.qb-paper', ['paper' => $data], $layout['paper'], $layout['orientation'], true);   // D118 (4): graphs and diagrams drawn
         return response($bytes, 200, ['Content-Type' => 'application/pdf',
@@ -237,16 +290,17 @@ class QbPaperController extends Controller
             + ['updated_at' => $p->updated_at?->toIso8601String(),
                'subjects' => $this->subjects($p),   // D128: the paper's subjects, in the order the paper groups them
                // D126 (2): the frozen sets (set = the Latin letter the print takes, code = the printed name)
-               'sets' => QbPaperVariant::where('qb_paper_id', $p->id)->orderBy('variant_number')->get()->map(fn ($v) => ['number' => $v->variant_number, 'set' => self::address($v->variant_number), 'code' => $v->code, 'strategy' => $v->strategy])->values(),
+               'revision' => $p->currentRevision()?->revision_number,   // D180: the latest revision (null while a draft)
+               'sets' => QbPaperVariant::current($p)->orderBy('variant_number')->get()->map(fn ($v) => ['number' => $v->variant_number, 'set' => self::address($v->variant_number), 'code' => $v->code, 'strategy' => $v->strategy])->values(),
                'sections' => QbPaperSection::where('qb_paper_id', $p->id)->orderBy('sort_order')->get()->map(fn ($s) => ['id' => $s->id, 'title' => $s->title, 'instruction' => $s->instruction,
                    'items' => ($items[$s->id] ?? collect())->sortBy('sort_order')->map(fn ($i) => ['qb_question_id' => (int) $i->qb_question_id, 'marks' => $i->marks])->values()])->values()];
     }
 
     /** The paper as printed (D126 (2)): a final paper prints its frozen set; a draft previews the set computed the same way */
-    private function printable(QbPaper $paper, int $number, bool $answers, string $strategy): array
+    private function printable(QbPaper $paper, int $number, bool $answers, string $strategy, ?int $revisionId = null): array
     {
         $row = $this->row($paper);
-        $frozen = $paper->status === 'final' ? QbPaperVariant::where('qb_paper_id', $paper->id)->where('variant_number', $number)->first() : null;
+        $frozen = $paper->status === 'final' ? QbPaperVariant::current($paper, $revisionId)->where('variant_number', $number)->first() : null;
         $sets = app(QbPaperSets::class);
         $list = $this->sectionList($paper);
         $layout = $frozen?->layout_json ?? $sets->layout($paper, $list, $number, $strategy, $sets->optionCounts($list));

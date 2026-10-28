@@ -28,7 +28,7 @@ class QbOmrFormService
 
     public function form(QbPaper $paper): QbOmrForm
     {
-        return QbOmrForm::where('qb_paper_id', $paper->id)->firstOrFail();
+        return QbOmrForm::current($paper)->firstOrFail();
     }
 
     public function save(QbPaper $paper, array $input): QbOmrForm
@@ -37,7 +37,7 @@ class QbOmrFormService
             $lockedPaper = QbPaper::lockForUpdate()->findOrFail($paper->id);
             if ($lockedPaper->status !== 'final') throw new BusinessException(__('errors.qb_omr_paper_not_final'), 'qb_omr_paper_not_final', 422);
 
-            $form = QbOmrForm::where('qb_paper_id', $lockedPaper->id)->lockForUpdate()->first();
+            $form = QbOmrForm::current($lockedPaper)->lockForUpdate()->first();
             if ($form?->locked_at !== null) throw new BusinessException(__('errors.qb_omr_locked'), 'qb_omr_locked', 422);
             $this->refuseLegacyCodes($lockedPaper);
 
@@ -89,6 +89,7 @@ class QbOmrFormService
                 $form = new QbOmrForm([
                     'institution_id' => $lockedPaper->institution_id,
                     'qb_paper_id' => $lockedPaper->id,
+                    'qb_paper_revision_id' => $lockedPaper->currentRevisionId(),   // D180 (4): one form per revision
                     'code' => Str::upper(Str::random(10)),
                     'layout_version' => 1,
                 ]);
@@ -112,7 +113,7 @@ class QbOmrFormService
     {
         return DB::transaction(function () use ($actor, $paperId, $geometryBuilder) {
             $paper = $this->paper($actor, $paperId, true);
-            $form = QbOmrForm::where('qb_paper_id', $paper->id)->lockForUpdate()->firstOrFail();
+            $form = QbOmrForm::current($paper)->lockForUpdate()->firstOrFail();
             if ($form->locked_at === null) {
                 $this->refuseLegacyCodes($paper);
                 $settings = is_array($form->settings_json) ? $form->settings_json : [];
@@ -134,7 +135,7 @@ class QbOmrFormService
     {
         return DB::transaction(function () use ($actor, $paperId) {
             $paper = $this->paper($actor, $paperId, true);
-            $form = QbOmrForm::where('qb_paper_id', $paper->id)->lockForUpdate()->firstOrFail();
+            $form = QbOmrForm::current($paper)->lockForUpdate()->firstOrFail();
             if ($form->locked_at !== null) {
                 $form->layout_version++;
                 $form->locked_at = null;
@@ -161,10 +162,10 @@ class QbOmrFormService
             throw new BusinessException(__('errors.qb_omr_not_generated'), 'qb_omr_not_generated', 422);
         }
 
-        $variants = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number');
+        $variants = QbPaperVariant::current($paper)->orderBy('variant_number');
         $variant = $setCode === null ? $variants->first() : $variants->where('code', $setCode)->first();
         if (!$variant) throw new BusinessException(__('errors.qb_no_such_set'), 'qb_no_such_set', 422);
-        $firstCode = (string) QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->value('code');
+        $firstCode = (string) QbPaperVariant::current($paper)->orderBy('variant_number')->value('code');
         $symbols = preg_match('/^[A-Z]/', $firstCode) ? range('A', 'J') : ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ', 'ঞ'];
 
         return ['paper' => $paper, 'form' => $form, 'variant' => $variant, 'settings' => $settings, 'set_symbols' => $symbols,
@@ -174,7 +175,7 @@ class QbOmrFormService
     /** D128: the MCQ rows of each subject block (the same in every set: sets shuffle only inside a block), from set 1's frozen order */
     private function subjectBlocks(QbPaper $paper): array
     {
-        $layout = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->value('layout_json') ?? [];
+        $layout = QbPaperVariant::current($paper)->orderBy('variant_number')->value('layout_json') ?? [];
         $mcq = array_flip($this->mcqIds($paper));
         $groups = $this->groups($paper);
         $blocks = [];
@@ -196,14 +197,14 @@ class QbOmrFormService
     /** D173: the set-code box has one A-J (or ক-ঞ) column per letter of the paper's set codes */
     private function setDigits(QbPaper $paper): int
     {
-        $code = (string) QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->value('code');
+        $code = (string) QbPaperVariant::current($paper)->orderBy('variant_number')->value('code');
         return $code === '' ? 1 : mb_strlen($code);
     }
 
     /** D173: a paper whose sets still use letters after J (made before D173) gets no OMR until its sets are next added or deleted */
     private function refuseLegacyCodes(QbPaper $paper): void
     {
-        $codes = QbPaperVariant::where('qb_paper_id', $paper->id)->pluck('code');
+        $codes = QbPaperVariant::current($paper)->pluck('code');
         if ($codes->contains(fn ($c) => \App\Services\QbPaperSets::legacy((string) $c))) {
             throw new BusinessException(__('errors.qb_omr_legacy_set_codes'), 'qb_omr_legacy_set_codes', 422);
         }

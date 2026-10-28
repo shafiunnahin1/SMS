@@ -3115,19 +3115,35 @@ CREATE TABLE qb_paper_folders (                              -- D126 (R2.1.5): q
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (parent_id) REFERENCES qb_paper_folders(id)
 );
+CREATE TABLE qb_paper_revisions (                            -- D180 (5): immutable snapshots of a final paper's settings block; each owns its sets and OMR form
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    qb_paper_id BIGINT UNSIGNED NOT NULL,
+    revision_number SMALLINT UNSIGNED NOT NULL,              -- 1 = as finalized; the highest is the current settings
+    settings_json JSON NOT NULL,                             -- title, exam_name, duration_minutes, sets_count, instructions_json - never updated
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_qb_paper_revisions_number (institution_id, qb_paper_id, revision_number),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
+);
 CREATE TABLE qb_paper_variants (                             -- D126 (2): a final paper's sets, frozen - a later edit never changes a printed set
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     qb_paper_id BIGINT UNSIGNED NOT NULL,
+    qb_paper_revision_id BIGINT UNSIGNED NOT NULL,           -- D180 (5): the revision these sets belong to
     variant_number TINYINT UNSIGNED NOT NULL,                -- 1 = as built
     code VARCHAR(10) NOT NULL,                               -- what the header prints: A-Z or ক-ঞ...
     strategy VARCHAR(10) NOT NULL,                           -- options | serial | both (qbank's)
     layout_json JSON NOT NULL,                               -- per section: question order, each question's option order and its correct labels
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    UNIQUE KEY unique_qb_paper_variants_number (qb_paper_id, variant_number),
+    INDEX idx_qb_paper_variants_paper (qb_paper_id),
+    UNIQUE KEY unique_qb_paper_variants_revision_number (qb_paper_revision_id, variant_number),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
-    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
+    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id),
+    FOREIGN KEY (qb_paper_revision_id) REFERENCES qb_paper_revisions(id)
 );
 CREATE TABLE qb_paper_sections (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -3155,16 +3171,19 @@ CREATE TABLE qb_omr_forms (                                   -- D127: one versi
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     qb_paper_id BIGINT UNSIGNED NOT NULL,
+    qb_paper_revision_id BIGINT UNSIGNED NOT NULL,           -- D180 (4): one form per paper revision; old forms keep their scans
     code VARCHAR(10) NOT NULL,
     settings_json JSON NOT NULL,
     layout_version INT UNSIGNED NOT NULL DEFAULT 1,
     locked_at TIMESTAMP NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    UNIQUE KEY unique_qb_omr_forms_paper (institution_id, qb_paper_id),
+    INDEX idx_qb_omr_forms_paper (qb_paper_id),
+    UNIQUE KEY unique_qb_omr_forms_revision (institution_id, qb_paper_revision_id),
     UNIQUE KEY unique_qb_omr_forms_code (institution_id, code),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
-    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id)
+    FOREIGN KEY (qb_paper_id) REFERENCES qb_papers(id),
+    FOREIGN KEY (qb_paper_revision_id) REFERENCES qb_paper_revisions(id)
 );
 CREATE TABLE exam_result_sms (                                 -- D161 (4): an exam's result / correction SMS per student; pending until the wallet can pay
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

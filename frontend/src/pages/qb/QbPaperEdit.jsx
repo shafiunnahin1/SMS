@@ -72,6 +72,19 @@ export default function QbPaperEdit() {
   const body = () => ({ title: v.title, exam_name: v.exam_name || null, duration_minutes: v.duration_minutes ? Number(v.duration_minutes) : null, sets_count: Number(v.sets_count),
     instructions_json: (v.instructions || v.group) ? { text: v.instructions || null, group_by_subject: v.group, subject_order: v.order } : null, sections: v.sections.map(s => ({ title: s.title, instruction: s.instruction || null, items: s.items.map(i => ({ qb_question_id: i.qb_question_id, marks: i.marks })) })) })
   const toast = (m, k) => useUiStore.getState().addToast(m, k)
+  // D180: on a final paper only the settings block is sent; a changed save becomes a new revision with its own sets
+  const saveSettings = async () => {
+    setBusy(true)
+    try {
+      const { sections: _locked, ...settings } = body()
+      const kept = paper.data?.instructions_json?.class_level_id ? { class_level_id: paper.data.instructions_json.class_level_id } : {}
+      await api.put(`/question-bank/papers/${id}`, { ...settings, instructions_json: settings.instructions_json || Object.keys(kept).length ? { ...(settings.instructions_json ?? {}), ...kept } : null })
+      toast(t('common.saved'))
+      qc.invalidateQueries({ queryKey: ['qb-papers'] })
+      qc.invalidateQueries({ queryKey: ['qb-paper-revisions', id] })
+      paper.refetch()
+    } catch (e) { const d = e.response?.data; toast(Object.values(d?.errors ?? {})[0]?.[0] ?? d?.message, 'error') } finally { setBusy(false) }
+  }
   const save = async () => {
     setBusy(true)
     try {
@@ -151,7 +164,8 @@ export default function QbPaperEdit() {
       </Card>
       {!isNew && final && <PaperSets paperId={id} paper={paper.data} base={base} onChanged={() => { paper.refetch(); qc.invalidateQueries({ queryKey: ['qb-papers'] }) }} />}
       <Card className="grid gap-3 sm:grid-cols-2" data-testid="paper-settings">
-        <fieldset disabled={final} className="contents">
+        {final && <p className="text-sm text-content-muted sm:col-span-2" data-testid="paper-revision-note">{t('qbpp.revision_note', { n: paper.data?.revision ?? 1 })}</p>}
+        <fieldset className="contents">
           <Input label={t('qbpp.title')} value={v.title} onChange={e => set({ title: e.target.value })} name="title" />
           <Input label={t('qbpp.exam_name')} value={v.exam_name} onChange={e => set({ exam_name: e.target.value })} name="exam_name" />
           <Input label={t('qbpp.duration')} ltr inputMode="numeric" value={v.duration_minutes} onChange={e => set({ duration_minutes: e.target.value })} name="duration_minutes" />
@@ -172,7 +186,9 @@ export default function QbPaperEdit() {
             ))}
           </div>
         </fieldset>
+        {final && <div className="flex justify-end sm:col-span-2"><Button onClick={saveSettings} loading={busy} data-action="save-settings">{t('qbpp.save_settings')}</Button></div>}
       </Card>
+      {!isNew && final && <PaperRevisions paperId={id} base={base} />}
       {isNew && (blueprints.data ?? []).length > 0 && (
         <Card className="flex flex-col gap-2" data-testid="paper-blueprint">
           <Select label={t('qbpp.from_blueprint')} name="blueprint" value={planInfo ? String(planInfo.id) : ''} placeholder={t('qbpp.no_blueprint')}
@@ -324,6 +340,30 @@ function PaperSets({ paperId, paper, base, onChanged }) {
             <span className="min-w-16 font-semibold">{t('qbpp.set_code', { code: s.code })}</span>
             <span className="flex-1 text-sm text-content-muted">{s.number === 1 ? t('qbpp.main_set') : t(`qbpp.strategies.${s.strategy}`)}</span>
             <Button variant="secondary" onClick={() => navigate(`${base}/${paperId}/preview?set=${s.set}`)} data-action="preview" data-set={s.set}><Eye aria-hidden="true" className="h-4 w-4" />{t('qbpv.open')}</Button>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
+// D180 (6): the paper's settings revisions, newest first - what each changed and a print of exactly that revision
+function PaperRevisions({ paperId, base }) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const list = useQuery({ queryKey: ['qb-paper-revisions', paperId], queryFn: () => api.get(`/question-bank/papers/${paperId}/revisions`).then(r => r.data.data) })
+  if (list.isPending) return <Loader />
+  if (list.isError) return <ErrorState onRetry={list.refetch} />
+  if ((list.data ?? []).length < 2) return null
+  return (
+    <Card className="flex flex-col gap-2" data-testid="paper-revisions">
+      <h2 className="font-semibold">{t('qbpp.revisions')}</h2>
+      <ul className="flex flex-col gap-1 text-sm">
+        {list.data.map((r, k) => (
+          <li key={r.number} className="flex flex-wrap items-center gap-2" data-revision={r.number}>
+            <span className="font-semibold">{t('qbpp.revision_n', { n: r.number })}{k === 0 ? ` · ${t('qbpp.revision_current')}` : ''}</span>
+            <span className="flex-1 text-content-muted" dir="auto">{r.settings?.title} · {t('qbpp.n_sets', { n: r.sets })}{r.changed?.length ? ` · ${t('qbpp.revision_changed', { list: r.changed.map(c => t(`qbpp.revision_keys.${c}`)).join(', ') })}` : ''}</span>
+            <Button variant="secondary" onClick={() => navigate(`${base}/${paperId}/preview?set=A&revision=${r.number}`)} data-action="print-revision">{t('qbpv.open')}</Button>
           </li>
         ))}
       </ul>

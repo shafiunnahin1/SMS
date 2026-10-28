@@ -65,8 +65,9 @@ export default function QbPaperPreview() {
   const { id } = useParams()
   const [params] = useSearchParams()
   const set = params.get('set') ?? 'A'
+  const revision = params.get('revision')                       // D180 (6): an older revision prints as it was; none = the latest
   const base = useLocation().pathname.replace(/\/\d+\/preview$/, '')
-  const paper = useQuery({ queryKey: ['qb-paper-preview', id, set], queryFn: () => api.get(`/question-bank/papers/${id}/pdf`, { params: { set, answers: 1, format: 'json' } }).then(r => r.data.data) })
+  const paper = useQuery({ queryKey: ['qb-paper-preview', id, set, revision], queryFn: () => api.get(`/question-bank/papers/${id}/pdf`, { params: { set, answers: 1, format: 'json', ...(revision ? { revision } : {}) } }).then(r => r.data.data) })
   const [o, setO] = useState(remembered)
   const [header, setHeader] = useState(null)
   const [order, setOrder] = useState(null)

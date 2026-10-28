@@ -234,6 +234,7 @@ class TenantIsolationTest extends TestCase
             'DELETE api/v1/question-bank/papers/{id}'      => fn (array $other) => $this->seedPaper($other),
             'POST api/v1/question-bank/papers/{id}/finalize' => fn (array $other) => $this->seedPaper($other),
             'GET api/v1/question-bank/papers/{id}/pdf'     => fn (array $other) => $this->seedPaper($other),
+            'GET api/v1/question-bank/papers/{id}/revisions' => fn (array $other) => $this->seedPaper($other),   // D180 (6)
             'GET api/v1/question-bank/papers/{id}/omr-form' => fn (array $other) => $this->seedPaper($other),
             'PUT api/v1/question-bank/papers/{id}/omr-form' => fn (array $other) => $this->seedPaper($other),
             'POST api/v1/question-bank/papers/{id}/omr-form/generate' => fn (array $other) => $this->seedPaper($other),

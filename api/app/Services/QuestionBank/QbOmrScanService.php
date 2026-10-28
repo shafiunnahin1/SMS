@@ -19,7 +19,7 @@ class QbOmrScanService
     public function storeBatch(User $actor, int $paperId, ?array $scans): array
     {
         $paper = $this->forms->paper($actor, $paperId);
-        $form = QbOmrForm::where('qb_paper_id', $paper->id)->firstOrFail();
+        $form = QbOmrForm::current($paper)->firstOrFail();
         if ($scans === null || $scans === []) {
             throw ValidationException::withMessages(['scans' => ['At least one scan is required.']]);
         }

@@ -59,13 +59,14 @@ class McqImportService
         $marks = [];
         $sheets = 0;
         foreach ($links as $link) {
-            $form = QbOmrForm::where('qb_paper_id', $link->qb_paper_id)->first();
-            if (!$form) continue;
+            // D180 (4): each revision of the paper has its own form; sheets of every revision count, each graded by its own sets
+            foreach (QbOmrForm::where('qb_paper_id', $link->qb_paper_id)->orderBy('id')->get() as $form) {
             $scans = QbOmrScan::where('qb_omr_form_id', $form->id)->where('status', 'graded')->whereNotNull('matched_student_id')->orderBy('id')->get();
             $sheets += $scans->count();
             foreach ($scans as $scan) {
                 $got = $link->qb_subject_id ? $this->review->grade($form, $link->paper, $scan, (int) $link->qb_subject_id)['marks'] : (string) $scan->obtained_marks;
                 $marks[$scan->matched_student_id] = round(($marks[$scan->matched_student_id] ?? 0) + (float) $got, 2);
+            }
             }
         }
         // the scan's matched student (D127 review) is known: pass that student's permanent ID, so the same roll in two sections never

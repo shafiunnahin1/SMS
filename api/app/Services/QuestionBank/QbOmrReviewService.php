@@ -29,7 +29,7 @@ class QbOmrReviewService
             if (!empty($c['omr_id_uncertain'])) $reasons[] = 'student_id_unconfirmed';
         } elseif (!preg_match('/^\d+$/', (string) $scan->roll)) $reasons[] = 'roll_unreadable';
         elseif (!empty($c['roll_uncertain'])) $reasons[] = 'roll_unconfirmed';   // D131: read, but a person confirms it
-        $codes = QbPaperVariant::where('qb_paper_id', $paper->id)->pluck('code')->map(fn ($v) => (string) $v)->all();
+        $codes = QbPaperVariant::current($paper, (int) $form->qb_paper_revision_id)->pluck('code')->map(fn ($v) => (string) $v)->all();
         if (($c['set_resolution'] ?? null) !== 'main') {
             if (!filled($scan->set_code)) $reasons[] = 'set_code_missing';
             elseif (!in_array($scan->set_code, $codes, true)) $reasons[] = 'set_code_unknown';
@@ -137,7 +137,7 @@ class QbOmrReviewService
      *  says which subject each row belongs to - sets shuffle only inside a block) */
     public function grade(QbOmrForm $form, QbPaper $paper, QbOmrScan $scan, ?int $qbSubjectId = null): array
     {
-        $variants = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->get();
+        $variants = QbPaperVariant::current($paper, (int) $form->qb_paper_revision_id)->orderBy('variant_number')->get();
         $variant = ($scan->comparison_json['set_resolution'] ?? null) === 'main' ? $variants->first() : $variants->firstWhere('code', $scan->set_code);
         if (!$variant) throw new BusinessException(__('errors.qb_no_such_set'), 'qb_no_such_set', 422);
         $mcq = QbPaperItem::whereHas('section', fn ($q) => $q->where('qb_paper_id', $paper->id))->whereHas('question.type', fn ($q) => $q->where('slug', 'mcq'))

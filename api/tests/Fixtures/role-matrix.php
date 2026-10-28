@@ -315,6 +315,7 @@ return [
     'DELETE api/v1/question-bank/papers/{id}' => ['admin', 'institution_staff', 'teacher'],
     'POST api/v1/question-bank/papers/{id}/finalize' => ['admin', 'institution_staff', 'teacher'],
     'GET api/v1/question-bank/papers/{id}/pdf' => ['admin', 'institution_staff', 'teacher'],
+    'GET api/v1/question-bank/papers/{id}/revisions' => ['admin', 'institution_staff', 'teacher'],   // D180 (6)
     'GET api/v1/question-bank/papers/{id}/omr-form' => ['admin', 'teacher'],
     'PUT api/v1/question-bank/papers/{id}/omr-form' => ['admin', 'teacher'],
     'POST api/v1/question-bank/papers/{id}/omr-form/generate' => ['admin', 'teacher'],

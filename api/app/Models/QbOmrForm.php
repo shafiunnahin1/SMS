@@ -10,7 +10,20 @@ class QbOmrForm extends Model
 {
     use BelongsToInstitution;
 
-    protected $fillable = ['institution_id', 'qb_paper_id', 'code', 'settings_json', 'layout_version', 'locked_at'];
+    /** D180 (4): the OMR form of the paper's latest revision (each revision has its own form; old ones keep their scans) */
+    public static function current(QbPaper $paper)
+    {
+        return static::where('qb_paper_id', $paper->id)->where('qb_paper_revision_id', $paper->currentRevisionId());
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $row) {               // D180 (5): no revision named = the paper's latest
+            if (!$row->qb_paper_revision_id && $row->qb_paper_id) $row->qb_paper_revision_id = QbPaperRevision::latestOrFirst((int) $row->qb_paper_id)->id;
+        });
+    }
+
+    protected $fillable = ['institution_id', 'qb_paper_id', 'qb_paper_revision_id', 'code', 'settings_json', 'layout_version', 'locked_at'];
 
     protected $casts = [
         'layout_version' => 'integer',

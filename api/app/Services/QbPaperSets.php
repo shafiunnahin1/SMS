@@ -43,10 +43,16 @@ class QbPaperSets
         return $code !== null && $code !== '' && (in_array(mb_substr($code, 0, 1), self::OMR_BANGLA, true) || in_array($code, self::BANGLA, true));
     }
 
+    /** D180: the revision new sets belong to - the paper's latest; a final paper always has one (finalize makes revision 1) */
+    private function revisionId(QbPaper $paper): int
+    {
+        return $paper->currentRevisionId() ?: throw new \LogicException('a paper needs a revision before its sets are frozen');
+    }
+
     /** D173: give every set of the paper the code of its place for the current count (after sets are added or deleted) */
     private function rename(QbPaper $paper): int
     {
-        $all = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->get();
+        $all = QbPaperVariant::current($paper)->orderBy('variant_number')->get();
         $bangla = self::bangla($all->first()?->code);
         foreach ($all as $k => $v) $v->update(['code' => self::code($k + 1, $all->count(), $bangla)]);
         return $all->count();
@@ -91,10 +97,10 @@ class QbPaperSets
         if ($count > $max) throw new BusinessException("at most {$max} sets are possible with this strategy", 'qb_sets_capacity', 422, ['max' => $max]);
         $correct = QbQuestionOption::whereIn('qb_question_id', $this->ids($sections))->orderBy('sort_order')->orderBy('id')->get(['qb_question_id', 'is_correct'])
             ->groupBy('qb_question_id')->map(fn ($os) => $os->pluck('is_correct')->map(fn ($v) => (bool) $v)->all());
-        QbPaperVariant::where('qb_paper_id', $paper->id)->delete();
+        QbPaperVariant::current($paper)->delete();
         for ($n = 1; $n <= $count; $n++) {
             $layout = $this->withKey($this->layout($paper, $sections, $n, $strategy, $counts), $correct, $sections);
-            QbPaperVariant::create(['qb_paper_id' => $paper->id, 'variant_number' => $n, 'code' => self::code($n, $count, $names === 'bangla'),
+            QbPaperVariant::create(['qb_paper_id' => $paper->id, 'qb_paper_revision_id' => $this->revisionId($paper), 'variant_number' => $n, 'code' => self::code($n, $count, $names === 'bangla'),
                 'strategy' => $strategy, 'layout_json' => $layout]);
         }
     }
@@ -103,7 +109,7 @@ class QbPaperSets
      *  repeating an order already printed; the earlier sets keep their order and key; D173: all codes are then renamed for the new total in the first set's scheme */
     public function append(QbPaper $paper, array $sections, int $count, string $strategy): void
     {
-        $existing = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->get();
+        $existing = QbPaperVariant::current($paper)->orderBy('variant_number')->get();
         $counts = $this->optionCounts($sections);
         $max = min(self::MAX, $this->capacity($sections, $strategy, $counts));
         if ($existing->count() + $count > $max) throw new BusinessException("at most {$max} sets are possible with this strategy", 'qb_sets_capacity', 422, ['max' => $max]);
@@ -116,7 +122,7 @@ class QbPaperSets
                 if (!in_array($plain($layout), $seen, true)) break;
             }
             $seen[] = $plain($layout);
-            QbPaperVariant::create(['qb_paper_id' => $paper->id, 'variant_number' => $n, 'code' => 'tmp' . $n, 'strategy' => $strategy,
+            QbPaperVariant::create(['qb_paper_id' => $paper->id, 'qb_paper_revision_id' => $this->revisionId($paper), 'variant_number' => $n, 'code' => 'tmp' . $n, 'strategy' => $strategy,
                 'layout_json' => $this->withKey($layout, $correct, $sections)]);
         }
         $this->rename($paper);   // D173: a new total may need longer codes - every set takes its place's code, its order and key unchanged
@@ -128,10 +134,10 @@ class QbPaperSets
     {
         $numbers = array_values(array_unique(array_map('intval', $numbers)));
         if (in_array(1, $numbers, true)) throw new BusinessException('the main set cannot be deleted', 'qb_set_main', 422);
-        $existing = QbPaperVariant::where('qb_paper_id', $paper->id)->orderBy('variant_number')->get();
+        $existing = QbPaperVariant::current($paper)->orderBy('variant_number')->get();
         $missing = array_diff($numbers, $existing->pluck('variant_number')->map(fn ($n) => (int) $n)->all());
         if ($numbers === [] || $missing !== []) throw new BusinessException('this paper has no such set', 'qb_no_such_set', 422);
-        QbPaperVariant::where('qb_paper_id', $paper->id)->whereIn('variant_number', $numbers)->delete();
+        QbPaperVariant::current($paper)->whereIn('variant_number', $numbers)->delete();
         $left = $existing->reject(fn ($v) => in_array((int) $v->variant_number, $numbers, true))->values();
         // ascending: each new number is at most the old one and already free (deleted or vacated), so the unique (paper, number) holds
         foreach ($left as $k => $v) $v->update(['variant_number' => $k + 1]);

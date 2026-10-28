@@ -550,6 +550,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/papers/{id}',                    [QbPaperController::class, 'update'])->whereNumber('id');
             Route::delete('/papers/{id}',                 [QbPaperController::class, 'destroy'])->whereNumber('id');
             Route::post('/papers/{id}/finalize',          [QbPaperController::class, 'finalize'])->whereNumber('id');
+            Route::get('/papers/{id}/revisions',          [QbPaperController::class, 'revisions'])->whereNumber('id');   // D180 (6)
             Route::get('/papers/{id}/pdf',                [QbPaperController::class, 'pdf'])->whereNumber('id');
             Route::middleware('role:admin,teacher')->group(function () {   // D127: admin and teachers manage OMR forms, not department staff
                 Route::get('/papers/{id}/omr-form', [QbOmrFormController::class, 'show'])->whereNumber('id');

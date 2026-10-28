@@ -576,6 +576,11 @@ final class DepartmentRouteCatalog
         ['method' => 'POST', 'uri' => 'api/v1/ai/attachments', 'action' => 'App\\Http\\Controllers\\Ai\\AiAttachmentController@store', 'current_roles' => ['admin', 'student', 'teacher'], 'preserve_nonstaff_roles' => ['admin', 'student', 'teacher'], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:ai_assistant'], 'selector_variants' => [], 'resource_scope' => 'tenant; the user\'s own photo, read by self-hosted OCR and kept one day; question askers only; no department-staff permission', 'approval' => 'D166', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
     ];
 
+    /** D180 (6) QBO.2: a paper's settings revisions (read-only list); staff need the paper's own "show" duty key (D101) - no new key. */
+    public const D180 = [
+        ['method' => 'GET|HEAD', 'uri' => 'api/v1/question-bank/papers/{id}/revisions', 'action' => 'App\\Http\\Controllers\\QuestionBank\\QbPaperController@revisions', 'current_roles' => ['admin', 'institution_staff', 'teacher'], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:question_bank'], 'selector_variants' => [], 'resource_scope' => 'D180 tenant record + existing service/ownership constraints; no privilege from former role', 'approval' => 'D180', 'staff_mode' => 'exact_duty_permission', 'permission_options' => ['staff.qb_paper.show']],
+    ];
+
     /** D170 (3): the Super Admin's direct activation of an existing pending first admin (central host). */
     public const D170 = [
         ['method' => 'POST', 'uri' => 'api/v1/super/institutions/{id}/direct-activation', 'action' => 'App\\Http\\Controllers\\SuperAdmin\\InstitutionController@activateDirectly', 'current_roles' => ['super_admin'], 'preserve_nonstaff_roles' => ['super_admin'], 'current_module_feature_gates' => [], 'selector_variants' => [], 'resource_scope' => 'central host; one eligible pending Super Admin-created first admin; rechecked under row locks; audited without secrets', 'approval' => 'D170', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],

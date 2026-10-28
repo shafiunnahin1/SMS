@@ -12,7 +12,7 @@ class DepartmentRoutePermissionResolver
     /** every reviewed route entry, in lookup order (D168: the help guide reads the same list) */
     public static function entries(): array
     {
-        return [...DepartmentRouteCatalog::D94, ...DepartmentRouteCatalog::D101, ...DepartmentRouteCatalog::D102, ...DepartmentRouteCatalog::D169, ...DepartmentRouteCatalog::CAPTURED, ...DepartmentRouteCatalog::D100, ...DepartmentRouteCatalog::D104, ...DepartmentRouteCatalog::D106, ...DepartmentRouteCatalog::D107, ...DepartmentRouteCatalog::D111, ...DepartmentRouteCatalog::D127, ...DepartmentRouteCatalog::D158, ...DepartmentRouteCatalog::D161, ...DepartmentRouteCatalog::D162, ...DepartmentRouteCatalog::D164, ...DepartmentRouteCatalog::D165, ...DepartmentRouteCatalog::D166, ...DepartmentRouteCatalog::D166_OCR, ...DepartmentRouteCatalog::D168, ...DepartmentRouteCatalog::D170];
+        return [...DepartmentRouteCatalog::D94, ...DepartmentRouteCatalog::D101, ...DepartmentRouteCatalog::D102, ...DepartmentRouteCatalog::D169, ...DepartmentRouteCatalog::CAPTURED, ...DepartmentRouteCatalog::D100, ...DepartmentRouteCatalog::D104, ...DepartmentRouteCatalog::D106, ...DepartmentRouteCatalog::D107, ...DepartmentRouteCatalog::D111, ...DepartmentRouteCatalog::D127, ...DepartmentRouteCatalog::D158, ...DepartmentRouteCatalog::D161, ...DepartmentRouteCatalog::D162, ...DepartmentRouteCatalog::D164, ...DepartmentRouteCatalog::D165, ...DepartmentRouteCatalog::D166, ...DepartmentRouteCatalog::D166_OCR, ...DepartmentRouteCatalog::D168, ...DepartmentRouteCatalog::D170, ...DepartmentRouteCatalog::D180];
     }
 
     public function resolve(Request $request): ?array
