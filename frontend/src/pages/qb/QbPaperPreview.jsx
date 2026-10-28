@@ -9,7 +9,7 @@ import { ErrorState } from '../../components/StateViews'
 import MathText from '../../features/qb/MathText'
 import { loadFont } from '../../theme/fonts'
 import { downloadPaperJpg, downloadPaperPdf, paperDimensions } from '../../features/qb/paperImage'
-import { applyPreviewFontSize, optionColumnCount, resetPreviewFontSize } from '../../features/qb/paperOptions'
+import { applyPreviewFontSize, optionColumnCount, paginateBlocks, resetPreviewFontSize } from '../../features/qb/paperOptions'
 import { useUiStore } from '../../store/uiStore'
 
 // D133 / D110: qbank's question-paper print preview with its Paper Controller (resources/views/question-paper/preview.blade.php at
@@ -48,6 +48,11 @@ const STORE = 'qb-paper-preview'
 const FREE = ['behind', 'front']                         // wraps placed freely on the page; the rest sit in the flow
 const ALIGNS = [['left', AlignLeft], ['center', AlignCenter], ['right', AlignRight], ['justify', AlignJustify]]   // the box text's alignment, as Word
 const WRAPS = ['inline', 'square', 'tight', 'topBottom', 'behind', 'front']
+const PX_PER_MM = 96 / 25.4                               // CSS px per mm: the pages are laid out in real paper units
+const COL_GAP_MM = 6
+// MathLive's <math-span> draws itself only when it scrolls into view; on the paper every formula must be drawn at once - for the page
+// layout (its height), for print and for PDF / JPG (a formula never scrolled to would come out blank)
+const drawAllMath = (root) => root?.querySelectorAll('math-span').forEach(m => { if (!m._hasRendered && typeof m.render === 'function') m.render() })
 const paperStore = (id, set) => `qb-paper-preview:${id}:${set}`
 const readJson = (key, fallback) => { try { return JSON.parse(window.localStorage.getItem(key) ?? 'null') ?? fallback } catch { return fallback } }
 const writeJson = (key, value) => { try { window.localStorage.setItem(key, JSON.stringify(value)) } catch { /* full or private: kept until the page closes */ } }
@@ -78,7 +83,9 @@ export default function QbPaperPreview() {
   const ghostRef = useRef(null)
   const [jpgBusy, setJpgBusy] = useState(false)
   const [pdfBusy, setPdfBusy] = useState(false)
-  const [pageCount, setPageCount] = useState(1)
+  const [layout, setLayout] = useState(null)               // D179 (5): [[keys of column 1, ..], ..] per page, from measured blocks
+  const headRef = useRef(null)
+  const blockMeta = useRef([])
   const paperRef = useRef(null)
   const drag = useRef(null)
   const imageInput = useRef(null)
@@ -102,31 +109,40 @@ export default function QbPaperPreview() {
   const sections = useMemo(() => (order ?? []).map(i => paper.data?.sections[i]).filter(Boolean), [order, paper.data])
   const paperSize = paperDimensions(printPrefs.pageSize, printPrefs.orientation)
   const maxSelectedFontSize = Math.max(64, Math.round(paperSize.heightPt))
+  // D179 (5): measure every block (section title / question with its boxes) and the page-1 header, then lay the blocks out into real
+  // pages; heights do not depend on the layout (every column has the same width), so this settles after one pass
   useEffect(() => {
-    const paperElement = paperRef.current
-    if (!paperElement || typeof ResizeObserver === 'undefined') return
-    const update = () => {
-      const pixelsPerMm = paperElement.getBoundingClientRect().width / paperSize.width
-      const pageHeight = paperSize.height * pixelsPerMm
-      setPageCount(Math.max(1, Math.ceil(paperElement.scrollHeight / pageHeight)))
+    const root = paperRef.current
+    if (!root) return
+    const measure = () => {
+      drawAllMath(root)
+      const heights = Object.fromEntries([...root.querySelectorAll('[data-block]')].map(el => [el.dataset.block, el.offsetHeight]))
+      const content = (paperSize.height - 2 * o.margin) * PX_PER_MM - 4   // a little slack: a full page never spills onto the next sheet
+      const next = paginateBlocks(blockMeta.current.map(m => ({ ...m, height: heights[m.key] ?? 0 })),
+        { columns: o.columns, firstHeight: content - (headRef.current?.offsetHeight ?? 0), height: content })
+      setLayout(current => (JSON.stringify(current) === JSON.stringify(next) ? current : next))
     }
-    const observer = new ResizeObserver(update)
-    observer.observe(paperElement)
-    const frame = requestAnimationFrame(update)
-    return () => { cancelAnimationFrame(frame); observer.disconnect() }
-  }, [paperSize.height, paperSize.width, o, sections, boxes, edits, header])
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    root.querySelectorAll('[data-block]').forEach(el => observer.observe(el))
+    if (headRef.current) observer.observe(headRef.current)
+    return () => observer.disconnect()
+  })
 
   if (paper.isPending || !header) return <Loader type="page" />
   if (paper.isError) return <ErrorState onRetry={paper.refetch} />
 
   const move = (i, dir) => setOrder(list => { const next = [...list]; const j = i + dir; if (j < 0 || j >= next.length) return list; [next[i], next[j]] = [next[j], next[i]]; return next })
-  const print = () => { window.focus(); window.print() }
+  const print = () => { drawAllMath(paperRef.current); window.focus(); window.print() }
   const savePdf = async () => {
     setPdfBusy(true)
+    drawAllMath(paperRef.current)
     try { await downloadPaperPdf(paperRef.current, `paper-${id}-${set}.pdf`, printPrefs.pageSize, printPrefs.orientation) } catch { useUiStore.getState().addToast(t('qbpv.pdf_failed'), 'error') } finally { setPdfBusy(false) }
   }
   const saveJpg = async () => {
     setJpgBusy(true)
+    drawAllMath(paperRef.current)
     try { await downloadPaperJpg(paperRef.current, `paper-${id}-${set}.jpg`, printPrefs.pageSize, printPrefs.orientation) } catch { useUiStore.getState().addToast(t('qbpv.image_failed'), 'error') } finally { setJpgBusy(false) }
   }
   const addBox = (extra = {}) => { const box = { id: Date.now(), kind: 'text', wrap: 'topBottom', anchor: 'top', side: 'start', x: 40, y: 40, width: 240, height: 0, html: '', ...extra }; setBoxes(b => [...b, box]); setActiveBox(box.id) }
@@ -205,7 +221,8 @@ export default function QbPaperPreview() {
       options: (item.question.options ?? []).map((op, k) => ({ ...op, content_text: savedEdit.options?.[k] ?? op.content_text })),
       items: (item.question.items ?? []).map(p => ({ ...p, prompt_json: { ...p.prompt_json, options: (p.prompt_json?.options ?? []).map((op, k) => savedEdit.childOptions?.[`${p.no}:${k}`] ?? op) } })) }
   }
-  const optionColumnsFor = (questionId, options) => optionColumnCount(options, printPrefs.questionColumns[questionId] ?? printPrefs.optionColumns)
+  const columnWidthPx = ((paperSize.width - 2 * o.margin) * PX_PER_MM - (o.columns - 1) * COL_GAP_MM * PX_PER_MM) / o.columns
+  const optionColumnsFor = (questionId, options) => optionColumnCount(options, printPrefs.questionColumns[questionId] ?? printPrefs.optionColumns, { width: columnWidthPx, fontPx: o.fontSize })
   const questionItemFor = (questionId) => sections.flatMap(s => s.items).find(item => String(item.question.id) === String(questionId))
   const sourceForSelection = (selection) => {
     const item = questionItemFor(selection.questionId)
@@ -282,18 +299,102 @@ export default function QbPaperPreview() {
   ]
   const activeWrap = boxes.find(b => b.id === activeBox)?.wrap ?? 'topBottom'
 
-  const paperStyle = { fontFamily: `${o.font}, 'Noto Sans Bengali', sans-serif`, fontSize: `${o.fontSize}px`, fontWeight: o.fontWeight, lineHeight: o.lineHeight, padding: `${o.margin}mm` }
-  let running = 0
+  const paperStyle = { fontFamily: `${o.font}, 'Noto Sans Bengali', sans-serif`, fontSize: `${o.fontSize}px`, fontWeight: o.fontWeight, lineHeight: o.lineHeight }
+  // D179 (5): the paper as blocks - a section title (kept with its first question) and each question with the boxes dropped after it
+  const blocks = []
+  sections.forEach((s, si) => {
+    if ((o.showSections && (s.title || s.instruction)) || boxes.some(b => !FREE.includes(b.wrap) && b.anchor === `s-${si}`)) {
+      blocks.push({ key: `s-${si}`, section: si, keepWithNext: s.items.length > 0, breakBefore: o.pageBreak && si > 0, el: [
+        o.showSections && s.title && <h2 key="h" className="mb-2 border-b border-line pb-1 text-center font-semibold" dir="auto" data-gap={`s-${si}`}>{s.title}</h2>,
+        ...renderBoxes(`s-${si}`),
+        o.showSections && s.instruction && <p key="i" className="mb-2 text-center text-sm" dir="auto">{s.instruction}</p>] })
+    }
+    s.items.forEach((it, ii) => {
+      const no = o.restartNumbers ? ii + 1 : it.no
+      const qn = q(it)
+      const opts = qn.options ?? []
+      const qid = String(it.question.id ?? `${si}-${ii}`)
+      const first = ii === 0 && !blocks.some(x => x.key === `s-${si}`)
+      if (editing === qid) {
+        blocks.push({ key: qid, section: si, breakBefore: first && o.pageBreak && si > 0, el: <QuestionEditor key={qid} t={t} question={it.question} value={edits[it.question.id]} onCancel={() => setEditing(null)}
+          onSave={v => { setEdits(e => ({ ...e, [it.question.id]: v })); setEditing(null) }} onReset={() => { setEdits(({ [it.question.id]: _drop, ...rest }) => rest); setEditing(null) }} /> })
+        return
+      }
+      blocks.push({ key: qid, section: si, question: true, breakBefore: first && o.pageBreak && si > 0, el: [
+        <div key="q" className="qb-q group relative pb-4" data-testid="qb-paper-question" data-qid={qid} data-gap={qid} data-edited={edits[it.question.id] ? 'yes' : undefined}>
+          <button type="button" onClick={() => setEditing(qid)} className="qb-no-print absolute -top-1 end-0 rounded-token bg-surface p-1 text-content-muted opacity-60 hover:opacity-100 group-hover:opacity-100 [border:1px_solid_var(--line)]" aria-label={t('qbpv.edit_question', { n: no })} data-action="edit-question"><Pencil aria-hidden="true" className="h-3.5 w-3.5" /></button>
+          {edits[it.question.id] && <span className="qb-no-print absolute -top-1 end-8 rounded-token bg-primary-soft px-1 text-xs text-primary-fg">{t('qbpv.edited')}</span>}
+          <label className="qb-no-print inline-flex items-center gap-1 text-xs text-content-muted">
+            <input type="checkbox" checked={selectedQuestions.includes(qid)} onChange={() => toggleQuestionSelection(qid)} aria-label={t('qbpv.select_question', { n: num(no) })} data-action="select-question" />
+            <span>{t('qbpv.select')}</span>
+          </label>
+          {it.subject && <p className="mb-1 font-semibold" dir="auto">{it.subject}</p>}
+          {o.show.question && <div className="flex gap-2 font-semibold">{it.no !== null && <span>{num(no)}.</span>}<div className="min-w-0 flex-1" dir="auto"><MathText text={qn.question_text} media={qn.media ?? []} allowPreviewFontSize questionId={qid} field="question_text" /></div></div>}
+          {o.show.question && (qn.creative_parts ?? []).length > 0 && <ol className="mt-1 flex flex-col gap-1 ps-6">{qn.creative_parts.map(p => <li key={p.part_label} dir="auto"><span>{p.part_label}.</span> <MathText text={p.question_text} /></li>)}</ol>}
+          {o.show.answer && qn.answer_text && <div className="mt-1" data-testid="qb-paper-answer"><p>{L('answer')}</p><div dir="auto"><MathText text={qn.answer_text} allowPreviewFontSize questionId={qid} field="answer_text" /></div></div>}
+          {o.show.question && opts.length > 0 && (
+            <div className="qb-option-grid mt-1" style={optionGrid(optionColumnsFor(qid, opts))} data-testid="qb-paper-options" data-option-columns={optionColumnsFor(qid, opts)}>
+              {opts.map((op, k) => (
+                <div key={k} className="qb-option-cell flex min-w-0 items-start gap-2">
+                  <span className="shrink-0 font-semibold">{(LABELS[o.language][k] ?? op.label)})</span>
+                  {o.show.answer && op.is_correct && <span aria-label={L('correct')} className="mt-2 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" />}
+                  <span className="qb-fit min-w-0 flex-1" dir="auto"><MathText text={op.content_text} allowPreviewFontSize questionId={qid} field="option" optionIndex={k} /></span>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* D171: a stimulus MCQ group prints its stimulus once, then each child as a numbered MCQ */}
+          {o.show.question && it.no === null && (qn.stimuli ?? []).map(st => <div key={st.id} className="mt-1" dir="auto" data-testid="qb-paper-stimulus"><MathText text={st.content_text} media={qn.media ?? []} /></div>)}
+          {o.show.question && it.no === null && (qn.items ?? []).filter(p => p.no != null).map(p => (
+            <div key={p.no} className="mt-2" data-testid="qb-paper-child">
+              <div className="flex gap-2 font-semibold"><span>{num(p.no)}.</span><div className="min-w-0 flex-1" dir="auto"><MathText text={p.prompt_text} /></div></div>
+              <label className="qb-no-print inline-flex items-center gap-1 text-xs text-content-muted">
+                <input type="checkbox" checked={selectedQuestions.includes(`${qid}:child:${p.no}`)} onChange={() => toggleQuestionSelection(`${qid}:child:${p.no}`)} aria-label={t('qbpv.select_question', { n: num(p.no) })} data-action="select-question" />
+                <span>{t('qbpv.select')}</span>
+              </label>
+              <div className="qb-option-grid mt-1" style={optionGrid(optionColumnsFor(`${qid}:child:${p.no}`, p.prompt_json?.options ?? []))} data-testid="qb-paper-child-options" data-option-columns={optionColumnsFor(`${qid}:child:${p.no}`, p.prompt_json?.options ?? [])}>
+                {(p.prompt_json?.options ?? []).map((op, k) => (
+                  <div key={k} className="qb-option-cell flex min-w-0 items-start gap-2">
+                    <span className="shrink-0 font-semibold">{LABELS[o.language][k] ?? k + 1})</span>
+                    {o.show.answer && p.answer_json?.correct === k && <span aria-label={L('correct')} className="mt-2 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" />}
+                    <span className="qb-fit min-w-0 flex-1" dir="auto"><MathText text={String(op)} allowPreviewFontSize questionId={qid} field="child_option" optionIndex={k} itemNo={p.no} /></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {o.show.explanation && qn.explanation_text && <div className="mt-1" data-testid="qb-paper-explanation"><p>{L('explanation')}</p><div dir="auto"><MathText text={qn.explanation_text} allowPreviewFontSize questionId={qid} field="explanation_text" /></div></div>}
+        </div>,
+        ...renderBoxes(qid)] })
+    })
+  })
+  blockMeta.current = blocks.map(({ el: _el, ...meta }) => meta)
+  const blockByKey = Object.fromEntries(blocks.map(b => [b.key, b]))
+  const keys = blocks.map(b => b.key)
+  const laid = layout && JSON.stringify(layout.flat(2)) === JSON.stringify(keys) && layout.every(p => p.length === o.columns)
+  const pages = laid ? layout : [[keys, ...Array.from({ length: o.columns - 1 }, () => [])]]   // until measured: everything in column 1
+  const questionCount = blocks.filter(b => b.question).length
+  const pageStyle = { width: `${paperSize.width}mm`, minHeight: `${paperSize.height}mm`, padding: `${o.margin}mm` }
+  // one column of a page: its blocks, grouped by section so each section element holds its own questions
+  const column = (colKeys) => colKeys.reduce((groups, key) => {
+    const b = blockByKey[key]
+    const last = groups[groups.length - 1]
+    if (last && last.section === b.section) last.keys.push(key)
+    else groups.push({ section: b.section, keys: [key] })
+    return groups
+  }, []).map((g, gi) => (
+    <section key={gi} className="qb-paper-section" data-testid="qb-paper-section">
+      {g.keys.map(key => <div key={key} className="qb-block" data-block={key}>{blockByKey[key].el}</div>)}
+    </section>
+  ))
   return (
     <div className="qb-print-root flex flex-col gap-4 lg:flex-row lg:items-start" data-testid="qb-paper-preview">
       <style>{`
-        .qb-paper .qb-cols{column-count:${o.columns};column-gap:2rem;column-fill:balance;column-rule:${o.columnLine && o.columns > 1 ? '1px solid var(--line)' : 'none'}}
-        .qb-paper .qb-q{break-inside:avoid-column;page-break-inside:avoid}
-        .qb-paper-section>h2{break-after:avoid}
+        .qb-paper .qb-block{display:flow-root}
         .qb-paper .qb-option-grid{gap:.25rem 1rem;}
-        .qb-paper .qb-option-cell,.qb-paper math-span,.qb-paper code{min-width:0;max-width:100%;overflow-wrap:anywhere;}
-        .qb-paper math-span{display:inline-block;vertical-align:middle;}
-        .qb-paper>:not(.qb-free):not(.qb-ghost){position:relative;z-index:1}
+        .qb-paper .qb-fit,.qb-paper code{min-width:0;overflow-wrap:break-word;}
+        .qb-paper math-span{display:inline-block;vertical-align:middle;max-width:none}
+        .qb-paper .qb-page>:not(.qb-free):not(.qb-page-no){position:relative;z-index:1}
         .qb-paper .qb-free.qb-behind{z-index:0}
         .qb-paper .qb-free.qb-front{z-index:2}
         .qb-paper .qb-free.qb-behind.qb-active{z-index:3}
@@ -304,122 +405,64 @@ export default function QbPaperPreview() {
           body:has(.qb-print-root)>#root,body:has(.qb-print-root) #root *:has(.qb-print-root){display:contents!important}
           body *{visibility:hidden}
           .qb-paper,.qb-paper *{visibility:visible}
-          .qb-print-root{display:block!important;width:${paperSize.width}mm;margin:0 auto}
-          .qb-paper{position:static;width:${paperSize.width}mm;max-width:none;min-height:${paperSize.height}mm;margin:0;overflow:visible;box-shadow:none;border:0;border-radius:0}
-          .qb-paper .qb-cols{column-fill:auto}
+          .qb-print-root{display:block!important}
+          .qb-paper{display:block!important;gap:0!important;padding:0!important;background:white}
+          .qb-paper .qb-page{width:${paperSize.width}mm;min-height:0;height:auto;margin:0;overflow:visible;box-shadow:none;border:0;border-radius:0;break-after:page;page-break-after:always}
+          .qb-paper .qb-page:last-of-type{break-after:auto;page-break-after:auto}
           .qb-no-print{display:none!important}
           .qb-paper .qb-box{resize:none;box-shadow:none!important}
         }`}</style>
 
-      <div className="flex min-w-0 flex-1 justify-center">
-        <article ref={paperRef} lang={o.language} onMouseUp={captureTextSelection} className="qb-paper relative rounded-token bg-surface text-content shadow-card [border:1px_solid_var(--line)]"
-          style={{ ...paperStyle, width: `${paperSize.width}mm`, minHeight: `${paperSize.height}mm` }} data-testid="qb-paper" data-page-count={pageCount}>
-          <div className="qb-no-print qb-page-guides pointer-events-none absolute inset-0" aria-hidden="true" data-testid="qb-page-guides">
-            {Array.from({ length: pageCount }, (_, index) => (
-              <div key={index} className="qb-page-guide absolute inset-x-0 border border-dashed border-line" style={{ top: `${index * paperSize.height}mm`, height: `${paperSize.height}mm` }}>
-                <span className="absolute end-1 top-1 rounded-token bg-surface px-2 py-1 text-xs text-content-muted">{t('qbpv.page_number', { n: index + 1 })}</span>
-              </div>
-            ))}
-          </div>
-          {renderBoxes('h-start')}
-          <header className={`relative pb-2 text-center ${o.headerStyle === 'bordered' ? 'rounded-token p-3 [border:2px_solid_currentColor]' : ''} ${o.headerStyle === 'image' ? 'rounded-token bg-surface-muted p-3' : ''}`} data-testid="qb-paper-header">
-            {/* three columns: an empty side, the heading lines in the middle, the code box at the end (board-paper layout) */}
-            <div className="grid grid-cols-[1fr_minmax(0,auto)_1fr] items-start gap-2">
-              <span />
-              <div>
-                {HEADER_LINES.map(k => header[k] && [<div key={k} style={{ fontSize: `${o.sizes[k]}px` }} className={`mb-1 ${k === 'institution' ? 'font-semibold' : ''}`} dir="auto" data-line={k} data-gap={`h-${k}`}>{header[k]}</div>, ...renderBoxes(`h-${k}`)])}
-              </div>
-              {/* the board paper's framed box: each subject's code in digit boxes (one row per subject), then the set in its own box */}
-              {(codes.length > 0 || header.setCode) && (
-                <div className="flex flex-col items-end gap-1 justify-self-end whitespace-nowrap rounded-token border-2 border-current p-2 font-semibold leading-tight" data-testid="qb-paper-codebox">
-                  {codes.map((c, i) => (
-                    <span key={i} className="flex items-center gap-2" style={{ fontSize: `${o.sizes.subjectCode ?? 14}px` }} data-testid="qb-paper-subject-code">
-                      <span>{L('subject_code')} :</span>
-                      <span className="flex" dir="ltr">{[...c].map((ch, j) => <span key={j} className="-ms-px inline-flex h-[1.9em] w-[1.6em] items-center justify-center border-2 border-current">{num(ch)}</span>)}</span>
-                    </span>
-                  ))}
-                  {header.setCode && <span className="flex items-center gap-2" style={{ fontSize: `${o.sizes.setCode}px` }} data-testid="qb-paper-set"><span>{L('set')} :</span> <span className="inline-flex h-[1.9em] min-w-[2.6em] items-center justify-center border-2 border-current px-1">{header.setCode}</span></span>}
-                </div>
-              )}
-            </div>
-            <div className="mt-3 flex w-full items-end justify-between gap-2 py-1" data-gap="h-meta">
-              <span style={{ fontSize: `${o.sizes.time}px` }}>{L('time')} : {num(header.time)}</span>
-              <span style={{ fontSize: `${o.sizes.marks}px` }}>{L('full_marks')} : {num(header.marks)}</span>
-            </div>
-            {renderBoxes('h-meta')}
-          </header>
-          <div data-gap="top">{header.instructions.trim() && <p className="whitespace-pre-line pb-2 text-center text-sm" dir="auto" data-testid="qb-paper-instructions">{header.instructions}</p>}</div>
-          {renderBoxes('top')}
-
-          <div className="qb-cols" data-testid="qb-paper-columns">
-            {sections.map((s, si) => (
-              <section key={si} className="qb-paper-section pt-3" style={{ breakBefore: o.pageBreak && si > 0 ? 'page' : 'auto' }} data-testid="qb-paper-section">
-                {o.showSections && s.title && <h2 className="mb-2 border-b border-line pb-1 text-center font-semibold" dir="auto" data-gap={`s-${si}`}>{s.title}</h2>}
-                {renderBoxes(`s-${si}`)}
-                {o.showSections && s.instruction && <p className="mb-2 text-center text-sm" dir="auto">{s.instruction}</p>}
-                {s.items.map((it, ii) => {
-                  running += 1
-                  const no = o.restartNumbers ? ii + 1 : it.no
-                  const qn = q(it)
-                  const opts = qn.options ?? []
-                  const qid = String(it.question.id ?? `${si}-${ii}`)
-                  if (editing === qid) return <QuestionEditor key={qid} t={t} question={it.question} value={edits[it.question.id]} onCancel={() => setEditing(null)}
-                    onSave={v => { setEdits(e => ({ ...e, [it.question.id]: v })); setEditing(null) }} onReset={() => { setEdits(({ [it.question.id]: _drop, ...rest }) => rest); setEditing(null) }} />
-                  return [
-                    <div key={`${si}-${ii}`} className="qb-q group relative mb-4" data-testid="qb-paper-question" data-qid={qid} data-gap={qid} data-edited={edits[it.question.id] ? 'yes' : undefined}>
-                      <button type="button" onClick={() => setEditing(qid)} className="qb-no-print absolute -top-1 end-0 rounded-token bg-surface p-1 text-content-muted opacity-60 hover:opacity-100 group-hover:opacity-100 [border:1px_solid_var(--line)]" aria-label={t('qbpv.edit_question', { n: no })} data-action="edit-question"><Pencil aria-hidden="true" className="h-3.5 w-3.5" /></button>
-                      {edits[it.question.id] && <span className="qb-no-print absolute -top-1 end-8 rounded-token bg-primary-soft px-1 text-xs text-primary-fg">{t('qbpv.edited')}</span>}
-                      <label className="qb-no-print inline-flex items-center gap-1 text-xs text-content-muted">
-                        <input type="checkbox" checked={selectedQuestions.includes(qid)} onChange={() => toggleQuestionSelection(qid)} aria-label={t('qbpv.select_question', { n: num(no) })} data-action="select-question" />
-                        <span>{t('qbpv.select')}</span>
-                      </label>
-                      {it.subject && <p className="mb-1 font-semibold" dir="auto">{it.subject}</p>}
-                      {o.show.question && <div className="flex gap-2 font-semibold">{it.no !== null && <span>{num(no)}.</span>}<div className="min-w-0 flex-1" dir="auto"><MathText text={qn.question_text} media={qn.media ?? []} allowPreviewFontSize questionId={qid} field="question_text" /></div></div>}
-                      {o.show.question && (qn.creative_parts ?? []).length > 0 && <ol className="mt-1 flex flex-col gap-1 ps-6">{qn.creative_parts.map(p => <li key={p.part_label} dir="auto"><span>{p.part_label}.</span> <MathText text={p.question_text} /></li>)}</ol>}
-                      {o.show.answer && qn.answer_text && <div className="mt-1" data-testid="qb-paper-answer"><p>{L('answer')}</p><div dir="auto"><MathText text={qn.answer_text} allowPreviewFontSize questionId={qid} field="answer_text" /></div></div>}
-                      {o.show.question && opts.length > 0 && (
-                        <div className="qb-option-grid mt-1" style={optionGrid(optionColumnsFor(qid, opts))} data-testid="qb-paper-options" data-option-columns={optionColumnsFor(qid, opts)}>
-                          {opts.map((op, k) => (
-                            <div key={k} className="qb-option-cell flex min-w-0 items-start gap-2">
-                              <span className="font-semibold">{(LABELS[o.language][k] ?? op.label)})</span>
-                              {o.show.answer && op.is_correct && <span aria-label={L('correct')} className="mt-2 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" />}
-                              <span className="qb-option-cell min-w-0" dir="auto"><MathText text={op.content_text} allowPreviewFontSize questionId={qid} field="option" optionIndex={k} /></span>
-                            </div>
+      <div className="flex min-w-0 flex-1 justify-center overflow-x-auto">
+        <article ref={paperRef} lang={o.language} onMouseUp={captureTextSelection} className="qb-paper relative flex flex-col items-center gap-6 text-content"
+          style={{ ...paperStyle, width: `${paperSize.width}mm`, minHeight: `${paperSize.height}mm` }} data-testid="qb-paper" data-page-count={pages.length} data-page-size={`${printPrefs.pageSize}-${printPrefs.orientation}`}>
+          {pages.map((cols, pi) => (
+            <div key={pi} className="qb-page relative shrink-0 rounded-token bg-surface shadow-card [border:1px_solid_var(--line)]" style={pageStyle} data-testid="qb-paper-page" data-page={pi + 1}>
+              {pi === 0 && (
+                <div ref={headRef} data-testid="qb-paper-head">
+                  {renderBoxes('h-start')}
+                  <header className={`relative pb-2 text-center ${o.headerStyle === 'bordered' ? 'rounded-token p-3 [border:2px_solid_currentColor]' : ''} ${o.headerStyle === 'image' ? 'rounded-token bg-surface-muted p-3' : ''}`} data-testid="qb-paper-header">
+                    {/* three columns: an empty side, the heading lines in the middle, the code box at the end (board-paper layout) */}
+                    <div className="grid grid-cols-[1fr_minmax(0,auto)_1fr] items-start gap-2">
+                      <span />
+                      <div>
+                        {HEADER_LINES.map(k => header[k] && [<div key={k} style={{ fontSize: `${o.sizes[k]}px` }} className={`mb-1 ${k === 'institution' ? 'font-semibold' : ''}`} dir="auto" data-line={k} data-gap={`h-${k}`}>{header[k]}</div>, ...renderBoxes(`h-${k}`)])}
+                      </div>
+                      {/* the board paper's framed box: each subject's code in digit boxes (one row per subject), then the set in its own box */}
+                      {(codes.length > 0 || header.setCode) && (
+                        <div className="flex flex-col items-end gap-1 justify-self-end whitespace-nowrap rounded-token border-2 border-current p-2 font-semibold leading-tight" data-testid="qb-paper-codebox">
+                          {codes.map((c, i) => (
+                            <span key={i} className="flex items-center gap-2" style={{ fontSize: `${o.sizes.subjectCode ?? 14}px` }} data-testid="qb-paper-subject-code">
+                              <span>{L('subject_code')} :</span>
+                              <span className="flex" dir="ltr">{[...c].map((ch, j) => <span key={j} className="-ms-px inline-flex h-[1.9em] w-[1.6em] items-center justify-center border-2 border-current">{num(ch)}</span>)}</span>
+                            </span>
                           ))}
+                          {header.setCode && <span className="flex items-center gap-2" style={{ fontSize: `${o.sizes.setCode}px` }} data-testid="qb-paper-set"><span>{L('set')} :</span> <span className="inline-flex h-[1.9em] min-w-[2.6em] items-center justify-center border-2 border-current px-1">{header.setCode}</span></span>}
                         </div>
                       )}
-                      {/* D171: a stimulus MCQ group prints its stimulus once, then each child as a numbered MCQ */}
-                      {o.show.question && it.no === null && (qn.stimuli ?? []).map(st => <div key={st.id} className="mt-1" dir="auto" data-testid="qb-paper-stimulus"><MathText text={st.content_text} media={qn.media ?? []} /></div>)}
-                      {o.show.question && it.no === null && (qn.items ?? []).filter(p => p.no != null).map(p => (
-                        <div key={p.no} className="mt-2" data-testid="qb-paper-child">
-                          <div className="flex gap-2 font-semibold"><span>{num(p.no)}.</span><div className="min-w-0 flex-1" dir="auto"><MathText text={p.prompt_text} /></div></div>
-                          <label className="qb-no-print inline-flex items-center gap-1 text-xs text-content-muted">
-                            <input type="checkbox" checked={selectedQuestions.includes(`${qid}:child:${p.no}`)} onChange={() => toggleQuestionSelection(`${qid}:child:${p.no}`)} aria-label={t('qbpv.select_question', { n: num(p.no) })} data-action="select-question" />
-                            <span>{t('qbpv.select')}</span>
-                          </label>
-                          <div className="qb-option-grid mt-1" style={optionGrid(optionColumnsFor(`${qid}:child:${p.no}`, p.prompt_json?.options ?? []))} data-testid="qb-paper-child-options" data-option-columns={optionColumnsFor(`${qid}:child:${p.no}`, p.prompt_json?.options ?? [])}>
-                            {(p.prompt_json?.options ?? []).map((op, k) => (
-                              <div key={k} className="qb-option-cell flex min-w-0 items-start gap-2">
-                                <span className="font-semibold">{LABELS[o.language][k] ?? k + 1})</span>
-                                {o.show.answer && p.answer_json?.correct === k && <span aria-label={L('correct')} className="mt-2 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" />}
-                                <span className="qb-option-cell min-w-0" dir="auto"><MathText text={String(op)} allowPreviewFontSize questionId={qid} field="child_option" optionIndex={k} itemNo={p.no} /></span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                      {o.show.explanation && qn.explanation_text && <div className="mt-1" data-testid="qb-paper-explanation"><p>{L('explanation')}</p><div dir="auto"><MathText text={qn.explanation_text} allowPreviewFontSize questionId={qid} field="explanation_text" /></div></div>}
-                    </div>,
-                    ...renderBoxes(qid),
-                  ]
-                })}
-              </section>
-            ))}
-          </div>
-          {running === 0 && <p className="py-8 text-center text-content-muted">{t('qbpv.empty')}</p>}
+                    </div>
+                    <div className="mt-3 flex w-full items-end justify-between gap-2 py-1" data-gap="h-meta">
+                      <span style={{ fontSize: `${o.sizes.time}px` }}>{L('time')} : {num(header.time)}</span>
+                      <span style={{ fontSize: `${o.sizes.marks}px` }}>{L('full_marks')} : {num(header.marks)}</span>
+                    </div>
+                    {renderBoxes('h-meta')}
+                  </header>
+                  <div data-gap="top">{header.instructions.trim() && <p className="whitespace-pre-line pb-2 text-center text-sm" dir="auto" data-testid="qb-paper-instructions">{header.instructions}</p>}</div>
+                  {renderBoxes('top')}
+                </div>
+              )}
+              <div className="qb-page-cols flex items-start" style={{ gap: `${COL_GAP_MM / 2}mm` }} data-testid={pi === 0 ? 'qb-paper-columns' : 'qb-paper-page-columns'}>
+                {cols.map((colKeys, ci) => [
+                  ci > 0 && <div key={`line-${ci}`} aria-hidden="true" className={`w-px self-stretch ${o.columnLine ? 'bg-[currentColor] opacity-40' : ''}`} />,
+                  <div key={ci} className="qb-col min-w-0 flex-1 basis-0" data-testid="qb-paper-column">{column(colKeys)}</div>,
+                ])}
+              </div>
+              {pi === 0 && questionCount === 0 && <p className="py-8 text-center text-content-muted">{t('qbpv.empty')}</p>}
+              <span className="qb-page-no qb-no-print absolute bottom-1 end-2 text-xs text-content-muted" data-testid="qb-page-number">{t('qbpv.page_number', { n: num(pi + 1) })}</span>
+            </div>
+          ))}
           {boxes.filter(b => FREE.includes(b.wrap)).map(box)}
           <div ref={ghostRef} aria-hidden="true" className="qb-ghost qb-no-print pointer-events-none fixed top-0 z-50 hidden rounded-token bg-primary-soft opacity-70 [border:2px_dashed_var(--color-primary)]" style={{ left: 0 }} data-testid="qb-drag-ghost" />
-
         </article>
       </div>
 

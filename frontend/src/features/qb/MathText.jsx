@@ -26,34 +26,41 @@ function Maths({ text, ready, fitMath = false, previewFontSize = null }) {
   })
 }
 
+// D179 (3)(4): in the paper preview a formula wider than the line it sits on is scaled down to fit (never below 5 pt), so it is never
+// hidden or pushed over the next column. The width is the nearest block-level box around the formula (an option cell, the question
+// line), measured with the formula at its natural size. A size the teacher chose for this formula (D179 (4)) is kept as chosen.
+const MIN_FIT_PX = 5 / 0.75                                   // 5 pt
+function blockBox(node) {
+  for (let el = node.parentElement; el; el = el.parentElement) {
+    const display = window.getComputedStyle(el).display
+    if (display && !display.startsWith('inline') && display !== 'contents') return el
+  }
+  return null
+}
+
 function FittingMath({ latex, source, previewFontSize }) {
   const ref = useRef(null)
   useEffect(() => {
     const node = ref.current
-    const container = node?.closest('.qb-option-cell') ?? node?.closest('.qb-q') ?? node?.parentElement
-    if (!node || !container) return
+    const box = node && blockBox(node)
+    if (!node || !box) return
     const fit = () => {
-      const available = container.clientWidth
-      if (!available) return
-      node.style.removeProperty('font-size')
-      node.style.removeProperty('max-width')
-      node.style.removeProperty('white-space')
-      node.style.removeProperty('overflow-wrap')
-      if (previewFontSize) node.style.fontSize = `${previewFontSize}pt`
-      const base = Number.parseFloat(window.getComputedStyle(node).fontSize) || 14
-      const naturalWidth = Math.max(node.scrollWidth, node.getBoundingClientRect().width)
-      if (naturalWidth <= available) return
-      const size = Math.max(5, base * available / naturalWidth)
-      node.style.fontSize = `${size}px`
-      node.style.maxWidth = '100%'
-      node.style.whiteSpace = 'normal'
-      node.style.overflowWrap = 'anywhere'
+      node.style.fontSize = previewFontSize ? `${previewFontSize}pt` : ''
+      if (previewFontSize) return                             // the teacher's own size wins
+      const style = window.getComputedStyle(box)
+      const available = box.clientWidth - (Number.parseFloat(style.paddingLeft) || 0) - (Number.parseFloat(style.paddingRight) || 0)
+      const natural = node.getBoundingClientRect().width
+      if (!available || !natural || natural <= available + 0.5) return
+      const base = Number.parseFloat(window.getComputedStyle(node).fontSize) || 16
+      node.style.fontSize = `${Math.max(MIN_FIT_PX, Math.floor(base * available / natural * 100) / 100)}px`
     }
     fit()
     if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(fit)
-    observer.observe(container)
-    return () => observer.disconnect()
+    let frame = 0
+    const observer = new ResizeObserver(() => { cancelAnimationFrame(frame); frame = requestAnimationFrame(fit) })
+    observer.observe(box)
+    observer.observe(node)                                    // MathLive draws the formula after mount: fit again once it has a size
+    return () => { cancelAnimationFrame(frame); observer.disconnect() }
   }, [latex, previewFontSize])
   return <math-span ref={ref} dir="ltr" data-qb-latex={latex} data-qb-latex-source={source} data-qb-preview-font-size={previewFontSize ?? undefined} className="qb-fitting-math">{latex}</math-span>
 }

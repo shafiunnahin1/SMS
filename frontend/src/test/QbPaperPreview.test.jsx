@@ -146,12 +146,12 @@ describe('D133 paper print preview', () => {
     const paper = await screen.findByTestId('qb-paper')
     const columns = within(paper).getByTestId('qb-paper-columns')
     expect(within(columns).getAllByTestId('qb-paper-section')).toHaveLength(2)
-    expect(columns.querySelectorAll('.qb-cols')).toHaveLength(0)
+    expect(within(paper).getAllByTestId('qb-paper-page')).toHaveLength(1)                 // jsdom measures nothing: one page
+    expect(within(columns).getAllByTestId('qb-paper-column')).toHaveLength(2)               // two real columns on the page
 
     const styles = [...document.querySelectorAll('style')].map(style => style.textContent).join('\n')
-    expect(styles).toContain('.qb-paper .qb-cols{column-count:2;column-gap:2rem;column-fill:balance;')
-    expect(styles).toContain('.qb-paper .qb-cols{column-fill:auto}')
-    expect(styles).toContain('.qb-paper{position:static;width:210mm;max-width:none;min-height:297mm;')
+    expect(styles).toContain('@page{size:210mm 297mm;margin:0}')
+    expect(styles).toContain('.qb-paper .qb-page{width:210mm;min-height:0;height:auto;margin:0;overflow:visible;box-shadow:none;border:0;border-radius:0;break-after:page;')
   })
 
   it('customizes the paper: visibility, language, numbering, section order, text box', async () => {

@@ -68,6 +68,7 @@ export async function paperCanvas(paper, scale = 2) {
   inlineStyles(paper, copy)
   copy.querySelectorAll('[data-drop]').forEach(el => el.remove())   // the screen-only controls (grips, edit buttons, the drag ghost)
   copy.style.margin = '0'
+  copy.style.minHeight = '0'
   copy.style.boxShadow = 'none'
   copy.style.border = '0'
   copy.style.borderRadius = '0'
@@ -101,9 +102,33 @@ function save(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(href), 10000)
 }
 
+// D179 (5): the preview lays the paper out into real pages (.qb-page); each one is drawn on its own, so the PDF and the picture hold
+// exactly the pages seen in the preview. A paper without pages (older markup) is still cut from one tall canvas.
+const realPages = (paper) => [...(paper?.querySelectorAll?.('.qb-page') ?? [])]
+
+async function pageCanvases(paper, scale) {
+  const canvases = []
+  for (const page of realPages(paper)) canvases.push(await paperCanvas(page, scale))
+  return canvases
+}
+
 /** saves the paper pages as one vertically stacked `filename` (JPEG) */
 export async function downloadPaperJpg(paper, filename = 'question-paper.jpg', size = 'A4', orientation = 'portrait') {
   const scale = 2
+  if (realPages(paper).length) {
+    const canvases = await pageCanvases(paper, scale)
+    const gap = Math.max(12, Math.round(canvases[0].width * 0.03))
+    const sheet = document.createElement('canvas')
+    sheet.width = Math.max(...canvases.map(c => c.width))
+    sheet.height = canvases.reduce((h, c) => h + c.height, 0) + gap * (canvases.length - 1)
+    const ctx = sheet.getContext('2d')
+    ctx.fillStyle = 'white'
+    ctx.fillRect(0, 0, sheet.width, sheet.height)
+    let y = 0
+    canvases.forEach(c => { ctx.drawImage(c, 0, y); y += c.height + gap })
+    save(await jpegBlob(sheet), filename)
+    return
+  }
   const canvas = await paperCanvas(paper, scale)
   const { width, height } = paperDimensions(size, orientation)
   const pageHeight = Math.floor(canvas.width * height / width)
@@ -199,6 +224,12 @@ export function buildPdf(pages, size = 'A4', orientation = 'portrait') {
 /** saves the paper as `filename` (PDF, A4 pages) */
 export async function downloadPaperPdf(paper, filename = 'question-paper.pdf', size = 'A4', orientation = 'portrait') {
   const scale = 2
+  if (realPages(paper).length) {
+    const pages = []
+    for (const c of await pageCanvases(paper, scale)) pages.push({ bytes: new Uint8Array(await (await jpegBlob(c)).arrayBuffer()), width: c.width, height: c.height })
+    save(new Blob([buildPdf(pages, size, orientation)], { type: 'application/pdf' }), filename)
+    return
+  }
   const canvas = await paperCanvas(paper, scale)
   const rects = questionRects(paper, canvas.width / paper.getBoundingClientRect().width)
   const pages = []

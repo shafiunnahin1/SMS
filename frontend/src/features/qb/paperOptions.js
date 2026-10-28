@@ -8,7 +8,11 @@ function rawOption(option) {
   return typeof option === 'string' ? option : String(option?.content_text ?? '')
 }
 
-export function optionColumnCount(options, setting = 'auto') {
+// D179 (1): auto option columns. Without a measure the thresholds are the decided ones (<= 12 displayed characters -> 4, <= 30 -> 2,
+// else 1). With `fit` = { width, fontPx } (the paper column's width and the text size) an option must also fit its cell on one line:
+// a character is taken as about 0.55 em and the label ("ক)" and its gap) as 2.6 em, so 4 short options never split a word in a
+// narrow two-column paper.
+export function optionColumnCount(options, setting = 'auto', fit = null) {
   if (['1', '2', '4'].includes(String(setting))) return Number(setting)
   const raw = (options ?? []).map(rawOption)
   if (raw.some(text => DISPLAY_FORMULA.test(text) || TABLE.test(text))) return 1
@@ -17,7 +21,8 @@ export function optionColumnCount(options, setting = 'auto') {
     .replace(/\$([^$]+)\$/g, '$1')
     .replace(/\\\((.*?)\\\)/g, '$1')
     .trim().length))
-  return longest <= 12 ? 4 : longest <= 30 ? 2 : 1
+  const fits = (cols) => !fit?.width || !fit?.fontPx || longest * 0.55 * fit.fontPx <= fit.width / cols - 2.6 * fit.fontPx - (cols - 1) * 4
+  return longest <= 12 && fits(4) ? 4 : longest <= 30 && fits(2) ? 2 : 1
 }
 
 function escapedSelection(text) {
@@ -53,4 +58,29 @@ function previewSelectionMatch(text, encoded) {
   const openingCount = (match[1].match(/<span data-qbp-font-size="\d{1,4}">/g) ?? []).length
   const closingCount = (match[2].match(/<\/span>/g) ?? []).length
   return openingCount === closingCount ? match : null
+}
+// D179 (5): the preview's real pages. Each block (a section title or a question with its own boxes) has a measured height; blocks
+// fill the first column of a page, then the next column, then the next page. A page's first column is shorter on page 1 (the header
+// sits above the columns). A block never splits; one taller than a whole column still gets a column of its own. A section title
+// moves with the block after it; a block marked `breakBefore` starts a new page. Returns [[keys of column 1, keys of column 2, ..], ..].
+export function paginateBlocks(blocks, { columns = 1, firstHeight, height }) {
+  const cols = Math.max(1, Number(columns) || 1)
+  const pages = []
+  let page = null
+  let col = 0
+  let used = 0
+  const capacity = () => (pages.length === 1 ? firstHeight : height)
+  const newPage = () => { page = Array.from({ length: cols }, () => []); pages.push(page); col = 0; used = 0 }
+  const advance = () => { if (col + 1 < cols) { col += 1; used = 0 } else newPage() }
+  newPage()
+  blocks.forEach((block, i) => {
+    const h = Math.max(0, Number(block.height) || 0)
+    if (block.breakBefore && pages.length > 0 && page.some(c => c.length)) newPage()
+    const next = block.keepWithNext ? blocks[i + 1] : null
+    const need = h + (next ? Math.max(0, Number(next.height) || 0) : 0)
+    if (used > 0 && used + need > capacity()) advance()
+    page[col].push(block.key)
+    used += h
+  })
+  return pages
 }
