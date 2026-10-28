@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -17,14 +17,10 @@ import { ErrorState } from '../../components/StateViews'
 import MathText from '../../features/qb/MathText'
 import { breadcrumbLabel, sourceLabel, versionsForSubject } from '../../features/qb/curriculum'
 import CurriculumPicker from '../../features/qb/CurriculumPicker'
+import { PER_PAGE_OPTIONS, readSelection, selectionKey, storedPerPage, storePerPage, writeSelection } from '../../features/qb/keptSelection'
 import { fromQuestion, StructuredAnswers, StructuredPreview } from '../../features/qb/Structured'
 
-// D174 (2): 25, 50, 75 or 100 per page, remembered in this browser (a convenience only)
-const PER_PAGE_OPTIONS = [25, 50, 75, 100]
 const PER_PAGE_KEY = 'qb.questions.per_page'
-function storedPerPage() {
-  try { const n = Number(localStorage.getItem(PER_PAGE_KEY)); return PER_PAGE_OPTIONS.includes(n) ? n : 25 } catch { return 25 }
-}
 const LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
 
 const STATUSES = ['all', 'draft', 'review', 'rejected', 'published']
@@ -57,13 +53,15 @@ export default function QbQuestions() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const role = useAuthStore(s => s.user?.role)
+  const userId = useAuthStore(s => s.user?.id)
+  const keptKey = selectionKey('writer', userId)
   const [params, setParams] = useSearchParams()
   const status = params.get('status') ?? (role === 'content_moderator' ? 'review' : 'all')
   const [filters, setFilters] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] })
   const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(storedPerPage)
+  const [perPage, setPerPage] = useState(() => storedPerPage(PER_PAGE_KEY))
   const [shown, setShown] = useState(() => new Set())
-  const [selected, setSelected] = useState(() => new Set())
+  const [selected, setSelected] = useState(() => new Set(readSelection(keptKey)))   // D176: kept across a refresh
   const [bulkError, setBulkError] = useState('')
   const [returnReason, setReturnReason] = useState('')
   const isReviewer = ['content_moderator', 'super_admin'].includes(role)
@@ -126,11 +124,12 @@ export default function QbQuestions() {
   const allSelectableSelected = selectableRows.length > 0 && selectableRows.every(row => selected.has(row.id))
   const someSelectableSelected = selectableRows.some(row => selected.has(row.id))
   const toggleSelected = id => setSelected(old => { const next = new Set(old); next.has(id) ? next.delete(id) : next.add(id); return next })
+  useEffect(() => { writeSelection(keptKey, [...selected]) }, [keptKey, selected])
   const clearSelection = () => { setSelected(new Set()); setBulkError('') }
   const changePerPage = value => {
     const n = Number(value)
     setPerPage(n); setPage(1); clearSelection()
-    try { localStorage.setItem(PER_PAGE_KEY, String(n)) } catch { /* not stored: the choice holds for this visit */ }
+    storePerPage(PER_PAGE_KEY, n)
   }
   // each question goes through its own endpoint, so roles, status rules and audit stay as they are; failures are counted
   const runBulk = async (ids, post, partialKey) => {

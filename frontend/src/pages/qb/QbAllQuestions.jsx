@@ -6,13 +6,15 @@ import { ChevronDown, FolderPlus, RotateCcw, Save, Search, X } from 'lucide-reac
 import api from '../../api/axios'
 import { useLocale } from '../../ui/I18nProvider'
 import { useUiStore } from '../../store/uiStore'
+import { useAuthStore } from '../../store/authStore'
+import { PER_PAGE_OPTIONS, readSelection, selectionKey, storedPerPage, storePerPage, writeSelection } from '../../features/qb/keptSelection'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
 import Loader from '../../components/Loader'
 import Ltr from '../../components/bidi/Ltr'
 import { EmptyState, ErrorState } from '../../components/StateViews'
-import { Input } from '../../components/FormField'
+import { Input, Select } from '../../components/FormField'
 import MathText from '../../features/qb/MathText'
 import BuyButton from '../../features/qb/BuyButton'
 import CurriculumPicker from '../../features/qb/CurriculumPicker'
@@ -22,7 +24,7 @@ import { flattenCurriculum, versionsForSubject } from '../../features/qb/curricu
 // "Search questions" filter (search, class, subject, chapter, topic, question type, source, year; many at a time, each narrowing
 // the next), "Select all" on the page, a selection kept across pages, and the floating "create paper (N)" with the paper's name.
 // ?paper=<id> opens it for that paper: its questions start selected and the button updates it. A paper is a qbank "question set".
-const PER_PAGE = 16
+const PER_PAGE_KEY = 'qb.all_questions.per_page'
 const LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
 
 export default function QbAllQuestions() {
@@ -35,14 +37,16 @@ export default function QbAllQuestions() {
   const paperId = params.get('paper')
   const [f, setF] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] })
   const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(() => storedPerPage(PER_PAGE_KEY))
+  const keptKey = selectionKey('all', useAuthStore(s => s.user?.id))
   const [picked, setPicked] = useState(() => new Map())     // id -> the question row (type and marks are needed to build the paper)
   const [naming, setNaming] = useState(false)
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [shown, setShown] = useState(() => new Set())      // cards whose answer panel is open
   const tree = useQuery({ queryKey: ['qb-library', 'curriculum'], queryFn: () => api.get('/question-bank/curriculum').then(r => r.data.data) })
-  const list = useQuery({ queryKey: ['qb-all-questions', f, page], placeholderData: (prev) => prev,
-    queryFn: () => api.get('/question-bank/questions', { params: { ...f, q: f.q || undefined, page, per_page: PER_PAGE, facets: 1 } }).then(r => r.data) })
+  const list = useQuery({ queryKey: ['qb-all-questions', f, page, perPage], placeholderData: (prev) => prev,
+    queryFn: () => api.get('/question-bank/questions', { params: { ...f, q: f.q || undefined, page, per_page: perPage, facets: 1 } }).then(r => r.data) })
   const paper = useQuery({ queryKey: ['qb-paper', paperId], enabled: Boolean(paperId), queryFn: () => api.get(`/question-bank/papers/${paperId}`).then(r => r.data.data) })
   useEffect(() => {                                           // "add questions" to a paper: its questions start selected
     if (!paper.data) return
@@ -50,6 +54,17 @@ export default function QbAllQuestions() {
     Promise.all(ids.map(id => api.get(`/question-bank/questions/${id}`).then(r => r.data.data).catch(() => null)))
       .then(rows => setPicked(new Map(rows.filter(Boolean).map(q => [q.id, q]))))
   }, [paper.data])
+  // D176: the ordinary selection (not a paper's "add questions") is kept in this browser and reloaded after a refresh
+  const [restored, setRestored] = useState(Boolean(paperId))
+  useEffect(() => {
+    if (paperId) return
+    const ids = readSelection(keptKey)
+    if (!ids.length) { setRestored(true); return }
+    Promise.all(ids.map(id => api.get(`/question-bank/questions/${id}`).then(r => r.data.data).catch(() => null)))
+      .then(rows => { setPicked(m => new Map([...rows.filter(q => q?.unlocked).map(q => [q.id, q]), ...m])); setRestored(true) })
+  }, [paperId, keptKey])
+  useEffect(() => { if (!paperId && restored) writeSelection(keptKey, [...picked.keys()]) }, [paperId, restored, keptKey, picked])
+  const clearPicked = () => { setPicked(new Map()); if (!paperId) writeSelection(keptKey, []) }
 
   const nm = (n) => (locale === 'bn' ? n?.name_bn : n?.name_en) || n?.name_bn || n?.name_en || ''
   const toast = (m, k) => useUiStore.getState().addToast(m, k)
@@ -123,6 +138,7 @@ export default function QbAllQuestions() {
         : { title: name.trim(), sets_count: 1, instructions_json: pickedClass, sections: sections() }
       const { data } = p ? await api.put(`/question-bank/papers/${p.id}`, body) : await api.post('/question-bank/papers', body)
       toast(t('common.saved'))
+      if (!p) clearPicked()
       qc.invalidateQueries({ queryKey: ['qb-papers'] })
       navigate(`${area}/question-bank/papers/${data.data.id}`)
     } catch (e) {
@@ -146,6 +162,10 @@ export default function QbAllQuestions() {
               <p className="font-semibold"><Ltr>{meta?.total ?? 0}</Ltr> {t('qbaq.questions')}</p>
               {meta && meta.total > 0 && <p className="text-sm text-content-muted"><Ltr>{(meta.current_page - 1) * meta.per_page + 1}–{(meta.current_page - 1) * meta.per_page + rows.length}</Ltr> {t('qbaq.displayed')}</p>}
             </div>
+            <Select className="w-28" label={t('qbaq.per_page')} name="per_page" value={String(perPage)}
+              onChange={e => { const n = Number(e.target.value); setPerPage(n); setPage(1); storePerPage(PER_PAGE_KEY, n) }}
+              options={PER_PAGE_OPTIONS.map(n => ({ value: String(n), label: String(n) }))} />
+            {picked.size > 0 && <Button variant="secondary" onClick={clearPicked} data-action="clear-picked">{t('qbaq.clear_picked')}</Button>}
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" name="select_all" checked={allOnPage} disabled={selectable.length === 0} ref={el => { if (el) el.indeterminate = !allOnPage && someOnPage }} onChange={toggleAll} />{t('qbaq.select_all')}
             </label>

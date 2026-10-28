@@ -27,7 +27,7 @@ class QbPurchaseController extends Controller
         $this->staffGate($request);
         $ids = fn () => ['nullable', 'array', 'max:100'];
         $f = $request->validate(['qb_subject_id' => 'nullable|integer', 'qb_chapter_id' => 'nullable|integer', 'qb_topic_id' => 'nullable|integer',
-            'qb_question_type_id' => 'nullable|integer', 'difficulty' => 'nullable|integer|min:1|max:5', 'q' => 'nullable|string|max:100', 'per_page' => 'nullable|integer|min:1|max:50',
+            'qb_question_type_id' => 'nullable|integer', 'difficulty' => 'nullable|integer|min:1|max:5', 'q' => 'nullable|string|max:100', 'per_page' => 'nullable|integer|min:1|max:100',
             'class_level_ids' => $ids(), 'class_level_ids.*' => 'integer', 'subject_ids' => $ids(), 'subject_ids.*' => 'integer',
             'chapter_ids' => $ids(), 'chapter_ids.*' => 'integer', 'topic_ids' => $ids(), 'topic_ids.*' => 'integer',
             'curriculum_node_ids' => $ids(), 'curriculum_node_ids.*' => 'integer|distinct|exists:qb_curriculum_nodes,id',
