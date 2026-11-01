@@ -37,7 +37,7 @@ class QbPaperController extends Controller
     public function store(Request $request)
     {
         $this->staffGate($request);
-        $in = $this->validated($request);
+        $in = $this->defaultGrouping($this->validated($request));
         if ($missing = $this->unbought($in)) return $missing;
         $paper = DB::transaction(function () use ($in, $request) {
             $paper = QbPaper::create(collect($in)->except('sections')->all() + ['created_by' => $request->user()->id, 'status' => 'draft']);
@@ -45,6 +45,19 @@ class QbPaperController extends Controller
             return $paper;
         });
         return response()->json(['success' => true, 'data' => $this->row($paper->fresh()), 'message' => __('messages.saved')], 201);
+    }
+
+    /** D178: a new paper with questions of more than one subject is grouped by subject (D128) unless the request says
+     *  `group_by_subject: false`; the order is the subjects as first met. Single-subject papers are left as sent. */
+    private function defaultGrouping(array $in): array
+    {
+        if (array_key_exists('group_by_subject', $in['instructions_json'] ?? []) && $in['instructions_json']['group_by_subject'] !== null) return $in;
+        $ids = collect($in['sections'])->flatMap(fn ($s) => collect($s['items'])->pluck('qb_question_id'))->map(fn ($v) => (int) $v)->all();
+        $subjectOf = QbQuestion::whereIn('id', $ids)->pluck('qb_subject_id', 'id');
+        $order = collect($ids)->map(fn ($id) => (int) ($subjectOf[$id] ?? 0))->filter()->unique()->values()->all();
+        if (count($order) < 2) return $in;
+        $in['instructions_json'] = array_merge($in['instructions_json'] ?? [], ['group_by_subject' => true, 'subject_order' => !empty($in['instructions_json']['subject_order']) ? $in['instructions_json']['subject_order'] : $order]);
+        return $in;
     }
 
     /** GET /question-bank/papers/{id} */

@@ -16,7 +16,8 @@ import MathText from '../../features/qb/MathText'
 
 // D173: set codes use only A-J per letter (A, AA, AAA); at most 255 sets for now - the server checks it again
 const MAX_SETS = 255
-const EMPTY = { title: '', exam_name: '', duration_minutes: '', sets_count: '1', instructions: '', group: false, order: [], sections: [{ title: '', instruction: '', items: [] }] }
+// group: null = not chosen yet - D178: the server groups a new multi-subject paper unless it is turned off
+const EMPTY = { title: '', exam_name: '', duration_minutes: '', sets_count: '1', instructions: '', group: null, order: [], sections: [{ title: '', instruction: '', items: [] }] }
 
 // QB.8 /admin|teacher/question-bank/papers/:id and /new (D66, question-bank.md §5): sections, questions searched from the bank with
 // their marks, saved as a draft. Not-yet-bought questions: the server answers with their ids and total; the page asks once and buys
@@ -172,7 +173,7 @@ export default function QbPaperEdit() {
           <Select label={t('qbpp.sets')} options={Array.from({ length: MAX_SETS }, (_, k) => ({ value: String(k + 1), label: t('qbpp.n_sets', { n: k + 1 }) }))} value={v.sets_count} onChange={e => set({ sets_count: e.target.value })} name="sets_count" />
           <Textarea className="sm:col-span-2" label={t('qbpp.instructions')} rows={2} value={v.instructions} onChange={e => set({ instructions: e.target.value })} name="instructions" />
           <div className="flex flex-col gap-2 sm:col-span-2" data-testid="paper-subject-group">
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="group_by_subject" checked={v.group} onChange={e => set({ group: e.target.checked })} />{t('qbpp.group_by_subject')}</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="group_by_subject" checked={!!v.group} onChange={e => set({ group: e.target.checked })} />{t('qbpp.group_by_subject')}</label>
             {v.group && (ordered.length === 0 ? <p className="text-sm text-content-muted">{t('qbpp.group_save_first')}</p> : (
               <ol className="flex flex-col gap-1 text-sm">
                 {ordered.map((x, k) => (
