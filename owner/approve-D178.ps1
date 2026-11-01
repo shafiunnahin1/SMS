@@ -1,5 +1,5 @@
 # Owner-run only: the agent must not execute this script.
-# D178: (1) the decision row, (2) task QBG.1 in the guard (after QBS.1), paper settings and set rebuild. Two commits; no push.
+# D178: (1) the decision row, (2) task QBG.1 in the guard (after QBS.1); default grouping for new multi-subject papers. Two commits; no push.
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $repo
