@@ -90,6 +90,7 @@
   "question_columns": "বাছাই করা প্রশ্নের কলাম",
   "apply_columns": "প্রয়োগ",
   "font_adjust": "বাছাই করা লেখার মাপ",
+  "objects": {"title": "ছবি, টেবিল ও চিত্র", "hint": "প্রশ্নপত্রে কোনো ছবি, টেবিল, গ্রাফ বা চিত্রে ক্লিক করে বাছাই করুন", "align": "অবস্থান", "kinds": {"image": "ছবি", "table": "টেবিল", "graph": "গ্রাফ", "diagram": "চিত্র"}, "aligns": {"left": "বামে", "center": "মাঝে", "right": "ডানে", "float-start": "বামে, পাশে লেখা", "float-end": "ডানে, পাশে লেখা"}, "aligns_short": {"left": "বাম", "center": "মাঝ", "right": "ডান", "float-start": "⇤ লেখা", "float-end": "লেখা ⇥"}, "size": "আকার", "border": "বর্ডার", "border_off": "নেই", "reset": "আগের মতো"},
   "select_text": "প্রিভিউয়ের লেখা বেছে নিন",
   "decrease_font_size": "লেখা ছোট করুন",
   "increase_font_size": "লেখা বড় করুন",

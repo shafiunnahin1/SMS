@@ -90,6 +90,7 @@
   "question_columns": "Selected question columns",
   "apply_columns": "Apply",
   "font_adjust": "Selected text size",
+  "objects": {"title": "Pictures, tables and figures", "hint": "Click a picture, table, graph or diagram on the paper to pick it", "align": "Position", "kinds": {"image": "Picture", "table": "Table", "graph": "Graph", "diagram": "Diagram"}, "aligns": {"left": "Left", "center": "Centre", "right": "Right", "float-start": "Left, text beside", "float-end": "Right, text beside"}, "aligns_short": {"left": "Left", "center": "Mid", "right": "Right", "float-start": "⇤ text", "float-end": "text ⇥"}, "size": "Size", "border": "Border", "border_off": "None", "reset": "Reset"},
   "select_text": "Select text in the preview",
   "decrease_font_size": "Decrease text size",
   "increase_font_size": "Increase text size",

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { loadMathlive, UNSAFE_LATEX } from './mathlive'
 import { parseRich } from './richText'
 import { diagramImage, graphImage } from './qbankTools'
+import { PaperObject, objectId, usePaperObjects } from './paperObjects'
 
 // Question text with inline maths ($...$ or qbank's \( ... \)) and, since D72 (QB.12), qbank's formatting vocabulary. The text is
 // read into allowlisted nodes (richText.js) and built as React elements - plain text stays React text (escaped); each maths piece
@@ -82,23 +83,28 @@ function Graph({ token }) {
   return <img src={src} alt={t(`qbed.${kind}`)} data-qb-graph="drawn" data-kind={kind} className="my-2 block max-w-full" />
 }
 
-function Text({ text, ready, fitMath, previewFontSize }) {
+function Text({ text, ready, fitMath, previewFontSize, objects }) {
   const parts = String(text).split(/(\[\[qmx-graph:[A-Za-z0-9_-]{10,60000}\]\]|\[\[qmx-diagram:[A-Za-z0-9_-]{10,200000}\]\])/g).filter(Boolean)
-  return parts.map((p, i) => /^\[\[qmx-(graph|diagram):/.test(p) ? <Graph key={i} token={p} /> : <Maths key={i} text={p} ready={ready} fitMath={fitMath} previewFontSize={previewFontSize} />)
+  return parts.map((p, i) => {
+    if (!/^\[\[qmx-(graph|diagram):/.test(p)) return <Maths key={i} text={p} ready={ready} fitMath={fitMath} previewFontSize={previewFontSize} />
+    const kind = p.startsWith('[[qmx-diagram:') ? 'diagram' : 'graph'
+    return <PaperObject key={i} id={objects && objectId(objects.scope, kind, objects.next(kind))} kind={kind}><Graph token={p} /></PaperObject>
+  })
 }
 
-function Node({ n, ready, media, onImageClick, onTableClick, fitMath, previewFontSize = null }) {
+function Node({ n, ready, media, onImageClick, onTableClick, fitMath, previewFontSize = null, objects = null }) {
   const { t } = useTranslation()
-  if (n.text !== undefined) return <Text text={n.text} ready={ready} fitMath={fitMath} previewFontSize={previewFontSize} />
+  if (n.text !== undefined) return <Text text={n.text} ready={ready} fitMath={fitMath} previewFontSize={previewFontSize} objects={objects} />
   const a = n.attrs
   const childPreviewFontSize = n.tag === 'span' && a.printFontSize ? Number(a.printFontSize) : previewFontSize
-  const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} media={media} onImageClick={onImageClick} onTableClick={onTableClick} fitMath={fitMath} previewFontSize={childPreviewFontSize} />)
+  const kids = n.children.map((c, i) => <Node key={i} n={c} ready={ready} media={media} onImageClick={onImageClick} onTableClick={onTableClick} fitMath={fitMath} previewFontSize={childPreviewFontSize} objects={objects} />)
   switch (n.tag) {
     case 'img': {
       const src = media.get(a.media)
       if (!src) return null
       const margin = { left: '0 auto 0 0', center: '0 auto', right: '0 0 0 auto' }[a.align] ?? '0 auto'
       const image = <img src={src} alt="" className="my-1 max-w-full" style={{ display: 'block', width: `${a.width ?? 100}%`, margin }} />
+      if (objects) return <PaperObject id={objectId(objects.scope, 'image', objects.next('image'))} kind="image">{image}</PaperObject>
       return onImageClick
         ? <button type="button" onClick={() => onImageClick(a)} aria-label={t('qbed.edit_picture')} className="block max-w-full rounded-token text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-fg">{image}</button>
         : image
@@ -120,9 +126,10 @@ function Node({ n, ready, media, onImageClick, onTableClick, fitMath, previewFon
         const index = [...(root?.querySelectorAll('table') ?? [])].indexOf(event.currentTarget)
         onTableClick(index)
       } : undefined
-      return <table onClick={editTable} onKeyDown={onTableClick ? event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); editTable(event) } } : undefined}
+      const tableId = objects ? objectId(objects.scope, 'table', objects.next('table')) : null
+      return <PaperObject id={tableId} kind="table"><table onClick={editTable} onKeyDown={onTableClick ? event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); editTable(event) } } : undefined}
         tabIndex={onTableClick ? 0 : undefined} aria-label={onTableClick ? t('qbed.table') : undefined}
-        className={`my-1 border-collapse ${onTableClick ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-primary' : ''} ${a.striped ? '[&_tbody_tr:nth-child(even)]:bg-surface-muted' : ''}`} style={{ width: TABLE_WIDTH[a.width] ?? '100%', ...margin }}>{kids}</table>
+        className={`my-1 border-collapse ${onTableClick ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-primary' : ''} ${a.striped ? '[&_tbody_tr:nth-child(even)]:bg-surface-muted' : ''}`} style={{ width: TABLE_WIDTH[a.width] ?? '100%', ...margin }}>{kids}</table></PaperObject>
     }
     case 'caption': return <caption className="caption-top p-2 text-start text-sm font-semibold">{kids}</caption>
     case 'th': return <th dir={a.dir} colSpan={a.colspan} rowSpan={a.rowspan} className={`${CELL} ${CELL_SPACING[a.spacing] ?? CELL_SPACING.normal} font-semibold`}>{kids}</th>
@@ -137,10 +144,14 @@ function Node({ n, ready, media, onImageClick, onTableClick, fitMath, previewFon
 export default function MathText({ text, className = '', media = [], onImageClick, onTableClick, allowPreviewFontSize = false, questionId, field, optionIndex, itemNo }) {
   const [ready, setReady] = useState(false)
   const mediaById = new Map(media.filter((item) => item?.id != null && typeof item.url === 'string').map((item) => [String(item.id), item.url]))
+  // D181: inside the paper preview each picture / table / graph / diagram of this field gets a stable id (its kind and place)
+  const paperObjects = usePaperObjects()
+  const counts = {}
+  const objects = paperObjects && questionId != null ? { scope: [questionId, field, optionIndex ?? '', itemNo ?? ''].join('|'), next: (kind) => { counts[kind] = (counts[kind] ?? 0) + 1; return counts[kind] } } : null
   useEffect(() => { let on = true; loadMathlive().then(() => on && setReady(true)).catch(() => {}); return () => { on = false } }, [])
   return (
     <span dir="auto" data-qb-rich-text data-qb-question-id={questionId} data-qb-field={field} data-qb-option-index={optionIndex} data-qb-item-no={itemNo} className={`whitespace-pre-wrap ${className}`}>
-      {parseRich(text, { allowPreviewFontSize }).map((n, i) => <Node key={i} n={n} ready={ready} media={mediaById} onImageClick={onImageClick} onTableClick={onTableClick} fitMath={allowPreviewFontSize} />)}
+      {parseRich(text, { allowPreviewFontSize }).map((n, i) => <Node key={i} n={n} ready={ready} media={mediaById} onImageClick={onImageClick} onTableClick={onTableClick} fitMath={allowPreviewFontSize} objects={objects} />)}
     </span>
   )
 }
