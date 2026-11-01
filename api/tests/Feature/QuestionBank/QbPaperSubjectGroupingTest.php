@@ -86,6 +86,7 @@ class QbPaperSubjectGroupingTest extends TestCase
         });
         $host = $this->hostOf($i);
         $id = $this->api('POST', $host, 'question-bank/papers', $admin, ['title' => 'সাধারণ', 'sets_count' => 2,
+            'instructions_json' => ['group_by_subject' => false],   // D178: a multi-subject paper is grouped unless turned off (owner-approved 2026-11-01)
             'sections' => [['title' => 'MCQ', 'items' => array_map(fn ($q) => ['qb_question_id' => $q->id, 'marks' => '1'], $this->q)]]])->assertCreated()->json('data.id');
         $this->api('POST', $host, "question-bank/papers/{$id}/finalize", $admin)->assertOk();
         $first = Tenancy::as($i, fn () => QbPaperVariant::where('qb_paper_id', $id)->orderBy('variant_number')->first()->layout_json[0]['items']);
