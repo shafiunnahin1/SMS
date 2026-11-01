@@ -63,6 +63,36 @@ class PdfService
             'paperWidth' => $w, 'paperHeight' => $h, 'marginTop' => 0.4, 'marginBottom' => 0.4, 'marginLeft' => 0.4, 'marginRight' => 0.4])->getBase64($timeout)));
     }
 
+    /** D185: qbank's tools beside the print page - a link where the system allows one, else a copy (Windows without Developer Mode
+     *  cannot make symlinks); returns 'link', 'copy' or 'none'. `$link` is the linker (a test passes one that fails). */
+    public static function placeTools(string $tools, string $target, ?\Closure $link = null): string
+    {
+        $link ??= fn (string $from, string $to) => @symlink($from, $to);
+        if ($link($tools, $target)) return 'link';
+        if (!is_dir($tools) || !@mkdir($target, 0700, true)) return 'none';
+        $items = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($tools, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+        foreach ($items as $item) {
+            $to = $target . substr($item->getPathname(), strlen($tools));
+            if ($item->isDir()) @mkdir($to, 0700, true);
+            elseif ($item->isFile()) @copy($item->getPathname(), $to);
+        }
+        return 'copy';
+    }
+
+    /** D185 (2): removes what placeTools left - a link is only unlinked (never followed); a copy is deleted inside $target only */
+    public static function removeTools(string $target): void
+    {
+        if (is_link($target)) { @unlink($target) || @rmdir($target); return; }   // rmdir: a Windows directory link
+        if (!is_dir($target)) return;
+        $items = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($target, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+        foreach ($items as $item) {
+            if ($item->isLink()) @unlink($item->getPathname());
+            elseif ($item->isDir()) @rmdir($item->getPathname());
+            else @unlink($item->getPathname());
+        }
+        @rmdir($target);
+    }
+
     /** a temporary local page next to a link to qbank's folder (file:// - still no network), drawn, then handed to $use */
     private function withFigurePage(string $html, \Closure $use): mixed
     {
@@ -76,7 +106,7 @@ class PdfService
         $dir = sys_get_temp_dir() . '/sms-pdf-' . Str::uuid();   // a throw-away page, not a user file
         @mkdir($dir, 0700, true);
         file_put_contents($dir . '/page.html', $html);
-        if ($haveTools) @symlink(realpath($tools), $dir . '/qbank');
+        if ($haveTools) self::placeTools(realpath($tools), $dir . '/qbank');
         $timeout = (int) config('pdf.timeout_ms');
         $browser = (new BrowserFactory(config('pdf.chrome_binary')))->createBrowser([
             'noSandbox' => (bool) config('pdf.no_sandbox'),
@@ -99,7 +129,7 @@ class PdfService
             return $use($page);
         } finally {
             $browser->close();
-            @unlink($dir . '/qbank');
+            self::removeTools($dir . '/qbank');
             @unlink($dir . '/page.html');
             @rmdir($dir);
         }
