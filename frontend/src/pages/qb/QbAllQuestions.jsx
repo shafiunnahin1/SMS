@@ -7,7 +7,7 @@ import api from '../../api/axios'
 import { useLocale } from '../../ui/I18nProvider'
 import { useUiStore } from '../../store/uiStore'
 import { useAuthStore } from '../../store/authStore'
-import { PER_PAGE_OPTIONS, readSelection, selectionKey, storedPerPage, storePerPage, writeSelection } from '../../features/qb/keptSelection'
+import { filterKey, PER_PAGE_OPTIONS, pruneIds, readFilters, readSelection, selectionKey, storedPerPage, storePerPage, writeFilters, writeSelection } from '../../features/qb/keptSelection'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
@@ -27,6 +27,19 @@ import { flattenCurriculum, versionsForSubject } from '../../features/qb/curricu
 const PER_PAGE_KEY = 'qb.all_questions.per_page'
 const LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ']
 
+const EMPTY_FILTERS = { q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] }
+
+// D177: the ids the curriculum offers now, per filter (kept filters naming anything else are trimmed silently)
+function offeredIds(tree) {
+  if (!tree) return null
+  const ids = (list) => new Set((list ?? []).map(x => String(x.id)))
+  const chapters = (tree.subjects ?? []).flatMap(s => s.chapters ?? [])
+  const nodes = []
+  const walk = (list) => (list ?? []).forEach(n => { nodes.push(n); walk(n.children) })
+  ;(tree.curriculum_versions ?? []).forEach(v => walk(v.nodes))
+  return { class_level_ids: ids(tree.class_levels), subject_ids: ids(tree.subjects), chapter_ids: ids(chapters), topic_ids: ids(chapters.flatMap(c => c.topics ?? [])), curriculum_node_ids: ids(nodes) }
+}
+
 export default function QbAllQuestions() {
   const { t } = useTranslation()
   const { locale } = useLocale()
@@ -35,8 +48,9 @@ export default function QbAllQuestions() {
   const area = useLocation().pathname.replace(/\/question-bank(?:\/all-questions)?\/?$/, '')
   const [params] = useSearchParams()
   const paperId = params.get('paper')
-  const [f, setF] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] })
-  const [page, setPage] = useState(1)
+  const keptFilters = useMemo(() => readFilters(filterKey('all', useAuthStore.getState().user?.id), EMPTY_FILTERS), [])   // D177: back after a reload
+  const [f, setF] = useState(keptFilters.filters)
+  const [page, setPage] = useState(keptFilters.page)
   const [perPage, setPerPage] = useState(() => storedPerPage(PER_PAGE_KEY))
   const keptKey = selectionKey('all', useAuthStore(s => s.user?.id))
   const [picked, setPicked] = useState(() => new Map())     // id -> the question row (type and marks are needed to build the paper)
@@ -45,6 +59,11 @@ export default function QbAllQuestions() {
   const [busy, setBusy] = useState(false)
   const [shown, setShown] = useState(() => new Set())      // cards whose answer panel is open
   const tree = useQuery({ queryKey: ['qb-library', 'curriculum'], queryFn: () => api.get('/question-bank/curriculum').then(r => r.data.data) })
+  // D177: the filters and page are kept for a reload (reset writes the empty ones, which removes them); ids the curriculum no
+  // longer offers are dropped once it has loaded
+  const filtersKey = filterKey('all', useAuthStore(s => s.user?.id))
+  useEffect(() => { writeFilters(filtersKey, f, page, EMPTY_FILTERS) }, [filtersKey, f, page])
+  useEffect(() => { const offered = offeredIds(tree.data); if (offered) setF(x => pruneIds(x, offered)) }, [tree.data])
   const list = useQuery({ queryKey: ['qb-all-questions', f, page, perPage], placeholderData: (prev) => prev,
     queryFn: () => api.get('/question-bank/questions', { params: { ...f, q: f.q || undefined, page, per_page: perPage, facets: 1 } }).then(r => r.data) })
   const paper = useQuery({ queryKey: ['qb-paper', paperId], enabled: Boolean(paperId), queryFn: () => api.get(`/question-bank/papers/${paperId}`).then(r => r.data.data) })
@@ -75,7 +94,7 @@ export default function QbAllQuestions() {
     if (k === 'chapter_ids') next.topic_ids = []
     return next
   }) }
-  const reset = () => { setPage(1); setF({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] }) }
+  const reset = () => { setPage(1); setF(EMPTY_FILTERS) }
 
   const subjects = useMemo(() => (tree.data?.subjects ?? []).filter(s => !f.class_level_ids.length || s.class_level_ids.some(id => f.class_level_ids.includes(id))), [tree.data, f.class_level_ids])
   const chapters = subjects.filter(s => f.subject_ids.includes(s.id)).flatMap(s => s.chapters)

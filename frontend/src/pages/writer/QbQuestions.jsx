@@ -17,7 +17,7 @@ import { ErrorState } from '../../components/StateViews'
 import MathText from '../../features/qb/MathText'
 import { breadcrumbLabel, sourceLabel, versionsForSubject } from '../../features/qb/curriculum'
 import CurriculumPicker from '../../features/qb/CurriculumPicker'
-import { PER_PAGE_OPTIONS, readSelection, selectionKey, storedPerPage, storePerPage, writeSelection } from '../../features/qb/keptSelection'
+import { filterKey, PER_PAGE_OPTIONS, pruneIds, readFilters, readSelection, selectionKey, storedPerPage, storePerPage, writeFilters, writeSelection } from '../../features/qb/keptSelection'
 import { fromQuestion, StructuredAnswers, StructuredPreview } from '../../features/qb/Structured'
 
 const PER_PAGE_KEY = 'qb.questions.per_page'
@@ -49,6 +49,19 @@ function questionTextWithoutRepeatedParts(question, structure) {
 
 // QB.2 /writer/questions (D65): a writer's own questions, a moderator's and the Super Admin's view of everyone's - by status. A
 // moderator lands on the review tab (?status=review). Opening a row goes to the editor / review page.
+const EMPTY_FILTERS = { q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] }
+
+// D177: the ids the curriculum offers now, per filter (kept filters naming anything else are trimmed silently)
+function offeredIds(tree) {
+  if (!tree) return null
+  const ids = (list) => new Set((list ?? []).map(x => String(x.id)))
+  const chapters = (tree.subjects ?? []).flatMap(s => s.chapters ?? [])
+  const nodes = []
+  const walk = (list) => (list ?? []).forEach(n => { nodes.push(n); walk(n.children) })
+  ;(tree.curriculum_versions ?? []).forEach(v => walk(v.nodes))
+  return { class_level_ids: ids(tree.class_levels), subject_ids: ids(tree.subjects), chapter_ids: ids(chapters), topic_ids: ids(chapters.flatMap(c => c.topics ?? [])), curriculum_node_ids: ids(nodes) }
+}
+
 export default function QbQuestions() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
@@ -57,8 +70,9 @@ export default function QbQuestions() {
   const keptKey = selectionKey('writer', userId)
   const [params, setParams] = useSearchParams()
   const status = params.get('status') ?? (role === 'content_moderator' ? 'review' : 'all')
-  const [filters, setFilters] = useState({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] })
-  const [page, setPage] = useState(1)
+  const keptFilters = useMemo(() => readFilters(filterKey('writer', useAuthStore.getState().user?.id), EMPTY_FILTERS), [])   // D177: back after a reload
+  const [filters, setFilters] = useState(keptFilters.filters)
+  const [page, setPage] = useState(keptFilters.page)
   const [perPage, setPerPage] = useState(() => storedPerPage(PER_PAGE_KEY))
   const [shown, setShown] = useState(() => new Set())
   const [selected, setSelected] = useState(() => new Set(readSelection(keptKey)))   // D176: kept across a refresh
@@ -77,6 +91,10 @@ export default function QbQuestions() {
     queryFn: () => api.get('/writer/curriculum').then(r => r.data.data),
     enabled: true,
   })
+  // D177: the filters and page are kept for a reload (the status tab stays in the address); stale ids are dropped
+  const filtersKey = filterKey('writer', userId)
+  useEffect(() => { writeFilters(filtersKey, filters, page, EMPTY_FILTERS) }, [filtersKey, filters, page])
+  useEffect(() => { const offered = offeredIds(curriculum.data); if (offered) setFilters(x => pruneIds(x, offered)) }, [curriculum.data])
   const questionTypes = useQuery({
     queryKey: ['writer', 'question-types'],
     queryFn: () => api.get('/writer/question-types').then(r => r.data.data),
@@ -91,7 +109,7 @@ export default function QbQuestions() {
     if (key === 'chapter_ids') next.topic_ids = []
     return next
   }) }
-  const resetFilters = () => { setPage(1); setFilters({ q: '', class_level_ids: [], subject_ids: [], chapter_ids: [], topic_ids: [], curriculum_node_ids: [], question_type_ids: [], source_types: [], years: [] }) }
+  const resetFilters = () => { setPage(1); setFilters(EMPTY_FILTERS) }
   const availableSubjects = useMemo(() => subjects.filter(s => !filters.class_level_ids.length || (s.class_level_ids ?? []).some(id => filters.class_level_ids.includes(id))), [subjects, filters.class_level_ids])
   const availableChapters = availableSubjects.filter(s => filters.subject_ids.includes(s.id)).flatMap(s => s.chapters ?? [])
     .filter(c => !filters.class_level_ids.length || !c.class_level_ids?.length || c.class_level_ids.some(id => filters.class_level_ids.includes(id)))
