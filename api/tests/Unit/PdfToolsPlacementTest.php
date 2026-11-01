@@ -22,6 +22,15 @@ class PdfToolsPlacementTest extends TestCase
         mkdir($this->root . '/page');
     }
 
+    /** can this system make a directory symlink? (Windows without Developer Mode cannot - the case D185 is for) */
+    private function canLink(): bool
+    {
+        $probe = $this->root . '/probe-link';
+        $ok = @symlink($this->root . '/outside', $probe);
+        if ($ok) PdfService::removeTools($probe);
+        return $ok;
+    }
+
     protected function tearDown(): void
     {
         PdfService::removeTools($this->root);   // the test's own temporary folder
@@ -35,7 +44,7 @@ class PdfToolsPlacementTest extends TestCase
         $this->assertFalse(is_link($target));
         $this->assertSame('export const x = 1', file_get_contents($target . '/js/math/graph-core.js'));
 
-        symlink($this->root . '/outside', $target . '/js/escape');           // a link inside the copy is never followed when removing
+        if ($this->canLink()) symlink($this->root . '/outside', $target . '/js/escape');   // a link inside the copy is never followed when removing
         PdfService::removeTools($target);
         $this->assertDirectoryDoesNotExist($target);
         $this->assertFileExists($this->root . '/tools/js/math/graph-core.js');
@@ -45,8 +54,11 @@ class PdfToolsPlacementTest extends TestCase
     public function test_a_link_is_used_where_possible_and_only_unlinked(): void
     {
         $target = $this->root . '/page/qbank';
-        $this->assertSame('link', PdfService::placeTools($this->root . '/tools', $target));
-        $this->assertTrue(is_link($target));
+        $linkable = $this->canLink();
+        // with the system's own linker: a link where the system allows one (Linux), else the copy (Windows without Developer Mode)
+        $this->assertSame($linkable ? 'link' : 'copy', PdfService::placeTools($this->root . '/tools', $target));
+        $this->assertSame($linkable, is_link($target));
+        $this->assertFileExists($target . '/js/math/graph-core.js');
         PdfService::removeTools($target);
         $this->assertFalse(file_exists($target) || is_link($target));
         $this->assertFileExists($this->root . '/tools/js/math/graph-core.js');
