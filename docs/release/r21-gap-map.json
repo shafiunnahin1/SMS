@@ -18,7 +18,7 @@
     "runtime_release": "R3",
     "preexisting_blocker_hash": "ad2bfbc64b603e52d291607793010b0c8626efe1"
   },
-  "imported_draft_sha256": "872d9ec3515fca3fd350f6210b496cb1b87ad21e840bf42bb7e9538e0f55dc54",
+  "imported_draft_sha256": "8a8bac2526f9b60a1e70a82a3f96d12a285808d40d7af60a551fe3023d2619ce",
   "registry_counts": {
     "source_anchor": "app/Services/QmxVisualImportService.php",
     "DIAGRAM_VERSIONS": 32,

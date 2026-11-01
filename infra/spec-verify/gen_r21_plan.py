@@ -206,7 +206,7 @@ def validate(root, scope, gaps):
     require(current is not None and current.group(1) == 'R3', 'runtime remains R3')
     require(modules is not None and re.findall(r"'(\w+)'", modules.group(1)) == r3['release_php']['modules'],
             'exact R3 module list remains unchanged')
-    require(hashlib.sha256((root / 'RELEASE-2.1.md').read_bytes()).hexdigest()
+    require(hashlib.sha256((root / 'RELEASE-2.1.md').read_bytes().replace(b'\r\n', b'\n')).hexdigest()   # D186: same hash on any OS
             == gaps.get('imported_draft_sha256'), 'imported draft provenance')
     gate_ids = {g['id'] for g in gaps['gates']}
     caps = {c['id']: c for c in gaps['capabilities']}
