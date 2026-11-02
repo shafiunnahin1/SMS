@@ -97,6 +97,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/coupons',                        [\App\Http\Controllers\SuperAdmin\CouponController::class, 'index']);
         Route::post('/coupons',                       [\App\Http\Controllers\SuperAdmin\CouponController::class, 'store']);
         Route::patch('/coupons/{id}/status',          [\App\Http\Controllers\SuperAdmin\CouponController::class, 'status'])->whereNumber('id');
+        Route::get('/subscriptions',                  [\App\Http\Controllers\SuperAdmin\SubscriptionStatusController::class, 'index']);   // D187 SUB.3
         // Step 8.1 (D27, privacy-and-consent.md 5.3): remove an institution for good - manual, two steps
         Route::get('/tenant-purge/candidates',                      [TenantPurgeController::class, 'candidates']);
         Route::post('/tenant-purge/{institutionId}/dry-run',        [TenantPurgeController::class, 'dryRun'])->whereNumber('institutionId');

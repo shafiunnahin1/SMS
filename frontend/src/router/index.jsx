@@ -79,6 +79,10 @@ const QbOmr             = lazy(() => import('../pages/qb/QbOmr'))
 const AiChat            = lazy(() => import('../pages/ai/AiChat'))   // D164 AI-P1.3
 const QbExamBatches     = lazy(() => import('../pages/super/QbExamBatches'))   // D165 ST.2
 const AiPlatform        = lazy(() => import('../pages/super/AiPlatform'))   // D164 AI-P1.5
+const ModulePrices      = lazy(() => import('../pages/super/ModulePrices'))   // D187 SUB.3
+const Coupons           = lazy(() => import('../pages/super/Coupons'))
+const SubscriptionStatus = lazy(() => import('../pages/super/SubscriptionStatus'))
+const Subscription      = lazy(() => import('../pages/admin/subscription/Subscription'))
 const HelpArticles      = lazy(() => import('../pages/ai/HelpArticles'))   // D166 AI-Q4 part 2
 const StaffStudents     = lazy(() => import('../pages/staff/StaffStudents').then(m => ({ default: m.StaffStudents })))   // D169 STW.2
 const StaffStudentAdd   = lazy(() => import('../pages/staff/StaffStudents').then(m => ({ default: m.StaffStudentAdd })))   // D169 STW.3
@@ -143,6 +147,7 @@ export const tenantRoutes = [
     { path: 'fees/categories', element: S(FeeCategories) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
+    { path: 'subscription', element: S(Subscription) },   // D187 SUB.3
     { path: 'settings/sms', element: S(SmsSettings) },
     { path: 'reports', element: S(Reports) },
     { path: 'exams', element: S(ExamList) },
@@ -211,6 +216,9 @@ export const centralRoutes = [
     { path: 'qb/quizzes', element: S(QbQuizAdmin) },   // QB.10
     { path: 'qb/withdrawals', element: S(QbWithdrawals) },   // QB.10b
     { path: 'ai', element: S(AiPlatform) },   // D164 AI-P1.5
+    { path: 'module-prices', element: S(ModulePrices) },   // D187 SUB.3
+    { path: 'coupons', element: S(Coupons) },
+    { path: 'subscriptions', element: S(SubscriptionStatus) },
     { path: 'ai-help', element: S(HelpArticles, { mode: 'super' }) },   // D166 AI-Q4 part 2
     { path: 'qb/exam-batches', element: S(QbExamBatches) },   // D165 ST.2
   ]),

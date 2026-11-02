@@ -93,4 +93,22 @@ class ModuleSubscriptionTest extends TestCase
         $i = $this->makeInstitution('sub-tenant');
         $this->api('GET', $this->hostOf($i), 'super/module-prices', $this->makeUser($i, 'admin'))->assertStatus(404);
     }
+
+    public function test_super_admin_status_counts_each_institution_without_creating_rows(): void
+    {
+        $central = 'admin.' . config('tenancy.base_domain');
+        $sa = User::create(['institution_id' => null, 'name' => 'SA', 'role' => 'super_admin', 'phone' => '01799000039', 'password' => 'Super-pass-2026', 'is_active' => true]);
+        $a = $this->makeInstitution('status-a');
+        $b = $this->makeInstitution('status-b', 'coaching');
+        $this->makeInstitution('status-l', 'learners');
+        $svc = app(ModuleEntitlementService::class);
+        $svc->all($a);
+        Tenancy::as($a, fn () => $svc->subscription($a, 'expenses')->update(['trial_ends_at' => now()->subDays(10)]));
+        $rows = collect($this->api('GET', $central, 'super/subscriptions', $sa)->assertOk()->json('data'))->keyBy('id');
+        $this->assertSame([$a->id, $b->id], $rows->keys()->sort()->values()->all());   // the learners type is exempt
+        $this->assertSame(1, $rows[$a->id]['counts']['read_only']);
+        $this->assertSame(0, array_sum($rows[$b->id]['counts']));
+        $this->assertSame(0, InstitutionModuleSubscription::forInstitution($b->id)->count());
+        $this->assertSame([$a->id], collect($this->api('GET', $central, 'super/subscriptions?state=read_only', $sa)->json('data'))->pluck('id')->all());
+    }
 }

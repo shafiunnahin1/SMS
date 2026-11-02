@@ -259,6 +259,9 @@ export const MENU = {
     it('qb-exam-batches','/super-admin/qb/exam-batches','প্রশ্নব্যাংক: পরীক্ষা-ব্যাচ (SSC/HSC)',{icon:'CalendarCheck'}),   // D165 ST.2
     it('ai-help','/super-admin/ai-help','AI সহকারী: নির্দেশনা',{icon:'LifeBuoy'}),   // D166 AI-Q4 part 2
     it('ai-platform','/super-admin/ai','AI সহকারী: সেটিং ও রিপোর্ট',{icon:'Sparkles'}),   // D164 AI-P1.5
+    it('subscriptions','/super-admin/subscriptions','সাবস্ক্রিপশন',{icon:'CreditCard'}),   // D187 SUB.3
+    it('module-prices','/super-admin/module-prices','মডিউলের মূল্য',{icon:'Tags'}),
+    it('coupons','/super-admin/coupons','কুপন',{icon:'Ticket'}),
     it('settings','/super-admin/settings','সেটিংস',{icon:'Settings'}),
   ],
 }

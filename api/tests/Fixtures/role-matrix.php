@@ -209,6 +209,7 @@ return [
     'GET api/v1/super/coupons' => ['super_admin'],                                 // D187 SUB.2
     'POST api/v1/super/coupons' => ['super_admin'],
     'PATCH api/v1/super/coupons/{id}/status' => ['super_admin'],
+    'GET api/v1/super/subscriptions' => ['super_admin'],                           // D187 SUB.3
     'GET api/v1/subscription/modules' => ['admin'],
     'POST api/v1/subscription/quote' => ['admin'],
     'POST api/v1/subscription/checkout' => ['admin'],
