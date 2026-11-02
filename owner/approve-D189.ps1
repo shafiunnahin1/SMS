@@ -23,6 +23,6 @@ foreach ($pair in @(@('D140','D139'), @('D152','D151'), @('D156','D155'), @('D18
 }
 [IO.File]::WriteAllText($registry, $content, $utf8)
 git add -- docs/LOCKED-DECISIONS.md
-git commit -m "decision: D189 spec-verification completion; D152 row restored; D140 and D156 reserved" -m "Change-Request: D189"
+git commit -m "decision: D189 spec-verification completion; D152 row restored; D140 and D156 reserved" -m "Change-Request: D140, D152, D156, D189"
 if ($LASTEXITCODE -ne 0) { throw 'Commit did not complete; inspect git status.' }
 Write-Host 'D189 committed locally. Not pushed. Run infra/guard/pre_push_guard.py first, then git push.'
