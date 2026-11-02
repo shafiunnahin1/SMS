@@ -59,6 +59,14 @@ describe('structured passage MCQs', () => {
     expect([...container.querySelector('[data-testid="qb-subs"]').children].some(row => row.className.includes('grid-cols-'))).toBe(true)
   })
 
+  it('adds a written sub-question to an empty passage (a card row without options)', () => {
+    function EmptyPassage() { return <StructuredEditor structure="passage" {...useForm({ defaultValues: { structured: { ...STRUCTURED_EMPTY } } })} /> }
+    const { container } = render(<EmptyPassage />)
+    fireEvent.click(container.querySelector('[data-action="add-subs"]'))
+    expect(container.querySelector('[name="structured.subs.0.prompt"]')).not.toBeNull()
+    expect(container.querySelector('[name="structured.subs.0.answer"]')).not.toBeNull()
+  })
+
   it('uses textareas for written prompts across structured item types', () => {
     const { container } = render(<AllPromptsHarness />)
     const prompts = [

@@ -153,7 +153,7 @@ function Rows({ name, control, empty, render, addLabel, testid, register, compac
           <Button type="button" variant="secondary" title={t('common.delete')} onClick={() => rows.remove(i)} aria-label={t('common.delete')}><X aria-hidden="true" className="h-4 w-4" /></Button>
         </div>
       ))}
-      <div><Button type="button" variant="secondary" onClick={() => rows.append(compact ? { ...empty, options: empty.options.map(option => ({ ...option })) } : empty)} data-action={`add-${name.split('.').pop()}`}><Plus aria-hidden="true" className="h-4 w-4" />{addLabel}</Button></div>
+      <div><Button type="button" variant="secondary" onClick={() => rows.append(empty.options ? { ...empty, options: empty.options.map(option => ({ ...option })) } : { ...empty })} data-action={`add-${name.split('.').pop()}`}><Plus aria-hidden="true" className="h-4 w-4" />{addLabel}</Button></div>
     </div>
   )
 }
