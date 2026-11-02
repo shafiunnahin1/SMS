@@ -206,6 +206,16 @@ return [
     'PUT api/v1/super/ai-settings' => ['super_admin'],
     'GET api/v1/super/module-prices' => ['super_admin'],                           // D187 SUB.1
     'POST api/v1/super/module-prices' => ['super_admin'],
+    'GET api/v1/super/coupons' => ['super_admin'],                                 // D187 SUB.2
+    'POST api/v1/super/coupons' => ['super_admin'],
+    'PATCH api/v1/super/coupons/{id}/status' => ['super_admin'],
+    'GET api/v1/subscription/modules' => ['admin'],
+    'POST api/v1/subscription/quote' => ['admin'],
+    'POST api/v1/subscription/checkout' => ['admin'],
+    'POST api/v1/subscription/coupon' => ['admin'],
+    'POST api/v1/subscription/modules/cancel' => ['admin'],
+    'POST api/v1/subscription/modules/resume' => ['admin'],
+    'GET api/v1/subscription/invoices' => ['admin'],
     'GET api/v1/super/ai-report' => ['super_admin'],
     'GET api/v1/super/ai-help-articles' => ['super_admin'],                         // D166 AI-Q4 part 2
     'POST api/v1/super/ai-help-articles' => ['super_admin'],

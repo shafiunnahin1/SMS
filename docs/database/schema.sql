@@ -2195,6 +2195,8 @@ CREATE TABLE coupons (
     note VARCHAR(255) NULL,
     created_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    applies_to_modules JSON NULL,                 -- D187 (6): NULL = every paid module
+    discount_months SMALLINT UNSIGNED NULL,       -- D187 (6): how long the discount lasts after redemption
     UNIQUE KEY unique_coupon_code (code)
 );
 CREATE TABLE coupon_redemptions (

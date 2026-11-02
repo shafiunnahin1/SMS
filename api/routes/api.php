@@ -38,6 +38,8 @@ Route::prefix('v1')->group(function () {
 
     // D58: bKash brings the payer back here after an SMS-wallet recharge (central host, no login - `ref` finds our own record)
     Route::middleware(['tenant:central', 'throttle:60,1'])->get('/billing/bkash/callback', [\App\Http\Controllers\Billing\SmsRechargeCallbackController::class, 'bkash']);
+    // D187 SUB.2: bKash brings the payer back here after paying for module subscriptions (central host, no login - `ref` finds our record)
+    Route::middleware(['tenant:central', 'throttle:60,1'])->get('/billing/subscription/bkash/callback', [\App\Http\Controllers\Billing\SubscriptionCallbackController::class, 'bkash']);
     // QB.9: bKash brings a student back here after paying for question-bank items (`ref` finds our own order; central host, no login)
     Route::middleware(['tenant:central', 'throttle:60,1'])->get('/qb/student-orders/bkash/callback', [QbStudentOrderCallbackController::class, 'bkash']);
     // QB.10: the platform's public quizzes (central host, no login; checked on the server, nothing saved, never the right answers)
@@ -91,6 +93,10 @@ Route::prefix('v1')->group(function () {
         // D187 SUB.1: each paid module's one price (monthly / yearly); a change is a new row
         Route::get('/module-prices',                  [\App\Http\Controllers\SuperAdmin\ModulePriceController::class, 'index']);
         Route::post('/module-prices',                 [\App\Http\Controllers\SuperAdmin\ModulePriceController::class, 'store']);
+        // D187 SUB.2: coupons (percent; pausing stops new redemptions)
+        Route::get('/coupons',                        [\App\Http\Controllers\SuperAdmin\CouponController::class, 'index']);
+        Route::post('/coupons',                       [\App\Http\Controllers\SuperAdmin\CouponController::class, 'store']);
+        Route::patch('/coupons/{id}/status',          [\App\Http\Controllers\SuperAdmin\CouponController::class, 'status'])->whereNumber('id');
         // Step 8.1 (D27, privacy-and-consent.md 5.3): remove an institution for good - manual, two steps
         Route::get('/tenant-purge/candidates',                      [TenantPurgeController::class, 'candidates']);
         Route::post('/tenant-purge/{institutionId}/dry-run',        [TenantPurgeController::class, 'dryRun'])->whereNumber('institutionId');
@@ -630,6 +636,17 @@ Route::prefix('v1')->group(function () {
                 Route::put('/admin/settings/sms-sender',    [SmsSenderController::class, 'update']);
                 Route::delete('/admin/settings/sms-sender', [SmsSenderController::class, 'destroy']);
             });
+        });
+
+        // ── D187 SUB.2: module subscriptions - quote, bKash checkout, coupon, remove from the next period, invoices (admin; no module gate) ──
+        Route::middleware('role:admin')->prefix('subscription')->group(function () {
+            Route::get('/modules',                        [\App\Http\Controllers\Billing\SubscriptionController::class, 'show']);
+            Route::post('/quote',                         [\App\Http\Controllers\Billing\SubscriptionController::class, 'quote']);
+            Route::post('/checkout',                      [\App\Http\Controllers\Billing\SubscriptionController::class, 'checkout'])->middleware('throttle:10,1');
+            Route::post('/coupon',                        [\App\Http\Controllers\Billing\SubscriptionController::class, 'redeem'])->middleware('throttle:10,1');
+            Route::post('/modules/cancel',                [\App\Http\Controllers\Billing\SubscriptionController::class, 'cancel']);
+            Route::post('/modules/resume',                [\App\Http\Controllers\Billing\SubscriptionController::class, 'resume']);
+            Route::get('/invoices',                       [\App\Http\Controllers\Billing\SubscriptionController::class, 'invoices']);
         });
 
         // ── Dashboards (Step 4.7) ──

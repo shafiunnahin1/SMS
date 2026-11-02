@@ -10,4 +10,12 @@ return [
     'free_modules' => ['students', 'enrollments', 'reports', 'support', 'data_migration', 'sms'],
     // Individual learners buy question-bank items per order (D165), not institution modules (docs/DECISIONS.md 2026-11-02 SUB.1)
     'exempt_types' => ['learners'],
+    // D187 (2): a module needs its companions (docs/pricing/modules.csv `requires`); each companion must already have a paid
+    // period running, be free, or be bought together
+    'requires' => [
+        'period_attendance' => ['attendance', 'routine'], 'attendance_devices' => ['attendance'], 'student_leave' => ['attendance'],
+        'substitution' => ['routine'], 'result_sheets' => ['exams'], 'admit_card' => ['exams'], 'merit_list' => ['exams'],
+        'fee_installment' => ['fees'], 'online_payment' => ['fees'], 'cashbook' => ['expenses'], 'scholarships' => ['fees'],
+        'risk_alerts' => ['attendance', 'exams'], 'admission_cycle' => ['leads'], 'quiz' => ['question_bank'],
+    ],
 ];
