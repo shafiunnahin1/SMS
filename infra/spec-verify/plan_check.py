@@ -11,7 +11,7 @@ import re, sqlite3, sys, os
 ROOT = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')), os.path.join(os.path.dirname(__file__), '..', '..')))
 def load(root):
     t = re.sub(r'--[^\n]*', '', open(os.path.join(root, 'docs/database/schema.sql'), encoding='utf-8').read())
-    t = re.sub(r"ENUM\([^)]*\)", "TEXT", t); t = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", t)
+    t = re.sub(r"ENUM\([^)]*\)", "TEXT", t); t = re.sub(r"ALTER TABLE\s+\w+\s+ADD FULLTEXT INDEX[^;]*;", "", re.sub(r",\s*\n\s*FULLTEXT INDEX\s+\w+\s*\([^)]*\)(?:\s+WITH PARSER\s+\w+)?", "", t)); t = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", t)
     t = re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b", r"\1", t); t = re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b", "", t)
     t = re.sub(r"\bUNIQUE KEY\s+(\w+)\s*\(", r"UNIQUE (", t)
     # inline "INDEX name (cols)" / "KEY name (cols)" clauses are real indexes in MySQL - keep them as CREATE INDEX instead of dropping them (a past blind spot)

@@ -48,7 +48,7 @@ from schema_inventory import inventory, documentation_problems
 sch=rd('docs/database/schema.sql'); names=re.findall(r'CREATE TABLE (\w+)',sch)
 _all_tables, deployed_names, design_only_names = inventory(sch)
 ok(set(names)==_all_tables, 'strict D98/D99 canonical schema classification')
-t=re.sub(r'--[^\n]*','',sch); t=re.sub(r"ENUM\([^)]*\)","TEXT",t)
+t=re.sub(r'--[^\n]*','',sch); t=re.sub(r"ENUM\([^)]*\)","TEXT",t); t=re.sub(r"ALTER TABLE\s+\w+\s+ADD FULLTEXT INDEX[^;]*;", "", re.sub(r",\s*\n\s*FULLTEXT INDEX\s+\w+\s*\([^)]*\)(?:\s+WITH PARSER\s+\w+)?", "", t))   # D188: MySQL FULLTEXT (D164) has no SQLite form
 t=re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b","INTEGER PRIMARY KEY AUTOINCREMENT",t); t=re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b",r"\1",t)
 t=re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b","",t); t=re.sub(r"\bUNIQUE KEY\s+\w+\s*\(",'UNIQUE (',t); t=re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)",'',t)
 con=sqlite3.connect(':memory:'); fails=[]
@@ -70,7 +70,8 @@ INTENDED_GLOBAL={('payments','invoice_no'),('payments','trx_id'),('subscription_
                  ('attendance_devices','key_id'),                                                               # a device identifies itself BEFORE the tenant is known
                  ('support_tickets','ticket_no'),                                                               # platform-issued ticket numbers
                  ('admission_draws','cycle_id'),                                                                # one draw per cycle (a cycle belongs to one institution)
-                 ('qb_student_orders','ref')}                                                                   # D65: bKash returns only the ref, BEFORE the tenant is known
+                 ('qb_student_orders','ref'),
+                 ('exam_mark_submissions','exam_subject_id'),('ai_reviews','ai_message_id'),('learner_profiles','user_id')}   # D188 (4): one row per referenced row; the referenced id is already platform-unique                                                                   # D65: bKash returns only the ref, BEFORE the tenant is known
 glob_unique=[(tb,u) for tb in tabs if 'institution_id' in cols(tb) for u in uniq(tb) if len(u)==1 and u[0]!='id' and (tb,u[0]) not in INTENDED_GLOBAL]
 ok(not glob_unique,f'no accidental global UNIQUE on a tenant table (D12) {glob_unique[:4]}')
 for tb,c in [('students','student_id'),('teachers','employee_id'),('certificates','certificate_no'),('tc_certificates','tc_number'),('staff_members','employee_id'),('payroll_items','slip_no')]:
@@ -373,7 +374,7 @@ ok(set(r1['tables'])<=set(names),f"R1 tables all exist in schema.sql {sorted(set
 _bm=ter.build_export_map(R); emap=_bm[1]                       # derived FRESH from schema.sql; the committed JSON may be stale (a separate check demands it is fresh)
 refs_of={k:v['refs'] for k,v in emap.items() if isinstance(v,dict) and 'refs' in v}
 if not refs_of: refs_of={k:v['refs'] for k,v in emap.get('tables',{}).items()}
-meta=sqlite3.connect(':memory:'); _t=re.sub(r'--[^\n]*','',sch); _t=re.sub(r"ENUM\([^)]*\)","TEXT",_t); _t=re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b","INTEGER PRIMARY KEY AUTOINCREMENT",_t); _t=re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b",r"\1",_t)
+meta=sqlite3.connect(':memory:'); _t=re.sub(r'--[^\n]*','',sch); _t=re.sub(r"ENUM\([^)]*\)","TEXT",_t); _t=re.sub(r"ALTER TABLE\s+\w+\s+ADD FULLTEXT INDEX[^;]*;", "", re.sub(r",\s*\n\s*FULLTEXT INDEX\s+\w+\s*\([^)]*\)(?:\s+WITH PARSER\s+\w+)?", "", _t)); _t=re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b","INTEGER PRIMARY KEY AUTOINCREMENT",_t); _t=re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b",r"\1",_t)
 _t=re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b","",_t); _t=re.sub(r"\bUNIQUE KEY\s+\w+\s*\(",'UNIQUE (',_t); _t=re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)",'',_t)
 for _st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',_t).split(';') if x.strip()]: meta.execute(_st)
 nn={(tb,c[1]):bool(c[3]) for tb in names for c in meta.execute(f'PRAGMA table_info({tb})')}

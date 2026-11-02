@@ -10,7 +10,7 @@ from schema_inventory import operational_schema, read_inventory
 
 def load_schema(root):
     s=operational_schema((Path(root)/'docs/database/schema.sql').read_text(encoding='utf-8'))
-    t=re.sub(r'--[^\n]*','',s); t=re.sub(r"ENUM\([^)]*\)","TEXT",t)
+    t=re.sub(r'--[^\n]*','',s); t=re.sub(r"ENUM\([^)]*\)","TEXT",t); t = re.sub(r"ALTER TABLE\s+\w+\s+ADD FULLTEXT INDEX[^;]*;", "", re.sub(r",\s*\n\s*FULLTEXT INDEX\s+\w+\s*\([^)]*\)(?:\s+WITH PARSER\s+\w+)?", "", t))   # D188: MySQL FULLTEXT (D164) has no SQLite form
     t=re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b","INTEGER PRIMARY KEY AUTOINCREMENT",t); t=re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b",r"\1",t)
     t=re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b","",t); t=re.sub(r"\bUNIQUE KEY\s+\w+\s*\(",'UNIQUE (',t); t=re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)",'',t)
     con=sqlite3.connect(':memory:')
@@ -21,6 +21,7 @@ def load_schema(root):
 OVERRIDES={
  'parent_user_id':'users','user_id':'users','teacher_id':'teachers','substitute_teacher_id':'teachers','original_teacher_id':'teachers',
  'interested_program_id':'programs','interested_batch_id':'batches','converted_student_id':'students','reverses_id':None,   # self-reference, handled below
+ 'linked_by':'users','submitted_by':'users',   # D188: R2.1.7 exam_papers / exam_mark_submissions
  'approved_by':'users','created_by':'users','added_by':'users','taken_by':'users','issued_by':'users','marked_by':'users','sent_by':'users','recorded_by':'users',
  'proposed_by':'users','prepared_by':'users','reviewed_by':'users','paid_by':'users','requested_by':'users','processed_by':'users','closed_by':'users',
  'reopened_by':'users','granted_by':'users','locked_by':'users','decided_by':'users','acknowledged_by':'users','posted_by':'users','received_by':'users',
@@ -117,7 +118,7 @@ EXCLUDED={
  'import_jobs':'operational','import_rows':'operational','device_punches':'raw high-volume feed; processed attendance IS exported','attendance_devices':'global device key + secret: re-register on the new institution',
  'institution_domains':'a domain is globally unique and belongs to one institution','institution_payment_gateways':'credentials (secrets)','institution_payout_accounts':'bank/mobile account numbers (secrets)',
  'settlements':'platform money flow','sms_logs':'personal message bodies; heavy','sms_credit_transactions':'platform credit ledger','coupon_redemptions':'platform-owned',
- 'institution_theme_logs':'history only','student_import_logs':'operational','subscription_invoices':'platform billing','payments':'platform billing',
+ 'institution_theme_logs':'history only','student_import_logs':'operational','subscription_invoices':'platform billing','payments':'platform billing','subscription_invoice_lines':'platform billing (D187)','institution_module_subscriptions':'platform billing (D187): the new institution starts its own trial',
 }
 # D33/D38: what a Super-Admin-initiated `backup` must NOT contain (the Super Admin chooses the passphrase, so anything inside is readable by the platform operator).
 # An institution-Admin `export` (their own passphrase, explicit tick-box + password re-entry) MAY include all of it.

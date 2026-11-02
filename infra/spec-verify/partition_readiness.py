@@ -10,7 +10,7 @@ ROOT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].star
 CANDIDATES = {'attendances': 'date', 'sms_logs': 'sent_at', 'audit_logs': 'created_at', 'messages': 'created_at', 'fee_payments': 'paid_at', 'device_punches': 'punched_at', 'period_attendances': 'date', 'vehicle_locations': 'timestamp'}
 def load():
     t = re.sub(r'--[^\n]*', '', open(os.path.join(ROOT, 'docs/database/schema.sql'), encoding='utf-8').read())
-    t = re.sub(r"ENUM\([^)]*\)", "TEXT", t); t = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", t); t = re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b", r"\1", t)
+    t = re.sub(r"ENUM\([^)]*\)", "TEXT", t); t = re.sub(r"ALTER TABLE\s+\w+\s+ADD FULLTEXT INDEX[^;]*;", "", re.sub(r",\s*\n\s*FULLTEXT INDEX\s+\w+\s*\([^)]*\)(?:\s+WITH PARSER\s+\w+)?", "", t)); t = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", t); t = re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b", r"\1", t)
     t = re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b", "", t); t = re.sub(r"\bUNIQUE KEY\s+\w+\s*\(", 'UNIQUE (', t); t = re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)", '', t)
     con = sqlite3.connect(':memory:')
     for st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',t).split(';') if x.strip()]: con.execute(st)

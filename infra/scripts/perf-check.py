@@ -40,7 +40,7 @@ CAT = (lambda *p: 'CONCAT(' + ', '.join(p) + ')') if my else (lambda *p: '(' + '
 # ---- seed plan ------------------------------------------------------------------------------------------------------------------------------------------------
 NI = max(10, round(250 * SCALE)); PER = 200; STUDENTS = NI * PER; DAYS = 220; START = '2026-09-01'
 sch = re.sub(r'--[^\n]*', '', open(os.path.join(ROOT, 'docs/database/schema.sql'), encoding='utf-8').read())
-lite = re.sub(r"ENUM\([^)]*\)", "TEXT", sch); lite = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", lite); lite = re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b", r"\1", lite)
+lite = re.sub(r"ENUM\([^)]*\)", "TEXT", sch); lite = re.sub(r"ALTER TABLE\s+\w+\s+ADD FULLTEXT INDEX[^;]*;", "", re.sub(r",\s*\n\s*FULLTEXT INDEX\s+\w+\s*\([^)]*\)(?:\s+WITH PARSER\s+\w+)?", "", lite)); lite = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", lite); lite = re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b", r"\1", lite)
 lite = re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b", "", lite); lite = re.sub(r"\bUNIQUE KEY\s+\w+\s*\(", 'UNIQUE (', lite); lite = re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)", '', lite)
 meta = sqlite3.connect(':memory:')
 for st in [x.strip() for x in re.sub(r'ALTER TABLE\s+\w+\s+ADD CONSTRAINT[^;]*;','',lite).split(';') if x.strip()]:

@@ -96,6 +96,7 @@ class ReceiptDesignTests(unittest.TestCase):
             ddl = re.search(r'CREATE TABLE '+name+r' \(.*?\n\);', schema, re.S).group()
             ddl = re.sub(r'--[^\n]*', '', ddl)
             ddl = re.sub(r'ENUM\([^)]*\)', 'TEXT', ddl)
+            ddl = re.sub(r"ALTER TABLE\s+\w+\s+ADD FULLTEXT INDEX[^;]*;", "", re.sub(r",\s*\n\s*FULLTEXT INDEX\s+\w+\s*\([^)]*\)(?:\s+WITH PARSER\s+\w+)?", "", ddl))   # D188: MySQL FULLTEXT (D164) has no SQLite form
             ddl = ddl.replace('BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT')
             ddl = re.sub(r'\b(BIGINT|INT|SMALLINT) UNSIGNED\b', r'\1', ddl)
             ddl = re.sub(r'UNIQUE KEY\s+\w+\s*\(', 'UNIQUE (', ddl)

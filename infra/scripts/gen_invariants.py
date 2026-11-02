@@ -17,6 +17,7 @@ for m in re.finditer(r'CREATE TABLE (\w+) \((.*?)\n\);', t, re.S):
     for c in re.finditer(r'\n\s*(\w+)\s+ENUM\(([^)]*)\)', m.group(2)): enums[(m.group(1), c.group(1))] = re.findall(r"'([^']*)'", c.group(2))
 for m in re.finditer(r'ALTER TABLE (\w+) ADD COLUMN (\w+) ENUM\(([^)]*)\)', t): enums[(m.group(1), m.group(2))] = re.findall(r"'([^']*)'", m.group(3))
 lite = re.sub(r"ENUM\([^)]*\)", "TEXT", t)
+lite = re.sub(r"ALTER TABLE\s+\w+\s+ADD FULLTEXT INDEX[^;]*;", "", re.sub(r",\s*\n\s*FULLTEXT INDEX\s+\w+\s*\([^)]*\)(?:\s+WITH PARSER\s+\w+)?", "", lite))   # D188: MySQL FULLTEXT (D164) has no SQLite form
 lite = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", lite); lite = re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b", r"\1", lite)
 lite = re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b", "", lite); lite = re.sub(r"\bUNIQUE KEY\s+\w+\s*\(", 'UNIQUE (', lite); lite = re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)", '', lite)
 con = sqlite3.connect(':memory:')

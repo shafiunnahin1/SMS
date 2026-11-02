@@ -28,7 +28,9 @@
   "institution_theme_logs": "history only",
   "student_import_logs": "operational",
   "subscription_invoices": "platform billing",
-  "payments": "platform billing"
+  "payments": "platform billing",
+  "subscription_invoice_lines": "platform billing (D187)",
+  "institution_module_subscriptions": "platform billing (D187): the new institution starts its own trial"
  },
  "backup_excludes": {
   "tables": [
@@ -65,6 +67,13 @@
   "students",
   "admission_leads",
   "admission_draws",
+  "ai_conversations",
+  "ai_messages",
+  "ai_reviews",
+  "ai_answer_bank",
+  "ai_answer_reveals",
+  "ai_attachments",
+  "ai_help_articles",
   "ai_usage_logs",
   "alumni",
   "archived_attendances",
@@ -100,8 +109,13 @@
   "exam_questions",
   "exam_attempts",
   "exams",
-  "exam_seat_plans",
   "exam_subjects",
+  "exam_mark_submissions",
+  "qb_paper_folders",
+  "qb_papers",
+  "exam_papers",
+  "exam_result_sms",
+  "exam_seat_plans",
   "payroll_runs",
   "expenses",
   "fee_categories",
@@ -126,6 +140,7 @@
   "inventory_items",
   "inventory_movements",
   "lead_payments",
+  "learner_profiles",
   "leave_types",
   "leave_applications",
   "syllabus_units",
@@ -145,12 +160,17 @@
   "period_attendances",
   "person_credentials",
   "provident_fund_entries",
-  "qb_papers",
+  "qb_paper_revisions",
+  "qb_omr_forms",
+  "qb_omr_scans",
   "qb_paper_sections",
   "qb_paper_items",
+  "qb_paper_variants",
+  "qb_practice_attempts",
   "qb_quiz_attempts",
   "qb_student_orders",
   "qb_student_package_access",
+  "qb_student_scope_access",
   "qb_student_unlocks",
   "qb_unlocks",
   "report_card_summaries",
@@ -168,6 +188,7 @@
   "site_posts",
   "sms_templates",
   "sms_campaigns",
+  "staff_attendance_grants",
   "staff_attendances",
   "staff_mapping_reviews",
   "student_documents",
@@ -283,6 +304,53 @@
    "refs": {
     "cycle_id": "admission_cycles",
     "drawn_by": "users"
+   },
+   "polymorphic": []
+  },
+  "ai_conversations": {
+   "refs": {
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "ai_messages": {
+   "refs": {
+    "ai_conversation_id": "ai_conversations"
+   },
+   "polymorphic": []
+  },
+  "ai_reviews": {
+   "refs": {
+    "ai_message_id": "ai_messages",
+    "reviewed_by": "users"
+   },
+   "polymorphic": []
+  },
+  "ai_answer_bank": {
+   "refs": {
+    "ai_review_id": "ai_reviews"
+   },
+   "polymorphic": []
+  },
+  "ai_answer_reveals": {
+   "refs": {
+    "ai_message_id": "ai_messages",
+    "qb_question_id": "qb_questions",
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "ai_attachments": {
+   "refs": {
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "ai_help_articles": {
+   "refs": {
+    "approved_by": "users",
+    "base_article_id": "ai_help_articles",
+    "created_by": "users"
    },
    "polymorphic": []
   },
@@ -532,18 +600,61 @@
    },
    "polymorphic": []
   },
-  "exam_seat_plans": {
-   "refs": {
-    "exam_id": "exams",
-    "student_id": "students"
-   },
-   "polymorphic": []
-  },
   "exam_subjects": {
    "refs": {
     "exam_id": "exams",
     "locked_by": "users",
     "subject_id": "subjects"
+   },
+   "polymorphic": []
+  },
+  "exam_mark_submissions": {
+   "refs": {
+    "decided_by": "users",
+    "exam_subject_id": "exam_subjects",
+    "requested_by": "users",
+    "submitted_by": "users"
+   },
+   "polymorphic": []
+  },
+  "qb_paper_folders": {
+   "refs": {
+    "created_by": "users",
+    "parent_id": "qb_paper_folders"
+   },
+   "polymorphic": []
+  },
+  "qb_papers": {
+   "refs": {
+    "created_by": "users",
+    "program_id": "programs",
+    "qb_paper_folder_id": "qb_paper_folders",
+    "qb_subject_id": "qb_subjects"
+   },
+   "polymorphic": []
+  },
+  "exam_papers": {
+   "refs": {
+    "exam_subject_id": "exam_subjects",
+    "linked_by": "users",
+    "qb_paper_id": "qb_papers",
+    "qb_subject_id": "qb_subjects"
+   },
+   "polymorphic": []
+  },
+  "exam_result_sms": {
+   "refs": {
+    "created_by": "users",
+    "exam_id": "exams",
+    "sms_log_id": "sms_logs",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "exam_seat_plans": {
+   "refs": {
+    "exam_id": "exams",
+    "student_id": "students"
    },
    "polymorphic": []
   },
@@ -731,6 +842,14 @@
    "refs": {
     "lead_id": "admission_leads",
     "online_payment_id": "online_payments"
+   },
+   "polymorphic": []
+  },
+  "learner_profiles": {
+   "refs": {
+    "qb_class_level_id": "qb_class_levels",
+    "qb_exam_batch_id": "qb_exam_batches",
+    "user_id": "users"
    },
    "polymorphic": []
   },
@@ -941,11 +1060,25 @@
     }
    ]
   },
-  "qb_papers": {
+  "qb_paper_revisions": {
    "refs": {
     "created_by": "users",
-    "program_id": "programs",
-    "qb_subject_id": "qb_subjects"
+    "qb_paper_id": "qb_papers"
+   },
+   "polymorphic": []
+  },
+  "qb_omr_forms": {
+   "refs": {
+    "qb_paper_id": "qb_papers",
+    "qb_paper_revision_id": "qb_paper_revisions"
+   },
+   "polymorphic": []
+  },
+  "qb_omr_scans": {
+   "refs": {
+    "matched_student_id": "students",
+    "qb_omr_form_id": "qb_omr_forms",
+    "reviewed_by": "users"
    },
    "polymorphic": []
   },
@@ -959,6 +1092,21 @@
    "refs": {
     "qb_paper_section_id": "qb_paper_sections",
     "qb_question_id": "qb_questions"
+   },
+   "polymorphic": []
+  },
+  "qb_paper_variants": {
+   "refs": {
+    "qb_paper_id": "qb_papers",
+    "qb_paper_revision_id": "qb_paper_revisions"
+   },
+   "polymorphic": []
+  },
+  "qb_practice_attempts": {
+   "refs": {
+    "qb_chapter_id": "qb_chapters",
+    "qb_subject_id": "qb_subjects",
+    "student_user_id": "users"
    },
    "polymorphic": []
   },
@@ -983,8 +1131,20 @@
    },
    "polymorphic": []
   },
+  "qb_student_scope_access": {
+   "refs": {
+    "qb_chapter_id": "qb_chapters",
+    "qb_class_level_id": "qb_class_levels",
+    "qb_exam_batch_id": "qb_exam_batches",
+    "qb_student_order_id": "qb_student_orders",
+    "qb_subject_id": "qb_subjects",
+    "student_user_id": "users"
+   },
+   "polymorphic": []
+  },
   "qb_student_unlocks": {
    "refs": {
+    "qb_exam_batch_id": "qb_exam_batches",
     "qb_student_order_id": "qb_student_orders",
     "student_user_id": "users"
    },
@@ -1094,6 +1254,15 @@
    "refs": {
     "created_by": "users",
     "template_id": "sms_templates"
+   },
+   "polymorphic": []
+  },
+  "staff_attendance_grants": {
+   "refs": {
+    "batch_id": "batches",
+    "granted_by": "users",
+    "revoked_by": "users",
+    "user_id": "users"
    },
    "polymorphic": []
   },
@@ -1238,20 +1407,46 @@
   "programs": {
    "qb_class_level_id": "qb_class_levels"
   },
-  "online_payments": {
-   "settlement_id": "settlements"
+  "ai_answer_reveals": {
+   "qb_question_id": "qb_questions"
   },
   "qb_papers": {
    "qb_subject_id": "qb_subjects"
   },
+  "exam_papers": {
+   "qb_subject_id": "qb_subjects"
+  },
+  "exam_result_sms": {
+   "sms_log_id": "sms_logs"
+  },
+  "online_payments": {
+   "settlement_id": "settlements"
+  },
+  "learner_profiles": {
+   "qb_class_level_id": "qb_class_levels",
+   "qb_exam_batch_id": "qb_exam_batches"
+  },
   "qb_paper_items": {
    "qb_question_id": "qb_questions"
+  },
+  "qb_practice_attempts": {
+   "qb_subject_id": "qb_subjects",
+   "qb_chapter_id": "qb_chapters"
   },
   "qb_quiz_attempts": {
    "qb_quiz_id": "qb_quizzes"
   },
   "qb_student_package_access": {
    "qb_quiz_package_id": "qb_quiz_packages"
+  },
+  "qb_student_scope_access": {
+   "qb_class_level_id": "qb_class_levels",
+   "qb_subject_id": "qb_subjects",
+   "qb_chapter_id": "qb_chapters",
+   "qb_exam_batch_id": "qb_exam_batches"
+  },
+  "qb_student_unlocks": {
+   "qb_exam_batch_id": "qb_exam_batches"
   },
   "qb_unlocks": {
    "qb_price_rule_id": "qb_price_rules"

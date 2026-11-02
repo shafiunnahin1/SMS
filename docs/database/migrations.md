@@ -356,6 +356,38 @@ php artisan make:migration create_qb_quiz_attempts_table
 php artisan make:migration create_qb_import_map_table      # D69 (QB.11): qbank row → row here, for qb:import-from-qbank
 2026_10_18_000005_create_qb_graph_datasets_table.php       # D115: platform graph datasets
 2026_10_21_000001_create_qb_flexible_curriculum.php        # D138/D139: versioned language curriculum and optional source fields
+# D188: tables migrated in R2.1 -> D187 whose migration file is not named create_<table>_table (one line per table: create_<table>_table -> file)
+# create_ai_answer_bank_table                     -> migration 2026_10_25_000001
+# create_ai_answer_reveals_table                  -> migration 2026_10_25_000003
+# create_ai_attachments_table                     -> migration 2026_11_02_000001
+# create_ai_conversations_table                   -> migration 2026_10_25_000001
+# create_ai_help_articles_table                   -> migration 2026_10_31_000001
+# create_ai_messages_table                        -> migration 2026_10_25_000001
+# create_ai_reviews_table                         -> migration 2026_10_25_000001
+# create_exam_mark_submissions_table              -> migration 2026_10_24_000004
+# create_exam_papers_table                        -> migration 2026_10_24_000001
+# create_exam_result_sms_table                    -> migration 2026_10_24_000003
+# create_institution_module_subscriptions_table   -> migration 2026_11_04_000001
+# create_learner_profiles_table                   -> migration 2026_10_26_000003
+# create_module_prices_table                      -> migration 2026_11_04_000001
+# create_qb_blueprint_items_table                 -> migration 2026_10_19_000005
+# create_qb_blueprints_table                      -> migration 2026_10_19_000005
+# create_qb_curriculum_nodes_table                -> migration 2026_10_21_000001
+# create_qb_curriculum_version_class_level_table  -> migration 2026_10_22_000001
+# create_qb_curriculum_versions_table             -> migration 2026_10_21_000001
+# create_qb_exam_batches_table                    -> migration 2026_10_27_000001
+# create_qb_import_batches_table                  -> migration 2026_10_19_000001
+# create_qb_import_records_table                  -> migration 2026_10_19_000001
+# create_qb_omr_forms_table                       -> migration 2026_10_19_000006
+# create_qb_omr_scans_table                       -> migration 2026_10_19_000007
+# create_qb_paper_folders_table                   -> migration 2026_10_19_000003
+# create_qb_paper_revisions_table                 -> migration 2026_11_03_000001
+# create_qb_paper_variants_table                  -> migration 2026_10_19_000004
+# create_qb_practice_attempts_table               -> migration 2026_10_29_000001
+# create_qb_question_curriculum_nodes_table       -> migration 2026_10_21_000001
+# create_qb_student_scope_access_table            -> migration 2026_10_28_000001
+# create_staff_attendance_grants_table            -> migration 2026_11_01_000001
+# create_subscription_invoice_lines_table         -> migration 2026_11_04_000001
 # column additions folded into their create migrations: settlements, online_payments (student_id/parent_user_id now NULL), payments (method += coupon), subscription_invoices,
 # teachers, institution_events, users, subjects, programs, batches, expenses, certificates, tc_certificates, notices, sms_logs, admission_leads
 

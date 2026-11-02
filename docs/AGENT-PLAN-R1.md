@@ -245,7 +245,7 @@ CREATE TABLE institutions (
     name VARCHAR(150) NOT NULL,
     slug VARCHAR(100) UNIQUE NOT NULL,           -- default subdomain: {slug}.APP_BASE_DOMAIN
     -- R6: custom domains live in institution_domains (see docs/modules/custom-domain.md)
-    institution_type ENUM('school','college','coaching','private_batch') NOT NULL DEFAULT 'school',
+    institution_type ENUM('school','college','coaching','private_batch','learners') NOT NULL DEFAULT 'school',   -- D165: learners = the platform's self-registered students
     enabled_modules JSON NULL,                   -- Super Admin overrides: {"hostel": true, "library": false}
     terminology JSON NULL,                       -- label overrides: {"batch": {"bn": "শাখা", "en": "Section"}}
     settings JSON NULL,                          -- {"fee_proration": "none", "use_programs": true, ...}
@@ -2029,8 +2029,11 @@ CREATE TABLE qb_question_occurrences (
     board VARCHAR(50) NULL,
     institution_name VARCHAR(200) NULL,
     exam_type VARCHAR(50) NULL,
+    question_number VARCHAR(30) NULL,
+    set_label VARCHAR(30) NULL,
     year SMALLINT UNSIGNED NULL,
     note VARCHAR(200) NULL,
+    page_reference VARCHAR(100) NULL,
     INDEX idx_qb_occurrence_board_year (board, year),
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id)
 );
@@ -2108,7 +2111,7 @@ CREATE TABLE qb_resources (
 CREATE TABLE qb_prices (                                     -- a change is a NEW row (effective_from); old purchases keep their price
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     audience ENUM('institution','student') NOT NULL,
-    item_kind ENUM('question_answer','concept','resource_slide','resource_book','resource_pdf','quiz_package') NOT NULL,
+    item_kind ENUM('question_answer','concept','resource_slide','resource_book','resource_pdf','quiz_package','class_pack','subject_pack','chapter_pack') NOT NULL,   -- D165 ST.3: *_pack = a student's whole class / class subject / chapter
     qb_question_type_id BIGINT UNSIGNED NULL,                -- question_answer: per question type
     amount DECIMAL(10,2) NOT NULL,
     effective_from TIMESTAMP NOT NULL,
@@ -2177,12 +2180,15 @@ CREATE TABLE qb_student_unlocks (
     item_id BIGINT UNSIGNED NOT NULL,
     price DECIMAL(10,2) NOT NULL,
     reason ENUM('paid','free','partial_free') NOT NULL,
+    expires_at TIMESTAMP NULL,                                   -- D165 (3) ST.2: NULL = bought before validity existed
+    qb_exam_batch_id BIGINT UNSIGNED NULL,                       -- the batch whose exam end set expires_at (moves with it)
     qb_student_order_id BIGINT UNSIGNED NULL,
     created_at TIMESTAMP NULL,
-    UNIQUE KEY unique_qb_student_unlock (student_user_id, item_type, item_id),
+    INDEX idx_qb_student_unlock_item (student_user_id, item_type, item_id, expires_at),   -- ST.2: no longer unique (an expired item can be bought again)
     INDEX idx_qb_student_unlocks_inst (institution_id, student_user_id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
-    FOREIGN KEY (qb_student_order_id) REFERENCES qb_student_orders(id)
+    FOREIGN KEY (qb_student_order_id) REFERENCES qb_student_orders(id),
+    FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
 );
 
 CREATE TABLE qb_writer_earnings (                            -- D66: a share of every sale, written in the sale's transaction; never deleted (D32)
@@ -2249,6 +2255,7 @@ CREATE TABLE qb_papers (
     instructions_json JSON NULL,
     status ENUM('draft','final') NOT NULL DEFAULT 'draft',
     sets_count TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    qb_paper_folder_id BIGINT UNSIGNED NULL,                 -- D126: the folder it sits in (none = the top level)
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     INDEX idx_qb_papers_owner (institution_id, created_by),

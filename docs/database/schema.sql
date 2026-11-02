@@ -2728,8 +2728,7 @@ CREATE TABLE qb_chapter_class_level (
     qb_class_level_id BIGINT UNSIGNED NOT NULL,
     PRIMARY KEY (qb_chapter_id, qb_class_level_id),
     FOREIGN KEY (qb_chapter_id) REFERENCES qb_chapters(id),
-    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
-    FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
 );
 CREATE TABLE qb_topics (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -2838,8 +2837,7 @@ CREATE TABLE qb_question_class_level (
     qb_class_level_id BIGINT UNSIGNED NOT NULL,
     PRIMARY KEY (qb_question_id, qb_class_level_id),
     FOREIGN KEY (qb_question_id) REFERENCES qb_questions(id),
-    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
-    FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
 );
 CREATE TABLE qb_question_occurrences (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -3410,8 +3408,7 @@ CREATE TABLE qb_curriculum_version_class_level (             -- D145: class appl
     PRIMARY KEY (qb_curriculum_version_id, qb_class_level_id),
     INDEX idx_qb_curriculum_version_classes (qb_class_level_id, qb_curriculum_version_id),
     FOREIGN KEY (qb_curriculum_version_id) REFERENCES qb_curriculum_versions(id),
-    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id),
-    FOREIGN KEY (qb_exam_batch_id) REFERENCES qb_exam_batches(id)
+    FOREIGN KEY (qb_class_level_id) REFERENCES qb_class_levels(id)
 );
 
 CREATE TABLE qb_curriculum_nodes (                            -- D138/D139: arbitrary-depth Part/Unit/Lesson/Text/Topic/Other tree
