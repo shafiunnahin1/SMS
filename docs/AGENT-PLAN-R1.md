@@ -2855,7 +2855,7 @@ GET /public/plans -> SignupController@plans
 
 **পরীক্ষা:** `SignupModeTest`
 
-> **⛔ অবরুদ্ধ (BLOCKED) — এই task এখন বানাবেন না:** **D47:** সাইন-আপে plan বাছাই ও plan-ভিত্তিক ট্রায়াল বাতিল হচ্ছে; মডিউল-ভিত্তিক সাবস্ক্রিপশনের স্পেক (`docs/PRICING-MODEL.md` PM-1) লেখা ও মালিক-অনুমোদিত না হওয়া পর্যন্ত **বানানো নিষিদ্ধ**। **D55/D60 (2026-10-10):** সাবস্ক্রিপশন সব মডিউলের পরে; ক্রমে এখন 9.1-এর পরে।
+> **⛔ অবরুদ্ধ (BLOCKED) — এই task এখন বানাবেন না:** **D190:** প্রতিস্থাপিত — বন্ধ, বানানো হবে না। এর কাজ D90 (প্রকাশ্য সাইন-আপ, যোগাযোগ যাচাই, Super Admin অনুমোদন), D187 SUB.1–SUB.3 (মডিউল-ট্রায়াল, দাম, গ্রেস/read-only, বিল, কুপন, bKash, ইনভয়েস, পাতা) ও D58 (SMS-ক্রেডিট কেনা)-এ হয়েছে।
 
 **Done When:** চার type-এর প্রতিটিতে signup → নিজ subdomain-এ login → wizard → dashboard; default Program/Batch ও preset type অনুযায়ী।
 
@@ -2962,7 +2962,7 @@ POST /subscription/checkout -> SubscriptionController@checkout [role:admin]
 
 **পরীক্ষা:** `SubscriptionLimitTest`
 
-> **⛔ অবরুদ্ধ (BLOCKED) — এই task এখন বানাবেন না:** **D47:** plan-ভিত্তিক সাবস্ক্রিপশন ও বিলিং (`subscription_plans`, `max_*`, plan-গেট) বাতিল; মডিউল-ভিত্তিক সাবস্ক্রিপশন-স্পেক (PM-1) লেখার আগে **বানানো নিষিদ্ধ**। **D55/D60 (2026-10-10):** সাবস্ক্রিপশন সব মডিউলের পরে; ক্রমে এখন 9.1-এর পরে।
+> **⛔ অবরুদ্ধ (BLOCKED) — এই task এখন বানাবেন না:** **D190:** প্রতিস্থাপিত — বন্ধ, বানানো হবে না। এর কাজ D90 (প্রকাশ্য সাইন-আপ, যোগাযোগ যাচাই, Super Admin অনুমোদন), D187 SUB.1–SUB.3 (মডিউল-ট্রায়াল, দাম, গ্রেস/read-only, বিল, কুপন, bKash, ইনভয়েস, পাতা) ও D58 (SMS-ক্রেডিট কেনা)-এ হয়েছে।
 
 **Done When:** sandbox-এ subscription payment → মেয়াদ বাড়ে + invoice + status `active`; মেয়াদ শেষ → grace → suspended, কিন্তু suspended admin তখনও login ও পেমেন্ট করে আবার চালু করতে পারে; callback central domain-এ ফিরে tenant-এর primary URL-এ redirect।
 

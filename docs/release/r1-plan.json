@@ -1551,7 +1551,7 @@
    ],
    "done_when": "চার type-এর প্রতিটিতে signup → নিজ subdomain-এ login → wizard → dashboard; default Program/Batch ও preset type অনুযায়ী।",
    "scope_note": "Self-signup + onboarding wizard. SIGNUP_MODE=invite|open (env) so the public switch can be flipped without code.",
-   "blocked": "**D47:** সাইন-আপে plan বাছাই ও plan-ভিত্তিক ট্রায়াল বাতিল হচ্ছে; মডিউল-ভিত্তিক সাবস্ক্রিপশনের স্পেক (`docs/PRICING-MODEL.md` PM-1) লেখা ও মালিক-অনুমোদিত না হওয়া পর্যন্ত **বানানো নিষিদ্ধ**। **D55/D60 (2026-10-10):** সাবস্ক্রিপশন সব মডিউলের পরে; ক্রমে এখন 9.1-এর পরে।",
+   "blocked": "**D190:** প্রতিস্থাপিত — বন্ধ, বানানো হবে না। এর কাজ D90 (প্রকাশ্য সাইন-আপ, যোগাযোগ যাচাই, Super Admin অনুমোদন), D187 SUB.1–SUB.3 (মডিউল-ট্রায়াল, দাম, গ্রেস/read-only, বিল, কুপন, bKash, ইনভয়েস, পাতা) ও D58 (SMS-ক্রেডিট কেনা)-এ হয়েছে।",
    "verify": [
     "php artisan test --filter=SignupModeTest",
     "npm test && npm run lint:theme",
@@ -1591,7 +1591,7 @@
    ],
    "done_when": "sandbox-এ subscription payment → মেয়াদ বাড়ে + invoice + status `active`; মেয়াদ শেষ → grace → suspended, কিন্তু suspended admin তখনও login ও পেমেন্ট করে আবার চালু করতে পারে; callback central domain-এ ফিরে tenant-এর primary URL-এ redirect।",
    "scope_note": "Plans, trial, grace, suspend, invoices, SSLCommerz subscription payment, SMS-credit purchase. Tax/VAT parameter fixed at 0 until OD-4.",
-   "blocked": "**D47:** plan-ভিত্তিক সাবস্ক্রিপশন ও বিলিং (`subscription_plans`, `max_*`, plan-গেট) বাতিল; মডিউল-ভিত্তিক সাবস্ক্রিপশন-স্পেক (PM-1) লেখার আগে **বানানো নিষিদ্ধ**। **D55/D60 (2026-10-10):** সাবস্ক্রিপশন সব মডিউলের পরে; ক্রমে এখন 9.1-এর পরে।",
+   "blocked": "**D190:** প্রতিস্থাপিত — বন্ধ, বানানো হবে না। এর কাজ D90 (প্রকাশ্য সাইন-আপ, যোগাযোগ যাচাই, Super Admin অনুমোদন), D187 SUB.1–SUB.3 (মডিউল-ট্রায়াল, দাম, গ্রেস/read-only, বিল, কুপন, bKash, ইনভয়েস, পাতা) ও D58 (SMS-ক্রেডিট কেনা)-এ হয়েছে।",
    "verify": [
     "php artisan test --filter=SubscriptionLimitTest",
     "npm test && npm run lint:theme",
