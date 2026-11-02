@@ -72,7 +72,7 @@ test('Grade 8 mathematics questions from the PDF are entered in the editor and i
     await form.locator('textarea[name="question_text"]').fill(question.question_text)
     await form.locator('textarea[name="explanation_text"]').fill(question.explanation)
     for (const [index, option] of question.options.entries()) {
-      await form.locator(`input[name="options.${index}.content_text"]`).fill(option)
+      await form.locator(`[name="options.${index}.content_text"]`).fill(option)
       const correct = form.locator(`input[name="options.${index}.is_correct"]`)
       if (index === question.correct) await correct.check()
       else if (await correct.isChecked()) await correct.uncheck()

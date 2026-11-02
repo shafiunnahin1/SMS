@@ -27,7 +27,7 @@ test('R2.1.6 an OMR form for a final paper: lock, print, scan, review, results',
   await form.locator('select[name="qb_question_type_id"]').selectOption({ label: 'বহুনির্বাচনী প্রশ্ন' })
   await form.locator('select[name="qb_subject_id"]').selectOption({ index: 1 })
   await form.locator('textarea[name="question_text"]').fill(`৫ - ২ = ? ${tag}`)
-  for (const [i, text] of ['৩', '২', '৭', '১'].entries()) await form.locator(`input[name="options.${i}.content_text"]`).fill(text)
+  for (const [i, text] of ['৩', '২', '৭', '১'].entries()) await form.locator(`[name="options.${i}.content_text"]`).fill(text)
   await page.locator('[data-action="save"]').click()
   await expect(page).toHaveURL(/\/writer\/questions\/\d+$/)
   await page.locator('[data-action="submit"]').click()

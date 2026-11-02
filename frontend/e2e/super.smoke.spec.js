@@ -50,9 +50,9 @@ test('5.3 super admin: institutions, wallet, modules, settings', async ({ page }
   await page.locator('[data-module="exams"]').selectOption('off')
   await expect(page.locator('[data-module="exams"]')).toHaveValue('off')
 
-  // D90: the new institution stays inactive until its first admin activates, and cannot be suspended before that;
-  // suspend an active demo institution instead and switch it back (workers: 1, so no other flow uses it meanwhile)
-  await expect(page.locator('[data-testid="institution-detail"] [data-status]').first()).toHaveAttribute('data-status', 'inactive')
+  // D170 (3) / D170.1: a Super Admin-created institution and its first admin are active at once (temporary password, no OTP);
+  // the suspend/restore check still uses an existing demo institution (workers: 1, so no other flow uses it meanwhile)
+  await expect(page.locator('[data-testid="institution-detail"] [data-status]').first()).toHaveAttribute('data-status', 'active')
   await page.goto('/super-admin/institutions')
   await page.getByRole('searchbox').fill('rahim-sir')
   await page.locator('main').getByText('rahim-sir').first().click()

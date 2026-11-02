@@ -16,7 +16,7 @@ test('QB.10 a public quiz: a visitor checks it, a student takes it and keeps the
   await form.locator('select[name="qb_question_type_id"]').selectOption({ label: 'বহুনির্বাচনী প্রশ্ন' })
   await form.locator('select[name="qb_subject_id"]').selectOption({ index: 1 })
   await form.locator('textarea[name="question_text"]').fill(`৩ + ১ = ? ${tag}`)
-  for (const [i, text] of ['৪', '৫', '৬', '৭'].entries()) await form.locator(`input[name="options.${i}.content_text"]`).fill(text)   // the first is marked right
+  for (const [i, text] of ['৪', '৫', '৬', '৭'].entries()) await form.locator(`[name="options.${i}.content_text"]`).fill(text)   // the first is marked right
   await page.locator('[data-action="save"]').click()
   await expect(page).toHaveURL(/\/writer\/questions\/\d+$/)
   await page.locator('[data-action="submit"]').click()

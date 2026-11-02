@@ -32,7 +32,7 @@ test('QB.3 editor: an MCQ with maths and a picture, a creative question, live pr
   await expect(form.locator('textarea[name="question_text"]')).toHaveValue(/\$\\mathbb\{a\+b\}\$$/)
 
   // the four options come pre-labelled ক-ঘ, the first marked right
-  for (const [i, text] of ['$2$', '$-2$', '$4$', '$0$'].entries()) await form.locator(`input[name="options.${i}.content_text"]`).fill(text)
+  for (const [i, text] of ['$2$', '$-2$', '$4$', '$0$'].entries()) await form.locator(`[name="options.${i}.content_text"]`).fill(text)
   const questionText = form.locator('textarea[name="question_text"]')
   await questionText.fill(`<div>${await questionText.inputValue()}</div><div>দ্বিতীয় অনুচ্ছেদ</div>`)
   await questionText.evaluate(el => el.setSelectionRange(el.value.length, el.value.length))

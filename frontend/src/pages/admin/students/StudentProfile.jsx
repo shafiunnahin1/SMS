@@ -72,7 +72,8 @@ function ProfileForm({ student, onSaved }) {
   })
   const onSubmit = async (v) => {
     try {
-      await api.post(`/students/${student.id}`, toFormData({ ...v, photo }, 'put'), multipart)
+      const { student_id: _fixed, ...profile } = v                 // D160: an ID never changes after it is given - the server refuses it
+      await api.post(`/students/${student.id}`, toFormData({ ...profile, photo }, 'put'), multipart)
       useUiStore.getState().addToast(t('common.saved'))
       onSaved()
     } catch (e) {
@@ -84,7 +85,7 @@ function ProfileForm({ student, onSaved }) {
     <Card>
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3 sm:grid-cols-2" noValidate>
         {text('name')}
-        {text('student_id', { ltr: true })}
+        {text('student_id', { ltr: true, readOnly: true })}
         {text('guardian_phone', { ltr: true, inputMode: 'tel' })}
         {text('father_name')}
         {text('mother_name')}
