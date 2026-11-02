@@ -577,6 +577,12 @@ final class DepartmentRouteCatalog
     ];
 
     /** D180 (6) QBO.2: a paper's settings revisions (read-only list); staff need the paper's own "show" duty key (D101) - no new key. */
+    // D187 SUB.1: Super Admin module prices
+    public const D187 = [
+        ['method' => 'GET|HEAD', 'uri' => 'api/v1/super/module-prices', 'action' => 'App\\Http\\Controllers\\SuperAdmin\\ModulePriceController@index', 'current_roles' => ['super_admin'], 'preserve_nonstaff_roles' => ['super_admin'], 'current_module_feature_gates' => [], 'selector_variants' => [], 'resource_scope' => 'central host; platform module prices only', 'approval' => 'D187', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
+        ['method' => 'POST', 'uri' => 'api/v1/super/module-prices', 'action' => 'App\\Http\\Controllers\\SuperAdmin\\ModulePriceController@store', 'current_roles' => ['super_admin'], 'preserve_nonstaff_roles' => ['super_admin'], 'current_module_feature_gates' => [], 'selector_variants' => [], 'resource_scope' => 'central host; platform module prices only', 'approval' => 'D187', 'staff_mode' => 'preserve_nonstaff_boundary', 'permission_options' => []],
+    ];
+
     public const D180 = [
         ['method' => 'GET|HEAD', 'uri' => 'api/v1/question-bank/papers/{id}/revisions', 'action' => 'App\\Http\\Controllers\\QuestionBank\\QbPaperController@revisions', 'current_roles' => ['admin', 'institution_staff', 'teacher'], 'preserve_nonstaff_roles' => [], 'current_module_feature_gates' => ['App\\Http\\Middleware\\ModuleMiddleware:question_bank'], 'selector_variants' => [], 'resource_scope' => 'D180 tenant record + existing service/ownership constraints; no privilege from former role', 'approval' => 'D180', 'staff_mode' => 'exact_duty_permission', 'permission_options' => ['staff.qb_paper.show']],
     ];

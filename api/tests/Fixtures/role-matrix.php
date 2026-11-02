@@ -204,6 +204,8 @@ return [
     'GET api/v1/super/sms-settings' => ['super_admin'],
     'GET api/v1/super/ai-settings' => ['super_admin'],                              // D164 AI-P1.5
     'PUT api/v1/super/ai-settings' => ['super_admin'],
+    'GET api/v1/super/module-prices' => ['super_admin'],                           // D187 SUB.1
+    'POST api/v1/super/module-prices' => ['super_admin'],
     'GET api/v1/super/ai-report' => ['super_admin'],
     'GET api/v1/super/ai-help-articles' => ['super_admin'],                         // D166 AI-Q4 part 2
     'POST api/v1/super/ai-help-articles' => ['super_admin'],

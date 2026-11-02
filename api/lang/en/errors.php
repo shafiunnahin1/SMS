@@ -13,6 +13,7 @@ return [
     'role_not_available'    => 'This role is not available here yet.',
     'must_change_password'  => 'Please change your password first.',
     'module_disabled'       => 'This module is not enabled for your institution.',
+    'module_read_only'      => 'This module\'s subscription has ended. You can view and export its data; pay to make changes again.',
     'feature_not_available' => 'This feature is not available for your institution.',
     'subscription_expired'  => 'Your subscription has expired. Please renew to continue.',
     'invalid_credentials'   => 'Wrong login details, or the account is temporarily locked. Please try again later.',

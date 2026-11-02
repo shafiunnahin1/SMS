@@ -3930,3 +3930,49 @@ CREATE TABLE staff_attendance_grants (                         -- D169 (4) STW.5
     FOREIGN KEY (granted_by) REFERENCES users(id),
     FOREIGN KEY (revoked_by) REFERENCES users(id)
 );
+
+-- D187 SUB.1: module-based subscriptions. One price per module (D47), append-only (a change is a new row); prices start at 0.
+CREATE TABLE module_prices (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    module_key VARCHAR(50) NOT NULL,
+    monthly_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+    yearly_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+    effective_from TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    INDEX idx_module_prices_key_from (module_key, effective_from),
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE institution_module_subscriptions (                -- D187: trial 30 days, grace 7 days, then read-only; data never deleted
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    module_key VARCHAR(50) NOT NULL,
+    status ENUM('trial','active','grace','read_only','cancelled') NOT NULL DEFAULT 'trial',
+    billing_cycle ENUM('monthly','yearly') NULL,
+    trial_ends_at TIMESTAMP NULL,
+    current_period_end TIMESTAMP NULL,
+    cancel_at_period_end TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_institution_module_subscriptions (institution_id, module_key),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id)
+);
+
+CREATE TABLE subscription_invoice_lines (                      -- D187: one module's charge on an invoice; never updated or deleted (D32)
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    subscription_invoice_id BIGINT UNSIGNED NOT NULL,
+    module_key VARCHAR(50) NOT NULL,
+    billing_cycle ENUM('monthly','yearly') NOT NULL,
+    period_start DATE NOT NULL,
+    period_end DATE NOT NULL,
+    days SMALLINT UNSIGNED NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    discount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    INDEX idx_subscription_invoice_lines_invoice (institution_id, subscription_invoice_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (subscription_invoice_id) REFERENCES subscription_invoices(id)
+);

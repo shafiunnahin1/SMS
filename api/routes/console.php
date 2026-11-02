@@ -31,3 +31,6 @@ Artisan::command('ops:alert-test', function () {
 
 // D166 (5) AI-Q5: chat photos are kept one day
 \Illuminate\Support\Facades\Schedule::command('ai:attachments-purge')->hourly()->withoutOverlapping();
+
+// D187 SUB.1: module subscriptions' trial / grace / read-only state
+\Illuminate\Support\Facades\Schedule::command('subscriptions:refresh')->dailyAt('00:40')->withoutOverlapping();

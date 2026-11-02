@@ -88,6 +88,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/ai-help-articles/{id}/approve', [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'superApprove'])->whereNumber('id');
         Route::post('/ai-help',                       [\App\Http\Controllers\Ai\AiHelpArticleController::class, 'superAsk'])->middleware('throttle:60,1');
         Route::put('/sms-settings',                   [UniversalSmsController::class, 'update']);
+        // D187 SUB.1: each paid module's one price (monthly / yearly); a change is a new row
+        Route::get('/module-prices',                  [\App\Http\Controllers\SuperAdmin\ModulePriceController::class, 'index']);
+        Route::post('/module-prices',                 [\App\Http\Controllers\SuperAdmin\ModulePriceController::class, 'store']);
         // Step 8.1 (D27, privacy-and-consent.md 5.3): remove an institution for good - manual, two steps
         Route::get('/tenant-purge/candidates',                      [TenantPurgeController::class, 'candidates']);
         Route::post('/tenant-purge/{institutionId}/dry-run',        [TenantPurgeController::class, 'dryRun'])->whereNumber('institutionId');

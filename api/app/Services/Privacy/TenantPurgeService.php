@@ -27,7 +27,7 @@ class TenantPurgeService
         'fee_refunds', 'cash_book_closings', 'expenses', 'results', 'exam_subjects', 'attendances', 'fee_payments', 'fee_structures', 'consents', 'parent_student', 'enrollments',
         'import_rows', 'import_jobs', 'sms_logs', 'sms_credit_transactions', 'batch_teachers', 'teacher_subjects', 'exams',
         'students', 'batches', 'subjects', 'teachers', 'programs', 'fee_categories', 'holidays', 'academic_years',
-        'subscription_invoices', 'payments', 'audit_logs', 'users',
+        'subscription_invoice_lines', 'institution_module_subscriptions', 'subscription_invoices', 'payments', 'audit_logs', 'users',   // D187 lines before invoices
     ];
 
     /** Since when the institution has been out of service: the last suspension (audit) or the subscription's expiry */
