@@ -1,5 +1,5 @@
 # Owner-run only: the agent must not execute this script.
-# D187: (1) the decision row, (2) tasks SUB.1 -> SUB.2 -> SUB.3 in the guard (after PDFW.1) with SUB.1's three new tables. Two commits; no push.
+# D187: (1) the decision row, (2) tasks SUB.1 -> SUB.2 -> SUB.3 in the guard (after PDFW.1) with SUB.1's three new tables and SUB.2's coupon tables. Two commits; no push.
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $repo
@@ -19,7 +19,7 @@ $anchor = 'D186'
 $content = [regex]::Replace($content, "(?m)^(\| $anchor \|[^\r\n]*)", ('$1' + $newline + $rows[0]))
 [IO.File]::WriteAllText($registry, $content, $utf8)
 git add -- docs/LOCKED-DECISIONS.md
-git commit -m "decision: approve D187 module-based subscriptions and billing" -m "Change-Request: D187"
+git commit -m "decision: approve D187 module-based subscriptions, billing and coupons" -m "Change-Request: D187"
 if ($LASTEXITCODE -ne 0) { throw 'Approval commit did not complete; inspect git status.' }
 
 # 2. the guard: SUB.1 after PDFW.1, then SUB.2, SUB.3; trailer D187; SUB.1's tables
@@ -34,7 +34,7 @@ if (-not $g.Contains($t)) { throw 'Guard validation failed (trailers).' }
 $g = $g.Replace($t, "$t, 'SUB.1': ['D187'], 'SUB.2': ['D187'], 'SUB.3': ['D187']")
 $t = "'QBO.2': {'qb_paper_revisions': 'D180', 'qb_paper_variants': 'D180', 'qb_omr_forms': 'D180'}"
 if (-not $g.Contains($t)) { throw 'Guard validation failed (tables).' }
-$g = $g.Replace($t, "$t, 'SUB.1': {'module_prices': 'D187', 'institution_module_subscriptions': 'D187', 'subscription_invoice_lines': 'D187'}")
+$g = $g.Replace($t, "$t, 'SUB.1': {'module_prices': 'D187', 'institution_module_subscriptions': 'D187', 'subscription_invoice_lines': 'D187'}, 'SUB.2': {'coupons': 'D187', 'coupon_redemptions': 'D187'}")
 [IO.File]::WriteAllText($guard, $g, $utf8)
 python infra/guard/test_guard.py
 if ($LASTEXITCODE -ne 0) { git checkout -- infra/guard/agent_guard.py; throw 'Guard self-test failed; the change was undone.' }
