@@ -203,7 +203,9 @@
   ]
  },
  "optional_refs_to_deferred_tables": [
-  "fee_payments.online_payment_id -> online_payments"
+  "fee_payments.online_payment_id -> online_payments",
+  "qb_papers.qb_paper_folder_id -> qb_paper_folders",
+  "qb_student_unlocks.qb_exam_batch_id -> qb_exam_batches"
  ],
  "roles": [
   "super_admin",

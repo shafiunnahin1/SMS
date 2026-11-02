@@ -46,6 +46,7 @@
 | `class_materials.file_path` | institution | private | `institutions/{inst}/learning/materials/{uuid}.{ext}` |
 | `notices.attachment` | institution | private | `institutions/{inst}/notices/{uuid}.{ext}` |
 | `expenses.receipt_path` | institution | private | `institutions/{inst}/finance/expenses/{uuid}.{ext}` |
+| `qb_omr_scans.image_path` | institution | private | `institutions/{inst}/question-bank/omr/{form_id}/{uuid}.{ext}` (D127: ছাত্রের OMR-এর ছবি; ঐচ্ছিক) |
 | `visitor_logs.photo` | visitor | private | `institutions/{inst}/visitors/{uuid}.{ext}` (ব্যক্তিগত তথ্য; `visitor_logs`-এর retention-এর সাথে মোছা) |
 | `staff_members.photo` | staff | private | `institutions/{inst}/staff/{id}/photo-{uuid}.{ext}` |
 | `teacher_trainings.certificate_path` | institution | private | `institutions/{inst}/hr/training/{uuid}.{ext}` |

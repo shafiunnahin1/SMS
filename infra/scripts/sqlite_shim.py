@@ -15,7 +15,7 @@ while i < len(args):
 path = lambda name: os.path.join(os.environ.get('SHIM_DIR', '/tmp'), f'lms_shim_{name}.db')
 def fail(msg): sys.stderr.write('ERROR: ' + msg + '\n'); sys.exit(1)
 def translate(s):
-    s = re.sub(r'--[^\n]*', '', s); s = re.sub(r"ENUM\([^)]*\)", "TEXT", s)
+    s = re.sub(r'--[^\n]*', '', s); s = re.sub(r"ENUM\([^)]*\)", "TEXT", s); s = re.sub(r"ALTER TABLE\s+\w+\s+ADD FULLTEXT INDEX[^;]*;", "", re.sub(r",\s*\n\s*FULLTEXT INDEX\s+\w+\s*\([^)]*\)(?:\s+WITH PARSER\s+\w+)?", "", s))
     s = re.sub(r"\bBIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY\b", "INTEGER PRIMARY KEY AUTOINCREMENT", s); s = re.sub(r"\b(BIGINT|TINYINT|INT) UNSIGNED\b", r"\1", s)
     s = re.sub(r"\bON UPDATE CURRENT_TIMESTAMP\b", "", s); s = re.sub(r"\bUNIQUE KEY\s+\w+\s*\(", 'UNIQUE (', s); s = re.sub(r",?\s*\n\s*(?:INDEX|KEY)\s+\w+\s*\([^)]*\)", '', s)
     return s

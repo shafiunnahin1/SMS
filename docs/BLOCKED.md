@@ -278,7 +278,7 @@ Required next input/action: resolve the existing schema/deep-verifier and hot-qu
 D188 items (1)-(5) are done in SVR.1 (schema FK fix, FULLTEXT in every SQLite translator incl. gen_invariants/perf-check, migration inventory + DATABASE grouping + tenant-less exceptions, D12 allowance, R1 plan regenerated; also the export map: two new `*_by` user references, D187 billing tables excluded, map regenerated). `verify.py . --deep` now runs to the end (it crashed before) with 10 FAIL, down from a crash plus 13. Left, each needs owner scope (not D188):
 1. decision rows D140, D152, D156 missing (owner question in `owner/decision-D188-spec-verify-repair.md`);
 2. smoke and perf-check DRY RUNs call the Windows launcher `py -3.14` (`MYSQL_CMD_STR`) - they cannot run on Linux; the invariant-uniqueness deep check depends on that dry run;
-3. `docs/modules/file-storage.md` lacks `qb_omr_scans.image_path` (D127) - a module-spec text change;
+3. `docs/architecture/file-storage.md` lacks `qb_omr_scans.image_path` (D127) - a module-spec text change;
 4. the documented optional references to deferred tables lack `fee_payments.online_payment_id`, `qb_papers.qb_paper_folder_id`, `qb_student_unlocks.qb_exam_batch_id`;
 5. `RELEASE-1.md` table count (69 of 219) and the `RELEASE-3.md` `config/release.php` sample (now also question_bank, quiz, ai_assistant, …) are out of date;
 6. generated `AGENT-PLAN-R3.md` / `r3-plan.json` and `RELEASE-FULL.md` / `AGENT-PLAN-FULL-DRAFT.md` / `full-audit.json` are stale (their generators would rewrite release documents).

@@ -289,11 +289,12 @@ my=dc['services']['mysql']; cmd=' '.join(my['command'])
 ok(my['image'].startswith('mysql:8') and 'utf8mb4_unicode_ci' in cmd and 'STRICT_TRANS_TABLES' in cmd and 'healthcheck' in my,'docker-compose.dev.yml: MySQL 8 (not MariaDB), utf8mb4_unicode_ci, Laravel-strict sql_mode, healthcheck')
 ok({'mysql','redis'}<=set(dc['services']),'docker-compose.dev.yml defines mysql and redis')
 bsh=shutil.which('bash')
+_SHIM_PY='py -3.14' if os.name=='nt' else 'python3'   # D189 (1): the Windows launcher on Windows, python3 elsewhere
 if bsh:
     ok(subprocess.run([bsh,'-n',os.path.join(R,'infra/scripts/mysql-smoke.sh')]).returncode==0,'infra/scripts/mysql-smoke.sh: bash syntax')
     g=subprocess.run([sys.executable,os.path.join(R,'infra/scripts/gen_invariants.py'),R,'--check'],capture_output=True,text=True)
     ok(g.returncode==0,f'infra/scripts/invariants.tsv is generated from the current schema: {g.stdout.strip()}')
-    shimdir=tempfile.mkdtemp(); env=dict(os.environ,SMOKE_ENGINE='sqlite',MYSQL_CMD_STR='py -3.14 -m infra.scripts.sqlite_shim',SHIM_DIR=shimdir)
+    shimdir=tempfile.mkdtemp(); env=dict(os.environ,SMOKE_ENGINE='sqlite',MYSQL_CMD_STR=_SHIM_PY+' -m infra.scripts.sqlite_shim',SHIM_DIR=shimdir)
     sm=subprocess.run([bsh,os.path.join(R,'infra/scripts/mysql-smoke.sh')],capture_output=True,text=True,encoding='utf-8',errors='replace',env=env,cwd=R)
     mres=re.search(r'(\d+) passed, (\d+) failed, (\d+) skipped',sm.stdout)
     ok(sm.returncode==0 and mres and mres.group(2)=='0' and int(mres.group(1))>=20,f'smoke script DRY RUN (SQLite shim - proves the script\'s mechanics, NOT MySQL): {mres.group(0) if mres else sm.stdout[-120:]}')
@@ -315,7 +316,7 @@ for name_,tb_,cols_ in re.findall(r"^CREATE INDEX (idx_\w+) ON (\w+)\(([^)]*)\);
     if tb_ not in "\n".join(open(os.path.join(R,'infra/scripts/hot-queries.tsv'),encoding='utf-8')): unjust.append(name_)
 ok(not unjust,f'every R14 index belongs to a table that appears in the hot-query catalogue (no speculative indexes) {unjust}')
 if '--deep' in sys.argv:
-    pe=dict(os.environ,SMOKE_ENGINE='sqlite',MYSQL_CMD_STR='py -3.14 -m infra.scripts.sqlite_shim',SHIM_DIR=tempfile.mkdtemp())
+    pe=dict(os.environ,SMOKE_ENGINE='sqlite',MYSQL_CMD_STR=_SHIM_PY+' -m infra.scripts.sqlite_shim',SHIM_DIR=tempfile.mkdtemp())
     pc=subprocess.run([sys.executable,os.path.join(R,'infra/scripts/perf-check.py'),'--scale','0.04','--big-rows','10000'],capture_output=True,text=True,encoding='utf-8',errors='replace',env=pe,cwd=R)
     ok(pc.returncode==0 and 'returned 0 rows' not in pc.stdout and 'NOTE:' not in pc.stdout,f'perf-check DRY RUN (SQLite, scale 0.04 - proves the tool\'s logic, NOT MySQL timing): {pc.stdout.strip().splitlines()[-1] if pc.stdout.strip() else pc.stderr[-120:]}')
 
