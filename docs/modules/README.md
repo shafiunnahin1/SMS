@@ -40,7 +40,7 @@
 | `homework` | হোমওয়ার্ক ও জমা | [`extended-features.md`](extended-features.md) | Phase 7 · #3 | core | ✓✓✓– |
 | `academic_calendar` | একাডেমিক ক্যালেন্ডার, ছুটি, seat plan | [`academic-calendar.md`](academic-calendar.md) | Phase 7 · #1 | core | ✓✓–– |
 | `promotion_tc` | প্রমোশন, TC, সেশন | [`promotion-tc.md`](promotion-tc.md), [`academic-sessions.md`](academic-sessions.md) | Phase 7 · #4 | core | ✓✓–– |
-| `admit_card` | প্রবেশপত্র (exam_subjects-এর সময়সূচি থেকে) | [`advanced-features.md`](advanced-features.md) | Phase 7 · #5 | core | ✓✓–– |
+| `admit_card` | প্রবেশপত্র (exam_subjects-এর সময়সূচি থেকে) | [`advanced-features.md`](advanced-features.md) | Phase 7 · #5 | core | ✓✓✓– |
 | `teacher_attendance` | শিক্ষকের উপস্থিতি | [`hr-payroll.md`](hr-payroll.md) | Phase 7 · #6 | core | ✓✓✓– |
 | `hr_payroll` | স্টাফ, বেতন-কাঠামো, ইনক্রিমেন্ট/ডিক্রিমেন্ট, বোনাস, অগ্রিম, payroll, payslip, PF | [`staff-payroll.md`](staff-payroll.md), [`hr-payroll.md`](hr-payroll.md) (শুধু ছুটি) | Phase 7 · #6 | plan | ✓✓✓– |
 | `fee_installment` | ফি কিস্তি | [`extended-features.md`](extended-features.md) | Phase 7 · #7 | plan | ✓✓✓– |

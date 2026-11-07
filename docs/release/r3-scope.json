@@ -88,7 +88,9 @@
    "accounting",
    "donations",
    "ai_assistant",
-   "notices"
+   "notices",
+   "admit_card",
+   "id_cards"
   ],
   "roles": [
  "super_admin",

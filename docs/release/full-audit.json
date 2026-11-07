@@ -773,7 +773,8 @@
    "gated_routes": 0,
    "types": [
     "স্কুল",
-    "কলেজ"
+    "কলেজ",
+    "কোচিং"
    ],
    "spec_files": [
     "advanced-features.md"
