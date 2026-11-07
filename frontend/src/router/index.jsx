@@ -30,6 +30,8 @@ const AdminNotices = lazy(() => import('../pages/notices/AdminNotices'))   // D1
 const NoticeBoard = lazy(() => import('../pages/notices/NoticeBoard'))
 const AdmitCards = lazy(() => import('../pages/cards/AdmitCards'))   // D193 ADM.1
 const IdCards = lazy(() => import('../pages/cards/IdCards'))
+const RoutineBuilder = lazy(() => import('../pages/routine/RoutineBuilder'))   // D193 RTN.1
+const MyRoutine = lazy(() => import('../pages/routine/MyRoutine'))
 const FeeLedger   = lazy(() => import('../pages/admin/fees/FeeLedger'))
 const ExamList    = lazy(() => import('../pages/admin/exams/ExamList'))
 const ExamDetail  = lazy(() => import('../pages/admin/exams/ExamDetail'))
@@ -151,6 +153,7 @@ export const tenantRoutes = [
     { path: 'fees/categories', element: S(FeeCategories) },
     { path: 'notices', element: S(AdminNotices) },
     { path: 'exams/admit-cards', element: S(AdmitCards) }, { path: 'students/id-cards', element: S(IdCards) },
+    { path: 'academic/routine', element: S(RoutineBuilder) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
     { path: 'subscription', element: S(Subscription) },   // D187 SUB.3
@@ -187,9 +190,9 @@ export const tenantRoutes = [
     { path: 'accounting', element: S(AccVouchers) }, { path: 'donations', element: S(DonList) },
     { path: 'hr/payroll', element: S(HrPayroll) }, { path: 'hr/advances', element: S(HrAdvances) }, { path: 'hr/adjustments', element: S(HrAdjustments) }, { path: 'hr/revisions', element: S(HrRevisions) },
   ]),
-  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbAllQuestions) }, { path: 'materials', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/all-questions', element: S(QbAllQuestions) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }, { path: 'question-bank/papers/:id/omr', element: S(QbOmr) }, { path: 'question-bank/papers/:id/preview', element: S(QbPaperPreview) }, { path: 'salary', element: S(MySalary) }, { path: 'ai', element: S(AiChat) }]),
+  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbAllQuestions) }, { path: 'materials', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/all-questions', element: S(QbAllQuestions) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }, { path: 'question-bank/papers/:id/omr', element: S(QbOmr) }, { path: 'question-bank/papers/:id/preview', element: S(QbPaperPreview) }, { path: 'salary', element: S(MySalary) }, { path: 'ai', element: S(AiChat) }, { path: 'routine', element: S(MyRoutine) }]),
   area('/staff', 'institution_staff', [{ path: 'departments', element: S(MyDepartments) }, { path: 'profile', element: S(MyProfile) }, { path: 'ai', element: S(AiChat) }, { path: 'students', element: S(StaffStudents) }, { path: 'students/new', element: S(StaffStudentAdd) }, { path: 'students/:id', element: S(StaffStudentProfile) }, { path: 'fees/collect', element: S(StaffFeeCollect) }, { path: 'attendance', element: S(StaffAttendance) }]),   // R3.12 / D88-D91; D168: the help guide; D169 STW.2
-  area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }, { path: 'my-class', element: S(LearnerProfile) }, { path: 'practice', element: S(QbPractice) }, { path: 'ai', element: S(AiChat) }]),   // D165 ST.6: the student assistant   // QB.9 / QB.10: the student portal (other student screens: R1.1)
+  area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }, { path: 'my-class', element: S(LearnerProfile) }, { path: 'practice', element: S(QbPractice) }, { path: 'ai', element: S(AiChat) }, { path: 'routine', element: S(MyRoutine) }]),   // D165 ST.6: the student assistant   // QB.9 / QB.10: the student portal (other student screens: R1.1)
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },
     { path: 'fees', element: S(ParentFees) },

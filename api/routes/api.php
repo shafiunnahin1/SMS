@@ -708,6 +708,19 @@ Route::prefix('v1')->group(function () {
             Route::get('/parent/children/{id}/results',   [ResultController::class, 'forParent'])->whereNumber('id')->middleware('role:parent');
         });
 
+        // ── D193 RTN.1: the weekly class routine (routine.md) ──
+        Route::middleware('module:routine')->group(function () {
+            Route::get('/routines',                       [\App\Http\Controllers\Routines\RoutineController::class, 'index'])->middleware('role:admin,teacher,student');
+            Route::get('/routines/teacher',               [\App\Http\Controllers\Routines\RoutineController::class, 'teacher'])->middleware('role:teacher');
+            Route::get('/routines/today',                 [\App\Http\Controllers\Routines\RoutineController::class, 'today'])->middleware('role:teacher');
+            Route::middleware('role:admin')->group(function () {
+                Route::post('/routines',                  [\App\Http\Controllers\Routines\RoutineController::class, 'store']);
+                Route::put('/routines/{id}',              [\App\Http\Controllers\Routines\RoutineController::class, 'update'])->whereNumber('id');
+                Route::delete('/routines/{id}',           [\App\Http\Controllers\Routines\RoutineController::class, 'destroy'])->whereNumber('id');
+                Route::get('/routines/{id}/print',      [\App\Http\Controllers\Routines\RoutineController::class, 'print'])->whereNumber('id');
+            });
+        });
+
         // ── D193 ADM.1: admit cards (exams' schedule) and student ID cards, PDF only ──
         Route::middleware(['module:exams', 'module:admit_card', 'role:admin'])->get('/exams/{id}/admit-cards/bulk', [\App\Http\Controllers\Cards\AdmitCardController::class, 'bulk'])->whereNumber('id');
         Route::middleware(['module:exams', 'module:admit_card', 'role:student'])->get('/student/exams/{id}/admit-card', [\App\Http\Controllers\Cards\AdmitCardController::class, 'mine'])->whereNumber('id');

@@ -221,6 +221,13 @@ return [
     'GET api/v1/student/exams/{id}/admit-card' => ['student'],
     'GET api/v1/students/id-cards/bulk' => ['admin'],
     'GET api/v1/students/{id}/card' => ['admin'],
+    'GET api/v1/routines' => ['admin', 'teacher', 'student'],   // D193 RTN.1
+    'GET api/v1/routines/teacher' => ['teacher'],
+    'GET api/v1/routines/today' => ['teacher'],
+    'POST api/v1/routines' => ['admin'],
+    'PUT api/v1/routines/{id}' => ['admin'],
+    'DELETE api/v1/routines/{id}' => ['admin'],
+    'GET api/v1/routines/{id}/print' => ['admin'],
     'GET api/v1/subscription/modules' => ['admin'],
     'POST api/v1/subscription/quote' => ['admin'],
     'POST api/v1/subscription/checkout' => ['admin'],

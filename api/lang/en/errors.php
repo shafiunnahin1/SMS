@@ -185,4 +185,6 @@ return [
     'learner_not_pending' => 'This registration was not found or is already verified.',
     'staff_grant_not_staff' => 'A grant can only be given to an active staff member of this institution.',   // D169 STW.5
     'exam_schedule_incomplete' => 'Complete the exam schedule first: every subject needs a date.',
+    'routine_conflict' => 'This slot clashes: :list.',
+    'routine_conflicts' => ['teacher' => 'the teacher has another class then', 'class' => 'this class has another subject then', 'room' => 'the room is in use then'],
 ];

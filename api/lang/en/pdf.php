@@ -10,6 +10,7 @@ return [
     ],
     'admit' => ['title' => 'Admit card', 'student' => 'Student', 'id' => 'ID', 'roll' => 'Roll', 'class' => 'Class/Course', 'subject' => 'Subject', 'datetime' => 'Date & time', 'room' => 'Room', 'center' => 'Exam centre', 'head' => 'Head of institution'],
     'idcard' => ['title' => 'Student ID card', 'id' => 'ID', 'class' => 'Class/Course', 'roll' => 'Roll', 'blood' => 'Blood group'],
+    'routine' => ['title' => 'Class routine', 'day' => 'Day', 'days' => ['sat' => 'Saturday', 'sun' => 'Sunday', 'mon' => 'Monday', 'tue' => 'Tuesday', 'wed' => 'Wednesday', 'thu' => 'Thursday']],
     'marksheet' => [
         'title' => 'Marksheet', 'student' => 'Student', 'class' => 'Class/Course', 'roll' => 'Roll', 'issued' => 'Date of issue',
         'subject' => 'Subject', 'full' => 'Full marks', 'obtained' => 'Marks', 'grade' => 'Grade', 'point' => 'Grade point', 'absent' => 'Absent',

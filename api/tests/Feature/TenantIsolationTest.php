@@ -106,6 +106,9 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/notices/{id}/receipts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'GET api/v1/exams/{id}/admit-cards/bulk' => fn (array $other) => $this->seedExam($other),   // D193 ADM.1
             'GET api/v1/students/{id}/card' => fn (array $other) => $this->seedStudent($other),
+            'PUT api/v1/routines/{id}' => fn (array $other) => $this->seedRoutine($other),   // D193 RTN.1
+            'DELETE api/v1/routines/{id}' => fn (array $other) => $this->seedRoutine($other),
+            'GET api/v1/routines/{id}/print' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Enrollment::where('student_id', $this->seedStudent($other))->value('program_id')),
             'GET api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
             // Date routes are independently covered by CashBookTenancyTest (no foreign row ID in the URL).
             'GET api/v1/cashbook/{date}/report.{ext}' => null,
@@ -260,6 +263,19 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/question-bank/paper-folders/{id}'  => fn (array $other) => $this->seedPaperFolder($other),
             'DELETE api/v1/question-bank/paper-folders/{id}' => fn (array $other) => $this->seedPaperFolder($other),
         ];
+    }
+
+    /** D193 RTN.1: one routine slot of the tenant's student's program */
+    private function seedRoutine(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], function () use ($student) {
+            if ($id = \App\Models\Routine::value('id')) return $id;
+            $program = \App\Models\Enrollment::where('student_id', $student)->value('program_id');
+            $subject = \App\Models\Subject::firstOrCreate(['program_id' => $program, 'name' => 'Routine subject']);
+            $teacher = \App\Models\Teacher::create(['employee_id' => 'RTN-T', 'status' => 'active']);
+            return \App\Models\Routine::create(['program_id' => $program, 'subject_id' => $subject->id, 'teacher_id' => $teacher->id, 'day_of_week' => 'sun', 'start_time' => '09:00', 'end_time' => '09:45'])->id;
+        });
     }
 
     /** A student (named after the tenant's marker) in a batch with a monthly fee - created once per tenant */
