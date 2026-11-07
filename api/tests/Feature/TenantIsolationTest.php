@@ -98,6 +98,12 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/fee-refunds/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeRefund::factory()->create()->id),
             // Literal {action} checks routing here; RefundCapTest exercises all three actual actions with foreign root IDs.
             'POST api/v1/fee-refunds/{id}/{action}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeRefund::factory()->create()->id),
+            // D193 NTC.1
+            'GET api/v1/notices/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
+            'PUT api/v1/notices/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
+            'DELETE api/v1/notices/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
+            'POST api/v1/notices/{id}/ack' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
+            'GET api/v1/notices/{id}/receipts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'GET api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
             // Date routes are independently covered by CashBookTenancyTest (no foreign row ID in the URL).
             'GET api/v1/cashbook/{date}/report.{ext}' => null,

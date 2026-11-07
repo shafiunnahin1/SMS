@@ -14,6 +14,7 @@ return [
     'must_change_password'  => 'Please change your password first.',
     'module_disabled'       => 'This module is not enabled for your institution.',
     'module_read_only'      => 'This module\'s subscription has ended. You can view and export its data; pay to make changes again.',
+    'notice_no_ack' => 'This notice does not ask for an acknowledgement.',
     'module_not_billable' => 'This module is not sold to your institution.',
     'module_requires' => 'This module needs :requires as well. Add it to the same payment.',
     'nothing_to_pay' => 'There is nothing to pay for these modules yet.',

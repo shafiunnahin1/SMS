@@ -650,6 +650,19 @@ Route::prefix('v1')->group(function () {
             Route::get('/invoices',                       [\App\Http\Controllers\Billing\SubscriptionController::class, 'invoices']);
         });
 
+        // ── D193 NTC.1: notice board - every reader lists / opens / acknowledges the notices meant for them; the admin writes them ──
+        Route::middleware(['module:notices', 'role:admin,teacher,accountant,parent,student'])->group(function () {
+            Route::get('/notices',                        [\App\Http\Controllers\Notices\NoticeController::class, 'index']);
+            Route::get('/notices/{id}',                   [\App\Http\Controllers\Notices\NoticeController::class, 'show'])->whereNumber('id');
+            Route::post('/notices/{id}/ack',              [\App\Http\Controllers\Notices\NoticeController::class, 'ack'])->whereNumber('id');
+        });
+        Route::middleware(['module:notices', 'role:admin'])->group(function () {
+            Route::post('/notices',                       [\App\Http\Controllers\Notices\NoticeController::class, 'store']);
+            Route::put('/notices/{id}',                   [\App\Http\Controllers\Notices\NoticeController::class, 'update'])->whereNumber('id');
+            Route::delete('/notices/{id}',                [\App\Http\Controllers\Notices\NoticeController::class, 'destroy'])->whereNumber('id');
+            Route::get('/notices/{id}/receipts',          [\App\Http\Controllers\Notices\NoticeController::class, 'receipts'])->whereNumber('id');
+        });
+
         // ── Dashboards (Step 4.7) ──
         Route::get('/admin/dashboard',                    [DashboardController::class, 'admin'])->middleware('role:admin');
         Route::get('/accountant/dashboard',               [DashboardController::class, 'accountant'])->middleware('role:accountant,institution_staff');

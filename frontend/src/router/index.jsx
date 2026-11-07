@@ -26,6 +26,8 @@ const StudentList = lazy(() => import('../pages/admin/students/StudentList'))
 const StudentAdd  = lazy(() => import('../pages/admin/students/StudentAdd'))
 const FeeCollect  = lazy(() => import('../pages/admin/fees/FeeCollect'))
 const FeeCategories = lazy(() => import('../pages/admin/fees/FeeCategories'))
+const AdminNotices = lazy(() => import('../pages/notices/AdminNotices'))   // D193 NTC.1
+const NoticeBoard = lazy(() => import('../pages/notices/NoticeBoard'))
 const FeeLedger   = lazy(() => import('../pages/admin/fees/FeeLedger'))
 const ExamList    = lazy(() => import('../pages/admin/exams/ExamList'))
 const ExamDetail  = lazy(() => import('../pages/admin/exams/ExamDetail'))
@@ -145,6 +147,7 @@ export const tenantRoutes = [
     { path: 'settings/imports', element: S(Imports) },
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/categories', element: S(FeeCategories) },
+    { path: 'notices', element: S(AdminNotices) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
     { path: 'subscription', element: S(Subscription) },   // D187 SUB.3
@@ -191,6 +194,8 @@ export const tenantRoutes = [
     { path: 'results', element: S(ParentResults) },
     { path: 'ai', element: S(AiChat) },   // D166 AI-Q4
   ]),
+  // D193 NTC.1: one notice board for the reader roles (the menu links /notices for each of them)
+  { path: '/notices', element: <ProtectedRoute role={['teacher', 'student', 'parent', 'accountant']}><AppShell /></ProtectedRoute>, children: [{ index: true, element: S(NoticeBoard) }] },
   { path: '/', element: <Navigate to="/login" replace /> },
   { path: '*', element: <Navigate to="/login" replace /> },
 ]

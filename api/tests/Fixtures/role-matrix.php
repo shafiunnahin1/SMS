@@ -210,6 +210,13 @@ return [
     'POST api/v1/super/coupons' => ['super_admin'],
     'PATCH api/v1/super/coupons/{id}/status' => ['super_admin'],
     'GET api/v1/super/subscriptions' => ['super_admin'],                           // D187 SUB.3
+    'GET api/v1/notices' => ['admin', 'teacher', 'accountant', 'parent', 'student'],   // D193 NTC.1
+    'GET api/v1/notices/{id}' => ['admin', 'teacher', 'accountant', 'parent', 'student'],
+    'POST api/v1/notices/{id}/ack' => ['admin', 'teacher', 'accountant', 'parent', 'student'],
+    'POST api/v1/notices' => ['admin'],
+    'PUT api/v1/notices/{id}' => ['admin'],
+    'DELETE api/v1/notices/{id}' => ['admin'],
+    'GET api/v1/notices/{id}/receipts' => ['admin'],
     'GET api/v1/subscription/modules' => ['admin'],
     'POST api/v1/subscription/quote' => ['admin'],
     'POST api/v1/subscription/checkout' => ['admin'],
