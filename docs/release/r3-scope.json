@@ -90,7 +90,8 @@
    "ai_assistant",
    "notices",
    "admit_card",
-   "id_cards"
+   "id_cards",
+   "routine"
   ],
   "roles": [
  "super_admin",
