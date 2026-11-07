@@ -25,6 +25,11 @@ class ExamRequest extends FormRequest
             'start_date'    => 'nullable|date',
             'end_date'      => 'nullable|date|after_or_equal:start_date',
             'status'        => $creating ? 'prohibited' : 'sometimes|in:upcoming,ongoing,completed',
+            // D193 ADM.1: the admit-card settings (advanced-features.md section 7)
+            'admit_card_available'    => 'sometimes|boolean',
+            'admit_card_from'         => 'nullable|date',
+            'exam_center'             => 'nullable|string|max:150',
+            'admit_card_instructions' => 'nullable|string|max:2000',
         ];
     }
 }

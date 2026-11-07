@@ -708,6 +708,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/parent/children/{id}/results',   [ResultController::class, 'forParent'])->whereNumber('id')->middleware('role:parent');
         });
 
+        // ── D193 ADM.1: admit cards (exams' schedule) and student ID cards, PDF only ──
+        Route::middleware(['module:exams', 'module:admit_card', 'role:admin'])->get('/exams/{id}/admit-cards/bulk', [\App\Http\Controllers\Cards\AdmitCardController::class, 'bulk'])->whereNumber('id');
+        Route::middleware(['module:exams', 'module:admit_card', 'role:student'])->get('/student/exams/{id}/admit-card', [\App\Http\Controllers\Cards\AdmitCardController::class, 'mine'])->whereNumber('id');
+        Route::middleware(['module:students', 'module:id_cards', 'role:admin'])->group(function () {
+            Route::get('/students/id-cards/bulk',     [\App\Http\Controllers\Cards\IdCardController::class, 'bulk']);
+            Route::get('/students/{id}/card',         [\App\Http\Controllers\Cards\IdCardController::class, 'show'])->whereNumber('id');
+        });
+
         // ── AI assistant (D164 P1): teachers and the head of the institution, own chats only ──
         Route::middleware(['module:ai_assistant', 'role:admin,teacher,student,parent,accountant,institution_staff'])->group(function () {   // D165 ST.6: students; D166 AI-Q4: parents and accountants (the help guide only); D168: staff (help only)
             Route::get('/ai/conversations',           [\App\Http\Controllers\Ai\AiConversationController::class, 'index']);

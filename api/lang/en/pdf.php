@@ -8,6 +8,8 @@ return [
         'item' => 'Description', 'period' => 'Period', 'paid' => 'Paid (BDT)', 'total' => 'Total',
         'methods' => ['cash' => 'Cash', 'bkash' => 'bKash', 'nagad' => 'Nagad', 'card' => 'Card', 'bank_transfer' => 'Bank transfer', 'cheque' => 'Cheque'],
     ],
+    'admit' => ['title' => 'Admit card', 'student' => 'Student', 'id' => 'ID', 'roll' => 'Roll', 'class' => 'Class/Course', 'subject' => 'Subject', 'datetime' => 'Date & time', 'room' => 'Room', 'center' => 'Exam centre', 'head' => 'Head of institution'],
+    'idcard' => ['title' => 'Student ID card', 'id' => 'ID', 'class' => 'Class/Course', 'roll' => 'Roll', 'blood' => 'Blood group'],
     'marksheet' => [
         'title' => 'Marksheet', 'student' => 'Student', 'class' => 'Class/Course', 'roll' => 'Roll', 'issued' => 'Date of issue',
         'subject' => 'Subject', 'full' => 'Full marks', 'obtained' => 'Marks', 'grade' => 'Grade', 'point' => 'Grade point', 'absent' => 'Absent',

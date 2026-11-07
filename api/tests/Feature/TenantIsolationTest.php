@@ -104,6 +104,8 @@ class TenantIsolationTest extends TestCase
             'DELETE api/v1/notices/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'POST api/v1/notices/{id}/ack' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'GET api/v1/notices/{id}/receipts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
+            'GET api/v1/exams/{id}/admit-cards/bulk' => fn (array $other) => $this->seedExam($other),   // D193 ADM.1
+            'GET api/v1/students/{id}/card' => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
             // Date routes are independently covered by CashBookTenancyTest (no foreign row ID in the URL).
             'GET api/v1/cashbook/{date}/report.{ext}' => null,
@@ -232,6 +234,7 @@ class TenantIsolationTest extends TestCase
             // QbQuizTest: another student's attempt is a 404
             'POST api/v1/student/qb/quiz-packages/{id}/buy' => null,
             'POST api/v1/student/qb/quizzes/{id}/attempts' => null,
+            'GET api/v1/student/exams/{id}/admit-card'     => null,   // D193 ADM.1: AdmitCardTest (another institution's exam 404)
             'GET api/v1/student/qb/attempts/{id}'          => null,
             'PUT api/v1/student/qb/attempts/{id}'          => null,
             'POST api/v1/student/qb/attempts/{id}/submit'  => null,

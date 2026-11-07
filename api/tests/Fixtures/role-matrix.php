@@ -217,6 +217,10 @@ return [
     'PUT api/v1/notices/{id}' => ['admin'],
     'DELETE api/v1/notices/{id}' => ['admin'],
     'GET api/v1/notices/{id}/receipts' => ['admin'],
+    'GET api/v1/exams/{id}/admit-cards/bulk' => ['admin'],   // D193 ADM.1
+    'GET api/v1/student/exams/{id}/admit-card' => ['student'],
+    'GET api/v1/students/id-cards/bulk' => ['admin'],
+    'GET api/v1/students/{id}/card' => ['admin'],
     'GET api/v1/subscription/modules' => ['admin'],
     'POST api/v1/subscription/quote' => ['admin'],
     'POST api/v1/subscription/checkout' => ['admin'],

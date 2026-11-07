@@ -283,3 +283,9 @@ D188 items (1)-(5) are done in SVR.1 (schema FK fix, FULLTEXT in every SQLite tr
 5. `RELEASE-1.md` table count (69 of 219) and the `RELEASE-3.md` `config/release.php` sample (now also question_bank, quiz, ai_assistant, …) are out of date;
 6. generated `AGENT-PLAN-R3.md` / `r3-plan.json` and `RELEASE-FULL.md` / `AGENT-PLAN-FULL-DRAFT.md` / `full-audit.json` are stale (their generators would rewrite release documents).
 Needed from the owner: a follow-up decision (proposed D189) that authorizes (3)-(6) as documentation sync, answers (1), and says whether (2) should run on Linux (`python3`) or stay Windows-only.
+
+## 2026-11-07 · ADM.1 (D193) · admit_card vs D80 (2)
+- **What blocks:** D193 puts `admit_card` into the runtime module list (release.php / r3-scope.json). The coaching type's module list (`config/institution_types.php`, institution-types.md; README marks admit_card for school and college only) does not contain `admit_card`, so a coaching tenant does not get it. D80 (2) says BootstrapTest "must verify coaching receives every R3 module except `donations`" - with `admit_card` in the R3 list that assertion fails (`BootstrapTest::test_a_tenant_host_gets_terms_modules_and_a_full_theme`, the only failure: 1166 passed, 1 failed). Changing the test or the coaching list would reverse D80 or a spec - not the agent's call (G4, G5).
+- **Tried:** nothing that edits the test or the type list.
+- **Owner choice needed:** (a) a new decision: D80 (2) covers the modules the coaching type has - the test compares coaching with (R3 modules ∩ coaching type modules) minus donations; or (b) add `admit_card` to the coaching type list (spec change); or (c) another rule.
+- **Resolved 2026-11-07:** owner chose (b) - D194 adds `admit_card` to the coaching type (config, institution-types.md, README availability); D80 (2) unchanged and BootstrapTest passes unmodified.

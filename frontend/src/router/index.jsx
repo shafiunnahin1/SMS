@@ -28,6 +28,8 @@ const FeeCollect  = lazy(() => import('../pages/admin/fees/FeeCollect'))
 const FeeCategories = lazy(() => import('../pages/admin/fees/FeeCategories'))
 const AdminNotices = lazy(() => import('../pages/notices/AdminNotices'))   // D193 NTC.1
 const NoticeBoard = lazy(() => import('../pages/notices/NoticeBoard'))
+const AdmitCards = lazy(() => import('../pages/cards/AdmitCards'))   // D193 ADM.1
+const IdCards = lazy(() => import('../pages/cards/IdCards'))
 const FeeLedger   = lazy(() => import('../pages/admin/fees/FeeLedger'))
 const ExamList    = lazy(() => import('../pages/admin/exams/ExamList'))
 const ExamDetail  = lazy(() => import('../pages/admin/exams/ExamDetail'))
@@ -148,6 +150,7 @@ export const tenantRoutes = [
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/categories', element: S(FeeCategories) },
     { path: 'notices', element: S(AdminNotices) },
+    { path: 'exams/admit-cards', element: S(AdmitCards) }, { path: 'students/id-cards', element: S(IdCards) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
     { path: 'subscription', element: S(Subscription) },   // D187 SUB.3
