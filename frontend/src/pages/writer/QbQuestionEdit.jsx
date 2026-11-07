@@ -161,6 +161,7 @@ export default function QbQuestionEdit() {
   const track = (e) => {                                        // D72: remember the field and selection the ribbon acts on
     const el = e.target
     if (!el?.name || !(el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text'))) return
+    if (el.closest('[data-testid="qb-ribbon"], [role="dialog"]')) return   // a ribbon dialog's own boxes (table caption, rows) are never the target
     setActiveField(el.name)
     if (!valueSnapshots.current.has(el.name)) valueSnapshots.current.set(el.name, el.value)
     active.current = { name: el.name, el, start: el.selectionStart, end: el.selectionEnd }
@@ -168,6 +169,7 @@ export default function QbQuestionEdit() {
   const recordInput = (e) => {
     const el = e.target
     if (!el?.name || !(el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text'))) return
+    if (el.closest('[data-testid="qb-ribbon"], [role="dialog"]')) return
     const previous = valueSnapshots.current.get(el.name)
     if (previous !== undefined && previous !== el.value) {
       setHistory(current => pushValueHistory(current, el.name, previous, el.selectionStart, el.selectionEnd))
@@ -215,7 +217,7 @@ export default function QbQuestionEdit() {
   }
   const readActive = () => {
     const field = document.activeElement
-    if (field?.name && (field.tagName === 'TEXTAREA' || (field.tagName === 'INPUT' && field.type === 'text'))) {
+    if (field?.name && (field.tagName === 'TEXTAREA' || (field.tagName === 'INPUT' && field.type === 'text')) && !field.closest('[data-testid="qb-ribbon"], [role="dialog"]')) {
       const current = { name: field.name, el: field, start: field.selectionStart, end: field.selectionEnd }
       active.current = current
       return { value: String(getValues(field.name) ?? ''), start: current.start, end: current.end }

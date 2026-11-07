@@ -58,10 +58,12 @@ test('R2.1.6 an OMR form for a final paper: lock, print, scan, review, results',
   await expect(school).toHaveURL(/\/omr$/)
   const omr = school.locator('[data-testid="omr-form"]')
   await omr.locator('input[name="title"]').fill(`OMR ${tag}`)
-  await omr.locator('[data-action="save-form"]').click()
+  // the designer saves by itself after a short pause (no save button since the R2.1.6 designer); generate waits for that save
+  await expect(omr.locator('[data-action="generate"]')).toBeEnabled({ timeout: 15_000 })
   await omr.locator('[data-action="generate"]').click()
   await expect(omr.locator('[data-action="unlock"]')).toBeVisible()
-  await expect(omr.getByRole('button', { name: /সেট A|set A/ })).toBeVisible()
+  // owner 2026-10-24: one sheet serves every set (the student bubbles the set code), so the print button names no set
+  await expect(omr.getByRole('button', { name: /প্রিন্ট|Print/ })).toBeVisible()
 
   await school.getByRole('tab', { name: /স্ক্যান|Scan/ }).click()
   const scan = school.locator('[data-testid="omr-scan"]')

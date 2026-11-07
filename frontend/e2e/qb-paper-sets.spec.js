@@ -82,13 +82,18 @@ test('R2.1.5 a paper from a blueprint, in a folder, printed as two sets', async 
   await expect(setList.locator('[data-action="preview"][data-set="B"]')).toBeVisible()
 
   await school.goto('/admin/question-bank/papers')
-  const folders = school.locator('[data-testid="qb-folders"]')
-  await folders.locator('input[name="folder_name"]').fill(`ফোল্ডার ${tag}`)
-  await folders.locator('[data-action="new-folder"]').click()
-  await expect(folders).toContainText(`ফোল্ডার ${tag}`)
+  // D133 step 2: the papers page is a grid of folder and paper cards; a paper moves through its card menu
+  const papersPage = school.locator('[data-testid="qb-papers"]')
+  await papersPage.locator('input[name="folder_name"]').fill(`ফোল্ডার ${tag}`)
+  await papersPage.locator('[data-action="new-folder"]').click()
+  const folderCard = school.locator('[data-testid="qb-paper-folder-card"]').filter({ hasText: `ফোল্ডার ${tag}` })
+  await expect(folderCard).toHaveCount(1)
   const id = paperUrl.match(/(\d+)$/)[1]
-  await school.locator(`select[name="folder-${id}"]`).selectOption({ label: `ফোল্ডার ${tag}` })
-  await folders.getByText(`ফোল্ডার ${tag}`).click()
+  const paperCard = school.locator(`[data-testid="qb-paper-card"][data-paper-id="${id}"]`)
+  await paperCard.locator('[aria-expanded]').click()
+  await paperCard.locator(`select[name="move-paper-${id}"]`).selectOption({ label: `ফোল্ডার ${tag}` })
+  await expect(paperCard).toHaveCount(0)                                              // it left the top level
+  await folderCard.locator('[data-action="open-folder"]').click()
   await expect(school.locator('[data-testid="qb-papers"]')).toContainText(`ব্লুপ্রিন্ট ${tag}`)
   await expect(school.locator('[data-testid="qb-papers"]')).not.toContainText(`কেনা ${tag}`)
 })

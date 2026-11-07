@@ -134,6 +134,22 @@ describe('writer question picture editor', () => {
     expect(screen.getByTestId('qb-preview').querySelector('[data-testid="qb-structured-preview"] table')).toBeInTheDocument()
   })
 
+  it('inserts the table into the question even after the dialog caption and size boxes were used', async () => {
+    renderPage()
+    expect(await screen.findByRole('heading', { name: 'প্রিভিউ' })).toBeInTheDocument()
+    const text = screen.getByRole('textbox', { name: 'প্রশ্ন' })
+    fireEvent.focus(text)
+    fireEvent.click(screen.getByTestId('qb-ribbon').querySelector('[data-action="table"]'))
+    const dialog = await screen.findByTestId('table-dialog')
+    const caption = dialog.querySelector('input[name="caption"]')
+    fireEvent.focus(caption)
+    fireEvent.change(caption, { target: { value: 'Water cycle' } })
+    fireEvent.focus(dialog.querySelector('input[name="rows"]'))
+    fireEvent.click(dialog.querySelector('[data-action="table-insert"]'))
+    expect(text.value).toContain('<table')
+    expect(text.value).toContain('Water cycle')
+  })
+
   it('opens the table editor when its word-box preview table is clicked', async () => {
     const sourceTable = '<table class="qmx-table qmx-table-grid"><tbody><tr><th>শব্দ ১</th><th>শব্দ ২</th></tr><tr><td>water</td><td>air</td></tr></tbody></table>'
     api.get.mockImplementation(url => Promise.resolve({ data: url === '/writer/curriculum'

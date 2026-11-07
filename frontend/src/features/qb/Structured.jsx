@@ -217,7 +217,13 @@ export function StructuredEditor({ structure, register, control, error, getValue
     </section>
   )
   const part = {
-    gaps: () => <div key="gaps" className="flex flex-col gap-2" data-testid="qb-gaps">
+    // D142 inline blanks belong to the gap-fill type only (they live in question_text); inside a passage a gap part is a list of
+    // sentences with blanks, as before - the inline editor there had no field behind it and crashed when it was removed
+    gaps: () => structure !== 'gap' ? rows('gaps', i => <div className="flex min-w-0 flex-col gap-3">
+      <Textarea rows={2} label={t('qb.gap_sentence')} hint={t('qb.blank_hint')} {...register(`structured.gaps.${i}.prompt`)} />
+      <Input label={t('qbx.hint')} {...register(`structured.gaps.${i}.hint`)} />
+      <Input label={t('qb.gap_answers')} hint={t('qb.gap_answers_hint')} {...register(`structured.gaps.${i}.answers`)} />
+    </div>, 'qb-gaps') : <div key="gaps" className="flex flex-col gap-2" data-testid="qb-gaps">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <label className="text-sm font-medium" htmlFor="qb-gap-passage">{t('qb.question')}</label>
         <Button type="button" variant="secondary" data-action="add-gap-blank" onClick={() => {
@@ -232,7 +238,7 @@ export function StructuredEditor({ structure, register, control, error, getValue
           requestAnimationFrame(() => { area?.focus(); area?.setSelectionRange(start + token.length, start + token.length) })
         }}><Plus aria-hidden="true" className="h-4 w-4" />{t('qbx.add.gaps')}</Button>
       </div>
-      <Textarea id="qb-gap-passage" rows={5} dir="auto" {...passageField} onFocus={onFieldFocus} onSelect={onFieldFocus} ref={el => { passageRef.current = el; passageField.ref(el) }} />
+      <Textarea id="qb-gap-passage" rows={5} dir="auto" {...passageField} onFocus={onFieldFocus} onSelect={onFieldFocus} ref={el => { passageRef.current = el; passageField.ref?.(el) }} />
       <div className="flex flex-col gap-2">
         {s.gaps.map((g, i) => <div key={i} className="grid gap-2 rounded-token [border:1px_solid_var(--line)] p-2 sm:grid-cols-2" data-gap-index={i}>
           <strong className="text-sm">({gapLabel(i)}) —</strong>
@@ -280,7 +286,7 @@ export function StructuredEditor({ structure, register, control, error, getValue
       <Textarea rows={2} label={t('qbx.correction')} {...register(`structured.tfs.${i}.correction`)} />
     </div>, 'qb-tfs'),
     tables: () => rows('tables', i => {
-      const item = s.tables[i]
+      const item = s.tables?.[i] ?? EMPTY_ROW.tables              // a row just added is in the field array one render before the watched values
       const flowChart = structure === 'passage' && !String(item.columns ?? '').trim() && (!String(item.rows ?? '').trim() || isFlowChartTable(item))
       if (!flowChart) return <div className="flex-1 grid gap-2">
         <Input label={t('qbx.columns')} hint={t('qbx.columns_hint')} {...register(`structured.tables.${i}.columns`)} />

@@ -57,8 +57,9 @@ test('Grade 8 mathematics questions from the PDF are entered in the editor and i
   test.setTimeout(180_000)
   await loginSuper(page)
   const tree = await curriculum(page)
-  const subject = tree.subjects.find(item => /math/i.test(item.name_en ?? '') || /গণিত/.test(item.name_bn ?? ''))
   const classLevel = tree.class_levels.find(item => /8/.test(item.name_en ?? '') || /অষ্টম|৮/.test(item.name_bn ?? ''))
+  // the mathematics subject taught in Class 8 (the seeded curriculum also has Primary Mathematics for Classes 1-5)
+  const subject = tree.subjects.find(item => (/math/i.test(item.name_en ?? '') || /গণিত/.test(item.name_bn ?? '')) && (item.class_level_ids ?? []).includes(classLevel?.id))
   expect(subject, 'Grade 8 Mathematics subject should exist in the writer curriculum').toBeTruthy()
   expect(classLevel, 'Grade 8 should exist in the writer curriculum').toBeTruthy()
 
@@ -67,8 +68,9 @@ test('Grade 8 mathematics questions from the PDF are entered in the editor and i
     await page.goto('/writer/questions/new')
     const form = page.locator('#qb-question-form')
     await form.locator('select[name="qb_question_type_id"]').selectOption({ label: 'বহুনির্বাচনী প্রশ্ন' })
-    await form.locator('select[name="qb_subject_id"]').selectOption(String(subject.id))
+    // the class comes first: the subject list follows the chosen classes (a subject picked before is cleared)
     await form.locator(`input[name="class_level_ids"][value="${classLevel.id}"]`).check()
+    await form.locator('select[name="qb_subject_id"]').selectOption(String(subject.id))
     await form.locator('textarea[name="question_text"]').fill(question.question_text)
     await form.locator('textarea[name="explanation_text"]').fill(question.explanation)
     for (const [index, option] of question.options.entries()) {
@@ -118,6 +120,12 @@ test('Grade 8 mathematics questions from the PDF are entered in the editor and i
   const importedLinks = review.locator('li[data-record] a[href^="/writer/questions/"]')
   await expect(importedLinks).toHaveCount(2)
   const importedUrls = await importedLinks.evaluateAll(links => links.map(link => link.getAttribute('href')))
-  for (const url of importedUrls) await publish(page, url)
+  // D154: questions picked and imported by the writer arrive for moderation (review), so they are published without a submit step
+  for (const url of importedUrls) {
+    await page.goto(url)
+    await expect(page.locator('[data-status]').first()).toHaveAttribute('data-status', 'review')
+    await page.locator('[data-action="publish"]').click()
+    await expect(page.locator('[data-status]').first()).toHaveAttribute('data-status', 'published')
+  }
 
 })

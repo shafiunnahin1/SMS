@@ -67,6 +67,26 @@ describe('structured passage MCQs', () => {
     expect(container.querySelector('[name="structured.subs.0.answer"]')).not.toBeNull()
   })
 
+  it('gives a passage gap part its own sentence rows and survives removing them', () => {
+    function PassageGaps() { return <StructuredEditor structure="passage" {...useForm({ defaultValues: { structured: { ...STRUCTURED_EMPTY } } })} /> }
+    const { container } = render(<PassageGaps />)
+    fireEvent.change(container.querySelector('select[data-action="add-part"]'), { target: { value: 'gaps' } })
+    fireEvent.click(container.querySelector('[data-action="add-gaps"]'))
+    expect(container.querySelector('[name="structured.gaps.0.prompt"]')).not.toBeNull()
+    expect(container.querySelector('#qb-gap-passage')).toBeNull()                      // the gap-fill-only inline editor is not used here
+    fireEvent.click(container.querySelector('[data-testid="qb-gaps"] [aria-label]:is(button)'))
+    expect(container.querySelector('[name="structured.gaps.0.prompt"]')).toBeNull()
+  })
+
+  it('adds a table part to a passage without crashing', () => {
+    function PassageTables() { return <StructuredEditor structure="passage" {...useForm({ defaultValues: { structured: { ...STRUCTURED_EMPTY } } })} /> }
+    const { container } = render(<PassageTables />)
+    fireEvent.change(container.querySelector('select[data-action="add-part"]'), { target: { value: 'tables' } })
+    fireEvent.click(container.querySelector('[data-action="add-tables"]'))
+    expect(container.querySelector('[data-testid="qb-tables"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="qb-tables"]').children.length).toBeGreaterThan(1)
+  })
+
   it('uses textareas for written prompts across structured item types', () => {
     const { container } = render(<AllPromptsHarness />)
     const prompts = [

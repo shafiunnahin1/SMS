@@ -31,8 +31,10 @@ test('R2.1.3 a JSON import is checked, fixed and imported as drafts', async ({ p
   await expect(bad.locator('[data-testid="qbi-errors"]')).toContainText('question_type')
 
   await bad.locator('[data-testid="qbi-edit"]').click()
-  await bad.locator('[data-testid="qbi-quick-edit"] select[name="type"]').selectOption('short')
-  await bad.locator('[data-testid="qbi-save"]').click()
+  // the quick edit opens as a dialog over the page (not inside the record row)
+  const quick = page.getByRole('dialog').locator('[data-testid="qbi-quick-edit"]')
+  await quick.locator('select[name="type"]').selectOption('short')
+  await quick.locator('[data-testid="qbi-save"]').click()
   await expect(review.locator('li[data-record="2"]')).toHaveAttribute('data-valid', '1')
   await expect(review.locator('[data-count="invalid"] dd')).toHaveText(/0|০/)
 
