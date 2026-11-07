@@ -109,6 +109,11 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/routines/{id}' => fn (array $other) => $this->seedRoutine($other),   // D193 RTN.1
             'DELETE api/v1/routines/{id}' => fn (array $other) => $this->seedRoutine($other),
             'GET api/v1/routines/{id}/print' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Enrollment::where('student_id', $this->seedStudent($other))->value('program_id')),
+            'GET api/v1/support/tickets/{id}' => fn (array $other) => $this->seedTicket($other),   // D193 SUP.1
+            'POST api/v1/support/tickets/{id}/messages' => fn (array $other) => $this->seedTicket($other),
+            'POST api/v1/support/tickets/{id}/close' => fn (array $other) => $this->seedTicket($other),
+            'POST api/v1/support/tickets/{id}/reopen' => fn (array $other) => $this->seedTicket($other),
+            'POST api/v1/support/tickets/{id}/rate' => fn (array $other) => $this->seedTicket($other),
             'GET api/v1/expenses/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Expense::factory()->create()->id),
             // Date routes are independently covered by CashBookTenancyTest (no foreign row ID in the URL).
             'GET api/v1/cashbook/{date}/report.{ext}' => null,
@@ -263,6 +268,15 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/question-bank/paper-folders/{id}'  => fn (array $other) => $this->seedPaperFolder($other),
             'DELETE api/v1/question-bank/paper-folders/{id}' => fn (array $other) => $this->seedPaperFolder($other),
         ];
+    }
+
+    /** D193 SUP.1: one support ticket of the tenant */
+    private function seedTicket(array $t): int
+    {
+        return Tenancy::as($t['institution'], function () use ($t) {
+            if ($id = \App\Models\SupportTicket::value('id')) return $id;
+            return \App\Models\SupportTicket::create(['ticket_no' => 'TKT-T-' . $t['institution']->id, 'subject' => 'S', 'category' => 'general', 'priority' => 'normal', 'status' => 'open', 'created_by' => $t['admin']->id])->id;
+        });
     }
 
     /** D193 RTN.1: one routine slot of the tenant's student's program */

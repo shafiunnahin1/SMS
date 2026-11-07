@@ -32,6 +32,7 @@ const AdmitCards = lazy(() => import('../pages/cards/AdmitCards'))   // D193 ADM
 const IdCards = lazy(() => import('../pages/cards/IdCards'))
 const RoutineBuilder = lazy(() => import('../pages/routine/RoutineBuilder'))   // D193 RTN.1
 const MyRoutine = lazy(() => import('../pages/routine/MyRoutine'))
+const SupportTickets = lazy(() => import('../pages/support/SupportTickets'))   // D193 SUP.1
 const FeeLedger   = lazy(() => import('../pages/admin/fees/FeeLedger'))
 const ExamList    = lazy(() => import('../pages/admin/exams/ExamList'))
 const ExamDetail  = lazy(() => import('../pages/admin/exams/ExamDetail'))
@@ -154,6 +155,7 @@ export const tenantRoutes = [
     { path: 'notices', element: S(AdminNotices) },
     { path: 'exams/admit-cards', element: S(AdmitCards) }, { path: 'students/id-cards', element: S(IdCards) },
     { path: 'academic/routine', element: S(RoutineBuilder) },
+    { path: 'support', element: S(SupportTickets, { mode: 'institution' }) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
     { path: 'subscription', element: S(Subscription) },   // D187 SUB.3
@@ -224,6 +226,7 @@ export const centralRoutes = [
     { path: 'qb/writers', element: S(QbWriters) },
     { path: 'qb/pricing', element: S(QbPricing) },   // QB.6
     { path: 'qb/blueprints', element: S(QbBlueprints) },   // R2.1.5 (D126)
+    { path: 'support', element: S(SupportTickets, { mode: 'super' }) },   // D193 SUP.1
     { path: 'qb/quizzes', element: S(QbQuizAdmin) },   // QB.10
     { path: 'qb/withdrawals', element: S(QbWithdrawals) },   // QB.10b
     { path: 'ai', element: S(AiPlatform) },   // D164 AI-P1.5

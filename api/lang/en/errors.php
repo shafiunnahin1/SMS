@@ -187,4 +187,8 @@ return [
     'exam_schedule_incomplete' => 'Complete the exam schedule first: every subject needs a date.',
     'routine_conflict' => 'This slot clashes: :list.',
     'routine_conflicts' => ['teacher' => 'the teacher has another class then', 'class' => 'this class has another subject then', 'room' => 'the room is in use then'],
+    'ticket_closed' => 'This ticket is closed; open a new one.',
+    'ticket_not_reopenable' => 'Only a resolved ticket can be opened again.',
+    'ticket_not_closed' => 'A ticket can be rated after it is closed.',
+    'ticket_already_rated' => 'This ticket is already rated.',
 ];

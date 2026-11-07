@@ -94,6 +94,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/module-prices',                  [\App\Http\Controllers\SuperAdmin\ModulePriceController::class, 'index']);
         Route::post('/module-prices',                 [\App\Http\Controllers\SuperAdmin\ModulePriceController::class, 'store']);
         // D187 SUB.2: coupons (percent; pausing stops new redemptions)
+        // D193 SUP.1: the platform's support queue
+        Route::get('/support/tickets',                [\App\Http\Controllers\Support\SuperSupportController::class, 'index']);
+        Route::get('/support/tickets/{id}',           [\App\Http\Controllers\Support\SuperSupportController::class, 'show'])->whereNumber('id');
+        Route::post('/support/tickets/{id}/messages', [\App\Http\Controllers\Support\SuperSupportController::class, 'message'])->whereNumber('id');
+        Route::post('/support/tickets/{id}/assign',   [\App\Http\Controllers\Support\SuperSupportController::class, 'assign'])->whereNumber('id');
+        Route::post('/support/tickets/{id}/status',   [\App\Http\Controllers\Support\SuperSupportController::class, 'status'])->whereNumber('id');
         Route::get('/coupons',                        [\App\Http\Controllers\SuperAdmin\CouponController::class, 'index']);
         Route::post('/coupons',                       [\App\Http\Controllers\SuperAdmin\CouponController::class, 'store']);
         Route::patch('/coupons/{id}/status',          [\App\Http\Controllers\SuperAdmin\CouponController::class, 'status'])->whereNumber('id');
@@ -706,6 +712,17 @@ Route::prefix('v1')->group(function () {
             });
             Route::get('/results/marksheet/{studentId}',  [ResultController::class, 'marksheet'])->whereNumber('studentId')->middleware('role:admin,teacher,parent,institution_staff');
             Route::get('/parent/children/{id}/results',   [ResultController::class, 'forParent'])->whereNumber('id')->middleware('role:parent');
+        });
+
+        // ── D193 SUP.1: support tickets to the platform (admin, accountant) ──
+        Route::middleware(['module:support', 'role:admin,accountant'])->group(function () {
+            Route::get('/support/tickets',                [\App\Http\Controllers\Support\SupportTicketController::class, 'index']);
+            Route::post('/support/tickets',               [\App\Http\Controllers\Support\SupportTicketController::class, 'store']);
+            Route::get('/support/tickets/{id}',           [\App\Http\Controllers\Support\SupportTicketController::class, 'show'])->whereNumber('id');
+            Route::post('/support/tickets/{id}/messages', [\App\Http\Controllers\Support\SupportTicketController::class, 'message'])->whereNumber('id');
+            Route::post('/support/tickets/{id}/close',    [\App\Http\Controllers\Support\SupportTicketController::class, 'close'])->whereNumber('id');
+            Route::post('/support/tickets/{id}/reopen',   [\App\Http\Controllers\Support\SupportTicketController::class, 'reopen'])->whereNumber('id');
+            Route::post('/support/tickets/{id}/rate',     [\App\Http\Controllers\Support\SupportTicketController::class, 'rate'])->whereNumber('id');
         });
 
         // ── D193 RTN.1: the weekly class routine (routine.md) ──
