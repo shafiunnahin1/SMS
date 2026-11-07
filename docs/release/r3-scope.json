@@ -87,7 +87,8 @@
    "inventory",
    "accounting",
    "donations",
-   "ai_assistant"
+   "ai_assistant",
+   "notices"
   ],
   "roles": [
  "super_admin",
