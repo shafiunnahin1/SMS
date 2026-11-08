@@ -50,7 +50,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 
 ## Milestone acceptance (decision D45 - ALL of these must be [x] before the public launch; the guard checks them for `Release: FULL`)
 
-- [ ] M1.A — ভিত্তি ও চারটি অপরিহার্য ফিচার (release R1): owner-signed acceptance
+- [x] M1.A — ভিত্তি ও চারটি অপরিহার্য ফিচার (release R1): owner-signed acceptance — signed by the owner 2026-11-08: Release 1 accepted (task A, 2026-10-11, D63/D64; see '- [x] A')
 - [ ] M2.A — প্রথম সংস্করণের পরপর: নোটিশ, খরচ, রুটিন, ID কার্ড, সহায়তা (release R1.1): owner-signed acceptance
 - [ ] M3.A — প্রতিষ্ঠান-গভীরতা: ফল, ভর্তি, অনলাইন-পেমেন্ট, ওয়েবসাইট, একাডেমিক-উন্নত (release R2): owner-signed acceptance
 - [ ] M4.A — টাকা ও মানুষ: ক্যাশবুক, বেতন, হিসাব-খাত, ইনভেন্টরি, দান (release R3): owner-signed acceptance
