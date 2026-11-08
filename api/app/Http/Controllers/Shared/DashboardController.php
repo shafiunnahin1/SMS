@@ -106,6 +106,26 @@ class DashboardController extends Controller
         })->values()]);
     }
 
+    /** D195 STP.1 GET /student/dashboard: the signed-in student's own month attendance, dues and latest published result
+     *  (the parent card for one child - the student comes from the login, never from the request) */
+    public function student(Request $request, FeeService $fees, ExamService $exams)
+    {
+        $s = Student::with(['user:id,name', 'batch:id,name', 'program:id,name'])->where('user_id', $request->user()->id)->firstOrFail();
+        $useGpa = app(InstitutionSettings::class)->general(Tenancy::current())['use_gpa'];
+        $month = now()->format('Y-m');
+        $att = Attendance::where('student_id', $s->id)->whereBetween('date', [$month . '-01', date('Y-m-t', strtotime($month . '-01'))])->selectRaw('status, COUNT(*) AS n')->groupBy('status')->pluck('n', 'status');
+        $days = (int) $att->sum();
+        $dues = $fees->dueLines($s);
+        $latest = Exam::where('status', 'published')->whereIn('id', Result::where('student_id', $s->id)->select('exam_id'))->orderByDesc('id')->first();
+        $sheet = $latest ? $exams->sheet($latest, $s, $useGpa) : null;
+        return response()->json(['success' => true, 'data' => ['id' => $s->id, 'student_id' => $s->student_id, 'name' => $s->user?->name,
+            'program' => $s->program?->name, 'batch' => $s->batch?->name,
+            'attendance' => ['month' => $month, 'days' => $days, 'absent' => (int) ($att['absent'] ?? 0),
+                'percentage' => $days ? round(((int) ($att['present'] ?? 0)) / $days * 100, 2) : null],
+            'dues' => ['count' => $dues->count(), 'total' => Money::format($dues->sum(fn ($l) => Money::toPaisa($l['amount'])))],
+            'latest_result' => $sheet ? ['exam' => $sheet['exam']['name'], 'percentage' => $sheet['total']['percentage'], 'gpa' => $sheet['total']['gpa'], 'is_pass' => $sheet['total']['is_pass']] : null]]);
+    }
+
     public function parentChildren(Request $request)
     {
         $children = Student::whereHas('parents', fn ($q) => $q->whereKey($request->user()->id))

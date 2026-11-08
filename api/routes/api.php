@@ -777,6 +777,14 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // ── D195 STP.1: the student's own portal (the student comes from the login, never from the request) ──
+        Route::middleware('role:student')->group(function () {
+            Route::get('/student/dashboard',              [DashboardController::class, 'student']);
+            Route::get('/student/results',                [ResultController::class, 'forStudent'])->middleware('module:exams');
+            Route::get('/student/fees',                   [FeeController::class, 'forStudent'])->middleware('module:fees');
+            Route::get('/student/attendance',             [AttendanceController::class, 'forStudent'])->middleware('module:attendance');
+        });
+
         // ── Parent (Step 4.7) ──
         Route::middleware('role:parent')->group(function () {
             Route::get('/parent/children',                [DashboardController::class, 'parentChildren']);

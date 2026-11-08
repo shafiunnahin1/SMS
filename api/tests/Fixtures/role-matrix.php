@@ -246,6 +246,10 @@ return [
     'GET api/v1/admin/exports/{id}/download' => ['admin'],
     'POST api/v1/super/institutions/{id}/backup' => ['super_admin'],
     'POST api/v1/super/institutions/import' => ['super_admin'],
+    'GET api/v1/student/dashboard' => ['student'],   // D195 STP.1
+    'GET api/v1/student/results' => ['student'],
+    'GET api/v1/student/fees' => ['student'],
+    'GET api/v1/student/attendance' => ['student'],
     'GET api/v1/subscription/modules' => ['admin'],
     'POST api/v1/subscription/quote' => ['admin'],
     'POST api/v1/subscription/checkout' => ['admin'],

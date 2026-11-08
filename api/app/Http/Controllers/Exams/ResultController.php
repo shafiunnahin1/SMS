@@ -135,6 +135,19 @@ class ResultController extends Controller
         ]);
     }
 
+    /** D195 STP.1 GET /student/results - the signed-in student's own PUBLISHED exams, newest first (the parent view of one child) */
+    public function forStudent(Request $request)
+    {
+        $student = Student::with('user:id,name')->where('user_id', $request->user()->id)->firstOrFail();
+        $examIds = Result::where('student_id', $student->id)->distinct()->pluck('exam_id');
+        $exams = Exam::with('program:id,name')->whereIn('id', $examIds)->where('status', 'published')->orderByDesc('academic_year')->orderByDesc('id')->get();
+        $gpa = $this->useGpa();
+        return response()->json(['success' => true, 'data' => [
+            'student' => ['id' => $student->id, 'name' => $student->user?->name, 'code' => $student->student_id],
+            'exams' => $exams->map(fn ($e) => $this->exams->sheet($e, $student, $gpa))->values(),
+        ]]);
+    }
+
     /** GET /parent/children/{id}/results - the child's PUBLISHED exams, newest first */
     public function forParent(Request $request, int $id)
     {

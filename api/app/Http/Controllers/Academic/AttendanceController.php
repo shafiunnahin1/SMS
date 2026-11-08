@@ -94,6 +94,14 @@ class AttendanceController extends Controller
         return response()->json(['success' => true, 'data' => $this->summaryData($student, $month, null)]);
     }
 
+    /** D195 STP.1 GET /student/attendance?month=: the signed-in student's own month */
+    public function forStudent(Request $request)
+    {
+        $student = Student::with('user:id,name')->where('user_id', $request->user()->id)->firstOrFail();
+        $month = $request->validate(['month' => 'nullable|date_format:Y-m'])['month'] ?? now()->format('Y-m');
+        return response()->json(['success' => true, 'data' => $this->summaryData($student, $month, null)]);
+    }
+
     private function summaryData(Student $student, string $month, ?int $batchId): array
     {
         $sum = $this->attendance->getStudentSummary($student->id, $month, $batchId);

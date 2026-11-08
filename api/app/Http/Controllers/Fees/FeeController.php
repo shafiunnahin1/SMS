@@ -61,16 +61,29 @@ class FeeController extends Controller
     /** GET /fees/payments/student/{id} - the student's receipts (admin, accountant; a parent for their own child) */
     public function studentPayments(Request $request, int $id)
     {
-        $student = $this->reachableStudent($request, $id);
-        $receipts = FeePayment::where('student_id', $student->id)->with('feeCategory:id,name')->orderByDesc('paid_at')->orderBy('line_no')->get()
+        return response()->json(['success' => true, 'data' => $this->receiptsOf($this->reachableStudent($request, $id))]);
+    }
+
+    /** D195 STP.1 GET /student/fees: the signed-in student's own dues and receipts */
+    public function forStudent(Request $request)
+    {
+        $student = Student::with('user:id,name')->where('user_id', $request->user()->id)->firstOrFail();
+        $lines = $this->fees->dueLines($student);
+        return response()->json(['success' => true, 'data' => [
+            'lines' => $lines->values(), 'total' => \App\Support\Money::format($lines->sum(fn ($l) => \App\Support\Money::toPaisa($l['amount']))),
+            'receipts' => $this->receiptsOf($student),
+        ]]);
+    }
+
+    private function receiptsOf(Student $student)
+    {
+        return FeePayment::where('student_id', $student->id)->with('feeCategory:id,name')->orderByDesc('paid_at')->orderBy('line_no')->get()
             ->groupBy('receipt_no')->map(fn ($lines, $no) => [
                 'receipt_no' => $no, 'id' => $lines->first()->id, 'paid_at' => $lines->first()->paid_at?->toIso8601String(),
                 'payment_method' => $lines->first()->payment_method,
                 'total' => Money::format($lines->sum(fn ($l) => Money::toPaisa($l->paid_amount))),
                 'lines' => $lines->map(fn ($l) => ['category' => $l->feeCategory?->name, 'period' => $l->month, 'paid_amount' => $l->paid_amount])->values(),
             ])->values();
-
-        return response()->json(['success' => true, 'data' => $receipts]);
     }
 
     /** GET /fees/categories (admin) */

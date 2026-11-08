@@ -18,11 +18,11 @@ import { fmtDate } from '../../i18n/format'
 
 // QB.9 /student/question-bank (D65/D66 §5): the student's own class first; questions free to read, an answer or a concept bought
 // by the student with bKash (the server prices it; the page sends only the item). Back from bKash, ?payment= says how it went.
-export default function QbStudy() {
+export default function QbStudy({ initialTab = 'questions' }) {   // D195 STP.1: /student/materials opens on the study materials
   const { t } = useTranslation()
   const { locale } = useLocale()
   const [params, setParams] = useSearchParams()
-  const [tab, setTab] = useState('questions')
+  const [tab, setTab] = useState(initialTab)
   const [place, setPlace] = useState({ subject: '', chapter: '', topic: '' })
   const [open, setOpen] = useState(null)
   const [busy, setBusy] = useState(false)
