@@ -92,7 +92,8 @@
    "admit_card",
    "id_cards",
    "routine",
-   "support"
+   "support",
+   "result_sheets"
   ],
   "roles": [
  "super_admin",
