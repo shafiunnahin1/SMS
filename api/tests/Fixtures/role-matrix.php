@@ -250,6 +250,10 @@ return [
     'GET api/v1/student/results' => ['student'],
     'GET api/v1/student/fees' => ['student'],
     'GET api/v1/student/attendance' => ['student'],
+    'GET api/v1/students/{id}/due-block' => ['admin', 'accountant'],   // D197 AAD.1
+    'POST api/v1/students/{id}/due-block-exemptions' => ['admin', 'accountant'],
+    'DELETE api/v1/students/{id}/due-block-exemptions' => ['admin', 'accountant'],
+    'GET api/v1/exams/{id}/admit-cards/blocked' => ['admin'],
     'GET api/v1/subscription/modules' => ['admin'],
     'POST api/v1/subscription/quote' => ['admin'],
     'POST api/v1/subscription/checkout' => ['admin'],

@@ -30,14 +30,18 @@ class SettingController extends Controller
 
     public function general()
     {
-        return response()->json(['success' => true, 'data' => $this->settings->general(app('currentInstitution'))]);
+        $i = app('currentInstitution');
+        return response()->json(['success' => true, 'data' => $this->settings->general($i) + ['fees' => $this->settings->dueBlock($i)]]);   // D197 AAD.1
     }
 
     public function updateGeneral(UpdateGeneralSettingsRequest $request)
     {
         $i = app('currentInstitution');
-        $this->settings->merge($i, $request->validated());
-        return response()->json(['success' => true, 'data' => $this->settings->general($i->fresh()), 'message' => __('messages.saved')]);
+        $v = $request->validated();
+        if (isset($v['fees'])) $v['fees'] = array_merge(($i->settings ?? [])['fees'] ?? [], $v['fees']);   // D197 AAD.1: other fee settings stay
+        $this->settings->merge($i, $v);
+        $i = $i->fresh();
+        return response()->json(['success' => true, 'data' => $this->settings->general($i) + ['fees' => $this->settings->dueBlock($i)], 'message' => __('messages.saved')]);
     }
 
     public function language()

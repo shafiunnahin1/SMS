@@ -106,6 +106,10 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/notices/{id}/receipts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'GET api/v1/exams/{id}/admit-cards/bulk' => fn (array $other) => $this->seedExam($other),   // D193 ADM.1
             'GET api/v1/students/{id}/card' => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/students/{id}/due-block' => fn (array $other) => $this->seedStudent($other),   // D197 AAD.1
+            'POST api/v1/students/{id}/due-block-exemptions' => fn (array $other) => $this->seedStudent($other),
+            'DELETE api/v1/students/{id}/due-block-exemptions' => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/exams/{id}/admit-cards/blocked' => fn (array $other) => $this->seedExam($other),
             'PUT api/v1/routines/{id}' => fn (array $other) => $this->seedRoutine($other),   // D193 RTN.1
             'DELETE api/v1/routines/{id}' => fn (array $other) => $this->seedRoutine($other),
             'GET api/v1/routines/{id}/print' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Enrollment::where('student_id', $this->seedStudent($other))->value('program_id')),

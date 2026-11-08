@@ -205,4 +205,6 @@ return [
     'import_format_unknown' => 'এই export-ফরম্যাট অজানা।',
     'import_checksum' => 'ফাইলটি নষ্ট (checksum মেলেনি)।',
     'import_unmapped' => 'আমদানি থেমেছে: :what export-ম্যাপে নেই। কিছুই তৈরি হয়নি।',
+    'blocked_by_dues' => ':reason',
+    'blocked_by_dues_default' => '৳:amount বকেয়া আছে। এটি পেতে বকেয়া পরিশোধ করুন।',
 ];

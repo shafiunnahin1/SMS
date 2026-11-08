@@ -35,6 +35,7 @@ const MyRoutine = lazy(() => import('../pages/routine/MyRoutine'))
 const SupportTickets = lazy(() => import('../pages/support/SupportTickets'))   // D193 SUP.1
 const DataExport = lazy(() => import('../pages/export/DataExport'))   // D193 EXP.1
 const SuperExports = lazy(() => import('../pages/export/SuperExports'))
+const GeneralSettings = lazy(() => import('../pages/admin/settings/GeneralSettings'))   // D197 AAD.1 (+ the existing general settings API)
 const StudentDashboard = lazy(() => import('../pages/student/Portal').then(m => ({ default: m.StudentDashboard })))   // D195 STP.1
 const StudentResults = lazy(() => import('../pages/student/Portal').then(m => ({ default: m.StudentResults })))
 const StudentFees = lazy(() => import('../pages/student/Portal').then(m => ({ default: m.StudentFees })))
@@ -163,6 +164,7 @@ export const tenantRoutes = [
     { path: 'academic/routine', element: S(RoutineBuilder) },
     { path: 'support', element: S(SupportTickets, { mode: 'institution' }) },
     { path: 'settings/exports', element: S(DataExport) },
+    { path: 'settings/general', element: S(GeneralSettings) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
     { path: 'subscription', element: S(Subscription) },   // D187 SUB.3

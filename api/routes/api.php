@@ -749,6 +749,14 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // ── D197 AAD.1: dues hold back admit cards / results; exemptions (academics-advanced.md section 2) ──
+        Route::middleware(['module:students', 'module:fees', 'role:admin,accountant'])->group(function () {
+            Route::get('/students/{id}/due-block',                [\App\Http\Controllers\Fees\DueBlockController::class, 'show'])->whereNumber('id');
+            Route::post('/students/{id}/due-block-exemptions',    [\App\Http\Controllers\Fees\DueBlockController::class, 'grant'])->whereNumber('id');
+            Route::delete('/students/{id}/due-block-exemptions',  [\App\Http\Controllers\Fees\DueBlockController::class, 'revoke'])->whereNumber('id');
+        });
+        Route::middleware(['module:exams', 'module:admit_card', 'role:admin'])->get('/exams/{id}/admit-cards/blocked', [\App\Http\Controllers\Fees\DueBlockController::class, 'blockedForExam'])->whereNumber('id');
+
         // ── D193 ADM.1: admit cards (exams' schedule) and student ID cards, PDF only ──
         Route::middleware(['module:exams', 'module:admit_card', 'role:admin'])->get('/exams/{id}/admit-cards/bulk', [\App\Http\Controllers\Cards\AdmitCardController::class, 'bulk'])->whereNumber('id');
         Route::middleware(['module:exams', 'module:admit_card', 'role:student'])->get('/student/exams/{id}/admit-card', [\App\Http\Controllers\Cards\AdmitCardController::class, 'mine'])->whereNumber('id');

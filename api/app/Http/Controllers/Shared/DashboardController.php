@@ -102,7 +102,9 @@ class DashboardController extends Controller
                 'attendance' => ['month' => $month, 'days' => $days, 'absent' => (int) ($att['absent'] ?? 0),
                     'percentage' => $days ? round(((int) ($att['present'] ?? 0)) / $days * 100, 2) : null],
                 'dues' => ['count' => $dues->count(), 'total' => Money::format($dues->sum(fn ($l) => Money::toPaisa($l['amount'])))],
-                'latest_result' => $sheet ? ['exam' => $sheet['exam']['name'], 'percentage' => $sheet['total']['percentage'], 'gpa' => $sheet['total']['gpa'], 'is_pass' => $sheet['total']['is_pass']] : null];
+                'latest_result' => ($rb = app(\App\Services\Fees\DueBlockService::class)->isBlocked($s, 'result')) ? null   // D197 AAD.1
+                    : ($sheet ? ['exam' => $sheet['exam']['name'], 'percentage' => $sheet['total']['percentage'], 'gpa' => $sheet['total']['gpa'], 'is_pass' => $sheet['total']['is_pass']] : null),
+                'result_blocked' => $rb ?: null];
         })->values()]);
     }
 
@@ -123,7 +125,9 @@ class DashboardController extends Controller
             'attendance' => ['month' => $month, 'days' => $days, 'absent' => (int) ($att['absent'] ?? 0),
                 'percentage' => $days ? round(((int) ($att['present'] ?? 0)) / $days * 100, 2) : null],
             'dues' => ['count' => $dues->count(), 'total' => Money::format($dues->sum(fn ($l) => Money::toPaisa($l['amount'])))],
-            'latest_result' => $sheet ? ['exam' => $sheet['exam']['name'], 'percentage' => $sheet['total']['percentage'], 'gpa' => $sheet['total']['gpa'], 'is_pass' => $sheet['total']['is_pass']] : null]]);
+            'latest_result' => ($rb = app(\App\Services\Fees\DueBlockService::class)->isBlocked($s, 'result')) ? null   // D197 AAD.1
+                : ($sheet ? ['exam' => $sheet['exam']['name'], 'percentage' => $sheet['total']['percentage'], 'gpa' => $sheet['total']['gpa'], 'is_pass' => $sheet['total']['is_pass']] : null),
+            'result_blocked' => $rb ?: null]]);
     }
 
     public function parentChildren(Request $request)

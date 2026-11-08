@@ -127,6 +127,9 @@ class ResultController extends Controller
         $student = $this->reachable($request, $studentId);
         $exam = Exam::with('program:id,name')->findOrFail($examId);
         if ($request->user()->role === 'parent' && $exam->status !== 'published') throw new BusinessException('not published', 'forbidden', 403);
+        if ($request->user()->role === 'parent' && ($b = app(\App\Services\Fees\DueBlockService::class)->isBlocked($student, 'result'))) {
+            throw new BusinessException($b['reason'], 'blocked_by_dues', 403, ['reason' => $b['reason']]);   // D197 AAD.1
+        }
         $sheet = $this->exams->sheet($exam, $student, $this->useGpa());
         if ($request->query('format') === 'json') return response()->json(['success' => true, 'data' => $sheet]);
         return response($pdf->render('pdf.marksheet', ['sheet' => $sheet]), 200, [
@@ -139,6 +142,11 @@ class ResultController extends Controller
     public function forStudent(Request $request)
     {
         $student = Student::with('user:id,name')->where('user_id', $request->user()->id)->firstOrFail();
+        // D197 AAD.1: dues hold the result back in the student / parent portal - the amount and reason instead of marks (staff always see)
+        if ($b = app(\App\Services\Fees\DueBlockService::class)->isBlocked($student, 'result')) {
+            return response()->json(['success' => true, 'data' => ['student' => ['id' => $student->id, 'name' => $student->user?->name, 'code' => $student->student_id],
+                'exams' => [], 'blocked' => $b]]);
+        }
         $examIds = Result::where('student_id', $student->id)->distinct()->pluck('exam_id');
         $exams = Exam::with('program:id,name')->whereIn('id', $examIds)->where('status', 'published')->orderByDesc('academic_year')->orderByDesc('id')->get();
         $gpa = $this->useGpa();
@@ -152,6 +160,11 @@ class ResultController extends Controller
     public function forParent(Request $request, int $id)
     {
         $student = $this->reachable($request, $id);
+        // D197 AAD.1: dues hold the result back in the student / parent portal - the amount and reason instead of marks (staff always see)
+        if ($b = app(\App\Services\Fees\DueBlockService::class)->isBlocked($student, 'result')) {
+            return response()->json(['success' => true, 'data' => ['student' => ['id' => $student->id, 'name' => $student->user?->name, 'code' => $student->student_id],
+                'exams' => [], 'blocked' => $b]]);
+        }
         $examIds = Result::where('student_id', $student->id)->distinct()->pluck('exam_id');
         $exams = Exam::with('program:id,name')->whereIn('id', $examIds)->where('status', 'published')->orderByDesc('academic_year')->orderByDesc('id')->get();
         $gpa = $this->useGpa();

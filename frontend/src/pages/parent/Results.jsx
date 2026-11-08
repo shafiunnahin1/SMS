@@ -40,6 +40,7 @@ export default function ParentResults() {
         </div>
       )}
       {results.isPending ? <Loader type="cards" count={2} /> : results.isError ? <ErrorState onRetry={results.refetch} />
+        : results.data.blocked ? <Card data-testid="result-blocked"><h2 className="font-semibold">{t('due_block.blocked_title')}</h2><p className="text-sm" dir="auto">{results.data.blocked.reason}</p></Card>   /* D197 AAD.1 */
         : !results.data.exams.length ? <EmptyState title={t('exams.none_published')} /> : results.data.exams.map(sheet => (
           <Card key={sheet.exam.id} className="flex flex-col gap-3" data-testid="parent-exam">
             <div className="flex flex-wrap items-center justify-between gap-2">

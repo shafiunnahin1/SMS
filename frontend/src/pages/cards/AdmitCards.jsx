@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { Printer } from 'lucide-react'
@@ -13,6 +14,7 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select, Textarea } from '../../components/FormField'
 import { useCrud } from '../../features/academic/useCrud'
 import { useUiStore } from '../../store/uiStore'
+import Ltr from '../../components/bidi/Ltr'
 
 // D193 ADM.1 /admin/exams/admit-cards: per exam the admit-card settings (centre, instructions, open to students from a date)
 // and the bulk PDF (optionally one batch). The server refuses (422) until every exam subject has its date.
@@ -37,6 +39,8 @@ export default function AdmitCards() {
       list.refetch()
     } catch { /* the interceptor shows the error */ }
   }
+  // D197 AAD.1: the students the dues hold back (left out of the PDF)
+  const blocked = useQuery({ queryKey: ['admit-blocked', exam?.id], enabled: Boolean(exam), queryFn: () => api.get(`/exams/${exam.id}/admit-cards/blocked`).then(r => r.data.data) })
   const examBatches = (batches.data ?? []).filter(b => exam && String(b.program_id ?? b.program?.id) === String(exam.program?.id))
   return (
     <div>
@@ -66,6 +70,12 @@ export default function AdmitCards() {
                 </Button>
               </div>
             </form>
+          )}
+          {exam && blocked.data?.length > 0 && (
+            <div className="mt-4" data-testid="admit-blocked">
+              <h3 className="font-semibold">{t('due_block.blocked_list', { n: blocked.data.length })}</h3>
+              <ul className="text-sm">{blocked.data.map(b => <li key={b.student_id} dir="auto">{b.name} · <Ltr>{b.code}</Ltr> · <Ltr>{b.due_amount}</Ltr></li>)}</ul>
+            </div>
           )}
         </Card>
       )}

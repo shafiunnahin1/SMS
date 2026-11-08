@@ -25,6 +25,17 @@ class InstitutionSettings
         ];
     }
 
+    /** D197 AAD.1 (academics-advanced.md section 2): the dues block settings, `institutions.settings.fees`; both switches off by default */
+    public function dueBlock(Institution $i): array
+    {
+        $f = ($i->settings ?? [])['fees'] ?? [];
+        $t = $f['block_threshold'] ?? [];
+        $mode = in_array($t['mode'] ?? null, ['amount', 'months', 'any'], true) ? $t['mode'] : 'amount';
+        return ['block_admit_card' => (bool) ($f['block_admit_card'] ?? false), 'block_result' => (bool) ($f['block_result'] ?? false),
+            'block_threshold' => ['mode' => $mode, 'value' => $mode === 'any' ? null : (string) ($t['value'] ?? ($mode === 'months' ? '1' : '1000'))],
+            'block_message' => ($f['block_message'] ?? null) ?: null];
+    }
+
     public function language(Institution $i): array
     {
         $s = $i->settings ?? [];

@@ -24,14 +24,17 @@ class ResultSmsService
         $merit = $this->exams->meritList($exam);
         $have = ExamResultSms::where('exam_id', $exam->id)->where('kind', 'result')->pluck('student_id')->flip();
         $students = Student::whereIn('id', array_column($merit['rows'], 'student_id'))->with('user:id,name')->get()->keyBy('id');
+        $blocks = app(\App\Services\Fees\DueBlockService::class);
+        $held = [];
         foreach ($merit['rows'] as $row) {
             if ($row['total'] === null || isset($have[$row['student_id']]) || !($s = $students->get($row['student_id']))) continue;
+            if ($blocks->isBlocked($s, 'result')) { $held[] = ['student_id' => $s->id, 'name' => $s->user?->name]; continue; }   // D197 AAD.1: no result SMS while held back
             ExamResultSms::create(['exam_id' => $exam->id, 'student_id' => $s->id, 'kind' => 'result', 'phone' => $s->guardian_phone,
                 'message' => $this->resultText($exam, $s, $row, $merit['full_marks']), 'created_by' => $actor->id]);
         }
         AuditLog::record('exam.result_sms_run', $exam, ['queued' => ExamResultSms::where('exam_id', $exam->id)->whereIn('status', ['pending', 'failed'])->count()]);
         SendExamResultSmsJob::dispatch($exam->id, $actor->id, (int) Tenancy::current()->id);
-        return $this->report($exam);
+        return $this->report($exam) + ['held_by_dues' => $held];
     }
 
     /** D161 (3): the admin corrected a published mark - one correction message with the old and new result, sent at once */

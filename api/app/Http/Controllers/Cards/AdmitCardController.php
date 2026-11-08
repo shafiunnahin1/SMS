@@ -27,6 +27,10 @@ class AdmitCardController extends Controller
     public function mine(Request $request, int $id)
     {
         $student = Student::where('user_id', $request->user()->id)->firstOrFail();
+        // D197 AAD.1: held back by dues - 403 with the amount and the reason, never a silent refusal
+        if ($b = app(\App\Services\Fees\DueBlockService::class)->isBlocked($student, 'admit_card')) {
+            throw new \App\Exceptions\BusinessException($b['reason'], 'blocked_by_dues', 403, ['reason' => $b['reason']]);
+        }
         $exam = Exam::with('program:id,name')->where('admit_card_available', true)
             ->where(fn ($q) => $q->whereNull('admit_card_from')->orWhere('admit_card_from', '<=', now()->toDateString()))->findOrFail($id);
         $data = $this->cards->build($exam, null, $student->id);
@@ -36,6 +40,7 @@ class AdmitCardController extends Controller
 
     private function send(array $data, string $name)
     {
-        return response(app(PdfService::class)->render('pdf.admit-cards', $data, 'a5'), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="' . $name . '"']);
+        return response(app(PdfService::class)->render('pdf.admit-cards', $data, 'a5'), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="' . $name . '"',
+            'X-Blocked-Count' => (string) ($data['blocked_count'] ?? 0)]);   // D197 AAD.1: how many the dues held back
     }
 }

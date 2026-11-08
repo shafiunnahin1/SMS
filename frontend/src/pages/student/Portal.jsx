@@ -53,7 +53,8 @@ export function StudentResults() {
   const { t } = useTranslation()
   return (
     <Page title={t('exams.results')} q={useMine('results', '/student/results')}>
-      {d => !d.exams.length ? <EmptyState title={t('exams.none_published')} /> : d.exams.map(sheet => (
+      {d => d.blocked ? <Card data-testid="result-blocked"><h2 className="font-semibold">{t('due_block.blocked_title')}</h2><p className="text-sm" dir="auto">{d.blocked.reason}</p></Card>
+        : !d.exams.length ? <EmptyState title={t('exams.none_published')} /> : d.exams.map(sheet => (
         <Card key={sheet.exam.id} className="flex flex-col gap-3" data-testid="student-exam">
           <h2 className="font-semibold"><span dir="auto">{sheet.exam.name}</span> <Ltr>({sheet.exam.academic_year})</Ltr></h2>
           <ul className="flex flex-col divide-y divide-line">

@@ -23,6 +23,7 @@ import List from '../../../ui/variants/List'
 import Modal from '../../../ui/variants/Modal'
 import { toFormData, multipart } from '../../../features/students/formData'
 import { usePrint } from '../../../hooks/usePrint'
+import DueBlockCard from '../../../features/fees/DueBlockCard'
 
 const GENDERS = ['male', 'female', 'other']
 const PROFILE_FIELDS = ['name', 'student_id', 'guardian_phone', 'father_name', 'mother_name', 'gender', 'date_of_birth', 'blood_group', 'religion', 'address', 'studying_at', 'admission_date']
@@ -55,11 +56,12 @@ export default function StudentProfile() {
           {!s.anonymized_at && <Button variant="secondary" onClick={() => setErasing(true)} data-action="anonymize"><UserX aria-hidden="true" className="h-4 w-4" />{t('privacy.anonymize')}</Button>}
           <Button variant="secondary" onClick={remove}><Trash2 aria-hidden="true" className="h-4 w-4" />{t('common.delete')}</Button></>} />
       <Anonymize open={erasing} student={s} onClose={() => setErasing(false)} onDone={() => { setErasing(false); refresh() }} />
-      <Tabs items={[{ key: 'profile', label: t('students.profile') }, { key: 'enrollments', label: t('students.enrollments') }, { key: 'consents', label: t('students.consents') }]}
+      <Tabs items={[{ key: 'profile', label: t('students.profile') }, { key: 'enrollments', label: t('students.enrollments') }, { key: 'consents', label: t('students.consents') }, { key: 'dues', label: t('due_block.tab') }]}
         value={tab} onChange={setTab} label={s.name} />
       {tab === 'profile' && <ProfileForm student={s} onSaved={refresh} />}
       {tab === 'enrollments' && <Enrollments studentId={id} onChanged={refresh} />}
       {tab === 'consents' && <Consents studentId={id} />}
+      {tab === 'dues' && <DueBlockCard studentId={id} />}
     </div>
   )
 }

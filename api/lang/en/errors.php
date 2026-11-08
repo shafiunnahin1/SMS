@@ -205,4 +205,6 @@ return [
     'import_format_unknown' => 'This export format is not known.',
     'import_checksum' => 'The file is damaged (checksum).',
     'import_unmapped' => 'The import stopped: :what is not in the export map. Nothing was created.',
+    'blocked_by_dues' => ':reason',
+    'blocked_by_dues_default' => 'Dues of Tk :amount are unpaid. Please pay them to get this.',
 ];

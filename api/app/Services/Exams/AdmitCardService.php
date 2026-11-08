@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 // (422 exam_schedule_incomplete). The QR carries only the student code and the exam id - no name, phone or other personal data.
 class AdmitCardService
 {
-    /** @return array{exam: array, subjects: array, cards: array} */
+    /** @return array{exam: array, subjects: array, cards: array, blocked_count: int} */
     public function build(Exam $exam, ?int $batchId = null, ?int $studentId = null): array
     {
         $subjects = ExamSubject::with('subject:id,name')->where('exam_id', $exam->id)->orderBy('exam_date')->orderBy('start_time')->orderBy('sort_order')->get();
@@ -24,6 +24,10 @@ class AdmitCardService
         $enr = Enrollment::with(['student.user:id,name', 'batch:id,name'])->where('program_id', $exam->program_id)->where('status', 'active')
             ->when($batch, fn ($q) => $q->where('batch_id', $batch))->when($studentId, fn ($q) => $q->where('student_id', $studentId))
             ->orderBy('batch_id')->orderBy('roll_no')->get()->unique('student_id');
+        // D197 AAD.1: a student the dues hold back gets no card here; the admin sees them in GET /exams/{id}/admit-cards/blocked
+        $blocks = app(\App\Services\Fees\DueBlockService::class);
+        $blocked = $enr->filter(fn ($e) => $e->student && $blocks->isBlocked($e->student, 'admit_card'));
+        $enr = $enr->reject(fn ($e) => $blocked->contains($e));
         $program = $exam->program?->name;
         return [
             'exam' => ['id' => $exam->id, 'name' => $exam->name, 'academic_year' => $exam->academic_year, 'center' => $exam->exam_center, 'instructions' => $exam->admit_card_instructions],
@@ -32,6 +36,7 @@ class AdmitCardService
             'cards' => $enr->map(fn ($e) => ['name' => $e->student?->user?->name, 'code' => $e->student?->student_id, 'roll' => $e->roll_no,
                 'class' => trim($program . ($e->batch ? ' — ' . $e->batch->name : '')), 'photo' => self::photo($e->student),
                 'qr' => self::qr($e->student?->student_id . '|' . $exam->id)])->values()->all(),
+            'blocked_count' => $blocked->count(),
         ];
     }
 
