@@ -53,7 +53,7 @@ Line format:  `- [x] <task-id> — <commit-sha> — <tests added / run> — <evi
 - [x] M1.A — ভিত্তি ও চারটি অপরিহার্য ফিচার (release R1): owner-signed acceptance — signed by the owner 2026-11-08: Release 1 accepted (task A, 2026-10-11, D63/D64; see '- [x] A')
 - [x] M2.A — প্রথম সংস্করণের পরপর: নোটিশ, খরচ, রুটিন, ID কার্ড, সহায়তা (release R1.1): owner-signed acceptance — signed by the owner 2026-11-08: R1.1 accepted inside runtime R3 (R1.1-ACC, D195, 2026-11-08: php artisan test 1178, vitest 328, Playwright 80/80, verify.py ALL CHECKS PASSED)
 - [ ] M3.A — প্রতিষ্ঠান-গভীরতা: ফল, ভর্তি, অনলাইন-পেমেন্ট, ওয়েবসাইট, একাডেমিক-উন্নত (release R2): owner-signed acceptance
-- [ ] M4.A — টাকা ও মানুষ: ক্যাশবুক, বেতন, হিসাব-খাত, ইনভেন্টরি, দান (release R3): owner-signed acceptance
+- [x] M4.A — টাকা ও মানুষ: ক্যাশবুক, বেতন, হিসাব-খাত, ইনভেন্টরি, দান (release R3): owner-signed acceptance — signed by the owner 2026-11-08: Release 3 accepted (R3.A, 2026-10-18; D108 payroll rules)
 - [ ] M5.A — ক্যাম্পাস ও যন্ত্র: লাইব্রেরি, পরিবহন, হোস্টেল, অনলাইন ক্লাস, কার্ড-যন্ত্র (release R4): owner-signed acceptance
 - [ ] M6.A — প্ল্যাটফর্ম-ব্যবসা ও বিশ্লেষণ: একাধিক শাখা, অ্যানালিটিক্স (release R5): owner-signed acceptance
 - [ ] M7.A — বাহ্যিক সংযোগ: বাংলা QR, Nagad, ব্যাংক-API (বাইরের নথি ছাড়া শুরু করা যায় না) (release R6): owner-signed acceptance
