@@ -749,6 +749,14 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // ── D197 AAD.3: student leave requests (academics-advanced.md section 5) ──
+        Route::middleware(['module:attendance', 'module:student_leave'])->group(function () {
+            Route::post('/parent/children/{id}/leave-requests', [\App\Http\Controllers\Academic\StudentLeaveController::class, 'store'])->whereNumber('id')->middleware('role:parent');
+            Route::get('/parent/leave-requests',              [\App\Http\Controllers\Academic\StudentLeaveController::class, 'forParent'])->middleware('role:parent');
+            Route::get('/leave-requests/students',            [\App\Http\Controllers\Academic\StudentLeaveController::class, 'index'])->middleware('role:admin,teacher');
+            Route::patch('/leave-requests/students/{id}',     [\App\Http\Controllers\Academic\StudentLeaveController::class, 'decide'])->whereNumber('id')->middleware('role:admin,teacher');
+        });
+
         // ── D197 AAD.2: weighted final results and the tabulation sheet (academics-advanced.md section 1) ──
         Route::middleware(['module:exams', 'module:result_sheets'])->group(function () {
             Route::middleware('role:admin')->group(function () {

@@ -214,4 +214,9 @@ return [
     'result_sheet_published' => 'A published result sheet cannot change; make a new version.',
     'result_sheet_not_published' => 'Only a published sheet gets a new version.',
     'result_sheet_not_computed' => 'Compute the results before publishing.',
+    // D197 AAD.3
+    'leave_overlap' => 'A leave request already covers some of these dates.',
+    'leave_too_long' => 'A leave request can be at most 60 days.',
+    'leave_needs_admin' => 'This leave is longer than a teacher may approve; the admin decides.',
+    'leave_decided' => 'This request was already decided.',
 ];

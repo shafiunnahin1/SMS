@@ -25,6 +25,13 @@ class InstitutionSettings
         ];
     }
 
+    /** D197 AAD.3 (academics-advanced.md section 5): up to this many days a class teacher decides a student's leave; above it, the admin */
+    public function studentLeave(Institution $i): array
+    {
+        $l = ($i->settings ?? [])['student_leave'] ?? [];
+        return ['max_days_auto' => max(0, (int) ($l['max_days_auto'] ?? 3))];
+    }
+
     /** D197 AAD.1 (academics-advanced.md section 2): the dues block settings, `institutions.settings.fees`; both switches off by default */
     public function dueBlock(Institution $i): array
     {

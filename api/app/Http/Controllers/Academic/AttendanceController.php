@@ -24,9 +24,11 @@ class AttendanceController extends Controller
         $records = Attendance::where('batch_id', $batch->id)->whereDate('date', $data['date'])->get(['student_id', 'status', 'taken_by', 'created_at']);
         $saved = $records->pluck('status', 'student_id');
         $last = $records->sortByDesc('created_at')->first();
-        $rows = Enrollment::where('batch_id', $batch->id)->where('status', 'active')->with('student.user:id,name')->orderBy('roll_no')->orderBy('id')->get()
-            ->map(fn ($e) => ['student_id' => $e->student_id, 'name' => $e->student?->user?->name, 'code' => $e->student?->student_id,
-                'roll_no' => $e->roll_no, 'status' => $saved[$e->student_id] ?? null]);
+        $enrolled = Enrollment::where('batch_id', $batch->id)->where('status', 'active')->with('student.user:id,name')->orderBy('roll_no')->orderBy('id')->get();
+        // D197 AAD.3: approved leave makes `leave` the default of an unsaved row (the teacher may still change it)
+        $leave = \App\Models\StudentLeaveRequest::onLeave($enrolled->pluck('student_id')->all(), $data['date']);
+        $rows = $enrolled->map(fn ($e) => ['student_id' => $e->student_id, 'name' => $e->student?->user?->name, 'code' => $e->student?->student_id,
+                'roll_no' => $e->roll_no, 'status' => $saved[$e->student_id] ?? (isset($leave[$e->student_id]) ? 'leave' : null), 'on_leave' => isset($leave[$e->student_id])]);
 
         return response()->json(['success' => true, 'data' => [
             'batch' => ['id' => $batch->id, 'name' => $batch->name, 'program' => $batch->program?->name],

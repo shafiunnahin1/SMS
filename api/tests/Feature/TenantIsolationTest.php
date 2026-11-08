@@ -48,6 +48,8 @@ class TenantIsolationTest extends TestCase
     {
         return [
             'GET api/v1/staff/departments/{id}/portal' => null, // CrossTenantRouteTest uses institution_staff and a real foreign department.
+            'POST api/v1/parent/children/{id}/leave-requests' => null, // D197 AAD.3: CrossTenantRouteTest (parent, foreign child)
+            'PATCH api/v1/leave-requests/students/{id}' => fn (array $other) => $this->seedLeave($other),   // D197 AAD.3
             'GET api/v1/parent/children/{id}/final-results' => null, // D197 AAD.2: CrossTenantRouteTest (parent, foreign child)
             'POST api/v1/admin/departments/{department}/members' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()),
             'PATCH api/v1/admin/department-memberships/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()->id),
@@ -284,6 +286,14 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/question-bank/paper-folders/{id}'  => fn (array $other) => $this->seedPaperFolder($other),
             'DELETE api/v1/question-bank/paper-folders/{id}' => fn (array $other) => $this->seedPaperFolder($other),
         ];
+    }
+
+    /** D197 AAD.3: one pending leave request of the tenant's student */
+    private function seedLeave(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\StudentLeaveRequest::value('id') ?? \App\Models\StudentLeaveRequest::create(['student_id' => $student,
+            'from_date' => now()->toDateString(), 'to_date' => now()->toDateString(), 'total_days' => 1, 'status' => 'pending'])->id);
     }
 
     /** D197 AAD.2: one draft result sheet on the tenant's exam */

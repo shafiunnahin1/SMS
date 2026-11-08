@@ -43,6 +43,8 @@ class AttendanceService
         });
 
         // the alerts are built in the queue, not in the request: saving a sheet stays a fixed handful of queries (AttendanceBulkQueryCountTest)
+        // D197 AAD.3: a student on approved leave gets no absent SMS, whatever the sheet says
+        if ($absent) $absent = array_values(array_diff($absent, array_keys(\App\Models\StudentLeaveRequest::onLeave($absent, $date))));
         if ($absent) NotifyAbsentParentsJob::dispatch($absent, $date, $batch->id, $institution->id)->afterCommit();
         return ['saved' => count($data['records']), 'absent_count' => count($absent)];
     }

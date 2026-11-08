@@ -254,6 +254,10 @@ return [
     'POST api/v1/students/{id}/due-block-exemptions' => ['admin', 'accountant'],
     'DELETE api/v1/students/{id}/due-block-exemptions' => ['admin', 'accountant'],
     'GET api/v1/exams/{id}/admit-cards/blocked' => ['admin'],
+    'POST api/v1/parent/children/{id}/leave-requests' => ['parent'],   // D197 AAD.3
+    'GET api/v1/parent/leave-requests' => ['parent'],
+    'GET api/v1/leave-requests/students' => ['admin', 'teacher'],
+    'PATCH api/v1/leave-requests/students/{id}' => ['admin', 'teacher'],
     'GET api/v1/result-sheets' => ['admin'],   // D197 AAD.2
     'POST api/v1/result-sheets' => ['admin'],
     'GET api/v1/result-sheets/{id}' => ['admin'],

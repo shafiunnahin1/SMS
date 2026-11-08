@@ -26,6 +26,7 @@ class CrossTenantRouteTest extends TestCase
             'GET api/v1/staff/departments/{id}/portal' => ['institution_staff', "staff/departments/{$theirs['department']}/portal"],
             'GET api/v1/parent/children/{id}/export'       => ['parent', "parent/children/{$theirs['student']}/export"],
             'GET api/v1/parent/children/{id}/results'      => ['parent', "parent/children/{$theirs['student']}/results"],
+            'POST api/v1/parent/children/{id}/leave-requests' => ['parent', "parent/children/{$theirs['student']}/leave-requests"],   // D197 AAD.3
             'GET api/v1/parent/children/{id}/final-results' => ['parent', "parent/children/{$theirs['student']}/final-results"],   // D197 AAD.2
             'GET api/v1/parent/children/{id}/attendance'   => ['parent', "parent/children/{$theirs['student']}/attendance"],
             'GET api/v1/results/marksheet/{studentId}'     => ['admin', "results/marksheet/{$theirs['student']}?exam_id={$theirs['exam']}&format=json"],
