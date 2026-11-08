@@ -19,24 +19,34 @@ import { ErrorState } from '../../../components/StateViews'
 import { Select } from '../../../components/FormField'
 import Ltr from '../../../components/bidi/Ltr'
 
-const FIELDS = ['name', 'guardian_phone', 'batch', 'student_id', 'roll_no', 'gender', 'date_of_birth', 'father_name', 'mother_name', 'address', 'admission_date', 'studying_at']
-const REQUIRED = ['name', 'guardian_phone', 'batch']
+// D193 MIG.1: every kind of data-migration.md section 1 - its fields and the required ones (the server checks the same)
+export const KINDS = {
+  students: { fields: ['name', 'guardian_phone', 'batch', 'student_id', 'roll_no', 'gender', 'date_of_birth', 'father_name', 'mother_name', 'address', 'admission_date', 'studying_at'], required: ['name', 'guardian_phone', 'batch'] },
+  teachers: { fields: ['name', 'phone', 'employee_id', 'email', 'designation', 'department', 'joining_date'], required: ['name', 'phone'] },
+  fee_structure: { fields: ['program', 'batch', 'fee_category', 'amount'], required: ['program', 'fee_category', 'amount'] },
+  fee_history: { fields: ['student_id', 'fee_category', 'amount', 'paid_at', 'receipt_no', 'month', 'payment_method'], required: ['student_id', 'fee_category', 'amount', 'paid_at', 'receipt_no'] },
+  results: { fields: ['exam_name', 'academic_year', 'student_id', 'subject', 'marks', 'is_absent'], required: ['exam_name', 'student_id', 'subject', 'marks'] },
+  attendance: { fields: ['student_id', 'date', 'status', 'batch', 'note'], required: ['student_id', 'date', 'status'] },
+}
 const err = (e) => useUiStore.getState().addToast(e.response?.data?.errors ? Object.values(e.response.data.errors)[0][0] : e.response?.data?.message, 'error')
 
 // Step 4.2 /admin/settings/imports (docs/modules/data-migration.md): upload -> match columns -> check (writes nothing) -> run -> undo
-// within 7 days. Release 1 imports students only.
+// within 7 days. D193 MIG.1: students, teachers, fee structure, fee history, results and attendance; a rollback never removes
+// imported money or results (D32) - those rows are listed as kept.
 export default function Imports() {
   const { t } = useTranslation()
   const { locale } = useLocale()
   const qc = useQueryClient()
   const [jobId, setJobId] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [kind, setKind] = useState('students')
+  const term = useTerms()
   const jobs = useQuery({ queryKey: ['imports'], queryFn: () => api.get('/imports').then(r => r.data.data) })
 
   const upload = async ([file]) => {
     setUploading(true)
     try {
-      const fd = new FormData(); fd.append('kind', 'students'); fd.append('file', file)
+      const fd = new FormData(); fd.append('kind', kind); fd.append('file', file)
       const { data } = await api.post('/imports', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       qc.invalidateQueries({ queryKey: ['imports'] })
       setJobId(data.data.id)
@@ -46,16 +56,20 @@ export default function Imports() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title={t('imports.title')} actions={
-        <a href="/api/v1/imports/templates/students.xlsx" className="inline-flex items-center gap-2 h-10 px-4 rounded-token bg-surface text-content text-sm font-medium [border:1px_solid_var(--line)] hover:bg-surface-muted">
+        <a href={`/api/v1/imports/templates/${kind}.xlsx`} className="inline-flex items-center gap-2 h-10 px-4 rounded-token bg-surface text-content text-sm font-medium [border:1px_solid_var(--line)] hover:bg-surface-muted">
           <Download aria-hidden="true" className="h-4 w-4" />{t('imports.template')}</a>} />
       <Card className="flex flex-col gap-3">
         <p className="text-sm text-content-muted">{t('imports.intro')}</p>
+        <Select label={t('imports.kind')} value={kind} onChange={e => setKind(e.target.value)}
+          options={Object.keys(KINDS).map(k => ({ value: k, label: t(`imports.kinds.${k}`) }))} />
+        {['fee_history', 'results'].includes(kind) && <p className="text-sm text-content-muted">{t('imports.kept_note')}</p>}
         {uploading ? <Loader type="skeleton" rows={2} /> : <FileUpload accept=".xlsx,.csv" maxSize={5} label={t('imports.upload')} onUpload={upload} />}
       </Card>
       <Card>
         <h2 className="font-semibold mb-2">{t('imports.history')}</h2>
         <List columns={[
           { key: 'id', label: '#', render: r => <Ltr>{r.id}</Ltr> },
+          { key: 'kind', label: t('imports.kind'), render: r => t(`imports.kinds.${r.kind}`, { defaultValue: r.kind }) },
           { key: 'status', label: t('academic.status'), primary: true, render: r => t(`imports.statuses.${r.status}`) },
           { key: 'rows', label: t('imports.row'), render: r => t('imports.rows', { n: r.summary?.total ?? 0 }) },
           { key: 'created_at', label: t('students.since'), render: r => r.created_at ? <Ltr>{fmtDate(r.created_at, locale)}</Ltr> : '' },
@@ -88,6 +102,9 @@ function ImportJob({ id, onBack }) {
   const headers = s.headers ?? []
   const checked = ['dry_run', 'running', 'done', 'rolled_back'].includes(j.status)
   const editable = ['uploaded', 'mapped', 'dry_run'].includes(j.status)
+  const { fields: FIELDS, required: REQUIRED } = KINDS[j.kind] ?? KINDS.students
+  const label = (f) => j.kind === 'students' ? t(`imports.fields.${f}`, { unit: term('batch') })
+    : `${t(`imports.kfields.${f}`, { batch: term('batch'), program: term('program') })}${REQUIRED.includes(f) ? ' *' : ''}`
   const saveAndCheck = () => act(async () => {
     await api.put(`/imports/${id}/mapping`, { mapping: Object.fromEntries(Object.entries(mapping).filter(([, v]) => v)) })
     await api.post(`/imports/${id}/dry-run`)
@@ -105,7 +122,7 @@ function ImportJob({ id, onBack }) {
           <p className="text-sm text-content-muted">{t('imports.map_hint')}</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {FIELDS.map(f => (
-              <Select key={f} label={t(`imports.fields.${f}`, { unit: term('batch') })} placeholder={t('imports.not_mapped')} value={mapping[f] ?? ''}
+              <Select key={f} label={label(f)} placeholder={t('imports.not_mapped')} value={mapping[f] ?? ''}
                 options={headers.map(h => ({ value: h, label: h }))} onChange={e => setMapping({ ...mapping, [f]: e.target.value })}
                 error={REQUIRED.includes(f) && !mapping[f] ? ' ' : undefined} />
             ))}
@@ -135,7 +152,7 @@ function ImportJob({ id, onBack }) {
           {s.rollback_kept?.length > 0 && <p className="text-sm">{t('imports.kept', { rows: s.rollback_kept.join(', ') })}</p>}
           <List columns={[
             { key: 'row_no', label: t('imports.row'), numeric: true },
-            { key: 'name', label: t('students.name'), primary: true, render: r => <span dir="auto">{r.data?.name}</span> },
+            { key: 'name', label: t('imports.what'), primary: true, render: r => <span dir="auto">{r.data?.name ?? r.data?.student_id ?? r.data?.program ?? ''}</span> },
             { key: 'error', label: t('imports.reason'), render: r => <span dir="auto">{r.error}</span> },
           ]} rows={(j.rows ?? []).map(r => ({ ...r, id: r.row_no }))} empty={<p className="text-sm text-content-muted py-4"><UploadIcon aria-hidden="true" className="inline h-4 w-4" /> 0 {t('imports.error')}</p>} />
         </Card>

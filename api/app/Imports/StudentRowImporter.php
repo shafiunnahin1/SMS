@@ -2,7 +2,8 @@
 
 namespace App\Imports;
 
-use App\Models\{Batch, Student, User};
+use App\Models\{Attendance, Batch, Enrollment, FeePayment, ParentStudent, Result, Student, User};
+use App\Support\StudentFiles;
 use App\Services\StudentService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
@@ -10,14 +11,13 @@ use Illuminate\Support\Facades\Validator;
 // kind=students (data-migration.md section 1; row rules from student-import.md): one mapped row -> a student, their login, the
 // parent link and the enrollment(s) - always through StudentService / EnrollmentService. Natural key: the student ID code; a file
 // without codes uses name + guardian phone, so running the same file twice skips every row the second time.
-final class StudentRowImporter
+final class StudentRowImporter extends RowImporter
 {
     public const FIELDS = ['name', 'guardian_phone', 'batch', 'student_id', 'roll_no', 'gender', 'date_of_birth', 'father_name', 'mother_name',
         'address', 'admission_date', 'studying_at'];
     public const REQUIRED = ['name', 'guardian_phone', 'batch'];
 
     private Collection $batches;
-    private array $seen = [];
 
     public function __construct(private StudentService $students)
     {
@@ -38,15 +38,20 @@ final class StudentRowImporter
         $batchIds = $this->batchIds($data['batch']);
         if ($batchIds === null) return $this->result('error', __('errors.import_batch_unknown', ['value' => $data['batch']]), $data);
 
-        $key = $this->key($data);
-        if (isset($this->seen[$key])) return $this->result('error', __('errors.import_duplicate_row', ['row' => $this->seen[$key]]), $data);
-        $this->seen[$key] = $data['_row'] ?? '?';
+        if ($dup = $this->duplicate($this->key($data), $data)) return $dup;
         if ($this->exists($data)) return $this->result('skipped', __('errors.import_exists'), $data);
         return $this->result('ok', null, $data + ['_batch_ids' => $batchIds]);
     }
 
-    /** Creates the student; returns its id. Called only for rows check() passed. */
-    public function create(array $data): int
+    public function fields(): array { return self::FIELDS; }
+    public function required(): array { return self::REQUIRED; }
+    public function aliases(): array
+    {
+        return ['batch_id' => 'batch', 'section' => 'batch', 'phone' => 'guardian_phone', 'mobile' => 'guardian_phone', 'dob' => 'date_of_birth', 'roll' => 'roll_no'];
+    }
+
+    /** Creates the student. Called only for rows check() passed. */
+    public function create(array $data): array
     {
         $batches = $data['_batch_ids'];
         $profile = array_filter(array_intersect_key($data, array_flip(array_diff(self::FIELDS, ['batch', 'roll_no']))), fn ($v) => $v !== '' && $v !== null);
@@ -54,7 +59,23 @@ final class StudentRowImporter
         $student = $this->students->create(array_filter($profile, fn ($v) => $v !== null), Batch::findOrFail($batches[0]),
             array_filter(['roll_no' => $data['roll_no'] ?? null], fn ($v) => $v !== null && $v !== ''));
         foreach (array_slice($batches, 1) as $bid) app(\App\Services\EnrollmentService::class)->enroll($student, Batch::findOrFail($bid));
-        return $student->id;
+        return ['students', $student->id];
+    }
+
+    /** Removes the student, the login, the parent link and enrollments - not when fees, attendance or results exist since */
+    public function undo(string $table, int $id): ?string
+    {
+        $student = Student::withTrashed()->find($id);
+        if (!$student) return null;
+        if (FeePayment::where('student_id', $student->id)->exists() || Attendance::where('student_id', $student->id)->exists()
+            || Result::where('student_id', $student->id)->exists()) return __('errors.import_has_dependents');
+        Enrollment::where('student_id', $student->id)->delete();
+        ParentStudent::where('student_id', $student->id)->delete();
+        StudentFiles::deleteAll($student);
+        $userId = $student->user_id;
+        $student->forceDelete();
+        if ($userId) User::whereKey($userId)->delete();
+        return null;
     }
 
     /** An id, a batch name, "Program - Batch" / "Program — Batch"; coaching: several separated by commas. null = unknown. */
@@ -83,8 +104,4 @@ final class StudentRowImporter
             ->whereHas('user', fn ($u) => $u->where('name', $d['name']))->exists();
     }
 
-    private function result(string $status, ?string $error, array $data): array
-    {
-        return ['status' => $status, 'error' => $error ? mb_substr($error, 0, 255) : null, 'data' => $data];
-    }
 }

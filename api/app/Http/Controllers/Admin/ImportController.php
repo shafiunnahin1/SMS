@@ -10,7 +10,7 @@ use App\Services\ImportService;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
-// Step 4.2 (docs/modules/data-migration.md "Endpoint", module data_migration, admin). R1: kind=students only.
+// Step 4.2 (docs/modules/data-migration.md "Endpoint", module data_migration, admin). Kinds: config release.import_kinds (D193 MIG.1).
 class ImportController extends Controller
 {
     public function __construct(private ImportService $imports) {}
@@ -68,7 +68,8 @@ class ImportController extends Controller
     public function template(string $kind)
     {
         if (!in_array($kind, config('release.import_kinds', []), true)) throw new BusinessException('kind', 'kind_not_available', 422);
-        return Excel::download(new StudentImportTemplate(), "{$kind}-template.xlsx");
+        if ($kind === 'students') return Excel::download(new StudentImportTemplate(), "{$kind}-template.xlsx");
+        return Excel::download(new SimpleSheetExport(\App\Imports\RowImporter::for($kind)->fields(), [], $kind), "{$kind}-template.xlsx");   // D193 MIG.1: the columns, empty
     }
 
     private function job(ImportJob $j): array

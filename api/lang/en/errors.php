@@ -191,4 +191,10 @@ return [
     'ticket_not_reopenable' => 'Only a resolved ticket can be opened again.',
     'ticket_not_closed' => 'A ticket can be rated after it is closed.',
     'ticket_already_rated' => 'This ticket is already rated.',
+    'import_unknown' => 'Unknown :field: ":value".',
+    'import_phone_taken' => 'Another account of this institution already uses this phone.',
+    'import_too_many_lines' => 'An old receipt may have at most 255 lines.',
+    'import_marks_over' => 'Marks are above the full marks (:full).',
+    'import_money_kept' => 'Imported fee receipts are never deleted (D32); correct them with a reversal.',
+    'import_results_kept' => 'Imported results are published and are never deleted (D32).',
 ];

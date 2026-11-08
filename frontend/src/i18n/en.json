@@ -516,7 +516,7 @@
     "on_leave": "On leave"
    }
   },
-  "imports": {
+  "imports": {"kind": "What to import", "what": "Row", "kept_note": "A rollback never removes imported fee receipts or results (D32): check the dry-run carefully before running.", "kinds": {"students": "Students", "teachers": "Teachers", "fee_structure": "Fee amounts", "fee_history": "Old fee receipts", "results": "Old exam results", "attendance": "Old attendance"}, "kfields": {"name": "Name", "phone": "Phone", "employee_id": "Employee ID", "email": "E-mail", "designation": "Designation", "department": "Department", "joining_date": "Joining date", "program": "{{program}}", "batch": "{{batch}}", "fee_category": "Fee head", "amount": "Amount", "student_id": "Student ID", "paid_at": "Paid on", "receipt_no": "Old receipt no.", "month": "For month (YYYY-MM)", "payment_method": "Paid by", "exam_name": "Exam", "academic_year": "Year", "subject": "Subject", "marks": "Marks", "is_absent": "Absent", "date": "Date", "status": "Status (P/A/L/V)", "note": "Note"},
    "title": "Import data",
    "intro": "Bring students from an old register or another program: upload, match the columns, check, then run. A run can be undone for 7 days.",
   

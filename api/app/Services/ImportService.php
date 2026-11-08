@@ -3,15 +3,16 @@
 namespace App\Services;
 
 use App\Exceptions\BusinessException;
-use App\Imports\{SheetReader, StudentRowImporter};
+use App\Imports\{RowImporter, SheetReader};
 use App\Jobs\RunImportJob;
-use App\Models\{AuditLog, Attendance, Enrollment, FeePayment, ImportJob, ImportRow, ParentStudent, Result, Student, User};
-use App\Support\{StudentFiles, TenantBulk};
+use App\Models\{AuditLog, ImportJob, ImportRow};
+use App\Support\TenantBulk;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\{DB, Storage};
 
 // docs/modules/data-migration.md: upload -> map -> dry-run (mandatory, writes nothing but the report) -> run (chunks of 500, a bad
-// row never stops the others) -> rollback within 7 days. R1 ships kind=students only (config release.import_kinds).
+// row never stops the others) -> rollback within 7 days. The kinds (config release.import_kinds) are App\Imports\RowImporter classes
+// (D193 MIG.1); money and results are never deleted by a rollback (D32, owner 2026-11-07).
 class ImportService
 {
     public const MAX_ROWS = 20000;
@@ -28,7 +29,7 @@ class ImportService
         return DB::transaction(function () use ($kind, $file, $ext, $sheet, $by) {
             $job = ImportJob::create(['kind' => $kind, 'status' => 'uploaded', 'file_path' => 'pending', 'created_by' => $by,
                 'summary' => ['headers' => $sheet['headers'], 'total' => count($sheet['rows'])],
-                'mapping' => $this->guessMapping($sheet['headers'])]);
+                'mapping' => $this->guessMapping($kind, $sheet['headers'])]);
             $path = $file->storeAs("institutions/{$job->institution_id}/imports", "{$job->id}.{$ext}", 'private');
             $job->update(['file_path' => $path]);
             AuditLog::record('import.uploaded', $job, ['kind' => $kind, 'rows' => count($sheet['rows'])]);
@@ -41,23 +42,24 @@ class ImportService
     {
         $this->expect($job, ['uploaded', 'mapped', 'dry_run']);
         $headers = $job->summary['headers'] ?? [];
-        $mapping = array_filter(array_intersect_key($mapping, array_flip(StudentRowImporter::FIELDS)), fn ($h) => in_array($h, $headers, true));
-        $missing = array_values(array_diff(StudentRowImporter::REQUIRED, array_keys($mapping)));
+        $importer = RowImporter::for($job->kind);
+        $mapping = array_filter(array_intersect_key($mapping, array_flip($importer->fields())), fn ($h) => in_array($h, $headers, true));
+        $missing = array_values(array_diff($importer->required(), array_keys($mapping)));
         if ($missing) throw new BusinessException('mapping', 'import_mapping_missing', 422, ['fields' => implode(', ', $missing)]);
         $job->update(['mapping' => $mapping, 'status' => 'mapped']);
         ImportRow::where('job_id', $job->id)->delete();                               // an old dry-run report no longer applies
         return $job->fresh();
     }
 
-    /** Checks every row and stores the report in import_rows; writes no student, user or enrollment */
+    /** Checks every row and stores the report in import_rows; writes nothing else */
     public function dryRun(ImportJob $job): ImportJob
     {
         $this->expect($job, ['mapped', 'dry_run']);
-        $importer = app(StudentRowImporter::class);
+        $importer = RowImporter::for($job->kind);
         $rows = [];
         foreach ($this->mappedRows($job) as $no => $data) {
             $r = $importer->check($data + ['_row' => $no]);
-            unset($r['data']['_row'], $r['data']['_batch_ids']);
+            $r['data'] = array_filter($r['data'], fn ($k) => !str_starts_with((string) $k, '_'), ARRAY_FILTER_USE_KEY);   // internal keys stay out of the report
             $rows[] = ['institution_id' => $job->institution_id, 'job_id' => $job->id, 'row_no' => $no, 'status' => $r['status'], 'error' => $r['error'], 'data' => json_encode($r['data'], JSON_UNESCAPED_UNICODE)];
         }
         DB::transaction(function () use ($job, $rows) {
@@ -83,7 +85,7 @@ class ImportService
     /** The run itself (RunImportJob): every row is checked again, each chunk of 500 is one transaction, a failing row is recorded */
     public function run(ImportJob $job): void
     {
-        $importer = app(StudentRowImporter::class);
+        $importer = RowImporter::for($job->kind);
         foreach (array_chunk($this->mappedRows($job), self::CHUNK, true) as $chunk) {
             DB::transaction(function () use ($job, $chunk, $importer) {
                 foreach ($chunk as $no => $data) {
@@ -98,7 +100,7 @@ class ImportService
                     }
                     $clean = $data; unset($clean['_row']);
                     ImportRow::updateOrCreate(['job_id' => $job->id, 'row_no' => $no], ['status' => $r['status'], 'error' => $r['error'] ?? null,
-                        'data' => $clean, 'created_table' => $created ? 'students' : null, 'created_id' => $created]);
+                        'data' => $clean, 'created_table' => $created[0] ?? null, 'created_id' => $created[1] ?? null]);
                 }
             });
         }
@@ -106,28 +108,21 @@ class ImportService
         AuditLog::record('import.run', $job, ['created' => $job->summary['ok'] ?? 0]);
     }
 
-    /** Removes what the run created - except students that have fees, attendance or results since (listed, never forced) */
+    /** Removes what the run created - except rows something depends on since, and money / results (D32): listed, never forced */
     public function rollback(ImportJob $job): ImportJob
     {
         $this->expect($job, ['done']);
         if ($job->finished_at?->lt(now()->subDays(7))) throw new BusinessException('expired', 'import_rollback_expired', 422);
+        $importer = RowImporter::for($job->kind);
         $kept = [];
-        DB::transaction(function () use ($job, &$kept) {
-            foreach (ImportRow::where('job_id', $job->id)->where('created_table', 'students')->whereNotNull('created_id')->get() as $row) {
-                $student = Student::withTrashed()->find($row->created_id);
-                if (!$student) continue;
-                if (FeePayment::where('student_id', $student->id)->exists() || Attendance::where('student_id', $student->id)->exists()
-                    || Result::where('student_id', $student->id)->exists()) {
+        DB::transaction(function () use ($job, $importer, &$kept) {
+            foreach (ImportRow::where('job_id', $job->id)->whereNotNull('created_table')->whereNotNull('created_id')->orderBy('row_no')->get() as $row) {
+                $reason = $importer->undo($row->created_table, (int) $row->created_id);
+                if ($reason !== null) {
                     $kept[] = $row->row_no;
-                    $row->update(['error' => __('errors.import_has_dependents')]);
+                    $row->update(['error' => mb_substr($reason, 0, 255)]);
                     continue;
                 }
-                Enrollment::where('student_id', $student->id)->delete();
-                ParentStudent::where('student_id', $student->id)->delete();
-                StudentFiles::deleteAll($student);
-                $userId = $student->user_id;
-                $student->forceDelete();
-                if ($userId) User::whereKey($userId)->delete();
                 $row->update(['created_id' => null, 'created_table' => null]);
             }
             $job->update(['status' => 'rolled_back', 'summary' => ($job->summary ?? []) + ['rollback_kept' => $kept]]);
@@ -156,14 +151,15 @@ class ImportService
             'skipped' => (int) ($counts['skipped'] ?? 0)]);
     }
 
-    private function guessMapping(array $headers): array
+    private function guessMapping(string $kind, array $headers): array
     {
         $norm = fn ($s) => preg_replace('/[^a-z_]/', '', str_replace([' ', '-'], '_', mb_strtolower($s)));
-        $alias = ['batch_id' => 'batch', 'section' => 'batch', 'phone' => 'guardian_phone', 'mobile' => 'guardian_phone', 'dob' => 'date_of_birth', 'roll' => 'roll_no'];
+        $importer = RowImporter::for($kind);
+        $alias = $importer->aliases();
         $map = [];
         foreach ($headers as $h) {
             $k = $norm($h);
-            $field = in_array($k, StudentRowImporter::FIELDS, true) ? $k : ($alias[$k] ?? null);
+            $field = in_array($k, $importer->fields(), true) ? $k : ($alias[$k] ?? null);
             if ($field && !isset($map[$field])) $map[$field] = $h;
         }
         return $map;

@@ -516,7 +516,7 @@
     "on_leave": "ছুটিতে"
    }
   },
-  "imports": {
+  "imports": {"kind": "কী আমদানি করবেন", "what": "সারি", "kept_note": "রোলব্যাকে আমদানি-করা ফি-রসিদ ও ফলাফল কখনো মোছা হয় না (D32): চালানোর আগে ড্রাই-রান ভালো করে দেখুন।", "kinds": {"students": "শিক্ষার্থী", "teachers": "শিক্ষক", "fee_structure": "ফি-এর পরিমাণ", "fee_history": "পুরনো ফি-রসিদ", "results": "পুরনো পরীক্ষার ফলাফল", "attendance": "পুরনো উপস্থিতি"}, "kfields": {"name": "নাম", "phone": "ফোন", "employee_id": "কর্মী আইডি", "email": "ইমেইল", "designation": "পদবি", "department": "বিভাগ", "joining_date": "যোগদানের তারিখ", "program": "{{program}}", "batch": "{{batch}}", "fee_category": "ফি-খাত", "amount": "পরিমাণ", "student_id": "শিক্ষার্থী আইডি", "paid_at": "পরিশোধের তারিখ", "receipt_no": "পুরনো রসিদ নং", "month": "কোন মাসের (YYYY-MM)", "payment_method": "পরিশোধের মাধ্যম", "exam_name": "পরীক্ষা", "academic_year": "বছর", "subject": "বিষয়", "marks": "নম্বর", "is_absent": "অনুপস্থিত", "date": "তারিখ", "status": "অবস্থা (P/A/L/V)", "note": "নোট"},
    "title": "ডেটা আমদানি",
    "intro": "পুরনো খাতা বা অন্য সফটওয়্যার থেকে ছাত্র আনুন: ফাইল দিন, ঘর মেলান, পরীক্ষা করুন, তারপর চালান। ৭ দিনের মধ্যে ফেরানো যায়।",
   
