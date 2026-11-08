@@ -32,7 +32,7 @@ export default function IdCards() {
             <Select label={term('program')} placeholder={t('cards.choose')} value={programId} onChange={e => { setProgramId(e.target.value); setBatchId('') }}
               options={programs.data.map(p => ({ value: String(p.id), label: p.name }))} />
             <Select label={term('batch')} placeholder={t('cards.all_batches')} value={batchId} disabled={!programId} onChange={e => setBatchId(e.target.value)}
-              options={(batches.data ?? []).filter(b => String(b.program_id) === programId).map(b => ({ value: String(b.id), label: b.name }))} />
+              options={(batches.data ?? []).filter(b => String(b.program_id ?? b.program?.id) === programId).map(b => ({ value: String(b.id), label: b.name }))} />
           </div>
           <p className="mt-3 text-sm text-content-muted">{t('cards.id_hint')}</p>
           <div className="mt-3 flex justify-end">

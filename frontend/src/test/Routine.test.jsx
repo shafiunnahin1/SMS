@@ -13,7 +13,7 @@ import { usePrint } from '../hooks/usePrint'
 vi.mock('../api/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() }, bindAuthStore: () => {} }))
 
 const slot = { id: 5, day_of_week: 'sun', start_time: '09:00', end_time: '09:45', subject: 'Bangla', teacher: 'Karim', batch: 'A', room_no: '101', program_id: 1, batch_id: 3, subject_id: 7, teacher_id: 9 }
-const data = { '/programs': [{ id: 1, name: 'Class 10' }], '/batches': [{ id: 3, name: 'A', program_id: 1 }], '/subjects': [{ id: 7, name: 'Bangla' }], '/teachers': [{ id: 9, name: 'Karim' }], '/routines': [slot], '/routines/teacher': [slot] }
+const data = { '/programs': [{ id: 1, name: 'Class 10' }], '/batches': [{ id: 3, name: 'A', program: { id: 1, name: 'Class 10' } }], '/subjects': [{ id: 7, name: 'Bangla' }], '/teachers': [{ id: 9, name: 'Karim' }], '/routines': [slot], '/routines/teacher': [slot] }
 const at = (el) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter>{el}</MemoryRouter></QueryClientProvider>)
 
 // D193 RTN.1: the builder shows the week, sends a slot and shows the server's clash message; a teacher reads their own week

@@ -11,7 +11,7 @@ vi.mock('../api/axios', () => ({ default: { get: vi.fn(), put: vi.fn() }, bindAu
 
 const exam = { id: 7, name: 'Half yearly', exam_type: 'term', academic_year: 2026, program: { id: 1, name: 'Class 10' }, batch: null,
   admit_card_available: false, admit_card_from: null, exam_center: null, admit_card_instructions: null }
-const data = { '/exams': [exam], '/batches': [{ id: 3, name: 'A', program_id: 1 }], '/programs': [{ id: 1, name: 'Class 10' }] }
+const data = { '/exams': [exam], '/batches': [{ id: 3, name: 'A', program: { id: 1, name: 'Class 10' } }], '/programs': [{ id: 1, name: 'Class 10' }] }
 const at = (el) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter>{el}</MemoryRouter></QueryClientProvider>)
 
 // D193 ADM.1: admit-card settings are saved with the exam's own fields; printing asks the server for the PDF (blob)

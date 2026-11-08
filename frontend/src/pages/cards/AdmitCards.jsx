@@ -37,7 +37,7 @@ export default function AdmitCards() {
       list.refetch()
     } catch { /* the interceptor shows the error */ }
   }
-  const examBatches = (batches.data ?? []).filter(b => exam && String(b.program_id) === String(exam.program?.id))
+  const examBatches = (batches.data ?? []).filter(b => exam && String(b.program_id ?? b.program?.id) === String(exam.program?.id))
   return (
     <div>
       <PageHeader title={t('cards.admit_title')} />

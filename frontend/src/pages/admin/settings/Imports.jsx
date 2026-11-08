@@ -145,7 +145,7 @@ function ImportJob({ id, onBack }) {
           <div className="flex flex-wrap gap-2 justify-end">
             {(s.error ?? 0) > 0 && <a href={`/api/v1/imports/${id}/errors.xlsx`} className="inline-flex items-center gap-2 h-10 px-4 rounded-token bg-surface text-content text-sm font-medium [border:1px_solid_var(--line)] hover:bg-surface-muted">
               <Download aria-hidden="true" className="h-4 w-4" />{t('imports.errors_file')}</a>}
-            {j.status === 'dry_run' && (s.ok ?? 0) > 0 && <Button onClick={() => act(() => api.post(`/imports/${id}/run`))} loading={busy}><Play aria-hidden="true" className="h-4 w-4" />{t('imports.run', { n: s.ok })}</Button>}
+            {j.status === 'dry_run' && (s.ok ?? 0) > 0 && <Button onClick={() => act(() => api.post(`/imports/${id}/run`))} loading={busy}><Play aria-hidden="true" className="h-4 w-4" />{j.kind === 'students' ? t('imports.run', { n: s.ok }) : t('imports.run_rows', { n: s.ok })}</Button>}
             {j.status === 'done' && <Button variant="danger" onClick={rollback} loading={busy}><RotateCcw aria-hidden="true" className="h-4 w-4" />{t('imports.rollback')}</Button>}
           </div>
           {j.rollback_until && <p className="text-xs text-content-muted">{t('imports.rollback_until', { date: fmtDate(j.rollback_until, locale) })}</p>}

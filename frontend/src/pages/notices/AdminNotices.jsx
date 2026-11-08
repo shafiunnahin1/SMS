@@ -66,7 +66,7 @@ export default function AdminNotices() {
           <Select label={term('program')} placeholder={t('notices.everyone')} error={errors.program_id?.message}
             options={(programs.data ?? []).map(p => ({ value: String(p.id), label: p.name }))} {...register('program_id')} />
           <Select label={term('batch')} placeholder={t('notices.whole_program')} disabled={!programId} error={errors.batch_id?.message}
-            options={(batches.data ?? []).filter(b => String(b.program_id) === String(programId)).map(b => ({ value: String(b.id), label: b.name }))} {...register('batch_id')} />
+            options={(batches.data ?? []).filter(b => String(b.program_id ?? b.program?.id) === String(programId)).map(b => ({ value: String(b.id), label: b.name }))} {...register('batch_id')} />
           <Input type="datetime-local" ltr label={t('notices.published_at')} hint={t('notices.publish_hint')} error={errors.published_at?.message} {...register('published_at')} />
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[var(--color-primary)]" {...register('require_ack')} />{t('notices.require_ack')}</label>
           {requireAck && <Input type="date" ltr label={t('notices.ack_deadline')} error={errors.ack_deadline?.message} {...register('ack_deadline')} />}

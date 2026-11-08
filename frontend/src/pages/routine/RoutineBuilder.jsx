@@ -48,7 +48,7 @@ export default function RoutineBuilder() {
       else if (e.response?.status === 422) useUiStore.getState().addToast(e.response.data.message, 'error')   // routine_conflict names the clash
     }
   }
-  const progBatches = (batches.data ?? []).filter(b => String(b.program_id) === programId)
+  const progBatches = (batches.data ?? []).filter(b => String(b.program_id ?? b.program?.id) === programId)
   return (
     <div>
       <PageHeader title={t('routine.title')} actions={programId && (
