@@ -93,7 +93,8 @@
    "id_cards",
    "routine",
    "support",
-   "result_sheets"
+   "result_sheets",
+   "student_leave"
   ],
   "roles": [
  "super_admin",
