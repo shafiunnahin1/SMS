@@ -109,6 +109,8 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/routines/{id}' => fn (array $other) => $this->seedRoutine($other),   // D193 RTN.1
             'DELETE api/v1/routines/{id}' => fn (array $other) => $this->seedRoutine($other),
             'GET api/v1/routines/{id}/print' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Enrollment::where('student_id', $this->seedStudent($other))->value('program_id')),
+            'GET api/v1/admin/exports/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\TenantExport::create(['kind' => 'export', 'status' => 'ready', 'file_path' => 'x', 'expires_at' => now()->addDay()])->id),   // D193 EXP.1
+            'GET api/v1/admin/exports/{id}/download' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\TenantExport::create(['kind' => 'export', 'status' => 'ready', 'file_path' => 'x', 'expires_at' => now()->addDay()])->id),
             'GET api/v1/support/tickets/{id}' => fn (array $other) => $this->seedTicket($other),   // D193 SUP.1
             'POST api/v1/support/tickets/{id}/messages' => fn (array $other) => $this->seedTicket($other),
             'POST api/v1/support/tickets/{id}/close' => fn (array $other) => $this->seedTicket($other),

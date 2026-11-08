@@ -240,6 +240,12 @@ return [
     'POST api/v1/super/support/tickets/{id}/messages' => ['super_admin'],
     'POST api/v1/super/support/tickets/{id}/assign' => ['super_admin'],
     'POST api/v1/super/support/tickets/{id}/status' => ['super_admin'],
+    'GET api/v1/admin/exports' => ['admin'],   // D193 EXP.1
+    'POST api/v1/admin/exports' => ['admin'],
+    'GET api/v1/admin/exports/{id}' => ['admin'],
+    'GET api/v1/admin/exports/{id}/download' => ['admin'],
+    'POST api/v1/super/institutions/{id}/backup' => ['super_admin'],
+    'POST api/v1/super/institutions/import' => ['super_admin'],
     'GET api/v1/subscription/modules' => ['admin'],
     'POST api/v1/subscription/quote' => ['admin'],
     'POST api/v1/subscription/checkout' => ['admin'],

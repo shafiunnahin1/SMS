@@ -94,6 +94,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/module-prices',                  [\App\Http\Controllers\SuperAdmin\ModulePriceController::class, 'index']);
         Route::post('/module-prices',                 [\App\Http\Controllers\SuperAdmin\ModulePriceController::class, 'store']);
         // D187 SUB.2: coupons (percent; pausing stops new redemptions)
+        // D193 EXP.1 (D38): back an institution up; restore an export / backup as a NEW institution
+        Route::post('/institutions/{id}/backup',    [\App\Http\Controllers\Export\SuperExportController::class, 'backup'])->whereNumber('id');
+        Route::post('/institutions/import',           [\App\Http\Controllers\Export\SuperExportController::class, 'import']);
         // D193 SUP.1: the platform's support queue
         Route::get('/support/tickets',                [\App\Http\Controllers\Support\SuperSupportController::class, 'index']);
         Route::get('/support/tickets/{id}',           [\App\Http\Controllers\Support\SuperSupportController::class, 'show'])->whereNumber('id');
@@ -712,6 +715,14 @@ Route::prefix('v1')->group(function () {
             });
             Route::get('/results/marksheet/{studentId}',  [ResultController::class, 'marksheet'])->whereNumber('studentId')->middleware('role:admin,teacher,parent,institution_staff');
             Route::get('/parent/children/{id}/results',   [ResultController::class, 'forParent'])->whereNumber('id')->middleware('role:parent');
+        });
+
+        // ── D193 EXP.1 (D38): the institution's own data export (admin; password again; one a day; download once) ──
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/admin/exports',                  [\App\Http\Controllers\Export\ExportController::class, 'index']);
+            Route::post('/admin/exports',                 [\App\Http\Controllers\Export\ExportController::class, 'store']);
+            Route::get('/admin/exports/{id}',             [\App\Http\Controllers\Export\ExportController::class, 'show'])->whereNumber('id');
+            Route::get('/admin/exports/{id}/download',    [\App\Http\Controllers\Export\ExportController::class, 'download'])->whereNumber('id');
         });
 
         // ── D193 SUP.1: support tickets to the platform (admin, accountant) ──

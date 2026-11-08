@@ -35,3 +35,4 @@ Artisan::command('ops:alert-test', function () {
 // D187 SUB.1: module subscriptions' trial / grace / read-only state
 \Illuminate\Support\Facades\Schedule::command('subscriptions:refresh')->dailyAt('00:40')->withoutOverlapping();
 \Illuminate\Support\Facades\Schedule::command('support:auto-close')->dailyAt('03:20')->withoutOverlapping();   // D193 SUP.1
+\Illuminate\Support\Facades\Schedule::command('exports:prune')->hourly()->withoutOverlapping();   // D193 EXP.1

@@ -2,10 +2,10 @@ import { useState } from 'react'
 import api from '../api/axios'
 import { useUiStore } from '../store/uiStore'
 
-// A refused PDF (422 / 404) arrives as a JSON blob: show its message (the interceptor shows only 401/403/429/5xx)
+// A refused file (404 / 410 / 422) arrives as a JSON blob: show its message (the interceptor shows only 401/403/429/5xx)
 const showRefusal = async (e) => {
   const data = e?.response?.data
-  if (!(data instanceof Blob) || ![404, 422].includes(e.response.status)) return
+  if (!(data instanceof Blob) || ![404, 410, 422].includes(e.response.status)) return
   try { const msg = JSON.parse(await data.text())?.message; if (msg) useUiStore.getState().addToast(msg, 'error') } catch { /* not JSON */ }
 }
 

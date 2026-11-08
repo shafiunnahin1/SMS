@@ -197,4 +197,12 @@ return [
     'import_marks_over' => 'Marks are above the full marks (:full).',
     'import_money_kept' => 'Imported fee receipts are never deleted (D32); correct them with a reversal.',
     'import_results_kept' => 'Imported results are published and are never deleted (D32).',
+    'export_password_wrong' => 'The password is not correct.',
+    'export_once_a_day' => 'One data export per day; try again tomorrow.',
+    'export_gone' => 'This file was already downloaded or has expired.',
+    'export_decrypt_failed' => 'The passphrase is wrong or the file is damaged.',
+    'import_slug_taken' => 'This address is already used by another institution.',
+    'import_format_unknown' => 'This export format is not known.',
+    'import_checksum' => 'The file is damaged (checksum).',
+    'import_unmapped' => 'The import stopped: :what is not in the export map. Nothing was created.',
 ];

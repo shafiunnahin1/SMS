@@ -197,4 +197,12 @@ return [
     'import_marks_over' => 'নম্বর পূর্ণমানের (:full) বেশি।',
     'import_money_kept' => 'আমদানি-করা ফি-রসিদ কখনো মোছা হয় না (D32); ভুল হলে উল্টো লাইন দিয়ে সংশোধন করুন।',
     'import_results_kept' => 'আমদানি-করা ফলাফল প্রকাশিত, তাই কখনো মোছা হয় না (D32)।',
+    'export_password_wrong' => 'পাসওয়ার্ড সঠিক নয়।',
+    'export_once_a_day' => 'দিনে একবার ডেটা export করা যায়; কাল আবার চেষ্টা করুন।',
+    'export_gone' => 'ফাইলটি আগেই নামানো হয়েছে বা মেয়াদ শেষ।',
+    'export_decrypt_failed' => 'পাসফ্রেজ ভুল বা ফাইলটি নষ্ট।',
+    'import_slug_taken' => 'এই ঠিকানা অন্য প্রতিষ্ঠান ব্যবহার করছে।',
+    'import_format_unknown' => 'এই export-ফরম্যাট অজানা।',
+    'import_checksum' => 'ফাইলটি নষ্ট (checksum মেলেনি)।',
+    'import_unmapped' => 'আমদানি থেমেছে: :what export-ম্যাপে নেই। কিছুই তৈরি হয়নি।',
 ];
