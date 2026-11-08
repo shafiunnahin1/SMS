@@ -10,6 +10,7 @@ import Button from '../../components/Button'
 import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import Ltr from '../../components/bidi/Ltr'
+import FinalResults from '../../features/exams/FinalResults'
 
 // Step 4.5 /parent/results: the chosen child's PUBLISHED exams (GET /parent/children/{id}/results) and the marksheet PDF
 export default function ParentResults() {
@@ -39,6 +40,7 @@ export default function ParentResults() {
           ))}
         </div>
       )}
+      {child && <FinalResults key={child} url={`/parent/children/${child}/final-results`} />}   {/* D197 AAD.2 */}
       {results.isPending ? <Loader type="cards" count={2} /> : results.isError ? <ErrorState onRetry={results.refetch} />
         : results.data.blocked ? <Card data-testid="result-blocked"><h2 className="font-semibold">{t('due_block.blocked_title')}</h2><p className="text-sm" dir="auto">{results.data.blocked.reason}</p></Card>   /* D197 AAD.1 */
         : !results.data.exams.length ? <EmptyState title={t('exams.none_published')} /> : results.data.exams.map(sheet => (

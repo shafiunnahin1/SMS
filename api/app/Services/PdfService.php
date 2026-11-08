@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 // Arabic shaping). This class is the one place that knows the engine. The page gets no network: images arrive as data URIs.
 class PdfService
 {
-    private const PAPER = ['a4' => [8.27, 11.69], 'a5' => [5.83, 8.27], 'a6' => [4.13, 5.83], 'letter' => [8.5, 11.0], 'legal' => [8.5, 14.0]];   // inches (Chromium's unit)
+    private const PAPER = ['a4' => [8.27, 11.69], 'a5' => [5.83, 8.27], 'a6' => [4.13, 5.83], 'a3' => [11.69, 16.54], 'letter' => [8.5, 11.0], 'legal' => [8.5, 14.0]];   // inches (Chromium's unit)
 
     /** Render a Blade view to PDF bytes; every view gets the theme, the logo (data URI), the locale and its direction */
     public function render(string $view, array $data = [], string $paper = 'a4', string $orientation = 'portrait', bool $qbankFigures = false): string

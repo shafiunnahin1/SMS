@@ -29,6 +29,7 @@ const FeeCategories = lazy(() => import('../pages/admin/fees/FeeCategories'))
 const AdminNotices = lazy(() => import('../pages/notices/AdminNotices'))   // D193 NTC.1
 const NoticeBoard = lazy(() => import('../pages/notices/NoticeBoard'))
 const AdmitCards = lazy(() => import('../pages/cards/AdmitCards'))   // D193 ADM.1
+const ResultSheets = lazy(() => import('../pages/exams/ResultSheets'))   // D197 AAD.2
 const IdCards = lazy(() => import('../pages/cards/IdCards'))
 const RoutineBuilder = lazy(() => import('../pages/routine/RoutineBuilder'))   // D193 RTN.1
 const MyRoutine = lazy(() => import('../pages/routine/MyRoutine'))
@@ -160,7 +161,7 @@ export const tenantRoutes = [
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/categories', element: S(FeeCategories) },
     { path: 'notices', element: S(AdminNotices) },
-    { path: 'exams/admit-cards', element: S(AdmitCards) }, { path: 'students/id-cards', element: S(IdCards) },
+    { path: 'exams/admit-cards', element: S(AdmitCards) }, { path: 'exams/result-sheets', element: S(ResultSheets) }, { path: 'students/id-cards', element: S(IdCards) },
     { path: 'academic/routine', element: S(RoutineBuilder) },
     { path: 'support', element: S(SupportTickets, { mode: 'institution' }) },
     { path: 'settings/exports', element: S(DataExport) },

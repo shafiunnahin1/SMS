@@ -112,6 +112,7 @@ class RoleMatrixContractTest extends TestCase
             if ($uri === 'api/v1/hr/people/{type}/{id}/salary') $path = 'hr/people/teacher/'.$salaryTeacher->id.'/salary';
             $host = str_starts_with($path, 'super/') || str_starts_with($path, 'writer/') ? $central : $this->hostOf($i);
             foreach (self::ROLES as $role) {
+                \Illuminate\Support\Facades\RateLimiter::clear(sha1((string) $users[$role]->id));   // D197: throttle:N,M shares one per-user key across routes; one call per route must not trip another route's limit
                 $response = $this->api($method, $host, $path, $users[$role]);
                 $status = $response->baseResponse->getStatusCode();     // a file download is a BinaryFileResponse
                 $ok = in_array($role, $allowed, true);

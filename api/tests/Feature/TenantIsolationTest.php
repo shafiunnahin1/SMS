@@ -48,6 +48,7 @@ class TenantIsolationTest extends TestCase
     {
         return [
             'GET api/v1/staff/departments/{id}/portal' => null, // CrossTenantRouteTest uses institution_staff and a real foreign department.
+            'GET api/v1/parent/children/{id}/final-results' => null, // D197 AAD.2: CrossTenantRouteTest (parent, foreign child)
             'POST api/v1/admin/departments/{department}/members' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()),
             'PATCH api/v1/admin/department-memberships/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()->id),
             'PUT api/v1/admin/department-memberships/{id}/duties' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\DepartmentMembership::factory()->create()->id),
@@ -110,6 +111,15 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/students/{id}/due-block-exemptions' => fn (array $other) => $this->seedStudent($other),
             'DELETE api/v1/students/{id}/due-block-exemptions' => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/exams/{id}/admit-cards/blocked' => fn (array $other) => $this->seedExam($other),
+            'GET api/v1/result-sheets/{id}' => fn (array $other) => $this->seedResultSheet($other),   // D197 AAD.2
+            'PUT api/v1/result-sheets/{id}' => fn (array $other) => $this->seedResultSheet($other),
+            'DELETE api/v1/result-sheets/{id}' => fn (array $other) => $this->seedResultSheet($other),
+            'POST api/v1/result-sheets/{id}/compute' => fn (array $other) => $this->seedResultSheet($other),
+            'POST api/v1/result-sheets/{id}/publish' => fn (array $other) => $this->seedResultSheet($other),
+            'POST api/v1/result-sheets/{id}/new-version' => fn (array $other) => $this->seedResultSheet($other),
+            'GET api/v1/result-sheets/{id}/tabulation.pdf' => fn (array $other) => $this->seedResultSheet($other),
+            'GET api/v1/result-sheets/{id}/export.xlsx' => fn (array $other) => $this->seedResultSheet($other),
+            'GET api/v1/result-sheets/{id}/preview' => fn (array $other) => $this->seedResultSheet($other),
             'PUT api/v1/routines/{id}' => fn (array $other) => $this->seedRoutine($other),   // D193 RTN.1
             'DELETE api/v1/routines/{id}' => fn (array $other) => $this->seedRoutine($other),
             'GET api/v1/routines/{id}/print' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Enrollment::where('student_id', $this->seedStudent($other))->value('program_id')),
@@ -274,6 +284,18 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/question-bank/paper-folders/{id}'  => fn (array $other) => $this->seedPaperFolder($other),
             'DELETE api/v1/question-bank/paper-folders/{id}' => fn (array $other) => $this->seedPaperFolder($other),
         ];
+    }
+
+    /** D197 AAD.2: one draft result sheet on the tenant's exam */
+    private function seedResultSheet(array $t): int
+    {
+        $exam = $this->seedExam($t);
+        return Tenancy::as($t['institution'], function () use ($exam) {
+            if ($id = \App\Models\ResultSheet::value('id')) return $id;
+            $e = \App\Models\Exam::find($exam);
+            return \App\Models\ResultSheet::create(['program_id' => $e->program_id, 'name' => 'Final', 'rule' => ['components' => [['exam_id' => $e->id, 'weight' => 100]],
+                'absent_policy' => 'zero', 'missing_subject_policy' => 'skip_redistribute', 'pass_rule' => 'every_subject', 'pass_percent' => 33], 'status' => 'draft', 'version' => 1])->id;
+        });
     }
 
     /** D193 SUP.1: one support ticket of the tenant */

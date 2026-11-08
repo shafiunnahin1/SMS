@@ -13,6 +13,7 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input } from '../../components/FormField'
 import StatCard from '../../ui/variants/StatCard'
 import Ltr from '../../components/bidi/Ltr'
+import FinalResults from '../../features/exams/FinalResults'
 
 // D195 STP.1: the student's own portal - the server picks the student from the login (GET /student/*), the page never sends an id.
 // The same views as the parent's pages for one child.
@@ -52,7 +53,7 @@ export function StudentDashboard() {
 export function StudentResults() {
   const { t } = useTranslation()
   return (
-    <Page title={t('exams.results')} q={useMine('results', '/student/results')}>
+    <Page title={t('exams.results')} q={useMine('results', '/student/results')} extra={<FinalResults url="/student/final-results" />}>
       {d => d.blocked ? <Card data-testid="result-blocked"><h2 className="font-semibold">{t('due_block.blocked_title')}</h2><p className="text-sm" dir="auto">{d.blocked.reason}</p></Card>
         : !d.exams.length ? <EmptyState title={t('exams.none_published')} /> : d.exams.map(sheet => (
         <Card key={sheet.exam.id} className="flex flex-col gap-3" data-testid="student-exam">

@@ -207,4 +207,11 @@ return [
     'import_unmapped' => 'আমদানি থেমেছে: :what export-ম্যাপে নেই। কিছুই তৈরি হয়নি।',
     'blocked_by_dues' => ':reason',
     'blocked_by_dues_default' => '৳:amount বকেয়া আছে। এটি পেতে বকেয়া পরিশোধ করুন।',
+    'result_sheet_weights' => 'ওজনের যোগফল ঠিক ১০০ হতে হবে (এখন :sum)।',
+    'result_sheet_best_of' => 'সেরা-কয়টি পরীক্ষার সংখ্যার বেশি হতে পারে না।',
+    'result_sheet_exam_twice' => 'একটি পরীক্ষা দুবার নেওয়া হয়েছে।',
+    'result_sheet_exam_scope' => 'প্রতিটি পরীক্ষা এই শ্রেণির (ও শাখার) হতে হবে।',
+    'result_sheet_published' => 'প্রকাশিত ফলাফল-শিট বদলানো যায় না; নতুন সংস্করণ বানান।',
+    'result_sheet_not_published' => 'শুধু প্রকাশিত শিটের নতুন সংস্করণ হয়।',
+    'result_sheet_not_computed' => 'প্রকাশের আগে ফলাফল হিসাব করুন।',
 ];

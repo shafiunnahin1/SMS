@@ -749,6 +749,25 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // ── D197 AAD.2: weighted final results and the tabulation sheet (academics-advanced.md section 1) ──
+        Route::middleware(['module:exams', 'module:result_sheets'])->group(function () {
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/result-sheets',                  [\App\Http\Controllers\Exams\ResultSheetController::class, 'index']);
+                Route::post('/result-sheets',                 [\App\Http\Controllers\Exams\ResultSheetController::class, 'store']);
+                Route::get('/result-sheets/{id}',             [\App\Http\Controllers\Exams\ResultSheetController::class, 'show'])->whereNumber('id');
+                Route::put('/result-sheets/{id}',             [\App\Http\Controllers\Exams\ResultSheetController::class, 'update'])->whereNumber('id');
+                Route::delete('/result-sheets/{id}',          [\App\Http\Controllers\Exams\ResultSheetController::class, 'destroy'])->whereNumber('id');
+                Route::post('/result-sheets/{id}/compute',    [\App\Http\Controllers\Exams\ResultSheetController::class, 'compute'])->whereNumber('id');
+                Route::post('/result-sheets/{id}/publish',    [\App\Http\Controllers\Exams\ResultSheetController::class, 'publish'])->whereNumber('id');
+                Route::post('/result-sheets/{id}/new-version', [\App\Http\Controllers\Exams\ResultSheetController::class, 'newVersion'])->whereNumber('id');
+                Route::get('/result-sheets/{id}/tabulation.pdf', [\App\Http\Controllers\Exams\ResultSheetController::class, 'tabulation'])->whereNumber('id');
+                Route::get('/result-sheets/{id}/export.xlsx', [\App\Http\Controllers\Exams\ResultSheetController::class, 'export'])->whereNumber('id');
+            });
+            Route::get('/result-sheets/{id}/preview',         [\App\Http\Controllers\Exams\ResultSheetController::class, 'preview'])->whereNumber('id')->middleware('role:admin,teacher');
+            Route::get('/student/final-results',              [\App\Http\Controllers\Exams\ResultSheetController::class, 'forStudent'])->middleware('role:student');
+            Route::get('/parent/children/{id}/final-results', [\App\Http\Controllers\Exams\ResultSheetController::class, 'forParent'])->whereNumber('id')->middleware('role:parent');
+        });
+
         // ── D197 AAD.1: dues hold back admit cards / results; exemptions (academics-advanced.md section 2) ──
         Route::middleware(['module:students', 'module:fees', 'role:admin,accountant'])->group(function () {
             Route::get('/students/{id}/due-block',                [\App\Http\Controllers\Fees\DueBlockController::class, 'show'])->whereNumber('id');

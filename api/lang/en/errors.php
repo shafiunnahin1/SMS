@@ -207,4 +207,11 @@ return [
     'import_unmapped' => 'The import stopped: :what is not in the export map. Nothing was created.',
     'blocked_by_dues' => ':reason',
     'blocked_by_dues_default' => 'Dues of Tk :amount are unpaid. Please pay them to get this.',
+    'result_sheet_weights' => 'The weights must add up to exactly 100 (now :sum).',
+    'result_sheet_best_of' => 'Best-of cannot be more than the number of exams.',
+    'result_sheet_exam_twice' => 'An exam is used twice.',
+    'result_sheet_exam_scope' => 'Every exam must belong to this class (and batch).',
+    'result_sheet_published' => 'A published result sheet cannot change; make a new version.',
+    'result_sheet_not_published' => 'Only a published sheet gets a new version.',
+    'result_sheet_not_computed' => 'Compute the results before publishing.',
 ];
