@@ -10,7 +10,7 @@
 | `fees` | ফি-র খাত, due গণনা, এক রসিদে একাধিক লাইন, waiver/late fee | [`fees-advanced.md`](fees-advanced.md), [`online-fee-payment.md`](online-fee-payment.md) | Phase 4 · 4.4 | core | ✓✓✓✓ |
 | `exams` | exam_subjects, শতকরা-ভিত্তিক গ্রেড, merit list, marksheet | [`grading.md`](grading.md), [`report-cards.md`](report-cards.md) | Phase 4 · 4.5 | core | ✓✓✓✓ |
 | `result_sheets` | ওজনযুক্ত ফাইনাল ফলাফল, Tabulation Sheet | [`academics-advanced.md`](academics-advanced.md) | Phase 6 · 6.6 | core | ✓✓✓– |
-| `period_attendance` | Period/বিষয়-ভিত্তিক হাজিরা | [`academics-advanced.md`](academics-advanced.md) | Phase 6 · 6.6 | core | ✓✓–– |
+| `period_attendance` | Period/বিষয়-ভিত্তিক হাজিরা | [`academics-advanced.md`](academics-advanced.md) | Phase 6 · 6.6 | core | ✓✓✓– |
 | `substitution` | বদলি শিক্ষক, রুটিন-সংঘর্ষ, স্থির ব্লক | [`academics-advanced.md`](academics-advanced.md) | Phase 6 · 6.6 | core | ✓✓–– |
 | `student_leave` | ছাত্র/অভিভাবকের ছুটির আবেদন | [`academics-advanced.md`](academics-advanced.md) | Phase 6 · 6.6 | core | ✓✓✓✓ |
 | `support` | প্রতিষ্ঠান→প্ল্যাটফর্ম সাপোর্ট টিকিট (grant-সহ impersonation) | [`platform-ops.md`](platform-ops.md) | Phase 5 · 5.6 | core | ✓✓✓✓ |

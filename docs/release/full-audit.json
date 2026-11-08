@@ -283,7 +283,8 @@
    "gated_routes": 3,
    "types": [
     "স্কুল",
-    "কলেজ"
+    "কলেজ",
+    "কোচিং"
    ],
    "spec_files": [
     "academics-advanced.md"

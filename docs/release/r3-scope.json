@@ -94,7 +94,8 @@
    "routine",
    "support",
    "result_sheets",
-   "student_leave"
+   "student_leave",
+   "period_attendance"
   ],
   "roles": [
  "super_admin",
