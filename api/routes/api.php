@@ -749,6 +749,13 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // ── D197 AAD.4: period / subject attendance (academics-advanced.md section 3) ──
+        Route::middleware(['module:attendance', 'module:period_attendance'])->group(function () {
+            Route::get('/teacher/periods/today',              [\App\Http\Controllers\Academic\PeriodAttendanceController::class, 'today'])->middleware('role:teacher');
+            Route::post('/period-attendance',                 [\App\Http\Controllers\Academic\PeriodAttendanceController::class, 'store'])->middleware('role:admin,teacher');
+            Route::get('/period-attendance/report',           [\App\Http\Controllers\Academic\PeriodAttendanceController::class, 'report'])->middleware('role:admin,teacher');
+        });
+
         // ── D197 AAD.3: student leave requests (academics-advanced.md section 5) ──
         Route::middleware(['module:attendance', 'module:student_leave'])->group(function () {
             Route::post('/parent/children/{id}/leave-requests', [\App\Http\Controllers\Academic\StudentLeaveController::class, 'store'])->whereNumber('id')->middleware('role:parent');

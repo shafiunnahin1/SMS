@@ -295,3 +295,9 @@ Needed from the owner: a follow-up decision (proposed D189) that authorizes (3)-
 - **Tried:** nothing that edits the test or the type list.
 - **Owner choice needed:** (a) a new decision: D80 (2) covers the modules the coaching type has - the test compares coaching with (R3 modules ∩ coaching type modules) minus donations; or (b) add `admit_card` to the coaching type list (spec change); or (c) another rule.
 - **Resolved 2026-11-07:** owner chose (b) - D194 adds `admit_card` to the coaching type (config, institution-types.md, README availability); D80 (2) unchanged and BootstrapTest passes unmodified.
+
+## 2026-11-08 · AAD.4 (D197) · period_attendance vs D80 (2)
+- **What blocks:** D197 puts `period_attendance` into the runtime module list (release.php / r3-scope.json). The coaching type's module list (`config/institution_types.php`, institution-types.md; README availability `✓✓––`) does not have it, so `/bootstrap` for coaching no longer returns every R3 module except donations, which D80 (2) requires: `BootstrapTest::test_a_tenant_host_gets_terms_modules_and_a_full_theme` fails (1 failed, 1183 passed). Everything else of AAD.4 is built and green, uncommitted.
+- **Tried:** nothing that edits the test, the type list or the decision (G4/G5).
+- **Owner choice needed:** (a) a new decision: D80 (2) covers the modules the coaching type has - the test compares coaching with (R3 modules ∩ coaching type modules) minus donations; or (b) add `period_attendance` to the coaching type (config, institution-types.md, README availability `✓✓✓–`), as D194 did for `admit_card`.
+- **Resolved 2026-11-08:** owner chose (b) - D198 adds `period_attendance` to the coaching type (config, institution-types.md, README availability); D80 (2) unchanged and BootstrapTest passes unmodified.
