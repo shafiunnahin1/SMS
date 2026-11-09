@@ -2,14 +2,10 @@
  "modules_total": 58,
  "modules_with_task_plan": 17,
  "features_total": 377,
- "tables_total": 219,
- "design_only_tables": [
-  "leave_substitution_events",
-  "leave_substitution_operations",
-  "leave_substitution_slots"
- ],
+ "tables_total": 222,
+ "design_only_tables": [],
  "tables_in_task_plans": 106,
- "tables_without_task": 113,
+ "tables_without_task": 116,
  "external_decisions": 14,
  "milestones": [
   {
@@ -299,7 +295,8 @@
    "gated_routes": 6,
    "types": [
     "স্কুল",
-    "কলেজ"
+    "কলেজ",
+    "কোচিং"
    ],
    "spec_files": [
     "academics-advanced.md"

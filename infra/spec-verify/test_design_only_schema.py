@@ -1,4 +1,4 @@
-"""D98/D99 mutations: design classification must not hide ordinary inventory defects."""
+"""D98/D99 mutations, D200 state: the deployed trio is ordinary inventory; classification must not hide inventory defects."""
 import re
 import sys
 import unittest
@@ -7,7 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from schema_inventory import DESIGN_ONLY, inventory, documentation_problems, operational_schema
+from schema_inventory import DESIGN_ONLY, DEPLOYED_BY_D200, inventory, documentation_problems, operational_schema
 import tenant_export_ref
 
 ROOT = Path(sys.argv.pop(1)) if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]
@@ -20,65 +20,66 @@ class DesignOnlyTests(unittest.TestCase):
         cls.migrations = (ROOT/'docs/database/migrations.md').read_text(encoding='utf-8')
         cls.database = (ROOT/'docs/DATABASE.md').read_text(encoding='utf-8')
 
-    def test_exact_trio_is_validated_but_not_operational(self):
+    # D200 (SUBL.1): the D98/D99 trio is deployed. These checks keep the same strength for the new state: no design-only table
+    # may come back by a marker, the trio is ordinary inventory (migrations, DATABASE grouping), and it is excluded from export.
+    TRIO = DEPLOYED_BY_D200
+
+    def test_trio_is_deployed_and_no_design_only_table_remains(self):
         all_tables, deployed, design = inventory(self.schema)
-        self.assertEqual(set(DESIGN_ONLY), design)
-        self.assertEqual(all_tables, deployed | design)
-        self.assertFalse(deployed & design)
+        self.assertEqual(set(), design)
+        self.assertEqual(set(), set(DESIGN_ONLY))
+        self.assertTrue(self.TRIO <= deployed)
+        self.assertEqual(all_tables, deployed)
         self.assertEqual([], documentation_problems(self.schema, self.migrations, self.database))
-        self.assertEqual((deployed, deployed, set()), inventory(operational_schema(self.schema)))
+        self.assertEqual(self.schema, operational_schema(self.schema))
 
-    def test_missing_unknown_duplicate_or_malformed_markers_fail(self):
-        marker = '-- @design-only D98: leave_substitution_slots'
-        for changed in [self.schema.replace(marker, ''), self.schema.replace(marker, marker+'\n'+marker),
-                        self.schema.replace(marker, marker.replace('D98', 'D99')),
-                        self.schema+'\n-- @design-only D98: users\n']:
-            with self.subTest(changed=changed[-80:]), self.assertRaises(ValueError):
+    def test_any_design_only_marker_now_fails(self):
+        for name, decision in [('leave_substitution_slots', 'D98'), ('leave_substitution_events', 'D98'), ('leave_substitution_operations', 'D99'), ('users', 'D98')]:
+            changed = self.schema.replace('CREATE TABLE '+name+' (', '-- @design-only '+decision+': '+name+'\nCREATE TABLE '+name+' (', 1)
+            with self.subTest(name=name), self.assertRaises(ValueError):
                 inventory(changed)
+        with self.assertRaises(ValueError):
+            inventory(self.schema+'\n-- @design-only D98: users\n')
 
-    def test_missing_or_duplicate_design_definition_fails(self):
+    def test_missing_or_duplicate_definition_fails(self):
+        with self.assertRaises(ValueError): inventory(self.schema+'\nCREATE TABLE users (\n id INT\n);')
+        with self.assertRaises(ValueError): inventory(self.schema+'\nCREATE TABLE leave_substitution_events (\n id INT\n);')
         removed = re.sub(r'CREATE TABLE leave_substitution_events \(.*?\n\);', '', self.schema, flags=re.S)
-        for changed in [removed, self.schema+'\nCREATE TABLE users (\n id INT\n);']:
-            with self.assertRaises(ValueError): inventory(changed)
+        self.assertTrue(documentation_problems(removed, self.migrations, self.database))   # a documented, migrated table without a definition
 
     def test_ordinary_missing_and_extra_migrations_still_fail(self):
         for changed in [self.migrations.replace('create_students_table', 'students_missing'),
                         self.migrations+'\ncreate_unapproved_table',
-                        self.migrations+'\ncreate_leave_substitution_slots_table']:
+                        self.migrations.replace('create_leave_substitution_slots_table', 'slots_missing'),
+                        self.migrations.replace('create_leave_substitution_operations_table', 'operations_missing')]:
             self.assertTrue(documentation_problems(self.schema, changed, self.database))
 
-    def test_ordinary_or_design_documentation_cannot_disappear(self):
+    def test_ordinary_documentation_cannot_disappear(self):
         self.assertTrue(documentation_problems(self.schema, self.migrations, self.database.replace('`students`', 'students')))
-        self.assertTrue(documentation_problems(self.schema, self.migrations, self.database.replace('`leave_substitution_slots`', 'leave_substitution_slots')))
-        self.assertTrue(documentation_problems(self.schema, self.migrations.replace('`leave_substitution_events`', 'leave_substitution_events'), self.database))
-
-    def test_operational_reference_to_design_table_fails(self):
-        changed = self.schema.replace('CREATE TABLE users (', 'CREATE TABLE users (\n FOREIGN KEY (id) REFERENCES leave_substitution_slots(id),')
-        with self.assertRaises(ValueError): inventory(changed)
-        changed = self.schema+'\nALTER TABLE users ADD FOREIGN KEY (id) REFERENCES leave_substitution_slots(id);'
-        with self.assertRaises(ValueError): inventory(changed)
+        for name in sorted(self.TRIO):
+            with self.subTest(name=name):
+                self.assertTrue(documentation_problems(self.schema, self.migrations, self.database.replace('`'+name+'`', name)))
+        listed = self.database.replace('None remain.', 'None remain. `leave_substitution_slots`')
+        self.assertTrue(documentation_problems(self.schema, self.migrations, listed))   # the section may not list a table as design-only again
 
     def test_ordinary_schema_without_design_definitions_remains_supported(self):
         self.assertEqual(({'users'}, {'users'}, set()), inventory('CREATE TABLE users (\n id INT\n);'))
 
-    def test_export_lists_design_separately_without_export_or_import_rows(self):
+    def test_export_excludes_the_trio_with_reasons(self):
         con, data, tables, *rest = tenant_export_ref.build_export_map(str(ROOT))
         try:
-            self.assertEqual(sorted(DESIGN_ONLY), data['design_only_tables'])
-            self.assertFalse(DESIGN_ONLY & set(data['order']))
-            self.assertFalse(DESIGN_ONLY & set(data['tables']))
-            self.assertFalse(DESIGN_ONLY & set(tables))
+            self.assertEqual([], data['design_only_tables'])
+            for name in sorted(self.TRIO):
+                with self.subTest(name=name):
+                    self.assertIn(name, data['excluded'])
+                    self.assertTrue(data['excluded'][name])
+                    self.assertNotIn(name, data['order'])
+                    self.assertNotIn(name, data['tables'])
+                    self.assertIn(name, tables)      # a deployed tenant table of the schema, but never in the export order
             self.assertIn('students', data['order'])
             self.assertIn('institution_registrations', data['excluded'])
         finally:
             con.close()
-
-    def test_receipt_marker_and_definition_cannot_disappear(self):
-        for changed in [self.schema.replace('-- @design-only D99: leave_substitution_operations', ''),
-                        re.sub(r'-- @design-only D99: leave_substitution_operations\nCREATE TABLE leave_substitution_operations \(.*?\n\);', '', self.schema, flags=re.S),
-                        self.schema.replace('-- @design-only D99: leave_substitution_operations', '-- @design-only D98: leave_substitution_operations')]:
-            with self.assertRaises(ValueError):
-                inventory(changed)
 
 
 class ReceiptDesignTests(unittest.TestCase):

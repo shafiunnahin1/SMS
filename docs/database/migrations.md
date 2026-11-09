@@ -254,6 +254,9 @@ php artisan make:migration create_due_block_exemptions_table
 php artisan make:migration create_period_attendances_table
 php artisan make:migration create_routine_blocks_table
 php artisan make:migration create_substitutions_table
+php artisan make:migration create_leave_substitution_slots_table        # D200 SUBL.1 (2026_11_09_000003; parents' tenant identity keys in 2026_11_09_000002)
+php artisan make:migration create_leave_substitution_operations_table   # D200 SUBL.1
+php artisan make:migration create_leave_substitution_events_table       # D200 SUBL.1
 php artisan make:migration create_student_leave_requests_table
 php artisan make:migration create_staff_members_table
 php artisan make:migration create_staff_mapping_reviews_table   # D101 (shipped in 2026_10_17_000002 together with the institutions switch columns)
@@ -421,7 +424,5 @@ Create users and otp_tokens, the composite users(id,institution_id) identity key
 
 ## Design-only tables (D98/D99)
 
-`leave_substitution_slots`, `leave_substitution_events`, `leave_substitution_operations` are canonical design definitions only. They are not deployed/migrated tables, operational export/import data or an executable task. No migration/backfill is authorized. D98/D99 inventory markers preserve full SQL/FK validation while keeping these definitions outside operational inventories. Runtime/dependency acceptance remains pending.
-
-D199 (owner, 2026-11-09): the three tables stay design-only; the completed design and its export/purge order are in `docs/API.md` D199. They become operational only through the later SUBL.1 approval, which removes their design-only markers together with the migrations.
+None remain. D200 (SUBL.1, 2026-11-09) deployed the three leave-substitution tables that D98/D99 had kept design-only; they are listed with the operational tables, and the inventory markers were removed from schema.sql. The institution export does not carry them (docs/API.md D199).
 

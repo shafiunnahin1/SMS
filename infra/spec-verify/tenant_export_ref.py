@@ -111,6 +111,9 @@ def topo(tenant,out):
 # ====================================================================================================================================
 # Export policy (D38). Tables that are NOT exported, each with the reason. Everything else with institution_id IS exported.
 EXCLUDED={
+ 'leave_substitution_operations':'D199/D200: request receipts bind tenant, actor and resource digests; not portable or replayable elsewhere',
+ 'leave_substitution_slots':'D199/D200: cover state is rebuilt from leaves in the new institution; not exported',
+ 'leave_substitution_events':'D199/D200: cover history references receipts and digests; not exported',
  'institution_registrations':'D90 first-principal approval is not portable; new tenant needs fresh review',
  'account_activation_requests':'D90 contact/challenge authorization evidence; never export or replay',
  'audit_logs':'platform-held trail; the new institution starts a fresh trail with one "imported" entry',

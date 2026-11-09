@@ -542,7 +542,7 @@ POST /admin/settings/website/hero -> WebsiteSettingsController@hero [role:admin]
 
 - **ভিত্তি:** স্পেক থেকে বের-করা ধাপ
 - **নির্ভর করে (মডিউল):** `routine`, `period_attendance`
-- **কোন ধরনে:** স্কুল, কলেজ · **গেট:** `core`
+- **কোন ধরনে:** স্কুল, কলেজ, কোচিং · **গেট:** `core`
 - **পড়ুন:** `docs/modules/academics-advanced.md`
 - **route (মডিউল-গেটেড, ৬):**
 

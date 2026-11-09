@@ -2,8 +2,9 @@
 import re
 from pathlib import Path
 
-MARKERS = {'leave_substitution_slots': 'D98', 'leave_substitution_events': 'D98',
-           'leave_substitution_operations': 'D99'}
+# D200 (SUBL.1) deployed the D98/D99 trio; no design-only table remains, so any `-- @design-only` marker is refused (an unknown name).
+MARKERS = {}
+DEPLOYED_BY_D200 = frozenset({'leave_substitution_slots', 'leave_substitution_events', 'leave_substitution_operations'})
 DESIGN_ONLY = frozenset(MARKERS)
 SECTION = '## Design-only tables (D98/D99)'
 

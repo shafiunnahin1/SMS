@@ -3627,10 +3627,9 @@ CREATE TABLE department_duty_assignments (
     FOREIGN KEY (revoked_by, institution_id) REFERENCES users(id, institution_id)
 );
 
--- D96 design contract only: current leave-linked occurrence projection plus append-only lifecycle events.
--- Preserve legacy `substitutions` rows and storage. No migration, backfill, runtime, or purge implementation is authorized here.
--- Future D27 tenant-purge order: events before slots and operations, then leave_applications/users/departments.
--- @design-only D98: leave_substitution_slots
+-- D96/D99/D199 leave-linked substitution: current occurrence state plus append-only lifecycle events and request receipts.
+-- Deployed by D200 (SUBL.1). The simple `substitutions` table above stays unbuilt (D199).
+-- D27 tenant-purge order: events before slots and operations, then leave_applications/users/departments.
 CREATE TABLE leave_substitution_slots (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
@@ -3658,9 +3657,8 @@ CREATE TABLE leave_substitution_slots (
     FOREIGN KEY (substitute_teacher_id, institution_id) REFERENCES teachers(id, institution_id)
 );
 
--- D99 design only: immutable successful request receipt, not an outbox or deployed table.
+-- D99: immutable successful request receipt, not an outbox (D199: notifications are database rows written with the event).
 -- Result manifest is the ordered linked event set, including an empty set for zero-slot success.
--- @design-only D99: leave_substitution_operations
 CREATE TABLE leave_substitution_operations (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     leave_application_id BIGINT UNSIGNED NULL,
@@ -3683,7 +3681,6 @@ CREATE TABLE leave_substitution_operations (
     FOREIGN KEY (department_id, institution_id) REFERENCES institution_departments(id, institution_id)
 );
 
--- @design-only D98: leave_substitution_events
 CREATE TABLE leave_substitution_events (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     leave_substitution_operation_id BIGINT UNSIGNED NOT NULL,

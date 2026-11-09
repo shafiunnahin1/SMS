@@ -17,6 +17,7 @@ class TenantPurgeService
 
     /** Every table with an institution_id, children before parents (FK order). TenantPurgeFilesTest fails when a new one is missing. */
     public const ORDER = [
+        'leave_substitution_events', 'leave_substitution_slots', 'leave_substitution_operations',   // D200 SUBL.1: history first (FKs to departments, leaves, users, teachers, routines)
         'account_activation_requests', 'institution_registrations',
         'department_duty_assignments', 'department_memberships', 'department_duties', 'institution_departments',
         'staff_attendance_grants', 'learner_profiles', 'ai_attachments', 'ai_answer_reveals', 'ai_reviews', 'ai_messages', 'ai_conversations', 'ai_answer_bank', 'ai_help_articles', 'exam_result_sms', 'exam_mark_submissions', 'exam_papers', 'qb_paper_items', 'qb_paper_sections', 'qb_paper_variants', 'qb_omr_scans', 'qb_omr_forms', 'qb_paper_revisions', 'qb_papers', 'qb_paper_folders', 'qb_quiz_attempts', 'qb_practice_attempts', 'qb_student_package_access', 'qb_student_scope_access', 'qb_student_unlocks',   // D165 learner profiles; D65 question bank; D127 scans/forms before papers
