@@ -224,3 +224,21 @@ Stable delivery identity must include tenant, immutable event/version, recipient
 The previously documented missing refresh enum/source-context storage gate is now refined in canonical schema only: source_refreshed records a fresh unassigned version, with source_program_id, nullable source_batch_id and source_subject_id alongside existing Teacher/date/interval/room history. Canonical program/batch/subject identity keys support tenant-bound FKs; all prior receipt/actor/slot/leave/version constraints remain. Source mutation invalidation captures the previous accepted context; explicit review refresh captures the new validated context. No event or earlier acceptance is retargeted to today's routine context. Exact writer rules are in `docs/API.md`.
 
 This closes the stated event/identity storage gap at design level, not source-refresh exposure or full workflow acceptance. Read/picker/department resource binding, all writer integration, source/settings classification, durable intent/provider recovery, safe portable export/import and accepted dependencies remain gates. No runtime enum/key/catalog/route, migration, UI or task activation.
+
+
+## D199 leave-linked substitution: design closed, implementation plan
+
+D199 (owner, 2026-11-09) selects this D96/D99 design over the simple §4.3 `substitutions` table, which stays unbuilt. The open gates are closed in documents: reads and picker (`docs/API.md` D199), first-exposure authority (`docs/AUTHORIZATION.md` D199), writer inventory and lock order (`docs/modules/routine.md` D199), in-app-only duplicate-safe notifications and export/purge (`docs/API.md` D199), tests (`docs/TESTING.md` D199). Still not decided here and left closed: the staff department binding for `staff.leave_substitution.*`, SMS for covers, any payroll effect.
+
+Effect on the teacher's day: a `confirmed` slot appears in the target's `GET /teacher/periods/today` (AAD.4) as a period with `cover: true` and the original Teacher's name, with the class list of the source routine; the target may then take that period's attendance on that date. Nothing changes for `offered` slots. The source routine and the original Teacher's own list are unchanged.
+
+Proposed implementation tasks (each needs the owner's later approval decision before any code; one task per commit, in this order):
+
+| Task | Builds | Done when (besides the D197-style suite, lint, build and `verify.py --deep`) |
+|---|---|---|
+| SUBL.1 | migrations for `leave_substitution_operations`, `leave_substitution_slots`, `leave_substitution_events` exactly as schema.sql (design-only markers removed by the approving decision); models; purge order; export `not_exported` entry; module `substitution` in release.php | schema-diff identical for the three tables; purge and export tests |
+| SUBL.2 | D99 receipt service (key/digest/replay), the shared lock helper with the 1213/1205 retry, the writer inventory locks and invalidations (`routine.md` D199) | unit tests for canonical JSON and digests; invalidation tests per writer |
+| SUBL.3 | leave create/approve/reject/cancel integration: slot materialization, `cover_choices`, `occurrence_scope`, substitute-leave invalidation | the API.md materialization cases, replay and stale-scope tests |
+| SUBL.4 | the six slot actions + refresh-source; in-app notifications with `delivery_key` | every row of the action table, all error codes, no duplicate notice on replay |
+| SUBL.5 | the four reads; admin cover screen; applicant nomination; teacher offers page; cover in "my periods" and period attendance by the target | role/tenant tests, frontend tests (360px and desktop) |
+| SUBL.6 | the two-connection MySQL concurrency tests and end-to-end demo on the school tenant | `docs/TESTING.md` D199 cases green on real MySQL |

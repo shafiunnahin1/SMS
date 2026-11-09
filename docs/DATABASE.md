@@ -61,3 +61,6 @@ institutions ─┬─ users ─┬─ students ─── enrollments ─── 
 ## Design-only tables (D98/D99)
 
 `leave_substitution_slots`, `leave_substitution_events`, `leave_substitution_operations` are canonical design definitions only. They are not deployed/migrated tables, operational export/import data or an executable task. No migration/backfill is authorized. D98/D99 inventory markers preserve full SQL/FK validation while keeping these definitions outside operational inventories. Runtime/dependency acceptance remains pending.
+
+D199 (owner, 2026-11-09): the three tables stay design-only; the completed design and its export/purge order are in `docs/API.md` D199. They become operational only through the later SUBL.1 approval, which removes their design-only markers together with the migrations.
+

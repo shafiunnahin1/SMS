@@ -49,3 +49,8 @@ Cover offer/clear keys defined in `docs/AUTHORIZATION.md` apply only to an alrea
 ## D96/D99 materialization and approval reconciliation boundary
 
 D85 remains authoritative for leave creation, overlap/balance checks, approved working-date/is_paid snapshots and pre-start approved cancellation. The design in `docs/API.md` now defines atomic cover materialization/reconciliation without widening existing leave-action authorization. Preserve owner-finalized P2 valid leave despite invalid separate nomination, and P3 approval with explicit gaps when reviewed nominees are newly conflicting. Approved dates remain the accepted snapshot; later calendar changes do not reinterpret them. No automatic payroll adjustment or financial row change. No source refresh, historical cover correction, outbox or runtime implementation is authorized by this design refinement.
+
+
+## D199 leave-linked substitution boundary
+
+D199 completes the cover design (`docs/API.md` D199) without touching leave approval: D90 principal-only approve/reject and D85 snapshots stay as they are; `LeaveService` gains the D96/D99 materialization only in the later SUBL.3 task. No payroll, extra-class pay or adjustment effect is designed or authorized.

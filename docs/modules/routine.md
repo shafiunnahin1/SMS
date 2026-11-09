@@ -103,3 +103,25 @@ Historical source program/batch/subject cannot be recovered by joining an old ev
 ## D96/D99 source-history writer obligation
 
 Canonical event snapshots now preserve program/batch/subject identity (including no-batch source), and source_refreshed is a design-only event. This supersedes the earlier absent-field/enum gate, without activating refresh. Every future routine/source writer must capture old context under the institution lock before changing source fields; invalidation events retain that old snapshot. A later authorized refresh validates the same occurrence/leave/original Teacher and both cutoff timestamps, writes new context in a fresh unassigned version, then requires separate offer/acceptance. Never reconstruct an old event's context from the mutated routine, or overwrite old events to match new source data. History FK references prohibit destructive parent deletion; existing past-source edit restrictions remain. All writer/runtime race checks are still pending.
+
+
+## D199 writer inventory (closes the D96 writer gate at design level)
+
+State of the code on 2026-11-09 and what each writer must do once slots are deployed. "Lock" = takes the tenant institution row `lockForUpdate` first inside its transaction (D96). Effects use the D96 event mapping in `docs/modules/academics-advanced.md`; each affected future live slot gets one version increment and one event in the writer's own operation.
+
+| Writer | Lock today | Effect on future live slots |
+|---|---|---|
+| `RoutineService::save` (update) | yes | change of `teacher_id`, `day_of_week`, `start_time`, `end_time`, `room_no`, `program_id`, `batch_id` or `subject_id` -> slots of that routine `cancelled`/`source_invalidated` (`routine_changed`; `identity_changed` when the Teacher changes), old source snapshot kept |
+| `RoutineService::delete` | yes | slots of that routine `cancelled`/`source_invalidated` (`routine_changed`) |
+| `RoutineBlockController` store/update/destroy | yes | none (a block is not a slot source; new classes inside a block are already refused) - lock kept for ordering |
+| `TeacherService::update` / `delete`, and the user deactivation they trigger (`UserObserver` runs after the write, so the effect belongs to the writer) | **no - must add** | the Teacher as original: their slots `cancelled`/`source_invalidated` (`teacher_inactive`); as target of an `offered`/`confirmed` slot: back to `unassigned`/`source_invalidated` (`target_inactive`) |
+| `TeacherRowImporter` (create only) | no | none (creates Teachers only) |
+| `AcademicStructureService::saveBatch` / `deleteBatch` / `deleteSubject` / `deleteProgram` | **no - must add** | deleting a parent that a routine uses: routine slots `cancelled`/`source_invalidated` (`routine_changed`); a parent referenced by event history cannot be hard-deleted (composite FK) - existing archive/in-use refusal |
+| `SubjectController::update`, `ProgramController::update` | no | none for renames (names are not identity); a change of a subject's `program_id` -> must add the lock and treat like `routine_changed` for routines of that subject |
+| `LeaveService::create` / `transition` | yes | the D96/D99 materialization and reconciliation in `docs/API.md` |
+| `PeriodAttendanceService::save` (AAD.4) | **no - must add** | none on slots; reads the confirmed cover for the substitute's authority under the lock |
+| `StaffAttendanceService::save` | yes | none |
+| settings writers for `hr.weekly_holidays` and holidays | no | none: approved leaves keep their D85 working-date snapshot; a pending leave's changed dates are caught by the `occurrence_scope` digest at approval (409) |
+| `TenantPurgeService` | n/a | deletes in the D199 purge order |
+
+Lock order after the institution row: leave_applications, routines, teachers, leave_substitution_slots (ascending id). The two-connection tests in `docs/TESTING.md` D199 prove it.
