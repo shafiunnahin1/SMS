@@ -94,6 +94,7 @@ export default function MarksEntry() {
         {parts.map(p => <span key={p.key} className="rounded-token bg-primary-soft px-2 py-1">{p.label} <Ltr className="font-semibold">{Number(p.full)}</Ltr></span>)}
       </div>
       {published && <Card><p className="text-sm">{t(correcting ? 'exams.correct_hint' : 'exams.locked_hint')}</p></Card>}
+      {!published && sub.entry_deadline && <p className="text-sm" data-testid="entry-deadline">{t('exams.entry_deadline')}: <Ltr>{sub.entry_deadline}</Ltr>{sub.overdue && <strong> · {t('exams.overdue')}</strong>}{sub.late && <> · {t('exams.late_submit')}</>}</p>}   {/* D197 AAD.6 */}
       {!published && <SubmissionBar examId={examId} subjectId={subjectId} state={sub} isAdmin={role === 'admin'}
         onChanged={() => qc.invalidateQueries({ queryKey: ['entry', examId, subjectId] })} />}
       {!locked && exam.status !== 'published' && parts.some(p => p.key === 'mcq') && rows.length > 0 && (

@@ -126,6 +126,7 @@ class ExamController extends Controller
         return ['subject_id' => $es->subject_id, 'name' => $es->subject?->name, 'is_optional' => (bool) $es->subject?->is_optional,
             'full_marks' => $es->full_marks, 'pass_marks' => $es->pass_marks, 'components' => $es->components,
             'exam_date' => $es->exam_date?->toDateString(), 'start_time' => $es->start_time ? substr($es->start_time, 0, 5) : null,
-            'end_time' => $es->end_time ? substr($es->end_time, 0, 5) : null, 'room' => $es->room, 'sort_order' => $es->sort_order];
+            'end_time' => $es->end_time ? substr($es->end_time, 0, 5) : null, 'room' => $es->room, 'sort_order' => $es->sort_order,
+            'entry_deadline' => $es->entry_deadline?->format('Y-m-d H:i')];   // D197 AAD.6
     }
 }

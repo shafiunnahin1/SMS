@@ -25,7 +25,7 @@ export default function SubjectsEditor({ examId, subjects, locked, onSaved }) {
     setSaving(true); setErrors({})
     try {
       const body = rows.map((r, i) => ({ subject_id: r.subject_id, full_marks: r.full_marks, pass_marks: r.pass_marks, exam_date: r.exam_date || null,
-        start_time: r.start_time || null, end_time: r.end_time || null, room: r.room || null, sort_order: i,
+        start_time: r.start_time || null, end_time: r.end_time || null, room: r.room || null, sort_order: i, entry_deadline: r.entry_deadline ? r.entry_deadline.replace('T', ' ').slice(0, 16) : null,
         components: r.components?.length ? r.components : null }))
       await api.put(`/exams/${examId}/subjects`, { subjects: body })
       useUiStore.getState().addToast(t('common.saved'))
@@ -50,6 +50,7 @@ export default function SubjectsEditor({ examId, subjects, locked, onSaved }) {
           <Input label={t('exams.start_time')} type="time" ltr value={r.start_time ?? ''} onChange={e => set(i, 'start_time', e.target.value)} />
           <Input label={t('exams.end_time')} type="time" ltr value={r.end_time ?? ''} error={err(i, 'end_time')} onChange={e => set(i, 'end_time', e.target.value)} />
           <Input label={t('exams.room')} value={r.room ?? ''} onChange={e => set(i, 'room', e.target.value)} />
+          <Input label={t('exams.entry_deadline')} type="datetime-local" ltr value={(r.entry_deadline ?? '').replace(' ', 'T')} onChange={e => set(i, 'entry_deadline', e.target.value)} />
           <div className="sm:col-span-6 flex flex-col gap-2">
             {(r.components ?? []).map((c, p) => (
               <div key={p} className="grid grid-cols-2 items-end gap-2 rounded-token p-2 [border:1px_dashed_var(--line)] sm:grid-cols-[1fr_5rem_5rem_auto] sm:border-0 sm:p-0">

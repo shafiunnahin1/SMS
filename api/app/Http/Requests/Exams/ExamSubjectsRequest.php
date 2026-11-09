@@ -20,6 +20,7 @@ class ExamSubjectsRequest extends FormRequest
             'subjects.*.start_time'   => 'nullable|date_format:H:i',
             'subjects.*.end_time'     => 'nullable|date_format:H:i|after:subjects.*.start_time',
             'subjects.*.room'         => 'nullable|string|max:50',
+            'subjects.*.entry_deadline' => 'nullable|date_format:Y-m-d H:i',   // D197 AAD.6
             'subjects.*.sort_order'   => 'nullable|integer|min:0|max:255',
             'subjects.*.components'          => 'nullable|array|max:5',
             'subjects.*.components.*.key'    => 'required|alpha_dash|max:20',

@@ -4,6 +4,11 @@
 return [
     'kinds' => ['mcq' => 'বহুনির্বাচনী', 'cq' => 'সৃজনশীল', 'short' => 'সংক্ষিপ্ত / লিখিত'],
     // D162: in-app notices of the marks submission flow
+    'reminder' => [   // D197 AAD.6
+        'title' => 'নম্বর এন্ট্রি',
+        'soon' => ':subject (:exam)-এর নম্বর :deadline-এর মধ্যে দিন ও জমা দিন।',
+        'today' => 'আজ :subject (:exam)-এর নম্বর জমার শেষ দিন (:deadline)। অনুগ্রহ করে জমা দিন।',
+    ],
     'submission' => [
         'submit_title' => 'নম্বর জমা: :subject',
         'submit_body' => ':name ":exam" পরীক্ষার :subject-এর নম্বর জমা দিয়েছেন।',

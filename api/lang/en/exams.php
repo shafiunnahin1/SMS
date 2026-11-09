@@ -4,6 +4,11 @@
 return [
     'kinds' => ['mcq' => 'MCQ', 'cq' => 'Creative', 'short' => 'Short / written'],
     // D162: in-app notices of the marks submission flow
+    'reminder' => [   // D197 AAD.6
+        'title' => 'Marks entry',
+        'soon' => 'Marks of :subject (:exam) are due by :deadline. Please enter and submit them.',
+        'today' => 'Today is the last day for the marks of :subject (:exam) (:deadline). Please submit them.',
+    ],
     'submission' => [
         'submit_title' => 'Marks submitted: :subject',
         'submit_body' => ':name submitted the :subject marks of ":exam".',

@@ -22,7 +22,11 @@ class MarkSubmissionService
     {
         $row = ExamMarkSubmission::where('exam_subject_id', $es->id)->first();
         return ['status' => $row?->status ?? 'draft', 'submitted_at' => $row?->submitted_at?->toIso8601String(), 'request_reason' => $row?->request_reason,
-            'requested_at' => $row?->requested_at?->toIso8601String(), 'decision_note' => $row?->decision_note, 'decided_at' => $row?->decided_at?->toIso8601String()];
+            'requested_at' => $row?->requested_at?->toIso8601String(), 'decision_note' => $row?->decision_note, 'decided_at' => $row?->decided_at?->toIso8601String(),
+            // D197 AAD.6: the deadline never blocks; past it a draft is `overdue`, a submission after it is `late`
+            'entry_deadline' => $es->entry_deadline?->format('Y-m-d H:i'),
+            'overdue' => $es->entry_deadline !== null && ($row?->status ?? 'draft') === 'draft' && now()->greaterThan($es->entry_deadline),
+            'late' => $es->entry_deadline !== null && $row?->submitted_at !== null && $row->submitted_at->greaterThan($es->entry_deadline)];
     }
 
     /** a teacher's (or staff's) save is refused once the subject is submitted; the admin may always edit before publishing */

@@ -60,6 +60,7 @@ class ExamService
                     'exam_date' => $r['exam_date'] ?? null, 'start_time' => $r['start_time'] ?? null, 'end_time' => $r['end_time'] ?? null,
                     'room' => $r['room'] ?? null, 'sort_order' => $r['sort_order'] ?? $i,
                 ]);
+                if (array_key_exists('entry_deadline', $r)) $es->entry_deadline = $r['entry_deadline'];   // D197 AAD.6: kept when a client does not send it
                 $rescale = $es->exists && $es->isDirty(['full_marks', 'pass_marks', 'components']);
                 $es->save();
                 if ($rescale) $this->regrade($exam, $es);
