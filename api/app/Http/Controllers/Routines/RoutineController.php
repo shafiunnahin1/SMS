@@ -78,10 +78,14 @@ class RoutineController extends Controller
         $batchId = $request->validate(['batch_id' => 'nullable|integer'])['batch_id'] ?? null;
         $batch = $batchId ? Batch::where('program_id', $program->id)->findOrFail($batchId) : null;
         $rows = $this->query()->where('program_id', $program->id)->when($batch, fn ($q) => $q->where(fn ($b) => $b->whereNull('batch_id')->orWhere('batch_id', $batch->id)))->get();
-        $times = $rows->map(fn ($r) => substr($r->start_time, 0, 5) . '–' . substr($r->end_time, 0, 5))->unique()->sort()->values()->all();
-        $grid = [];
-        foreach ($rows as $r) $grid[$r->day_of_week][substr($r->start_time, 0, 5) . '–' . substr($r->end_time, 0, 5)][] = $this->row($r);
-        $pdf = app(PdfService::class)->render('pdf.routine', ['program' => $program->name, 'batch' => $batch?->name, 'days' => Routine::DAYS, 'times' => $times, 'grid' => $grid], 'a4', 'landscape');
+        $slot = fn ($x) => substr((string) $x->start_time, 0, 5) . '–' . substr((string) $x->end_time, 0, 5);
+        // D197 AAD.5: the fixed blocks of this program are their own grey columns (a block of one day greys only that day)
+        $blocks = \App\Models\RoutineBlock::for($program->id)->orderBy('sort_order')->orderBy('start_time')->get();
+        $times = $rows->map($slot)->merge($blocks->map($slot))->unique()->sort()->values()->all();
+        $grid = []; $greyed = [];
+        foreach ($rows as $r) $grid[$r->day_of_week][$slot($r)][] = $this->row($r);
+        foreach ($blocks as $b) foreach ($b->day_of_week ? [$b->day_of_week] : Routine::DAYS as $d) $greyed[$d][$slot($b)] = $b->label ?: __('pdf.routine.kinds.' . $b->kind);
+        $pdf = app(PdfService::class)->render('pdf.routine', ['program' => $program->name, 'batch' => $batch?->name, 'days' => Routine::DAYS, 'times' => $times, 'grid' => $grid, 'blocks' => $greyed], 'a4', 'landscape');
         return response($pdf, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="routine-' . $program->id . '.pdf"']);
     }
 

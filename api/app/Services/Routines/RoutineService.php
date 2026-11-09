@@ -3,7 +3,7 @@
 namespace App\Services\Routines;
 
 use App\Exceptions\BusinessException;
-use App\Models\{Institution, Routine};
+use App\Models\{Institution, Routine, RoutineBlock};
 use App\Support\Tenancy;
 use Illuminate\Support\Facades\DB;
 
@@ -37,7 +37,7 @@ class RoutineService
         });
     }
 
-    /** @return string[] teacher | class | room */
+    /** @return string[] teacher | class | room | block (D197 AAD.5: a fixed break / assembly / prayer block of the program on that day) */
     public function conflicts(array $d, ?int $exceptId = null): array
     {
         $base = fn () => Routine::where('day_of_week', $d['day_of_week'])->where('start_time', '<', $d['end_time'])->where('end_time', '>', $d['start_time'])
@@ -47,6 +47,7 @@ class RoutineService
         $batch = $d['batch_id'] ?? null;
         if ($base()->where('program_id', $d['program_id'])->when($batch, fn ($q) => $q->where(fn ($w) => $w->whereNull('batch_id')->orWhere('batch_id', $batch)))->exists()) $out[] = 'class';
         if (!empty($d['room_no']) && $base()->where('room_no', $d['room_no'])->exists()) $out[] = 'room';
+        if (RoutineBlock::for((int) $d['program_id'], $d['day_of_week'])->where('start_time', '<', $d['end_time'])->where('end_time', '>', $d['start_time'])->exists()) $out[] = 'block';
         return $out;
     }
 }

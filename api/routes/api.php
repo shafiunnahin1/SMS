@@ -739,6 +739,10 @@ Route::prefix('v1')->group(function () {
         // ── D193 RTN.1: the weekly class routine (routine.md) ──
         Route::middleware('module:routine')->group(function () {
             Route::get('/routines',                       [\App\Http\Controllers\Routines\RoutineController::class, 'index'])->middleware('role:admin,teacher,student');
+            Route::get('/routine-blocks',                 [\App\Http\Controllers\Routines\RoutineBlockController::class, 'index'])->middleware('role:admin,teacher,student');   // D197 AAD.5
+            Route::post('/routine-blocks',                [\App\Http\Controllers\Routines\RoutineBlockController::class, 'store'])->middleware('role:admin');
+            Route::put('/routine-blocks/{id}',            [\App\Http\Controllers\Routines\RoutineBlockController::class, 'update'])->whereNumber('id')->middleware('role:admin');
+            Route::delete('/routine-blocks/{id}',         [\App\Http\Controllers\Routines\RoutineBlockController::class, 'destroy'])->whereNumber('id')->middleware('role:admin');
             Route::get('/routines/teacher',               [\App\Http\Controllers\Routines\RoutineController::class, 'teacher'])->middleware('role:teacher');
             Route::get('/routines/today',                 [\App\Http\Controllers\Routines\RoutineController::class, 'today'])->middleware('role:teacher');
             Route::middleware('role:admin')->group(function () {

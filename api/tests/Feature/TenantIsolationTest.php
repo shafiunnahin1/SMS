@@ -48,6 +48,8 @@ class TenantIsolationTest extends TestCase
     {
         return [
             'GET api/v1/staff/departments/{id}/portal' => null, // CrossTenantRouteTest uses institution_staff and a real foreign department.
+            'PUT api/v1/routine-blocks/{id}' => fn (array $other) => $this->seedRoutineBlock($other),   // D197 AAD.5
+            'DELETE api/v1/routine-blocks/{id}' => fn (array $other) => $this->seedRoutineBlock($other),
             'POST api/v1/parent/children/{id}/leave-requests' => null, // D197 AAD.3: CrossTenantRouteTest (parent, foreign child)
             'PATCH api/v1/leave-requests/students/{id}' => fn (array $other) => $this->seedLeave($other),   // D197 AAD.3
             'GET api/v1/parent/children/{id}/final-results' => null, // D197 AAD.2: CrossTenantRouteTest (parent, foreign child)
@@ -286,6 +288,12 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/question-bank/paper-folders/{id}'  => fn (array $other) => $this->seedPaperFolder($other),
             'DELETE api/v1/question-bank/paper-folders/{id}' => fn (array $other) => $this->seedPaperFolder($other),
         ];
+    }
+
+    /** D197 AAD.5: one fixed routine block of the tenant */
+    private function seedRoutineBlock(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\RoutineBlock::value('id') ?? \App\Models\RoutineBlock::create(['start_time' => '10:30', 'end_time' => '10:45', 'kind' => 'break'])->id);
     }
 
     /** D197 AAD.3: one pending leave request of the tenant's student */

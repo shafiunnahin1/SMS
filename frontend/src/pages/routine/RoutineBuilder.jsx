@@ -16,6 +16,7 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select } from '../../components/FormField'
 import { useCrud, clean } from '../../features/academic/useCrud'
 import WeekView, { DAYS } from './WeekView'
+import RoutineBlocks from '../../features/routine/RoutineBlocks'
 
 // D193 RTN.1 /admin/academic/routine: pick a class (and batch), see the week, add / edit / remove slots; the server refuses a
 // teacher, class or room clash (the message names it). Print = A4 landscape PDF.
@@ -91,6 +92,7 @@ export default function RoutineBuilder() {
           </div>
         </form>
       </Modal>
+      <RoutineBlocks programId={programId} />   {/* D197 AAD.5 */}
     </div>
   )
 }
