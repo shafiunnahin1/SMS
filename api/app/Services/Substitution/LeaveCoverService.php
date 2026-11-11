@@ -118,8 +118,9 @@ class LeaveCoverService
             'status' => $l->status, 'from_date' => $l->from_date->toDateString(), 'to_date' => $l->to_date->toDateString(), 'working_dates' => array_values($dates)];
     }
 
-    /** null = may cover this period; otherwise why not (never another person's details) */
-    public function unavailable(int $teacherId, Routine $r, string $date, ?int $exceptSlotId = null): ?string
+    /** null = may cover this period; otherwise why not (never another person's details). An unanswered offer elsewhere blocks a NEW
+     *  offer or nomination, but not the acceptance of this one: only a confirmed cover does (SUBL.6: two accepts, one wins). */
+    public function unavailable(int $teacherId, Routine $r, string $date, ?int $exceptSlotId = null, bool $offersCount = true): ?string
     {
         $t = Teacher::with('user:id,is_active')->find($teacherId);
         if (!$t || $t->status === 'inactive' || !$t->user?->is_active) return 'target_inactive';
@@ -127,7 +128,7 @@ class LeaveCoverService
         $overlap = fn ($q, string $a, string $b) => $q->where($a, '<', $r->end_time)->where($b, '>', $r->start_time);
         if ($overlap(Routine::where('teacher_id', $t->id)->where('day_of_week', $r->day_of_week), 'start_time', 'end_time')->exists()) return 'target_busy';
         if (LeaveApplication::where('user_id', $t->user_id)->whereIn('status', ['pending', 'approved'])->whereDate('from_date', '<=', $date)->whereDate('to_date', '>=', $date)->exists()) return 'target_on_leave';
-        if ($overlap(LeaveSubstitutionSlot::where('substitute_teacher_id', $t->id)->whereIn('status', ['offered', 'confirmed'])->whereDate('occurrence_date', $date)
+        if ($overlap(LeaveSubstitutionSlot::where('substitute_teacher_id', $t->id)->whereIn('status', $offersCount ? ['offered', 'confirmed'] : ['confirmed'])->whereDate('occurrence_date', $date)
             ->when($exceptSlotId, fn ($q) => $q->whereKeyNot($exceptSlotId)), 'source_start_time', 'source_end_time')->exists()) return 'target_busy';
         return null;
     }

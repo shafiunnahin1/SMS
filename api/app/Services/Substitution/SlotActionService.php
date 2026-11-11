@@ -54,9 +54,9 @@ class SlotActionService
             $routine = Routine::find($slot->routine_id);
             $state = fn () => throw new BusinessException('state', 'substitution_state_conflict', 409);
             $need = fn (string $leaveStatus, array $slotStatuses) => ($leave->status === $leaveStatus && in_array($slot->status, $slotStatuses, true)) || $state();
-            $free = function (?int $target) use ($routine, $date, $slot) {
+            $free = function (?int $target) use ($routine, $date, $slot, $action) {
                 if (!$target || !Teacher::whereKey($target)->exists()) throw ValidationException::withMessages(['substitute_teacher_id' => __('hr.invalid')]);
-                if (!$routine || $this->cover->unavailable($target, $routine, $date, $slot->id)) throw new BusinessException('unavailable', 'substitution_unavailable', 409);
+                if (!$routine || $this->cover->unavailable($target, $routine, $date, $slot->id, $action !== 'accept')) throw new BusinessException('unavailable', 'substitution_unavailable', 409);
             };
             $needReason = fn () => $reason !== null || throw ValidationException::withMessages(['reason' => __('hr.invalid')]);
 

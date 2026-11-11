@@ -43,7 +43,7 @@ export default function SlotCard({ slot, as, onDone }) {
         <span className="text-sm">{t(`substitution.status.${slot.status}`)}</span>
       </div>
       <p className="text-sm text-content-muted" dir="auto">
-        {slot.applicant ?? slot.original_teacher}{slot.substitute && <> → {slot.substitute.name}</>}
+        {slot.applicant ?? slot.original_teacher}{slot.substitute && <> · {t('substitution.pick')}: {slot.substitute.name}</>}
         {slot.reason_code && <> · {t(`substitution.reasons.${slot.reason_code}`, slot.reason_code)}</>}
       </p>
       {canPick && (
