@@ -11,7 +11,7 @@ use Carbon\Carbon;
 // D200 SUBL.4 (docs/API.md D199 notifications): in-app only, written in the SAME transaction as the event (so both commit or
 // neither), one per recipient per event: the notification carries delivery_key = leave-substitution:{institution}:{event}:{user}:
 // database and a recipient who already has that key is skipped - a replay or a retried transaction never adds a second notice.
-// The body has the date, time, class / subject, the other teacher's name - never the leave reason. No SMS (later decision).
+// The body has the date, time, class / subject, the other teacher's name - never the leave reason. D201: the same text also goes by SMS.
 class SubstitutionNotifier
 {
     /** @param int|null $oldTarget the Teacher who held the slot before this event (for cleared / invalidated covers) */
@@ -40,8 +40,15 @@ class SubstitutionNotifier
             $key = "leave-substitution:{$institution->id}:{$e->id}:{$u->id}:database";
             if ($u->notifications()->where('data->data->delivery_key', $key)->exists()) continue;
             $loc = app(SmsService::class)->localeFor($u, $institution);
-            $u->notify(new GeneralNotification(__('substitution.title', [], $loc), __('substitution.' . $type, $vars, $loc), 'leave_substitution',
-                ['delivery_key' => $key, 'leave_id' => $e->leave_application_id, 'slot_id' => $e->leave_substitution_slot_id, 'version' => $e->version, 'status' => $e->result_status]));
+            // D201 SUBM.2: every cover notice is also an SMS when the recipient has a phone and has not switched SMS (or this kind) off.
+            // The intent is this row's `sms` state, written with the event; the job is queued only after the commit.
+            $prefs = $u->notification_preferences ?? [];
+            $sms = $u->phone && ($prefs['sms'] ?? true) && ($prefs['leave_substitution'] ?? true) ? 'pending' : 'skipped';
+            $notice = new GeneralNotification(__('substitution.title', [], $loc), __('substitution.' . $type, $vars, $loc), 'leave_substitution',
+                ['delivery_key' => $key, 'leave_id' => $e->leave_application_id, 'slot_id' => $e->leave_substitution_slot_id, 'version' => $e->version, 'status' => $e->result_status, 'sms' => $sms]);
+            $notice->id = (string) \Illuminate\Support\Str::uuid();   // set here: the sender only fills the id on its own clone
+            $u->notify($notice);
+            if ($sms === 'pending') \App\Jobs\SendSubstitutionSmsJob::dispatch($u->id, (string) $notice->id, $institution->id)->afterCommit();
         }
     }
 
