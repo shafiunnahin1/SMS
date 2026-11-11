@@ -219,4 +219,8 @@ return [
     'leave_too_long' => 'একটি আবেদনে সর্বোচ্চ ৬০ দিনের ছুটি।',
     'leave_needs_admin' => 'এই ছুটি শিক্ষকের অনুমোদন-সীমার বেশি; Admin সিদ্ধান্ত দেবেন।',
     'leave_decided' => 'এই আবেদনের সিদ্ধান্ত আগেই হয়েছে।',
+    // D200 SUBL.2
+    'idempotency_key_invalid' => 'Idempotency-Key header (১-১২৮ বাইট) দরকার।',
+    'idempotency_conflict' => 'এই অনুরোধ-চাবি আগে অন্য একটি অনুরোধে ব্যবহৃত হয়েছে।',
+    'substitution_retry_required' => 'সিস্টেম ব্যস্ত ছিল; আবার চেষ্টা করুন।',
 ];

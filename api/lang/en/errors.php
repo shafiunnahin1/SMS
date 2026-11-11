@@ -219,4 +219,8 @@ return [
     'leave_too_long' => 'A leave request can be at most 60 days.',
     'leave_needs_admin' => 'This leave is longer than a teacher may approve; the admin decides.',
     'leave_decided' => 'This request was already decided.',
+    // D200 SUBL.2
+    'idempotency_key_invalid' => 'An Idempotency-Key header (1-128 bytes) is required.',
+    'idempotency_conflict' => 'This request key was already used for a different request.',
+    'substitution_retry_required' => 'The system was busy; please try again.',
 ];

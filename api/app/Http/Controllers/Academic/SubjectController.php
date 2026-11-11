@@ -49,8 +49,16 @@ class SubjectController extends Controller
 
     public function update(SubjectRequest $request, int $id)
     {
-        $subject = Subject::findOrFail($id);
-        $subject->update($request->validated());
+        // D200 SUBL.2: institution lock; moving a subject to another program invalidates the cover slots of its routine periods
+        $subject = app(\App\Services\Substitution\InstitutionLock::class)->run(function () use ($request, $id) {
+            $subject = Subject::findOrFail($id);
+            $subject->fill($request->validated());
+            if ($subject->isDirty('program_id')) {
+                app(\App\Services\Substitution\SlotInvalidator::class)->sourceChanged(\App\Models\Routine::where('subject_id', $subject->id)->pluck('id')->all(), 'routine_changed', 'subject', $subject->id);
+            }
+            $subject->save();
+            return $subject;
+        });
         return (new SubjectResource($subject->load(['program:id,name', 'teacher.user:id,name'])))->additional(['success' => true, 'message' => __('messages.saved')]);
     }
 

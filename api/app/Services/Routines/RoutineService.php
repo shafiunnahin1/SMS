@@ -24,7 +24,15 @@ class RoutineService
                 $list = implode(', ', array_map(fn ($c) => __("errors.routine_conflicts.$c"), $conflicts));
                 throw new BusinessException('routine conflict: ' . implode(',', $conflicts), 'routine_conflict', 422, ['list' => $list]);
             }
-            if ($routine) { $routine->update($data); return $routine->fresh(); }
+            if ($routine) {
+                // D200 SUBL.2: a change of the slot's identity invalidates its future cover slots before the row changes
+                $t = fn ($v) => substr((string) $v, 0, 5);
+                $changed = array_filter(['teacher_id', 'day_of_week', 'room_no', 'program_id', 'batch_id', 'subject_id'], fn ($k) => array_key_exists($k, $data) && (string) $routine->$k !== (string) $data[$k]);
+                foreach (['start_time', 'end_time'] as $k) if (array_key_exists($k, $data) && $t($routine->$k) !== $t($data[$k])) $changed[] = $k;
+                if ($changed) app(\App\Services\Substitution\SlotInvalidator::class)->sourceChanged([$routine->id], in_array('teacher_id', $changed, true) ? 'identity_changed' : 'routine_changed', 'routine', $routine->id);
+                $routine->update($data);
+                return $routine->fresh();
+            }
             return Routine::create($data);
         });
     }
@@ -33,6 +41,8 @@ class RoutineService
     {
         DB::transaction(function () use ($routine) {
             Institution::whereKey(Tenancy::current()->id)->lockForUpdate()->firstOrFail();
+            // D200 SUBL.2: cover history references the routine (foreign key); such a routine is edited, not deleted
+            if (\App\Models\LeaveSubstitutionSlot::where('routine_id', $routine->id)->exists()) throw new BusinessException('routine has cover history', 'in_use', 422);
             Routine::whereKey($routine->id)->lockForUpdate()->firstOrFail()->delete();
         });
     }

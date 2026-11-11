@@ -34,13 +34,14 @@ class TeacherService
 
     public function update(Teacher $teacher, array $data): Teacher
     {
-        return DB::transaction(function () use ($teacher, $data) {
+        return app(\App\Services\Substitution\InstitutionLock::class)->run(function () use ($teacher, $data) {   // D200 SUBL.2: institution lock first
             $user = array_intersect_key($data, array_flip(self::USER_FIELDS));
             if ($user && $teacher->user) $teacher->user->fill($user)->save();      // a changed phone/email revokes tokens (UserObserver)
             $rest = array_diff_key($data, array_flip(self::USER_FIELDS));
             if (array_key_exists('employee_id', $rest) && !$rest['employee_id']) unset($rest['employee_id']);
             $teacher->fill($rest)->save();
             if (isset($rest['status']) && $teacher->user) $teacher->user->forceFill(['is_active' => $rest['status'] !== 'inactive'])->save();
+            if (($rest['status'] ?? null) === 'inactive') app(\App\Services\Substitution\SlotInvalidator::class)->teacherInactive($teacher->id);
             return $teacher->fresh('user');
         });
     }
@@ -48,7 +49,8 @@ class TeacherService
     /** Soft delete (schema: deleted_at); the login is switched off, which revokes its tokens. Assignments stay as history. */
     public function delete(Teacher $teacher): void
     {
-        DB::transaction(function () use ($teacher) {
+        app(\App\Services\Substitution\InstitutionLock::class)->run(function () use ($teacher) {   // D200 SUBL.2
+            app(\App\Services\Substitution\SlotInvalidator::class)->teacherInactive($teacher->id);
             $teacher->user?->forceFill(['is_active' => false])->save();
             $teacher->delete();
         });

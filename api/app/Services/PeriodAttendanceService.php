@@ -6,7 +6,6 @@ use App\Exceptions\BusinessException;
 use App\Models\{Attendance, Enrollment, PeriodAttendance, Routine, StudentLeaveRequest, Teacher, User};
 use App\Support\{Tenancy, TenantBulk};
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 // D197 AAD.4 (academics-advanced.md section 3): a teacher's periods of the day (from the routine), the class list of a period
 // (active enrollments of its batch, or of the whole program), saving it, and - only when settings.attendance.daily_from_periods
@@ -64,7 +63,7 @@ class PeriodAttendanceService
             $rows[] = ['institution_id' => $t, 'student_id' => $x['student_id'], 'routine_id' => $r->id, 'date' => $date, 'status' => $x['status'], 'taken_by' => $by->id, 'note' => $x['note'] ?? null];
         }
         $derived = 0;
-        DB::transaction(function () use ($rows, $date, &$derived) {
+        app(\App\Services\Substitution\InstitutionLock::class)->run(function () use ($rows, $date, &$derived) {   // D200 SUBL.2: institution lock first
             TenantBulk::upsert(PeriodAttendance::class, $rows, ['student_id', 'routine_id', 'date'], ['status', 'taken_by', 'note']);
             if ($this->settings()['daily_from_periods']) $derived = $this->deriveDaily(array_column($rows, 'student_id'), $date);
         });

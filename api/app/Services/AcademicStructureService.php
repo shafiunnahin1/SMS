@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Exceptions\BusinessException;
 use App\Models\{Batch, BatchTeacher, Enrollment, Exam, ExamSubject, FeeStructure, Program, Result, Subject, Teacher, TeacherSubject};
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 // docs/modules/academic-structure.md: Program -> Batch (-> Enrollment, owned by EnrollmentService). Nothing that has members or
@@ -19,13 +18,16 @@ class AcademicStructureService
         $used = Batch::where('program_id', $program->id)->exists() || Subject::where('program_id', $program->id)->exists()
             || Exam::where('program_id', $program->id)->exists() || FeeStructure::where('program_id', $program->id)->exists();
         if ($used) throw new BusinessException('program in use', 'in_use', 422);
-        $program->delete();
+        app(\App\Services\Substitution\InstitutionLock::class)->run(function () use ($program) {   // D200 SUBL.2: lock; cover history keeps its program (foreign key)
+            if (\App\Models\LeaveSubstitutionEvent::where('source_program_id', $program->id)->exists()) throw new BusinessException('program in use', 'in_use', 422);
+            $program->delete();
+        });
     }
 
     /** Create or update a batch with its class teacher and subject teachers */
     public function saveBatch(array $data, ?Batch $batch = null): Batch
     {
-        return DB::transaction(function () use ($data, $batch) {
+        return app(\App\Services\Substitution\InstitutionLock::class)->run(function () use ($data, $batch) {   // D200 SUBL.2
             if (!$batch && empty($data['program_id'])) $data['program_id'] = $this->defaultProgram()->id;
             $subjectTeachers = $data['subject_teachers'] ?? null;
             unset($data['subject_teachers']);
@@ -41,7 +43,8 @@ class AcademicStructureService
     {
         // any enrollment, whatever its status, is history (rule 5): archive the batch instead
         if (Enrollment::where('batch_id', $batch->id)->exists()) throw new BusinessException('batch in use', 'in_use', 422);
-        DB::transaction(function () use ($batch) {
+        app(\App\Services\Substitution\InstitutionLock::class)->run(function () use ($batch) {   // D200 SUBL.2
+            if (\App\Models\LeaveSubstitutionEvent::where('source_batch_id', $batch->id)->exists()) throw new BusinessException('batch in use', 'in_use', 422);
             BatchTeacher::where('batch_id', $batch->id)->delete();
             $batch->delete();
         });
@@ -51,7 +54,8 @@ class AcademicStructureService
     {
         $used = ExamSubject::where('subject_id', $subject->id)->exists() || Result::where('subject_id', $subject->id)->exists();
         if ($used) throw new BusinessException('subject in use', 'in_use', 422);
-        DB::transaction(function () use ($subject) {
+        app(\App\Services\Substitution\InstitutionLock::class)->run(function () use ($subject) {   // D200 SUBL.2
+            if (\App\Models\LeaveSubstitutionEvent::where('source_subject_id', $subject->id)->exists()) throw new BusinessException('subject in use', 'in_use', 422);
             BatchTeacher::where('subject_id', $subject->id)->delete();
             TeacherSubject::where('subject_id', $subject->id)->delete();
             $subject->delete();
