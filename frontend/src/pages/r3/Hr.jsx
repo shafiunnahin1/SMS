@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import LeaveCoverApproval from '../../features/substitution/LeaveCoverApproval'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import api from '../../api/axios'
@@ -110,13 +111,14 @@ export function ProvidentFund() {
 
 export function Leave() {
   const tr = (a, when, danger) => ({ key: a, label: `r3.hr.leave.${a}`, when, danger, method: 'patch', path: r => `/hr/leaves/${r.id}/${a}` })
-  return <ResourcePage title="r3.hr.leaves" endpoint="hr/leaves"
+  // D201 SUBM.1: a pending Teacher leave with class periods is approved together with its substitutes (panel above the list)
+  return <><LeaveCoverApproval /><ResourcePage title="r3.hr.leaves" endpoint="hr/leaves"
     columns={[{ key: 'user_name', label: 'r3.name', value: r => r.user?.name ?? r.staff?.name ?? r.user_name ?? r.staff_id }, { key: 'from_date', label: 'r3.from', kind: 'date' },
       { key: 'to_date', label: 'r3.to', kind: 'date' }, { key: 'total_days', label: 'r3.hr.days' }, { key: 'status', label: 'r3.status', kind: 'status' }]}
     create={{ label: 'r3.hr.new_leave', fields: [{ name: 'staff_id', label: 'r3.hr.staff_member', kind: 'select', optionsFrom: 'hr/staff' },
       { name: 'leave_type_id', label: 'r3.type', kind: 'select', optionsFrom: 'hr/leave-types', required: true },
       { name: 'from_date', label: 'r3.from', kind: 'date', required: true }, { name: 'to_date', label: 'r3.to', kind: 'date', required: true }, { name: 'reason', label: 'r3.reason', wide: true }] }}
-    actions={[tr('approve', r => r.status === 'pending'), tr('reject', r => r.status === 'pending', true), tr('cancel', r => ['pending', 'approved'].includes(r.status), true)]} />
+    actions={[tr('approve', r => r.status === 'pending'), tr('reject', r => r.status === 'pending', true), tr('cancel', r => ['pending', 'approved'].includes(r.status), true)]} /></>
 }
 
 export function StaffAttendance() {
