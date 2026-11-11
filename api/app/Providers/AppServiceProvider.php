@@ -21,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
             'ssl_wireless' => new SslWirelessGateway(),
             default        => new LogSmsGateway(),
         });
+        $this->app->scoped(\App\Services\Substitution\LeaveCoverService::class);   // D200 SUBL.3: one per request (it carries the approval's gap list)
         foreach ([SmsService::class, PdfService::class, NotificationService::class, ThemeService::class, ModuleGate::class] as $service) {
             $this->app->singleton($service);
         }

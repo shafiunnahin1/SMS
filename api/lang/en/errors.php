@@ -223,4 +223,6 @@ return [
     'idempotency_key_invalid' => 'An Idempotency-Key header (1-128 bytes) is required.',
     'idempotency_conflict' => 'This request key was already used for a different request.',
     'substitution_retry_required' => 'The system was busy; please try again.',
+    'substitution_version_conflict' => 'The cover plan changed; reload and try again.',
+    'substitution_state_conflict' => 'This period is already claimed by another leave or state.',
 ];

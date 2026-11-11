@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class LeaveService
 {
-    public function __construct(private HrCalendar $calendar) {}
+    public function __construct(private HrCalendar $calendar, private \App\Services\Substitution\LeaveCoverService $cover) {}
 
     private function actor(User $actor): User
     {
@@ -90,6 +90,13 @@ class LeaveService
             $actor = $this->actor($actor);
             if ($actor->role === 'teacher' && ((int) ($input['user_id'] ?? 0) !== $actor->id || isset($input['staff_id']))) throw new AuthorizationException();
             $this->payee($input['user_id'] ?? null, $input['staff_id'] ?? null);
+            // D200 SUBL.3: a Teacher's leave owns cover slots; a repeated request with the same Idempotency-Key replays the first result
+            $teacher = $this->cover->teacherOf($input['user_id'] ?? null);
+            if ($teacher) {
+                [$key, $digest, $prior] = $this->cover->begin($actor, 'leave_create', ['type' => 'leave_application_collection', 'id' => null],
+                    array_intersect_key($input, array_flip(['user_id', 'leave_type_id', 'from_date', 'to_date', 'reason', 'override', 'override_reason'])), null);
+                if ($prior) return LeaveApplication::findOrFail($prior->leave_application_id);
+            }
             $type = LeaveType::findOrFail($input['leave_type_id']);
             $dates = $this->dates($input);
             $this->check($input, $dates, $type, $actor);
@@ -97,6 +104,7 @@ class LeaveService
                 ['total_days' => count($dates), 'status' => 'pending']);
             $this->audit('leave.requested', $row, ['actor_id' => $actor->id, 'override' => $input['override'] ?? false,
                 'override_reason' => $input['override_reason'] ?? null]);
+            if ($teacher) $this->cover->created($row, $teacher, $dates, $actor, $key, $digest);
             $this->notify($row, 'requested');
             return $row;
         });
@@ -115,6 +123,18 @@ class LeaveService
             $state = ['approve' => 'approved', 'reject' => 'rejected', 'cancel' => 'cancelled'][$action] ?? null;
             if (!$state) $this->invalid('action');
             $reason = trim($input['reason'] ?? '');
+            // D200 SUBL.3: replay by Idempotency-Key comes before every state check; a stale occurrence_scope is refused before any write
+            $teacher = $this->cover->teacherOf($row->user_id);
+            if ($teacher) {
+                $scope = $input['expected_versions']['occurrence_scope'] ?? null;
+                [$key, $digest, $prior] = $this->cover->begin($actor, 'leave_' . $action, ['type' => 'leave_application', 'id' => (string) $row->id],
+                    ['reason' => $reason, 'override' => (bool) ($input['override'] ?? false), 'override_reason' => $input['override_reason'] ?? '', 'cover_choices' => $input['cover_choices'] ?? null], $scope);
+                if ($prior) return $row;
+                if ($scope !== null) {
+                    $current = $row->status === 'approved' ? $this->snapshot($row)['dates'] : $this->calendar->dates($row->from_date->toDateString(), $row->to_date->toDateString());
+                    if (!hash_equals($this->cover->scope($row, $teacher, $current), $scope)) throw new BusinessException('stale scope', 'substitution_version_conflict', 409);
+                }
+            }
             if ($row->status === $state) {
                 $audit = AuditLog::where('model', 'LeaveApplication')->where('model_id', $row->id)->where('action', 'leave.'.$state)->orderByDesc('id')->first();
                 if (($audit?->new_data['actor_id'] ?? null) === $actor->id &&
@@ -139,6 +159,10 @@ class LeaveService
                 $data += ['dates' => $dates, 'is_paid' => (bool) $type->is_paid];
             }
             $row->status = $state; $row->save();
+            if ($teacher) {
+                if ($state === 'approved') $this->cover->approved($row, $teacher, $dates, $input['cover_choices'] ?? null, $actor, $key, $digest);
+                else $this->cover->closed($row, $state, $actor, $key, $digest);
+            }
             $this->audit('leave.'.$state, $row, $data);
             $this->notify($row, $state);
             return $row;

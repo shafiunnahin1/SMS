@@ -36,7 +36,11 @@ class LeaveController extends Controller
     }
     public function transition(LeaveRequest $request,int $id,string $action,LeaveService $service)
     {
-        return (new LeaveResource($service->transition($id,$action,$request->validated(),$request->user())))->additional(['success'=>true]);
+        app(\App\Services\Substitution\LeaveCoverService::class)->gaps=[];
+        $row=$service->transition($id,$action,$request->validated(),$request->user());
+        // D200 SUBL.3: an approval says which periods stayed without a substitute and why
+        $gaps=app(\App\Services\Substitution\LeaveCoverService::class)->gaps;
+        return (new LeaveResource($row))->additional(['success'=>true]+($action==='approve'&&$gaps?['cover_gaps'=>$gaps]:[]));
     }
     public function balance(HrQueryRequest $request,LeaveService $service)
     {
