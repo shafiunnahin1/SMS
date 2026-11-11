@@ -88,6 +88,8 @@ class RoleMatrixContractTest extends TestCase
             if ($uri === 'api/v1/writer/qb/{kind}') $path = 'writer/qb/curriculum-versions';
             // D90 adds two numeric row placeholders; retain the same role assertions and all existing substitutions.
             $path = strtr($path, ['{department}' => '999999', '{duty}' => '999999']);
+            // D200 SUBL.4 adds two numeric row placeholders (a leave and its cover slot); same role assertions
+            $path = strtr($path, ['{leave}' => '999999', '{slot}' => '999999']);
             // D84: use a valid shared action so route constraints do not preempt the role middleware.
             if ($uri === 'api/v1/hr/leaves/{id}/{action}') $path = str_replace('dry-run', 'cancel', $path);
             if ($uri === 'api/v1/fee-refunds/{id}/{action}') $path = str_replace('dry-run', 'process', $path);

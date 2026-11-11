@@ -225,4 +225,6 @@ return [
     'substitution_retry_required' => 'সিস্টেম ব্যস্ত ছিল; আবার চেষ্টা করুন।',
     'substitution_version_conflict' => 'বদলির পরিকল্পনা বদলে গেছে; আবার লোড করে চেষ্টা করুন।',
     'substitution_state_conflict' => 'এই পিরিয়ডটি অন্য ছুটি বা অবস্থায় আছে।',
+    'substitution_period_started' => 'পিরিয়ডটি শুরু হয়ে গেছে।',
+    'substitution_unavailable' => 'এই শিক্ষক ওই পিরিয়ডে ফাঁকা নন।',
 ];

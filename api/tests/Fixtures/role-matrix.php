@@ -254,6 +254,13 @@ return [
     'POST api/v1/students/{id}/due-block-exemptions' => ['admin', 'accountant'],
     'DELETE api/v1/students/{id}/due-block-exemptions' => ['admin', 'accountant'],
     'GET api/v1/exams/{id}/admit-cards/blocked' => ['admin'],
+    'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/nomination' => ['teacher'],   // D200 SUBL.4
+    'DELETE api/v1/hr/leaves/{leave}/substitution-slots/{slot}/nomination' => ['teacher'],
+    'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer' => ['admin'],
+    'DELETE api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer' => ['admin'],
+    'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/accept' => ['teacher'],
+    'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/decline' => ['teacher'],
+    'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/refresh-source' => ['admin'],
     'GET api/v1/routine-blocks' => ['admin', 'teacher', 'student'],   // D197 AAD.5
     'POST api/v1/routine-blocks' => ['admin'],
     'PUT api/v1/routine-blocks/{id}' => ['admin'],

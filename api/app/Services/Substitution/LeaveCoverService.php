@@ -186,21 +186,24 @@ class LeaveCoverService
 
     private function move(LeaveSubstitutionOperation $op, LeaveSubstitutionSlot $slot, string $status, ?int $target, string $type, ?string $reason, User $actor): void
     {
+        $was = $slot->substitute_teacher_id;
         $slot->forceFill(['status' => $status, 'substitute_teacher_id' => $target, 'version' => $slot->version + 1])->save();
-        $this->event($op, $slot, $type, $reason, $actor, null);
+        $this->event($op, $slot, $type, $reason, $actor, null, $was);
     }
 
-    private function event(LeaveSubstitutionOperation $op, LeaveSubstitutionSlot $slot, string $type, ?string $reason, User $actor, ?array $src): void
+    private function event(LeaveSubstitutionOperation $op, LeaveSubstitutionSlot $slot, string $type, ?string $reason, User $actor, ?array $src, ?int $was = null): void
     {
         if (!$src) {
             $last = LeaveSubstitutionEvent::where('leave_substitution_slot_id', $slot->id)->orderByDesc('version')->first();
             $src = [$last->source_program_id, $last->source_batch_id, $last->source_subject_id];
         }
-        LeaveSubstitutionEvent::create(['leave_substitution_operation_id' => $op->id, 'leave_substitution_slot_id' => $slot->id, 'leave_application_id' => $slot->leave_application_id,
+        $event = LeaveSubstitutionEvent::create(['leave_substitution_operation_id' => $op->id, 'leave_substitution_slot_id' => $slot->id, 'leave_application_id' => $slot->leave_application_id,
             'version' => $slot->version, 'result_status' => $slot->status, 'event_type' => $type, 'user_id' => $actor->id, 'original_teacher_id' => $slot->original_teacher_id,
             'source_program_id' => $src[0], 'source_batch_id' => $src[1], 'source_subject_id' => $src[2], 'substitute_teacher_id' => $slot->substitute_teacher_id,
             'occurrence_date' => Carbon::parse($slot->occurrence_date)->toDateString(), 'source_start_time' => $slot->source_start_time, 'source_end_time' => $slot->source_end_time,
             'source_room_no' => $slot->source_room_no, 'reason_code' => $reason, 'idempotency_key' => $this->receipts->eventKey($op, $slot->id), 'payload_sha256' => $op->payload_sha256]);
+        // D200 SUBL.4: a slot created already offered is an offer to its target
+        app(SubstitutionNotifier::class)->notify($event, $was, $type === 'slot_created' && $slot->status === 'offered' ? 'offer_created' : null);
     }
 
     private function routineFields(Routine $r): array

@@ -53,13 +53,15 @@ class SlotInvalidator
             $last = LeaveSubstitutionEvent::where('leave_substitution_slot_id', $slot->id)->orderByDesc('version')->first();
             $routine = $last ? null : Routine::find($slot->routine_id);
             $status = $mode === 'cancel' ? 'cancelled' : 'unassigned';
+            $was = $slot->substitute_teacher_id;
             $slot->forceFill(['status' => $status, 'substitute_teacher_id' => null, 'version' => $slot->version + 1])->save();
-            LeaveSubstitutionEvent::create(['leave_substitution_operation_id' => $op->id, 'leave_substitution_slot_id' => $slot->id, 'leave_application_id' => $slot->leave_application_id,
+            $event = LeaveSubstitutionEvent::create(['leave_substitution_operation_id' => $op->id, 'leave_substitution_slot_id' => $slot->id, 'leave_application_id' => $slot->leave_application_id,
                 'version' => $slot->version, 'result_status' => $status, 'event_type' => 'source_invalidated', 'user_id' => $actor->id, 'original_teacher_id' => $slot->original_teacher_id,
                 'source_program_id' => $last?->source_program_id ?? $routine->program_id, 'source_batch_id' => $last ? $last->source_batch_id : $routine->batch_id,
                 'source_subject_id' => $last?->source_subject_id ?? $routine->subject_id, 'substitute_teacher_id' => null,
                 'occurrence_date' => $slot->occurrence_date->toDateString(), 'source_start_time' => $slot->source_start_time, 'source_end_time' => $slot->source_end_time,
                 'source_room_no' => $slot->source_room_no, 'reason_code' => $reason, 'idempotency_key' => $this->receipts->eventKey($op, $slot->id), 'payload_sha256' => $digest]);
+            app(SubstitutionNotifier::class)->notify($event, $was);   // D200 SUBL.4
         }
         return $slots->count();
     }

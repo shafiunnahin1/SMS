@@ -35,6 +35,13 @@ class CrossTenantRouteTest extends TestCase
             'DELETE api/v1/exams/{id}/subjects/{subjectId}/paper' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/paper"],
             'POST api/v1/exams/{id}/subjects/{subjectId}/mcq-import' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/mcq-import"],
             'POST api/v1/exams/{id}/subjects/{subjectId}/submission' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/submission"],   // D162
+            'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/nomination' => ['teacher', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/nomination"],   // D200 SUBL.4
+            'DELETE api/v1/hr/leaves/{leave}/substitution-slots/{slot}/nomination' => ['teacher', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/nomination"],
+            'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer' => ['admin', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/offer"],
+            'DELETE api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer' => ['admin', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/offer"],
+            'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/accept' => ['teacher', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/accept"],
+            'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/decline' => ['teacher', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/decline"],
+            'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/refresh-source' => ['admin', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/refresh-source"],
             'GET api/v1/teacher/salary/slips/{id}.pdf' => ['teacher', "teacher/salary/slips/{$theirs['payroll_item']}.pdf"],
         ];
     }
@@ -78,6 +85,17 @@ class CrossTenantRouteTest extends TestCase
         $ids['payroll_item'] = Tenancy::as($i, function () use ($users) {
             $teacher = \App\Models\Teacher::create(['user_id' => $users['teacher']->id, 'employee_id' => 'PAY-T', 'status' => 'active']);
             return \App\Models\PayrollItem::factory()->create(['payee_id' => $teacher->id])->id;
+        });
+        // D200 SUBL.4: one leave of the tenant's teacher with one cover slot
+        [$ids['leave'], $ids['slot']] = Tenancy::as($i, function () use ($users, $ids) {
+            $teacher = \App\Models\Teacher::where('user_id', $users['teacher']->id)->first();
+            $type = \App\Models\LeaveType::create(['name' => 'Casual', 'max_days_per_year' => 10, 'is_paid' => true]);
+            $leave = \App\Models\LeaveApplication::create(['user_id' => $users['teacher']->id, 'leave_type_id' => $type->id, 'from_date' => '2035-01-07', 'to_date' => '2035-01-07', 'total_days' => 1, 'status' => 'pending']);
+            $program = \App\Models\Student::find($ids['student'])->enrollments()->value('program_id');
+            $routine = \App\Models\Routine::create(['program_id' => $program, 'subject_id' => $ids['subject'], 'teacher_id' => $teacher->id, 'day_of_week' => 'sun', 'start_time' => '09:00', 'end_time' => '09:45']);
+            $slot = \App\Models\LeaveSubstitutionSlot::create(['leave_application_id' => $leave->id, 'routine_id' => $routine->id, 'original_teacher_id' => $teacher->id,
+                'occurrence_date' => '2035-01-07', 'source_start_time' => '09:00', 'source_end_time' => '09:45']);
+            return [$leave->id, $slot->id];
         });
         $ids['department'] = Tenancy::as($i, function () use ($users) {
             $service = app(\App\Services\DepartmentService::class);

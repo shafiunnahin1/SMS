@@ -48,6 +48,13 @@ class TenantIsolationTest extends TestCase
     {
         return [
             'GET api/v1/staff/departments/{id}/portal' => null, // CrossTenantRouteTest uses institution_staff and a real foreign department.
+            'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/nomination' => null, // D200 SUBL.4: CrossTenantRouteTest (a foreign leave and slot)
+            'DELETE api/v1/hr/leaves/{leave}/substitution-slots/{slot}/nomination' => null,
+            'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer' => null,
+            'DELETE api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer' => null,
+            'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/accept' => null,
+            'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/decline' => null,
+            'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/refresh-source' => null,
             'PUT api/v1/routine-blocks/{id}' => fn (array $other) => $this->seedRoutineBlock($other),   // D197 AAD.5
             'DELETE api/v1/routine-blocks/{id}' => fn (array $other) => $this->seedRoutineBlock($other),
             'POST api/v1/parent/children/{id}/leave-requests' => null, // D197 AAD.3: CrossTenantRouteTest (parent, foreign child)

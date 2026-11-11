@@ -414,6 +414,16 @@ Route::prefix('v1')->group(function () {
                 Route::get('/leaves/balance',[LeaveController::class,'balance']);
             });
         });
+        // ── D200 SUBL.4: leave-linked substitution slot actions (docs/API.md D96; Idempotency-Key required) ──
+        Route::middleware(['role:admin,teacher', 'module:hr_payroll', 'module:substitution'])->group(function () {
+            Route::put('/hr/leaves/{leave}/substitution-slots/{slot}/nomination',       [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'act'])->whereNumber(['leave', 'slot'])->defaults('action', 'nominate')->middleware('role:teacher');
+            Route::delete('/hr/leaves/{leave}/substitution-slots/{slot}/nomination',    [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'act'])->whereNumber(['leave', 'slot'])->defaults('action', 'clear_nomination')->middleware('role:teacher');
+            Route::put('/hr/leaves/{leave}/substitution-slots/{slot}/offer',            [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'act'])->whereNumber(['leave', 'slot'])->defaults('action', 'offer')->middleware('role:admin');
+            Route::delete('/hr/leaves/{leave}/substitution-slots/{slot}/offer',         [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'act'])->whereNumber(['leave', 'slot'])->defaults('action', 'clear_offer')->middleware('role:admin');
+            Route::patch('/hr/leaves/{leave}/substitution-slots/{slot}/accept',         [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'act'])->whereNumber(['leave', 'slot'])->defaults('action', 'accept')->middleware('role:teacher');
+            Route::patch('/hr/leaves/{leave}/substitution-slots/{slot}/decline',        [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'act'])->whereNumber(['leave', 'slot'])->defaults('action', 'decline')->middleware('role:teacher');
+            Route::patch('/hr/leaves/{leave}/substitution-slots/{slot}/refresh-source', [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'act'])->whereNumber(['leave', 'slot'])->defaults('action', 'refresh_source')->middleware('role:admin');
+        });
         Route::middleware(['role:admin,teacher','module:hr_payroll'])->group(function () {
             Route::patch('/hr/leaves/{id}/{action}',[LeaveController::class,'transition'])->where('action','approve|reject|cancel');
         });

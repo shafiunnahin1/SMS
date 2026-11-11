@@ -225,4 +225,6 @@ return [
     'substitution_retry_required' => 'The system was busy; please try again.',
     'substitution_version_conflict' => 'The cover plan changed; reload and try again.',
     'substitution_state_conflict' => 'This period is already claimed by another leave or state.',
+    'substitution_period_started' => 'This period has already started.',
+    'substitution_unavailable' => 'This teacher is not available for that period.',
 ];
