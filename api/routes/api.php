@@ -414,8 +414,12 @@ Route::prefix('v1')->group(function () {
                 Route::get('/leaves/balance',[LeaveController::class,'balance']);
             });
         });
+        Route::middleware(['role:teacher', 'module:substitution'])->get('/teacher/substitution-offers', [\App\Http\Controllers\Hr\SubstitutionOfferController::class, 'index']);   // D200 SUBL.5
         // ── D200 SUBL.4: leave-linked substitution slot actions (docs/API.md D96; Idempotency-Key required) ──
         Route::middleware(['role:admin,teacher', 'module:hr_payroll', 'module:substitution'])->group(function () {
+            Route::get('/hr/leaves/{leave}/substitution-slots',                         [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'index'])->whereNumber('leave');   // D200 SUBL.5 reads
+            Route::get('/hr/leaves/{leave}/substitution-slots/{slot}/candidates',       [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'candidates'])->whereNumber(['leave', 'slot']);
+            Route::get('/hr/substitution-slots',                                        [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'needing'])->middleware('role:admin');
             Route::put('/hr/leaves/{leave}/substitution-slots/{slot}/nomination',       [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'act'])->whereNumber(['leave', 'slot'])->defaults('action', 'nominate')->middleware('role:teacher');
             Route::delete('/hr/leaves/{leave}/substitution-slots/{slot}/nomination',    [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'act'])->whereNumber(['leave', 'slot'])->defaults('action', 'clear_nomination')->middleware('role:teacher');
             Route::put('/hr/leaves/{leave}/substitution-slots/{slot}/offer',            [\App\Http\Controllers\Hr\LeaveSubstitutionController::class, 'act'])->whereNumber(['leave', 'slot'])->defaults('action', 'offer')->middleware('role:admin');

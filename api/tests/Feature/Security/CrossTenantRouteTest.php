@@ -35,6 +35,8 @@ class CrossTenantRouteTest extends TestCase
             'DELETE api/v1/exams/{id}/subjects/{subjectId}/paper' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/paper"],
             'POST api/v1/exams/{id}/subjects/{subjectId}/mcq-import' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/mcq-import"],
             'POST api/v1/exams/{id}/subjects/{subjectId}/submission' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/submission"],   // D162
+            'GET api/v1/hr/leaves/{leave}/substitution-slots' => ['admin', "hr/leaves/{$theirs['leave']}/substitution-slots"],   // D200 SUBL.5
+            'GET api/v1/hr/leaves/{leave}/substitution-slots/{slot}/candidates' => ['admin', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/candidates"],
             'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/nomination' => ['teacher', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/nomination"],   // D200 SUBL.4
             'DELETE api/v1/hr/leaves/{leave}/substitution-slots/{slot}/nomination' => ['teacher', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/nomination"],
             'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer' => ['admin', "hr/leaves/{$theirs['leave']}/substitution-slots/{$theirs['slot']}/offer"],

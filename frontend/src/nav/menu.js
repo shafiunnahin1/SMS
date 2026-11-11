@@ -157,6 +157,7 @@ export const MENU = {
     it('salary','/teacher/salary','আমার বেতন',{icon:'Banknote',module:'hr_payroll'}),
     it('leave','/teacher/leave','ছুটি',{icon:'Plane',module:'hr_payroll'}),
     it('periods','/teacher/periods','আমার period',{icon:'ListChecks',module:'period_attendance'}),
+    it('substitutions','/teacher/substitutions','বদলি ক্লাস',{icon:'Users',module:'substitution'}),   // D200 SUBL.5
     it('syllabus','/teacher/syllabus','সিলেবাস-অগ্রগতি',{icon:'ListTree',module:'syllabus'}),
     it('hifz','/teacher/hifz','হিফজ',{icon:'BookOpen',module:'hifz'}),
     it('risk','/teacher/risk','সহায়তা প্রয়োজন',{icon:'LifeBuoy',module:'risk_alerts'}),

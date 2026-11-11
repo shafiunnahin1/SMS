@@ -48,6 +48,8 @@ class TenantIsolationTest extends TestCase
     {
         return [
             'GET api/v1/staff/departments/{id}/portal' => null, // CrossTenantRouteTest uses institution_staff and a real foreign department.
+            'GET api/v1/hr/leaves/{leave}/substitution-slots' => null, // D200 SUBL.5: CrossTenantRouteTest
+            'GET api/v1/hr/leaves/{leave}/substitution-slots/{slot}/candidates' => null,
             'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/nomination' => null, // D200 SUBL.4: CrossTenantRouteTest (a foreign leave and slot)
             'DELETE api/v1/hr/leaves/{leave}/substitution-slots/{slot}/nomination' => null,
             'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer' => null,

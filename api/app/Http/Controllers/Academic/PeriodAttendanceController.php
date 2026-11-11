@@ -23,7 +23,8 @@ class PeriodAttendanceController extends Controller
     public function store(Request $request)
     {
         $r = Routine::findOrFail((int) $request->input('routine_id'));
-        abort_unless($this->periods->canTake($request->user(), $r), 403);
+        $on = is_string($request->input('date')) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $request->input('date')) ? $request->input('date') : null;
+        abort_unless($this->periods->canTake($request->user(), $r, $on), 403);
         $data = $request->validate([
             'routine_id' => 'required|integer', 'date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'records' => 'required|array|min:1|max:300', 'records.*.student_id' => 'required|integer|distinct',

@@ -43,7 +43,7 @@ export default function MyPeriods() {
           <div className="flex flex-wrap gap-2" role="tablist">
             {q.data.periods.map(p => (
               <Button key={p.routine_id} variant={p.routine_id === open ? 'primary' : 'secondary'} onClick={() => { setOpen(p.routine_id); setMarks({}) }} data-testid="period">
-                <Ltr>{p.start_time}–{p.end_time}</Ltr> <span dir="auto">{p.subject}</span>{p.batch && <> · <span dir="auto">{p.batch}</span></>}
+                <Ltr>{p.start_time}–{p.end_time}</Ltr> <span dir="auto">{p.subject}</span>{p.batch && <> · <span dir="auto">{p.batch}</span></>}{p.cover && <> · {t('substitution.cover_for', { name: p.original_teacher })}</>}
               </Button>
             ))}
           </div>

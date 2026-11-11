@@ -32,4 +32,39 @@ class LeaveSubstitutionController extends Controller
         ]);
         return response()->json(['success' => true, 'data' => $slots->act($action, $leave, $slot, $data, $request->user(), $request->header('Idempotency-Key'))]);
     }
+
+    // ── D200 SUBL.5: the reads (docs/API.md D199). No Idempotency-Key, nothing is written. ──
+
+    /** GET /hr/leaves/{leave}/substitution-slots - the admin; the applicant only for their own leave (another teacher's leave is 404) */
+    public function index(Request $request, int $leave, \App\Services\Substitution\SlotReadService $reads)
+    {
+        return response()->json(['success' => true, 'data' => $reads->forLeave($this->visibleLeave($request, $leave))]);
+    }
+
+    /** GET /hr/substitution-slots?from=&to=&status=&page= - the admin: future slots of approved leaves, at most 31 days */
+    public function needing(Request $request, \App\Services\Substitution\SlotReadService $reads)
+    {
+        $d = $request->validate(['from' => 'nullable|date_format:Y-m-d', 'to' => 'nullable|date_format:Y-m-d|after_or_equal:from', 'status' => 'nullable|in:unassigned,offered', 'page' => 'nullable|integer|min:1']);
+        $from = $d['from'] ?? now()->toDateString();
+        $to = $d['to'] ?? \Carbon\Carbon::parse($from)->addDays(7)->toDateString();
+        if (\Carbon\Carbon::parse($from)->diffInDays(\Carbon\Carbon::parse($to)) > 31) throw ValidationException::withMessages(['to' => __('hr.invalid')]);
+        return response()->json(['success' => true, 'data' => $reads->needing($from, $to, $d['status'] ?? 'unassigned', (int) ($d['page'] ?? 1)) + ['from' => $from, 'to' => $to]]);
+    }
+
+    /** GET /hr/leaves/{leave}/substitution-slots/{slot}/candidates - the admin (pending or approved leave), the applicant (own pending leave) */
+    public function candidates(Request $request, int $leave, int $slot, \App\Services\Substitution\SlotReadService $reads)
+    {
+        $row = $this->visibleLeave($request, $leave);
+        $s = \App\Models\LeaveSubstitutionSlot::where('leave_application_id', $row->id)->findOrFail($slot);
+        $ok = $request->user()->role === 'admin' ? in_array($row->status, ['pending', 'approved'], true) : $row->status === 'pending';
+        abort_unless($ok && $s->status !== 'cancelled', 403);
+        return response()->json(['success' => true, 'data' => $reads->candidates($row, $s)]);
+    }
+
+    private function visibleLeave(Request $request, int $leave): \App\Models\LeaveApplication
+    {
+        $row = \App\Models\LeaveApplication::findOrFail($leave);
+        if ($request->user()->role !== 'admin' && (int) $row->user_id !== (int) $request->user()->id) abort(404);
+        return $row;
+    }
 }

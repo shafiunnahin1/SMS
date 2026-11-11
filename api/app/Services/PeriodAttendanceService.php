@@ -28,9 +28,15 @@ class PeriodAttendanceService
         $teacher = Teacher::where('user_id', $u->id)->value('id');
         $day = self::DAY[Carbon::parse($date)->dayOfWeek] ?? null;
         if (!$teacher || !$day) return [];
-        return Routine::with(['subject:id,name', 'batch:id,name', 'program:id,name'])->where('teacher_id', $teacher)->where('day_of_week', $day)->orderBy('start_time')->get()
-            ->map(fn (Routine $r) => ['routine_id' => $r->id, 'start_time' => substr((string) $r->start_time, 0, 5), 'end_time' => substr((string) $r->end_time, 0, 5),
-                'subject' => $r->subject?->name, 'batch' => $r->batch?->name, 'program' => $r->program?->name, 'room_no' => $r->room_no, 'students' => $this->roster($r, $date)])->all();
+        $row = fn (Routine $r, ?string $coverFor = null) => ['routine_id' => $r->id, 'start_time' => substr((string) $r->start_time, 0, 5), 'end_time' => substr((string) $r->end_time, 0, 5),
+            'subject' => $r->subject?->name, 'batch' => $r->batch?->name, 'program' => $r->program?->name, 'room_no' => $r->room_no,
+            'cover' => $coverFor !== null, 'original_teacher' => $coverFor, 'students' => $this->roster($r, $date)];
+        $own = Routine::with(['subject:id,name', 'batch:id,name', 'program:id,name'])->where('teacher_id', $teacher)->where('day_of_week', $day)->get()->map(fn (Routine $r) => $row($r));
+        // D200 SUBL.5: periods this teacher covers today (a confirmed slot) are theirs for the day, marked `cover`
+        $covers = \App\Models\LeaveSubstitutionSlot::with(['routine.subject:id,name', 'routine.batch:id,name', 'routine.program:id,name', 'originalTeacher.user:id,name'])
+            ->where('substitute_teacher_id', $teacher)->where('status', 'confirmed')->whereDate('occurrence_date', $date)->get()
+            ->filter(fn ($s) => $s->routine !== null)->map(fn ($s) => $row($s->routine, (string) $s->originalTeacher?->user?->name));
+        return $own->concat($covers)->sortBy('start_time')->values()->all();
     }
 
     public function roster(Routine $r, string $date): array
@@ -44,10 +50,13 @@ class PeriodAttendanceService
             'status' => $saved[$e->student_id] ?? (isset($leave[$e->student_id]) ? 'leave' : null), 'on_leave' => isset($leave[$e->student_id])])->values()->all();
     }
 
-    public function canTake(User $u, Routine $r): bool
+    /** the admin, the routine's own teacher, or (D200 SUBL.5) the teacher who holds the CONFIRMED cover of that period on that date - only then, only that date */
+    public function canTake(User $u, Routine $r, ?string $date = null): bool
     {
         if ($u->role === 'admin') return true;
-        return $u->role === 'teacher' && (int) Teacher::where('user_id', $u->id)->value('id') === (int) $r->teacher_id;
+        if ($u->role !== 'teacher' || !($teacher = Teacher::where('user_id', $u->id)->value('id'))) return false;
+        if ((int) $teacher === (int) $r->teacher_id) return true;
+        return $date !== null && \App\Models\LeaveSubstitutionSlot::where('routine_id', $r->id)->where('substitute_teacher_id', $teacher)->where('status', 'confirmed')->whereDate('occurrence_date', $date)->exists();
     }
 
     /** $data = { routine_id, date, records: [{student_id, status, note?}] } */
