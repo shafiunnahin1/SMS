@@ -43,6 +43,12 @@ const MyRoutine = lazy(() => import('../pages/routine/MyRoutine'))
 const SupportTickets = lazy(() => import('../pages/support/SupportTickets'))   // D193 SUP.1
 const DataExport = lazy(() => import('../pages/export/DataExport'))   // D193 EXP.1
 const SuperExports = lazy(() => import('../pages/export/SuperExports'))
+const WebsiteSettings = lazy(() => import('../pages/admin/settings/WebsiteSettings'))   // D202 PUB.3
+const PublicSite = import('../pages/public/PublicSite')
+const PublicRoot = lazy(() => PublicSite.then(m => ({ default: m.PublicRoot })))
+const PublicGate = lazy(() => PublicSite.then(m => ({ default: m.PublicGate })))
+const PublicAdmission = lazy(() => PublicSite.then(m => ({ default: m.PublicAdmission })))
+const NoticesEntry = lazy(() => PublicSite.then(m => ({ default: m.NoticesEntry })))
 const GeneralSettings = lazy(() => import('../pages/admin/settings/GeneralSettings'))   // D197 AAD.1 (+ the existing general settings API)
 const StudentDashboard = lazy(() => import('../pages/student/Portal').then(m => ({ default: m.StudentDashboard })))   // D195 STP.1
 const StudentResults = lazy(() => import('../pages/student/Portal').then(m => ({ default: m.StudentResults })))
@@ -173,6 +179,7 @@ export const tenantRoutes = [
     { path: 'support', element: S(SupportTickets, { mode: 'institution' }) },
     { path: 'settings/exports', element: S(DataExport) },
     { path: 'settings/general', element: S(GeneralSettings) },
+    { path: 'settings/website', element: S(WebsiteSettings) },   // D202 PUB.3
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
     { path: 'subscription', element: S(Subscription) },   // D187 SUB.3
@@ -221,8 +228,10 @@ export const tenantRoutes = [
     { path: 'ai', element: S(AiChat) },   // D166 AI-Q4
   ]),
   // D193 NTC.1: one notice board for the reader roles (the menu links /notices for each of them)
-  { path: '/notices', element: <ProtectedRoute role={['teacher', 'student', 'parent', 'accountant']}><AppShell /></ProtectedRoute>, children: [{ index: true, element: S(NoticeBoard) }] },
-  { path: '/', element: <Navigate to="/login" replace /> },
+  // D202 PUB.3: signed out, /notices is the public site's notice page (when the site is on); signed in, the readers' board
+  { path: '/notices', element: S(NoticesEntry, { board: <ProtectedRoute role={['teacher', 'student', 'parent', 'accountant']}><AppShell /></ProtectedRoute> }), children: [{ index: true, element: S(NoticeBoard) }] },
+  { path: '/admission', element: <Suspense fallback={<Loader type="page" />}><PublicGate><PublicAdmission /></PublicGate></Suspense> },
+  { path: '/', element: S(PublicRoot) },   // D202 PUB.3: the public home while the site is on, otherwise /login
   { path: '*', element: <Navigate to="/login" replace /> },
 ]
 
