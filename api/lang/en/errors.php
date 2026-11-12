@@ -227,4 +227,5 @@ return [
     'substitution_state_conflict' => 'This period is already claimed by another leave or state.',
     'substitution_period_started' => 'This period has already started.',
     'substitution_unavailable' => 'This teacher is not available for that period.',
+    'lead_converted' => 'This application was already turned into a student.',
 ];

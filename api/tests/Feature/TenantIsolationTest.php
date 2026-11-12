@@ -57,6 +57,9 @@ class TenantIsolationTest extends TestCase
             'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/accept' => null,
             'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/decline' => null,
             'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/refresh-source' => null,
+            'PUT api/v1/leads/{id}' => fn (array $other) => $this->seedLead($other),   // D202 PUB.1
+            'DELETE api/v1/leads/{id}' => fn (array $other) => $this->seedLead($other),
+            'POST api/v1/leads/{id}/convert' => fn (array $other) => $this->seedLead($other),
             'PUT api/v1/routine-blocks/{id}' => fn (array $other) => $this->seedRoutineBlock($other),   // D197 AAD.5
             'DELETE api/v1/routine-blocks/{id}' => fn (array $other) => $this->seedRoutineBlock($other),
             'POST api/v1/parent/children/{id}/leave-requests' => null, // D197 AAD.3: CrossTenantRouteTest (parent, foreign child)
@@ -297,6 +300,12 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/question-bank/paper-folders/{id}'  => fn (array $other) => $this->seedPaperFolder($other),
             'DELETE api/v1/question-bank/paper-folders/{id}' => fn (array $other) => $this->seedPaperFolder($other),
         ];
+    }
+
+    /** D202 PUB.1: one admission lead of the tenant */
+    private function seedLead(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\AdmissionLead::value('id') ?? \App\Models\AdmissionLead::create(['name' => 'Lead', 'phone' => '01711000009', 'status' => 'new'])->id);
     }
 
     /** D197 AAD.5: one fixed routine block of the tenant */

@@ -775,6 +775,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/period-attendance/report',           [\App\Http\Controllers\Academic\PeriodAttendanceController::class, 'report'])->middleware('role:admin,teacher');
         });
 
+        // ── D202 PUB.1: admission leads (coaching-private-batch.md "Leads") ──
+        Route::middleware(['module:leads'])->group(function () {
+            Route::get('/leads',                              [\App\Http\Controllers\Leads\LeadController::class, 'index'])->middleware('role:admin,accountant');
+            Route::middleware('role:admin')->group(function () {
+                Route::post('/leads',                         [\App\Http\Controllers\Leads\LeadController::class, 'store']);
+                Route::put('/leads/{id}',                     [\App\Http\Controllers\Leads\LeadController::class, 'update'])->whereNumber('id');
+                Route::delete('/leads/{id}',                  [\App\Http\Controllers\Leads\LeadController::class, 'destroy'])->whereNumber('id');
+                Route::post('/leads/{id}/convert',            [\App\Http\Controllers\Leads\LeadController::class, 'convert'])->whereNumber('id')->middleware('module:students');
+            });
+        });
+
         // ── D197 AAD.3: student leave requests (academics-advanced.md section 5) ──
         Route::middleware(['module:attendance', 'module:student_leave'])->group(function () {
             Route::post('/parent/children/{id}/leave-requests', [\App\Http\Controllers\Academic\StudentLeaveController::class, 'store'])->whereNumber('id')->middleware('role:parent');

@@ -265,6 +265,11 @@ return [
     'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/accept' => ['teacher'],
     'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/decline' => ['teacher'],
     'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/refresh-source' => ['admin', 'institution_staff'],
+    'GET api/v1/leads' => ['admin', 'accountant'],   // D202 PUB.1
+    'POST api/v1/leads' => ['admin'],
+    'PUT api/v1/leads/{id}' => ['admin'],
+    'DELETE api/v1/leads/{id}' => ['admin'],
+    'POST api/v1/leads/{id}/convert' => ['admin'],
     'GET api/v1/routine-blocks' => ['admin', 'teacher', 'student'],   // D197 AAD.5
     'POST api/v1/routine-blocks' => ['admin'],
     'PUT api/v1/routine-blocks/{id}' => ['admin'],

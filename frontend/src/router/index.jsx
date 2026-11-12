@@ -33,6 +33,7 @@ const ResultSheets = lazy(() => import('../pages/exams/ResultSheets'))   // D197
 const StudentLeaves = lazy(() => import('../pages/leave/StudentLeaves'))   // D197 AAD.3
 const MyPeriods = lazy(() => import('../pages/attendance/MyPeriods'))   // D197 AAD.4
 const CoverDesk = lazy(() => import('../pages/substitution/CoverDesk'))   // D200 SUBL.5
+const Leads = lazy(() => import('../pages/leads/Leads'))   // D202 PUB.1
 const MyCovers = lazy(() => import('../pages/substitution/MyCovers'))
 const PeriodReport = lazy(() => import('../pages/attendance/PeriodReport'))
 const ParentLeave = lazy(() => import('../pages/parent/Leave'))
@@ -181,7 +182,7 @@ export const tenantRoutes = [
     { path: 'exams/results', element: S(ResultsWorkspace) },
     { path: 'exams/:id', element: S(ExamDetail) },
     { path: 'exams/:examId/entry/:subjectId', element: S(MarksEntry) },
-    { path: 'attendance', element: S(Attendance) }, { path: 'attendance/periods', element: S(PeriodReport) }, { path: 'academic/substitutions', element: S(CoverDesk) },
+    { path: 'attendance', element: S(Attendance) }, { path: 'attendance/periods', element: S(PeriodReport) }, { path: 'academic/substitutions', element: S(CoverDesk) }, { path: 'leads', element: S(Leads) },
     { path: 'academic/programs', element: S(Programs) },
     { path: 'academic/subjects', element: S(Subjects) },
     { path: 'batches', element: S(BatchList) },
