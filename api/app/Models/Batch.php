@@ -40,4 +40,11 @@ class Batch extends Model
     public function academicYear() { return $this->belongsTo(AcademicYear::class); }
     public function subjectTeachers() { return $this->hasMany(BatchTeacher::class); }
     public function activeEnrollments() { return $this->hasMany(Enrollment::class)->where('status', 'active'); }
+
+    // D202 PUB.2: the public site shows these; its cached payload is forgotten on every change
+    protected static function booted(): void
+    {
+        static::saved(fn ($m) => \App\Services\PublicSite\PublicSiteService::forget($m->institution_id));
+        static::deleted(fn ($m) => \App\Services\PublicSite\PublicSiteService::forget($m->institution_id));
+    }
 }

@@ -15,6 +15,10 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // D202 PUB.2: public admission applications per hour per institution + IP; the SEO shell's built index.html (PUB.4)
+    'public_admission_rate' => (int) env('PUBLIC_ADMISSION_RATE_PER_HOUR', 5),
+    'public_shell_path' => env('PUBLIC_SHELL_PATH', base_path('../frontend/dist/index.html')),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

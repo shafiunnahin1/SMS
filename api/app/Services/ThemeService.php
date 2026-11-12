@@ -125,6 +125,7 @@ class ThemeService
     {
         Cache::forget("theme:{$i->id}");
         Cache::forget("bootstrap:{$i->id}");
+        Cache::forget("public_site:{$i->id}");     // D202 PUB.2: name / logo on the public site
     }
 
     /** institution_theme_logs is not a Release 1 table, so the change goes to audit_logs */

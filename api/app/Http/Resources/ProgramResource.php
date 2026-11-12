@@ -12,6 +12,7 @@ class ProgramResource extends JsonResource
             'id' => $this->id, 'name' => $this->name, 'numeric_name' => $this->numeric_name, 'code' => $this->code,
             'group_name' => $this->group_name, 'duration_months' => $this->duration_months, 'course_fee' => $this->course_fee,
             'is_default' => $this->is_default, 'is_active' => $this->is_active, 'sort_order' => $this->sort_order, 'qb_class_level_id' => $this->qb_class_level_id,
+            'is_public' => (bool) $this->is_public, 'public_description' => $this->public_description,
             'batches_count' => $this->whenCounted('batches'),
         ];
     }

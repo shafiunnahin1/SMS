@@ -220,6 +220,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/resources/{id}/reject',         [QbResourceController::class, 'reject'])->whereNumber('id')->middleware('role:content_moderator,super_admin');
     });
 
+    // D202 PUB.2: the institution's public website on its own host, no login (docs/modules/public-website.md "API")
+    Route::middleware(['tenant', 'locale', 'module:public_site', 'throttle:60,1'])->prefix('public')->group(function () {
+        Route::get('/site',        [\App\Http\Controllers\Public\PublicSiteController::class, 'show']);
+        Route::get('/notices',     [\App\Http\Controllers\Public\PublicSiteController::class, 'notices']);
+        Route::post('/admission',  [\App\Http\Controllers\Public\PublicAdmissionController::class, 'store'])->middleware('throttle:admission');
+    });
+
     // D90: recipient staff activation is tenant-bound but does not require an existing login.
     Route::middleware(['tenant', 'locale', 'throttle:activation-verify'])->post('/auth/activate', [\App\Http\Controllers\Auth\AccountActivationController::class, 'store']);
 
@@ -282,6 +289,12 @@ Route::prefix('v1')->group(function () {
             Route::get('/admin/theme',                    [ThemeController::class, 'show']);
             Route::put('/admin/theme',                    [ThemeController::class, 'update']);
             Route::post('/admin/theme/logo',              [ThemeController::class, 'logo']);
+            // D202 PUB.2: the public website's settings and hero image
+            Route::middleware('module:public_site')->group(function () {
+                Route::get('/admin/settings/website',         [\App\Http\Controllers\Admin\WebsiteSettingsController::class, 'show']);
+                Route::put('/admin/settings/website',         [\App\Http\Controllers\Admin\WebsiteSettingsController::class, 'update']);
+                Route::post('/admin/settings/website/hero',   [\App\Http\Controllers\Admin\WebsiteSettingsController::class, 'hero']);
+            });
             Route::get('/audit-logs',                     [AuditLogController::class, 'index']);
             Route::get('/audit-logs/{id}',                [AuditLogController::class, 'show'])->whereNumber('id');
 

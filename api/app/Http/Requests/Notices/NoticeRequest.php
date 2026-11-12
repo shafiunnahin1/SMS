@@ -24,6 +24,7 @@ class NoticeRequest extends FormRequest
             'batch_id'     => ['nullable', 'integer', Rule::exists('batches', 'id')->where('institution_id', $tenant)->where('program_id', (int) $this->input('program_id'))],
             'published_at' => ['nullable', 'date'],
             'require_ack'  => ['sometimes', 'boolean'],
+            'is_public'    => ['sometimes', 'boolean'],                 // D202 PUB.2: also shown on the public website
             'ack_deadline' => ['nullable', 'date', 'required_if:require_ack,true,1'],
             'created_by'   => ['prohibited'],
         ];

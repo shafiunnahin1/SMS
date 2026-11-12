@@ -270,6 +270,9 @@ return [
     'PUT api/v1/leads/{id}' => ['admin'],
     'DELETE api/v1/leads/{id}' => ['admin'],
     'POST api/v1/leads/{id}/convert' => ['admin'],
+    'GET api/v1/admin/settings/website' => ['admin'],   // D202 PUB.2
+    'PUT api/v1/admin/settings/website' => ['admin'],
+    'POST api/v1/admin/settings/website/hero' => ['admin'],
     'GET api/v1/routine-blocks' => ['admin', 'teacher', 'student'],   // D197 AAD.5
     'POST api/v1/routine-blocks' => ['admin'],
     'PUT api/v1/routine-blocks/{id}' => ['admin'],

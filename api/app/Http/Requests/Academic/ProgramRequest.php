@@ -26,6 +26,8 @@ class ProgramRequest extends FormRequest
             'course_fee'         => 'nullable|numeric|min:0|max:9999999',
             'is_active'          => 'sometimes|boolean',
             'sort_order'         => 'sometimes|integer|min:0|max:9999',
+            'is_public'          => 'sometimes|boolean',                 // D202 PUB.2: listed on the public website
+            'public_description' => 'nullable|string|max:500',
             'qb_class_level_id'  => app(ModuleGate::class)->allows(Tenancy::current(), 'question_bank')
                 ? ['nullable', 'integer', Rule::exists('qb_class_levels', 'id')->where('is_active', 1)] : 'prohibited',
         ];

@@ -44,6 +44,9 @@ class RouteMiddlewareContractTest extends TestCase
         'POST api/v1/public/qb/quizzes/{id}/check' => 'QB.10: central host; marks only (never the answers), nothing saved, throttle 30/min',
     ];
 
+    /** D202 PUB.2: tenant-host routes without a login - the public website only */
+    private const TENANT_PUBLIC = ['GET api/v1/public/site', 'GET api/v1/public/notices', 'POST api/v1/public/admission'];
+
     /** Routes for a signed-in user on EITHER host (Super Admin on central, everyone else on their own host) */
     private const ANY_HOST_AUTH = ['GET api/v1/auth/me', 'POST api/v1/auth/logout'];
 
@@ -82,6 +85,13 @@ class RouteMiddlewareContractTest extends TestCase
             if ($key === 'POST api/v1/auth/activate') {
                 foreach (['tenant', 'locale', 'throttle:activation-verify'] as $mw) if (!self::has($r, $mw)) $problems[] = "$key: missing $mw";
                 if (self::hasPrefix($r, 'auth:') || self::has($r, 'tenant:optional') || self::has($r, 'tenancy.bypass')) $problems[] = "$key: invalid activation boundary";
+                continue;
+            }
+            // D202 PUB.2: the institution's public website - tenant-bound, no login, behind its module and a throttle (never tenant:optional)
+            if (in_array($key, self::TENANT_PUBLIC, true)) {
+                foreach (['tenant', 'locale', 'module:public_site', 'throttle:60,1'] as $mw) if (!self::has($r, $mw)) $problems[] = "$key: missing $mw";
+                if ($key === 'POST api/v1/public/admission' && !self::has($r, 'throttle:admission')) $problems[] = "$key: missing throttle:admission";
+                if (self::hasPrefix($r, 'auth:') || self::has($r, 'tenant:optional') || self::has($r, 'tenancy.bypass')) $problems[] = "$key: invalid public-site boundary";
                 continue;
             }
             if (isset(self::PUBLIC[$key])) {
@@ -129,7 +139,7 @@ class RouteMiddlewareContractTest extends TestCase
     public function test_the_listed_exceptions_still_exist(): void
     {
         $all = $this->routes();
-        foreach ([...array_keys(self::FRAMEWORK), ...array_keys(self::PUBLIC), ...self::ANY_HOST_AUTH] as $key) {
+        foreach ([...array_keys(self::FRAMEWORK), ...array_keys(self::PUBLIC), ...self::ANY_HOST_AUTH, ...self::TENANT_PUBLIC] as $key) {
             $this->assertArrayHasKey($key, $all, "stale exception {$key}");
         }
     }

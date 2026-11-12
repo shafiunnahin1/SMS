@@ -14,10 +14,17 @@ class Notice extends Model
     use BelongsToInstitution, SoftDeletes;
 
     public $timestamps = false;
-    protected $fillable = ['institution_id', 'title', 'content', 'target', 'program_id', 'batch_id', 'published_at', 'created_by', 'require_ack', 'ack_deadline'];
+    protected $fillable = ['institution_id', 'title', 'content', 'target', 'program_id', 'batch_id', 'published_at', 'created_by', 'require_ack', 'ack_deadline', 'is_public'];
     protected $casts = ['published_at' => 'datetime', 'ack_deadline' => 'date', 'require_ack' => 'boolean', 'is_public' => 'boolean'];
 
     public function receipts() { return $this->hasMany(NoticeReceipt::class); }
     public function program() { return $this->belongsTo(Program::class); }
     public function batch() { return $this->belongsTo(Batch::class); }
+
+    // D202 PUB.2: the public site shows these; its cached payload is forgotten on every change
+    protected static function booted(): void
+    {
+        static::saved(fn ($m) => \App\Services\PublicSite\PublicSiteService::forget($m->institution_id));
+        static::deleted(fn ($m) => \App\Services\PublicSite\PublicSiteService::forget($m->institution_id));
+    }
 }

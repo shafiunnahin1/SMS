@@ -13,7 +13,7 @@ import Button from '../../../components/Button'
 import StatusBadge from '../../../components/StatusBadge'
 import List from '../../../ui/variants/List'
 import Modal from '../../../ui/variants/Modal'
-import { Input, Select } from '../../../components/FormField'
+import { Input, Select, Textarea } from '../../../components/FormField'
 import Check from '../../../features/academic/Check'
 import RowActions from '../../../features/academic/RowActions'
 import { useCrud, clean } from '../../../features/academic/useCrud'
@@ -27,13 +27,15 @@ export default function Programs() {
   const { has } = useModules()
   const { locale } = useLocale()
   const qbOn = has('question_bank')
+  const siteOn = has('public_site')                     // D202 PUB.2: listed on the public website
   const qbClasses = useQuery({ queryKey: ['qb-class-levels'], queryFn: () => api.get('/qb/class-levels').then(r => r.data.data), enabled: qbOn })
   const [editing, setEditing] = useState(null)          // null = closed, {} = new, row = edit
   const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting } } = useForm()
-  const open = (row) => { reset(row?.id ? { ...row, qb_class_level_id: row.qb_class_level_id ?? '' } : { is_active: true, qb_class_level_id: '' }); setEditing(row ?? {}) }
+  const open = (row) => { reset(row?.id ? { ...row, qb_class_level_id: row.qb_class_level_id ?? '', public_description: row.public_description ?? '' } : { is_active: true, is_public: true, public_description: '', qb_class_level_id: '' }); setEditing(row ?? {}) }
   const onSubmit = async (v) => {
     const body = clean({ name: v.name, numeric_name: v.numeric_name, code: v.code, course_fee: v.course_fee, is_active: Boolean(v.is_active),
-      ...(qbOn ? { qb_class_level_id: v.qb_class_level_id === '' ? null : Number(v.qb_class_level_id) } : {}) })
+      ...(qbOn ? { qb_class_level_id: v.qb_class_level_id === '' ? null : Number(v.qb_class_level_id) } : {}),
+      ...(siteOn ? { is_public: Boolean(v.is_public), public_description: v.public_description || null } : {}) })
     if (await save(body, editing?.id, setError)) setEditing(null)
   }
   const columns = [
@@ -56,6 +58,8 @@ export default function Programs() {
           {qbOn && <Select label={t('qb.platform_class')} placeholder={t('qb.none')} error={errors.qb_class_level_id?.message}
             options={(qbClasses.data ?? []).map(c => ({ value: String(c.id), label: locale === 'bn' ? c.name_bn : c.name_en }))} {...register('qb_class_level_id')} />}
           <Check label={t('academic.active')} {...register('is_active')} />
+          {siteOn && <Check label={t('academic.show_on_website')} {...register('is_public')} />}
+          {siteOn && <Textarea className="sm:col-span-2" rows={2} label={t('academic.public_description')} error={errors.public_description?.message} {...register('public_description')} />}
           <div className="sm:col-span-2 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setEditing(null)}>{t('common.cancel')}</Button>
             <Button type="submit" loading={isSubmitting}>{t('common.save')}</Button>

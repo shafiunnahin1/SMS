@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, Users } from 'lucide-react'
 import api from '../../api/axios'
 import { useLocale } from '../../ui/I18nProvider'
 import { useTerms } from '../../hooks/useTerms'
+import { useModules } from '../../hooks/useModules'
 import { fmtDate } from '../../i18n/format'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
@@ -24,6 +25,7 @@ export default function AdminNotices() {
   const { locale } = useLocale()
   const term = useTerms()
   const { list, save, remove } = useCrud('notices')
+  const siteOn = useModules().has('public_site')      // D202 PUB.2: a notice may also go on the public website
   const programs = useCrud('programs').list
   const batches = useCrud('batches').list
   const [editing, setEditing] = useState(null)
@@ -33,12 +35,12 @@ export default function AdminNotices() {
   const programId = watch('program_id')
   const requireAck = watch('require_ack')
   const open = (row) => {
-    reset(row?.id ? { ...row, program_id: row.program_id ?? '', batch_id: row.batch_id ?? '', published_at: row.published_at?.slice(0, 16) ?? '' } : { target: 'all', require_ack: false })
+    reset(row?.id ? { ...row, program_id: row.program_id ?? '', batch_id: row.batch_id ?? '', published_at: row.published_at?.slice(0, 16) ?? '' } : { target: 'all', require_ack: false, is_public: false })
     setEditing(row ?? {})
   }
   const onSubmit = async (v) => {
     const body = clean({ title: v.title, content: v.content, target: v.target, program_id: v.program_id || null, batch_id: v.batch_id || null,
-      published_at: v.published_at || null, require_ack: Boolean(v.require_ack), ack_deadline: v.require_ack ? (v.ack_deadline || null) : null })
+      published_at: v.published_at || null, require_ack: Boolean(v.require_ack), ...(siteOn ? { is_public: Boolean(v.is_public) } : {}), ack_deadline: v.require_ack ? (v.ack_deadline || null) : null })
     if (await save(body, editing?.id, setError)) setEditing(null)
   }
   const columns = [
@@ -69,6 +71,7 @@ export default function AdminNotices() {
             options={(batches.data ?? []).filter(b => String(b.program_id ?? b.program?.id) === String(programId)).map(b => ({ value: String(b.id), label: b.name }))} {...register('batch_id')} />
           <Input type="datetime-local" ltr label={t('notices.published_at')} hint={t('notices.publish_hint')} error={errors.published_at?.message} {...register('published_at')} />
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[var(--color-primary)]" {...register('require_ack')} />{t('notices.require_ack')}</label>
+          {siteOn && <div className="flex flex-col gap-1 text-sm"><label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-[var(--color-primary)]" {...register('is_public')} />{t('notices.is_public')}</label><span className="text-xs text-content-muted">{t('notices.is_public_hint')}</span></div>}
           {requireAck && <Input type="date" ltr label={t('notices.ack_deadline')} error={errors.ack_deadline?.message} {...register('ack_deadline')} />}
           <div className="sm:col-span-2 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setEditing(null)}>{t('common.cancel')}</Button>

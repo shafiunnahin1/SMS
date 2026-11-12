@@ -36,4 +36,11 @@ class Program extends Model
     ];
 
     public function batches() { return $this->hasMany(Batch::class); }
+
+    // D202 PUB.2: the public site shows these; its cached payload is forgotten on every change
+    protected static function booted(): void
+    {
+        static::saved(fn ($m) => \App\Services\PublicSite\PublicSiteService::forget($m->institution_id));
+        static::deleted(fn ($m) => \App\Services\PublicSite\PublicSiteService::forget($m->institution_id));
+    }
 }

@@ -59,6 +59,10 @@ class AppServiceProvider extends ServiceProvider
             return !($lastSeen && $lastSeen->lt(now()->subMinutes($idle)));
         });
 
+        // D202 PUB.2: the public admission form, per institution and IP (docs/modules/public-website.md)
+        RateLimiter::for('admission', fn (Request $r) => Limit::perHour((int) config('app.public_admission_rate'))
+            ->by((app()->bound('currentInstitution') ? app('currentInstitution')->id : 0) . '|' . $r->ip())
+            ->response(fn () => response()->json(['success' => false, 'error' => 'too_many_requests', 'message' => __('errors.public_admission_throttled')], 429)));
         RateLimiter::for('signup', fn (Request $r) => Limit::perHour(config('auth_policy.activation.signup_per_hour'))->by($r->ip()));
         RateLimiter::for('activation-verify', fn (Request $r) => Limit::perMinute(config('auth_policy.activation.verify_per_minute'))
             ->by(hash('sha256', is_string($r->input('public_id')) ? $r->input('public_id') : '').'|'.$r->ip()));

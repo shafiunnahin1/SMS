@@ -91,7 +91,7 @@ class NoticeController extends Controller
     private function row(Notice $n, ?NoticeReceipt $r, User $user): array
     {
         $row = ['id' => $n->id, 'title' => $n->title, 'content' => $n->content, 'target' => $n->target, 'program_id' => $n->program_id, 'batch_id' => $n->batch_id,
-            'published_at' => $n->published_at?->toIso8601String(), 'require_ack' => (bool) $n->require_ack, 'ack_deadline' => $n->ack_deadline?->toDateString(),
+            'published_at' => $n->published_at?->toIso8601String(), 'require_ack' => (bool) $n->require_ack, 'is_public' => (bool) $n->is_public, 'ack_deadline' => $n->ack_deadline?->toDateString(),
             'read_at' => $r?->read_at?->toIso8601String(), 'acknowledged_at' => $r?->acknowledged_at?->toIso8601String()];
         if ($user->role === 'admin') $row['scheduled'] = $n->published_at && $n->published_at->isFuture();
         return $row;
