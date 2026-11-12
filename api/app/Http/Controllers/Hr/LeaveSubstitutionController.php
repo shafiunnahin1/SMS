@@ -30,7 +30,9 @@ class LeaveSubstitutionController extends Controller
             'substitute_teacher_id' => [$target ? 'required' : 'prohibited', 'string', 'regex:/^[1-9][0-9]*$/'],
             'reason' => [$action === 'refresh_source' ? 'required' : 'nullable', 'string', 'max:255'],
         ]);
-        return response()->json(['success' => true, 'data' => $slots->act($action, $leave, $slot, $data, $request->user(), $request->header('Idempotency-Key'))]);
+        // D201 SUBM.3: a staff reviewer acts inside the department whose duty key allowed the request (re-checked here; recorded on the receipt and event)
+        $department = $request->user()->role === 'institution_staff' ? app(\App\Services\DepartmentRequestContextService::class)->forRoute($request) : null;
+        return response()->json(['success' => true, 'data' => $slots->act($action, $leave, $slot, $data, $request->user(), $request->header('Idempotency-Key'), $department)]);
     }
 
     // ── D200 SUBL.5: the reads (docs/API.md D199). No Idempotency-Key, nothing is written. ──
@@ -56,7 +58,7 @@ class LeaveSubstitutionController extends Controller
     {
         $row = $this->visibleLeave($request, $leave);
         $s = \App\Models\LeaveSubstitutionSlot::where('leave_application_id', $row->id)->findOrFail($slot);
-        $ok = $request->user()->role === 'admin' ? in_array($row->status, ['pending', 'approved'], true) : $row->status === 'pending';
+        $ok = in_array($request->user()->role, ['admin', 'institution_staff'], true) ? in_array($row->status, ['pending', 'approved'], true) : $row->status === 'pending';
         abort_unless($ok && $s->status !== 'cancelled', 403);
         return response()->json(['success' => true, 'data' => $reads->candidates($row, $s)]);
     }
@@ -64,7 +66,8 @@ class LeaveSubstitutionController extends Controller
     private function visibleLeave(Request $request, int $leave): \App\Models\LeaveApplication
     {
         $row = \App\Models\LeaveApplication::findOrFail($leave);
-        if ($request->user()->role !== 'admin' && (int) $row->user_id !== (int) $request->user()->id) abort(404);
+        // reviewers (the admin; D201: staff with the read key, any teacher's leave) see every leave; a teacher only their own
+        if (!in_array($request->user()->role, ['admin', 'institution_staff'], true) && (int) $row->user_id !== (int) $request->user()->id) abort(404);
         return $row;
     }
 }

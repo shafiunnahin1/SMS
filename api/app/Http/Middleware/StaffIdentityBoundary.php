@@ -152,12 +152,18 @@ class StaffIdentityBoundary
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/ai/conversations', 'HEAD api/v1/ai/conversations', 'POST api/v1/ai/conversations',
                 'GET api/v1/ai/conversations/{id}', 'HEAD api/v1/ai/conversations/{id}', 'DELETE api/v1/ai/conversations/{id}', 'POST api/v1/ai/conversations/{id}/messages',
                 'PUT api/v1/ai/messages/{id}/rating'], true);
+        // D201 SUBM.3: cover reviewer work - the three reads and offer / clear offer / refresh source; nominate, accept and decline stay closed
+        $substitution = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Hr\LeaveSubstitutionController::class.'@')
+            && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/hr/leaves/{leave}/substitution-slots', 'HEAD api/v1/hr/leaves/{leave}/substitution-slots',
+                'GET api/v1/hr/leaves/{leave}/substitution-slots/{slot}/candidates', 'HEAD api/v1/hr/leaves/{leave}/substitution-slots/{slot}/candidates',
+                'GET api/v1/hr/substitution-slots', 'HEAD api/v1/hr/substitution-slots', 'PUT api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer',
+                'DELETE api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer', 'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/refresh-source'], true);
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money && !$hr && !$inventory && !$aiChat && !$studentView) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$substitution && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money && !$hr && !$inventory && !$aiChat && !$studentView) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         // D101 money routes: context and exact duty key are checked here, before any FormRequest validation can answer 422
-        if (($money || $hr || $inventory) && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
+        if (($money || $hr || $inventory || $substitution) && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
         // D169 STW.3: admission too - the selected department's key is checked before validation can answer 422
         if ($studentView && $request->isMethod('POST') && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
         // D101: staff never write their own pay row (a revision, adjustment or advance naming themselves as payee)

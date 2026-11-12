@@ -23,10 +23,10 @@ class SlotActionService
         private SubstitutionNotifier $notifier, private LeaveService $leaves, private HrCalendar $calendar) {}
 
     /** @param array{expected_versions: array{slot: string, source: string}, substitute_teacher_id?: string, reason?: ?string} $in */
-    public function act(string $action, int $leaveId, int $slotId, array $in, User $actor, ?string $rawKey): array
+    public function act(string $action, int $leaveId, int $slotId, array $in, User $actor, ?string $rawKey, ?int $departmentId = null): array
     {
         $key = $this->receipts->keyDigest($rawKey);                                   // mandatory here (422 without it)
-        return $this->lock->run(function () use ($action, $leaveId, $slotId, $in, $actor, $key) {
+        return $this->lock->run(function () use ($action, $leaveId, $slotId, $in, $actor, $key, $departmentId) {
             $leave = LeaveApplication::findOrFail($leaveId);
             $me = Teacher::where('user_id', $actor->id)->first();
             $applicant = $leave->user_id !== null && (int) $leave->user_id === (int) $actor->id;
@@ -34,7 +34,8 @@ class SlotActionService
             $slot = LeaveSubstitutionSlot::where('leave_application_id', $leave->id)->whereKey($slotId)->lockForUpdate()->firstOrFail();
             $may = match ($action) {
                 'nominate', 'clear_nomination' => $applicant && $me !== null,
-                'offer', 'clear_offer', 'refresh_source' => $actor->role === 'admin' && !$applicant,
+                // the admin, or (D201 SUBM.3) department staff whose exact duty key the middleware has just checked; never the applicant
+                'offer', 'clear_offer', 'refresh_source' => ($actor->role === 'admin' || ($actor->role === 'institution_staff' && $departmentId !== null)) && !$applicant,
                 'accept', 'decline' => $me !== null && (int) $slot->substitute_teacher_id === $me->id,
             };
             if (!$may) throw new AuthorizationException();
@@ -43,7 +44,7 @@ class SlotActionService
             $target = isset($in['substitute_teacher_id']) ? (int) $in['substitute_teacher_id'] : null;
             $payload = array_filter(['substitute_teacher_id' => $target === null ? null : (string) $target], fn ($v) => $v !== null) + ['reason' => $reason];
             $digest = $this->receipts->payloadDigest($this->receipts->envelope($action, ['type' => 'leave_substitution_slot', 'leave_id' => (string) $leave->id, 'id' => (string) $slot->id],
-                $this->receipts->context($actor), $payload, ['slot' => (string) $in['expected_versions']['slot'], 'source' => (string) $in['expected_versions']['source']]));
+                $this->receipts->context($actor, $departmentId), $payload, ['slot' => (string) $in['expected_versions']['slot'], 'source' => (string) $in['expected_versions']['source']]));
             if ($prior = $this->receipts->replay($actor, $key, $digest)) return $this->receipts->manifest($prior);
 
             if ((string) $slot->version !== (string) $in['expected_versions']['slot'] || !hash_equals($this->sourceOf($leave, $slot), (string) $in['expected_versions']['source'])) {
@@ -103,7 +104,7 @@ class SlotActionService
                     break;
             }
 
-            $op = $this->receipts->record($actor, $action, $key, $digest, $change ? 'applied' : 'unchanged', 200, $change ? 1 : 0, $leave->id);
+            $op = $this->receipts->record($actor, $action, $key, $digest, $change ? 'applied' : 'unchanged', 200, $change ? 1 : 0, $leave->id, $departmentId);
             if ($change) {
                 [$status, $newTarget, $type] = $change;
                 $last = LeaveSubstitutionEvent::where('leave_substitution_slot_id', $slot->id)->orderByDesc('version')->first();
@@ -113,7 +114,7 @@ class SlotActionService
                 $src = $type === 'source_refreshed' ? [$routine->program_id, $routine->batch_id, $routine->subject_id] : [$last->source_program_id, $last->source_batch_id, $last->source_subject_id];
                 $event = LeaveSubstitutionEvent::create(['leave_substitution_operation_id' => $op->id, 'leave_substitution_slot_id' => $slot->id, 'leave_application_id' => $leave->id,
                     'version' => $slot->version, 'result_status' => $status, 'event_type' => $type, 'user_id' => $actor->id, 'original_teacher_id' => $slot->original_teacher_id,
-                    'source_program_id' => $src[0], 'source_batch_id' => $src[1], 'source_subject_id' => $src[2], 'substitute_teacher_id' => $newTarget, 'occurrence_date' => $date,
+                    'source_program_id' => $src[0], 'source_batch_id' => $src[1], 'source_subject_id' => $src[2], 'substitute_teacher_id' => $newTarget, 'department_id' => $departmentId, 'occurrence_date' => $date,
                     'source_start_time' => $slot->source_start_time, 'source_end_time' => $slot->source_end_time, 'source_room_no' => $slot->source_room_no, 'reason_note' => $reason,
                     'idempotency_key' => $this->receipts->eventKey($op, $slot->id), 'payload_sha256' => $digest]);
                 $this->notifier->notify($event, $was ? (int) $was : null);

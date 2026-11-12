@@ -171,9 +171,17 @@ final class DepartmentPermissionKeys
         'staff.inventory.stock',
     ];
 
+    /** D201 SUBM.3: department staff as cover reviewers - no key implies another; nominate / accept / decline are never duties */
+    public const D201 = [
+        'staff.leave_substitution.clear_offer',
+        'staff.leave_substitution.offer',
+        'staff.leave_substitution.read',
+        'staff.leave_substitution.refresh_source',
+    ];
+
     /** every key a duty may hold: the D90 contract plus owner-approved later additions */
     public static function known(): array
     {
-        return [...self::ALL, ...self::D102];
+        return [...self::ALL, ...self::D102, ...self::D201];
     }
 }
