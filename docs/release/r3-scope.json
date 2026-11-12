@@ -97,7 +97,8 @@
    "student_leave",
    "period_attendance",
    "substitution",
-   "leads"
+   "leads",
+   "public_site"
   ],
   "roles": [
  "super_admin",
