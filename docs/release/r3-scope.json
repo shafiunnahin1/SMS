@@ -96,7 +96,8 @@
    "result_sheets",
    "student_leave",
    "period_attendance",
-   "substitution"
+   "substitution",
+   "leads"
   ],
   "roles": [
  "super_admin",
