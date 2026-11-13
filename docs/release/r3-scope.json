@@ -102,7 +102,8 @@
    "admission_cycle",
    "promotion_tc",
    "certificates",
-   "fee_installment"
+   "fee_installment",
+   "homework"
   ],
   "roles": [
  "super_admin",
