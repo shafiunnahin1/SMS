@@ -99,7 +99,8 @@
    "substitution",
    "leads",
    "public_site",
-   "admission_cycle"
+   "admission_cycle",
+   "promotion_tc"
   ],
   "roles": [
  "super_admin",
