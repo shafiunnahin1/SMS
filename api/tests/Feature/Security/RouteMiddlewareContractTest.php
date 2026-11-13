@@ -48,7 +48,7 @@ class RouteMiddlewareContractTest extends TestCase
     private const SHELL = ['GET notices', 'GET admission', 'GET privacy', 'GET terms', 'GET robots.txt', 'GET sitemap.xml'];
 
     /** D202 PUB.2: tenant-host routes without a login - the public website only */
-    private const TENANT_PUBLIC = ['GET api/v1/public/site', 'GET api/v1/public/notices', 'POST api/v1/public/admission', 'GET api/v1/public/admission/cycle/{id}/transparency'];   // D209 ACY.3
+    private const TENANT_PUBLIC = ['GET api/v1/public/site', 'GET api/v1/public/notices', 'POST api/v1/public/admission', 'GET api/v1/public/admission/cycle/{id}/transparency', 'GET api/v1/public/admission/status', 'GET api/v1/public/admission/cycles'];   // D209 ACY.3, ACY.5
 
     /** Routes for a signed-in user on EITHER host (Super Admin on central, everyone else on their own host) */
     private const ANY_HOST_AUTH = ['GET api/v1/auth/me', 'POST api/v1/auth/logout'];

@@ -18,6 +18,7 @@ return [
     'fee_already_paid'       => 'আবেদন-ফি আগেই পরিশোধ হয়েছে।',
     'payment_not_reversible' => 'এই পরিশোধটি ফেরত (রিভার্স) করা যায় না।',
     'lead_not_in_cycle'      => 'এটি কোনো ভর্তি-চক্রের আবেদন নয়।',
+    'application_not_found'  => 'এই নম্বর ও ফোনে কোনো আবেদন পাওয়া যায়নি।',
     'lead_not_selected'      => 'এই আবেদনকারী নির্বাচিত নন।',
     'unknown_application'    => 'এই আবেদন-নম্বরগুলো পরীক্ষায় নেই: :list',
     'cycle_wrong_mode'       => 'এই চক্রে অন্য বাছাই-নিয়ম চলছে।',

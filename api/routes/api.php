@@ -225,6 +225,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/site',        [\App\Http\Controllers\Public\PublicSiteController::class, 'show']);
         Route::get('/notices',     [\App\Http\Controllers\Public\PublicSiteController::class, 'notices']);
         Route::post('/admission',  [\App\Http\Controllers\Public\PublicAdmissionController::class, 'store'])->middleware('throttle:admission');
+        Route::get('/admission/status', [\App\Http\Controllers\Admission\PublicAdmissionStatusController::class, 'status'])->middleware(['module:admission_cycle', 'throttle:10,1']);   // D209 ACY.5
+        Route::get('/admission/cycles', [\App\Http\Controllers\Admission\PublicAdmissionStatusController::class, 'cycles'])->middleware('module:admission_cycle');   // D209 ACY.5
         Route::get('/admission/cycle/{id}/transparency', [\App\Http\Controllers\Admission\AdmissionListController::class, 'transparency'])->whereNumber('id')->middleware('module:admission_cycle');   // D209 ACY.3
     });
 

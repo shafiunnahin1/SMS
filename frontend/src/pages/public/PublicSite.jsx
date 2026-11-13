@@ -17,6 +17,7 @@ import { Input, Select, Textarea } from '../../components/FormField'
 import LanguageSwitcher from '../../layouts/parts/LanguageSwitcher'
 import PoweredBy from '../../layouts/parts/PoweredBy'
 import AdmissionTransparency from './AdmissionTransparency'
+import AdmissionStatusCheck from './AdmissionStatusCheck'
 
 // D202 PUB.3 (docs/modules/public-website.md "Routes & Pages"): the institution's small public site - Home, Notices, Admission -
 // in its own theme (colours, font, radius) but not its app layout. Every institution text is shown as plain text, never as HTML.
@@ -200,6 +201,7 @@ export function PublicAdmission() {
   return (
     <PublicLayout>
       <h1 className="text-2xl font-semibold">{t('public_site.admission_title')}</h1>
+      <AdmissionStatusCheck />
       {!s.admission_open ? <Card data-testid="admission-closed"><p>{t('public_site.admission_closed')}</p></Card>
         : done ? <Card data-testid="admission-done"><p className="font-medium" dir="auto">{done}</p>{appNo && <p className="mt-2" data-testid="application-no">{t('public_site.application_no')}: <strong><Ltr>{appNo}</Ltr></strong> <span className="text-sm text-content-muted">{t('public_site.application_no_keep')}</span></p>}</Card> : (
         <Card>
