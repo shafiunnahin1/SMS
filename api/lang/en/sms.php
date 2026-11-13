@@ -4,6 +4,8 @@
 return [
     'absent'       => 'Dear guardian, :name was absent from :batch on :date.',
     'fee_received' => 'BDT :amount received. Receipt: :receipt.',
+    'installment_before' => 'Installment :no (BDT :amount) is due on :date.',
+    'installment_overdue' => 'Installment :no (BDT :amount) was due on :date. Please pay.',
     // D161: result and correction SMS (the recipient's language)
     'result' => ':institution: :name, :exam - total :total/:full (:percentage%), rank :rank.',
     'result_gpa' => 'GPA :gpa.',

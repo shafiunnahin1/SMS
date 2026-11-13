@@ -3,7 +3,10 @@
 namespace App\Services\Fees;
 
 use App\Exceptions\BusinessException;
-use App\Models\{AuditLog, FeeInstallment, FeeInstallmentPlan, Student};
+use App\Models\{AuditLog, FeeInstallment, FeeInstallmentPlan, Institution, Student};
+use App\Services\Sms\SmsEventPolicy;
+use App\Services\SmsService;
+use App\Support\Tenancy;
 use App\Services\FeeService;
 use App\Support\Money;
 use Carbon\Carbon;
@@ -58,5 +61,50 @@ class InstallmentService
     {
         return FeeInstallmentPlan::where('student_id', $studentId)->where('due_key', $dueKey)
             ->whereHas('items', fn ($q) => $q->where('status', '!=', 'paid'))->first();
+    }
+
+    /** D211 INST.2: pay one installment through the normal fee collection of its due line (one RCP- receipt); the amount is the
+     *  installment's own; the due line must still owe at least that much. Returns the receipt number. */
+    public function pay(FeeInstallment $item, string $method): string
+    {
+        return DB::transaction(function () use ($item, $method) {
+            $item = FeeInstallment::whereKey($item->id)->lockForUpdate()->firstOrFail();
+            if ($item->status === 'paid') throw new BusinessException('already paid', 'installment_paid', 409);
+            $plan = FeeInstallmentPlan::with('student')->findOrFail($item->plan_id);
+            $line = $this->fees->dueLines($plan->student)->firstWhere('key', $plan->due_key);
+            if (!$line || Money::toPaisa($line['amount']) < Money::toPaisa((string) $item->amount)) {
+                throw new BusinessException('the due no longer matches this installment', 'installment_mismatch', 422);
+            }
+            $rows = $this->fees->collect($plan->student, [['key' => $plan->due_key, 'paid_amount' => (string) $item->amount]], $method);
+            $item->update(['status' => 'paid', 'paid_at' => now(), 'payment_id' => $rows->first()->id]);
+            AuditLog::record('installment.paid', $item, ['receipt_no' => $rows->first()->receipt_no]);
+            return $rows->first()->receipt_no;
+        });
+    }
+
+    /** D211 INST.2 (daily): unpaid installments past their date become overdue; the guardian gets the `fee_due_reminder` SMS once
+     *  3 days before (or later, until the date, if a day was missed) and once after the date - never twice. Returns [overdue, sent]. */
+    public function daily(): array
+    {
+        $today = now()->toDateString();
+        $overdue = FeeInstallment::where('status', 'pending')->whereDate('due_date', '<', $today)->update(['status' => 'overdue']);
+        $sent = 0;
+        $i = Institution::find(Tenancy::current()->id);
+        $policy = app(SmsEventPolicy::class);
+        if ($policy->mode('fee_due_reminder', $i) === 'off') return [$overdue, 0];
+        $before = FeeInstallment::with('plan.student')->where('status', 'pending')->whereNull('reminded_before_at')
+            ->whereDate('due_date', '>=', $today)->whereDate('due_date', '<=', now()->addDays(3)->toDateString())->get();
+        $after = FeeInstallment::with('plan.student')->where('status', 'overdue')->whereNull('reminded_overdue_at')->get();
+        foreach ([['installment_before', $before, 'reminded_before_at'], ['installment_overdue', $after, 'reminded_overdue_at']] as [$key, $items, $col]) {
+            foreach ($items as $it) {
+                $s = $it->plan?->student;
+                if (!$s?->guardian_phone) continue;
+                $loc = app(SmsService::class)->localeFor($s->primaryParent(), $i);
+                $policy->dispatch('fee_due_reminder', $s->guardian_phone, __("sms.{$key}", ['no' => $it->installment_no, 'amount' => $it->amount, 'date' => $it->due_date->format('d/m/Y')], $loc));
+                $it->update([$col => now()]);
+                $sent++;
+            }
+        }
+        return [$overdue, $sent];
     }
 }

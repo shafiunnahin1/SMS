@@ -41,6 +41,7 @@ export const MENU = {
     { key: 'fees', label: 'ফি', icon: 'Wallet', module: 'fees', children: [
       it('collect',     '/admin/fees/collect',     'ফি আদায়', { primary: true }),
       it('dues',        '/admin/fees/dues',        'বকেয়া'),
+      it('installments','/admin/fees/installments', 'কিস্তি', { module: 'fee_installment' }),   // D211 INST.2
       it('categories',  '/admin/fees/categories',  'ফি-র খাত'),
       it('waivers',     '/admin/fees/waivers',     'মওকুফ', { since: 'R2' }),
       it('installments','/admin/fees/installments','কিস্তি', { module: 'fee_installment' }),
@@ -208,6 +209,7 @@ export const MENU = {
     it('dashboard','/accountant/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard',primary:true}),
     it('collect','/accountant/fees/collect','ফি আদায়',{icon:'Wallet',module:'fees',primary:true}),
     it('dues','/accountant/fees/dues','বকেয়া',{icon:'AlertCircle',module:'fees',primary:true}),
+    it('installments','/accountant/fees/installments','কিস্তি',{icon:'CalendarCheck',module:'fee_installment'}),   // D211 INST.2
     it('ai','/accountant/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant'}),   // D166 AI-Q4: the help guide
     it('online','/admin/payments','অনলাইন পেমেন্ট',{icon:'CreditCard',module:'online_payment'}),
     it('expenses','/accountant/expenses','আয়-ব্যয়',{icon:'Receipt',module:'expenses'}),

@@ -844,6 +844,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['module:fees', 'module:fee_installment', 'role:admin,accountant'])->prefix('fees/installments')->group(function () {
             Route::get('/',                               [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'index']);
             Route::post('/plan',                          [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'store']);
+            Route::get('/overdue',                        [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'overdue']);   // D211 INST.2
+            Route::post('/{id}/pay',                      [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'pay'])->whereNumber('id')->middleware('throttle:60,1');
             Route::get('/{id}',                           [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'show'])->whereNumber('id');
             Route::put('/{id}',                           [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'update'])->whereNumber('id');
         });

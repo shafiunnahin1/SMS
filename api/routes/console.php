@@ -39,3 +39,4 @@ Artisan::command('ops:alert-test', function () {
 \Illuminate\Support\Facades\Schedule::command('exams:remind-entry')->dailyAt('07:40')->withoutOverlapping();   // D197 AAD.6
 \Illuminate\Support\Facades\Schedule::command('substitution:sms-sweep')->everyFifteenMinutes()->withoutOverlapping();   // D201 SUBM.2
 \Illuminate\Support\Facades\Schedule::command('admission:promote')->dailyAt('00:55')->withoutOverlapping();   // D209 ACY.4
+\Illuminate\Support\Facades\Schedule::command('installments:daily')->dailyAt('09:10')->withoutOverlapping();   // D211 INST.2

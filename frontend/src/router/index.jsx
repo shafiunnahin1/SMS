@@ -40,6 +40,7 @@ const MemoSettings = lazy(() => import('../pages/admin/memo/MemoSettings'))   //
 const PromotionTc = lazy(() => import('../pages/documents/PromotionTc'))   // D210 PTC.1
 const Certificates = lazy(() => import('../pages/documents/Certificates'))   // D210 CERT.1
 const Letters = lazy(() => import('../pages/documents/Letters'))   // D210 LTR.1
+const Installments = lazy(() => import('../pages/fees/Installments'))   // D211 INST.2
 const VerifyDocument = lazy(() => import('../pages/public/VerifyDocument'))
 const MemoRegister = lazy(() => import('../pages/admin/memo/MemoRegister'))
 const MyCovers = lazy(() => import('../pages/substitution/MyCovers'))
@@ -197,6 +198,7 @@ export const tenantRoutes = [
     { path: 'academic/promotion', element: S(PromotionTc) },   // D210 PTC.1
     { path: 'certificates', element: S(Certificates) },   // D210 CERT.1
     { path: 'letters', element: S(Letters) },   // D210 LTR.1
+    { path: 'fees/installments', element: S(Installments) },   // D211 INST.2
     { path: 'memo-register', element: S(MemoRegister) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
@@ -227,6 +229,7 @@ export const tenantRoutes = [
   area('/accountant', 'accountant', [
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'admission', element: S(AdmissionCycles) },   // D209 ACY.2: the list and cash only
+    { path: 'fees/installments', element: S(Installments) },   // D211 INST.2
     { path: 'ai', element: S(AiChat) },   // D166 AI-Q4: the help guide
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/dues', element: S(FeeLedger) },

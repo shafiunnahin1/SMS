@@ -295,6 +295,8 @@ return [
     'POST api/v1/fees/installments/plan' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
+    'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
+    'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
     'POST api/v1/students/promote' => ['admin'],   // D210 PTC.1
     'GET api/v1/tc' => ['admin'],
     'POST api/v1/students/{id}/tc' => ['admin'],

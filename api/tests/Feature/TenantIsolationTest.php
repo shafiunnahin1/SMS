@@ -69,6 +69,7 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/students/{id}/tc' => fn (array $other) => $this->seedStudent($other),   // D210 PTC.1
             'POST api/v1/students/{id}/certificates' => fn (array $other) => $this->seedStudent($other),   // D210 CERT.1
             'GET api/v1/letters/{id}/pdf' => fn (array $other) => $this->seedLetter($other),   // D210 LTR.1
+            'POST api/v1/fees/installments/{id}/pay' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeInstallment::where('plan_id', $this->seedInstallmentPlan($other))->value('id')),   // D211 INST.2
             'GET api/v1/fees/installments/{id}' => fn (array $other) => $this->seedInstallmentPlan($other),   // D211 INST.1
             'PUT api/v1/fees/installments/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeInstallment::where('plan_id', $this->seedInstallmentPlan($other))->value('id')),
             'POST api/v1/letters/{id}/cancel' => fn (array $other) => $this->seedLetter($other),

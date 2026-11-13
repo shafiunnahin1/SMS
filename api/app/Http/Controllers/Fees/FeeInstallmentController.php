@@ -8,7 +8,7 @@ use App\Services\Fees\InstallmentService;
 use Illuminate\Http\Request;
 
 // D211 (docs/modules/extended-features.md section 2 "API"): fee installments for the admin and the accountant -
-// INST.1: the plans (list, make, detail) and changing an unpaid installment's due date.
+// INST.1: the plans (list, make, detail) and changing an unpaid installment's due date; INST.2: paying one, the overdue list.
 class FeeInstallmentController extends Controller
 {
     public function __construct(private InstallmentService $installments) {}
@@ -46,6 +46,24 @@ class FeeInstallmentController extends Controller
         $item = FeeInstallment::findOrFail($id);
         $d = $request->validate(['due_date' => 'required|date_format:Y-m-d']);
         return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $this->item($this->installments->changeDueDate($item, $d['due_date']))]);
+    }
+
+    /** D211 INST.2 POST /fees/installments/{id}/pay { payment_method? } - one normal receipt */
+    public function pay(Request $request, int $id)
+    {
+        $item = FeeInstallment::findOrFail($id);
+        $d = $request->validate(['payment_method' => 'nullable|in:cash,bkash,nagad,card,bank_transfer,cheque']);
+        $receipt = $this->installments->pay($item, $d['payment_method'] ?? 'cash');
+        return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $this->item($item->fresh()) + ['receipt_no' => $receipt]], 201);
+    }
+
+    /** D211 INST.2 GET /fees/installments/overdue - unpaid installments past their date, oldest first */
+    public function overdue()
+    {
+        $rows = FeeInstallment::with(['plan.category:id,name', 'plan.student:id,user_id,student_id', 'plan.student.user:id,name'])->where('status', '!=', 'paid')
+            ->whereDate('due_date', '<', now()->toDateString())->orderBy('due_date')->orderBy('id')->limit(500)->get();
+        return response()->json(['success' => true, 'data' => $rows->map(fn ($i) => $this->item($i) + ['category' => $i->plan?->category?->name,
+            'student' => $i->plan?->student ? ['id' => $i->plan->student->id, 'name' => $i->plan->student->user?->name, 'student_id' => $i->plan->student->student_id] : null])->values()]);
     }
 
     protected function plan(FeeInstallmentPlan $p): array
