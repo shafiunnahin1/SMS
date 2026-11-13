@@ -65,6 +65,10 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/admission/cycles/{id}' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.1
             'GET api/v1/admission/cycles/{id}/applications' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.2
             'POST api/v1/admission/cycles/{id}/test-marks' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.3
+            'POST api/v1/admission/leads/{id}/confirm' => fn (array $other) => $this->seedLead($other),   // D209 ACY.4
+            'POST api/v1/admission/leads/{id}/decline' => fn (array $other) => $this->seedLead($other),
+            'POST api/v1/admission/leads/{id}/admit' => fn (array $other) => $this->seedLead($other),
+            'POST api/v1/admission/cycles/{id}/result-sms' => fn (array $other) => $this->seedCycle($other),
             'GET api/v1/public/admission/cycle/{id}/transparency' => fn (array $other) => $this->seedCycle($other, 'open'),   // an OPEN foreign cycle: the 404 is the tenant boundary
             'POST api/v1/admission/cycles/{id}/list/merit' => fn (array $other) => $this->seedCycle($other),
             'POST api/v1/admission/cycles/{id}/list/lottery' => fn (array $other) => $this->seedCycle($other),
@@ -583,7 +587,7 @@ class TenantIsolationTest extends TestCase
                 if (str_contains($uri, 'api/v1/hr/final-settlement/') || str_contains($uri, 'api/v1/hr/pf/')) $path = str_replace('{type}', 'staff', $path);
                 if ($uri === 'GET api/v1/hr/payroll-runs/{id}/{file}') $path = str_replace('{file}', 'disbursement.csv', $path);
                 if (str_contains($uri, 'api/v1/accounting/')) $path = str_replace(['{account_id}', '{action}'], [(string) $id, str_contains($uri, 'vouchers') ? 'post' : 'match'], $path);
-                if (str_contains($uri, 'api/v1/public/')) \Illuminate\Support\Facades\Cache::flush();   // D209 ACY.3: the public pages' 60/min limit, not the tenant check
+                \Illuminate\Support\Facades\Cache::flush();   // D209 ACY.3/4: route rate limits (public 60/min, result-sms 5/min) are not the tenant check
                 $this->api($method, $this->hostOf($me['institution']), $path, $me['admin'])->assertNotFound();
             }
         }

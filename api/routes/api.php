@@ -848,6 +848,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/draw',                           [\App\Http\Controllers\Admission\AdmissionListController::class, 'draw']);
         });
 
+        // ── D209 ACY.4: after the list - confirm, decline, admit, the result SMS (admin) ──
+        Route::middleware(['module:admission_cycle', 'role:admin'])->prefix('admission')->group(function () {
+            Route::post('/leads/{id}/confirm',            [\App\Http\Controllers\Admission\AdmissionDecisionController::class, 'confirm'])->whereNumber('id');
+            Route::post('/leads/{id}/decline',            [\App\Http\Controllers\Admission\AdmissionDecisionController::class, 'decline'])->whereNumber('id');
+            Route::post('/leads/{id}/admit',              [\App\Http\Controllers\Admission\AdmissionDecisionController::class, 'admit'])->whereNumber('id')->middleware('module:students');
+            Route::post('/cycles/{id}/result-sms',        [\App\Http\Controllers\Admission\AdmissionDecisionController::class, 'resultSms'])->whereNumber('id')->middleware('throttle:5,1');
+        });
+
         // ── D209 ACY.2: the application fee (admin; the accountant collects cash and sees the list) ──
         Route::middleware('module:admission_cycle')->prefix('admission')->group(function () {
             Route::middleware('role:admin')->group(function () {

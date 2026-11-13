@@ -107,8 +107,11 @@ class AdmissionListService
         $wait = (int) ($c->rule['waiting'] ?? 0);
         $selected = array_slice($orderIds, 0, $seats);
         $waiting = array_slice($orderIds, $seats, $wait);
+        // ACY.4: a selected applicant gets a confirmation deadline (follow_up_date = today + confirm_within_days)
+        $deadline = now()->addDays((int) ($c->rule['confirm_within_days'] ?? 7))->toDateString();
         foreach ($orderIds as $n => $id) {
-            AdmissionLead::whereKey($id)->update(['merit_rank' => $n + 1, 'list_status' => $n < $seats ? 'selected' : ($n < $seats + $wait ? 'waiting' : 'rejected')]);
+            AdmissionLead::whereKey($id)->update(['merit_rank' => $n + 1, 'list_status' => $n < $seats ? 'selected' : ($n < $seats + $wait ? 'waiting' : 'rejected'),
+                'follow_up_date' => $n < $seats ? $deadline : null]);
         }
         $unranked = array_diff($allIds, $orderIds);
         if ($unranked) AdmissionLead::whereIn('id', $unranked)->update(['merit_rank' => null, 'list_status' => 'rejected']);

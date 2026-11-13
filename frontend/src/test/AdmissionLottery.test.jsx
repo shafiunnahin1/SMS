@@ -47,4 +47,26 @@ describe('admission lists (D209 ACY.3)', () => {
     expect(screen.getByText('Selected')).toBeInTheDocument()
     expect(api.get).toHaveBeenCalledWith('/public/admission/cycle/7/transparency')
   })
+
+  it('decides on a selected applicant after the list (D209 ACY.4)', async () => {
+    const apps = { data: [{ id: 51, name: 'Rafi', phone: '01711000001', application_no: 'A30-AAAAA', paid: true, paid_amount: '0.00', test_roll: '0001', list_status: 'selected' },
+      { id: 52, name: 'Mim', phone: '01711000002', application_no: 'A30-BBBBB', paid: true, paid_amount: '0.00', test_roll: '0002', list_status: 'waiting' }], meta: { application_fee: '0.00', status: 'listing', methods: ['cash'] } }
+    api.get.mockImplementation((u) => Promise.resolve({ data: u.endsWith('/applications') ? apps : u === '/batches' ? { data: [{ id: 9, name: 'A', program_id: 3 }] } : u === '/admission/fee-methods' ? { data: { methods: ['cash'], online_available: false } } : { data: [cycle({ status: 'listing' })] } }))
+    api.post.mockResolvedValue({ data: { data: { sent: 2 } } })
+    wrap(<AdmissionCycles />)
+    fireEvent.click(await screen.findByText('Applications'))
+    fireEvent.click(await screen.findByText('Confirmed'))
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/admission/leads/51/confirm'))
+    expect(screen.getAllByText('Not coming')).toHaveLength(2)   // the selected and the waiting one
+    fireEvent.click(screen.getAllByText('Not coming')[1])
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/admission/leads/52/decline'))
+    fireEvent.click(screen.getAllByText('Admit')[0])
+    const admit = await screen.findByTestId('admit')
+    await waitFor(() => expect(admit.querySelector('[name="batch_id"] option[value="9"]')).not.toBeNull())
+    fireEvent.change(admit.querySelector('[name="batch_id"]'), { target: { value: '9' } })
+    fireEvent.click(admit.querySelector('[data-action="admit-confirm"]'))
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/admission/leads/51/admit', { batch_ids: [9] }))
+    fireEvent.click(screen.getByText('Send result SMS'))
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/admission/cycles/7/result-sms'))
+  })
 })

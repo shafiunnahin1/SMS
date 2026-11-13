@@ -10,10 +10,13 @@ import Loader from '../../components/Loader'
 import StatusBadge from '../../components/StatusBadge'
 import Ltr from '../../components/bidi/Ltr'
 import { EmptyState, ErrorState } from '../../components/StateViews'
+import { Select } from '../../components/FormField'
+import { useCrud } from '../../features/academic/useCrud'
+import { useTerms } from '../../hooks/useTerms'
 
 // D209 ACY.2: one cycle's applications, oldest first, with paid / unpaid. While the cycle is open the admin or the accountant
 // takes the fee in cash (the server sets the amount, an APP- receipt); the admin can reverse a payment (a new negative row).
-export default function AdmissionApplications({ cycleId, isAdmin, mode }) {
+export default function AdmissionApplications({ cycleId, isAdmin, mode, programId }) {
   const { t } = useTranslation()
   const { locale } = useLocale()
   const qc = useQueryClient()
@@ -22,6 +25,11 @@ export default function AdmissionApplications({ cycleId, isAdmin, mode }) {
   // D209 ACY.3: marks for a merit cycle while it is in `testing` (admin)
   const [marks, setMarks] = useState({})
   const [saving, setSaving] = useState(false)
+  // ACY.4: confirm / decline / admit for the listing cycle (admin); admit picks the batch the student joins
+  const term = useTerms()
+  const batches = useCrud('batches').list
+  const [admitting, setAdmitting] = useState(null)   // {id, batch_id}
+  const act = async (fn, done) => { try { await fn(); done?.() } catch { /* the interceptor shows the error */ } finally { refresh() } }
   useEffect(() => { if (q.data) setMarks(Object.fromEntries(q.data.data.filter(l => l.test_roll).map(l => [l.application_no, l.test_marks ?? '']))) }, [q.data])
   if (q.isPending) return <Loader type="skeleton" rows={4} />
   if (q.isError) return <ErrorState onRetry={q.refetch} />
@@ -70,11 +78,25 @@ export default function AdmissionApplications({ cycleId, isAdmin, mode }) {
             {l.list_status && <StatusBadge status={`list_${l.list_status}`} />}
             {Number(meta.application_fee) > 0 && <StatusBadge status={l.paid ? 'paid' : 'due'} />}
             {canTake && !l.paid && <Button onClick={() => collect(l)} data-action="collect">{t('admission.collect')}</Button>}
+            {isAdmin && meta.status === 'listing' && l.list_status === 'selected' && <>
+              <Button variant="secondary" onClick={() => act(() => api.post(`/admission/leads/${l.id}/confirm`))} data-action="confirm">{t('admission.confirm')}</Button>
+              <Button onClick={() => setAdmitting({ id: l.id, batch_id: '' })} data-action="admit">{t('admission.admit')}</Button>
+            </>}
+            {isAdmin && meta.status === 'listing' && ['selected', 'waiting'].includes(l.list_status) && <Button variant="ghost" data-action="decline"
+              onClick={() => useUiStore.getState().openConfirm({ title: t('admission.decline'), description: t('admission.decline_confirm'), type: 'danger', onConfirm: () => act(() => api.post(`/admission/leads/${l.id}/decline`)) })}>{t('admission.decline')}</Button>}
             {isAdmin && meta.status === 'open' && Number(l.paid_amount) > 0 && <Button variant="secondary" onClick={() => reverse(l)} data-action="reverse">{t('admission.reverse')}</Button>}
           </span>
         </li>
       ))}
     </ul>
+    {admitting && (
+      <div className="flex flex-wrap items-end gap-2" data-testid="admit">
+        <Select label={term('batch')} placeholder="—" value={admitting.batch_id} onChange={e => setAdmitting(a => ({ ...a, batch_id: e.target.value }))} name="batch_id"
+          options={(batches.data ?? []).filter(b => !programId || String(b.program_id ?? b.program?.id) === String(programId)).map(b => ({ value: String(b.id), label: b.name }))} />
+        <Button onClick={() => act(() => api.post(`/admission/leads/${admitting.id}/admit`, admitting.batch_id ? { batch_ids: [Number(admitting.batch_id)] } : {}), () => setAdmitting(null))} data-action="admit-confirm">{t('admission.admit')}</Button>
+        <Button variant="secondary" onClick={() => setAdmitting(null)}>{t('common.cancel')}</Button>
+      </div>
+    )}
     {marking && <div><Button onClick={saveMarks} loading={saving} data-action="save-marks">{t('admission.save_marks')}</Button></div>}
     </div>
   )

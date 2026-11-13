@@ -115,6 +115,8 @@ export default function AdmissionCycles() {
                   <Button onClick={() => setDraw({ cycle: c, seed: '' })} data-action="lottery">{t('admission.run_lottery')}</Button>
                   <Button variant="ghost" onClick={() => recommit(c)} data-action="recommit">{t('admission.seed_lost')}</Button>
                 </>}
+                {isAdmin && ['listing', 'closed'].includes(c.status) && <Button variant="secondary" data-action="result-sms" onClick={() => useUiStore.getState().openConfirm({ title: t('admission.result_sms'), description: t('admission.result_sms_confirm'),
+                  onConfirm: async () => { try { const r = await api.post(`/admission/cycles/${c.id}/result-sms`); useUiStore.getState().addToast(t('admission.result_sms_done', { count: r.data.data.sent })) } catch { /* the interceptor shows the error */ } } })}>{t('admission.result_sms')}</Button>}
                 {c.status !== 'draft' && <a className="text-sm underline self-center" href={`/admission?transparency=${c.id}`} target="_blank" rel="noreferrer">{t('admission.public_record')}</a>}
               </div>
             </Card>
@@ -150,7 +152,7 @@ export default function AdmissionCycles() {
       </Modal>
 
       <Modal open={!!apps} onClose={() => { setApps(null); refresh() }} title={apps?.name ?? ''}>
-        {apps && <AdmissionApplications cycleId={apps.id} isAdmin={isAdmin} mode={apps.rule.mode} />}
+        {apps && <AdmissionApplications cycleId={apps.id} isAdmin={isAdmin} mode={apps.rule.mode} programId={apps.program?.id} />}
       </Modal>
 
       <Modal open={!!draw} onClose={() => setDraw(null)} title={t('admission.run_lottery')}>

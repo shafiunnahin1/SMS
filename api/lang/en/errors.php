@@ -18,6 +18,7 @@ return [
     'fee_already_paid'       => 'The application fee is already paid.',
     'payment_not_reversible' => 'This payment cannot be reversed.',
     'lead_not_in_cycle'      => 'This is not an application of an admission cycle.',
+    'lead_not_selected'      => 'This applicant is not selected.',
     'unknown_application'    => 'These application numbers did not sit the test: :list',
     'cycle_wrong_mode'       => 'This cycle uses the other selection rule.',
     'seed_mismatch'          => 'This code does not match the published commitment.',
