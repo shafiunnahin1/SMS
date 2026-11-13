@@ -20,7 +20,8 @@ class UserAccessController extends Controller
             $i = app('currentInstitution');
             $data['teacher'] = ['features' => TeacherFeatures::keys(), 'institution_off' => $features->institutionOff($i),
                 'overrides' => (object) $features->overrides($u), 'off' => $features->offFor($u, $i)];
-        } else {
+        }
+        {   // D206 TDM.4: a teacher may be a department member too
             $memberships = DepartmentMembership::where('user_id', $u->id)->orderBy('id')->get();
             $departments = InstitutionDepartment::whereIn('id', $memberships->pluck('department_id'))->get(['id', 'name', 'status'])->keyBy('id');
             $assigned = DepartmentDutyAssignment::whereIn('membership_id', $memberships->pluck('id'))->where('status', 'active')->get(['membership_id', 'duty_id'])->groupBy('membership_id');

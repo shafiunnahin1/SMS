@@ -20,7 +20,10 @@ api.interceptors.request.use((config) => {
   config.headers['Accept-Language'] = i18n.language || 'bn'
   // D169 STW.1 (D91): a staff member's request names the selected department; the API checks the duty key there
   const department = useStaffDepartmentStore.getState().department
-  if (department && authStore?.getState().role === 'institution_staff') config.headers['X-Department-Id'] = String(department.id)
+  const role = authStore?.getState().role
+  // D206 TDM.4: a teacher sends it only from the department pages (/staff/...), so their own teacher pages stay teacher work
+  const departmentPage = role === 'teacher' && typeof window !== 'undefined' && window.location.pathname.startsWith('/staff/')
+  if (department && (role === 'institution_staff' || departmentPage)) config.headers['X-Department-Id'] = String(department.id)
   return config
 })
 

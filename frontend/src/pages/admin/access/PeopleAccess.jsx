@@ -55,7 +55,7 @@ export default function PeopleAccess() {
         <Select label={t('access.person')} placeholder={t('access.pick')} value={person} onChange={e => setPerson(e.target.value)} options={people} />
       </div>
       {!person ? <EmptyState title={t('access.pick_hint')} /> : one.isPending ? <Loader type="cards" count={1} /> : one.isError ? <ErrorState onRetry={one.refetch} />
-        : one.data.role === 'teacher' ? <TeacherAccess d={one.data} run={run} /> : <StaffAccess d={one.data} run={run} />}
+        : one.data.role === 'teacher' ? <><TeacherAccess d={one.data} run={run} /><StaffAccess d={one.data} run={run} /></> : <StaffAccess d={one.data} run={run} />}   {/* D206 TDM.4: a teacher's departments too */}
     </div>
   )
 }
@@ -83,7 +83,7 @@ function StaffAccess({ d, run }) {
   const { t } = useTranslation()
   const [dept, setDept] = useState('')
   const departments = useQuery({ queryKey: ['admin-departments', 'access'], queryFn: () => api.get('/admin/departments', { params: { per_page: 100 } }).then(list) })
-  const active = d.memberships.filter(m => m.status === 'active')
+  const active = (d.memberships ?? []).filter(m => m.status === 'active')
   const free = (departments.data ?? []).filter(x => x.status === 'active' && !active.some(m => m.department_id === x.id))
   return (
     <Card className="flex flex-col gap-3" data-testid="access-staff">

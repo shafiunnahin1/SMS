@@ -33,7 +33,7 @@ class UserAccessTest extends TestCase
         $d = $this->api('GET', $h, "admin/users/{$staff->id}/access", $s['admin'])->assertOk()->json('data');
         $this->assertSame(['institution_staff', 'Front office', 'Leads desk', ['staff.lead.read', 'staff.lead.update']],
             [$d['role'], $d['memberships'][0]['department'], $d['memberships'][0]['duties'][0]['name'], $d['memberships'][0]['duties'][0]['permission_keys']]);
-        $this->assertArrayNotHasKey('teacher', $d);
+        $this->assertArrayNotHasKey('teacher', $d);   // a staff member has no teacher switches
 
         // a teacher: the switches
         $this->api('PUT', $h, 'admin/teacher-features', $s['admin'], ['off' => ['notices']])->assertOk();
@@ -41,6 +41,10 @@ class UserAccessTest extends TestCase
         $t = $this->api('GET', $h, "admin/users/{$s['karimUser']->id}/access", $s['admin'])->assertOk()->json('data');
         $this->assertSame(['teacher', ['notices'], ['ai_assistant' => 'blocked'], ['ai_assistant', 'notices']],
             [$t['role'], $t['teacher']['institution_off'], $t['teacher']['overrides'], $t['teacher']['off']]);
+        $this->assertSame([], $t['memberships']);   // D206 TDM.4: a teacher's departments are part of the read (none yet)
+        $dept = $this->api('GET', $h, "admin/users/{$staff->id}/access", $s['admin'])->json('data.memberships.0.department_id');
+        $this->api('POST', $h, "admin/departments/{$dept}/members", $s['admin'], ['user_id' => $s['karimUser']->id])->assertCreated();
+        $this->assertSame('Front office', $this->api('GET', $h, "admin/users/{$s['karimUser']->id}/access", $s['admin'])->json('data.memberships.0.department'));
 
         // nobody else; never another institution; admin only
         $this->api('GET', $h, "admin/users/{$s['admin']->id}/access", $s['admin'])->assertNotFound();
