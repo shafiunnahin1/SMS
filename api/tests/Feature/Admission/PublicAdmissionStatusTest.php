@@ -40,7 +40,10 @@ class PublicAdmissionStatusTest extends TestCase
         $cycles = $this->getJson("http://{$s['host']}/api/v1/public/admission/cycles")->assertOk();
         $this->assertSame(['Six 2031'], array_column($cycles->json('data'), 'name'));   // no draft
 
-        for ($n = 0; $n < 6; $n++) $get($s, 'application_no=A30-XXXXX&phone=01711000701');
+        // browsing other public pages does not use up the result checks (their own counter)
+        for ($n = 0; $n < 12; $n++) $this->getJson("http://{$s['host']}/api/v1/public/admission/cycles")->assertOk();
+        $get($s, 'application_no=A30-SSSSS&phone=01711000701')->assertOk();
+        for ($n = 0; $n < 5; $n++) $get($s, 'application_no=A30-XXXXX&phone=01711000701');
         $get($s, 'application_no=A30-SSSSS&phone=01711000701')->assertStatus(429);   // 10 a minute
     }
 }
