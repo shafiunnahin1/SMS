@@ -842,7 +842,8 @@
   "lead_payments": {
    "refs": {
     "lead_id": "admission_leads",
-    "online_payment_id": "online_payments"
+    "online_payment_id": "online_payments",
+    "received_by": "users"
    },
    "polymorphic": []
   },

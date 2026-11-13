@@ -98,7 +98,8 @@
    "period_attendance",
    "substitution",
    "leads",
-   "public_site"
+   "public_site",
+   "admission_cycle"
   ],
   "roles": [
  "super_admin",

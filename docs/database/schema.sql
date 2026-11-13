@@ -2326,8 +2326,10 @@ CREATE TABLE lead_payments (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     lead_id BIGINT UNSIGNED NOT NULL,
-    online_payment_id BIGINT UNSIGNED NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
+    online_payment_id BIGINT UNSIGNED NULL,       -- D209: NULL for a cash payment at the office
+    method VARCHAR(10) NOT NULL DEFAULT 'online', -- D209: cash | online
+    received_by BIGINT UNSIGNED NULL,             -- D209: the admin / accountant who took the cash
+    amount DECIMAL(10,2) NOT NULL,                -- D209: a mistake is a new negative (reversal) row, never a delete (D32)
     receipt_no VARCHAR(30) NOT NULL,              -- prefix APP-
     paid_at TIMESTAMP NULL,
     UNIQUE KEY unique_lead_receipt (institution_id, receipt_no),
