@@ -31,6 +31,13 @@ return [
     'installment_mismatch'   => 'বকেয়াটি এই কিস্তির সাথে আর মেলে না (অন্যভাবে পরিশোধ বা পরিবর্তন হয়েছে)।',
     'holiday_exists'         => 'এই দিনগুলোর কোনোটিতে আগেই ছুটি আছে।',   // D213 CAL.1
     'holiday_range_too_long' => 'একবারে সর্বোচ্চ :max দিনের ছুটি যোগ করা যায়।',
+    'event_has_registrations' => 'নিবন্ধন হয়ে গেছে; নিবন্ধন বন্ধ করা যাবে না।',   // D213 CAL.2
+    'event_limit_below_registered' => 'ইতিমধ্যে :count জন নিবন্ধন করেছে; সীমা এর কম হতে পারে না।',
+    'event_registration_students' => 'শুধু শিক্ষার্থীরা নিবন্ধন করতে পারে; দর্শক "সবাই" বা "শিক্ষার্থী" দিন।',
+    'event_no_registration' => 'এই অনুষ্ঠানে নিবন্ধন লাগে না।',
+    'event_registration_closed' => 'নিবন্ধনের সময় শেষ।',
+    'event_already_registered' => 'আপনি আগেই নিবন্ধন করেছেন।',
+    'event_full' => 'আসন পূর্ণ।',
     'not_your_subject'       => 'আপনি এখানে এই বিষয়টি পড়ান না।',
     'empty_submission'       => 'কিছু লিখুন বা একটি ফাইল যোগ করুন।',
     'submission_graded'      => 'এই জমায় গ্রেড দেওয়া হয়ে গেছে।',

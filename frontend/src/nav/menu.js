@@ -159,6 +159,7 @@ export const MENU = {
       it('qb-papers','/teacher/question-bank/papers','প্রশ্নপত্র',{icon:'FileText',module:'question_bank',teacherFeature:'question_bank'}),
     ]},
     it('homework','/teacher/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework'}),
+    it('calendar','/teacher/calendar','একাডেমিক ক্যালেন্ডার',{icon:'CalendarCheck',module:'academic_calendar'}),   // D213 CAL.2
     it('routine','/teacher/routine','রুটিন',{icon:'Clock',module:'routine'}),
     it('materials','/teacher/materials','শিক্ষা-উপকরণ', {icon:'Folder', since: 'R2' }),
     it('messages','/teacher/messages','বার্তা', {icon:'MessageCircle', since: 'R2' }),
@@ -185,6 +186,7 @@ export const MENU = {
     it('fees','/student/fees','ফি',{icon:'Wallet',module:'fees',primary:true, since: 'R1.1' }),
     it('attendance','/student/attendance','উপস্থিতি',{icon:'CalendarCheck',module:'attendance', since: 'R1.1' }),
     it('homework','/student/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework', since: 'R1.1' }),
+    it('calendar','/student/calendar','একাডেমিক ক্যালেন্ডার',{icon:'CalendarCheck',module:'academic_calendar'}),   // D213 CAL.2
     it('quiz','/student/quiz','অনলাইন পরীক্ষা',{icon:'ClipboardCheck',module:'online_quiz', since: 'R1.1' }),
     it('materials','/student/materials','শিক্ষা-উপকরণ',{icon:'Folder', since: 'R1.1' }),
     it('library','/student/library','লাইব্রেরি',{icon:'Library',module:'library', since: 'R1.1' }),
@@ -197,6 +199,7 @@ export const MENU = {
     it('ai','/parent/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant'}),   // D166 AI-Q4: the help guide
     it('attendance','/parent/attendance','উপস্থিতি',{icon:'CalendarCheck',module:'attendance',primary:true}),
     it('homework','/parent/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework'}),
+    it('calendar','/parent/calendar','একাডেমিক ক্যালেন্ডার',{icon:'CalendarCheck',module:'academic_calendar'}),   // D213 CAL.2
     it('meetings','/parent/meetings','সভা',{icon:'Users',module:'parent_meeting'}),
     it('leave','/parent/leave','ছুটির আবেদন',{icon:'CalendarOff',module:'student_leave'}),
     it('transport','/parent/transport','পরিবহন',{icon:'Bus',module:'transport'}),

@@ -71,6 +71,11 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/letters/{id}/pdf' => fn (array $other) => $this->seedLetter($other),   // D210 LTR.1
             'PATCH api/v1/academic-years/{id}/set-current' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AcademicYear::create(['name' => 'Y-' . uniqid(), 'start_date' => '2026-01-01', 'end_date' => '2026-12-31'])->id),   // D213 CAL.1
             'PUT api/v1/holidays/{id}' => fn (array $other) => $this->seedHoliday($other),
+            'PUT api/v1/events/{id}' => fn (array $other) => $this->seedEvent($other),   // D213 CAL.2
+            'DELETE api/v1/events/{id}' => fn (array $other) => $this->seedEvent($other),
+            'GET api/v1/events/{id}/registrations' => fn (array $other) => $this->seedEvent($other),
+            'POST api/v1/events/{id}/register' => null,   // student only: CrossTenantRouteTest::NOT_ROW_IDS, EventTest
+            'DELETE api/v1/events/{id}/register' => null,
             'DELETE api/v1/holidays/{id}' => fn (array $other) => $this->seedHoliday($other),
             'GET api/v1/homework/{id}' => fn (array $other) => $this->seedHomework($other),   // D212 HW.1
             'GET api/v1/homework/{id}/submissions' => fn (array $other) => $this->seedHomework($other),   // D212 HW.2
@@ -364,6 +369,11 @@ class TenantIsolationTest extends TestCase
         $hw = $this->seedHomework($t);
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\HomeworkSubmission::create(['homework_id' => $hw, 'student_id' => $student, 'text_answer' => 'x', 'status' => 'submitted'])->id);
+    }
+
+    private function seedEvent(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\InstitutionEvent::create(['title' => 'E', 'type' => 'sports', 'event_date' => '2026-12-20'])->id);
     }
 
     private function seedHoliday(array $t): int

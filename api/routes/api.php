@@ -228,6 +228,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/admission/status', [\App\Http\Controllers\Admission\PublicAdmissionStatusController::class, 'status'])->middleware(['module:admission_cycle', 'throttle:admission-status']);   // D209 ACY.5
         Route::get('/admission/cycles', [\App\Http\Controllers\Admission\PublicAdmissionStatusController::class, 'cycles'])->middleware('module:admission_cycle');   // D209 ACY.5
         Route::get('/verify/{code}', [\App\Http\Controllers\Documents\CertificateController::class, 'verify'])->where('code', '[A-Za-z0-9]{1,16}')->middleware(['module:certificates', 'throttle:verify-code']);   // D210 CERT.1
+        Route::get('/calendar',    [\App\Http\Controllers\Calendar\PublicCalendarController::class, 'show'])->middleware('module:academic_calendar');   // D213 CAL.2
         Route::get('/admission/cycle/{id}/transparency', [\App\Http\Controllers\Admission\AdmissionListController::class, 'transparency'])->whereNumber('id')->middleware('module:admission_cycle');   // D209 ACY.3
     });
 
@@ -852,6 +853,23 @@ Route::prefix('v1')->group(function () {
                 Route::delete('/holidays/{id}',               [\App\Http\Controllers\Calendar\HolidayController::class, 'destroy'])->whereNumber('id');
             });
             Route::get('/holidays/calendar',                  [\App\Http\Controllers\Calendar\HolidayController::class, 'calendar'])->middleware('role:admin,teacher,student,parent');
+            // D213 CAL.2: events and the month calendar
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/events',                         [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'index']);
+                Route::post('/events',                        [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'store'])->middleware('throttle:30,1');
+                Route::put('/events/{id}',                    [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'update'])->whereNumber('id');
+                Route::delete('/events/{id}',                 [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'destroy'])->whereNumber('id');
+                Route::get('/events/{id}/registrations',      [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'registrations'])->whereNumber('id');
+            });
+            Route::middleware('role:admin,teacher,student,parent')->group(function () {
+                Route::get('/calendar',                       [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'calendar']);
+                Route::get('/events/upcoming',                [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'upcoming']);
+            });
+            Route::middleware('role:student')->group(function () {
+                Route::post('/events/{id}/register',          [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'register'])->whereNumber('id')->middleware('throttle:30,1');
+                Route::delete('/events/{id}/register',        [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'unregister'])->whereNumber('id');
+                Route::get('/student/events',                 [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'mine']);
+            });
         });
 
         // ── D212 HW.1: homework ──

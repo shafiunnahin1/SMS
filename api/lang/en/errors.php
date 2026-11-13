@@ -31,6 +31,13 @@ return [
     'installment_mismatch'   => 'The due no longer matches this installment (it was paid or changed elsewhere).',
     'holiday_exists'         => 'A holiday already exists on one of these days.',   // D213 CAL.1
     'holiday_range_too_long' => 'At most :max days can be added at once.',
+    'event_has_registrations' => 'Students have registered; registration cannot be turned off.',   // D213 CAL.2
+    'event_limit_below_registered' => ':count students have already registered; the limit cannot be lower.',
+    'event_registration_students' => 'Only students register; choose the audience "everyone" or "students".',
+    'event_no_registration' => 'This event needs no registration.',
+    'event_registration_closed' => 'Registration is closed.',
+    'event_already_registered' => 'You have already registered.',
+    'event_full' => 'The event is full.',
     'not_your_subject'       => 'You do not teach this subject here.',
     'empty_submission'       => 'Write something or attach a file.',
     'submission_graded'      => 'This submission is already graded.',
