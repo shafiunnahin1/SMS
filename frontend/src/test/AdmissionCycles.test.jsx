@@ -40,7 +40,7 @@ describe('admission cycles (D209 ACY.1)', () => {
     api.get.mockImplementation((u) => Promise.resolve({ data: { data: u === '/programs' ? [] : u === '/admission/fee-methods' ? { methods: ['cash'], online_available: false } : [cycle(), cycle({ id: 8, name: 'Frozen', status: 'testing' })] } }))
     api.post.mockResolvedValue({ data: { data: { ...cycle({ status: 'open' }), seed: 'ab'.repeat(32), draw: { seed_commitment: 'cd'.repeat(32) } } } })
     at()
-    expect(await screen.findByText('Enter the marks and build the list next.', { exact: false })).toBeInTheDocument()
+    expect(await screen.findByText('Run the lottery')).toBeInTheDocument()   // ACY.3: the testing cycle offers its draw (was a hint in ACY.1)
     fireEvent.click(screen.getByText('Open applications'))
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/admission/cycles/7/open'))
     expect(await screen.findByTestId('seed-value')).toHaveTextContent('ab'.repeat(32))

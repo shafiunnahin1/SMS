@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../api/axios'
@@ -12,16 +13,28 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 
 // D209 ACY.2: one cycle's applications, oldest first, with paid / unpaid. While the cycle is open the admin or the accountant
 // takes the fee in cash (the server sets the amount, an APP- receipt); the admin can reverse a payment (a new negative row).
-export default function AdmissionApplications({ cycleId, isAdmin }) {
+export default function AdmissionApplications({ cycleId, isAdmin, mode }) {
   const { t } = useTranslation()
   const { locale } = useLocale()
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['admission', 'applications', cycleId], queryFn: () => api.get(`/admission/cycles/${cycleId}/applications`).then(r => r.data) })
   const refresh = () => qc.invalidateQueries({ queryKey: ['admission', 'applications', cycleId] })
+  // D209 ACY.3: marks for a merit cycle while it is in `testing` (admin)
+  const [marks, setMarks] = useState({})
+  const [saving, setSaving] = useState(false)
+  useEffect(() => { if (q.data) setMarks(Object.fromEntries(q.data.data.filter(l => l.test_roll).map(l => [l.application_no, l.test_marks ?? '']))) }, [q.data])
   if (q.isPending) return <Loader type="skeleton" rows={4} />
   if (q.isError) return <ErrorState onRetry={q.refetch} />
   const { data: rows, meta } = q.data
   const canTake = meta.status === 'open' && Number(meta.application_fee) > 0 && meta.methods.includes('cash')
+  const marking = isAdmin && mode === 'merit' && meta.status === 'testing'
+  const saveMarks = async () => {
+    setSaving(true)
+    try {
+      await api.post(`/admission/cycles/${cycleId}/test-marks`, { rows: Object.entries(marks).map(([no, m]) => ({ application_no: no, marks: m === '' ? null : m })) })
+      useUiStore.getState().addToast(t('common.saved'))
+    } catch { /* the interceptor shows the error */ } finally { setSaving(false); refresh() }
+  }
 
   const collect = (l) => useUiStore.getState().openConfirm({ title: t('admission.collect'), description: t('admission.collect_confirm', { amount: fmtMoney(meta.application_fee, locale), name: l.name }),
     onConfirm: async () => {
@@ -42,6 +55,7 @@ export default function AdmissionApplications({ cycleId, isAdmin }) {
 
   if (!rows.length) return <EmptyState title={t('admission.no_applications')} />
   return (
+    <div className="flex flex-col gap-2">
     <ul className="flex flex-col divide-y divide-line" data-testid="applications">
       {rows.map(l => (
         <li key={l.id} className="py-2 flex flex-wrap items-center justify-between gap-2">
@@ -50,6 +64,10 @@ export default function AdmissionApplications({ cycleId, isAdmin }) {
             <span className="text-xs text-content-muted"><Ltr>{l.phone}</Ltr>{l.test_roll ? ` · ${t('admission.roll')} ${l.test_roll}` : ''}</span>
           </span>
           <span className="inline-flex items-center gap-2">
+            {marking && l.test_roll && <input aria-label={t('admission.marks_of', { no: l.application_no })} inputMode="decimal" dir="ltr" name={`marks-${l.application_no}`}
+              className="w-20 h-10 rounded-token px-2 bg-surface text-content [border:1px_solid_var(--line)]" value={marks[l.application_no] ?? ''}
+              onChange={e => setMarks(m => ({ ...m, [l.application_no]: e.target.value }))} />}
+            {l.list_status && <StatusBadge status={`list_${l.list_status}`} />}
             {Number(meta.application_fee) > 0 && <StatusBadge status={l.paid ? 'paid' : 'due'} />}
             {canTake && !l.paid && <Button onClick={() => collect(l)} data-action="collect">{t('admission.collect')}</Button>}
             {isAdmin && meta.status === 'open' && Number(l.paid_amount) > 0 && <Button variant="secondary" onClick={() => reverse(l)} data-action="reverse">{t('admission.reverse')}</Button>}
@@ -57,5 +75,7 @@ export default function AdmissionApplications({ cycleId, isAdmin }) {
         </li>
       ))}
     </ul>
+    {marking && <div><Button onClick={saveMarks} loading={saving} data-action="save-marks">{t('admission.save_marks')}</Button></div>}
+    </div>
   )
 }

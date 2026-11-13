@@ -225,6 +225,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/site',        [\App\Http\Controllers\Public\PublicSiteController::class, 'show']);
         Route::get('/notices',     [\App\Http\Controllers\Public\PublicSiteController::class, 'notices']);
         Route::post('/admission',  [\App\Http\Controllers\Public\PublicAdmissionController::class, 'store'])->middleware('throttle:admission');
+        Route::get('/admission/cycle/{id}/transparency', [\App\Http\Controllers\Admission\AdmissionListController::class, 'transparency'])->whereNumber('id')->middleware('module:admission_cycle');   // D209 ACY.3
     });
 
     // D90: recipient staff activation is tenant-bound but does not require an existing login.
@@ -836,6 +837,15 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/open',                     [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'open'])->whereNumber('id');
             Route::post('/{id}/freeze',                   [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'freeze'])->whereNumber('id');
             Route::post('/{id}/close',                    [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'close'])->whereNumber('id');
+        });
+
+        // ── D209 ACY.3: test marks, merit list, verifiable lottery (admin) ──
+        Route::middleware(['module:admission_cycle', 'role:admin'])->prefix('admission/cycles/{id}')->whereNumber('id')->group(function () {
+            Route::post('/test-marks',                    [\App\Http\Controllers\Admission\AdmissionListController::class, 'marks']);
+            Route::post('/list/merit',                    [\App\Http\Controllers\Admission\AdmissionListController::class, 'merit']);
+            Route::post('/list/lottery',                  [\App\Http\Controllers\Admission\AdmissionListController::class, 'lottery'])->middleware('throttle:10,1');
+            Route::post('/draw/recommit',                 [\App\Http\Controllers\Admission\AdmissionListController::class, 'recommit']);
+            Route::get('/draw',                           [\App\Http\Controllers\Admission\AdmissionListController::class, 'draw']);
         });
 
         // ── D209 ACY.2: the application fee (admin; the accountant collects cash and sees the list) ──

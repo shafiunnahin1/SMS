@@ -283,6 +283,11 @@ return [
     'GET api/v1/admin/staff-mode' => ['admin'],   // D207 MODE.1
     'GET api/v1/admission/cycles' => ['admin'],   // D209 ACY.1
     'GET api/v1/admission/fee-cycles' => ['admin', 'accountant'],   // D209 ACY.2
+    'POST api/v1/admission/cycles/{id}/test-marks' => ['admin'],   // D209 ACY.3
+    'POST api/v1/admission/cycles/{id}/list/merit' => ['admin'],
+    'POST api/v1/admission/cycles/{id}/list/lottery' => ['admin'],
+    'POST api/v1/admission/cycles/{id}/draw/recommit' => ['admin'],
+    'GET api/v1/admission/cycles/{id}/draw' => ['admin'],
     'POST api/v1/admission/cycles' => ['admin'],
     'GET api/v1/admission/cycles/{id}' => ['admin'],
     'PUT api/v1/admission/cycles/{id}' => ['admin'],

@@ -36,6 +36,7 @@ export default function AdmissionCycles() {
   const [busy, setBusy] = useState(null)
   const [seed, setSeed] = useState(null)
   const [apps, setApps] = useState(null)        // the cycle whose applications are shown
+  const [draw, setDraw] = useState(null)        // ACY.3: {cycle, seed} while the lottery seed is typed in
   const isAdmin = useAuthStore(s => s.user?.role) === 'admin'   // ACY.2: the accountant sees the list and takes cash only
   const programs = useQuery({ queryKey: ['programs'], queryFn: () => api.get('/programs').then(r => r.data.data), enabled: isAdmin })
   const q = useQuery({ queryKey: ['admission', 'cycles', isAdmin], queryFn: () => api.get(isAdmin ? '/admission/cycles' : '/admission/fee-cycles').then(r => r.data.data) })
@@ -71,6 +72,22 @@ export default function AdmissionCycles() {
       } catch { /* the interceptor shows the error */ } finally { setBusy(null) }
     } })
 
+  // ACY.3: the merit list, the lottery (the saved seed is typed in) and the seed-loss fallback (a weaker guarantee, shown publicly)
+  const buildMerit = (c) => useUiStore.getState().openConfirm({ title: t('admission.build_merit'), description: t('admission.build_merit_confirm'),
+    onConfirm: async () => { setBusy(c.id); try { await api.post(`/admission/cycles/${c.id}/list/merit`); refresh() } catch { /* the interceptor shows the error */ } finally { setBusy(null) } } })
+  const runLottery = async () => {
+    setBusy('draw')
+    try { await api.post(`/admission/cycles/${draw.cycle.id}/list/lottery`, { seed: draw.seed.trim() }); setDraw(null); refresh() }
+    catch { /* the interceptor shows the error */ } finally { setBusy(null) }
+  }
+  const recommit = (c) => useUiStore.getState().openConfirm({ title: t('admission.seed_lost'), description: t('admission.seed_lost_confirm'), type: 'danger',
+    onConfirm: async () => {
+      try {
+        const r = await api.post(`/admission/cycles/${c.id}/draw/recommit`)
+        setSeed({ seed: r.data.data.seed, commitment: r.data.data.draw?.seed_commitment, name: c.name })
+      } catch { /* the interceptor shows the error */ }
+    } })
+
   if (q.isPending) return <Loader type="page" />
   if (q.isError) return <ErrorState onRetry={q.refetch} />
   return (
@@ -93,7 +110,12 @@ export default function AdmissionCycles() {
                 {c.status !== 'draft' && <Button variant="secondary" onClick={() => setApps(c)} data-action="applications">{t('admission.applications_button')}</Button>}
                 {isAdmin && c.status === 'draft' && <Button variant="secondary" onClick={() => edit(c)} data-action="edit">{t('common.edit')}</Button>}
                 {isAdmin && NEXT[c.status] && <Button onClick={() => step(c)} loading={busy === c.id} data-action={NEXT[c.status]}>{t(`admission.steps.${NEXT[c.status]}`)}</Button>}
-                {c.status === 'testing' && <span className="text-sm text-content-muted">{t('admission.list_next')}</span>}
+                {isAdmin && c.status === 'testing' && c.rule.mode === 'merit' && <Button onClick={() => buildMerit(c)} loading={busy === c.id} data-action="merit">{t('admission.build_merit')}</Button>}
+                {isAdmin && c.status === 'testing' && c.rule.mode === 'lottery' && <>
+                  <Button onClick={() => setDraw({ cycle: c, seed: '' })} data-action="lottery">{t('admission.run_lottery')}</Button>
+                  <Button variant="ghost" onClick={() => recommit(c)} data-action="recommit">{t('admission.seed_lost')}</Button>
+                </>}
+                {c.status !== 'draft' && <a className="text-sm underline self-center" href={`/admission?transparency=${c.id}`} target="_blank" rel="noreferrer">{t('admission.public_record')}</a>}
               </div>
             </Card>
           ))}
@@ -128,7 +150,20 @@ export default function AdmissionCycles() {
       </Modal>
 
       <Modal open={!!apps} onClose={() => { setApps(null); refresh() }} title={apps?.name ?? ''}>
-        {apps && <AdmissionApplications cycleId={apps.id} isAdmin={isAdmin} />}
+        {apps && <AdmissionApplications cycleId={apps.id} isAdmin={isAdmin} mode={apps.rule.mode} />}
+      </Modal>
+
+      <Modal open={!!draw} onClose={() => setDraw(null)} title={t('admission.run_lottery')}>
+        {draw && (
+          <div className="flex flex-col gap-3" data-testid="lottery">
+            <p className="text-sm">{t('admission.lottery_hint')}</p>
+            <Input label={t('admission.seed')} ltr value={draw.seed} onChange={e => setDraw(d => ({ ...d, seed: e.target.value }))} name="seed" autoComplete="off" />
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setDraw(null)}>{t('common.cancel')}</Button>
+              <Button onClick={runLottery} loading={busy === 'draw'} disabled={!draw.seed.trim()} data-action="draw">{t('admission.run_lottery')}</Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       <Modal open={!!seed} onClose={() => setSeed(null)} title={t('admission.seed_title')}>

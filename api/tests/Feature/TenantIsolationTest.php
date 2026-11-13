@@ -64,6 +64,12 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/sms-logs/{id}/send' => fn (array $other) => $this->seedPendingSms($other),   // D208 SMSC.3
             'GET api/v1/admission/cycles/{id}' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.1
             'GET api/v1/admission/cycles/{id}/applications' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.2
+            'POST api/v1/admission/cycles/{id}/test-marks' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.3
+            'GET api/v1/public/admission/cycle/{id}/transparency' => fn (array $other) => $this->seedCycle($other, 'open'),   // an OPEN foreign cycle: the 404 is the tenant boundary
+            'POST api/v1/admission/cycles/{id}/list/merit' => fn (array $other) => $this->seedCycle($other),
+            'POST api/v1/admission/cycles/{id}/list/lottery' => fn (array $other) => $this->seedCycle($other),
+            'POST api/v1/admission/cycles/{id}/draw/recommit' => fn (array $other) => $this->seedCycle($other),
+            'GET api/v1/admission/cycles/{id}/draw' => fn (array $other) => $this->seedCycle($other),
             'GET api/v1/admission/leads/{id}/payments' => fn (array $other) => $this->seedLead($other),
             'POST api/v1/admission/leads/{id}/payments' => fn (array $other) => $this->seedLead($other),
             'POST api/v1/admission/lead-payments/{id}/reverse' => fn (array $other) => $this->seedLeadPayment($other),
@@ -324,12 +330,12 @@ class TenantIsolationTest extends TestCase
             ?? $this->makeUser($t['institution'], 'teacher')->id;
     }
 
-    private function seedCycle(array $t): int
+    private function seedCycle(array $t, string $status = 'draft'): int
     {
-        return Tenancy::as($t['institution'], function () {
+        return Tenancy::as($t['institution'], function () use ($status) {
             $p = \App\Models\Program::value('id') ?? \App\Models\Program::create(['name' => 'Cycle program'])->id;
             return \App\Models\AdmissionCycle::create(['name' => 'C', 'program_id' => $p, 'seats' => 5, 'apply_from' => '2026-01-01', 'apply_until' => '2026-12-31',
-                'rule' => ['mode' => 'merit'], 'status' => 'draft'])->id;
+                'rule' => ['mode' => 'merit'], 'status' => $status])->id;
         });
     }
 
@@ -577,6 +583,7 @@ class TenantIsolationTest extends TestCase
                 if (str_contains($uri, 'api/v1/hr/final-settlement/') || str_contains($uri, 'api/v1/hr/pf/')) $path = str_replace('{type}', 'staff', $path);
                 if ($uri === 'GET api/v1/hr/payroll-runs/{id}/{file}') $path = str_replace('{file}', 'disbursement.csv', $path);
                 if (str_contains($uri, 'api/v1/accounting/')) $path = str_replace(['{account_id}', '{action}'], [(string) $id, str_contains($uri, 'vouchers') ? 'post' : 'match'], $path);
+                if (str_contains($uri, 'api/v1/public/')) \Illuminate\Support\Facades\Cache::flush();   // D209 ACY.3: the public pages' 60/min limit, not the tenant check
                 $this->api($method, $this->hostOf($me['institution']), $path, $me['admin'])->assertNotFound();
             }
         }

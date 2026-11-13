@@ -16,6 +16,7 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select, Textarea } from '../../components/FormField'
 import LanguageSwitcher from '../../layouts/parts/LanguageSwitcher'
 import PoweredBy from '../../layouts/parts/PoweredBy'
+import AdmissionTransparency from './AdmissionTransparency'
 
 // D202 PUB.3 (docs/modules/public-website.md "Routes & Pages"): the institution's small public site - Home, Notices, Admission -
 // in its own theme (colours, font, radius) but not its app layout. Every institution text is shown as plain text, never as HTML.
@@ -160,6 +161,8 @@ export function PublicNotices() {
 const blank = { name: '', guardian_name: '', phone: '', email: '', current_class: '', interested_program_id: '', interested_batch_id: '', message: '', consent: false, website: '' }
 
 export function PublicAdmission() {
+  const [qs] = useSearchParams()   // D209 ACY.3: /admission?transparency=<cycle id> shows that cycle's public record
+  const transparency = Number(qs.get('transparency')) || null
   const { t } = useTranslation()
   const term = useTerms()
   const site = useSite()
@@ -189,6 +192,7 @@ export function PublicAdmission() {
       if (v) setErrors(Object.fromEntries(Object.entries(v).map(([k, m]) => [k, [].concat(m)[0]])))
     } finally { setBusy(false) }
   }
+  if (transparency) return <PublicLayout><AdmissionTransparency id={transparency} /></PublicLayout>
   if (site.isPending) return <PublicLayout><Loader type="cards" count={1} /></PublicLayout>
   if (site.isError) return <PublicLayout><ErrorState onRetry={site.refetch} /></PublicLayout>
   const s = site.data.settings
