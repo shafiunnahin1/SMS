@@ -198,6 +198,7 @@
   "syllabus_coverage",
   "tc_certificates",
   "teacher_attendances",
+  "teacher_feature_overrides",
   "teacher_payouts",
   "teacher_subjects",
   "teacher_trainings",
@@ -1338,6 +1339,13 @@
    "refs": {
     "marked_by": "users",
     "teacher_id": "teachers"
+   },
+   "polymorphic": []
+  },
+  "teacher_feature_overrides": {
+   "refs": {
+    "set_by": "users",
+    "user_id": "users"
    },
    "polymorphic": []
   },

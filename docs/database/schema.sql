@@ -1246,6 +1246,25 @@ CREATE TABLE admission_leads (
 CREATE INDEX idx_leads_phone ON admission_leads(institution_id, phone, created_at);
 CREATE INDEX idx_leads_referrer ON admission_leads(institution_id, referred_by);   -- D203: 'my referrals', the referrer filter and the summary
 
+-- D205: per-teacher exceptions to the institution's teacher feature switches (institutions.settings.teacher_features_off).
+-- `blocked` switches one feature off for this teacher, `allowed` switches back on what the institution switched off; a switch only
+-- ever takes away (a module that is off stays off). feature_key: attendance, period_attendance, marks, question_bank, ai_assistant,
+-- student_leave, substitution, referrals, salary, own_leave, notices.
+CREATE TABLE teacher_feature_overrides (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    feature_key VARCHAR(40) NOT NULL,
+    state ENUM('blocked','allowed') NOT NULL,
+    set_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (set_by) REFERENCES users(id),
+    UNIQUE KEY uq_teacher_feature (institution_id, user_id, feature_key)
+);
+
 -- Prepaid SMS credit ledger (institutions.sms_balance is the running balance)
 CREATE TABLE sms_credit_transactions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
