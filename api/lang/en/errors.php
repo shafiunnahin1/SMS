@@ -23,6 +23,7 @@ return [
     'student_transferred'    => 'This student already has a transfer certificate.',
     'tc_revoked'             => 'This transfer certificate is already cancelled.',
     'certificate_revoked'    => 'This certificate is already cancelled.',
+    'letter_cancelled'       => 'This letter is already cancelled.',
     'application_not_found'  => 'No application matches this number and phone.',
     'lead_not_selected'      => 'This applicant is not selected.',
     'unknown_application'    => 'These application numbers did not sit the test: :list',

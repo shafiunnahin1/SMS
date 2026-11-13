@@ -44,6 +44,7 @@ export default function NoticeBoard() {
             <button type="button" className="w-full text-start" onClick={() => view(n)} aria-expanded={open === n.id}>
               <span className={`block ${n.read_at ? '' : 'font-semibold'}`} dir="auto">{n.title}</span>
               <span className="block text-sm text-content-muted">{n.published_at ? fmtDate(n.published_at, locale) : ''}{n.read_at ? '' : ` · ${t('notices.unread')}`}</span>
+              {n.memo_no_bn && <span className="block text-xs text-content-muted font-mono" dir="ltr">{t('memo.memo_no')}: {n.memo_no_bn}</span>}
             </button>
             {open === n.id && <p className="mt-3 whitespace-pre-line" dir="auto">{n.content}</p>}
             {n.require_ack && (n.acknowledged_at

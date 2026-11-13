@@ -109,6 +109,7 @@ export const MENU = {
       it('alumni', '/admin/alumni', 'প্রাক্তন শিক্ষার্থী', { module: 'alumni' }),
     ]},
     it('notices', '/admin/notices', 'নোটিশ', { icon: 'Megaphone', module: 'notices' }),
+    it('letters', '/admin/letters', 'অফিসিয়াল চিঠি', { icon: 'FileText', module: 'notices' }),   // D210 LTR.1
     it('sms',     '/admin/sms',     'SMS', { icon: 'MessageSquare', module: 'sms' }),
     it('sms-templates', '/admin/sms/templates', 'SMS টেমপ্লেট', { module: 'sms', since: 'R2' }),
     it('sms-campaigns', '/admin/sms/campaigns', 'SMS ক্যাম্পেইন', { module: 'sms', since: 'R2' }),

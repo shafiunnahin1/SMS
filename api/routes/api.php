@@ -840,6 +840,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
         });
 
+        // ── D210 LTR.1: official letters (admin) ──
+        Route::middleware(['module:notices', 'role:admin'])->group(function () {
+            Route::get('/letters',                        [\App\Http\Controllers\Documents\LetterController::class, 'index']);
+            Route::post('/letters',                       [\App\Http\Controllers\Documents\LetterController::class, 'store']);
+            Route::get('/letters/{id}/pdf',               [\App\Http\Controllers\Documents\LetterController::class, 'pdf'])->whereNumber('id');
+            Route::post('/letters/{id}/cancel',           [\App\Http\Controllers\Documents\LetterController::class, 'cancel'])->whereNumber('id');
+        });
+
         // ── D210 CERT.1: certificates - attestation, testimonial and others (admin) ──
         Route::middleware(['module:certificates', 'role:admin'])->group(function () {
             Route::get('/certificates',                   [\App\Http\Controllers\Documents\CertificateController::class, 'index']);

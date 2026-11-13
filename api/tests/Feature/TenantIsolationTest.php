@@ -68,6 +68,8 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/admission/leads/{id}/confirm' => fn (array $other) => $this->seedLead($other),   // D209 ACY.4
             'POST api/v1/students/{id}/tc' => fn (array $other) => $this->seedStudent($other),   // D210 PTC.1
             'POST api/v1/students/{id}/certificates' => fn (array $other) => $this->seedStudent($other),   // D210 CERT.1
+            'GET api/v1/letters/{id}/pdf' => fn (array $other) => $this->seedLetter($other),   // D210 LTR.1
+            'POST api/v1/letters/{id}/cancel' => fn (array $other) => $this->seedLetter($other),
             'GET api/v1/public/verify/{code}' => null,   // D210 CERT.1: not a row id - CrossTenantRouteTest::NOT_ROW_IDS, CertificateTest
             'GET api/v1/certificates/{id}/pdf' => fn (array $other) => $this->seedCertificate($other),
             'POST api/v1/certificates/{id}/cancel' => fn (array $other) => $this->seedCertificate($other),
@@ -340,6 +342,11 @@ class TenantIsolationTest extends TestCase
     {
         return \App\Models\User::where('institution_id', $t['institution']->id)->where('role', 'teacher')->value('id')
             ?? $this->makeUser($t['institution'], 'teacher')->id;
+    }
+
+    private function seedLetter(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => app(\App\Services\Documents\LetterService::class)->issue(['subject' => 'S', 'recipient' => 'R', 'body' => 'B'], $t['admin']->id)->id);
     }
 
     private function seedCertificate(array $t): int

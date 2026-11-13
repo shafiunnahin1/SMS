@@ -287,6 +287,10 @@ return [
     'POST api/v1/students/{id}/certificates' => ['admin'],
     'GET api/v1/certificates/{id}/pdf' => ['admin'],
     'POST api/v1/certificates/{id}/cancel' => ['admin'],
+    'GET api/v1/letters' => ['admin'],   // D210 LTR.1
+    'POST api/v1/letters' => ['admin'],
+    'GET api/v1/letters/{id}/pdf' => ['admin'],
+    'POST api/v1/letters/{id}/cancel' => ['admin'],
     'POST api/v1/students/promote' => ['admin'],   // D210 PTC.1
     'GET api/v1/tc' => ['admin'],
     'POST api/v1/students/{id}/tc' => ['admin'],

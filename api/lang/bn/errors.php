@@ -23,6 +23,7 @@ return [
     'student_transferred'    => 'এই শিক্ষার্থীর ছাড়পত্র আগেই দেওয়া হয়েছে।',
     'tc_revoked'             => 'এই ছাড়পত্র আগেই বাতিল হয়েছে।',
     'certificate_revoked'    => 'এই সনদ আগেই বাতিল হয়েছে।',
+    'letter_cancelled'       => 'এই চিঠি আগেই বাতিল হয়েছে।',
     'application_not_found'  => 'এই নম্বর ও ফোনে কোনো আবেদন পাওয়া যায়নি।',
     'lead_not_selected'      => 'এই আবেদনকারী নির্বাচিত নন।',
     'unknown_application'    => 'এই আবেদন-নম্বরগুলো পরীক্ষায় নেই: :list',

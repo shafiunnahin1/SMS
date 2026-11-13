@@ -39,6 +39,7 @@ const AdmissionCycles = lazy(() => import('../pages/admission/AdmissionCycles'))
 const MemoSettings = lazy(() => import('../pages/admin/memo/MemoSettings'))   // D210 MEMO.1
 const PromotionTc = lazy(() => import('../pages/documents/PromotionTc'))   // D210 PTC.1
 const Certificates = lazy(() => import('../pages/documents/Certificates'))   // D210 CERT.1
+const Letters = lazy(() => import('../pages/documents/Letters'))   // D210 LTR.1
 const VerifyDocument = lazy(() => import('../pages/public/VerifyDocument'))
 const MemoRegister = lazy(() => import('../pages/admin/memo/MemoRegister'))
 const MyCovers = lazy(() => import('../pages/substitution/MyCovers'))
@@ -195,6 +196,7 @@ export const tenantRoutes = [
     { path: 'settings/memo', element: S(MemoSettings) },   // D210 MEMO.1
     { path: 'academic/promotion', element: S(PromotionTc) },   // D210 PTC.1
     { path: 'certificates', element: S(Certificates) },   // D210 CERT.1
+    { path: 'letters', element: S(Letters) },   // D210 LTR.1
     { path: 'memo-register', element: S(MemoRegister) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },

@@ -40,7 +40,12 @@ class NoticeController extends Controller
     public function store(NoticeRequest $request)
     {
         $f = $request->validated();
-        $notice = Notice::create($f + ['created_by' => $request->user()->id, 'published_at' => $f['published_at'] ?? now()]);
+        // D210 LTR.1: every new notice takes the next memo number (kind `notice`) in the same transaction
+        $notice = \Illuminate\Support\Facades\DB::transaction(function () use ($f, $request) {
+            $n = Notice::create($f + ['created_by' => $request->user()->id, 'published_at' => $f['published_at'] ?? now()]);
+            app(\App\Services\Documents\LetterService::class)->numberNotice($n, $request->user()->id);
+            return $n;
+        });
         AuditLog::record('notice.created', $notice);
         return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $this->row($notice->fresh(), null, $request->user())], 201);
     }
@@ -57,6 +62,7 @@ class NoticeController extends Controller
     {
         $notice = Notice::findOrFail($id);
         $notice->delete();                                                  // soft delete (R7); receipts stay
+        app(\App\Services\Documents\LetterService::class)->cancelMemo($notice->memo_no, 'notice deleted');   // D210 LTR.1: the number stays, cancelled
         AuditLog::record('notice.deleted', $notice);
         return response()->json(['success' => true, 'message' => __('messages.deleted')]);
     }
@@ -91,6 +97,7 @@ class NoticeController extends Controller
     private function row(Notice $n, ?NoticeReceipt $r, User $user): array
     {
         $row = ['id' => $n->id, 'title' => $n->title, 'content' => $n->content, 'target' => $n->target, 'program_id' => $n->program_id, 'batch_id' => $n->batch_id,
+            'memo_no' => $n->memo_no, 'memo_no_bn' => $n->memo_no ? \App\Support\BanglaFormat::digits($n->memo_no) : null,   // D210 LTR.1
             'published_at' => $n->published_at?->toIso8601String(), 'require_ack' => (bool) $n->require_ack, 'is_public' => (bool) $n->is_public, 'ack_deadline' => $n->ack_deadline?->toDateString(),
             'read_at' => $r?->read_at?->toIso8601String(), 'acknowledged_at' => $r?->acknowledged_at?->toIso8601String()];
         if ($user->role === 'admin') $row['scheduled'] = $n->published_at && $n->published_at->isFuture();

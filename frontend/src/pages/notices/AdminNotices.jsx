@@ -47,6 +47,7 @@ export default function AdminNotices() {
     { key: 'title', label: t('notices.notice_title'), primary: true, render: r => <span dir="auto">{r.title}</span> },
     { key: 'target', label: t('notices.target'), render: r => t(`notices.targets.${r.target}`) },
     { key: 'published_at', label: t('notices.published_at'), render: r => r.published_at ? fmtDate(r.published_at, locale) : t('notices.draft') },
+    { key: 'memo_no_bn', label: t('memo.memo_no'), render: r => r.memo_no_bn ? <span className="font-mono text-xs" dir="ltr">{r.memo_no_bn}</span> : '—' },   // D210 LTR.1
     { key: 'require_ack', label: t('notices.require_ack'), render: r => r.require_ack ? (r.ack_deadline ? fmtDate(r.ack_deadline, locale) : t('notices.yes')) : t('notices.no') },
     { key: 'actions', label: t('common.actions'), action: true, render: r => (
       <span className="flex gap-1">
