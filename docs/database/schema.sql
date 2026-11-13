@@ -1238,10 +1238,13 @@ CREATE TABLE admission_leads (
     converted_student_id BIGINT UNSIGNED NULL,
     consented_at TIMESTAMP NULL,                 -- R7: the public admission form requires the privacy consent checkbox
     created_by BIGINT UNSIGNED NULL,
+    referred_by BIGINT UNSIGNED NULL,            -- D203: the teacher / staff user who filled the application in their own account; NULL = no referrer (always NULL from the public form)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (institution_id) REFERENCES institutions(id)
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (referred_by) REFERENCES users(id)
 );
 CREATE INDEX idx_leads_phone ON admission_leads(institution_id, phone, created_at);
+CREATE INDEX idx_leads_referrer ON admission_leads(institution_id, referred_by);   -- D203: 'my referrals', the referrer filter and the summary
 
 -- Prepaid SMS credit ledger (institutions.sms_balance is the running balance)
 CREATE TABLE sms_credit_transactions (

@@ -295,7 +295,8 @@
     "created_by": "users",
     "cycle_id": "admission_cycles",
     "interested_batch_id": "batches",
-    "interested_program_id": "programs"
+    "interested_program_id": "programs",
+    "referred_by": "users"
    },
    "polymorphic": []
   },

@@ -40,6 +40,7 @@ OVERRIDES={
  'staff_id':'staff_members','optional_subject_id':'subjects','campaign_id':'donation_campaigns','credit_for_id':'subscription_invoices',
  'question_id':'exam_questions','online_exam_id':'online_exams','homework_id':'homeworks','meeting_id':'parent_meetings','teacher_user_id':'users',
  'unlocked_by':'users','student_user_id':'users',                                                  # D65 question bank
+ 'referred_by':'users',                                                                             # D203: admission_leads.referred_by
 }
 # Polymorphic (type column -> id column) pairs. The id's target depends on the type value.
 POLY={('payee_type','payee_id'):{'teacher':'teachers','staff':'staff_members'},
