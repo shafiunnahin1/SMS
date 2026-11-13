@@ -4,6 +4,7 @@ namespace App\Services\Admission;
 
 use App\Exceptions\BusinessException;
 use App\Models\{AdmissionCycle, AdmissionDraw, AdmissionLead, AuditLog};
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
 // D209 ACY.1 (docs/modules/admission-cycle.md sections 1 and 3): the cycle's state machine - draft -> open -> testing -> listing ->
@@ -22,7 +23,7 @@ class AdmissionCycleService
         $r['waiting'] = (int) $r['waiting'];
         $r['confirm_within_days'] = (int) $r['confirm_within_days'];
         $r['publish_names'] = (bool) $r['publish_names'];
-        $r['min_marks'] = $r['min_marks'] === null || $r['min_marks'] === '' ? null : number_format((float) $r['min_marks'], 2, '.', '');
+        $r['min_marks'] = $r['min_marks'] === null || $r['min_marks'] === '' ? null : Money::format(Money::toPaisa((string) $r['min_marks']));   // two decimals, no float
         return $r;
     }
 
@@ -48,7 +49,10 @@ class AdmissionCycleService
     {
         return DB::transaction(function () use ($c) {
             $c = $this->locked($c, 'open');
-            $nos = $this->eligible($c)->pluck('application_no')->sort(SORT_STRING)->values()->all();
+            $eligible = $this->eligible($c);
+            // ACY.2: test roll numbers in the order the applications came (0001, 0002, ...), only for those who take part
+            foreach ($eligible as $n => $lead) $lead->update(['test_roll' => str_pad((string) ($n + 1), 4, '0', STR_PAD_LEFT)]);
+            $nos = $eligible->pluck('application_no')->sort(SORT_STRING)->values()->all();
             if ($draw = AdmissionDraw::where('cycle_id', $c->id)->lockForUpdate()->first()) {
                 $draw->update(['applicants_count' => count($nos), 'result' => array_merge($draw->result ?? [], ['applicants_hash' => self::applicantsHash($nos)])]);
             }
@@ -71,10 +75,11 @@ class AdmissionCycleService
         });
     }
 
-    /** the applications that take part (ACY.2 adds: the fee is paid when there is one) */
+    /** the applications that take part: numbered, and the fee paid when the cycle has one (ACY.2) */
     public function eligible(AdmissionCycle $c)
     {
-        return AdmissionLead::where('cycle_id', $c->id)->whereNotNull('application_no');
+        $fees = app(AdmissionFeeService::class);
+        return AdmissionLead::where('cycle_id', $c->id)->whereNotNull('application_no')->orderBy('id')->get()->filter(fn ($l) => $fees->isPaid($l, $c))->values();
     }
 
     /** sha256 of the sorted application numbers, one per line */

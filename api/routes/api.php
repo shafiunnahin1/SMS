@@ -838,6 +838,21 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/close',                    [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'close'])->whereNumber('id');
         });
 
+        // ── D209 ACY.2: the application fee (admin; the accountant collects cash and sees the list) ──
+        Route::middleware('module:admission_cycle')->prefix('admission')->group(function () {
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/fee-methods',                    [\App\Http\Controllers\Admission\LeadPaymentController::class, 'methods']);
+                Route::put('/fee-methods',                    [\App\Http\Controllers\Admission\LeadPaymentController::class, 'updateMethods']);
+                Route::post('/lead-payments/{id}/reverse',    [\App\Http\Controllers\Admission\LeadPaymentController::class, 'reverse'])->whereNumber('id');
+            });
+            Route::middleware('role:admin,accountant')->group(function () {
+                Route::get('/fee-cycles',                     [\App\Http\Controllers\Admission\LeadPaymentController::class, 'cycles']);   // the accountant's read-only cycle list
+                Route::get('/cycles/{id}/applications',       [\App\Http\Controllers\Admission\LeadPaymentController::class, 'applications'])->whereNumber('id');
+                Route::get('/leads/{id}/payments',            [\App\Http\Controllers\Admission\LeadPaymentController::class, 'index'])->whereNumber('id');
+                Route::post('/leads/{id}/payments',           [\App\Http\Controllers\Admission\LeadPaymentController::class, 'store'])->whereNumber('id')->middleware('throttle:60,1');
+            });
+        });
+
         // ── D197 AAD.3: student leave requests (academics-advanced.md section 5) ──
         Route::middleware(['module:attendance', 'module:student_leave'])->group(function () {
             Route::post('/parent/children/{id}/leave-requests', [\App\Http\Controllers\Academic\StudentLeaveController::class, 'store'])->whereNumber('id')->middleware('role:parent');

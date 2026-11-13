@@ -16,6 +16,9 @@ import Ltr from '../../components/bidi/Ltr'
 import Modal from '../../ui/variants/Modal'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select } from '../../components/FormField'
+import { useAuthStore } from '../../store/authStore'
+import AdmissionApplications from './AdmissionApplications'
+import AdmissionFeeMethods from './AdmissionFeeMethods'
 
 const blank = { name: '', program_id: '', seats: '', apply_from: '', apply_until: '', test_date: '', application_fee: '0', mode: 'merit', waiting: '0', min_marks: '', confirm_within_days: '7', publish_names: false }
 // the one step each state allows (testing -> listing happens by building the list)
@@ -28,12 +31,14 @@ export default function AdmissionCycles() {
   const term = useTerms()
   const { locale } = useLocale()
   const qc = useQueryClient()
-  const q = useQuery({ queryKey: ['admission', 'cycles'], queryFn: () => api.get('/admission/cycles').then(r => r.data.data) })
-  const programs = useQuery({ queryKey: ['programs'], queryFn: () => api.get('/programs').then(r => r.data.data) })
   const [form, setForm] = useState(null)        // null = closed; {id?, ...fields}
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(null)
   const [seed, setSeed] = useState(null)
+  const [apps, setApps] = useState(null)        // the cycle whose applications are shown
+  const isAdmin = useAuthStore(s => s.user?.role) === 'admin'   // ACY.2: the accountant sees the list and takes cash only
+  const programs = useQuery({ queryKey: ['programs'], queryFn: () => api.get('/programs').then(r => r.data.data), enabled: isAdmin })
+  const q = useQuery({ queryKey: ['admission', 'cycles', isAdmin], queryFn: () => api.get(isAdmin ? '/admission/cycles' : '/admission/fee-cycles').then(r => r.data.data) })
   const refresh = () => qc.invalidateQueries({ queryKey: ['admission', 'cycles'] })
 
   const edit = (c) => { setErrors({}); setForm(c ? { id: c.id, name: c.name, program_id: String(c.program?.id ?? ''), seats: String(c.seats), apply_from: c.apply_from, apply_until: c.apply_until,
@@ -70,7 +75,8 @@ export default function AdmissionCycles() {
   if (q.isError) return <ErrorState onRetry={q.refetch} />
   return (
     <div className="flex flex-col gap-4" data-testid="admission-cycles">
-      <PageHeader title={t('admission.title')} actions={<Button onClick={() => edit(null)} data-action="new"><Plus size={16} aria-hidden="true" />{t('admission.new')}</Button>} />
+      <PageHeader title={t('admission.title')} actions={isAdmin && <Button onClick={() => edit(null)} data-action="new"><Plus size={16} aria-hidden="true" />{t('admission.new')}</Button>} />
+      {isAdmin && <AdmissionFeeMethods />}
       {!q.data.length ? <EmptyState title={t('admission.none')} /> : (
         <div className="flex flex-col gap-3">
           {q.data.map(c => (
@@ -84,8 +90,9 @@ export default function AdmissionCycles() {
                 · {fmtDate(c.apply_from, locale)} – {fmtDate(c.apply_until, locale)} · {t('admission.fee')}: {fmtMoney(c.application_fee, locale)} · {t('admission.applications', { count: c.applications ?? 0 })}
               </p>
               <div className="flex flex-wrap gap-2">
-                {c.status === 'draft' && <Button variant="secondary" onClick={() => edit(c)} data-action="edit">{t('common.edit')}</Button>}
-                {NEXT[c.status] && <Button onClick={() => step(c)} loading={busy === c.id} data-action={NEXT[c.status]}>{t(`admission.steps.${NEXT[c.status]}`)}</Button>}
+                {c.status !== 'draft' && <Button variant="secondary" onClick={() => setApps(c)} data-action="applications">{t('admission.applications_button')}</Button>}
+                {isAdmin && c.status === 'draft' && <Button variant="secondary" onClick={() => edit(c)} data-action="edit">{t('common.edit')}</Button>}
+                {isAdmin && NEXT[c.status] && <Button onClick={() => step(c)} loading={busy === c.id} data-action={NEXT[c.status]}>{t(`admission.steps.${NEXT[c.status]}`)}</Button>}
                 {c.status === 'testing' && <span className="text-sm text-content-muted">{t('admission.list_next')}</span>}
               </div>
             </Card>
@@ -118,6 +125,10 @@ export default function AdmissionCycles() {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal open={!!apps} onClose={() => { setApps(null); refresh() }} title={apps?.name ?? ''}>
+        {apps && <AdmissionApplications cycleId={apps.id} isAdmin={isAdmin} />}
       </Modal>
 
       <Modal open={!!seed} onClose={() => setSeed(null)} title={t('admission.seed_title')}>

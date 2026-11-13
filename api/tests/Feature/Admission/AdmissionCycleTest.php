@@ -72,7 +72,9 @@ class AdmissionCycleTest extends TestCase
         Tenancy::as($s['i'], fn () => $this->assertSame(['admitted', 'rejected'], AdmissionLead::orderBy('id')->pluck('list_status')->all()));
 
         $this->assertCount(1, $this->api('GET', $h, 'admission/cycles', $admin)->assertOk()->json('data'));
-        $this->api('GET', $h, 'admission/cycles', $this->makeUser($s['i'], 'accountant'))->assertForbidden();
+        $acct = $this->makeUser($s['i'], 'accountant');
+        $this->api('GET', $h, 'admission/cycles', $acct)->assertForbidden();
+        $this->assertCount(1, $this->api('GET', $h, 'admission/fee-cycles', $acct)->assertOk()->json('data'));   // ACY.2: the accountant's read-only list
         $this->api('GET', $h, 'admission/cycles', $s['karimUser'])->assertForbidden();
     }
 

@@ -63,6 +63,10 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/admin/users/{id}/access' => fn (array $other) => $this->seedTeacherUser($other),   // D205 PERM.3
             'POST api/v1/sms-logs/{id}/send' => fn (array $other) => $this->seedPendingSms($other),   // D208 SMSC.3
             'GET api/v1/admission/cycles/{id}' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.1
+            'GET api/v1/admission/cycles/{id}/applications' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.2
+            'GET api/v1/admission/leads/{id}/payments' => fn (array $other) => $this->seedLead($other),
+            'POST api/v1/admission/leads/{id}/payments' => fn (array $other) => $this->seedLead($other),
+            'POST api/v1/admission/lead-payments/{id}/reverse' => fn (array $other) => $this->seedLeadPayment($other),
             'PUT api/v1/admission/cycles/{id}' => fn (array $other) => $this->seedCycle($other),
             'POST api/v1/admission/cycles/{id}/open' => fn (array $other) => $this->seedCycle($other),
             'POST api/v1/admission/cycles/{id}/freeze' => fn (array $other) => $this->seedCycle($other),
@@ -327,6 +331,12 @@ class TenantIsolationTest extends TestCase
             return \App\Models\AdmissionCycle::create(['name' => 'C', 'program_id' => $p, 'seats' => 5, 'apply_from' => '2026-01-01', 'apply_until' => '2026-12-31',
                 'rule' => ['mode' => 'merit'], 'status' => 'draft'])->id;
         });
+    }
+
+    private function seedLeadPayment(array $t): int
+    {
+        $lead = $this->seedLead($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\LeadPayment::create(['lead_id' => $lead, 'method' => 'cash', 'amount' => '100.00', 'receipt_no' => 'APP-T-' . $lead, 'paid_at' => now()])->id);
     }
 
     private function seedPendingSms(array $t): int

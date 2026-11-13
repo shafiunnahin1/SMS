@@ -214,6 +214,7 @@ export const MENU = {
     it('hr-revisions','/accountant/hr/revisions','ইনক্রিমেন্ট প্রস্তাব',{icon:'TrendingUp',module:'hr_payroll'}),
     it('cashbook','/accountant/cashbook','ক্যাশবুক',{icon:'BookOpenCheck',module:'cashbook'}),
     it('refunds','/accountant/refunds','রিফান্ড',{icon:'Receipt',module:'fees'}),
+    it('admission','/accountant/admission','ভর্তির আবেদন-ফি',{icon:'ClipboardList',module:'admission_cycle'}),   // D209 ACY.2
     it('inventory','/accountant/inventory','স্টোর',{icon:'Package',module:'inventory'}),
     it('accounting','/accountant/accounting','হিসাব-খাতা',{icon:'Landmark',module:'accounting'}),
     it('donations','/accountant/donations','দান ও অনুদান',{icon:'HandHeart',module:'donations'}),

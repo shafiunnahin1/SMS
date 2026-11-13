@@ -6,7 +6,7 @@ use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Models\{AdmissionCycle, AuditLog};
 use App\Services\Admission\AdmissionCycleService;
-use App\Support\Tenancy;
+use App\Support\{Money, Tenancy};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -82,7 +82,7 @@ class AdmissionCycleController extends Controller
             'rule.publish_names' => 'nullable|boolean',
         ]);
         $d['rule'] = $this->cycles->rule($d['rule']);
-        $d['application_fee'] = number_format((float) $d['application_fee'], 2, '.', '');
+        $d['application_fee'] = Money::format(Money::toPaisa((string) $d['application_fee']));   // G9: never a float
         return $d;
     }
 

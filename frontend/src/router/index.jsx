@@ -215,6 +215,7 @@ export const tenantRoutes = [
   ]),
   area('/accountant', 'accountant', [
     { path: 'dashboard', element: S(Dashboard) },
+    { path: 'admission', element: S(AdmissionCycles) },   // D209 ACY.2: the list and cash only
     { path: 'ai', element: S(AiChat) },   // D166 AI-Q4: the help guide
     { path: 'fees/collect', element: S(FeeCollect) },
     { path: 'fees/dues', element: S(FeeLedger) },
