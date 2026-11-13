@@ -66,6 +66,7 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/admission/cycles/{id}/applications' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.2
             'POST api/v1/admission/cycles/{id}/test-marks' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.3
             'POST api/v1/admission/leads/{id}/confirm' => fn (array $other) => $this->seedLead($other),   // D209 ACY.4
+            'POST api/v1/memo-register/{id}/cancel' => fn (array $other) => Tenancy::as($other['institution'], fn () => app(\App\Services\Memo\MemoService::class)->issue('letter', 'X', null, $other['admin']->id)->id),   // D210 MEMO.1
             'POST api/v1/admission/leads/{id}/decline' => fn (array $other) => $this->seedLead($other),
             'POST api/v1/admission/leads/{id}/admit' => fn (array $other) => $this->seedLead($other),
             'POST api/v1/admission/cycles/{id}/result-sms' => fn (array $other) => $this->seedCycle($other),

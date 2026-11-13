@@ -283,6 +283,10 @@ return [
     'GET api/v1/admin/staff-mode' => ['admin'],   // D207 MODE.1
     'GET api/v1/admission/cycles' => ['admin'],   // D209 ACY.1
     'GET api/v1/admission/fee-cycles' => ['admin', 'accountant'],   // D209 ACY.2
+    'GET api/v1/admin/settings/memo' => ['admin'],   // D210 MEMO.1
+    'PUT api/v1/admin/settings/memo' => ['admin'],
+    'GET api/v1/memo-register' => ['admin'],
+    'POST api/v1/memo-register/{id}/cancel' => ['admin'],
     'POST api/v1/admission/leads/{id}/confirm' => ['admin'],   // D209 ACY.4
     'POST api/v1/admission/leads/{id}/decline' => ['admin'],
     'POST api/v1/admission/leads/{id}/admit' => ['admin'],

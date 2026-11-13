@@ -830,6 +830,14 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // ── D210 MEMO.1: memo (smarak) numbers - the institution's codes and the register (admin) ──
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/admin/settings/memo',            [\App\Http\Controllers\Memo\MemoSettingsController::class, 'show']);
+            Route::put('/admin/settings/memo',            [\App\Http\Controllers\Memo\MemoSettingsController::class, 'update']);
+            Route::get('/memo-register',                  [\App\Http\Controllers\Memo\MemoRegisterController::class, 'index']);
+            Route::post('/memo-register/{id}/cancel',     [\App\Http\Controllers\Memo\MemoRegisterController::class, 'cancel'])->whereNumber('id');
+        });
+
         // ── D209 ACY.1: admission cycles (admission-cycle.md section 5; admin) ──
         Route::middleware(['module:admission_cycle', 'role:admin'])->prefix('admission/cycles')->group(function () {
             Route::get('/',                               [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'index']);

@@ -126,6 +126,8 @@ export const MENU = {
       it('domain',    '/admin/settings/domain',    'ডোমেইন', { feature: 'custom_subdomain', since: 'R2' }),
       it('payments',  '/admin/settings/payments',  'পেমেন্ট সেটআপ', { module: 'online_payment' }),
       it('sms-sender','/admin/settings/sms',       'SMS Sender ID'),
+      it('memo',      '/admin/settings/memo',      'স্মারক নম্বর'),   // D210 MEMO.1
+      it('memo-register','/admin/memo-register',   'স্মারক রেজিস্টার'),
       it('terms',     '/admin/settings/terminology','শব্দ-কোষ'),
       it('imports',  '/admin/settings/imports',  'ডেটা আমদানি (পুরনো সিস্টেম থেকে)', { module: 'data_migration' }),
       it('exports',  '/admin/settings/exports',  'এক্সপোর্ট / ব্যাকআপ', { since: 'R1.1' }),

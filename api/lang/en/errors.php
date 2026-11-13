@@ -18,6 +18,8 @@ return [
     'fee_already_paid'       => 'The application fee is already paid.',
     'payment_not_reversible' => 'This payment cannot be reversed.',
     'lead_not_in_cycle'      => 'This is not an application of an admission cycle.',
+    'memo_cancelled'         => 'This memo number is already cancelled.',
+    'memo_files_full'        => 'No memo file numbers are left for this subject this year.',
     'application_not_found'  => 'No application matches this number and phone.',
     'lead_not_selected'      => 'This applicant is not selected.',
     'unknown_application'    => 'These application numbers did not sit the test: :list',
