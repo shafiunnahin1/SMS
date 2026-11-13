@@ -29,6 +29,7 @@ return [
     'due_too_small'          => 'This due is too small to split.',
     'installment_paid'       => 'A paid installment cannot change.',
     'installment_mismatch'   => 'The due no longer matches this installment (it was paid or changed elsewhere).',
+    'not_your_subject'       => 'You do not teach this subject here.',
     'application_not_found'  => 'No application matches this number and phone.',
     'lead_not_selected'      => 'This applicant is not selected.',
     'unknown_application'    => 'These application numbers did not sit the test: :list',

@@ -840,6 +840,22 @@ Route::prefix('v1')->group(function () {
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
         });
 
+        // ── D212 HW.1: homework ──
+        Route::middleware('module:homework')->group(function () {
+            Route::middleware('role:admin,teacher')->group(function () {
+                Route::get('/homework',                   [\App\Http\Controllers\Homework\HomeworkController::class, 'index']);
+                Route::post('/homework',                  [\App\Http\Controllers\Homework\HomeworkController::class, 'store'])->middleware('throttle:30,1');
+                Route::put('/homework/{id}',              [\App\Http\Controllers\Homework\HomeworkController::class, 'update'])->whereNumber('id');
+                Route::delete('/homework/{id}',           [\App\Http\Controllers\Homework\HomeworkController::class, 'destroy'])->whereNumber('id');
+            });
+            Route::middleware('role:admin,teacher,student,parent')->group(function () {
+                Route::get('/homework/{id}',              [\App\Http\Controllers\Homework\HomeworkController::class, 'show'])->whereNumber('id');
+                Route::get('/homework/{id}/file',         [\App\Http\Controllers\Homework\HomeworkController::class, 'file'])->whereNumber('id');
+            });
+            Route::get('/student/homework',               [\App\Http\Controllers\Homework\HomeworkController::class, 'mine'])->middleware('role:student');
+            Route::get('/parent/homework',                [\App\Http\Controllers\Homework\HomeworkController::class, 'child'])->middleware('role:parent');
+        });
+
         // ── D211 INST.1: fee installments (admin, accountant) ──
         Route::middleware(['module:fees', 'module:fee_installment', 'role:admin,accountant'])->prefix('fees/installments')->group(function () {
             Route::get('/',                               [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'index']);

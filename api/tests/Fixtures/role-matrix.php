@@ -297,6 +297,14 @@ return [
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
     'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
+    'GET api/v1/homework' => ['admin', 'teacher'],   // D212 HW.1
+    'POST api/v1/homework' => ['admin', 'teacher'],
+    'PUT api/v1/homework/{id}' => ['admin', 'teacher'],
+    'DELETE api/v1/homework/{id}' => ['admin', 'teacher'],
+    'GET api/v1/homework/{id}' => ['admin', 'teacher', 'student', 'parent'],
+    'GET api/v1/homework/{id}/file' => ['admin', 'teacher', 'student', 'parent'],
+    'GET api/v1/student/homework' => ['student'],
+    'GET api/v1/parent/homework' => ['parent'],
     'POST api/v1/students/promote' => ['admin'],   // D210 PTC.1
     'GET api/v1/tc' => ['admin'],
     'POST api/v1/students/{id}/tc' => ['admin'],

@@ -16,6 +16,7 @@ class SmsEventPolicy
         'attendance_absent' => 'auto', 'fee_paid' => 'auto', 'fee_due_reminder' => 'auto', 'result_published' => 'auto',
         'student_leave' => 'auto', 'staff_leave' => 'auto', 'salary' => 'auto', 'fee_refund' => 'auto', 'substitution' => 'auto',
         'admission_new_lead' => 'auto', 'admission_result' => 'off',
+        'homework_new' => 'auto',   // D212 HW.1
     ];
 
     /** events whose SMS is part of a transaction the person is told about (receipts, pay changes): sent even without a marketing consent */

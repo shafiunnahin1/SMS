@@ -69,6 +69,10 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/students/{id}/tc' => fn (array $other) => $this->seedStudent($other),   // D210 PTC.1
             'POST api/v1/students/{id}/certificates' => fn (array $other) => $this->seedStudent($other),   // D210 CERT.1
             'GET api/v1/letters/{id}/pdf' => fn (array $other) => $this->seedLetter($other),   // D210 LTR.1
+            'GET api/v1/homework/{id}' => fn (array $other) => $this->seedHomework($other),   // D212 HW.1
+            'PUT api/v1/homework/{id}' => fn (array $other) => $this->seedHomework($other),
+            'DELETE api/v1/homework/{id}' => fn (array $other) => $this->seedHomework($other),
+            'GET api/v1/homework/{id}/file' => fn (array $other) => $this->seedHomework($other),
             'POST api/v1/fees/installments/{id}/pay' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeInstallment::where('plan_id', $this->seedInstallmentPlan($other))->value('id')),   // D211 INST.2
             'GET api/v1/fees/installments/{id}' => fn (array $other) => $this->seedInstallmentPlan($other),   // D211 INST.1
             'PUT api/v1/fees/installments/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeInstallment::where('plan_id', $this->seedInstallmentPlan($other))->value('id')),
@@ -345,6 +349,17 @@ class TenantIsolationTest extends TestCase
     {
         return \App\Models\User::where('institution_id', $t['institution']->id)->where('role', 'teacher')->value('id')
             ?? $this->makeUser($t['institution'], 'teacher')->id;
+    }
+
+    private function seedHomework(array $t): int
+    {
+        $teacherUser = $this->seedTeacherUser($t);
+        return Tenancy::as($t['institution'], function () use ($teacherUser) {
+            $teacher = \App\Models\Teacher::where('user_id', $teacherUser)->first() ?? \App\Models\Teacher::create(['user_id' => $teacherUser, 'employee_id' => 'HW-' . $teacherUser]);
+            $p = \App\Models\Program::create(['name' => 'HW P']);
+            $sub = \App\Models\Subject::create(['program_id' => $p->id, 'name' => 'HW S', 'full_marks' => 100, 'pass_marks' => 33]);
+            return \App\Models\Homework::create(['teacher_id' => $teacher->id, 'program_id' => $p->id, 'subject_id' => $sub->id, 'title' => 'T'])->id;
+        });
     }
 
     private function seedInstallmentPlan(array $t): int
