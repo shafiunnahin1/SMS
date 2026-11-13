@@ -297,6 +297,14 @@ return [
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
     'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
+    'GET api/v1/academic-years' => ['admin'],   // D213 CAL.1
+    'POST api/v1/academic-years' => ['admin'],
+    'PATCH api/v1/academic-years/{id}/set-current' => ['admin'],
+    'GET api/v1/holidays' => ['admin'],
+    'POST api/v1/holidays' => ['admin'],
+    'PUT api/v1/holidays/{id}' => ['admin'],
+    'DELETE api/v1/holidays/{id}' => ['admin'],
+    'GET api/v1/holidays/calendar' => ['admin', 'teacher', 'student', 'parent'],
     'GET api/v1/homework' => ['admin', 'teacher'],   // D212 HW.1
     'POST api/v1/homework' => ['admin', 'teacher'],
     'PUT api/v1/homework/{id}' => ['admin', 'teacher'],

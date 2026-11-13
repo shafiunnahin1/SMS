@@ -69,6 +69,9 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/students/{id}/tc' => fn (array $other) => $this->seedStudent($other),   // D210 PTC.1
             'POST api/v1/students/{id}/certificates' => fn (array $other) => $this->seedStudent($other),   // D210 CERT.1
             'GET api/v1/letters/{id}/pdf' => fn (array $other) => $this->seedLetter($other),   // D210 LTR.1
+            'PATCH api/v1/academic-years/{id}/set-current' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\AcademicYear::create(['name' => 'Y-' . uniqid(), 'start_date' => '2026-01-01', 'end_date' => '2026-12-31'])->id),   // D213 CAL.1
+            'PUT api/v1/holidays/{id}' => fn (array $other) => $this->seedHoliday($other),
+            'DELETE api/v1/holidays/{id}' => fn (array $other) => $this->seedHoliday($other),
             'GET api/v1/homework/{id}' => fn (array $other) => $this->seedHomework($other),   // D212 HW.1
             'GET api/v1/homework/{id}/submissions' => fn (array $other) => $this->seedHomework($other),   // D212 HW.2
             'POST api/v1/homework/{id}/paper' => fn (array $other) => $this->seedHomework($other),
@@ -361,6 +364,11 @@ class TenantIsolationTest extends TestCase
         $hw = $this->seedHomework($t);
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\HomeworkSubmission::create(['homework_id' => $hw, 'student_id' => $student, 'text_answer' => 'x', 'status' => 'submitted'])->id);
+    }
+
+    private function seedHoliday(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\Holiday::create(['title' => 'H', 'date' => '2026-12-' . str_pad((string) random_int(1, 28), 2, '0', STR_PAD_LEFT)])->id);
     }
 
     private function seedHomework(array $t): int

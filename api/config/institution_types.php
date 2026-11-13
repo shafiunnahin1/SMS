@@ -66,7 +66,7 @@ return [
             'tuition_fee'   => ['bn' => 'মাসিক ফি',    'en' => 'Monthly Fee', 'ar' => 'الرسوم الشهرية'],
         ],
         'modules' => ['students','enrollments','attendance','fees','exams','cashbook','support','syllabus','data_migration','accounting','inventory','attendance_devices','risk_alerts','admission_cycle','result_sheets','period_attendance','substitution','student_leave','hr_payroll','teacher_attendance','donations','sms','notices','reports',
-            'expenses','routine','homework','id_cards','admit_card','leads','teacher_payouts','merit_list','promotion_tc','certificates',   // D210 PTC.1, CERT.1: D80 - coaching gets every R3 module
+            'expenses','routine','homework','id_cards','admit_card','leads','teacher_payouts','merit_list','promotion_tc','certificates','academic_calendar',   // D210 PTC.1, CERT.1, D213 CAL.1: D80 - coaching gets every R3 module
             'online_class','online_quiz','fee_installment','analytics','ai_assistant','multi_branch',
             'online_payment','public_site','question_bank','quiz'],
         'onboarding' => ['public_site' => true, 'programs' => 'none', 'batches' => [], 'fee_categories' => ['মাসিক ফি','ভর্তি ফি','কোর্স ফি']],

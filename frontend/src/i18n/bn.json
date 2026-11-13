@@ -1,5 +1,6 @@
 {
  "app": {
+     "cal": {"title": "একাডেমিক ক্যালেন্ডার", "holidays": "ছুটি", "years": "শিক্ষাবর্ষ", "add_holiday": "ছুটি যোগ করুন", "edit_holiday": "ছুটি সম্পাদনা", "holiday_title": "ছুটির নাম", "date": "তারিখ", "from": "শুরু", "to": "শেষ (ঐচ্ছিক)", "to_hint": "কয়েক দিনের ছুটির জন্য", "type_label": "ধরন", "type": {"public": "সরকারি", "institution": "প্রতিষ্ঠানের", "optional": "ঐচ্ছিক"}, "note": "মন্তব্য", "notify_hint": "শিক্ষার্থী, অভিভাবক ও শিক্ষকেরা অ্যাপে জানবেন; SMS যাবে শুধু SMS সেটিংসে \"নতুন ছুটি\" চালু থাকলে।", "save": "সংরক্ষণ", "cancel": "বাতিল", "saved": "ছুটি সংরক্ষিত হয়েছে", "holiday_list": "বছরের ছুটি", "year": "বছর", "no_holidays": "এই বছরে এখনো কোনো ছুটি নেই", "edit": "সম্পাদনা", "delete": "মুছুন", "delete_confirm": "\"{{title}}\" মুছবেন?", "add_year": "নতুন শিক্ষাবর্ষ", "year_name": "নাম", "year_name_hint": "যেমন 2026 বা 2026-2027", "start": "শুরু", "end": "শেষ", "no_years": "এখনো কোনো শিক্ষাবর্ষ নেই", "set_current": "চলতি করুন", "set_current_confirm": "{{name}} কে চলতি শিক্ষাবর্ষ করবেন?"},
   "qbpv": {
    "pdf_failed": "PDF তৈরি করা যায়নি",
    "image_busy": "তৈরি হচ্ছে...",
@@ -700,7 +701,7 @@
     "discarded": "বাতিল"
    },
    "manual": {"send": "পাঠান", "discard": "বাতিল", "send_all": "অপেক্ষমাণ সব পাঠান ({{count}})", "discard_confirm": "এই SMS পাঠানো হবে না। বাতিল করবেন?", "done": "পাঠানো হয়েছে {{sent}}, ব্যর্থ {{failed}}, বাদ {{skipped}}"},
-   "events": {"title": "কোন ঘটনায় SMS যাবে", "hint": "বন্ধ: কোনো SMS তৈরি হবে না। অটো: সঙ্গে সঙ্গে চলে যাবে। ম্যানুয়াল: SMS ইতিহাসে অপেক্ষায় থাকবে, আপনি \"পাঠান\" চাপলে যাবে।", "modes": {"off": "বন্ধ", "auto": "অটো", "manual": "ম্যানুয়াল"}, "transactional": "রসিদ/বেতনের SMS: অভিভাবক SMS বন্ধ রাখলেও যায়", "names": {"attendance_absent": "অনুপস্থিতি", "fee_paid": "ফি জমার রসিদ", "fee_due_reminder": "বকেয়া ফি মনে করানো", "result_published": "ফলাফল প্রকাশ", "student_leave": "শিক্ষার্থীর ছুটি", "staff_leave": "শিক্ষক/কর্মীর ছুটি", "salary": "বেতন", "fee_refund": "ফি ফেরত", "substitution": "বদলি ক্লাস", "admission_new_lead": "নতুন ভর্তি-আবেদন", "homework_new": "নতুন বাড়ির কাজ", "admission_result": "ভর্তির ফলাফল"}},
+   "events": {"title": "কোন ঘটনায় SMS যাবে", "hint": "বন্ধ: কোনো SMS তৈরি হবে না। অটো: সঙ্গে সঙ্গে চলে যাবে। ম্যানুয়াল: SMS ইতিহাসে অপেক্ষায় থাকবে, আপনি \"পাঠান\" চাপলে যাবে।", "modes": {"off": "বন্ধ", "auto": "অটো", "manual": "ম্যানুয়াল"}, "transactional": "রসিদ/বেতনের SMS: অভিভাবক SMS বন্ধ রাখলেও যায়", "names": {"attendance_absent": "অনুপস্থিতি", "fee_paid": "ফি জমার রসিদ", "fee_due_reminder": "বকেয়া ফি মনে করানো", "result_published": "ফলাফল প্রকাশ", "student_leave": "শিক্ষার্থীর ছুটি", "staff_leave": "শিক্ষক/কর্মীর ছুটি", "salary": "বেতন", "fee_refund": "ফি ফেরত", "substitution": "বদলি ক্লাস", "admission_new_lead": "নতুন ভর্তি-আবেদন", "homework_new": "নতুন বাড়ির কাজ", "holiday_new": "নতুন ছুটি", "admission_result": "ভর্তির ফলাফল"}},
    "parts": "{{count}} অংশ",
    "fallback": "প্ল্যাটফর্ম sender দিয়ে",
    "types": {

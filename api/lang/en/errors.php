@@ -29,6 +29,8 @@ return [
     'due_too_small'          => 'This due is too small to split.',
     'installment_paid'       => 'A paid installment cannot change.',
     'installment_mismatch'   => 'The due no longer matches this installment (it was paid or changed elsewhere).',
+    'holiday_exists'         => 'A holiday already exists on one of these days.',   // D213 CAL.1
+    'holiday_range_too_long' => 'At most :max days can be added at once.',
     'not_your_subject'       => 'You do not teach this subject here.',
     'empty_submission'       => 'Write something or attach a file.',
     'submission_graded'      => 'This submission is already graded.',

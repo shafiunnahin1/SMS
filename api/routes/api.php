@@ -840,6 +840,20 @@ Route::prefix('v1')->group(function () {
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
         });
 
+        // ── D213 CAL.1: academic years and holidays ──
+        Route::middleware('module:academic_calendar')->group(function () {
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/academic-years',                 [\App\Http\Controllers\Calendar\AcademicYearController::class, 'index']);
+                Route::post('/academic-years',                [\App\Http\Controllers\Calendar\AcademicYearController::class, 'store']);
+                Route::patch('/academic-years/{id}/set-current', [\App\Http\Controllers\Calendar\AcademicYearController::class, 'setCurrent'])->whereNumber('id');
+                Route::get('/holidays',                       [\App\Http\Controllers\Calendar\HolidayController::class, 'index']);
+                Route::post('/holidays',                      [\App\Http\Controllers\Calendar\HolidayController::class, 'store'])->middleware('throttle:30,1');
+                Route::put('/holidays/{id}',                  [\App\Http\Controllers\Calendar\HolidayController::class, 'update'])->whereNumber('id');
+                Route::delete('/holidays/{id}',               [\App\Http\Controllers\Calendar\HolidayController::class, 'destroy'])->whereNumber('id');
+            });
+            Route::get('/holidays/calendar',                  [\App\Http\Controllers\Calendar\HolidayController::class, 'calendar'])->middleware('role:admin,teacher,student,parent');
+        });
+
         // ── D212 HW.1: homework ──
         Route::middleware('module:homework')->group(function () {
             Route::middleware('role:admin,teacher')->group(function () {

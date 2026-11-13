@@ -41,6 +41,7 @@ const PromotionTc = lazy(() => import('../pages/documents/PromotionTc'))   // D2
 const Certificates = lazy(() => import('../pages/documents/Certificates'))   // D210 CERT.1
 const Letters = lazy(() => import('../pages/documents/Letters'))   // D210 LTR.1
 const Installments = lazy(() => import('../pages/fees/Installments'))   // D211 INST.2
+const CalendarAdmin = lazy(() => import('../pages/calendar/CalendarAdmin'))   // D213 CAL.1
 const HomeworkTeacher = lazy(() => import('../pages/homework/HomeworkTeacher'))   // D212 HW.2
 const HomeworkStudent = lazy(() => import('../pages/homework/HomeworkStudent'))
 const HomeworkParent = lazy(() => import('../pages/homework/HomeworkParent'))
@@ -190,6 +191,7 @@ export const tenantRoutes = [
     { path: 'notices', element: S(AdminNotices) },
     { path: 'exams/admit-cards', element: S(AdmitCards) }, { path: 'exams/result-sheets', element: S(ResultSheets) }, { path: 'leave/students', element: S(StudentLeaves) }, { path: 'students/id-cards', element: S(IdCards) },
     { path: 'academic/routine', element: S(RoutineBuilder) },
+    { path: 'academic/calendar', element: S(CalendarAdmin) },   // D213 CAL.1
     { path: 'support', element: S(SupportTickets, { mode: 'institution' }) },
     { path: 'settings/exports', element: S(DataExport) },
     { path: 'settings/general', element: S(GeneralSettings) },
