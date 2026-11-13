@@ -28,7 +28,7 @@ class TcService
             $memo = $this->memos->issue('tc', $student->user?->name, null, $by);
             $tc = TcCertificate::create(['student_id' => $student->id, 'tc_number' => $tcNo, 'reason' => $d['reason'] ?? null, 'last_class' => $d['last_class'] ?? null,
                 'last_attendance_date' => $d['last_attendance_date'] ?? null, 'conduct' => $d['conduct'] ?? 'ভালো', 'issued_date' => now()->toDateString(), 'issued_by' => $by,
-                'memo_no' => $memo->memo_no]);
+                'memo_no' => $memo->memo_no, 'verify_code' => app(CertificateService::class)->newCode()]);   // CERT.1: the public check
             $this->memos->attach($memo, 'tc_certificate:' . $tc->id);
             foreach ($student->activeEnrollments()->get() as $e) $this->enrollments->end($e, 'transferred', 'TC ' . $tcNo);
             $student->refresh()->update(['status' => 'transferred']);

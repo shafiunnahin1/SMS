@@ -66,6 +66,9 @@ class AppServiceProvider extends ServiceProvider
         // D209 ACY.5: the public result check has its own counter (an unnamed throttle shares one counter with every public page)
         RateLimiter::for('admission-status', fn (Request $r) => Limit::perMinute(10)
             ->by('status|' . (app()->bound('currentInstitution') ? app('currentInstitution')->id : 0) . '|' . $r->ip()));
+        // D210 CERT.1: the public certificate check (quick-wins.md section 2: 30 a minute per IP), its own counter
+        RateLimiter::for('verify-code', fn (Request $r) => Limit::perMinute(30)
+            ->by('verify|' . (app()->bound('currentInstitution') ? app('currentInstitution')->id : 0) . '|' . $r->ip()));
         RateLimiter::for('signup', fn (Request $r) => Limit::perHour(config('auth_policy.activation.signup_per_hour'))->by($r->ip()));
         RateLimiter::for('activation-verify', fn (Request $r) => Limit::perMinute(config('auth_policy.activation.verify_per_minute'))
             ->by(hash('sha256', is_string($r->input('public_id')) ? $r->input('public_id') : '').'|'.$r->ip()));

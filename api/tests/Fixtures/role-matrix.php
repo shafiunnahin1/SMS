@@ -283,6 +283,10 @@ return [
     'GET api/v1/admin/staff-mode' => ['admin'],   // D207 MODE.1
     'GET api/v1/admission/cycles' => ['admin'],   // D209 ACY.1
     'GET api/v1/admission/fee-cycles' => ['admin', 'accountant'],   // D209 ACY.2
+    'GET api/v1/certificates' => ['admin'],   // D210 CERT.1
+    'POST api/v1/students/{id}/certificates' => ['admin'],
+    'GET api/v1/certificates/{id}/pdf' => ['admin'],
+    'POST api/v1/certificates/{id}/cancel' => ['admin'],
     'POST api/v1/students/promote' => ['admin'],   // D210 PTC.1
     'GET api/v1/tc' => ['admin'],
     'POST api/v1/students/{id}/tc' => ['admin'],

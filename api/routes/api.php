@@ -227,6 +227,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/admission',  [\App\Http\Controllers\Public\PublicAdmissionController::class, 'store'])->middleware('throttle:admission');
         Route::get('/admission/status', [\App\Http\Controllers\Admission\PublicAdmissionStatusController::class, 'status'])->middleware(['module:admission_cycle', 'throttle:admission-status']);   // D209 ACY.5
         Route::get('/admission/cycles', [\App\Http\Controllers\Admission\PublicAdmissionStatusController::class, 'cycles'])->middleware('module:admission_cycle');   // D209 ACY.5
+        Route::get('/verify/{code}', [\App\Http\Controllers\Documents\CertificateController::class, 'verify'])->where('code', '[A-Za-z0-9]{1,16}')->middleware(['module:certificates', 'throttle:verify-code']);   // D210 CERT.1
         Route::get('/admission/cycle/{id}/transparency', [\App\Http\Controllers\Admission\AdmissionListController::class, 'transparency'])->whereNumber('id')->middleware('module:admission_cycle');   // D209 ACY.3
     });
 
@@ -837,6 +838,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/students/{id}/tc',              [\App\Http\Controllers\Documents\TcController::class, 'store'])->whereNumber('id')->middleware('module:students');
             Route::get('/tc/{id}/pdf',                    [\App\Http\Controllers\Documents\TcController::class, 'pdf'])->whereNumber('id');
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
+        });
+
+        // ── D210 CERT.1: certificates - attestation, testimonial and others (admin) ──
+        Route::middleware(['module:certificates', 'role:admin'])->group(function () {
+            Route::get('/certificates',                   [\App\Http\Controllers\Documents\CertificateController::class, 'index']);
+            Route::post('/students/{id}/certificates',    [\App\Http\Controllers\Documents\CertificateController::class, 'store'])->whereNumber('id')->middleware('module:students');
+            Route::get('/certificates/{id}/pdf',          [\App\Http\Controllers\Documents\CertificateController::class, 'pdf'])->whereNumber('id');
+            Route::post('/certificates/{id}/cancel',      [\App\Http\Controllers\Documents\CertificateController::class, 'cancel'])->whereNumber('id');
         });
 
         // ── D210 MEMO.1: memo (smarak) numbers - the institution's codes and the register (admin) ──

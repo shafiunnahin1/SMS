@@ -38,6 +38,8 @@ const MyReferrals = lazy(() => import('../pages/leads/MyReferrals'))   // D203 R
 const AdmissionCycles = lazy(() => import('../pages/admission/AdmissionCycles'))   // D209 ACY.1
 const MemoSettings = lazy(() => import('../pages/admin/memo/MemoSettings'))   // D210 MEMO.1
 const PromotionTc = lazy(() => import('../pages/documents/PromotionTc'))   // D210 PTC.1
+const Certificates = lazy(() => import('../pages/documents/Certificates'))   // D210 CERT.1
+const VerifyDocument = lazy(() => import('../pages/public/VerifyDocument'))
 const MemoRegister = lazy(() => import('../pages/admin/memo/MemoRegister'))
 const MyCovers = lazy(() => import('../pages/substitution/MyCovers'))
 const PeriodReport = lazy(() => import('../pages/attendance/PeriodReport'))
@@ -192,6 +194,7 @@ export const tenantRoutes = [
     { path: 'admission', element: S(AdmissionCycles) },   // D209 ACY.1
     { path: 'settings/memo', element: S(MemoSettings) },   // D210 MEMO.1
     { path: 'academic/promotion', element: S(PromotionTc) },   // D210 PTC.1
+    { path: 'certificates', element: S(Certificates) },   // D210 CERT.1
     { path: 'memo-register', element: S(MemoRegister) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
@@ -246,6 +249,7 @@ export const tenantRoutes = [
   // D202 PUB.3: signed out, /notices is the public site's notice page (when the site is on); signed in, the readers' board
   { path: '/notices', element: S(NoticesEntry, { board: <ProtectedRoute role={['teacher', 'student', 'parent', 'accountant']}><AppShell /></ProtectedRoute> }), children: [{ index: true, element: S(NoticeBoard) }] },
   { path: '/admission', element: <Suspense fallback={<Loader type="page" />}><PublicGate><PublicAdmission /></PublicGate></Suspense> },
+  { path: '/verify/:code', element: <Suspense fallback={<Loader type="page" />}><PublicGate><VerifyDocument /></PublicGate></Suspense> },   // D210 CERT.1: the QR on a certificate / TC
   { path: '/', element: S(PublicRoot) },   // D202 PUB.3: the public home while the site is on, otherwise /login
   { path: '*', element: <Navigate to="/login" replace /> },
 ]
