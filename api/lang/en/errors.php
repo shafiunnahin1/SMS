@@ -6,6 +6,7 @@ return [
     'validation_failed'     => 'Some fields need attention.',
     'not_found'             => 'Not found.',
     'forbidden'             => 'You do not have permission to do this.',
+    'feature_off'           => 'Your institution has switched this off for you.',
     'forbidden_host'        => 'Super Admin can only be used on the admin domain.',
     'institution_mismatch'  => 'Access denied for this institution.',
     'institution_not_found' => 'No institution found for this address.',

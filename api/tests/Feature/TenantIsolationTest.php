@@ -58,6 +58,8 @@ class TenantIsolationTest extends TestCase
             'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/decline' => null,
             'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/refresh-source' => null,
             'PUT api/v1/leads/{id}' => fn (array $other) => $this->seedLead($other),   // D202 PUB.1
+            'GET api/v1/admin/users/{id}/teacher-features' => fn (array $other) => $this->seedTeacherUser($other),   // D205 PERM.1
+            'PUT api/v1/admin/users/{id}/teacher-features' => fn (array $other) => $this->seedTeacherUser($other),
             'DELETE api/v1/leads/{id}' => fn (array $other) => $this->seedLead($other),
             'POST api/v1/leads/{id}/convert' => fn (array $other) => $this->seedLead($other),
             'PUT api/v1/routine-blocks/{id}' => fn (array $other) => $this->seedRoutineBlock($other),   // D197 AAD.5
@@ -303,6 +305,13 @@ class TenantIsolationTest extends TestCase
     }
 
     /** D202 PUB.1: one admission lead of the tenant */
+    /** D205 PERM.1: a teacher login of the tenant */
+    private function seedTeacherUser(array $t): int
+    {
+        return \App\Models\User::where('institution_id', $t['institution']->id)->where('role', 'teacher')->value('id')
+            ?? $this->makeUser($t['institution'], 'teacher')->id;
+    }
+
     private function seedLead(array $t): int
     {
         return Tenancy::as($t['institution'], fn () => \App\Models\AdmissionLead::value('id') ?? \App\Models\AdmissionLead::create(['name' => 'Lead', 'phone' => '01711000009', 'status' => 'new'])->id);

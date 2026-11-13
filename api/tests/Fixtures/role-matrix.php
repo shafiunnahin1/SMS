@@ -274,6 +274,11 @@ return [
     'GET api/v1/referrals' => ['teacher', 'institution_staff'],
     'POST api/v1/referrals' => ['teacher', 'institution_staff'],
     'GET api/v1/admin/settings/website' => ['admin'],   // D202 PUB.2
+    'GET api/v1/admin/teacher-features' => ['admin'],   // D205 PERM.1
+    'PUT api/v1/admin/teacher-features' => ['admin'],
+    'GET api/v1/admin/users/{id}/teacher-features' => ['admin'],
+    'PUT api/v1/admin/users/{id}/teacher-features' => ['admin'],
+    'GET api/v1/teacher/features' => ['teacher'],
     'PUT api/v1/admin/settings/website' => ['admin'],
     'POST api/v1/admin/settings/website/hero' => ['admin'],
     'GET api/v1/routine-blocks' => ['admin', 'teacher', 'student'],   // D197 AAD.5

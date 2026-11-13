@@ -231,7 +231,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['tenant', 'locale', 'throttle:activation-verify'])->post('/auth/activate', [\App\Http\Controllers\Auth\AccountActivationController::class, 'store']);
 
     // ─── 3. Tenant host only ───────────────────────────────────
-    Route::middleware(['tenant', 'locale', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription', \App\Http\Middleware\StaffIdentityBoundary::class])->group(function () {
+    Route::middleware(['tenant', 'locale', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription', \App\Http\Middleware\StaffIdentityBoundary::class, \App\Http\Middleware\TeacherFeatureGate::class])->group(function () {   // D205 PERM.1: teacher feature switches
+        Route::get('/teacher/features', [\App\Http\Controllers\Admin\TeacherFeatureController::class, 'mine'])->middleware('role:teacher');
         Route::patch('/staff/profile', [\App\Http\Controllers\Auth\StaffAccountController::class, 'updateOwnProfile'])->middleware('role:institution_staff');
         Route::get('/staff/departments', [\App\Http\Controllers\DepartmentContextController::class, 'index'])->middleware('role:institution_staff');
         Route::get('/staff/departments/{id}/portal', [\App\Http\Controllers\DepartmentContextController::class, 'show'])->whereNumber('id')->middleware('role:institution_staff');
@@ -289,6 +290,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/admin/theme',                    [ThemeController::class, 'show']);
             Route::put('/admin/theme',                    [ThemeController::class, 'update']);
             Route::post('/admin/theme/logo',              [ThemeController::class, 'logo']);
+            // D205 PERM.1: teacher feature switches - for every teacher, and one teacher's exceptions
+            Route::get('/admin/teacher-features',             [\App\Http\Controllers\Admin\TeacherFeatureController::class, 'institution']);
+            Route::put('/admin/teacher-features',             [\App\Http\Controllers\Admin\TeacherFeatureController::class, 'updateInstitution']);
+            Route::get('/admin/users/{id}/teacher-features',  [\App\Http\Controllers\Admin\TeacherFeatureController::class, 'user'])->whereNumber('id');
+            Route::put('/admin/users/{id}/teacher-features',  [\App\Http\Controllers\Admin\TeacherFeatureController::class, 'updateUser'])->whereNumber('id');
             // D202 PUB.2: the public website's settings and hero image
             Route::middleware('module:public_site')->group(function () {
                 Route::get('/admin/settings/website',         [\App\Http\Controllers\Admin\WebsiteSettingsController::class, 'show']);
