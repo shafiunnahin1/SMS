@@ -1544,7 +1544,7 @@ CREATE TABLE sms_logs (
     institution_id BIGINT UNSIGNED NOT NULL,
     to_phone VARCHAR(20) NOT NULL,
     message TEXT NOT NULL,
-    status ENUM('sent','failed') DEFAULT 'sent',
+    status ENUM('sent','failed','pending','discarded') DEFAULT 'sent',   -- D208: pending = created in manual mode, waiting for Send; discarded = removed by hand, kept for the record
     segments TINYINT UNSIGNED NOT NULL DEFAULT 1, -- R9: SMS parts billed (Unicode = 70/67 chars, GSM-7 = 160/153) - docs/I18N.md section 7
     encoding VARCHAR(10) NOT NULL DEFAULT 'gsm',  -- gsm | unicode
     sender_id VARCHAR(20) NULL,                  -- R6.2: the sender ID actually used
@@ -1559,6 +1559,7 @@ ALTER TABLE sms_logs ADD COLUMN delivery_status VARCHAR(12) NULL;
 ALTER TABLE sms_logs ADD COLUMN delivered_at TIMESTAMP NULL;
 ALTER TABLE sms_logs ADD COLUMN cost DECIMAL(8,2) NOT NULL DEFAULT 0;
 ALTER TABLE sms_logs ADD COLUMN route VARCHAR(10) NOT NULL DEFAULT 'universal';
+ALTER TABLE sms_logs ADD COLUMN event_key VARCHAR(40) NULL;                              -- D208: which SMS event created it (attendance_absent, fee_paid, ...);
 CREATE INDEX idx_sms_logs_inst_sent ON sms_logs(institution_id, sent_at);
 CREATE INDEX idx_sms_logs_campaign ON sms_logs(campaign_id);
 

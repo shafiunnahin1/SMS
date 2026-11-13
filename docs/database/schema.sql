@@ -369,7 +369,7 @@ CREATE TABLE sms_logs (
     institution_id BIGINT UNSIGNED NOT NULL,
     to_phone VARCHAR(20) NOT NULL,
     message TEXT NOT NULL,
-    status ENUM('sent','failed') DEFAULT 'sent',
+    status ENUM('sent','failed','pending','discarded') DEFAULT 'sent',   -- D208: pending = created in manual mode, waiting for Send; discarded = removed by hand, kept for the record
     segments TINYINT UNSIGNED NOT NULL DEFAULT 1, -- R9: SMS parts billed (Unicode = 70/67 chars, GSM-7 = 160/153) - docs/I18N.md section 7
     encoding VARCHAR(10) NOT NULL DEFAULT 'gsm',  -- gsm | unicode
     sender_id VARCHAR(20) NULL,                  -- R6.2: the sender ID actually used
@@ -2019,6 +2019,7 @@ ALTER TABLE sms_logs ADD COLUMN delivered_at TIMESTAMP NULL;
 -- D56/D59 (owner, 2026-10-10): what the SMS cost and which API sent it
 ALTER TABLE sms_logs ADD COLUMN cost DECIMAL(8,2) NOT NULL DEFAULT 0;                    -- taka charged (0 on the institution's own API)
 ALTER TABLE sms_logs ADD COLUMN route VARCHAR(10) NOT NULL DEFAULT 'universal';         -- universal | own
+ALTER TABLE sms_logs ADD COLUMN event_key VARCHAR(40) NULL;                              -- D208: which SMS event created it (attendance_absent, fee_paid, ...); NULL = a direct send
 ALTER TABLE admission_leads ADD COLUMN cycle_id BIGINT UNSIGNED NULL;
 ALTER TABLE admission_leads ADD COLUMN test_roll VARCHAR(20) NULL;
 ALTER TABLE admission_leads ADD COLUMN test_marks DECIMAL(6,2) NULL;
