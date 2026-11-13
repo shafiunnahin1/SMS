@@ -101,7 +101,8 @@
    "public_site",
    "admission_cycle",
    "promotion_tc",
-   "certificates"
+   "certificates",
+   "fee_installment"
   ],
   "roles": [
  "super_admin",

@@ -78,7 +78,7 @@
 ## ৮. `config/release.php` — R3-এর জন্য
 ```php
 // R3 cumulative: R1's 8 + expenses + the 6 R3 modules. Add R1.1 / R2 modules only when their code exists.
-'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'sms', 'reports', 'data_migration', 'question_bank', 'quiz', 'expenses', 'cashbook', 'hr_payroll', 'teacher_attendance', 'inventory', 'accounting', 'donations', 'ai_assistant', 'notices', 'admit_card', 'id_cards', 'routine', 'support', 'result_sheets', 'student_leave', 'period_attendance', 'substitution', 'leads', 'public_site', 'admission_cycle', 'promotion_tc', 'certificates'],
+'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'sms', 'reports', 'data_migration', 'question_bank', 'quiz', 'expenses', 'cashbook', 'hr_payroll', 'teacher_attendance', 'inventory', 'accounting', 'donations', 'ai_assistant', 'notices', 'admit_card', 'id_cards', 'routine', 'support', 'result_sheets', 'student_leave', 'period_attendance', 'substitution', 'leads', 'public_site', 'admission_cycle', 'promotion_tc', 'certificates', 'fee_installment'],
 // D90 target roles; runtime addition waits for R3.6a foundation tests.
 'roles' => ['super_admin', 'admin', 'teacher', 'accountant', 'parent', 'content_writer', 'content_moderator', 'student', 'institution_staff'],
 ```

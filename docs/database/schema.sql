@@ -1320,6 +1320,10 @@ CREATE TABLE official_letters (
 ALTER TABLE tc_certificates ADD COLUMN memo_no VARCHAR(40) NULL;           -- D210 PTC.1
 ALTER TABLE certificates ADD COLUMN memo_no VARCHAR(40) NULL;              -- D210 CERT.1
 ALTER TABLE notices ADD COLUMN memo_no VARCHAR(40) NULL;                   -- D210 LTR.1
+-- D211: fee installments - the due line a plan splits, and the two reminder SMS (sent once each)
+ALTER TABLE fee_installment_plans ADD COLUMN due_key VARCHAR(100) NOT NULL;   -- '{enrollment_id}:{fee_category_id}:{period}' (FeeService::dueLines)
+ALTER TABLE fee_installments ADD COLUMN reminded_before_at TIMESTAMP NULL;    -- the SMS 3 days before the due date
+ALTER TABLE fee_installments ADD COLUMN reminded_overdue_at TIMESTAMP NULL;   -- the SMS after the due date was missed
 
 -- Prepaid SMS credit ledger (institutions.sms_balance is the running balance)
 CREATE TABLE sms_credit_transactions (
