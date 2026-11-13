@@ -18,7 +18,9 @@ class NotificationService
         $user->notify(new GeneralNotification($title, $body, $type, $data));          // in-app: always
 
         if (($prefs['sms'] ?? true) && ($prefs[$type] ?? true) && $user->phone) {
-            SendSmsJob::dispatch($user->phone, $body, Tenancy::current()->id)->afterCommit();
+            // D208: a listed SMS event follows the institution's off / auto / manual choice; any other type (marks reminders) as before
+            if (in_array($type, \App\Services\Sms\SmsEventPolicy::keys(), true)) app(\App\Services\Sms\SmsEventPolicy::class)->dispatch($type, $user->phone, $body);
+            else SendSmsJob::dispatch($user->phone, $body, Tenancy::current()->id)->afterCommit();
         }
     }
 

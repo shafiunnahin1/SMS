@@ -8,6 +8,7 @@ return [
     'forbidden'             => 'You do not have permission to do this.',
     'feature_off'           => 'Your institution has switched this off for you.',
     'own_matter'            => 'In department work you cannot act on your own matters.',
+    'sms_event_off'         => 'This kind of SMS is switched off in the institution settings.',
     'forbidden_host'        => 'Super Admin can only be used on the admin domain.',
     'institution_mismatch'  => 'Access denied for this institution.',
     'institution_not_found' => 'No institution found for this address.',

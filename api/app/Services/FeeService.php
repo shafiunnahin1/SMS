@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Jobs\SendSmsJob;
 use App\Exceptions\BusinessException;
 use App\Models\{Batch, Enrollment, FeeCategory, FeePayment, FeeStructure, Institution, Student};
 use App\Support\Money;
@@ -126,7 +125,7 @@ class FeeService
             $total = Money::format($rows->sum(fn ($r) => Money::toPaisa($r->paid_amount)));
             // sender + institution suffix are added by SmsService::compose()
             $locale = app(SmsService::class)->localeFor($s->primaryParent(), Tenancy::current());
-            SendSmsJob::dispatch($s->guardian_phone, __('sms.fee_received', ['amount' => $total, 'receipt' => $receipt], $locale), Tenancy::current()->id, auth()->id(), transactional: true)->afterCommit();
+            app(\App\Services\Sms\SmsEventPolicy::class)->dispatch('fee_paid', $s->guardian_phone, __('sms.fee_received', ['amount' => $total, 'receipt' => $receipt], $locale), auth()->id(), true);   // D208
             return $rows;
         });
     }

@@ -44,11 +44,16 @@ class SubstitutionNotifier
             // The intent is this row's `sms` state, written with the event; the job is queued only after the commit.
             $prefs = $u->notification_preferences ?? [];
             $sms = $u->phone && ($prefs['sms'] ?? true) && ($prefs['leave_substitution'] ?? true) ? 'pending' : 'skipped';
+            // D208: the institution's choice for this event - off: no SMS; manual: it waits in the SMS history; auto: as before
+            $mode = app(\App\Services\Sms\SmsEventPolicy::class)->mode('substitution', $institution);
+            if ($sms === 'pending' && $mode === 'off') $sms = 'skipped';
+            if ($sms === 'pending' && $mode === 'manual') $sms = 'manual';
             $notice = new GeneralNotification(__('substitution.title', [], $loc), __('substitution.' . $type, $vars, $loc), 'leave_substitution',
                 ['delivery_key' => $key, 'leave_id' => $e->leave_application_id, 'slot_id' => $e->leave_substitution_slot_id, 'version' => $e->version, 'status' => $e->result_status, 'sms' => $sms]);
             $notice->id = (string) \Illuminate\Support\Str::uuid();   // set here: the sender only fills the id on its own clone
             $u->notify($notice);
             if ($sms === 'pending') \App\Jobs\SendSubstitutionSmsJob::dispatch($u->id, (string) $notice->id, $institution->id)->afterCommit();
+            if ($sms === 'manual') app(\App\Services\Sms\SmsEventPolicy::class)->dispatch('substitution', $u->phone, __('substitution.' . $type, $vars, $loc));
         }
     }
 

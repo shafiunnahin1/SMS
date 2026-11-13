@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Exceptions\BusinessException;
-use App\Jobs\SendSmsJob;
 use App\Models\{AuditLog, Expense, FeePayment, FeeRefund, Student, User};
 use App\Support\{Money, Tenancy};
 use Illuminate\Auth\Access\AuthorizationException;
@@ -174,8 +173,8 @@ class FeeRefundService
             if ($action === 'process') {
                 $student = Student::findOrFail($root->student_id);
                 $locale = app(SmsService::class)->localeFor($student->primaryParent(), Tenancy::current());
-                SendSmsJob::dispatch($student->guardian_phone, __('refund.sms', ['amount' => $snapshot->amount,
-                    'receipt' => $snapshot->reversal_receipt_no], $locale), Tenancy::current()->id, $by, transactional: true)->afterCommit();
+                app(\App\Services\Sms\SmsEventPolicy::class)->dispatch('fee_refund', $student->guardian_phone, __('refund.sms', ['amount' => $snapshot->amount,
+                    'receipt' => $snapshot->reversal_receipt_no], $locale), $by, true);   // D208
             }
             return $this->find($id);
         });

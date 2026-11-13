@@ -19,7 +19,7 @@ class SmsEventPolicy
     ];
 
     /** events whose SMS is part of a transaction the person is told about (receipts, pay changes): sent even without a marketing consent */
-    public const TRANSACTIONAL = ['fee_paid', 'fee_refund', 'salary'];
+    public const TRANSACTIONAL = ['fee_paid', 'fee_refund', 'salary', 'staff_leave'];
 
     public static function keys(): array { return array_keys(self::EVENTS); }
 

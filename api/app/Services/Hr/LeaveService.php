@@ -3,7 +3,6 @@
 namespace App\Services\Hr;
 
 use App\Exceptions\BusinessException;
-use App\Jobs\SendSmsJob;
 use App\Models\{AuditLog, LeaveApplication, LeaveType, StaffMember, Teacher, User};
 use App\Support\Tenancy;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -183,8 +182,7 @@ class LeaveService
             $recipient = $person instanceof StaffMember && $person->user_id
                 ? User::where('institution_id', Tenancy::current()->id)->whereKey($person->user_id)->first() : $person;
             if (!$person->phone || !(($recipient?->notification_preferences ?? [])['sms'] ?? true)) continue;
-            SendSmsJob::dispatch($person->phone, __('hr.sms_'.$state, [], $recipient?->locale ?? Tenancy::current()->default_language ?? 'bn'),
-                Tenancy::current()->id, null, true)->afterCommit();
+            app(\App\Services\Sms\SmsEventPolicy::class)->dispatch('staff_leave', $person->phone, __('hr.sms_'.$state, [], $recipient?->locale ?? Tenancy::current()->default_language ?? 'bn'), null, true);   // D208
         }
     }
 }

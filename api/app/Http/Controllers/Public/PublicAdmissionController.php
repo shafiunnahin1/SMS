@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PublicSite\PublicAdmissionRequest;
-use App\Jobs\SendSmsJob;
 use App\Models\{AdmissionLead, Batch, Program, User};
 use App\Notifications\GeneralNotification;
 use App\Services\PublicSite\PublicSiteService;
@@ -48,7 +47,7 @@ class PublicAdmissionController extends Controller
             $admin->notify(new GeneralNotification(__('messages.public_admission_title'), __('messages.public_admission_body', ['name' => $lead->name]), 'admission_lead', ['lead_id' => $lead->id]));
         }
         if ($s['alert_sms'] && $i->phone) {
-            SendSmsJob::dispatch($i->phone, __('messages.public_admission_sms', ['name' => $lead->name, 'phone' => $lead->phone]), $i->id);
+            app(\App\Services\Sms\SmsEventPolicy::class)->dispatch('admission_new_lead', $i->phone, __('messages.public_admission_sms', ['name' => $lead->name, 'phone' => $lead->phone]));   // D208
         }
         return response()->json(['ok' => true, 'message' => $thanks], 201);
     }

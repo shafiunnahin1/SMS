@@ -2,7 +2,6 @@
 namespace App\Services\Hr;
 
 use App\Exceptions\BusinessException;
-use App\Jobs\SendSmsJob;
 use App\Models\{AuditLog,SalaryRevision,SalaryStructure,SalaryStructureLine,Teacher,User};
 use App\Notifications\GeneralNotification;
 use App\Support\Tenancy;
@@ -57,7 +56,7 @@ class SalaryStructureService
             $user=$payee->user_id?User::where('institution_id',Tenancy::current()->id)->whereKey($payee->user_id)->first():null;
             if($user) $user->notify(new GeneralNotification(__('salary.updated',[],$user->locale),__('salary.updated',[],$user->locale),'salary_revision',['revision_id'=>$revision->id]));
             $phone=$user?->phone??$payee->phone??null;
-            if($phone && (($user?->notification_preferences??[])['sms']??true)) SendSmsJob::dispatch($phone,__('salary.updated',[],$user?->locale??'bn'),Tenancy::current()->id,$actor->id,true)->afterCommit();
+            if($phone && (($user?->notification_preferences??[])['sms']??true)) app(\App\Services\Sms\SmsEventPolicy::class)->dispatch('salary',$phone,__('salary.updated',[],$user?->locale??'bn'),$actor->id,true);   // D208
             return $structure;
         });
     }

@@ -2,7 +2,6 @@
 namespace App\Services\Hr;
 
 use App\Exceptions\BusinessException;
-use App\Jobs\SendSmsJob;
 use App\Models\{AuditLog,SalaryRevision,User};
 use App\Notifications\GeneralNotification;
 use App\Support\Tenancy;
@@ -55,7 +54,7 @@ class SalaryRevisionService
                 $notice=$user!==null;
                 $phone=$user?->phone??$payee->phone??null;
                 if($phone && (($user?->notification_preferences??[])['sms']??true)){
-                    SendSmsJob::dispatch($phone,__('salary.decrement_notice',[],$user?->locale??'bn'),Tenancy::current()->id,$actor->id,true)->afterCommit();
+                    app(\App\Services\Sms\SmsEventPolicy::class)->dispatch('salary',$phone,__('salary.decrement_notice',[],$user?->locale??'bn'),$actor->id,true);   // D208
                     $notice=true;
                 }
             }

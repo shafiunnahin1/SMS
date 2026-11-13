@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\BusinessException;
-use App\Jobs\{NotifyAbsentParentsJob, SendSmsJob};
+use App\Jobs\NotifyAbsentParentsJob;
 use App\Models\{Attendance, Batch, BatchTeacher, Enrollment, Holiday, Student, Teacher, User};
 use App\Support\{Tenancy, TenantBulk};
 use Carbon\Carbon;
@@ -69,7 +69,7 @@ class AttendanceService
             if (($prefs['sms'] ?? true) && ($prefs['absent_alert'] ?? true)) {
                 $name = $s->user?->name ?? $s->student_id;
                 $text = __('sms.absent', ['name' => $name, 'date' => $when, 'batch' => $batch->name], $sms->localeFor($parent, Tenancy::current()));
-                SendSmsJob::dispatch($s->guardian_phone, $text, Tenancy::current()->id);
+                app(\App\Services\Sms\SmsEventPolicy::class)->dispatch('attendance_absent', $s->guardian_phone, $text);   // D208
             }
         });
     }

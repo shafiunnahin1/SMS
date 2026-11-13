@@ -22,6 +22,8 @@ class ResultSmsService
     {
         if ($exam->status !== 'published') throw new BusinessException('publish the result first', 'exam_not_published', 422);
         $merit = $this->exams->meritList($exam);
+        // D208: the result SMS is always a deliberate run by the admin (manual by nature); with the event switched off it is refused
+        if (app(\App\Services\Sms\SmsEventPolicy::class)->mode('result_published') === 'off') throw new BusinessException(__('errors.sms_event_off'), 'sms_event_off', 422);
         $have = ExamResultSms::where('exam_id', $exam->id)->where('kind', 'result')->pluck('student_id')->flip();
         $students = Student::whereIn('id', array_column($merit['rows'], 'student_id'))->with('user:id,name')->get()->keyBy('id');
         $blocks = app(\App\Services\Fees\DueBlockService::class);
@@ -41,7 +43,7 @@ class ResultSmsService
     public function correction(Exam $exam, Result $result, array $before, User $actor): void
     {
         $s = Student::with('user:id,name')->find($result->student_id);
-        if (!$s) return;
+        if (!$s || app(\App\Services\Sms\SmsEventPolicy::class)->mode('result_published') === 'off') return;   // D208
         $row = collect($this->exams->meritList($exam)['rows'])->firstWhere('student_id', $s->id);
         $subject = $result->subject?->name ?? '';
         $fmt = fn ($m, $g) => $m === null ? '—' : rtrim(rtrim(number_format((float) $m, 2, '.', ''), '0'), '.') . ($g ? " ({$g})" : '');
@@ -63,7 +65,7 @@ class ResultSmsService
             if ($walletEmpty) { $m->update(['status' => 'pending']); continue; }
             $m->increment('attempts');
             try {
-                $ok = $this->sms->send($m->phone, $m->message, $actorId);
+                $ok = $this->sms->send($m->phone, $m->message, $actorId, eventKey: 'result_published');   // D208
             } catch (BusinessException $e) {
                 if (in_array($e->errorCode, ['sms_quota_exceeded', 'sms_disabled'], true)) { $m->update(['status' => 'pending', 'error' => $e->errorCode]); $walletEmpty = true; continue; }   // wait for a recharge
                 throw $e;
