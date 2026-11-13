@@ -17,6 +17,7 @@ class StaffIdentityBoundary
         'GET api/v1/staff/departments/{id}/portal', 'HEAD api/v1/staff/departments/{id}/portal',
         'GET api/v1/teachers', 'HEAD api/v1/teachers',
         'GET api/v1/staff/attendance-batches', 'HEAD api/v1/staff/attendance-batches',   // D169 STW.5: own active grants only
+        'GET api/v1/referrals', 'HEAD api/v1/referrals', 'POST api/v1/referrals',   // D203 REF.1: own referrals only, the referrer is always the caller
     ];
     public function handle(Request $request, Closure $next)
     {

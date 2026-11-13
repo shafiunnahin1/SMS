@@ -9,7 +9,7 @@ import Leads from '../pages/leads/Leads'
 vi.mock('../api/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() }, bindAuthStore: () => {} }))
 const at = (el) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter>{el}</MemoryRouter></QueryClientProvider>)
 const lead = { id: 3, name: 'Rafi', phone: '01711223344', guardian_name: 'Abdul', status: 'new', source: 'website', follow_up_date: '2030-01-05', interested_program_id: 1, program: 'Class 10', interested_batch_id: null }
-const routes = (url) => Promise.resolve({ data: url === '/leads' ? { data: [lead, { ...lead, id: 4, name: 'Old', status: 'enrolled' }], meta: { total: 2, follow_up_today: 1 } }
+const routes = (url) => Promise.resolve({ data: url === '/leads/referral-summary' ? { data: [], meta: { applications: 0, admitted: 0 } } : url === '/leads' ? { data: [lead, { ...lead, id: 4, name: 'Old', status: 'enrolled' }], meta: { total: 2, follow_up_today: 1 } }
   : { data: url === '/programs' ? [{ id: 1, name: 'Class 10' }] : [{ id: 5, name: 'A', program_id: 1 }, { id: 6, name: 'Other', program_id: 2 }] } })
 
 // D202 PUB.1: the follow-up card, moving a lead along, adding one, and admitting it into a group of its program

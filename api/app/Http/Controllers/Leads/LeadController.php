@@ -17,10 +17,14 @@ use Illuminate\Validation\Rule;
 // change and the conversion are the admin's.
 class LeadController extends Controller
 {
+    private const WITH = ['program:id,name', 'batch:id,name', 'referrer:id,name'];
+
     public function index(Request $request)
     {
-        $f = $request->validate(['status' => ['nullable', Rule::in(['new', 'contacted', 'visited', 'enrolled', 'lost'])], 'follow_up_date' => 'nullable|date_format:Y-m-d', 'page' => 'nullable|integer|min:1']);
-        $q = AdmissionLead::with(['program:id,name', 'batch:id,name'])->when($f['status'] ?? null, fn ($w, $s) => $w->where('status', $s))
+        $f = $request->validate(['status' => ['nullable', Rule::in(['new', 'contacted', 'visited', 'enrolled', 'lost'])], 'follow_up_date' => 'nullable|date_format:Y-m-d', 'page' => 'nullable|integer|min:1',
+            'referred_by' => 'nullable|integer|min:1']);   // D203: filter by referrer
+        $q = AdmissionLead::with(self::WITH)->when($f['status'] ?? null, fn ($w, $s) => $w->where('status', $s))
+            ->when($f['referred_by'] ?? null, fn ($w, $u) => $w->where('referred_by', $u))
             ->when($f['follow_up_date'] ?? null, fn ($w, $d) => $w->whereDate('follow_up_date', $d))->orderByDesc('id');
         $page = $q->paginate(25);
         return response()->json(['success' => true, 'data' => collect($page->items())->map(fn ($l) => $this->row($l))->values(),
@@ -32,15 +36,20 @@ class LeadController extends Controller
     public function store(Request $request)
     {
         $lead = AdmissionLead::create($this->validated($request) + ['status' => 'new', 'created_by' => $request->user()->id]);
-        return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $this->row($lead->load(['program:id,name', 'batch:id,name']))], 201);
+        if ($lead->referred_by) AuditLog::record('lead.referrer_changed', $lead, ['from' => null, 'to' => $lead->referred_by]);   // D203: every referrer change is audited
+        return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $this->row($lead->load(self::WITH))], 201);
     }
 
     public function update(Request $request, int $id)
     {
         $lead = AdmissionLead::findOrFail($id);
-        if ($lead->status === 'enrolled') throw new BusinessException('converted', 'lead_converted', 422);
-        $lead->update($this->validated($request, true));
-        return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $this->row($lead->fresh(['program:id,name', 'batch:id,name']))]);
+        // a converted lead is frozen, except its referrer (D203 (3): the admin may set, change or clear the referrer of any lead)
+        if ($lead->status === 'enrolled' && array_diff(array_keys($request->all()), ['referred_by'])) throw new BusinessException('converted', 'lead_converted', 422);
+        $v = $this->validated($request, true);
+        $from = $lead->referred_by;
+        $lead->update($v);
+        if (array_key_exists('referred_by', $v) && $from !== $lead->referred_by) AuditLog::record('lead.referrer_changed', $lead, ['from' => $from, 'to' => $lead->referred_by]);
+        return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $this->row($lead->fresh(self::WITH))]);
     }
 
     public function destroy(int $id)
@@ -77,7 +86,29 @@ class LeadController extends Controller
             AuditLog::record('lead.converted', $lead, ['student_id' => $student->id]);
             return $student;
         });
-        return response()->json(['success' => true, 'message' => __('messages.admitted'), 'data' => $this->row($lead->fresh(['program:id,name', 'batch:id,name'])) + ['student_code' => $student->student_id]], 201);
+        return response()->json(['success' => true, 'message' => __('messages.admitted'), 'data' => $this->row($lead->fresh(self::WITH)) + ['student_code' => $student->student_id]], 201);
+    }
+
+    /** D203 (4) GET /leads/referral-summary?from=&to= - per referrer: applications in the period and how many of them were admitted */
+    public function referralSummary(Request $request)
+    {
+        $f = $request->validate(['from' => 'nullable|date_format:Y-m-d', 'to' => 'nullable|date_format:Y-m-d|after_or_equal:from']);
+        $rows = AdmissionLead::whereNotNull('referred_by')
+            ->when($f['from'] ?? null, fn ($w, $d) => $w->where('created_at', '>=', $d . ' 00:00:00'))
+            ->when($f['to'] ?? null, fn ($w, $d) => $w->where('created_at', '<=', $d . ' 23:59:59'))
+            ->selectRaw("referred_by, COUNT(*) AS applications, SUM(CASE WHEN status = 'enrolled' THEN 1 ELSE 0 END) AS admitted")
+            ->groupBy('referred_by')->get();
+        $users = User::inTenant()->whereIn('id', $rows->pluck('referred_by'))->get(['id', 'name', 'role'])->keyBy('id');
+        $data = $rows->map(fn ($r) => ['user_id' => (int) $r->referred_by, 'name' => $users[$r->referred_by]->name ?? null, 'role' => $users[$r->referred_by]->role ?? null,
+            'applications' => (int) $r->applications, 'admitted' => (int) $r->admitted])->sortByDesc('applications')->values();
+        return response()->json(['success' => true, 'data' => $data, 'meta' => ['from' => $f['from'] ?? null, 'to' => $f['to'] ?? null,
+            'applications' => $data->sum('applications'), 'admitted' => $data->sum('admitted')]]);
+    }
+
+    /** D203 (3): active teachers and staff of this institution - the people who may be named as a lead's referrer */
+    private function referrerRule(int $t)
+    {
+        return Rule::exists('users', 'id')->where('institution_id', $t)->whereIn('role', ['teacher', 'institution_staff'])->where('is_active', 1)->whereNull('deleted_at');
     }
 
     private function validated(Request $request, bool $update = false): array
@@ -89,7 +120,7 @@ class LeadController extends Controller
             'guardian_name' => 'nullable|string|max:100', 'email' => 'nullable|email|max:100', 'current_class' => 'nullable|string|max:100', 'message' => 'nullable|string|max:500',
             'interested_program_id' => ['nullable', 'integer', Rule::exists('programs', 'id')->where('institution_id', $t)],
             'interested_batch_id' => ['nullable', 'integer', Rule::exists('batches', 'id')->where('institution_id', $t)],
-            'source' => ['nullable', Rule::in(AdmissionLead::SOURCES)], 'follow_up_date' => 'nullable|date_format:Y-m-d', 'note' => 'nullable|string|max:2000',
+            'source' => ['nullable', Rule::in(AdmissionLead::SOURCES)], 'referred_by' => ['nullable', 'integer', $this->referrerRule($t)], 'follow_up_date' => 'nullable|date_format:Y-m-d', 'note' => 'nullable|string|max:2000',
             // `enrolled` is never set by hand
             'status' => [$update ? 'sometimes' : 'prohibited', Rule::in(['new', 'contacted', 'visited', 'lost'])],
             'converted_student_id' => 'prohibited', 'institution_id' => 'prohibited', 'created_by' => 'prohibited', 'consented_at' => 'prohibited', 'ip_hash' => 'prohibited',
@@ -103,6 +134,6 @@ class LeadController extends Controller
         return ['id' => $l->id, 'name' => $l->name, 'phone' => $l->phone, 'guardian_name' => $l->guardian_name, 'email' => $l->email, 'current_class' => $l->current_class,
             'message' => $l->message, 'interested_program_id' => $l->interested_program_id, 'program' => $l->program?->name, 'interested_batch_id' => $l->interested_batch_id,
             'batch' => $l->batch?->name, 'source' => $l->source, 'status' => $l->status, 'follow_up_date' => $l->follow_up_date?->toDateString(), 'note' => $l->note,
-            'converted_student_id' => $l->converted_student_id, 'created_at' => $l->created_at?->toIso8601String()];
+            'converted_student_id' => $l->converted_student_id, 'referred_by' => $l->referred_by, 'referrer' => $l->referrer?->name, 'created_at' => $l->created_at?->toIso8601String()];
     }
 }

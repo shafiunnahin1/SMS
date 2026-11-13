@@ -138,6 +138,7 @@ export const MENU = {
     it('fees','/staff/fees/collect','ফি আদায়',{icon:'Wallet',module:'fees',staffKey:'staff.fee.collect',staff_access:true}),   // D169 STW.4
     it('attendance','/staff/attendance','উপস্থিতি',{icon:'CalendarCheck',module:'attendance',staffKey:'staff.attendance.store',staff_access:true}),   // D169 STW.5
     it('substitutions','/staff/substitutions','বদলি শিক্ষক',{icon:'Users',module:'substitution',staffKey:'staff.leave_substitution.read',staff_access:true}),   // D201 SUBM.3
+    it('referrals','/staff/referrals','ভর্তির রেফারেল',{icon:'UserPlus',module:'leads',staff_access:true}),   // D203 REF.1: own identity, no duty key
     it('ai','/staff/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant',staff_access:true}),   // D168 AI-Q4S: the help guide
   ],
   teacher: [
@@ -155,6 +156,7 @@ export const MENU = {
     it('materials','/teacher/materials','শিক্ষা-উপকরণ', {icon:'Folder', since: 'R2' }),
     it('messages','/teacher/messages','বার্তা', {icon:'MessageCircle', since: 'R2' }),
     it('notices','/notices','নোটিশ',{icon:'Megaphone',module:'notices'}),
+    it('referrals','/teacher/referrals','ভর্তির রেফারেল',{icon:'UserPlus',module:'leads'}),   // D203 REF.1
     it('salary','/teacher/salary','আমার বেতন',{icon:'Banknote',module:'hr_payroll'}),
     it('leave','/teacher/leave','ছুটি',{icon:'Plane',module:'hr_payroll'}),
     it('periods','/teacher/periods','আমার period',{icon:'ListChecks',module:'period_attendance'}),

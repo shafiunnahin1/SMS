@@ -270,6 +270,9 @@ return [
     'PUT api/v1/leads/{id}' => ['admin'],
     'DELETE api/v1/leads/{id}' => ['admin'],
     'POST api/v1/leads/{id}/convert' => ['admin'],
+    'GET api/v1/leads/referral-summary' => ['admin', 'accountant'],   // D203 REF.1
+    'GET api/v1/referrals' => ['teacher', 'institution_staff'],
+    'POST api/v1/referrals' => ['teacher', 'institution_staff'],
     'GET api/v1/admin/settings/website' => ['admin'],   // D202 PUB.2
     'PUT api/v1/admin/settings/website' => ['admin'],
     'POST api/v1/admin/settings/website/hero' => ['admin'],
