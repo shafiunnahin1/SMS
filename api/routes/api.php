@@ -231,7 +231,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['tenant', 'locale', 'throttle:activation-verify'])->post('/auth/activate', [\App\Http\Controllers\Auth\AccountActivationController::class, 'store']);
 
     // ─── 3. Tenant host only ───────────────────────────────────
-    Route::middleware(['tenant', 'locale', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription', \App\Http\Middleware\StaffIdentityBoundary::class, \App\Http\Middleware\TeacherFeatureGate::class])->group(function () {   // D205 PERM.1: teacher feature switches
+    Route::middleware(['tenant', 'locale', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription', \App\Http\Middleware\DepartmentModeSwitch::class, \App\Http\Middleware\StaffIdentityBoundary::class, \App\Http\Middleware\TeacherFeatureGate::class])->group(function () {   // D205 PERM.1: teacher feature switches
         Route::get('/teacher/features', [\App\Http\Controllers\Admin\TeacherFeatureController::class, 'mine'])->middleware('role:teacher');
         Route::patch('/staff/profile', [\App\Http\Controllers\Auth\StaffAccountController::class, 'updateOwnProfile'])->middleware('role:institution_staff');
         Route::get('/staff/departments', [\App\Http\Controllers\DepartmentContextController::class, 'index'])->middleware('role:institution_staff,teacher');   // D206 TDM.1

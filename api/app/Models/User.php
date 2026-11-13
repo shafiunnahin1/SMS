@@ -12,6 +12,17 @@ use Laravel\Sanctum\HasApiTokens;
 // and inTenant() fails closed without a bound tenant. Never User::where('email', …) alone (docs/templates/laravel-core-files.md).
 class User extends Authenticatable
 {
+    /** D206 TDM.2: true while a teacher acts as department staff in this request (the role is changed in memory only) */
+    public bool $departmentMode = false;
+
+    protected static function booted(): void
+    {
+        // D206 TDM.2: the department-mode role is never written - whatever else is saved, the stored role stays the teacher's
+        static::saving(function (User $u) {
+            if ($u->departmentMode && $u->isDirty('role')) $u->role = $u->getOriginal('role');
+        });
+    }
+
     use HasApiTokens, Notifiable, SoftDeletes;
 
     const UPDATED_AT = null;

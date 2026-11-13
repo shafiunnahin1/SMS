@@ -16,7 +16,7 @@ class LeaveService
 
     private function actor(User $actor): User
     {
-        $fresh = User::whereKey($actor->id)->where('institution_id', Tenancy::current()->id)->where('is_active', true)->first();
+        $fresh = \App\Support\DepartmentMode::asStaff(User::whereKey($actor->id)->where('institution_id', Tenancy::current()->id)->where('is_active', true)->first());   // D206 TDM.2
         if (!$fresh || !in_array($fresh->role, ['admin','teacher'], true)) throw new AuthorizationException();
         if (request()->attributes->get('impersonator_id')) throw new AuthorizationException();
         return $fresh;
