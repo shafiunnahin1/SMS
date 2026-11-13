@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18n from '../i18n'
 import api from '../api/axios'
 import Leads from '../pages/leads/Leads'
+import { useAuthStore } from '../store/authStore'
 
 vi.mock('../api/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() }, bindAuthStore: () => {} }))
 const at = (el) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter>{el}</MemoryRouter></QueryClientProvider>)
@@ -14,7 +15,7 @@ const routes = (url) => Promise.resolve({ data: url === '/leads/referral-summary
 
 // D202 PUB.1: the follow-up card, moving a lead along, adding one, and admitting it into a group of its program
 describe('admission leads (D202 PUB.1)', () => {
-  beforeEach(() => { for (const f of ['get', 'post', 'put', 'delete']) api[f].mockReset(); i18n.changeLanguage('en'); api.get.mockImplementation(routes); for (const f of ['post', 'put']) api[f].mockResolvedValue({ data: { data: {} } }) })
+  beforeEach(() => { for (const f of ['get', 'post', 'put', 'delete']) api[f].mockReset(); i18n.changeLanguage('en'); useAuthStore.setState({ role: 'admin' }); api.get.mockImplementation(routes);   /* D204 GAP.3: these are the admin's actions */ for (const f of ['post', 'put']) api[f].mockResolvedValue({ data: { data: {} } }) })
 
   it('shows the follow-up card and moves a lead along; an admitted lead has no actions', async () => {
     at(<Leads />)

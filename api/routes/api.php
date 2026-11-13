@@ -790,16 +790,19 @@ Route::prefix('v1')->group(function () {
 
         // ── D202 PUB.1: admission leads (coaching-private-batch.md "Leads") ──
         Route::middleware(['module:leads'])->group(function () {
-            Route::get('/leads',                              [\App\Http\Controllers\Leads\LeadController::class, 'index'])->middleware('role:admin,accountant');
-            Route::get('/leads/referral-summary',             [\App\Http\Controllers\Leads\LeadController::class, 'referralSummary'])->middleware('role:admin,accountant');   // D203 REF.1
+            Route::get('/leads',                              [\App\Http\Controllers\Leads\LeadController::class, 'index'])->middleware('role:admin,accountant,institution_staff');   // D204 GAP.3: staff with staff.lead.read
+            Route::get('/leads/referral-summary',             [\App\Http\Controllers\Leads\LeadController::class, 'referralSummary'])->middleware('role:admin,accountant,institution_staff');   // D203 REF.1
             // D203 REF.1: a teacher or staff member brings an applicant in their own account; their own referrals only
             Route::middleware('role:teacher,institution_staff')->group(function () {
                 Route::get('/referrals',                      [\App\Http\Controllers\Leads\LeadReferralController::class, 'index']);
                 Route::post('/referrals',                     [\App\Http\Controllers\Leads\LeadReferralController::class, 'store']);
             });
-            Route::middleware('role:admin')->group(function () {
+            // D204 GAP.3: staff with staff.lead.create / staff.lead.update; delete and convert stay the admin's
+            Route::middleware('role:admin,institution_staff')->group(function () {
                 Route::post('/leads',                         [\App\Http\Controllers\Leads\LeadController::class, 'store']);
                 Route::put('/leads/{id}',                     [\App\Http\Controllers\Leads\LeadController::class, 'update'])->whereNumber('id');
+            });
+            Route::middleware('role:admin')->group(function () {
                 Route::delete('/leads/{id}',                  [\App\Http\Controllers\Leads\LeadController::class, 'destroy'])->whereNumber('id');
                 Route::post('/leads/{id}/convert',            [\App\Http\Controllers\Leads\LeadController::class, 'convert'])->whereNumber('id')->middleware('module:students');
             });

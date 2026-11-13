@@ -265,12 +265,12 @@ return [
     'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/accept' => ['teacher'],
     'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/decline' => ['teacher'],
     'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/refresh-source' => ['admin', 'institution_staff'],
-    'GET api/v1/leads' => ['admin', 'accountant'],   // D202 PUB.1
-    'POST api/v1/leads' => ['admin'],
-    'PUT api/v1/leads/{id}' => ['admin'],
+    'GET api/v1/leads' => ['admin', 'accountant', 'institution_staff'],   // D202 PUB.1; D204 GAP.3: staff with staff.lead.read
+    'POST api/v1/leads' => ['admin', 'institution_staff'],   // D204 GAP.3: staff.lead.create
+    'PUT api/v1/leads/{id}' => ['admin', 'institution_staff'],   // D204 GAP.3: staff.lead.update
     'DELETE api/v1/leads/{id}' => ['admin'],
     'POST api/v1/leads/{id}/convert' => ['admin'],
-    'GET api/v1/leads/referral-summary' => ['admin', 'accountant'],   // D203 REF.1
+    'GET api/v1/leads/referral-summary' => ['admin', 'accountant', 'institution_staff'],   // D203 REF.1; D204 GAP.3
     'GET api/v1/referrals' => ['teacher', 'institution_staff'],
     'POST api/v1/referrals' => ['teacher', 'institution_staff'],
     'GET api/v1/admin/settings/website' => ['admin'],   // D202 PUB.2

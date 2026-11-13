@@ -15,6 +15,7 @@ import { useCrud } from '../../features/academic/useCrud'
 import { useUiStore } from '../../store/uiStore'
 import Ltr from '../../components/bidi/Ltr'
 import { useAuthStore } from '../../store/authStore'
+import { useStaffDepartmentStore } from '../../store/staffDepartmentStore'
 
 const STATUSES = ['new', 'contacted', 'visited', 'lost']
 const SOURCES = ['walk_in', 'website', 'facebook', 'referral', 'leaflet']
@@ -35,7 +36,12 @@ export default function Leads() {
   const [admit, setAdmit] = useState(null)        // { id, batch_id }
   const [referrer, setReferrer] = useState('')    // D203: filter by referrer
   const [period, setPeriod] = useState({ from: '', to: '' })
-  const isAdmin = useAuthStore(s => s.role) === 'admin'
+  const role = useAuthStore(s => s.role)
+  const isAdmin = role === 'admin'
+  // D204 GAP.3: department staff act by their duty keys; the accountant only reads; delete and admit stay the admin's
+  const keys = useStaffDepartmentStore(s => s.permissions)
+  const canCreate = isAdmin || (role === 'institution_staff' && keys.includes('staff.lead.create'))
+  const canEdit = isAdmin || (role === 'institution_staff' && keys.includes('staff.lead.update'))
   const programs = useCrud('programs').list
   const batches = useCrud('batches').list
   // D203: the people who may be named as referrer - active teachers and staff accounts (the admin only edits)
@@ -60,7 +66,7 @@ export default function Leads() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={t('leads.title')} actions={!form && <Button onClick={() => setForm(blank)}><Plus aria-hidden="true" className="h-4 w-4" />{t('leads.new')}</Button>} />
+      <PageHeader title={t('leads.title')} actions={!form && canCreate && <Button onClick={() => setForm(blank)}><Plus aria-hidden="true" className="h-4 w-4" />{t('leads.new')}</Button>} />
       {q.data?.meta?.follow_up_today > 0 && <Card data-testid="leads-today"><p className="text-sm">{t('leads.follow_up_today', { n: q.data.meta.follow_up_today })}</p></Card>}
       {form && (
         <Card className="grid gap-3 sm:grid-cols-2" data-testid="lead-form">
@@ -112,17 +118,19 @@ export default function Leads() {
             {[l.guardian_name, l.current_class, l.program, l.batch].filter(Boolean).join(' · ')}{l.follow_up_date && <> · {t('leads.follow_up')}: <Ltr>{l.follow_up_date}</Ltr></>}
           </p>
           {(l.message || l.note) && <p className="text-sm" dir="auto">{[l.message, l.note].filter(Boolean).join(' — ')}</p>}
-          {isAdmin ? (
+          {canEdit ? (
             <div className="max-w-xs"><Select label={t('referrals.referrer')} placeholder={t('referrals.no_referrer')} value={l.referred_by ? String(l.referred_by) : ''}
               onChange={e => patch(l, { referred_by: e.target.value ? Number(e.target.value) : null })}
               options={referrers.some(o => o.value === String(l.referred_by)) || !l.referred_by ? referrers : [...referrers, { value: String(l.referred_by), label: l.referrer ?? `#${l.referred_by}` }]} /></div>
           ) : l.referrer && <p className="text-sm">{t('referrals.referrer')}: <span dir="auto">{l.referrer}</span></p>}
-          {l.status !== 'enrolled' && (
+          {l.status !== 'enrolled' && canEdit && (
             <div className="flex flex-wrap items-end gap-2">
               <Select label={t('leads.status')} value={l.status} onChange={e => patch(l, { status: e.target.value })} options={STATUSES.map(v => ({ value: v, label: t(`leads.statuses.${v}`) }))} />
               <Input type="date" ltr label={t('leads.follow_up')} value={l.follow_up_date ?? ''} onChange={e => patch(l, { follow_up_date: e.target.value || null })} />
-              <Button onClick={() => setAdmit(admit?.id === l.id ? null : { id: l.id, batch_id: l.interested_batch_id ? String(l.interested_batch_id) : '' })}>{t('leads.admit')}</Button>
-              <Button variant="ghost" onClick={() => remove(l)}>{t('common.delete')}</Button>
+              {isAdmin && <>
+                <Button onClick={() => setAdmit(admit?.id === l.id ? null : { id: l.id, batch_id: l.interested_batch_id ? String(l.interested_batch_id) : '' })}>{t('leads.admit')}</Button>
+                <Button variant="ghost" onClick={() => remove(l)}>{t('common.delete')}</Button>
+              </>}
             </div>
           )}
           {admit?.id === l.id && (

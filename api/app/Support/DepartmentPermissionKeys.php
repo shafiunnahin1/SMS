@@ -171,6 +171,13 @@ final class DepartmentPermissionKeys
         'staff.inventory.stock',
     ];
 
+    /** D204 GAP.3: department staff working admission leads - one key each, none implies another; delete and convert are never duties */
+    public const D204 = [
+        'staff.lead.create',
+        'staff.lead.read',
+        'staff.lead.update',
+    ];
+
     /** D201 SUBM.3: department staff as cover reviewers - no key implies another; nominate / accept / decline are never duties */
     public const D201 = [
         'staff.leave_substitution.clear_offer',
@@ -182,6 +189,6 @@ final class DepartmentPermissionKeys
     /** every key a duty may hold: the D90 contract plus owner-approved later additions */
     public static function known(): array
     {
-        return [...self::ALL, ...self::D102, ...self::D201];
+        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204];
     }
 }
