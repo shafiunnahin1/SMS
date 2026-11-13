@@ -41,7 +41,7 @@
 
 ```php
 // R3: cumulative. Add any R1.1 / R2 modules you have ALREADY built; never list a module whose code does not exist.
-'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'sms', 'reports', 'data_migration', 'question_bank', 'quiz', 'expenses', 'cashbook', 'hr_payroll', 'teacher_attendance', 'inventory', 'accounting', 'donations', 'ai_assistant', 'notices', 'admit_card', 'id_cards', 'routine', 'support', 'result_sheets', 'student_leave', 'period_attendance', 'substitution', 'leads', 'public_site', 'admission_cycle', 'promotion_tc'],
+'modules' => ['students', 'enrollments', 'attendance', 'fees', 'exams', 'sms', 'reports', 'data_migration', 'question_bank', 'quiz', 'expenses', 'cashbook', 'hr_payroll', 'teacher_attendance', 'inventory', 'accounting', 'donations', 'ai_assistant', 'notices', 'admit_card', 'id_cards', 'routine', 'support', 'result_sheets', 'student_leave', 'period_attendance', 'substitution', 'leads', 'public_site', 'admission_cycle', 'promotion_tc', 'certificates'],
 ```
 
 ## ঘ. Task-সমূহ

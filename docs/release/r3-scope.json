@@ -100,7 +100,8 @@
    "leads",
    "public_site",
    "admission_cycle",
-   "promotion_tc"
+   "promotion_tc",
+   "certificates"
   ],
   "roles": [
  "super_admin",
