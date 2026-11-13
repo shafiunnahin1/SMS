@@ -60,6 +60,7 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/leads/{id}' => fn (array $other) => $this->seedLead($other),   // D202 PUB.1
             'GET api/v1/admin/users/{id}/teacher-features' => fn (array $other) => $this->seedTeacherUser($other),   // D205 PERM.1
             'PUT api/v1/admin/users/{id}/teacher-features' => fn (array $other) => $this->seedTeacherUser($other),
+            'GET api/v1/admin/users/{id}/access' => fn (array $other) => $this->seedTeacherUser($other),   // D205 PERM.3
             'DELETE api/v1/leads/{id}' => fn (array $other) => $this->seedLead($other),
             'POST api/v1/leads/{id}/convert' => fn (array $other) => $this->seedLead($other),
             'PUT api/v1/routine-blocks/{id}' => fn (array $other) => $this->seedRoutineBlock($other),   // D197 AAD.5

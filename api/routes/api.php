@@ -295,6 +295,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/admin/teacher-features',             [\App\Http\Controllers\Admin\TeacherFeatureController::class, 'updateInstitution']);
             Route::get('/admin/users/{id}/teacher-features',  [\App\Http\Controllers\Admin\TeacherFeatureController::class, 'user'])->whereNumber('id');
             Route::put('/admin/users/{id}/teacher-features',  [\App\Http\Controllers\Admin\TeacherFeatureController::class, 'updateUser'])->whereNumber('id');
+            Route::get('/admin/users/{id}/access',            [\App\Http\Controllers\Admin\UserAccessController::class, 'show'])->whereNumber('id');   // D205 PERM.3
             // D202 PUB.2: the public website's settings and hero image
             Route::middleware('module:public_site')->group(function () {
                 Route::get('/admin/settings/website',         [\App\Http\Controllers\Admin\WebsiteSettingsController::class, 'show']);
