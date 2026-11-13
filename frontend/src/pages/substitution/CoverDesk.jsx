@@ -8,6 +8,8 @@ import Loader from '../../components/Loader'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select } from '../../components/FormField'
 import SlotCard from '../../features/substitution/SlotCard'
+import { useAuthStore } from '../../store/authStore'
+import { useStaffDepartmentStore } from '../../store/staffDepartmentStore'
 
 const day = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10)
 
@@ -19,6 +21,11 @@ export default function CoverDesk() {
   const qc = useQueryClient()
   const [f, setF] = useState({ from: day(0), to: day(14), status: 'unassigned' })
   const [leave, setLeave] = useState(null)
+  // D204 GAP.1: department staff see only the actions their selected department's duty keys allow (D201: one key each)
+  const isStaff = useAuthStore(s => s.role) === 'institution_staff'
+  const keys = useStaffDepartmentStore(s => s.permissions)
+  const can = isStaff ? { offer: keys.includes('staff.leave_substitution.offer'), clear: keys.includes('staff.leave_substitution.clear_offer'),
+    refresh: keys.includes('staff.leave_substitution.refresh_source') } : undefined
   const list = useQuery({ queryKey: ['cover-needing', f], queryFn: () => api.get('/hr/substitution-slots', { params: f }).then(r => r.data.data) })
   const one = useQuery({ queryKey: ['cover-leave', leave], enabled: Boolean(leave), queryFn: () => api.get(`/hr/leaves/${leave}/substitution-slots`).then(r => r.data.data) })
   const reload = () => { qc.invalidateQueries({ queryKey: ['cover-needing'] }); qc.invalidateQueries({ queryKey: ['cover-leave'] }); qc.invalidateQueries({ queryKey: ['cover-candidates'] }) }
@@ -34,14 +41,14 @@ export default function CoverDesk() {
       {list.isPending ? <Loader type="cards" count={2} /> : list.isError ? <ErrorState onRetry={list.refetch} /> : !list.data.slots.length ? <EmptyState title={t('substitution.none')} />
         : list.data.slots.map(s => (
           <div key={s.id} className="flex flex-col gap-1">
-            <SlotCard slot={s} as="admin" onDone={reload} />
+            <SlotCard slot={s} as="admin" can={can} onDone={reload} />
             <div><Button variant="ghost" onClick={() => setLeave(leave === s.leave_id ? null : s.leave_id)}>{t('substitution.whole_leave')}</Button></div>
           </div>
         ))}
       {leave && (
         <section className="flex flex-col gap-2" data-testid="cover-leave">
           <h2 className="font-semibold">{t('substitution.leave_periods')}</h2>
-          {one.isPending ? <Loader /> : one.isError ? <ErrorState onRetry={one.refetch} /> : one.data.slots.map(s => <SlotCard key={s.id} slot={s} as="admin" onDone={reload} />)}
+          {one.isPending ? <Loader /> : one.isError ? <ErrorState onRetry={one.refetch} /> : one.data.slots.map(s => <SlotCard key={s.id} slot={s} as="admin" can={can} onDone={reload} />)}
         </section>
       )}
     </div>

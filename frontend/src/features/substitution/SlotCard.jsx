@@ -18,12 +18,13 @@ export const slotAction = (method, slot, suffix, body = {}) => api.request({
 })
 
 // One cover slot with the actions of the viewer: `admin` (offer / clear / reopen), `applicant` (nominate / clear), `target` (accept / decline)
-export default function SlotCard({ slot, as, onDone }) {
+// D204 GAP.1: `can` narrows the admin-side actions for a department staff viewer to their duty keys (the server checks them again)
+export default function SlotCard({ slot, as, onDone, can = { offer: true, clear: true, refresh: true } }) {
   const { t } = useTranslation()
   const [pick, setPick] = useState('')
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
-  const canPick = (as === 'admin' && ['unassigned', 'offered', 'confirmed'].includes(slot.status)) || (as === 'applicant' && ['unassigned', 'nominated'].includes(slot.status))
+  const canPick = (as === 'admin' && can.offer && ['unassigned', 'offered', 'confirmed'].includes(slot.status)) || (as === 'applicant' && ['unassigned', 'nominated'].includes(slot.status))
   const candidates = useQuery({ queryKey: ['cover-candidates', slot.id, slot.version], enabled: canPick,
     queryFn: () => api.get(`/hr/leaves/${slot.leave_id}/substitution-slots/${slot.id}/candidates`).then(r => r.data.data) })
   const run = async (method, suffix, body) => {
@@ -35,7 +36,7 @@ export default function SlotCard({ slot, as, onDone }) {
     } catch { /* the interceptor shows the message; the list is reloaded either way */ } finally { setBusy(false); onDone() }
   }
   const confirmed = slot.status === 'confirmed'
-  const reopen = as === 'admin' && slot.status === 'cancelled' && slot.latest_event === 'source_invalidated'
+  const reopen = as === 'admin' && can.refresh && slot.status === 'cancelled' && slot.latest_event === 'source_invalidated'
   return (
     <Card className="flex flex-col gap-2" data-testid="cover-slot">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -60,7 +61,7 @@ export default function SlotCard({ slot, as, onDone }) {
       )}
       <div className="flex flex-wrap items-end gap-2">
         {as === 'applicant' && slot.status === 'nominated' && <Button variant="secondary" loading={busy} onClick={() => run('delete', 'nomination')}>{t('substitution.clear_nomination')}</Button>}
-        {as === 'admin' && ['offered', 'confirmed'].includes(slot.status) && (
+        {as === 'admin' && can.clear && ['offered', 'confirmed'].includes(slot.status) && (
           <Button variant="secondary" loading={busy} disabled={confirmed && !reason} onClick={() => run('delete', 'offer', confirmed ? { reason } : {})}>{t('substitution.clear_offer')}</Button>
         )}
         {as === 'target' && slot.status === 'offered' && <>
