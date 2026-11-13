@@ -67,7 +67,7 @@ class SmsService
      *  message (absence alert, reminder, notice) is skipped for a phone whose guardian switched SMS off. Returns false when skipped.
      *  $finalAttempt = false (a queued job with retries left): a gateway failure throws SmsGatewayException so the queue retries;
      *  only the last attempt writes the failed row. */
-    public function send(string $phone, string $message, ?int $sentBy = null, bool $transactional = false, bool $finalAttempt = true): bool
+    public function send(string $phone, string $message, ?int $sentBy = null, bool $transactional = false, bool $finalAttempt = true, ?string $eventKey = null): bool
     {
         $i = Tenancy::current() ?? throw new \App\Exceptions\TenantNotBoundException(SmsLog::class);
         if (!$transactional && !app(ConsentService::class)->allowsSms(User::normalisePhone($phone) ?? $phone)) return false;
@@ -103,6 +103,7 @@ class SmsService
             'to_phone' => $phone, 'message' => $text, 'status' => $ok ? 'sent' : 'failed', 'sender_id' => $sender['sid'],
             'segments' => max(1, $parts['segments']), 'encoding' => $parts['encoding'], 'cost' => Money::format($cost),
             'route' => $sender['own'] ? 'own' : 'universal', 'fallback_used' => $fallback, 'error' => $ok ? null : 'gateway_error', 'sent_by' => $sentBy,
+            'event_key' => $eventKey,   // D208
         ]);
         if ($charged) $this->charge($i, $log, SmsSegments::billable($text), $cost);
         return $ok;

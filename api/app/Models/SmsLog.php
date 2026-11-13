@@ -29,6 +29,7 @@ class SmsLog extends Model
         'gateway_msg_id',
         'delivery_status',
         'delivered_at',
+        'event_key',   // D208
     ];
 
     protected $casts = [

@@ -19,7 +19,7 @@ class SendSmsJob implements ShouldQueue
     public int $tries = 3;
     public array $backoff = [30, 120];          // seconds before the 2nd and 3rd attempt when the gateway refused
 
-    public function __construct(public string $phone, public string $message, int $institutionId, public ?int $sentBy = null, public bool $transactional = false)
+    public function __construct(public string $phone, public string $message, int $institutionId, public ?int $sentBy = null, public bool $transactional = false, public ?string $eventKey = null)
     {
         $this->institutionId = $institutionId;
     }
@@ -28,7 +28,7 @@ class SendSmsJob implements ShouldQueue
     {
         try {
             // a gateway failure with attempts left throws SmsGatewayException -> the queue retries after $backoff
-            $sms->send($this->phone, $this->message, $this->sentBy, $this->transactional, finalAttempt: $this->attempts() >= $this->tries);
+            $sms->send($this->phone, $this->message, $this->sentBy, $this->transactional, finalAttempt: $this->attempts() >= $this->tries, eventKey: $this->eventKey);
         } catch (BusinessException $e) {
             // An automatic message (receipt, absence alert) must never fail the work that triggered it, and retrying
             // cannot create credit (D56) or switch SMS back on (D59). Direct sends from the UI still get the 402 from SmsService.
