@@ -62,6 +62,11 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/admin/users/{id}/teacher-features' => fn (array $other) => $this->seedTeacherUser($other),
             'GET api/v1/admin/users/{id}/access' => fn (array $other) => $this->seedTeacherUser($other),   // D205 PERM.3
             'POST api/v1/sms-logs/{id}/send' => fn (array $other) => $this->seedPendingSms($other),   // D208 SMSC.3
+            'GET api/v1/admission/cycles/{id}' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.1
+            'PUT api/v1/admission/cycles/{id}' => fn (array $other) => $this->seedCycle($other),
+            'POST api/v1/admission/cycles/{id}/open' => fn (array $other) => $this->seedCycle($other),
+            'POST api/v1/admission/cycles/{id}/freeze' => fn (array $other) => $this->seedCycle($other),
+            'POST api/v1/admission/cycles/{id}/close' => fn (array $other) => $this->seedCycle($other),
             'POST api/v1/sms-logs/{id}/discard' => fn (array $other) => $this->seedPendingSms($other),
             'DELETE api/v1/leads/{id}' => fn (array $other) => $this->seedLead($other),
             'POST api/v1/leads/{id}/convert' => fn (array $other) => $this->seedLead($other),
@@ -313,6 +318,15 @@ class TenantIsolationTest extends TestCase
     {
         return \App\Models\User::where('institution_id', $t['institution']->id)->where('role', 'teacher')->value('id')
             ?? $this->makeUser($t['institution'], 'teacher')->id;
+    }
+
+    private function seedCycle(array $t): int
+    {
+        return Tenancy::as($t['institution'], function () {
+            $p = \App\Models\Program::value('id') ?? \App\Models\Program::create(['name' => 'Cycle program'])->id;
+            return \App\Models\AdmissionCycle::create(['name' => 'C', 'program_id' => $p, 'seats' => 5, 'apply_from' => '2026-01-01', 'apply_until' => '2026-12-31',
+                'rule' => ['mode' => 'merit'], 'status' => 'draft'])->id;
+        });
     }
 
     private function seedPendingSms(array $t): int

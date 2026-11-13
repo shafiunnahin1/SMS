@@ -58,6 +58,8 @@ class LeadController extends Controller
     {
         $lead = AdmissionLead::findOrFail($id);
         if ($lead->status === 'enrolled') throw new BusinessException('converted', 'lead_converted', 422);   // the admitted student's origin stays on record
+        // D209 ACY.1: once its cycle is frozen an application is part of the published applicants' hash - it stays
+        if ($lead->cycle_id && $lead->cycle && !in_array($lead->cycle->status, ['draft', 'open'], true)) throw new BusinessException('frozen', 'lead_in_cycle', 422);
         $lead->delete();
         return response()->json(['success' => true, 'message' => __('messages.deleted')]);
     }

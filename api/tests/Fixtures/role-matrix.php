@@ -281,6 +281,13 @@ return [
     'GET api/v1/teacher/features' => ['teacher'],
     'GET api/v1/admin/users/{id}/access' => ['admin'],   // D205 PERM.3
     'GET api/v1/admin/staff-mode' => ['admin'],   // D207 MODE.1
+    'GET api/v1/admission/cycles' => ['admin'],   // D209 ACY.1
+    'POST api/v1/admission/cycles' => ['admin'],
+    'GET api/v1/admission/cycles/{id}' => ['admin'],
+    'PUT api/v1/admission/cycles/{id}' => ['admin'],
+    'POST api/v1/admission/cycles/{id}/open' => ['admin'],
+    'POST api/v1/admission/cycles/{id}/freeze' => ['admin'],
+    'POST api/v1/admission/cycles/{id}/close' => ['admin'],
     'GET api/v1/admin/settings/sms-events' => ['admin'],   // D208 SMSC.3
     'PUT api/v1/admin/settings/sms-events' => ['admin'],
     'POST api/v1/sms-logs/send-pending' => ['admin', 'accountant'],

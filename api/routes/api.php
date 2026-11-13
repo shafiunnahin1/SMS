@@ -827,6 +827,17 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // ── D209 ACY.1: admission cycles (admission-cycle.md section 5; admin) ──
+        Route::middleware(['module:admission_cycle', 'role:admin'])->prefix('admission/cycles')->group(function () {
+            Route::get('/',                               [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'index']);
+            Route::post('/',                              [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'store']);
+            Route::get('/{id}',                           [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'show'])->whereNumber('id');
+            Route::put('/{id}',                           [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'update'])->whereNumber('id');
+            Route::post('/{id}/open',                     [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'open'])->whereNumber('id');
+            Route::post('/{id}/freeze',                   [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'freeze'])->whereNumber('id');
+            Route::post('/{id}/close',                    [\App\Http\Controllers\Admission\AdmissionCycleController::class, 'close'])->whereNumber('id');
+        });
+
         // ── D197 AAD.3: student leave requests (academics-advanced.md section 5) ──
         Route::middleware(['module:attendance', 'module:student_leave'])->group(function () {
             Route::post('/parent/children/{id}/leave-requests', [\App\Http\Controllers\Academic\StudentLeaveController::class, 'store'])->whereNumber('id')->middleware('role:parent');

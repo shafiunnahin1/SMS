@@ -35,6 +35,7 @@ const MyPeriods = lazy(() => import('../pages/attendance/MyPeriods'))   // D197 
 const CoverDesk = lazy(() => import('../pages/substitution/CoverDesk'))   // D200 SUBL.5
 const Leads = lazy(() => import('../pages/leads/Leads'))   // D202 PUB.1
 const MyReferrals = lazy(() => import('../pages/leads/MyReferrals'))   // D203 REF.1
+const AdmissionCycles = lazy(() => import('../pages/admission/AdmissionCycles'))   // D209 ACY.1
 const MyCovers = lazy(() => import('../pages/substitution/MyCovers'))
 const PeriodReport = lazy(() => import('../pages/attendance/PeriodReport'))
 const ParentLeave = lazy(() => import('../pages/parent/Leave'))
@@ -185,6 +186,7 @@ export const tenantRoutes = [
     { path: 'settings/website', element: S(WebsiteSettings) },   // D202 PUB.3
     { path: 'access', element: S(PeopleAccess) },   // D205 PERM.3
     { path: 'staff-mode', element: S(StaffMode) },   // D207 MODE.1
+    { path: 'admission', element: S(AdmissionCycles) },   // D209 ACY.1
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
     { path: 'subscription', element: S(Subscription) },   // D187 SUB.3

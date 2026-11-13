@@ -167,6 +167,7 @@ export function PublicAdmission() {
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(null)
+  const [appNo, setAppNo] = useState(null)
   const set = (k) => (e) => setF(v => ({ ...v, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
   const submit = async (e) => {
     e.preventDefault()
@@ -182,6 +183,7 @@ export function PublicAdmission() {
         interested_batch_id: f.interested_batch_id ? Number(f.interested_batch_id) : null }
       const r = await api.post('/public/admission', body)
       setDone(r.data.message ?? t('public_site.thanks'))
+      setAppNo(r.data.application_no ?? null)   // D209 ACY.1
     } catch (x) {
       const v = x?.response?.data?.errors
       if (v) setErrors(Object.fromEntries(Object.entries(v).map(([k, m]) => [k, [].concat(m)[0]])))
@@ -195,7 +197,7 @@ export function PublicAdmission() {
     <PublicLayout>
       <h1 className="text-2xl font-semibold">{t('public_site.admission_title')}</h1>
       {!s.admission_open ? <Card data-testid="admission-closed"><p>{t('public_site.admission_closed')}</p></Card>
-        : done ? <Card data-testid="admission-done"><p className="font-medium" dir="auto">{done}</p></Card> : (
+        : done ? <Card data-testid="admission-done"><p className="font-medium" dir="auto">{done}</p>{appNo && <p className="mt-2" data-testid="application-no">{t('public_site.application_no')}: <strong><Ltr>{appNo}</Ltr></strong> <span className="text-sm text-content-muted">{t('public_site.application_no_keep')}</span></p>}</Card> : (
         <Card>
           <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-2" data-testid="admission-form">
             <Input label={`${t('public_site.f_name')} *`} value={f.name} onChange={set('name')} error={errors.name} maxLength={100} />
