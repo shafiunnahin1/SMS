@@ -67,7 +67,7 @@ class SmsService
      *  message (absence alert, reminder, notice) is skipped for a phone whose guardian switched SMS off. Returns false when skipped.
      *  $finalAttempt = false (a queued job with retries left): a gateway failure throws SmsGatewayException so the queue retries;
      *  only the last attempt writes the failed row. */
-    public function send(string $phone, string $message, ?int $sentBy = null, bool $transactional = false, bool $finalAttempt = true, ?string $eventKey = null): bool
+    public function send(string $phone, string $message, ?int $sentBy = null, bool $transactional = false, bool $finalAttempt = true, ?string $eventKey = null, ?SmsLog $pending = null): bool
     {
         $i = Tenancy::current() ?? throw new \App\Exceptions\TenantNotBoundException(SmsLog::class);
         if (!$transactional && !app(ConsentService::class)->allowsSms(User::normalisePhone($phone) ?? $phone)) return false;
@@ -99,12 +99,14 @@ class SmsService
         $parts = SmsSegments::count($text);
         $charged = $ok && !$sender['own'];
         $cost = $charged ? $this->costOf($text) : 0;
-        $log = SmsLog::create([
+        // D208 SMSC.3: a pending row sent by hand becomes the record itself (no second row)
+        $values = [
             'to_phone' => $phone, 'message' => $text, 'status' => $ok ? 'sent' : 'failed', 'sender_id' => $sender['sid'],
             'segments' => max(1, $parts['segments']), 'encoding' => $parts['encoding'], 'cost' => Money::format($cost),
             'route' => $sender['own'] ? 'own' : 'universal', 'fallback_used' => $fallback, 'error' => $ok ? null : 'gateway_error', 'sent_by' => $sentBy,
-            'event_key' => $eventKey,   // D208
-        ]);
+            'event_key' => $eventKey ?? $pending?->event_key,   // D208
+        ];
+        if ($pending) { $pending->update($values + ['sent_at' => now()]); $log = $pending; } else { $log = SmsLog::create($values); }
         if ($charged) $this->charge($i, $log, SmsSegments::billable($text), $cost);
         return $ok;
     }

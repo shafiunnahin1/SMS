@@ -281,6 +281,11 @@ return [
     'GET api/v1/teacher/features' => ['teacher'],
     'GET api/v1/admin/users/{id}/access' => ['admin'],   // D205 PERM.3
     'GET api/v1/admin/staff-mode' => ['admin'],   // D207 MODE.1
+    'GET api/v1/admin/settings/sms-events' => ['admin'],   // D208 SMSC.3
+    'PUT api/v1/admin/settings/sms-events' => ['admin'],
+    'POST api/v1/sms-logs/send-pending' => ['admin', 'accountant'],
+    'POST api/v1/sms-logs/{id}/send' => ['admin', 'accountant'],
+    'POST api/v1/sms-logs/{id}/discard' => ['admin', 'accountant'],
     'POST api/v1/admin/staff-mode/reviews' => ['admin'],
     'PUT api/v1/admin/staff-mode' => ['admin'],
     'PUT api/v1/admin/settings/website' => ['admin'],

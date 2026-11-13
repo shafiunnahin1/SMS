@@ -331,6 +331,7 @@
    "children": "আমার সন্তান"
   },
   "status": {
+   "discarded": "বাতিল",
    "grace": "গ্রেস",
    "read_only": "শুধু দেখা",
    "free": "বিনামূল্যে",
@@ -668,8 +669,12 @@
    "no_log": "এখনো কোনো SMS পাঠানো হয়নি",
    "statuses": {
     "sent": "পাঠানো হয়েছে",
-    "failed": "ব্যর্থ"
+    "failed": "ব্যর্থ",
+    "pending": "পাঠানোর অপেক্ষায়",
+    "discarded": "বাতিল"
    },
+   "manual": {"send": "পাঠান", "discard": "বাতিল", "send_all": "অপেক্ষমাণ সব পাঠান ({{count}})", "discard_confirm": "এই SMS পাঠানো হবে না। বাতিল করবেন?", "done": "পাঠানো হয়েছে {{sent}}, ব্যর্থ {{failed}}, বাদ {{skipped}}"},
+   "events": {"title": "কোন ঘটনায় SMS যাবে", "hint": "বন্ধ: কোনো SMS তৈরি হবে না। অটো: সঙ্গে সঙ্গে চলে যাবে। ম্যানুয়াল: SMS ইতিহাসে অপেক্ষায় থাকবে, আপনি \"পাঠান\" চাপলে যাবে।", "modes": {"off": "বন্ধ", "auto": "অটো", "manual": "ম্যানুয়াল"}, "transactional": "রসিদ/বেতনের SMS: অভিভাবক SMS বন্ধ রাখলেও যায়", "names": {"attendance_absent": "অনুপস্থিতি", "fee_paid": "ফি জমার রসিদ", "fee_due_reminder": "বকেয়া ফি মনে করানো", "result_published": "ফলাফল প্রকাশ", "student_leave": "শিক্ষার্থীর ছুটি", "staff_leave": "শিক্ষক/কর্মীর ছুটি", "salary": "বেতন", "fee_refund": "ফি ফেরত", "substitution": "বদলি ক্লাস", "admission_new_lead": "নতুন ভর্তি-আবেদন", "admission_result": "ভর্তির ফলাফল"}},
    "parts": "{{count}} অংশ",
    "fallback": "প্ল্যাটফর্ম sender দিয়ে",
    "types": {

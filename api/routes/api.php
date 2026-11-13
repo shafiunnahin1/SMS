@@ -677,6 +677,12 @@ Route::prefix('v1')->group(function () {
         // ── SMS (Step 4.6): log and balance; sending happens from attendance / fee collection through SendSmsJob ──
         Route::middleware('module:sms')->group(function () {
             Route::get('/sms-logs',                       [SmsLogController::class, 'index'])->middleware('role:admin,accountant,institution_staff');
+            // D208 SMSC.3: manual SMS - send or discard a pending row (admin, accountant)
+            Route::middleware('role:admin,accountant')->group(function () {
+                Route::post('/sms-logs/send-pending',     [SmsLogController::class, 'sendPending'])->middleware('throttle:20,1');
+                Route::post('/sms-logs/{id}/send',        [SmsLogController::class, 'send'])->whereNumber('id')->middleware('throttle:60,1');
+                Route::post('/sms-logs/{id}/discard',     [SmsLogController::class, 'discard'])->whereNumber('id');
+            });
             Route::get('/subscription/sms-credits',       [SmsCreditController::class, 'balance'])->middleware('role:admin');
             Route::post('/subscription/sms-credits',      [SmsCreditController::class, 'purchase'])->middleware(['role:admin', 'throttle:10,1']);   // D58: bKash recharge
             // D59: the universal / own API switches and the institution's own BulkSMSBD key + masking sender
@@ -684,6 +690,8 @@ Route::prefix('v1')->group(function () {
                 Route::get('/admin/settings/sms-sender',    [SmsSenderController::class, 'show']);
                 Route::put('/admin/settings/sms-sender',    [SmsSenderController::class, 'update']);
                 Route::delete('/admin/settings/sms-sender', [SmsSenderController::class, 'destroy']);
+                Route::get('/admin/settings/sms-events',    [\App\Http\Controllers\Sms\SmsEventController::class, 'show']);   // D208 SMSC.3
+                Route::put('/admin/settings/sms-events',    [\App\Http\Controllers\Sms\SmsEventController::class, 'update']);
             });
         });
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useAuthStore } from '../../../store/authStore'
 import { useSearchParams } from 'react-router-dom'
 import { useUiStore } from '../../../store/uiStore'
 import Modal from '../../../ui/variants/Modal'
@@ -61,16 +62,35 @@ function SmsLog() {
   const { t } = useTranslation()
   const { locale } = useLocale()
   const [status, setStatus] = useState('')
+  const qc = useQueryClient()
+  const canSend = ['admin', 'accountant'].includes(useAuthStore(s => s.user?.role))   // D208: staff only read the history
+  const [busy, setBusy] = useState(null)
   const log = useInfiniteQuery({
     queryKey: ['sms', 'logs', status], initialPageParam: null,
     queryFn: ({ pageParam }) => api.get('/sms-logs', { params: { per_page: 30, status: status || undefined, cursor: pageParam ?? undefined } }).then(r => r.data),
     getNextPageParam: (last) => last.meta.next_cursor ?? undefined,
   })
   const rows = log.data?.pages.flatMap(p => p.data) ?? []
+  const pending = rows.filter(l => l.status === 'pending')
+  const refresh = () => qc.invalidateQueries({ queryKey: ['sms', 'logs'] })
+  const act = async (key, fn) => {
+    setBusy(key)
+    try { await fn() } catch { /* the interceptor shows the error */ } finally { setBusy(null); refresh() }
+  }
+  const sendOne = (id) => act(id, () => api.post(`/sms-logs/${id}/send`))
+  const sendAll = () => act('all', async () => {
+    const r = await api.post('/sms-logs/send-pending', { ids: pending.map(l => l.id) })
+    useUiStore.getState().addToast(t('sms.manual.done', r.data.data))
+  })
+  const discard = (id) => useUiStore.getState().openConfirm({ title: t('sms.manual.discard'), description: t('sms.manual.discard_confirm'), type: 'danger',
+    onConfirm: () => act(id, () => api.post(`/sms-logs/${id}/discard`)) })
   return (
     <Card className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-2">
       <Select label={t('academic.status')} placeholder={t('common.all')} value={status} onChange={e => setStatus(e.target.value)} className="sm:w-56"
-        options={['sent', 'failed'].map(s => ({ value: s, label: t(`sms.statuses.${s}`) }))} />
+        options={['sent', 'failed', 'pending', 'discarded'].map(s => ({ value: s, label: t(`sms.statuses.${s}`) }))} />
+      {canSend && pending.length > 0 && <Button onClick={sendAll} loading={busy === 'all'} data-action="send-all">{t('sms.manual.send_all', { count: pending.length })}</Button>}
+      </div>
       {log.isPending ? <Loader type="skeleton" rows={5} /> : log.isError ? <ErrorState onRetry={log.refetch} /> : !rows.length ? <EmptyState title={t('sms.no_log')} /> : (
         <ul className="flex flex-col divide-y divide-line" data-testid="sms-log">
           {rows.map(l => (
@@ -83,6 +103,12 @@ function SmsLog() {
                 </span>
               </div>
               <p className="text-sm" dir="auto">{l.message}</p>
+              {canSend && l.status === 'pending' && (
+                <div className="flex gap-2">
+                  <Button onClick={() => sendOne(l.id)} loading={busy === l.id} data-action="send">{t('sms.manual.send')}</Button>
+                  <Button variant="secondary" onClick={() => discard(l.id)} disabled={busy === l.id} data-action="discard">{t('sms.manual.discard')}</Button>
+                </div>
+              )}
             </li>
           ))}
         </ul>

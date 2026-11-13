@@ -13,6 +13,7 @@ import { ErrorState } from '../../../components/StateViews'
 import { Input } from '../../../components/FormField'
 import { secretInputProps } from '../../../components/secretInput'
 import Ltr from '../../../components/bidi/Ltr'
+import SmsEventSwitches from './SmsEventSwitches'
 
 // D59 /admin/settings/sms: two switches (the universal API, charged from the SMS wallet; the institution's own BulkSMSBD API,
 // never charged) and the own key + masking sender. The key is write-only - the server only says whether one is set (last 4).
@@ -71,6 +72,7 @@ export default function SmsSettings() {
           <Button onClick={save} loading={saving} data-action="save">{t('common.save')}</Button>
         </div>
       </Card>
+      <SmsEventSwitches />
     </div>
   )
 }

@@ -61,6 +61,8 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/admin/users/{id}/teacher-features' => fn (array $other) => $this->seedTeacherUser($other),   // D205 PERM.1
             'PUT api/v1/admin/users/{id}/teacher-features' => fn (array $other) => $this->seedTeacherUser($other),
             'GET api/v1/admin/users/{id}/access' => fn (array $other) => $this->seedTeacherUser($other),   // D205 PERM.3
+            'POST api/v1/sms-logs/{id}/send' => fn (array $other) => $this->seedPendingSms($other),   // D208 SMSC.3
+            'POST api/v1/sms-logs/{id}/discard' => fn (array $other) => $this->seedPendingSms($other),
             'DELETE api/v1/leads/{id}' => fn (array $other) => $this->seedLead($other),
             'POST api/v1/leads/{id}/convert' => fn (array $other) => $this->seedLead($other),
             'PUT api/v1/routine-blocks/{id}' => fn (array $other) => $this->seedRoutineBlock($other),   // D197 AAD.5
@@ -311,6 +313,12 @@ class TenantIsolationTest extends TestCase
     {
         return \App\Models\User::where('institution_id', $t['institution']->id)->where('role', 'teacher')->value('id')
             ?? $this->makeUser($t['institution'], 'teacher')->id;
+    }
+
+    private function seedPendingSms(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\SmsLog::create(['to_phone' => '01711000010', 'message' => 'x', 'status' => 'pending',
+            'event_key' => 'fee_paid', 'segments' => 1, 'encoding' => 'gsm', 'cost' => '0.00'])->id);
     }
 
     private function seedLead(array $t): int
