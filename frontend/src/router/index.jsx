@@ -44,6 +44,7 @@ const MyRoutine = lazy(() => import('../pages/routine/MyRoutine'))
 const SupportTickets = lazy(() => import('../pages/support/SupportTickets'))   // D193 SUP.1
 const DataExport = lazy(() => import('../pages/export/DataExport'))   // D193 EXP.1
 const SuperExports = lazy(() => import('../pages/export/SuperExports'))
+const StaffMode = lazy(() => import('../pages/admin/access/StaffMode'))   // D207 MODE.1
 const PeopleAccess = lazy(() => import('../pages/admin/access/PeopleAccess'))   // D205 PERM.3
 const WebsiteSettings = lazy(() => import('../pages/admin/settings/WebsiteSettings'))   // D202 PUB.3
 const PublicSite = import('../pages/public/PublicSite')
@@ -183,6 +184,7 @@ export const tenantRoutes = [
     { path: 'settings/general', element: S(GeneralSettings) },
     { path: 'settings/website', element: S(WebsiteSettings) },   // D202 PUB.3
     { path: 'access', element: S(PeopleAccess) },   // D205 PERM.3
+    { path: 'staff-mode', element: S(StaffMode) },   // D207 MODE.1
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
     { path: 'subscription', element: S(Subscription) },   // D187 SUB.3

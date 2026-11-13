@@ -280,6 +280,9 @@ return [
     'PUT api/v1/admin/users/{id}/teacher-features' => ['admin'],
     'GET api/v1/teacher/features' => ['teacher'],
     'GET api/v1/admin/users/{id}/access' => ['admin'],   // D205 PERM.3
+    'GET api/v1/admin/staff-mode' => ['admin'],   // D207 MODE.1
+    'POST api/v1/admin/staff-mode/reviews' => ['admin'],
+    'PUT api/v1/admin/staff-mode' => ['admin'],
     'PUT api/v1/admin/settings/website' => ['admin'],
     'POST api/v1/admin/settings/website/hero' => ['admin'],
     'GET api/v1/routine-blocks' => ['admin', 'teacher', 'student'],   // D197 AAD.5

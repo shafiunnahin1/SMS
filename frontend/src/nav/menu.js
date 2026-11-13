@@ -58,6 +58,7 @@ export const MENU = {
       it('staff-accounts', '/admin/staff', 'কর্মকর্তা অ্যাকাউন্ট', { since: 'R3', department_admin: true }),
       it('departments', '/admin/departments', 'বিভাগ ও দায়িত্ব', { since: 'R3', department_admin: true }),
       it('people-access', '/admin/access', 'ব্যক্তির দায়িত্ব', { since: 'R3' }),   // D205 PERM.3
+      it('staff-mode', '/admin/staff-mode', 'বিভাগ-মোড', { since: 'R3' }),   // D207 MODE.1
     ]},
     { key: 'hr', label: 'HR ও বেতন', icon: 'Briefcase', module: 'hr_payroll', children: [
       it('hr-staff',      '/admin/hr/staff',             'কর্মচারী'),
