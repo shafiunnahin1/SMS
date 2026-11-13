@@ -35,6 +35,7 @@ api.interceptors.response.use(
       authStore?.getState().clearAuth()                       // the session ended (logout elsewhere, idle limit, force-logout)
       if (window.location.pathname !== '/login') window.location.assign('/login')
     } else if (status === 419) addToast(i18n.t('errors.expired'), 'warning')         // CSRF token expired (D51)
+    else if (status === 403 && code === 'feature_off') addToast(i18n.t('errors.feature_off'), 'warning')   // D205: the institution switched this off for the teacher
     else if (status === 403 && code !== 'must_change_password') addToast(i18n.t('errors.forbidden'), 'error')
     else if (status === 429) addToast(i18n.t('errors.too_many'), 'warning')
     else if (status >= 500) addToast(i18n.t('errors.server'), 'error')

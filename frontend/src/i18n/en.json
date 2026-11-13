@@ -152,6 +152,7 @@
   },
   "errors": {
    "network": "Check your internet connection",
+   "feature_off": "Your institution has switched this off for you",
    "forbidden": "You are not allowed to do this",
    "too_many": "Too many requests. Please wait a moment.",
    "server": "Server problem. Please try again.",
