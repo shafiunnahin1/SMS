@@ -145,27 +145,27 @@ export const MENU = {
   teacher: [
     it('dashboard','/teacher/dashboard','ড্যাশবোর্ড',{icon:'LayoutDashboard',primary:true}),
     it('batches','/teacher/batches',{term:'batches'},{icon:'Layers',primary:true}),
-    it('attendance','/teacher/attendance','উপস্থিতি',{icon:'CalendarCheck',module:'attendance',primary:true}),
+    it('attendance','/teacher/attendance','উপস্থিতি',{icon:'CalendarCheck',module:'attendance',primary:true,teacherFeature:'attendance'}),
     { key: 'exam-group', label: 'পরীক্ষা', icon: 'FileText', children: [   // D158 (1)
-      it('marks','/teacher/marks','নম্বর এন্ট্রি',{icon:'FileText',module:'exams',primary:true}),
-      it('question-bank','/teacher/question-bank','প্রশ্নব্যাংক',{icon:'Library',module:'question_bank'}),
-      it('ai','/teacher/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant'}),   // D164 AI-P1.3
-      it('qb-papers','/teacher/question-bank/papers','প্রশ্নপত্র',{icon:'FileText',module:'question_bank'}),
+      it('marks','/teacher/marks','নম্বর এন্ট্রি',{icon:'FileText',module:'exams',primary:true,teacherFeature:'marks'}),
+      it('question-bank','/teacher/question-bank','প্রশ্নব্যাংক',{icon:'Library',module:'question_bank',teacherFeature:'question_bank'}),
+      it('ai','/teacher/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant',teacherFeature:'ai_assistant'}),   // D164 AI-P1.3
+      it('qb-papers','/teacher/question-bank/papers','প্রশ্নপত্র',{icon:'FileText',module:'question_bank',teacherFeature:'question_bank'}),
     ]},
     it('homework','/teacher/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework'}),
     it('routine','/teacher/routine','রুটিন',{icon:'Clock',module:'routine'}),
     it('materials','/teacher/materials','শিক্ষা-উপকরণ', {icon:'Folder', since: 'R2' }),
     it('messages','/teacher/messages','বার্তা', {icon:'MessageCircle', since: 'R2' }),
-    it('notices','/notices','নোটিশ',{icon:'Megaphone',module:'notices'}),
-    it('referrals','/teacher/referrals','ভর্তির রেফারেল',{icon:'UserPlus',module:'leads'}),   // D203 REF.1
-    it('salary','/teacher/salary','আমার বেতন',{icon:'Banknote',module:'hr_payroll'}),
-    it('leave','/teacher/leave','ছুটি',{icon:'Plane',module:'hr_payroll'}),
-    it('periods','/teacher/periods','আমার period',{icon:'ListChecks',module:'period_attendance'}),
-    it('substitutions','/teacher/substitutions','বদলি ক্লাস',{icon:'Users',module:'substitution'}),   // D200 SUBL.5
+    it('notices','/notices','নোটিশ',{icon:'Megaphone',module:'notices',teacherFeature:'notices'}),
+    it('referrals','/teacher/referrals','ভর্তির রেফারেল',{icon:'UserPlus',module:'leads',teacherFeature:'referrals'}),   // D203 REF.1
+    it('salary','/teacher/salary','আমার বেতন',{icon:'Banknote',module:'hr_payroll',teacherFeature:'salary'}),
+    it('leave','/teacher/leave','ছুটি',{icon:'Plane',module:'hr_payroll',teacherFeature:'own_leave'}),
+    it('periods','/teacher/periods','আমার period',{icon:'ListChecks',module:'period_attendance',teacherFeature:'period_attendance'}),
+    it('substitutions','/teacher/substitutions','বদলি ক্লাস',{icon:'Users',module:'substitution',teacherFeature:'substitution'}),   // D200 SUBL.5
     it('syllabus','/teacher/syllabus','সিলেবাস-অগ্রগতি',{icon:'ListTree',module:'syllabus'}),
     it('hifz','/teacher/hifz','হিফজ',{icon:'BookOpen',module:'hifz'}),
     it('risk','/teacher/risk','সহায়তা প্রয়োজন',{icon:'LifeBuoy',module:'risk_alerts'}),
-    it('student-leave','/teacher/leave/students','ছাত্রের ছুটি',{icon:'CalendarOff',module:'student_leave'}),
+    it('student-leave','/teacher/leave/students','ছাত্রের ছুটি',{icon:'CalendarOff',module:'student_leave',teacherFeature:'student_leave'}),
   ],
   student: [
     it('question-bank','/student/question-bank','প্রশ্নব্যাংক',{icon:'Library',module:'question_bank'}),
@@ -274,10 +274,10 @@ export const MENU = {
 // buildNav (docs/THEMING.md "nav/menu.js"): drop what the institution's modules / settings / this release hide, resolve {term} labels.
 // `roleNeeds` hides an item when the institution type has no such role (a private batch has no teachers); `feature` items stay
 // hidden in the spike (plan features are an open owner question, PM-1).
-export function buildNav(role, { modules = [], settings = {}, roles = [], release = 'R1', features = {}, institutionType = null, staffKeys = [] } = {}, term = (k) => k, translate = (l) => l) {
+export function buildNav(role, { modules = [], settings = {}, roles = [], release = 'R1', features = {}, institutionType = null, staffKeys = [], featuresOff = [] } = {}, term = (k) => k, translate = (l) => l) {
   // D169: a staff item with staffKey shows only when the selected department holds that duty key (the API checks it again)
   const ok = (i) => (!i.staffKey || staffKeys.includes(i.staffKey)) && (!i.module || modules.includes(i.module)) && !(i.hideWhen && i.hideWhen(settings))
-    && shipped(i.since, release) && (!i.onlyType || i.onlyType === institutionType) && (!i.roleNeeds || roles.includes(i.roleNeeds)) && (!i.feature || Boolean(features[i.feature]))
+    && shipped(i.since, release) && (!i.onlyType || i.onlyType === institutionType) && (!i.roleNeeds || roles.includes(i.roleNeeds)) && (!i.feature || Boolean(features[i.feature])) && (!i.teacherFeature || !featuresOff.includes(i.teacherFeature))   // D205 PERM.2
   const label = (l) => (l && typeof l === 'object' && l.term ? term(l.term) : translate(l))
   const map = (i) => ({ ...i, label: label(i.label), children: i.children?.filter(ok).map(map) })
   return (MENU[role] ?? []).filter(ok).map(map).filter((i) => !i.children || i.children.length)

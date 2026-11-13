@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import api from '../../api/axios'
 import { useAuthStore } from '../../store/authStore'
 import { useTerms } from '../../hooks/useTerms'
+import { useTeacherFeatures } from '../../hooks/useTeacherFeatures'
 import { useLocale } from '../../ui/I18nProvider'
 import { fmtDate, fmtMoney, fmtNumber } from '../../i18n/format'
 import PageHeader from '../../components/PageHeader'
@@ -118,6 +119,7 @@ function AccountantView({ d }) {
 function TeacherView({ d }) {
   const { t } = useTranslation()
   const term = useTerms()
+  const { on } = useTeacherFeatures()   // D205 PERM.2: no link into a switched-off feature
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
@@ -127,7 +129,7 @@ function TeacherView({ d }) {
             {d.batches.map(b => (
               <li key={b.id} className="flex items-center justify-between h-row gap-2 text-sm">
                 <span dir="auto">{b.program ? `${b.program} — ` : ''}{b.name}</span>
-                {b.attendance_taken ? <StatusBadge status="completed" /> : <Link to="/teacher/attendance" className="text-primary-fg underline">{t('attendance.take')}</Link>}
+                {b.attendance_taken ? <StatusBadge status="completed" /> : !on('attendance') ? null : <Link to="/teacher/attendance" className="text-primary-fg underline">{t('attendance.take')}</Link>}
               </li>
             ))}
           </ul>
@@ -139,7 +141,7 @@ function TeacherView({ d }) {
           <ul className="flex flex-col divide-y divide-line">
             {d.marks_pending.map(p => (
               <li key={`${p.exam_id}-${p.subject_id}`} className="h-row flex items-center text-sm">
-                <Link to={`/teacher/marks/${p.exam_id}/${p.subject_id}`} className="text-primary-fg underline" dir="auto">{p.exam} — {p.subject}</Link>
+                {on('marks') ? <Link to={`/teacher/marks/${p.exam_id}/${p.subject_id}`} className="text-primary-fg underline" dir="auto">{p.exam} — {p.subject}</Link> : <span dir="auto">{p.exam} — {p.subject}</span>}
               </li>
             ))}
           </ul>
