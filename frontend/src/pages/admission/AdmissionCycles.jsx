@@ -6,7 +6,7 @@ import api from '../../api/axios'
 import { useTerms } from '../../hooks/useTerms'
 import { useUiStore } from '../../store/uiStore'
 import { useLocale } from '../../ui/I18nProvider'
-import { fmtDate, fmtMoney } from '../../i18n/format'
+import { fmtDate, fmtMoney, fmtNumber } from '../../i18n/format'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
@@ -103,8 +103,8 @@ export default function AdmissionCycles() {
                 <StatusBadge status={`cycle_${c.status}`} />
               </div>
               <p className="text-sm text-content-muted">
-                {term('program')}: {c.program?.name ?? '—'} · {t('admission.seats')}: {c.seats} · {t('admission.waiting')}: {c.rule.waiting} · {t(`admission.modes.${c.rule.mode}`)}
-                · {fmtDate(c.apply_from, locale)} – {fmtDate(c.apply_until, locale)} · {t('admission.fee')}: {fmtMoney(c.application_fee, locale)} · {t('admission.applications', { count: c.applications ?? 0 })}
+                {term('program')}: {c.program?.name ?? '—'} · {t('admission.seats')}: {fmtNumber(c.seats, locale)} · {t('admission.waiting')}: {fmtNumber(c.rule.waiting, locale)} · {t(`admission.modes.${c.rule.mode}`)}
+                · {fmtDate(c.apply_from, locale)} – {fmtDate(c.apply_until, locale)} · {t('admission.fee')}: {fmtMoney(c.application_fee, locale)} · {t('admission.applications', { count: c.applications ?? 0, n: fmtNumber(c.applications ?? 0, locale) })}
               </p>
               <div className="flex flex-wrap gap-2">
                 {c.status !== 'draft' && <Button variant="secondary" onClick={() => setApps(c)} data-action="applications">{t('admission.applications_button')}</Button>}
@@ -116,7 +116,7 @@ export default function AdmissionCycles() {
                   <Button variant="ghost" onClick={() => recommit(c)} data-action="recommit">{t('admission.seed_lost')}</Button>
                 </>}
                 {isAdmin && ['listing', 'closed'].includes(c.status) && <Button variant="secondary" data-action="result-sms" onClick={() => useUiStore.getState().openConfirm({ title: t('admission.result_sms'), description: t('admission.result_sms_confirm'),
-                  onConfirm: async () => { try { const r = await api.post(`/admission/cycles/${c.id}/result-sms`); useUiStore.getState().addToast(t('admission.result_sms_done', { count: r.data.data.sent })) } catch { /* the interceptor shows the error */ } } })}>{t('admission.result_sms')}</Button>}
+                  onConfirm: async () => { try { const r = await api.post(`/admission/cycles/${c.id}/result-sms`); useUiStore.getState().addToast(t('admission.result_sms_done', { count: r.data.data.sent, n: fmtNumber(r.data.data.sent, locale) })) } catch { /* the interceptor shows the error */ } } })}>{t('admission.result_sms')}</Button>}
                 {c.status !== 'draft' && <a className="text-sm underline self-center" href={`/admission?transparency=${c.id}`} target="_blank" rel="noreferrer">{t('admission.public_record')}</a>}
               </div>
             </Card>

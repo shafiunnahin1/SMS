@@ -69,4 +69,15 @@ describe('admission lists (D209 ACY.3)', () => {
     fireEvent.click(screen.getByText('Send result SMS'))
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/admission/cycles/7/result-sms'))
   })
+
+  it('keeps Latin digits (docs/I18N.md 3.4) and shows a green selected badge on the public record', async () => {
+    await i18n.changeLanguage('bn')
+    api.get.mockResolvedValue({ data: { data: { cycle: { id: 7, name: 'ষষ্ঠ', status: 'listing', mode: 'merit' },
+      draw: null, applicants: [], list: [{ rank: 1, application_no: 'A30-BBBBB', list_status: 'selected', marks: '82.00' }, { rank: 2, application_no: 'A30-AAAAA', list_status: 'waiting', marks: '78.00' }] } } })
+    wrap(<AdmissionTransparency id={7} />)
+    const list = await screen.findByTestId('public-list')
+    expect(list).toHaveTextContent('1. A30-BBBBB · 82')   // Latin digits in every language, as the I18N spec says
+    expect(list.querySelector('[data-status="list_selected"]').className).toContain('bg-green-100')
+    expect(list.querySelector('[data-status="list_waiting"]').className).toContain('bg-amber-100')
+  })
 })

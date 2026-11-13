@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 const TONE = {
   active: 'success', paid: 'success', present: 'success', published: 'info', granted: 'success', ongoing: 'info', sent: 'success', failed: 'danger',
   inactive: 'danger', suspended: 'danger', expired: 'danger', trial: 'info', absent: 'danger', due: 'warning', partial: 'warning', pending: 'warning', late: 'warning', leave: 'muted', revoked: 'muted',
+  // D209: admission list and cycle states
+  list_selected: 'success', list_admitted: 'success', list_waiting: 'warning', list_rejected: 'muted', list_declined: 'muted', cycle_open: 'info', cycle_testing: 'warning', cycle_listing: 'info',
 }
 const CLASS = {
   success: 'bg-green-100 text-green-800', danger: 'bg-red-100 text-red-800', warning: 'bg-amber-100 text-amber-800',

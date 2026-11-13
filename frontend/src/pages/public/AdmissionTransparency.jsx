@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
+import { useLocale } from '../../ui/I18nProvider'
+import { fmtNumber } from '../../i18n/format'
 import Card from '../../components/Card'
 import Loader from '../../components/Loader'
 import Ltr from '../../components/bidi/Ltr'
@@ -18,6 +20,7 @@ print(sorted(nos, key=lambda n: (hmac.new(seed, n.encode(), hashlib.sha256).hexd
 // numbers and hash; after it the seed, the order and the list. Numbers only unless the institution publishes names.
 export default function AdmissionTransparency({ id }) {
   const { t } = useTranslation()
+  const { locale } = useLocale()
   const q = useQuery({ queryKey: ['public', 'transparency', id], queryFn: () => api.get(`/public/admission/cycle/${id}/transparency`).then(r => r.data.data) })
   if (q.isPending) return <Loader type="cards" count={2} />
   if (q.isError) return <ErrorState onRetry={q.refetch} />
@@ -29,7 +32,7 @@ export default function AdmissionTransparency({ id }) {
         <Card className="flex flex-col gap-1 text-sm">
           {draw.guarantee === 'weaker' && <p className="font-medium" data-testid="weaker">{t('admission.weaker_note')}</p>}
           <p>{t('admission.commitment')}: <span className="font-mono break-all"><Ltr>{draw.seed_commitment}</Ltr></span></p>
-          {draw.applicants_hash && <p>{t('admission.applicants_hash', { count: draw.applicants_count })}: <span className="font-mono break-all"><Ltr>{draw.applicants_hash}</Ltr></span></p>}
+          {draw.applicants_hash && <p>{t('admission.applicants_hash', { count: draw.applicants_count, n: fmtNumber(draw.applicants_count, locale) })}: <span className="font-mono break-all"><Ltr>{draw.applicants_hash}</Ltr></span></p>}
           {draw.seed ? <p>{t('admission.seed')}: <span className="font-mono break-all" data-testid="public-seed"><Ltr>{draw.seed}</Ltr></span></p> : <p className="text-content-muted">{t('admission.seed_not_yet')}</p>}
         </Card>
       )}
@@ -38,7 +41,7 @@ export default function AdmissionTransparency({ id }) {
           <ul className="flex flex-col divide-y divide-line" data-testid="public-list">
             {list.map(r => (
               <li key={r.application_no} className="flex items-center justify-between gap-2 py-2 text-sm">
-                <span>{r.rank}. <Ltr>{r.application_no}</Ltr>{r.name ? ` · ${r.name}` : ''}{r.marks ? ` · ${r.marks}` : ''}</span>
+                <span>{fmtNumber(r.rank, locale)}. <Ltr>{r.application_no}</Ltr>{r.name ? ` · ${r.name}` : ''}{r.marks ? ` · ${fmtNumber(Number(r.marks), locale)}` : ''}</span>
                 <StatusBadge status={`list_${r.list_status}`} />
               </li>
             ))}
