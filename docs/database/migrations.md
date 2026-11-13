@@ -258,6 +258,9 @@ php artisan make:migration create_leave_substitution_slots_table        # D200 S
 php artisan make:migration create_leave_substitution_operations_table   # D200 SUBL.1
 php artisan make:migration create_leave_substitution_events_table       # D200 SUBL.1
 php artisan make:migration create_teacher_feature_overrides_table       # D205 PERM.1: per-teacher exceptions to the teacher feature switches
+php artisan make:migration create_memo_files_table                    # D210 MEMO.1
+php artisan make:migration create_memo_numbers_table                  # D210 MEMO.1
+php artisan make:migration create_official_letters_table              # D210 LTR.1
 php artisan make:migration create_student_leave_requests_table
 php artisan make:migration create_staff_members_table
 php artisan make:migration create_staff_mapping_reviews_table   # D101 (shipped in 2026_10_17_000002 together with the institutions switch columns)

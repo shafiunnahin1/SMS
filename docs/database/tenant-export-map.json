@@ -144,9 +144,12 @@
   "leave_applications",
   "syllabus_units",
   "lesson_plans",
+  "memo_files",
+  "memo_numbers",
   "messages",
   "notices",
   "notice_receipts",
+  "official_letters",
   "online_classes",
   "parent_meetings",
   "parent_student",
@@ -885,6 +888,17 @@
    },
    "polymorphic": []
   },
+  "memo_files": {
+   "refs": {},
+   "polymorphic": []
+  },
+  "memo_numbers": {
+   "refs": {
+    "issued_by": "users",
+    "memo_file_id": "memo_files"
+   },
+   "polymorphic": []
+  },
   "messages": {
    "refs": {
     "from_user_id": "users",
@@ -904,6 +918,12 @@
    "refs": {
     "notice_id": "notices",
     "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "official_letters": {
+   "refs": {
+    "issued_by": "users"
    },
    "polymorphic": []
   },

@@ -889,7 +889,7 @@ CREATE TABLE certificates (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     student_id BIGINT UNSIGNED NOT NULL,
-    type ENUM('participation','merit','appreciation','completion') NOT NULL,
+    type ENUM('participation','merit','appreciation','completion','attestation','testimonial') NOT NULL,   -- D210: attestation (prottayon potro), testimonial (prosongsha potro)
     title VARCHAR(150) NOT NULL,
     description TEXT,
     issued_date DATE NOT NULL,
@@ -1264,6 +1264,62 @@ CREATE TABLE teacher_feature_overrides (
     FOREIGN KEY (set_by) REFERENCES users(id),
     UNIQUE KEY uq_teacher_feature (institution_id, user_id, feature_key)
 );
+
+-- D210: memo (smarak) numbers - Secretariat Instructions 2024, 22 digits in 8 dot-separated parts MM.DD.GGGG.SSS.BBB.TT.NNNN.YY,
+-- then '.' and the issue (jari) number. The institution's own codes live in institutions.settings.memo. One file per document kind and
+-- year (file_serial per subject code and year from 0001); every issued document takes the next issue_no. Never reused or deleted.
+CREATE TABLE memo_files (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    doc_kind VARCHAR(20) NOT NULL,               -- tc | attestation | testimonial | certificate | letter | notice
+    subject_code CHAR(2) NOT NULL,
+    file_serial SMALLINT UNSIGNED NOT NULL,      -- 1..9999, printed as 4 digits
+    year SMALLINT UNSIGNED NOT NULL,             -- the year the file was opened
+    file_no VARCHAR(30) NOT NULL,                -- the 22-digit file number as issued (codes frozen at opening)
+    next_issue INT UNSIGNED NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NULL,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    UNIQUE KEY uq_memo_file_kind (institution_id, doc_kind, year),
+    UNIQUE KEY uq_memo_file_serial (institution_id, subject_code, year, file_serial)
+);
+CREATE TABLE memo_numbers (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    memo_file_id BIGINT UNSIGNED NOT NULL,
+    issue_no INT UNSIGNED NOT NULL,
+    memo_no VARCHAR(40) NOT NULL,                -- file_no + '.' + issue_no (Latin digits; printed in Bangla digits)
+    doc_kind VARCHAR(20) NOT NULL,
+    source_key VARCHAR(40) NULL,                 -- '<type>:<id>' of the document: tc_certificate | certificate | official_letter | notice
+    recipient VARCHAR(150) NULL,
+    status ENUM('issued','cancelled') NOT NULL DEFAULT 'issued',
+    issued_by BIGINT UNSIGNED NULL,
+    issued_at TIMESTAMP NULL,
+    cancelled_at TIMESTAMP NULL,                 -- who cancelled: audit_logs (memo.cancelled)
+    cancel_reason VARCHAR(255) NULL,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (memo_file_id) REFERENCES memo_files(id),
+    UNIQUE KEY uq_memo_no (institution_id, memo_no),
+    UNIQUE KEY uq_memo_issue (memo_file_id, issue_no)
+);
+CREATE INDEX idx_memo_source ON memo_numbers(institution_id, source_key);
+-- D210 LTR.1: an official letter of the institution (its memo number from memo_numbers)
+CREATE TABLE official_letters (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    memo_no VARCHAR(40) NOT NULL,
+    subject VARCHAR(200) NOT NULL,
+    recipient VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    issued_date DATE NOT NULL,
+    issued_by BIGINT UNSIGNED NOT NULL,
+    status ENUM('issued','cancelled') NOT NULL DEFAULT 'issued',
+    created_at TIMESTAMP NULL,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    UNIQUE KEY uq_letter_memo (institution_id, memo_no)
+);
+ALTER TABLE tc_certificates ADD COLUMN memo_no VARCHAR(40) NULL;           -- D210 PTC.1
+ALTER TABLE certificates ADD COLUMN memo_no VARCHAR(40) NULL;              -- D210 CERT.1
+ALTER TABLE notices ADD COLUMN memo_no VARCHAR(40) NULL;                   -- D210 LTR.1
 
 -- Prepaid SMS credit ledger (institutions.sms_balance is the running balance)
 CREATE TABLE sms_credit_transactions (
