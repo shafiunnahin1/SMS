@@ -103,7 +103,8 @@
    "promotion_tc",
    "certificates",
    "fee_installment",
-   "homework"
+   "homework",
+   "academic_calendar"
   ],
   "roles": [
  "super_admin",
