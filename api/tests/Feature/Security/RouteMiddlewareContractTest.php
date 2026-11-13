@@ -15,7 +15,7 @@ class RouteMiddlewareContractTest extends TestCase
 {
     /** Framework routes outside the API (each with its reason) */
     private const FRAMEWORK = [
-        'GET /' => 'the SPA shell / welcome page',
+        'GET /' => 'D202 PUB.4: the SPA shell with the institution\'s SEO tags (PublicShellController, no session)',
         'GET up' => 'Laravel health ping (no data)',
         'GET storage/{path}' => 'local private-disk serving of signed temporaryUrl() links (signature checked by Laravel)',
         'PUT storage/{path}' => 'Laravel 12 local-disk upload for signed temporaryUploadUrl() links - we never issue one; unsigned = refused (SecurityHeadersTest)',
@@ -43,6 +43,9 @@ class RouteMiddlewareContractTest extends TestCase
         'GET api/v1/public/qb/quizzes/{id}' => 'QB.10: central host; questions without answers, throttle 30/min',
         'POST api/v1/public/qb/quizzes/{id}/check' => 'QB.10: central host; marks only (never the answers), nothing saved, throttle 30/min',
     ];
+
+    /** D202 PUB.4: the SEO shell, robots and sitemap - the paths infra/nginx.conf sends to Laravel; no auth, no tenant binding, no web group */
+    private const SHELL = ['GET notices', 'GET admission', 'GET privacy', 'GET terms', 'GET robots.txt', 'GET sitemap.xml'];
 
     /** D202 PUB.2: tenant-host routes without a login - the public website only */
     private const TENANT_PUBLIC = ['GET api/v1/public/site', 'GET api/v1/public/notices', 'POST api/v1/public/admission'];
@@ -77,6 +80,11 @@ class RouteMiddlewareContractTest extends TestCase
         foreach ($this->routes() as $key => $r) {
             if (isset(self::FRAMEWORK[$key])) continue;
             $uri = $r->uri();
+            if (in_array($key, self::SHELL, true)) {
+                if (!str_starts_with($r->getActionName(), 'App\\Http\\Controllers\\Public\\PublicShellController@')) $problems[] = "{$key}: not the SEO shell controller";
+                if ($r->gatherMiddleware() !== []) $problems[] = "{$key}: the shell takes no middleware (no session, auth or tenant binding)";
+                continue;
+            }
             if (!str_starts_with($uri, 'api/v1/')) { $problems[] = "{$key}: outside api/v1 and not a known framework route"; continue; }
             if ($r->getActionName() === 'Closure') $problems[] = "{$key}: closure route";
             $path = substr($uri, strlen('api/v1/'));
@@ -139,7 +147,7 @@ class RouteMiddlewareContractTest extends TestCase
     public function test_the_listed_exceptions_still_exist(): void
     {
         $all = $this->routes();
-        foreach ([...array_keys(self::FRAMEWORK), ...array_keys(self::PUBLIC), ...self::ANY_HOST_AUTH, ...self::TENANT_PUBLIC] as $key) {
+        foreach ([...array_keys(self::FRAMEWORK), ...array_keys(self::PUBLIC), ...self::ANY_HOST_AUTH, ...self::TENANT_PUBLIC, ...self::SHELL] as $key) {
             $this->assertArrayHasKey($key, $all, "stale exception {$key}");
         }
     }

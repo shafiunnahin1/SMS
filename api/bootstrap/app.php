@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // D202 PUB.4: the SEO shell, robots.txt and sitemap.xml - outside the web group (no session, no cookie)
+        then: fn () => \Illuminate\Support\Facades\Route::group([], base_path('routes/public.php')),
     )
     ->withMiddleware(function (Middleware $middleware) {
         // D51: requests from our own SPA (same host) get a session + CSRF check (Sanctum stateful); SessionBearer then uses the
