@@ -66,6 +66,9 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/admission/cycles/{id}/applications' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.2
             'POST api/v1/admission/cycles/{id}/test-marks' => fn (array $other) => $this->seedCycle($other),   // D209 ACY.3
             'POST api/v1/admission/leads/{id}/confirm' => fn (array $other) => $this->seedLead($other),   // D209 ACY.4
+            'POST api/v1/students/{id}/tc' => fn (array $other) => $this->seedStudent($other),   // D210 PTC.1
+            'GET api/v1/tc/{id}/pdf' => fn (array $other) => $this->seedTc($other),
+            'POST api/v1/tc/{id}/cancel' => fn (array $other) => $this->seedTc($other),
             'POST api/v1/memo-register/{id}/cancel' => fn (array $other) => Tenancy::as($other['institution'], fn () => app(\App\Services\Memo\MemoService::class)->issue('letter', 'X', null, $other['admin']->id)->id),   // D210 MEMO.1
             'POST api/v1/admission/leads/{id}/decline' => fn (array $other) => $this->seedLead($other),
             'POST api/v1/admission/leads/{id}/admit' => fn (array $other) => $this->seedLead($other),
@@ -333,6 +336,12 @@ class TenantIsolationTest extends TestCase
     {
         return \App\Models\User::where('institution_id', $t['institution']->id)->where('role', 'teacher')->value('id')
             ?? $this->makeUser($t['institution'], 'teacher')->id;
+    }
+
+    private function seedTc(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\TcCertificate::create(['student_id' => $student, 'tc_number' => 'TC-T-' . $student . '-' . random_int(1000, 9999), 'issued_date' => now()->toDateString(), 'issued_by' => $t['admin']->id])->id);
     }
 
     private function seedCycle(array $t, string $status = 'draft'): int

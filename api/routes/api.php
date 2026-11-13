@@ -830,6 +830,15 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // ── D210 PTC.1: class promotion and transfer certificates (admin) ──
+        Route::middleware(['module:promotion_tc', 'role:admin'])->group(function () {
+            Route::post('/students/promote',              [\App\Http\Controllers\Documents\PromotionController::class, 'promote'])->middleware('module:students');
+            Route::get('/tc',                             [\App\Http\Controllers\Documents\TcController::class, 'index']);
+            Route::post('/students/{id}/tc',              [\App\Http\Controllers\Documents\TcController::class, 'store'])->whereNumber('id')->middleware('module:students');
+            Route::get('/tc/{id}/pdf',                    [\App\Http\Controllers\Documents\TcController::class, 'pdf'])->whereNumber('id');
+            Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
+        });
+
         // ── D210 MEMO.1: memo (smarak) numbers - the institution's codes and the register (admin) ──
         Route::middleware('role:admin')->group(function () {
             Route::get('/admin/settings/memo',            [\App\Http\Controllers\Memo\MemoSettingsController::class, 'show']);
