@@ -291,6 +291,10 @@ return [
     'POST api/v1/letters' => ['admin'],
     'GET api/v1/letters/{id}/pdf' => ['admin'],
     'POST api/v1/letters/{id}/cancel' => ['admin'],
+    'GET api/v1/fees/installments' => ['admin', 'accountant'],   // D211 INST.1
+    'POST api/v1/fees/installments/plan' => ['admin', 'accountant'],
+    'GET api/v1/fees/installments/{id}' => ['admin', 'accountant'],
+    'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'POST api/v1/students/promote' => ['admin'],   // D210 PTC.1
     'GET api/v1/tc' => ['admin'],
     'POST api/v1/students/{id}/tc' => ['admin'],

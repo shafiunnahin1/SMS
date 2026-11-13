@@ -840,6 +840,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
         });
 
+        // ── D211 INST.1: fee installments (admin, accountant) ──
+        Route::middleware(['module:fees', 'module:fee_installment', 'role:admin,accountant'])->prefix('fees/installments')->group(function () {
+            Route::get('/',                               [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'index']);
+            Route::post('/plan',                          [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'store']);
+            Route::get('/{id}',                           [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'show'])->whereNumber('id');
+            Route::put('/{id}',                           [\App\Http\Controllers\Fees\FeeInstallmentController::class, 'update'])->whereNumber('id');
+        });
+
         // ── D210 LTR.1: official letters (admin) ──
         Route::middleware(['module:notices', 'role:admin'])->group(function () {
             Route::get('/letters',                        [\App\Http\Controllers\Documents\LetterController::class, 'index']);

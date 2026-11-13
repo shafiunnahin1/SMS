@@ -69,6 +69,8 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/students/{id}/tc' => fn (array $other) => $this->seedStudent($other),   // D210 PTC.1
             'POST api/v1/students/{id}/certificates' => fn (array $other) => $this->seedStudent($other),   // D210 CERT.1
             'GET api/v1/letters/{id}/pdf' => fn (array $other) => $this->seedLetter($other),   // D210 LTR.1
+            'GET api/v1/fees/installments/{id}' => fn (array $other) => $this->seedInstallmentPlan($other),   // D211 INST.1
+            'PUT api/v1/fees/installments/{id}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\FeeInstallment::where('plan_id', $this->seedInstallmentPlan($other))->value('id')),
             'POST api/v1/letters/{id}/cancel' => fn (array $other) => $this->seedLetter($other),
             'GET api/v1/public/verify/{code}' => null,   // D210 CERT.1: not a row id - CrossTenantRouteTest::NOT_ROW_IDS, CertificateTest
             'GET api/v1/certificates/{id}/pdf' => fn (array $other) => $this->seedCertificate($other),
@@ -342,6 +344,17 @@ class TenantIsolationTest extends TestCase
     {
         return \App\Models\User::where('institution_id', $t['institution']->id)->where('role', 'teacher')->value('id')
             ?? $this->makeUser($t['institution'], 'teacher')->id;
+    }
+
+    private function seedInstallmentPlan(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], function () use ($student) {
+            $cat = \App\Models\FeeCategory::value('id') ?? \App\Models\FeeCategory::create(['name' => 'Admission', 'frequency' => 'once', 'amount' => '1000'])->id;
+            $plan = \App\Models\FeeInstallmentPlan::create(['student_id' => $student, 'fee_category_id' => $cat, 'total_amount' => '1000.00', 'installments' => 2, 'due_key' => '1:' . $cat . ':once']);
+            \App\Models\FeeInstallment::create(['plan_id' => $plan->id, 'installment_no' => 1, 'amount' => '500.00', 'due_date' => now()->addMonth()->toDateString(), 'status' => 'pending']);
+            return $plan->id;
+        });
     }
 
     private function seedLetter(array $t): int
