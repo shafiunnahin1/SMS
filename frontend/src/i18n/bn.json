@@ -191,7 +191,7 @@
   "dashboard": {
    "title": "ড্যাশবোর্ড",
    "hello": "স্বাগতম, {{name}}",
-   "students": "সক্রিয় ছাত্রছাত্রী",
+   "leads_title": "ভর্তি-আবেদন", "leads_follow_up": "আজ যাদের সাথে যোগাযোগ করতে হবে", "leads_website": "গত ৭ দিনে ওয়েবসাইট থেকে নতুন আবেদন", "students": "সক্রিয় ছাত্রছাত্রী",
    "teachers": "শিক্ষক",
    "sms_balance": "SMS ক্রেডিট",
    "attendance_today": "আজকের উপস্থিতি",

@@ -191,7 +191,7 @@
   "dashboard": {
    "title": "Dashboard",
    "hello": "Welcome, {{name}}",
-   "students": "Active students",
+   "leads_title": "Admission applications", "leads_follow_up": "Follow-ups due today", "leads_website": "New website applications, last 7 days", "students": "Active students",
    "teachers": "Teachers",
    "sms_balance": "SMS credit",
    "attendance_today": "Attendance today",

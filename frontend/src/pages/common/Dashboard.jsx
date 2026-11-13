@@ -66,6 +66,13 @@ function AdminView({ d }) {
         <span>{t('dashboard.exams_open')}: <Ltr>{n(d.exams_open)}</Ltr></span>
         <Link to="/admin/exams" className="text-sm text-primary-fg underline">{t('exams.title')}</Link>
       </Card>
+      {d.leads && (   /* D204 GAP.2: the admission card - counts only */
+        <Card className="flex flex-col gap-2" data-testid="dashboard-leads">
+          <h2 className="font-semibold">{t('dashboard.leads_title')}</h2>
+          <Link to={`/admin/leads?follow_up_date=${d.leads.today ?? ''}`} className="flex justify-between gap-2 text-sm underline"><span>{t('dashboard.leads_follow_up')}</span><Ltr>{n(d.leads.follow_up_today)}</Ltr></Link>
+          <Link to={`/admin/leads?source=website&created_from=${d.leads.since}`} className="flex justify-between gap-2 text-sm underline"><span>{t('dashboard.leads_website')}</span><Ltr>{n(d.leads.website_7_days)}</Ltr></Link>
+        </Card>
+      )}
     </>
   )
 }

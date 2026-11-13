@@ -22,9 +22,11 @@ class LeadController extends Controller
     public function index(Request $request)
     {
         $f = $request->validate(['status' => ['nullable', Rule::in(['new', 'contacted', 'visited', 'enrolled', 'lost'])], 'follow_up_date' => 'nullable|date_format:Y-m-d', 'page' => 'nullable|integer|min:1',
-            'referred_by' => 'nullable|integer|min:1']);   // D203: filter by referrer
+            'referred_by' => 'nullable|integer|min:1',   // D203: filter by referrer
+            'source' => ['nullable', Rule::in(AdmissionLead::SOURCES)], 'created_from' => 'nullable|date_format:Y-m-d']);   // D204 GAP.2: the dashboard's website link
         $q = AdmissionLead::with(self::WITH)->when($f['status'] ?? null, fn ($w, $s) => $w->where('status', $s))
             ->when($f['referred_by'] ?? null, fn ($w, $u) => $w->where('referred_by', $u))
+            ->when($f['source'] ?? null, fn ($w, $src) => $w->where('source', $src))->when($f['created_from'] ?? null, fn ($w, $d) => $w->where('created_at', '>=', $d . ' 00:00:00'))
             ->when($f['follow_up_date'] ?? null, fn ($w, $d) => $w->whereDate('follow_up_date', $d))->orderByDesc('id');
         $page = $q->paginate(25);
         return response()->json(['success' => true, 'data' => collect($page->items())->map(fn ($l) => $this->row($l))->values(),

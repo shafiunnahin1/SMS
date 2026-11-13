@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
@@ -26,7 +27,10 @@ export default function Leads() {
   const term = useTerms()
   const qc = useQueryClient()
   const toast = (m) => useUiStore.getState().addToast(m)
-  const [status, setStatus] = useState('')
+  // D204 GAP.2: the dashboard card links here with ?follow_up_date= or ?source=website&created_from=
+  const [search] = useSearchParams()
+  const [status, setStatus] = useState(search.get('status') ?? '')
+  const link = Object.fromEntries(['follow_up_date', 'source', 'created_from'].filter(k => search.get(k)).map(k => [k, search.get(k)]))
   const [form, setForm] = useState(null)
   const [admit, setAdmit] = useState(null)        // { id, batch_id }
   const [referrer, setReferrer] = useState('')    // D203: filter by referrer
@@ -43,7 +47,7 @@ export default function Leads() {
     ...(staff.data ?? []).filter(x => x.is_active).map(x => [String(x.id), x.name]),
     ...(summary.data?.meta ? summary.data.data : []).map(x => [String(x.user_id), x.name]),
   ]).entries()].map(([value, label]) => ({ value, label: label ?? `#${value}` }))
-  const params = { ...(status ? { status } : {}), ...(referrer ? { referred_by: referrer } : {}) }
+  const params = { ...link, ...(status ? { status } : {}), ...(referrer ? { referred_by: referrer } : {}) }
   const q = useQuery({ queryKey: ['leads', params], queryFn: () => api.get('/leads', { params }).then(r => r.data) })
   const reload = () => { qc.invalidateQueries({ queryKey: ['leads'] }); qc.invalidateQueries({ queryKey: ['leads-referral-summary'] }) }
   const run = async (fn, done) => { try { await fn(); toast(t('common.saved')); done?.(); reload() } catch { /* the interceptor shows it */ } }

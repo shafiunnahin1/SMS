@@ -45,7 +45,18 @@ class DashboardController extends Controller
             'collection' => $this->collection(),
             'exams_open' => Exam::where('status', '!=', 'published')->count(),
             'sms_balance' => $sms->usage(Tenancy::current())['balance'],
-        ]]);
+        ] + $this->leads()]);
+    }
+
+    /** D204 GAP.2: the admission card - counts only (no names, no phones), only with the `leads` module */
+    private function leads(): array
+    {
+        if (!app(\App\Services\ModuleGate::class)->allows(Tenancy::current(), 'leads')) return [];
+        return ['leads' => [
+            'follow_up_today' => \App\Models\AdmissionLead::whereIn('status', \App\Models\AdmissionLead::OPEN)->whereDate('follow_up_date', now()->toDateString())->count(),
+            'website_7_days' => \App\Models\AdmissionLead::where('source', 'website')->where('created_at', '>=', now()->subDays(7))->count(),
+            'today' => now()->toDateString(), 'since' => now()->subDays(7)->toDateString(),
+        ]];
     }
 
     /** GET /accountant/dashboard */
