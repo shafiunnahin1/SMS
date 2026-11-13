@@ -63,6 +63,7 @@ class CrossTenantRouteTest extends TestCase
         'GET api/v1/question-bank/concepts/{id}', 'GET api/v1/question-bank/resources/{id}', 'GET api/v1/question-bank/questions/{id}',
         'GET api/v1/student/qb/questions/{id}', 'GET api/v1/student/qb/concepts/{id}', 'GET api/v1/student/qb/resources/{id}', 'POST api/v1/student/qb/practice/{id}/submit', 'GET api/v1/student/qb/orders/{ref}',
         'POST api/v1/student/qb/quiz-packages/{id}/buy', 'POST api/v1/student/qb/quizzes/{id}/attempts',   // QB.10: catalogue rows
+        'POST api/v1/homework/{id}/submit',   // D212 HW.2: student only; HomeworkSubmissionTest: another institution's homework 404
         'GET api/v1/student/exams/{id}/admit-card',   // D193 ADM.1: own card only (AdmitCardTest: another institution's exam 404)
         'GET api/v1/student/qb/attempts/{id}', 'PUT api/v1/student/qb/attempts/{id}', 'POST api/v1/student/qb/attempts/{id}/submit',   // QB.10: own attempt (QbQuizTest: another student 404)   // QB.9: catalogue rows / own order by ref (QbStudentTest)   // QB.5: platform catalogue rows; QbLibraryTest: another institution's unlock opens nothing
     ];

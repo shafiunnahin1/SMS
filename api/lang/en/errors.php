@@ -30,6 +30,8 @@ return [
     'installment_paid'       => 'A paid installment cannot change.',
     'installment_mismatch'   => 'The due no longer matches this installment (it was paid or changed elsewhere).',
     'not_your_subject'       => 'You do not teach this subject here.',
+    'empty_submission'       => 'Write something or attach a file.',
+    'submission_graded'      => 'This submission is already graded.',
     'application_not_found'  => 'No application matches this number and phone.',
     'lead_not_selected'      => 'This applicant is not selected.',
     'unknown_application'    => 'These application numbers did not sit the test: :list',

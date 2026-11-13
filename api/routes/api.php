@@ -853,6 +853,17 @@ Route::prefix('v1')->group(function () {
                 Route::get('/homework/{id}/file',         [\App\Http\Controllers\Homework\HomeworkController::class, 'file'])->whereNumber('id');
             });
             Route::get('/student/homework',               [\App\Http\Controllers\Homework\HomeworkController::class, 'mine'])->middleware('role:student');
+            // D212 HW.2: submissions
+            Route::post('/homework/{id}/submit',          [\App\Http\Controllers\Homework\HomeworkSubmissionController::class, 'submit'])->whereNumber('id')->middleware(['role:student', 'throttle:20,1']);
+            Route::middleware('role:admin,teacher')->group(function () {
+                Route::get('/homework/options',           [\App\Http\Controllers\Homework\HomeworkSubmissionController::class, 'options']);
+                Route::get('/homework/{id}/submissions',  [\App\Http\Controllers\Homework\HomeworkSubmissionController::class, 'index'])->whereNumber('id');
+                Route::post('/homework/{id}/paper',       [\App\Http\Controllers\Homework\HomeworkSubmissionController::class, 'paper'])->whereNumber('id');
+                Route::post('/homework/submissions/{id}/grade', [\App\Http\Controllers\Homework\HomeworkSubmissionController::class, 'grade'])->whereNumber('id');
+            });
+            Route::get('/homework/submissions/{id}/file', [\App\Http\Controllers\Homework\HomeworkSubmissionController::class, 'file'])->whereNumber('id')->middleware('role:admin,teacher,student,parent');
+            Route::get('/student/homework/submitted',     [\App\Http\Controllers\Homework\HomeworkSubmissionController::class, 'mine'])->middleware('role:student');
+            Route::get('/parent/homework/submitted',      [\App\Http\Controllers\Homework\HomeworkSubmissionController::class, 'child'])->middleware('role:parent');
             Route::get('/parent/homework',                [\App\Http\Controllers\Homework\HomeworkController::class, 'child'])->middleware('role:parent');
         });
 

@@ -305,6 +305,14 @@ return [
     'GET api/v1/homework/{id}/file' => ['admin', 'teacher', 'student', 'parent'],
     'GET api/v1/student/homework' => ['student'],
     'GET api/v1/parent/homework' => ['parent'],
+    'POST api/v1/homework/{id}/submit' => ['student'],   // D212 HW.2
+    'GET api/v1/homework/options' => ['admin', 'teacher'],
+    'GET api/v1/homework/{id}/submissions' => ['admin', 'teacher'],
+    'POST api/v1/homework/{id}/paper' => ['admin', 'teacher'],
+    'POST api/v1/homework/submissions/{id}/grade' => ['admin', 'teacher'],
+    'GET api/v1/homework/submissions/{id}/file' => ['admin', 'teacher', 'student', 'parent'],
+    'GET api/v1/student/homework/submitted' => ['student'],
+    'GET api/v1/parent/homework/submitted' => ['parent'],
     'POST api/v1/students/promote' => ['admin'],   // D210 PTC.1
     'GET api/v1/tc' => ['admin'],
     'POST api/v1/students/{id}/tc' => ['admin'],

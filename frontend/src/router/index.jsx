@@ -41,6 +41,9 @@ const PromotionTc = lazy(() => import('../pages/documents/PromotionTc'))   // D2
 const Certificates = lazy(() => import('../pages/documents/Certificates'))   // D210 CERT.1
 const Letters = lazy(() => import('../pages/documents/Letters'))   // D210 LTR.1
 const Installments = lazy(() => import('../pages/fees/Installments'))   // D211 INST.2
+const HomeworkTeacher = lazy(() => import('../pages/homework/HomeworkTeacher'))   // D212 HW.2
+const HomeworkStudent = lazy(() => import('../pages/homework/HomeworkStudent'))
+const HomeworkParent = lazy(() => import('../pages/homework/HomeworkParent'))
 const VerifyDocument = lazy(() => import('../pages/public/VerifyDocument'))
 const MemoRegister = lazy(() => import('../pages/admin/memo/MemoRegister'))
 const MyCovers = lazy(() => import('../pages/substitution/MyCovers'))
@@ -198,6 +201,7 @@ export const tenantRoutes = [
     { path: 'academic/promotion', element: S(PromotionTc) },   // D210 PTC.1
     { path: 'certificates', element: S(Certificates) },   // D210 CERT.1
     { path: 'letters', element: S(Letters) },   // D210 LTR.1
+    { path: 'homework', element: S(HomeworkTeacher) },   // D212 HW.2
     { path: 'fees/installments', element: S(Installments) },   // D211 INST.2
     { path: 'memo-register', element: S(MemoRegister) },
     { path: 'fees/dues', element: S(FeeLedger) },
@@ -238,16 +242,17 @@ export const tenantRoutes = [
     { path: 'accounting', element: S(AccVouchers) }, { path: 'donations', element: S(DonList) },
     { path: 'hr/payroll', element: S(HrPayroll) }, { path: 'hr/advances', element: S(HrAdvances) }, { path: 'hr/adjustments', element: S(HrAdjustments) }, { path: 'hr/revisions', element: S(HrRevisions) },
   ]),
-  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'referrals', element: S(MyReferrals) }, { path: 'leave/students', element: S(StudentLeaves) }, { path: 'periods', element: S(MyPeriods) }, { path: 'substitutions', element: S(MyCovers) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbAllQuestions) }, { path: 'materials', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/all-questions', element: S(QbAllQuestions) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }, { path: 'question-bank/papers/:id/omr', element: S(QbOmr) }, { path: 'question-bank/papers/:id/preview', element: S(QbPaperPreview) }, { path: 'salary', element: S(MySalary) }, { path: 'ai', element: S(AiChat) }, { path: 'routine', element: S(MyRoutine) }]),
+  area('/teacher', 'teacher', [{ path: 'dashboard', element: S(Dashboard) }, { path: 'referrals', element: S(MyReferrals) }, { path: 'leave/students', element: S(StudentLeaves) }, { path: 'periods', element: S(MyPeriods) }, { path: 'substitutions', element: S(MyCovers) }, { path: 'attendance', element: S(Attendance) }, { path: 'batches', element: S(MyBatches) }, { path: 'marks', element: S(MyMarks) }, { path: 'marks/:examId/:subjectId', element: S(MarksEntry) }, { path: 'question-bank', element: S(QbAllQuestions) }, { path: 'materials', element: S(QbLibrary) }, { path: 'question-bank/papers', element: S(QbPapers) }, { path: 'question-bank/all-questions', element: S(QbAllQuestions) }, { path: 'question-bank/papers/:id', element: S(QbPaperEdit) }, { path: 'question-bank/papers/:id/omr', element: S(QbOmr) }, { path: 'question-bank/papers/:id/preview', element: S(QbPaperPreview) }, { path: 'salary', element: S(MySalary) }, { path: 'ai', element: S(AiChat) }, { path: 'routine', element: S(MyRoutine) }, { path: 'homework', element: S(HomeworkTeacher) }]),
   area('/staff', ['institution_staff', 'teacher'], [   // D206 TDM.4: a teacher in department mode uses the staff pages
 { path: 'departments', element: S(MyDepartments) }, { path: 'leads', element: S(Leads) }, { path: 'referrals', element: S(MyReferrals) }, { path: 'profile', element: S(MyProfile) }, { path: 'ai', element: S(AiChat) }, { path: 'students', element: S(StaffStudents) }, { path: 'students/new', element: S(StaffStudentAdd) }, { path: 'students/:id', element: S(StaffStudentProfile) }, { path: 'fees/collect', element: S(StaffFeeCollect) }, { path: 'attendance', element: S(StaffAttendance) }, { path: 'substitutions', element: S(CoverDesk) }]),   // D201 SUBM.3: the cover desk for staff reviewers   // R3.12 / D88-D91; D168: the help guide; D169 STW.2
-  area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }, { path: 'my-class', element: S(LearnerProfile) }, { path: 'practice', element: S(QbPractice) }, { path: 'ai', element: S(AiChat) }, { path: 'routine', element: S(MyRoutine) }, { path: 'dashboard', element: S(StudentDashboard) }, { path: 'results', element: S(StudentResults) }, { path: 'fees', element: S(StudentFees) }, { path: 'attendance', element: S(StudentAttendance) }, { path: 'materials', element: S(QbStudy, { initialTab: 'concepts' }) }]),   // D195 STP.1; D165 ST.6: the student assistant   // QB.9 / QB.10: the student portal (other student screens: R1.1)
+  area('/student', 'student', [{ path: 'question-bank', element: S(QbStudy) }, { path: 'quizzes', element: S(QbStudentQuizzes) }, { path: 'quizzes/:id', element: S(QbQuizAttempt) }, { path: 'my-class', element: S(LearnerProfile) }, { path: 'practice', element: S(QbPractice) }, { path: 'ai', element: S(AiChat) }, { path: 'routine', element: S(MyRoutine) }, { path: 'dashboard', element: S(StudentDashboard) }, { path: 'results', element: S(StudentResults) }, { path: 'fees', element: S(StudentFees) }, { path: 'attendance', element: S(StudentAttendance) }, { path: 'materials', element: S(QbStudy, { initialTab: 'concepts' }) }, { path: 'homework', element: S(HomeworkStudent) }]),   // D195 STP.1; D165 ST.6: the student assistant   // QB.9 / QB.10: the student portal (other student screens: R1.1)
   area('/parent', 'parent', [
     { path: 'dashboard', element: S(ParentHome) },
     { path: 'fees', element: S(ParentFees) },
     { path: 'attendance', element: S(ParentAttendance) },
     { path: 'results', element: S(ParentResults) },
     { path: 'leave', element: S(ParentLeave) },
+    { path: 'homework', element: S(HomeworkParent) },   // D212 HW.2
     { path: 'ai', element: S(AiChat) },   // D166 AI-Q4
   ]),
   // D193 NTC.1: one notice board for the reader roles (the menu links /notices for each of them)
