@@ -51,7 +51,7 @@ class DepartmentContextService
             || !Institution::whereKey($tenant->id)->where('status', 'active')->exists()) $this->forbidden();
 
         $user = User::inTenant()->whereKey($actor->id)->first();
-        if (!$user || $user->role !== 'institution_staff' || !$user->is_active
+        if (!$user || !in_array($user->role, ['institution_staff', 'teacher'], true) || !$user->is_active   // D206 TDM.1: teachers as members
             || ($user->locked_until && $user->locked_until->isFuture())) $this->forbidden();
         if (Teacher::withTrashed()->where('user_id', $user->id)->count() > 1
             || StaffMember::withTrashed()->where('user_id', $user->id)->count() > 1) $this->forbidden();

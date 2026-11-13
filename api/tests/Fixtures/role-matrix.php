@@ -12,8 +12,8 @@
 // names only, used by every panel's filters).
 return [
     // Own department identity metadata: no legacy role grant; new role tested in DepartmentAuthorizationTest.
-    'GET api/v1/staff/departments' => [],
-    'GET api/v1/staff/departments/{id}/portal' => [],
+    'GET api/v1/staff/departments' => ['teacher'],   // D206 TDM.1: a teacher who is a department member
+    'GET api/v1/staff/departments/{id}/portal' => ['teacher'],
     'POST api/v1/admin/departments/{department}/members' => ['admin'],
     'PATCH api/v1/admin/department-memberships/{id}' => ['admin'],
     'PUT api/v1/admin/department-memberships/{id}/duties' => ['admin'],

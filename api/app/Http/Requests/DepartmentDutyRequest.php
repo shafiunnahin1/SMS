@@ -13,7 +13,7 @@ class DepartmentDutyRequest extends FormRequest
         $required = $this->isMethod('POST') ? 'required' : 'sometimes|required';
         $rules = ['code' => $required.'|string|max:40', 'name' => $required.'|string|max:120',
             'description' => 'sometimes|nullable|string|max:500', 'permission_keys' => $required.'|array|min:1|max:150',
-            'permission_keys.*' => ['required', 'string', 'distinct:strict', Rule::in(DepartmentPermissionKeys::ALL)]];
+            'permission_keys.*' => ['required', 'string', 'distinct:strict', Rule::in(DepartmentPermissionKeys::known())]];   // D206 TDM.1: the same list the service checks (D102/D201/D204 keys were refused here)
         if (!$this->isMethod('POST')) $rules['status'] = 'sometimes|required|in:active,archived';
         return $rules;
     }

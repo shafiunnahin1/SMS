@@ -24,7 +24,7 @@ class DepartmentDutyPermissionService
 
         if (!Institution::whereKey($tenant->id)->where('status', 'active')->where('staff_department_mode', 'department')->exists()) return [];
         $user = User::inTenant()->whereKey($actor->id)->first();
-        if (!$user || $user->role !== 'institution_staff' || !$user->is_active
+        if (!$user || !in_array($user->role, ['institution_staff', 'teacher'], true) || !$user->is_active   // D206 TDM.1: teachers as members
             || ($user->locked_until && $user->locked_until->isFuture())) return [];
 
         // Historical links participate in ambiguity review; one Teacher plus one StaffMember is valid.

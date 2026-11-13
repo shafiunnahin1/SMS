@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class DepartmentContextRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->role === 'institution_staff' && $this->user()->is_active; }
+    public function authorize(): bool { return in_array($this->user()?->role, ['institution_staff', 'teacher'], true) && $this->user()->is_active; }   // D206 TDM.1
 
     public function rules(): array
     {

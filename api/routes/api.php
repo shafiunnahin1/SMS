@@ -234,8 +234,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['tenant', 'locale', 'auth:sanctum', 'tenant.user', 'password.fresh', 'subscription', \App\Http\Middleware\StaffIdentityBoundary::class, \App\Http\Middleware\TeacherFeatureGate::class])->group(function () {   // D205 PERM.1: teacher feature switches
         Route::get('/teacher/features', [\App\Http\Controllers\Admin\TeacherFeatureController::class, 'mine'])->middleware('role:teacher');
         Route::patch('/staff/profile', [\App\Http\Controllers\Auth\StaffAccountController::class, 'updateOwnProfile'])->middleware('role:institution_staff');
-        Route::get('/staff/departments', [\App\Http\Controllers\DepartmentContextController::class, 'index'])->middleware('role:institution_staff');
-        Route::get('/staff/departments/{id}/portal', [\App\Http\Controllers\DepartmentContextController::class, 'show'])->whereNumber('id')->middleware('role:institution_staff');
+        Route::get('/staff/departments', [\App\Http\Controllers\DepartmentContextController::class, 'index'])->middleware('role:institution_staff,teacher');   // D206 TDM.1
+        Route::get('/staff/departments/{id}/portal', [\App\Http\Controllers\DepartmentContextController::class, 'show'])->whereNumber('id')->middleware('role:institution_staff,teacher');
         Route::patch('/auth/change-password', [PasswordResetController::class, 'changePassword']);
         Route::get('/auth/sessions',          [SessionController::class, 'index']);
         Route::delete('/auth/sessions/{id}',  [SessionController::class, 'destroy'])->whereNumber('id');

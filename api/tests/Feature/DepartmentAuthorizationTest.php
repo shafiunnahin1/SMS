@@ -1246,7 +1246,7 @@ class DepartmentAuthorizationTest extends TestCase
         $grant = DepartmentDutyAssignment::sole();
         foreach ([[$grant, 'status', 'revoked'], [$duty, 'status', 'archived'], [$duty, 'permission_keys', ['staff.batch.index']],
             [$membership, 'status', 'inactive'], [$department, 'status', 'archived'], [$user, 'is_active', false],
-            [$user, 'role', 'teacher'], [$user, 'locked_until', now()->addHour()], [$teacher, 'status', 'inactive']] as [$row, $field, $value]) {
+            [$user, 'role', 'accountant'], [$user, 'locked_until', now()->addHour()], [$teacher, 'status', 'inactive']] as [$row, $field, $value]) {
             $before = $row->getAttribute($field); $this->assertCount(2, $service->ownBatches($user, $department->id));
             $row->forceFill([$field => $value])->save(); $denied();
             $row->forceFill([$field => $before])->save();
@@ -1412,7 +1412,7 @@ class DepartmentAuthorizationTest extends TestCase
             Tenancy::withoutTenancy(fn () => $denied($a['user']));
             try { $service->show($a['user'], $b['department']->id); $this->fail('Foreign context exposed'); }
             catch (\Illuminate\Database\Eloquent\ModelNotFoundException) { $this->assertTrue(true); }
-            foreach ([[$a['user'], 'is_active', false], [$a['user'], 'role', 'teacher'], [$a['user'], 'locked_until', now()->addHour()], [$a['i'], 'status', 'inactive']] as [$row, $field, $value]) {
+            foreach ([[$a['user'], 'is_active', false], [$a['user'], 'role', 'accountant'], [$a['user'], 'locked_until', now()->addHour()], [$a['i'], 'status', 'inactive']] as [$row, $field, $value]) {
                 $before = $row->getAttribute($field); $row->forceFill([$field => $value])->save();
                 $denied($a['user']); $row->forceFill([$field => $before])->save();
                 $this->assertCount(1, $service->index($a['user']));
@@ -1447,7 +1447,7 @@ class DepartmentAuthorizationTest extends TestCase
         extract($this->fixture()); $this->bindTenant($i); $check = app(DepartmentDutyPermissionService::class);
         $assignment = DepartmentDutyAssignment::sole();
         foreach ([[$assignment, 'status', 'revoked'], [$duty, 'status', 'archived'], [$membership, 'status', 'inactive'],
-            [$department, 'status', 'archived'], [$user, 'is_active', false], [$user, 'role', 'teacher'], [$user, 'locked_until', now()->addHour()], [$i, 'status', 'inactive']] as [$row, $field, $denied]) {
+            [$department, 'status', 'archived'], [$user, 'is_active', false], [$user, 'role', 'accountant'], [$user, 'locked_until', now()->addHour()], [$i, 'status', 'inactive']] as [$row, $field, $denied]) {
             $before = $row->getAttribute($field);
             $this->assertTrue($check->has($user, $department->id, 'staff.report.dues'));
             $row->forceFill([$field => $denied])->save();

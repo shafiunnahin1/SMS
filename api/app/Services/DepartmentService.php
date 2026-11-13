@@ -83,8 +83,8 @@ class DepartmentService
 
     private function membershipUser(int $id): User
     {
-        // Legacy roles are reviewed/mapped only in R3.6b, never silently converted here.
-        return User::inTenant()->where('role', 'institution_staff')->whereKey($id)->lockForUpdate()->firstOrFail();
+        // Legacy roles are reviewed/mapped only in R3.6b, never silently converted here. D206 TDM.1: a teacher may be a member too.
+        return User::inTenant()->whereIn('role', ['institution_staff', 'teacher'])->whereKey($id)->lockForUpdate()->firstOrFail();
     }
 
     private function validateMembership(array $input, ?DepartmentMembership $member = null): void
