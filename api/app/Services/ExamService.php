@@ -38,6 +38,7 @@ class ExamService
     public function publish(Exam $exam): Exam
     {
         if (!Result::where('exam_id', $exam->id)->exists()) throw new BusinessException('no marks yet', 'no_results', 422);
+        if (\App\Support\GradingScale::incomplete()) throw new BusinessException('fill the grade ranges first', 'grading_incomplete', 422);   // D214 MAD.4
         $exam->update(['status' => 'published']);
         return $exam;
     }
@@ -120,7 +121,7 @@ class ExamService
                 $r = $results->get($es->subject_id);
                 return ['subject_id' => $es->subject_id, 'subject' => $es->subject?->name, 'full_marks' => $es->full_marks, 'pass_marks' => $es->pass_marks,
                     'components' => $es->components, 'component_marks' => $r?->component_marks, 'marks_obtained' => $r?->marks_obtained,
-                    'percentage' => $r?->percentage, 'grade' => $r?->grade, 'grade_point' => $r?->grade_point,
+                    'percentage' => $r?->percentage, 'grade' => $r?->grade, 'grade_label' => \App\Support\GradingScale::label($r?->grade), 'grade_point' => $r?->grade_point,
                     'is_absent' => (bool) $r?->is_absent, 'is_pass' => $r ? (bool) $r->is_pass : null, 'remarks' => $r?->teacher_remarks];
             })->values();
         $full = $rows->sum(fn ($r) => (float) $r['full_marks']);

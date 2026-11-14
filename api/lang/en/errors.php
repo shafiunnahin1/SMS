@@ -31,6 +31,8 @@ return [
     'installment_mismatch'   => 'The due no longer matches this installment (it was paid or changed elsewhere).',
     'holiday_exists'         => 'A holiday already exists on one of these days.',   // D213 CAL.1
     'holiday_range_too_long' => 'At most :max days can be added at once.',
+    'grading_incomplete' => 'Fill the grade ranges first: set the lowest percentage of every grade in the madrasa settings.',   // D214 MAD.4
+    'grading_order' => 'The lowest percentages must go down from the top grade to the bottom.',
     'hifz_range_order' => 'The start surah/ayah cannot come after the end.',   // D214 MAD.1
     'hifz_edit_window' => 'Your own entry can be changed only within 24 hours.',
     'hifz_hidden_from_parents' => 'The institution has not turned on hifz progress for parents.',

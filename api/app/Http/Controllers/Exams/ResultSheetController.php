@@ -78,6 +78,7 @@ class ResultSheetController extends Controller
         $s = $this->draft($id);
         $reason = $request->validate(['reason' => 'nullable|string|max:255'])['reason'] ?? null;
         if (!FinalResult::where('result_sheet_id', $s->id)->exists()) throw new BusinessException('compute first', 'result_sheet_not_computed', 422);
+        if (\App\Support\GradingScale::incomplete()) throw new BusinessException('fill the grade ranges first', 'grading_incomplete', 422);   // D214 MAD.4
         $s->update(['status' => 'published', 'published_at' => now()]);
         AuditLog::record('result_sheet.published', $s, ['reason' => $reason, 'version' => $s->version]);
         return response()->json(['success' => true, 'data' => $this->row($s->fresh(['program:id,name', 'batch:id,name']))]);

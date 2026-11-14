@@ -36,7 +36,7 @@
       </td>
       <td class="num">{{ $n($s['full_marks']) }}</td>
       <td class="num">{{ $s['is_absent'] ? __('pdf.marksheet.absent') : $n($s['marks_obtained']) }}</td>
-      @if ($sheet['use_gpa'])<td>{{ $s['grade'] ?? '—' }}</td><td class="num">{{ $s['grade_point'] === null ? '—' : number_format((float) $s['grade_point'], 2) }}</td>
+      @if ($sheet['use_gpa'])<td>{{ \App\Support\GradingScale::label($s['grade'] ?? null) ?? '—' }}</td><td class="num">{{ $s['grade_point'] === null ? '—' : number_format((float) $s['grade_point'], 2) }}</td>
       @else<td class="num">{{ $n($s['percentage']) }}</td>@endif
     </tr>
   @endforeach

@@ -13,7 +13,7 @@ import { useLocale } from '../../ui/I18nProvider'
 import { fmtHijri } from '../../features/hijri/hijri'
 
 // D214 MAD.1 /admin/settings/madrasa: the hifz switch and its settings (pages a para, days before "behind", parents' view);
-// D214 MAD.2: the Hijri calendar display; D214 MAD.3: second-language names
+// D214 MAD.2: the Hijri calendar display; D214 MAD.3: second-language names; D214 MAD.4: grade labels
 export default function MadrasaSettings() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -47,6 +47,7 @@ export default function MadrasaSettings() {
       </Card>
       <HijriSettings />
       <AltNameSettings />
+      <GradingSettings />
     </div>
   )
 }
@@ -113,6 +114,52 @@ function AltNameSettings() {
         {cur.alt_name_locale && <Input name="name_alt" label={t('altname.institution')} dir={cur.alt_name_locale === 'ar' ? 'rtl' : 'ltr'} maxLength={150} value={cur.name_alt} onChange={(e) => setF({ ...cur, name_alt: e.target.value })} />}
         <p className="text-sm text-content-muted">{t('altname.note')}</p>
         <div><Button type="submit" disabled={busy} data-action="save-altname">{t('hifz.save')}</Button></div>
+      </form>
+    </Card>
+  )
+}
+
+// D214 MAD.4: the grading preset - the usual GPA scale, or madrasa grade names whose ranges the institution fills itself
+function GradingSettings() {
+  const { t } = useTranslation()
+  const { locale } = useLocale()
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['settings', 'general'], queryFn: () => api.get('/admin/settings/general').then(r => r.data.data) })
+  const [f, setF] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const g = q.data?.grading
+  const cur = f ?? (g ? { preset: g.preset, rows: g.preset === 'labelled' ? g.rows.map(r => ({ grade: r.grade, min: r.min ?? '', label: r.label?.[locale] ?? r.label?.bn ?? '' })) : [] } : null)
+  if (q.isPending) return <Loader />
+  if (q.isError || !cur) return <ErrorState onRetry={q.refetch} />
+  const setRow = (i, k, v) => setF({ ...cur, rows: cur.rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)) })
+  const save = async (e) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      await api.put('/admin/settings/general', { grading: cur.preset === 'labelled'
+        ? { preset: 'labelled', rows: cur.rows.filter(r => r.grade !== 'F').map(r => ({ grade: r.grade, min: r.min === '' ? null : Number(r.min), label: r.label ? { [locale]: r.label } : null })) }
+        : { preset: 'bd_gpa' } })
+      useUiStore.getState().addToast(t('hifz.settings_saved'))
+    } catch { /* the interceptor shows the error */ } finally { setBusy(false); setF(null); qc.invalidateQueries({ queryKey: ['settings', 'general'] }) }
+  }
+  return (
+    <Card>
+      <form className="flex flex-col gap-3 sm:max-w-xl" onSubmit={save} data-testid="grading-settings">
+        <h2 className="font-semibold">{t('grading.title')}</h2>
+        <Select name="preset" label={t('grading.preset')} value={cur.preset} onChange={(e) => setF({ preset: e.target.value, rows: e.target.value === 'labelled' && g.preset === 'labelled' ? cur.rows : [] })}
+          options={[{ value: 'bd_gpa', label: t('grading.presets.bd_gpa') }, { value: 'labelled', label: t('grading.presets.labelled') }]} />
+        {cur.preset === 'labelled' && !cur.rows.length && <p className="text-sm text-content-muted">{t('grading.save_first')}</p>}
+        {cur.preset === 'labelled' && cur.rows.map((r, i) => (
+          <div key={r.grade} className="grid gap-2 grid-cols-2 items-end">
+            <Input name={`label-${r.grade}`} label={t('grading.name')} value={r.label} onChange={(e) => setRow(i, 'label', e.target.value)} maxLength={40} />
+            {r.grade === 'F'
+              ? <p className="text-sm text-content-muted pb-2">{t('grading.fail_row')}</p>
+              : <Input name={`min-${r.grade}`} type="number" min="0" max="100" step="0.01" label={t('grading.min')} value={r.min} onChange={(e) => setRow(i, 'min', e.target.value)} ltr />}
+          </div>
+        ))}
+        {g.incomplete && g.preset === 'labelled' && <p className="text-sm text-red-600" data-testid="grading-incomplete">{t('grading.incomplete')}</p>}
+        <p className="text-sm text-content-muted">{t('grading.note')}</p>
+        <div><Button type="submit" disabled={busy} data-action="save-grading">{t('hifz.save')}</Button></div>
       </form>
     </Card>
   )

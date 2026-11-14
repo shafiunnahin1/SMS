@@ -31,7 +31,7 @@ class FinalResultService
         foreach (Result::whereIn('exam_id', $examIds)->whereIn('student_id', array_keys($students))->get(['exam_id', 'student_id', 'subject_id', 'percentage', 'is_absent', 'is_pass']) as $r) {
             $res[$r->exam_id][$r->student_id][$r->subject_id] = $r;
         }
-        $scale = (Tenancy::current()->settings ?? [])['grading_scale'] ?? config('grading.default_scale');
+        $scale = \App\Support\GradingScale::rowsOrFail();   // D214 MAD.4
         $useGpa = (bool) ($rule['use_gpa'] ?? app(InstitutionSettings::class)->general(Tenancy::current())['use_gpa']);
         $passPct = (float) $rule['pass_percent'];
         $missing = [];
