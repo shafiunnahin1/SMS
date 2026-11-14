@@ -177,6 +177,9 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/notices/{id}/receipts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'GET api/v1/exams/{id}/admit-cards/bulk' => fn (array $other) => $this->seedExam($other),   // D193 ADM.1
             'POST api/v1/exams/{id}/seat-plan/generate' => fn (array $other) => $this->seedExam($other),   // D213 CAL.3
+            'GET api/v1/risk/students/{id}' => fn (array $other) => $this->seedStudent($other),   // D216 RISK.2
+            'POST api/v1/risk/flags/{id}/acknowledge' => fn (array $other) => $this->seedRiskFlag($other),
+            'POST api/v1/risk/flags/{id}/resolve' => fn (array $other) => $this->seedRiskFlag($other),
             'PUT api/v1/hifz/records/{id}' => fn (array $other) => $this->seedHifz($other),   // D214 MAD.1
             'DELETE api/v1/hifz/records/{id}' => fn (array $other) => $this->seedHifz($other),
             'GET api/v1/hifz/students/{id}/progress' => fn (array $other) => $this->seedStudent($other),
@@ -378,6 +381,12 @@ class TenantIsolationTest extends TestCase
         $hw = $this->seedHomework($t);
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\HomeworkSubmission::create(['homework_id' => $hw, 'student_id' => $student, 'text_answer' => 'x', 'status' => 'submitted'])->id);
+    }
+
+    private function seedRiskFlag(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\RiskFlag::firstOrCreate(['student_id' => $student, 'kind' => 'combined', 'computed_on' => '2026-11-05'], ['level' => 'high', 'details' => []])->id);
     }
 
     private function seedHifz(array $t): int

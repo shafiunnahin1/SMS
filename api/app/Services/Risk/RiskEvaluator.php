@@ -70,11 +70,14 @@ class RiskEvaluator
         return DB::transaction(function () use ($studentId, $batchId, $kind, $flag, $today) {
             $current = RiskFlag::where('student_id', $studentId)->where('kind', $kind)->orderByDesc('computed_on')->orderByDesc('id')->lockForUpdate()->first();
             $live = $current && $current->status !== 'resolved' ? $current : null;
+            $byHand = $current && !$live && ($current->details['resolved_by_hand'] ?? false);   // D216 RISK.2: closed by a person
             if (!$flag) {
                 $live?->update(['status' => 'resolved']);
+                if ($byHand) $current->update(['details' => array_diff_key($current->details, ['resolved_by_hand' => 1])]);   // the condition cleared: a later return is new again
                 return null;
             }
             if ($live && $live->level === $flag['level']) return null;   // unchanged: no new row
+            if ($byHand && $current->level === $flag['level']) return null;   // closed by hand and nothing changed: stays closed
             $data = ['batch_id' => $batchId, 'level' => $flag['level'], 'score' => $flag['score'], 'details' => $flag['details'], 'status' => 'open', 'acknowledged_by' => null, 'note' => null];
             if ($current && $current->computed_on->toDateString() === $today) {   // unique (student, kind, day): the day's row is rewritten
                 $current->update($data);

@@ -18,6 +18,7 @@ class SmsEventPolicy
         'admission_new_lead' => 'auto', 'admission_result' => 'off',
         'homework_new' => 'auto',   // D212 HW.1
         'holiday_new' => 'off',     // D213 CAL.1
+        'risk_parent_notice' => 'off',   // D216 RISK.2
     ];
 
     /** events whose SMS is part of a transaction the person is told about (receipts, pay changes): sent even without a marketing consent */

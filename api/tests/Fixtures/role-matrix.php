@@ -297,6 +297,13 @@ return [
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
     'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
+    'GET api/v1/risk/flags' => ['admin', 'teacher'],   // D216 RISK.2
+    'GET api/v1/risk/students/{id}' => ['admin', 'teacher'],
+    'POST api/v1/risk/flags/{id}/acknowledge' => ['admin', 'teacher'],
+    'POST api/v1/risk/flags/{id}/resolve' => ['admin', 'teacher'],
+    'GET api/v1/risk/settings' => ['admin'],
+    'PUT api/v1/risk/settings' => ['admin'],
+    'POST api/v1/risk/evaluate' => ['admin'],
     'GET api/v1/settings/calendar' => ['admin', 'teacher', 'accountant', 'student', 'parent'],   // D214 MAD.2
     'PUT api/v1/admin/settings/calendar' => ['admin'],
     'GET api/v1/hifz/records' => ['admin', 'teacher'],   // D214 MAD.1

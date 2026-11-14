@@ -841,6 +841,21 @@ Route::prefix('v1')->group(function () {
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
         });
 
+        // ── D216 RISK.2: risk alerts (admin; a teacher for their batches) ──
+        Route::middleware('module:risk_alerts')->prefix('risk')->group(function () {
+            Route::middleware('role:admin,teacher')->group(function () {
+                Route::get('/flags',                      [\App\Http\Controllers\Risk\RiskController::class, 'index']);
+                Route::get('/students/{id}',              [\App\Http\Controllers\Risk\RiskController::class, 'student'])->whereNumber('id');
+                Route::post('/flags/{id}/acknowledge',    [\App\Http\Controllers\Risk\RiskController::class, 'acknowledge'])->whereNumber('id');
+                Route::post('/flags/{id}/resolve',        [\App\Http\Controllers\Risk\RiskController::class, 'resolve'])->whereNumber('id');
+            });
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/settings',                   [\App\Http\Controllers\Risk\RiskController::class, 'settings']);
+                Route::put('/settings',                   [\App\Http\Controllers\Risk\RiskController::class, 'updateSettings']);
+                Route::post('/evaluate',                  [\App\Http\Controllers\Risk\RiskController::class, 'evaluate'])->middleware('throttle:6,1');
+            });
+        });
+
         // ── D214 MAD.2: the secondary (Hijri) calendar - display only ──
         Route::get('/settings/calendar',                  [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'show'])->middleware('role:admin,teacher,accountant,student,parent');
         Route::put('/admin/settings/calendar',            [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'update'])->middleware('role:admin');

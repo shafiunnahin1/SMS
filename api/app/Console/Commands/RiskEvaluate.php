@@ -18,7 +18,9 @@ class RiskEvaluate extends Command
         $n = 0;
         Tenancy::each(function ($institution) use ($modules, $risk, &$n) {
             if (!$modules->allows($institution, 'risk_alerts')) return;
-            $n += count($risk->run());
+            $written = $risk->run();
+            app(\App\Services\Risk\RiskNotifier::class)->announce($written);   // D216 RISK.2
+            $n += count($written);
         });
         $this->info("{$n} flag(s) written");
         return self::SUCCESS;
