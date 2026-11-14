@@ -601,10 +601,12 @@ return [
     'GET api/v1/student/qb/concepts' => ['student'],
     'GET api/v1/student/qb/concepts/{id}' => ['student'],
     'POST api/v1/student/qb/orders' => ['student'],
+    'POST api/v1/student/qb/wallet-orders' => ['student'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],
     'POST api/v1/student/qb/quiz-packages/{id}/buy' => ['student'],
+    'POST api/v1/student/qb/quiz-packages/{id}/wallet-buy' => ['student'],
     'POST api/v1/student/qb/quizzes/{id}/attempts' => ['student'],
     'GET api/v1/student/qb/attempts' => ['student'],
     'GET api/v1/student/qb/attempts/{id}' => ['student'],

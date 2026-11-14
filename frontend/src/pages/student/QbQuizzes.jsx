@@ -43,8 +43,7 @@ export default function QbQuizzes() {
     title: t('qbz.buy_confirm', { title: p.title }), description: t('qbz.buy_hint', { price: p.price, days: p.validity_days }), confirmLabel: t('qbz.buy'),
     onConfirm: async () => {
       try {
-        const d = (await api.post(`/student/qb/quiz-packages/${p.id}/buy`)).data.data
-        if (d.bkash_url) { window.location.assign(d.bkash_url); return }
+        await api.post(`/student/qb/quiz-packages/${p.id}/wallet-buy`)   // D218 (6): paid from the student's wallet
         useUiStore.getState().addToast(t('qbst.opened'))
         qc.invalidateQueries({ queryKey: ['qbz'] })
       } catch (e) { fail(e) }

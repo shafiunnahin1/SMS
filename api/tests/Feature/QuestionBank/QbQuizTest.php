@@ -105,10 +105,9 @@ class QbQuizTest extends TestCase
         $this->api('POST', $host, "student/qb/quizzes/{$id}/attempts", $s)->assertForbidden()->assertJsonPath('error', 'qb_package_needed');
         $this->assertSame('20.00', collect($this->api('GET', $host, 'student/qb/quiz-packages', $s)->json('data'))->firstWhere('id', $package->id)['price']);
 
-        $buy = $this->api('POST', $host, "student/qb/quiz-packages/{$package->id}/buy", $s)->assertOk()->json('data');
-        $this->assertSame(['20.00', false], [$buy['amount'], $buy['paid']]);
-        $this->get("http://{$this->central}/api/v1/qb/student-orders/bkash/callback?ref={$buy['ref']}&paymentID=PAY-{$buy['ref']}&status=success")
-            ->assertRedirect('http://' . $host . "/student/quizzes?payment=success&ref={$buy['ref']}");
+        Tenancy::as($i, fn () => app(\App\Services\Wallet\StudentWalletService::class)->move($s, 'recharge', 2000, null, null));   // D221 (2): the price in the wallet
+        $buy = $this->api('POST', $host, "student/qb/quiz-packages/{$package->id}/wallet-buy", $s)->assertOk()->json('data');
+        $this->assertSame(['20.00', true], [$buy['amount'], $buy['paid']]);
         $access = Tenancy::as($i, fn () => QbStudentPackageAccess::firstOrFail());
         $this->assertSame(now()->addDays(30)->toDateString(), $access->expires_at->toDateString());
 

@@ -45,11 +45,21 @@ class QbStudentTest extends TestCase
         return User::create(['institution_id' => $i->id, 'name' => $name, 'username' => strtoupper($name), 'role' => 'student', 'password' => 'Student-pass-26', 'is_active' => true]);
     }
 
+    /** D221 (1): a bKash checkout already started - the pending order and its cached entry, exactly what the retired endpoint wrote */
+    private function started($i, User $s, string $price): string
+    {
+        $ref = 'QB' . $i->id . 'S' . strtoupper(\Illuminate\Support\Str::random(8));
+        $order = Tenancy::as($i, fn () => QbStudentOrder::create(['student_user_id' => $s->id, 'ref' => $ref, 'amount' => $price, 'payment_id' => "PAY-{$ref}", 'status' => 'pending',
+            'items' => [['item_type' => 'question', 'item_id' => $this->q->id, 'price' => $price, 'reason' => 'paid']]]));
+        \Illuminate\Support\Facades\Cache::put("qb_student_order:{$ref}", ['institution_id' => $i->id, 'order_id' => $order->id, 'page' => '/student/question-bank',
+            'return' => 'http://' . $this->hostOf($i)], now()->addDay());
+        return $ref;
+    }
+
     private function pay($host, User $s): string
     {
-        $r = $this->api('POST', $host, 'student/qb/orders', $s, ['items' => [['item_type' => 'question', 'item_id' => $this->q->id]]])->assertOk();
-        $this->assertSame(['1.00', false], [$r->json('data.amount'), $r->json('data.paid')]);
-        return $r->json('data.ref');
+        $i = \App\Models\Institution::findOrFail($s->institution_id);
+        return $this->started($i, $s, '1.00');
     }
 
     private function back(string $ref, string $status = 'success', ?string $payment = null)
@@ -69,8 +79,7 @@ class QbStudentTest extends TestCase
         $this->assertStringNotContainsString('SECRET-ANSWER', $this->api('GET', $host, 'student/qb/questions', $a)->getContent());
 
         $ref = $this->pay($host, $a);
-        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/checkout/create') && $r['amount'] === '1.00'
-            && $r['callbackURL'] === "https://{$this->central}/api/v1/qb/student-orders/bkash/callback?ref={$ref}");
+        $this->api('POST', $host, 'student/qb/orders', $a, ['items' => [['item_type' => 'question', 'item_id' => $this->q->id]]])->assertStatus(410)->assertJsonPath('error', 'use_wallet');   // D221 (1): no NEW checkout
         $this->back($ref)->assertRedirect('http://' . $host . "/student/question-bank?payment=success&ref={$ref}");
         $this->back($ref)->assertRedirect('http://' . $host . "/student/question-bank?payment=success&ref={$ref}");   // repeated: nothing twice
         $this->assertSame(1, Tenancy::as($i, fn () => QbStudentUnlock::count()));

@@ -64,7 +64,7 @@ class CrossTenantRouteTest extends TestCase
         'PUT api/v1/parent/consents/{type}',                                           // consent type of the caller's own children
         'GET api/v1/question-bank/concepts/{id}', 'GET api/v1/question-bank/resources/{id}', 'GET api/v1/question-bank/questions/{id}',
         'GET api/v1/student/qb/questions/{id}', 'GET api/v1/student/qb/concepts/{id}', 'GET api/v1/student/qb/resources/{id}', 'POST api/v1/student/qb/practice/{id}/submit', 'GET api/v1/student/qb/orders/{ref}',
-        'POST api/v1/student/qb/quiz-packages/{id}/buy', 'POST api/v1/student/qb/quizzes/{id}/attempts',   // QB.10: catalogue rows
+        'POST api/v1/student/qb/quiz-packages/{id}/buy', 'POST api/v1/student/qb/quiz-packages/{id}/wallet-buy', 'POST api/v1/student/qb/quizzes/{id}/attempts',   // QB.10: catalogue rows
         'PUT api/v1/admin/settings/payments/gateways/{gateway}',   // D217 OPAY.3: a registry key, not a row id
         'POST api/v1/admin/settings/payments/gateways/{gateway}/test',
         'DELETE api/v1/admin/settings/payments/gateways/{gateway}',

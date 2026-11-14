@@ -83,12 +83,11 @@ class StudentPackTest extends TestCase
         $offers = collect($this->api('GET', $host, 'student/qb/packs', $u, ['qb_subject_id' => $this->math->id, 'qb_chapter_id' => $this->ch1->id])->assertOk()->json('data'));
         $this->assertSame(['class_pack' => '500.00', 'subject_pack' => '150.00', 'chapter_pack' => '40.00'], $offers->pluck('price', 'item_type')->all());
 
-        $r = $this->api('POST', $host, 'student/qb/orders', $u, ['items' => [['item_type' => 'subject_pack', 'item_id' => $this->math->id]]])->assertOk();
-        $this->assertSame(['150.00', false], [$r->json('data.amount'), $r->json('data.paid')]);
         $this->assertFalse($this->open($u, $inSubject), 'not before the payment');
-        $ref = $r->json('data.ref');
-        $this->get('http://' . config('tenancy.central_domains')[0] . "/api/v1/qb/student-orders/bkash/callback?ref={$ref}&paymentID=PAY-{$ref}&status=success")->assertRedirect();
-        $this->get('http://' . config('tenancy.central_domains')[0] . "/api/v1/qb/student-orders/bkash/callback?ref={$ref}&paymentID=PAY-{$ref}&status=success");   // repeated: still one
+        Tenancy::as(LearnerRegistrationService::institution(), fn () => app(\App\Services\Wallet\StudentWalletService::class)->move($u, 'recharge', 15000, null, null));   // D221 (2): the price in the wallet
+        $r = $this->api('POST', $host, 'student/qb/wallet-orders', $u, ['items' => [['item_type' => 'subject_pack', 'item_id' => $this->math->id]]])->assertOk();
+        $this->assertSame(['150.00', true], [$r->json('data.amount'), $r->json('data.paid')]);
+        $this->api('POST', $host, 'student/qb/wallet-orders', $u, ['items' => [['item_type' => 'subject_pack', 'item_id' => $this->math->id]]])->assertOk();   // repeated: still one
         $this->assertSame(1, Tenancy::as(LearnerRegistrationService::institution(), fn () => QbStudentScopeAccess::count()));
 
         $this->assertTrue($this->open($u, $inSubject));

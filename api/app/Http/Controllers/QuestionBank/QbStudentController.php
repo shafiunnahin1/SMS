@@ -5,14 +5,13 @@ namespace App\Http\Controllers\QuestionBank;
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\{QbContentPublicResource, QbQuestionPublicResource};
-use App\Models\{PlatformSetting, Program, QbConcept, QbQuestion, QbQuizPackage, QbResource, QbStudentOrder, QbStudentPackageAccess, QbStudentScopeAccess, QbStudentUnlock, Student, User};
+use App\Models\{Program, QbConcept, QbQuestion, QbQuizPackage, QbResource, QbStudentOrder, QbStudentPackageAccess, QbStudentScopeAccess, QbStudentUnlock, Student, User};
 use App\Services\Billing\BkashService;
 use App\Services\Learner\{StudentPackService, StudentValidityService};
 use App\Services\{QbEarningService, QbPricingService};
-use App\Support\{Money, Tenancy};
+use App\Support\Money;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\{Cache, DB};
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 // QB.9 (D65/D66, docs/modules/question-bank.md §1, §4.1, §4.2, §5): the student portal on the institution's host. Questions are free
 // to read; an answer or a concept is bought by the STUDENT (their own unlock - another student never gets it, nor does the
@@ -98,6 +97,15 @@ class QbStudentController extends Controller
     /** POST /student/qb/orders {items: [{item_type, item_id}]}: free items open now; the rest become one bKash payment */
     public function order(Request $request, BkashService $bkash)
     {
+        [$free, $paid] = $this->priceItems($request);
+        if ($paid) throw new BusinessException('pay from the wallet', 'use_wallet', 410);                  // D218 (6): the direct bKash checkout is retired
+        foreach ($free as $p) self::unlock($request->user(), $p, null);
+        return response()->json(['success' => true, 'data' => ['paid' => true, 'opened' => count($free)]]);
+    }
+
+    /** The server's price of the requested items: [free items, paid items]; owned items are skipped. Shared with D218 WAL.4's wallet order. */
+    public function priceItems(Request $request): array
+    {
         $f = $request->validate(['items' => 'required|array|min:1|max:20', 'items.*.item_type' => 'required|in:question,concept,resource,class_pack,subject_pack,chapter_pack', 'items.*.item_id' => 'required|integer',
             'amount' => 'prohibited', 'price' => 'prohibited']);
         $user = $request->user();
@@ -119,31 +127,14 @@ class QbStudentController extends Controller
             $priced["{$it['item_type']}:{$item->id}"] = ['item_type' => $it['item_type'], 'item_id' => $item->id, 'price' => $q['price'],
                 'reason' => Money::toPaisa($q['price']) === 0 ? 'free' : ($q['rule_id'] !== null ? 'partial_free' : 'paid')];
         }
-        $free = array_filter($priced, fn ($p) => $p['reason'] === 'free');
-        $paid = array_values(array_filter($priced, fn ($p) => $p['reason'] !== 'free'));
-        foreach ($free as $p) self::unlock($user, $p, null);
-        return $this->pay($request, $bkash, $paid, count($free));
+        return [array_values(array_filter($priced, fn ($p) => $p['reason'] === 'free')), array_values(array_filter($priced, fn ($p) => $p['reason'] !== 'free'))];
     }
 
-    /** One bKash payment for the paid items (prices set by the server); nothing paid = done. Shared with QB.10's package purchase. */
+    /** Nothing to pay = done. D218 (6): a NEW bKash checkout is retired (410 use_wallet); one already started completes in its callback. */
     public function pay(Request $request, BkashService $bkash, array $paid, int $opened, string $page = '/student/question-bank')
     {
-        $user = $request->user();
-        if (!$paid) return response()->json(['success' => true, 'data' => ['paid' => true, 'opened' => $opened]]);
-
-        if (!$bkash->configured()) throw new BusinessException('bKash is not configured', 'payment_unavailable', 503);
-        $amount = Money::format(array_sum(array_map(fn ($p) => Money::toPaisa($p['price']), $paid)));
-        $institution = Tenancy::current();
-        $ref = 'QB' . $institution->id . 'S' . strtoupper(Str::random(8));                       // <= 20 chars, [A-Z0-9]
-        $base = PlatformSetting::read('bkash_callback_base') ?: config('app.url');
-        $payment = $bkash->createPayment($amount, $ref, rtrim((string) $base, '/') . '/api/v1/qb/student-orders/bkash/callback?ref=' . $ref);
-        if (!$payment) return response()->json(['success' => false, 'error' => 'payment_failed', 'message' => __('errors.recharge_failed')
-            . (config('app.debug') && $bkash->lastError() ? ' (' . $bkash->lastError() . ')' : '')], 502);
-        $order = QbStudentOrder::create(['student_user_id' => $user->id, 'ref' => $ref, 'items' => $paid, 'amount' => $amount, 'payment_id' => $payment['paymentID'], 'status' => 'pending']);
-        $back = $request->headers->get('origin');
-        Cache::put("qb_student_order:{$ref}", ['institution_id' => $institution->id, 'order_id' => $order->id, 'page' => $page,
-            'return' => ($back && parse_url($back, PHP_URL_HOST) === $request->getHost()) ? $back : $request->getSchemeAndHttpHost()], now()->addDay());
-        return response()->json(['success' => true, 'data' => ['paid' => false, 'opened' => $opened, 'bkash_url' => $payment['bkashURL'], 'ref' => $ref, 'amount' => $amount]]);
+        if ($paid) throw new BusinessException('pay from the wallet', 'use_wallet', 410);
+        return response()->json(['success' => true, 'data' => ['paid' => true, 'opened' => $opened]]);
     }
 
     /** GET /student/qb/orders/{ref}: the student's own order */

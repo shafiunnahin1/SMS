@@ -346,6 +346,7 @@ class TenantIsolationTest extends TestCase
             // QB.10: student-only routes (the admin is 403); catalogue rows (packages, quizzes) and the student's own attempts -
             // QbQuizTest: another student's attempt is a 404
             'POST api/v1/student/qb/quiz-packages/{id}/buy' => null,
+            'POST api/v1/student/qb/quiz-packages/{id}/wallet-buy' => null,
             'POST api/v1/student/qb/quizzes/{id}/attempts' => null,
             'GET api/v1/student/exams/{id}/admit-card'     => null,   // D193 ADM.1: AdmitCardTest (another institution's exam 404)
             'GET api/v1/student/qb/attempts/{id}'          => null,

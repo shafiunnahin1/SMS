@@ -6,7 +6,7 @@ use App\Http\Controllers\Exams\{ExamController, ResultController};
 use App\Http\Controllers\Fees\{FeeController, FeeRefundController};
 use App\Http\Controllers\Sms\{SmsCreditController, SmsLogController, SmsSenderController};
 use App\Http\Controllers\Public\{BootstrapController, HealthController};
-use App\Http\Controllers\QuestionBank\{QbBlueprintController, QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbImportController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbOmrFormController, QbPaperController, QbPaperFolderController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbWithdrawalController, QbWriterController};
+use App\Http\Controllers\QuestionBank\{QbBlueprintController, QbConceptController, QbCurriculumController, QbEarningController, QbFinderController, QbImportController, QbGraphDatasetController, QbLibraryController, QbMediaController, QbOmrFormController, QbPaperController, QbPaperFolderController, QbPricingController, QbPurchaseController, QbQuestionController, QbPublicQuizController, QbQuizController, QbResourceController, QbStudentController, QbStudentOrderCallbackController, QbStudentQuizController, QbStudentWalletOrderController, QbWithdrawalController, QbWriterController};
 use App\Http\Controllers\Privacy\StudentPrivacyController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Shared\{AuditLogController, DashboardController, NotificationController};
@@ -681,6 +681,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/concepts',                       [QbStudentController::class, 'concepts']);
             Route::get('/concepts/{id}',                  [QbStudentController::class, 'concept'])->whereNumber('id');
             Route::post('/orders',                        [QbStudentController::class, 'order'])->middleware('throttle:10,1');
+            Route::post('/wallet-orders',                 [QbStudentWalletOrderController::class, 'order'])->middleware('throttle:10,1');   // D218 WAL.4
             Route::get('/orders/{ref}',                   [QbStudentController::class, 'orderStatus']);
             Route::get('/validity',                       [QbStudentController::class, 'validity']);   // D165 ST.2
             Route::get('/packs',                          [QbStudentController::class, 'packs']);      // D165 ST.3
@@ -696,6 +697,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/quizzes',                        [QbStudentQuizController::class, 'index']);
             Route::get('/quiz-packages',                  [QbStudentQuizController::class, 'packages']);
             Route::post('/quiz-packages/{id}/buy',        [QbStudentQuizController::class, 'buy'])->whereNumber('id')->middleware('throttle:10,1');
+            Route::post('/quiz-packages/{id}/wallet-buy', [QbStudentWalletOrderController::class, 'package'])->whereNumber('id')->middleware('throttle:10,1');   // D218 WAL.4
             Route::post('/quizzes/{id}/attempts',         [QbStudentQuizController::class, 'start'])->whereNumber('id');
             Route::get('/attempts',                       [QbStudentQuizController::class, 'attempts']);
             Route::get('/attempts/{id}',                  [QbStudentQuizController::class, 'attempt'])->whereNumber('id');

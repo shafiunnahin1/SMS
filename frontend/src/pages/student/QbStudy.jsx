@@ -50,15 +50,17 @@ export default function QbStudy({ initialTab = 'questions' }) {   // D195 STP.1:
   const chapter = subject?.chapters.find(c => String(c.id) === place.chapter)
   const pick = (next) => { setOpen(null); setPlace(next) }
 
+  const walletFail = (e) => useUiStore.getState().addToast(e.response?.data?.error === 'wallet_insufficient' ? t('wallet.insufficient_topup') : (e.response?.data?.message ?? t('qbst.payment.failed')), 'error')
   const buy = async (kind, id) => {
     setBusy(true)
     try {
       const itemType = { questions: 'question', concepts: 'concept', resources: 'resource' }[kind] ?? kind
-      const { data } = await api.post('/student/qb/orders', { items: [{ item_type: itemType, item_id: id }] })
-      if (data.data.paid) { useUiStore.getState().addToast(t('qbst.opened')); if (open) item.refetch(); list.refetch(); packs.refetch(); return }
-      window.location.assign(data.data.bkash_url)              // bKash's page; it sends the student back here
+      const items = { items: [{ item_type: itemType, item_id: id }] }
+      // D218 (6): a free item opens through the order; a paid one answers 410 use_wallet and is paid from the student's wallet
+      await api.post('/student/qb/orders', items).catch(e => { if (e.response?.data?.error === 'use_wallet') return api.post('/student/qb/wallet-orders', items); throw e })
+      useUiStore.getState().addToast(t('qbst.opened')); if (open) item.refetch(); list.refetch(); packs.refetch()
     } catch (e) {
-      useUiStore.getState().addToast(e.response?.data?.message ?? t('qbst.payment.failed'), 'error')
+      walletFail(e)
     } finally { setBusy(false) }
   }
 

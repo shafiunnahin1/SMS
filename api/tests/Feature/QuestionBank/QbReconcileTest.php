@@ -41,9 +41,20 @@ class QbReconcileTest extends TestCase
             'status' => 'published', 'created_by' => $writer->id, 'published_at' => now()]);
     }
 
+    /** D221 (1): a bKash checkout already started - the pending order and its cached entry, exactly what the retired endpoint wrote */
+    private function started($i, User $s, string $price): string
+    {
+        $ref = 'QB' . $i->id . 'S' . strtoupper(\Illuminate\Support\Str::random(8));
+        $order = Tenancy::as($i, fn () => QbStudentOrder::create(['student_user_id' => $s->id, 'ref' => $ref, 'amount' => $price, 'payment_id' => "PAY-{$ref}", 'status' => 'pending',
+            'items' => [['item_type' => 'question', 'item_id' => $this->q->id, 'price' => $price, 'reason' => 'paid']]]));
+        \Illuminate\Support\Facades\Cache::put("qb_student_order:{$ref}", ['institution_id' => $i->id, 'order_id' => $order->id, 'page' => '/student/question-bank',
+            'return' => 'http://' . $this->hostOf($i)], now()->addDay());
+        return $ref;
+    }
+
     private function order($i, User $s): string
     {
-        return $this->api('POST', $this->hostOf($i), 'student/qb/orders', $s, ['items' => [['item_type' => 'question', 'item_id' => $this->q->id]]])->assertOk()->json('data.ref');
+        return $this->started($i, $s, '1.10');
     }
 
     private function back(string $ref)
