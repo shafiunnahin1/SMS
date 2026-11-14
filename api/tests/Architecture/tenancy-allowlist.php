@@ -34,4 +34,5 @@ return [
     'app/Http/Controllers/Ai/AiPlatformController.php' => 'D164 AI-P1.5: the Super Admin\'s usage report counts the assistant\'s rows over every institution (anyInstitution, counts by day only; central host, tenancy.bypass)',
     'app/Console/Commands/AiEvaluate.php' => 'D164 (5): the owner-run quality gate asks as one named institution (Tenancy::as) and counts only',
     'app/Services/Ai/AssistantService.php' => 'D164 (3): the reviewed answer bank holds rows open to every institution (institution_id NULL) - AiAnswerBank::anyInstitution() limited to whereNull(institution_id) or the bound tenant',
+    'app/Services/Payments/OnlinePaymentService.php' => 'D217 OPAY.1: a payment ref is unique across institutions and the central host / the reconcile worker have no tenant - Tenancy::withoutTenancy only to find the institution of a ref and to list open attempts (ids and timing columns); every write runs inside Tenancy::as of that institution',
 ];

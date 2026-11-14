@@ -42,6 +42,11 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['tenant:central', 'throttle:60,1'])->get('/billing/subscription/bkash/callback', [\App\Http\Controllers\Billing\SubscriptionCallbackController::class, 'bkash']);
     // QB.9: bKash brings a student back here after paying for question-bank items (`ref` finds our own order; central host, no login)
     Route::middleware(['tenant:central', 'throttle:60,1'])->get('/qb/student-orders/bkash/callback', [QbStudentOrderCallbackController::class, 'bkash']);
+    // D217 OPAY.1: a payment provider notifies us here (central host, no login - the ref finds the row; the adapter authenticates)
+    Route::middleware(['tenant:central', 'throttle:120,1'])->match(['get', 'post'], '/fees/payment/{gateway}/notify', [\App\Http\Controllers\Payments\FeePaymentCallbackController::class, 'notify'])->where('gateway', '[a-z0-9_]{1,30}');
+    if (!app()->environment('production')) {   // the fake gateway's "customer paid" simulator: dev and tests only
+        Route::middleware(['tenant:central', 'throttle:60,1'])->post('/dev/fakeqr/pay', [\App\Http\Controllers\Payments\FeePaymentCallbackController::class, 'fakePay']);
+    }
     // QB.10: the platform's public quizzes (central host, no login; checked on the server, nothing saved, never the right answers)
     Route::middleware(['tenant:central', 'locale', 'throttle:30,1'])->prefix('public/qb')->group(function () {
         Route::get('/quizzes',                            [QbPublicQuizController::class, 'index']);

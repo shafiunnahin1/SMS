@@ -36,6 +36,9 @@ class RouteMiddlewareContractTest extends TestCase
         'POST api/v1/auth/login' => 'throttle:login', 'POST api/v1/auth/verify-otp' => 'throttle:otp',   // D68 (4)
         'POST api/v1/auth/google' => 'throttle:login; R2.1.1/D111 Google sign-in of an existing verified-email account only',
         'POST api/v1/auth/forgot-password' => 'throttle:login', 'POST api/v1/auth/reset-password' => 'throttle:login',
+        'GET api/v1/fees/payment/{gateway}/notify' => 'D217 OPAY.1: central host; the ref finds the payment, the gateway adapter authenticates; throttle 120/min',
+        'POST api/v1/fees/payment/{gateway}/notify' => 'D217 OPAY.1: the same notification by POST',
+        'POST api/v1/dev/fakeqr/pay' => 'D217 OPAY.1: the fake gateway simulator, registered outside production only; throttle 60/min',
         'GET api/v1/billing/bkash/callback' => 'central host; finds its own record by ref (D58), throttle 60/min',
         'GET api/v1/qb/student-orders/bkash/callback' => 'QB.9: central host; finds its own order by ref, throttle 60/min',
         'GET api/v1/billing/subscription/bkash/callback' => 'D187 SUB.2: central host; finds its own checkout by ref, throttle 60/min',

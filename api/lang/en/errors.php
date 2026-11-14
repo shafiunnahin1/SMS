@@ -31,6 +31,11 @@ return [
     'installment_mismatch'   => 'The due no longer matches this installment (it was paid or changed elsewhere).',
     'holiday_exists'         => 'A holiday already exists on one of these days.',   // D213 CAL.1
     'holiday_range_too_long' => 'At most :max days can be added at once.',
+    'payment_gateway_unavailable' => 'Online payment by this method is not available now.',   // D217 OPAY.1
+    'payment_below_minimum' => 'The minimum payment is ৳:min.',
+    'payment_in_progress' => 'A payment for this fee is in progress. Try again in a few minutes.',
+    'payment_not_in_review' => 'This payment is not in review.',
+    'payment_cannot_accept' => 'Only a late payment of the right amount for fees that are still due can be accepted.',
     'risk_already_resolved' => 'This alert is already closed.',   // D216 RISK.2
     'grading_incomplete' => 'Fill the grade ranges first: set the lowest percentage of every grade in the madrasa settings.',   // D214 MAD.4
     'grading_order' => 'The lowest percentages must go down from the top grade to the bottom.',

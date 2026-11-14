@@ -130,6 +130,50 @@ class FeeService
         });
     }
 
+    /** D217 OPAY.1: the chosen dues of THIS student as payment items; every key must be one of the student's unpaid dues */
+    public function outstandingItems(Student $s, array $dueKeys): array
+    {
+        $dues = $this->dueLines($s)->keyBy('key');
+        $keys = array_values(array_unique($dueKeys));
+        if (!$keys) throw ValidationException::withMessages(['dues' => __('errors.due_not_applicable')]);
+        return array_map(function ($k) use ($dues) {
+            if (!is_string($k) || !$dues->has($k)) throw ValidationException::withMessages(['dues' => __('errors.due_not_applicable')]);
+            $d = $dues[$k];
+            return ['key' => $d['key'], 'enrollment_id' => $d['enrollment_id'], 'batch_id' => $d['batch_id'], 'fee_category_id' => $d['fee_category_id'], 'category' => $d['category'],
+                'month' => $d['period'], 'gross' => $d['gross'], 'discount' => $d['discount'], 'amount' => $d['amount']];
+        }, $keys);
+    }
+
+    /** D217 OPAY.1: every item of the payment is still an unpaid due of exactly the amount that was charged */
+    public function stillOutstanding(\App\Models\OnlinePayment $p): bool
+    {
+        $student = Student::find($p->student_id);
+        if (!$student) return false;
+        $dues = $this->dueLines($student)->keyBy('key');
+        foreach ($p->items ?? [] as $i) {
+            if (!$dues->has($i['key']) || Money::toPaisa($dues[$i['key']]['amount']) !== Money::toPaisa($i['amount'])) return false;
+        }
+        return true;
+    }
+
+    /** D217 OPAY.1: a successful online payment - one fee line per item on ONE receipt, and the payment row marked success */
+    public function recordOnlinePayment(\App\Models\OnlinePayment $p): void
+    {
+        $student = Student::findOrFail($p->student_id);
+        app(CashBookService::class)->lockInstitution();
+        $receipt = $this->nextReceiptNo();
+        $paidAt = now();
+        $n = 0;
+        foreach ($p->items as $i) {
+            FeePayment::create(['student_id' => $student->id, 'enrollment_id' => $i['enrollment_id'], 'batch_id' => $i['batch_id'], 'online_payment_id' => $p->id,
+                'fee_category_id' => $i['fee_category_id'], 'amount' => $i['gross'], 'discount' => $i['discount'], 'paid_amount' => $i['amount'], 'month' => $i['month'],
+                'payment_method' => $p->gateway, 'receipt_no' => $receipt, 'line_no' => ++$n, 'paid_at' => $paidAt, 'collected_by' => null, 'status' => 'paid']);
+        }
+        $p->update(['status' => 'success', 'receipt_no' => $receipt, 'paid_at' => $paidAt, 'failure_reason' => null]);
+        $locale = app(SmsService::class)->localeFor($student->primaryParent(), Tenancy::current());
+        app(\App\Services\Sms\SmsEventPolicy::class)->dispatch('fee_paid', $student->guardian_phone, __('sms.fee_received', ['amount' => $p->amount, 'receipt' => $receipt], $locale), null, true);
+    }
+
     /** Create or update a fee category. Once money was collected under it, its frequency is fixed (the periods of paid dues
      *  would change meaning); the amount may change - it applies to dues not yet paid. */
     public function saveCategory(array $data, ?FeeCategory $c = null): FeeCategory

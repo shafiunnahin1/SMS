@@ -42,3 +42,4 @@ Artisan::command('ops:alert-test', function () {
 \Illuminate\Support\Facades\Schedule::command('installments:daily')->dailyAt('09:10')->withoutOverlapping();   // D211 INST.2
 \Illuminate\Support\Facades\Schedule::command('risk:evaluate')->dailyAt('05:20')->withoutOverlapping();   // D216 RISK.1
 \Illuminate\Support\Facades\Schedule::command('risk:prune')->dailyAt('05:40')->withoutOverlapping();
+\Illuminate\Support\Facades\Schedule::command('payments:reconcile')->everyFiveMinutes()->withoutOverlapping();   // D217 OPAY.1
