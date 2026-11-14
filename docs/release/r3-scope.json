@@ -106,7 +106,8 @@
    "homework",
    "academic_calendar",
    "hifz",
-   "risk_alerts"
+   "risk_alerts",
+   "online_payment"
   ],
   "roles": [
  "super_admin",
