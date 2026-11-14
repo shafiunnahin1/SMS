@@ -176,6 +176,10 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/notices/{id}/ack' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'GET api/v1/notices/{id}/receipts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'GET api/v1/exams/{id}/admit-cards/bulk' => fn (array $other) => $this->seedExam($other),   // D193 ADM.1
+            'POST api/v1/exams/{id}/seat-plan/generate' => fn (array $other) => $this->seedExam($other),   // D213 CAL.3
+            'GET api/v1/exams/{id}/seat-plan' => fn (array $other) => $this->seedExam($other),
+            'GET api/v1/exams/{id}/seat-plan/print' => fn (array $other) => $this->seedExam($other),
+            'PUT api/v1/exams/{id}/seat-plan/{studentId}' => null,   // two ids - CrossTenantRouteTest plans it
             'GET api/v1/students/{id}/card' => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/students/{id}/due-block' => fn (array $other) => $this->seedStudent($other),   // D197 AAD.1
             'POST api/v1/students/{id}/due-block-exemptions' => fn (array $other) => $this->seedStudent($other),

@@ -31,6 +31,10 @@ return [
     'installment_mismatch'   => 'The due no longer matches this installment (it was paid or changed elsewhere).',
     'holiday_exists'         => 'A holiday already exists on one of these days.',   // D213 CAL.1
     'holiday_range_too_long' => 'At most :max days can be added at once.',
+    'seat_no_students' => 'This exam has no students.',   // D213 CAL.3
+    'seat_capacity_short' => ':students students but :seats seats; add rooms or seats.',
+    'seat_unknown_room' => 'This room is not in the seat plan.',
+    'seat_taken' => 'Someone already sits there.',
     'event_has_registrations' => 'Students have registered; registration cannot be turned off.',   // D213 CAL.2
     'event_limit_below_registered' => ':count students have already registered; the limit cannot be lower.',
     'event_registration_students' => 'Only students register; choose the audience "everyone" or "students".',

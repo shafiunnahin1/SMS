@@ -15,17 +15,18 @@ import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select } from '../../components/FormField'
 import MonthCalendar from './MonthCalendar'
 import EventsAdmin from './EventsAdmin'
+import SeatPlan from './SeatPlan'
 
 // D213 CAL.1 /admin/academic/calendar: (1) the holidays of a year - add one day or a range, edit, delete; (2) academic years -
-// create and set the current one; D213 CAL.2 adds (3) events and (4) the month view.
+// create and set the current one; D213 CAL.2 adds (3) events and (4) the month view; D213 CAL.3 (5) the exam seat plan.
 export default function CalendarAdmin() {
   const { t } = useTranslation()
   const [tab, setTab] = useState('holidays')
   return (
     <div className="flex flex-col gap-4" data-testid="calendar-admin">
       <PageHeader title={t('cal.title')} />
-      <Tabs items={[{ key: 'holidays', label: t('cal.holidays') }, { key: 'events', label: t('cal.events') }, { key: 'month', label: t('cal.month_view') }, { key: 'years', label: t('cal.years') }]} value={tab} onChange={setTab} label={t('cal.title')} />
-      {tab === 'holidays' ? <Holidays /> : tab === 'events' ? <EventsAdmin /> : tab === 'month' ? <Card><MonthCalendar /></Card> : <Years />}
+      <Tabs items={[{ key: 'holidays', label: t('cal.holidays') }, { key: 'events', label: t('cal.events') }, { key: 'month', label: t('cal.month_view') }, { key: 'years', label: t('cal.years') }, { key: 'seats', label: t('seat.title') }]} value={tab} onChange={setTab} label={t('cal.title')} />
+      {tab === 'holidays' ? <Holidays /> : tab === 'events' ? <EventsAdmin /> : tab === 'month' ? <Card><MonthCalendar /></Card> : tab === 'seats' ? <SeatPlan /> : <Years />}
     </div>
   )
 }

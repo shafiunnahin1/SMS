@@ -10,6 +10,7 @@ return [
     ],
     'admit' => ['title' => 'Admit card', 'student' => 'Student', 'id' => 'ID', 'roll' => 'Roll', 'class' => 'Class/Course', 'subject' => 'Subject', 'datetime' => 'Date & time', 'room' => 'Room', 'center' => 'Exam centre', 'head' => 'Head of institution'],
     'idcard' => ['title' => 'Student ID card', 'id' => 'ID', 'class' => 'Class/Course', 'roll' => 'Roll', 'blood' => 'Blood group'],
+    'seat_plan' => ['title' => 'Exam seat plan', 'room' => 'Room', 'count' => ':count students', 'seat' => 'Seat', 'roll' => 'Roll', 'id' => 'ID', 'name' => 'Name'],   // D213 CAL.3
     'routine' => ['title' => 'Class routine', 'day' => 'Day', 'days' => ['sat' => 'Saturday', 'sun' => 'Sunday', 'mon' => 'Monday', 'tue' => 'Tuesday', 'wed' => 'Wednesday', 'thu' => 'Thursday'], 'kinds' => ['break' => 'Break', 'assembly' => 'Assembly', 'prayer' => 'Prayer', 'other' => 'Block']],
     'tabulation' => ['title' => 'Tabulation sheet', 'roll' => 'Roll', 'id' => 'ID', 'name' => 'Name', 'weighted' => 'weighted %', 'grade' => 'Grade', 'total' => 'Total %', 'position' => 'Position', 'result' => 'Result', 'passed' => 'Passed', 'failed' => 'Failed', 'class_teacher' => 'Class teacher', 'head' => 'Head of institution'],
     'marksheet' => [

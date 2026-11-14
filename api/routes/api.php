@@ -841,6 +841,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
         });
 
+        // ── D213 CAL.3: exam seat plan (admin) ──
+        Route::middleware(['module:exams', 'module:academic_calendar', 'role:admin'])->group(function () {
+            Route::post('/exams/{id}/seat-plan/generate',   [\App\Http\Controllers\Calendar\ExamSeatPlanController::class, 'generate'])->whereNumber('id')->middleware('throttle:30,1');
+            Route::get('/exams/{id}/seat-plan',             [\App\Http\Controllers\Calendar\ExamSeatPlanController::class, 'show'])->whereNumber('id');
+            Route::get('/exams/{id}/seat-plan/print',       [\App\Http\Controllers\Calendar\ExamSeatPlanController::class, 'print'])->whereNumber('id');
+            Route::put('/exams/{id}/seat-plan/{studentId}', [\App\Http\Controllers\Calendar\ExamSeatPlanController::class, 'adjust'])->whereNumber(['id', 'studentId']);
+        });
+
         // ── D213 CAL.1: academic years and holidays ──
         Route::middleware('module:academic_calendar')->group(function () {
             Route::middleware('role:admin')->group(function () {

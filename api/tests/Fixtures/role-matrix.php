@@ -297,6 +297,10 @@ return [
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
     'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
+    'POST api/v1/exams/{id}/seat-plan/generate' => ['admin'],   // D213 CAL.3
+    'GET api/v1/exams/{id}/seat-plan' => ['admin'],
+    'GET api/v1/exams/{id}/seat-plan/print' => ['admin'],
+    'PUT api/v1/exams/{id}/seat-plan/{studentId}' => ['admin'],
     'GET api/v1/events' => ['admin'],   // D213 CAL.2
     'POST api/v1/events' => ['admin'],
     'PUT api/v1/events/{id}' => ['admin'],
