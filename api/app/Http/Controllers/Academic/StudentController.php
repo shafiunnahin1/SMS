@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 // Step 4.2: student CRUD. Admission = student + login + parent link + first enrollment (+ photo, + the guardian's paper consent).
 class StudentController extends Controller
 {
-    private const DETAIL = ['user:id,name', 'program:id,name', 'batch:id,name', 'activeEnrollments.batch', 'activeEnrollments.program'];
+    private const DETAIL = ['user:id,name,name_alt', 'program:id,name', 'batch:id,name', 'activeEnrollments.batch', 'activeEnrollments.program'];
 
     public function __construct(private StudentService $students, private ConsentService $consents) {}
 
@@ -21,11 +21,11 @@ class StudentController extends Controller
     {
         $this->staffContext($request);   // D169 STW.2: staff only with the key in the selected department (D91)
         $request->validate(['q' => 'nullable|string|max:50', 'batch_id' => 'nullable|integer', 'per_page' => 'nullable|integer|min:1|max:100']);
-        $page = Student::with(['user:id,name', 'program:id,name', 'batch:id,name'])
+        $page = Student::with(['user:id,name,name_alt', 'program:id,name', 'batch:id,name'])
             ->when($request->input('batch_id'), fn ($q, $b) => $q->inBatch((int) $b))
             ->when($request->input('q'), fn ($q, $s) => $q->where(fn ($w) => $w->where('student_id', 'like', "{$s}%")
                 ->orWhere('guardian_phone', 'like', "%{$s}%")
-                ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%"))))
+                ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")->orWhere('name_alt', 'like', "%{$s}%"))))
             ->orderByDesc('id')->paginate((int) $request->input('per_page', 20));
 
         return StudentResource::collection($page)->additional(['success' => true]);

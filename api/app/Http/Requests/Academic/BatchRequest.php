@@ -23,6 +23,7 @@ class BatchRequest extends FormRequest
         return [
             'program_id'       => [$post && $usePrograms ? 'required' : 'sometimes', 'integer', $own('programs')],
             'name'             => [$post ? 'required' : 'sometimes', 'string', 'max:60'],
+            'name_alt'         => ['nullable', 'string', 'max:150'],   // D214 MAD.3
             'teacher_id'       => ['nullable', 'integer', Rule::exists('teachers', 'id')->where('institution_id', $inst->id)->whereNull('deleted_at')],
             'academic_year_id' => ['nullable', 'integer', $own('academic_years')],
             'start_date'       => 'nullable|date',

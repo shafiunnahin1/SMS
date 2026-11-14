@@ -38,6 +38,7 @@ class ExamService
     public function publish(Exam $exam): Exam
     {
         if (!Result::where('exam_id', $exam->id)->exists()) throw new BusinessException('no marks yet', 'no_results', 422);
+        if (\App\Support\GradingScale::incomplete()) throw new BusinessException('fill the grade ranges first', 'grading_incomplete', 422);   // D214 MAD.4
         $exam->update(['status' => 'published']);
         return $exam;
     }
@@ -120,7 +121,7 @@ class ExamService
                 $r = $results->get($es->subject_id);
                 return ['subject_id' => $es->subject_id, 'subject' => $es->subject?->name, 'full_marks' => $es->full_marks, 'pass_marks' => $es->pass_marks,
                     'components' => $es->components, 'component_marks' => $r?->component_marks, 'marks_obtained' => $r?->marks_obtained,
-                    'percentage' => $r?->percentage, 'grade' => $r?->grade, 'grade_point' => $r?->grade_point,
+                    'percentage' => $r?->percentage, 'grade' => $r?->grade, 'grade_label' => \App\Support\GradingScale::label($r?->grade), 'grade_point' => $r?->grade_point,
                     'is_absent' => (bool) $r?->is_absent, 'is_pass' => $r ? (bool) $r->is_pass : null, 'remarks' => $r?->teacher_remarks];
             })->values();
         $full = $rows->sum(fn ($r) => (float) $r['full_marks']);
@@ -129,7 +130,7 @@ class ExamService
         $failed = $rows->contains(fn ($r) => $r['is_pass'] === false);        // one failed subject decides it even before the rest is entered
         return [
             'exam' => ['id' => $exam->id, 'name' => $exam->name, 'exam_type' => $exam->exam_type, 'academic_year' => (int) $exam->academic_year, 'status' => $exam->status],
-            'student' => ['id' => $student->id, 'student_id' => $student->student_id, 'name' => $student->user?->name,
+            'student' => ['id' => $student->id, 'student_id' => $student->student_id, 'name' => $student->user?->name, 'name_alt' => \App\Support\AltName::of($student->user),
                 'batch' => $enrollment?->batch?->name, 'program' => $exam->program?->name, 'roll_no' => $enrollment?->roll_no],
             'subjects' => $rows,
             'total' => ['full_marks' => round($full, 2), 'obtained' => round($got, 2), 'percentage' => $full > 0 ? round($got / $full * 100, 2) : null,

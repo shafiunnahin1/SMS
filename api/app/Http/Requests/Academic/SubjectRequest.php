@@ -18,6 +18,7 @@ class SubjectRequest extends FormRequest
         return [
             'program_id'  => [$req, 'integer', Rule::exists('programs', 'id')->where('institution_id', $inst)],
             'name'        => "{$req}|string|max:100",
+            'name_alt'    => 'nullable|string|max:150',   // D214 MAD.3
             'code'        => 'nullable|string|max:20',
             'teacher_id'  => ['nullable', 'integer', Rule::exists('teachers', 'id')->where('institution_id', $inst)->whereNull('deleted_at')],
             'full_marks'  => 'sometimes|integer|min:1|max:1000',

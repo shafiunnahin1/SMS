@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 // must_change_password: they set their own through "forgot password" (SMS code / email link), never a password sent by the admin.
 class TeacherService
 {
-    private const USER_FIELDS = ['name', 'phone', 'email'];
+    private const USER_FIELDS = ['name', 'name_alt', 'phone', 'email'];   // D214 MAD.3: name_alt
 
     public function create(array $data): Teacher
     {

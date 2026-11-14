@@ -19,7 +19,7 @@
   <h2>{{ __('pdf.admit.title') }} — {{ $exam['name'] }} ({{ $exam['academic_year'] }})</h2>
   <div class="who">
     <div>
-      <div>{{ __('pdf.admit.student') }}: <strong>{{ $c['name'] }}</strong></div>
+      <div>{{ __('pdf.admit.student') }}: <strong>{{ $c['name'] }}</strong>@if (!empty($c['name_alt'])) / <span dir="{{ \App\Support\AltName::dir() }}">{{ $c['name_alt'] }}</span>@endif</div>
       <div>{{ __('pdf.admit.id') }}: {{ $c['code'] }} &nbsp; {{ __('pdf.admit.roll') }}: {{ $c['roll'] ?? '—' }}</div>
       <div>{{ __('pdf.admit.class') }}: {{ $c['class'] }}</div>
     </div>

@@ -177,6 +177,11 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/notices/{id}/receipts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'GET api/v1/exams/{id}/admit-cards/bulk' => fn (array $other) => $this->seedExam($other),   // D193 ADM.1
             'POST api/v1/exams/{id}/seat-plan/generate' => fn (array $other) => $this->seedExam($other),   // D213 CAL.3
+            'PUT api/v1/hifz/records/{id}' => fn (array $other) => $this->seedHifz($other),   // D214 MAD.1
+            'DELETE api/v1/hifz/records/{id}' => fn (array $other) => $this->seedHifz($other),
+            'GET api/v1/hifz/students/{id}/progress' => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/hifz/batches/{id}/overview' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Batch::create(['program_id' => \App\Models\Program::create(['name' => 'P'])->id, 'name' => 'HZ'])->id),
+            'GET api/v1/parent/children/{id}/hifz' => null,   // parent only: CrossTenantRouteTest plans it
             'GET api/v1/exams/{id}/seat-plan' => fn (array $other) => $this->seedExam($other),
             'GET api/v1/exams/{id}/seat-plan/print' => fn (array $other) => $this->seedExam($other),
             'PUT api/v1/exams/{id}/seat-plan/{studentId}' => null,   // two ids - CrossTenantRouteTest plans it
@@ -373,6 +378,12 @@ class TenantIsolationTest extends TestCase
         $hw = $this->seedHomework($t);
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\HomeworkSubmission::create(['homework_id' => $hw, 'student_id' => $student, 'text_answer' => 'x', 'status' => 'submitted'])->id);
+    }
+
+    private function seedHifz(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\HifzRecord::create(['student_id' => $student, 'record_date' => '2026-11-01', 'kind' => 'sabaq', 'from_surah' => 1, 'from_ayah' => 1, 'to_surah' => 1, 'to_ayah' => 7])->id);
     }
 
     private function seedEvent(array $t): int
@@ -649,8 +660,8 @@ class TenantIsolationTest extends TestCase
         $this->assertSame([], array_keys(array_diff_key($byId, $this->foreignIds())), 'add these routes to foreignIds()');
 
         $me = $this->tenants['isoschoola'];
-        // D107: donations is opt-in; switch it on for the caller so the tenant boundary (404), not the module gate (403), answers
-        $me['institution']->forceFill(['settings' => array_replace($me['institution']->fresh()->settings ?? [], ['opt_in_modules' => ['donations']])])->save();
+        // D107, D214: donations and hifz are opt-in; switch them on for the caller so the tenant boundary (404), not the module gate (403), answers
+        $me['institution']->forceFill(['settings' => array_replace($me['institution']->fresh()->settings ?? [], ['opt_in_modules' => config('institution_types.opt_in')])])->save();   // D214: hifz too
         foreach (array_filter($this->foreignIds()) as $key => $make) {
             [$method, $uri] = explode(' ', $key, 2);
             foreach ($this->tenants as $slug => $other) {

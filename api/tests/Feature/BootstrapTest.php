@@ -33,14 +33,14 @@ class BootstrapTest extends TestCase
             ->assertJsonPath('data.release.id', 'R3');
 
         $this->assertCount(8, $res->json('data.theme.tokens'));
-        $this->assertEqualsCanonicalizing(array_values(array_diff(config('release.modules'), ['donations'])), $res->json('data.modules'), 'D80: coaching gets every R3 module except opt-in donations');
+        $this->assertEqualsCanonicalizing(array_values(array_diff(config('release.modules'), config('institution_types.opt_in'))), $res->json('data.modules'), 'D80, D214, D215: coaching gets every R3 module except the opt-in ones (donations, hifz)');
         $this->assertContains('student', $res->json('data.roles'), 'D68: R1 ships student login for the question-bank portal');
         $this->assertSame(['bn', 'en'], $res->json('data.locales.enabled'));
 
         $optedCoaching = $this->makeInstitution('opted-coaching', 'coaching');
-        $optedCoaching->update(['settings' => ['opt_in_modules' => ['donations']]]);
+        $optedCoaching->update(['settings' => ['opt_in_modules' => config('institution_types.opt_in')]]);   // D214: every opt-in module
         $optedIn = $this->api('GET', $this->hostOf($optedCoaching), 'bootstrap')->assertOk();
-        $this->assertEqualsCanonicalizing(config('release.modules'), $optedIn->json('data.modules'));
+        $this->assertEqualsCanonicalizing(array_values(array_diff(config('release.modules'), ['hifz'])), $optedIn->json('data.modules'), 'D215: hifz is for madrasas (school / college) only');
     }
 
     public function test_private_batch_type_excludes_d80_modules(): void

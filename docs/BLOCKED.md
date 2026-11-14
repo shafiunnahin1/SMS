@@ -302,3 +302,9 @@ Needed from the owner: a follow-up decision (proposed D189) that authorizes (3)-
 - **Tried:** nothing that edits the test, the type list or the decision (G4/G5).
 - **Owner choice needed:** (a) a new decision: D80 (2) covers the modules the coaching type has - the test compares coaching with (R3 modules ∩ coaching type modules) minus donations; or (b) add `period_attendance` to the coaching type (config, institution-types.md, README availability `✓✓✓–`), as D194 did for `admit_card`.
 - **Resolved 2026-11-08:** owner chose (b) - D198 adds `period_attendance` to the coaching type (config, institution-types.md, README availability); D80 (2) unchanged and BootstrapTest passes unmodified.
+
+## 2026-11-14 · MAD.1 (D214) · hifz for coaching vs ModuleGateTest
+- **What blocks:** D214 puts `hifz` into the coaching type's module list. `tests/Feature/ModuleGateTest::test_opt_in_modules_stay_off_until_the_institution_turns_them_on` uses a coaching institution as its example of "opting in cannot add a module the type does not include" (`assertFalse($gate->allows($coaching, 'hifz'))`), so it now fails. D214 allows changing only BootstrapTest's D80 line (and the contract-test fixtures), not this test.
+- **Tried:** nothing that edits ModuleGateTest (G5). The rest of MAD.1 (records, progress, stale list, PDF, parent view, switch) is written; the contract tests pass with the opt-in fixtures.
+- **Owner choice needed:** (a) a new decision: the ModuleGateTest example uses the private_batch type (which has no hifz) instead of coaching - the rule it checks stays the same; or (b) take hifz out of the coaching list again (madrasa.md says school and college) - then BootstrapTest's opted-in coaching line also needs changing.
+- **Resolved 2026-11-14:** owner chose (b) - D215: hifz is in the school and college lists only (madrasa preset), not coaching; ModuleGateTest unchanged and passing; BootstrapTest compares an opted-in coaching with the R3 modules minus hifz.

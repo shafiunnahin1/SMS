@@ -21,7 +21,7 @@ class AdmitCardService
             throw new BusinessException(__('errors.exam_schedule_incomplete'), 'exam_schedule_incomplete', 422);
         }
         $batch = $exam->batch_id ?? $batchId;
-        $enr = Enrollment::with(['student.user:id,name', 'batch:id,name'])->where('program_id', $exam->program_id)->where('status', 'active')
+        $enr = Enrollment::with(['student.user:id,name,name_alt', 'batch:id,name'])->where('program_id', $exam->program_id)->where('status', 'active')
             ->when($batch, fn ($q) => $q->where('batch_id', $batch))->when($studentId, fn ($q) => $q->where('student_id', $studentId))
             ->orderBy('batch_id')->orderBy('roll_no')->get()->unique('student_id');
         // D197 AAD.1: a student the dues hold back gets no card here; the admin sees them in GET /exams/{id}/admit-cards/blocked
@@ -33,7 +33,7 @@ class AdmitCardService
             'exam' => ['id' => $exam->id, 'name' => $exam->name, 'academic_year' => $exam->academic_year, 'center' => $exam->exam_center, 'instructions' => $exam->admit_card_instructions],
             'subjects' => $subjects->map(fn ($s) => ['subject' => $s->subject?->name, 'date' => $s->exam_date?->format('d/m/Y'),
                 'start' => $s->start_time ? substr((string) $s->start_time, 0, 5) : null, 'end' => $s->end_time ? substr((string) $s->end_time, 0, 5) : null, 'room' => $s->room])->values()->all(),
-            'cards' => $enr->map(fn ($e) => ['name' => $e->student?->user?->name, 'code' => $e->student?->student_id, 'roll' => $e->roll_no,
+            'cards' => $enr->map(fn ($e) => ['name' => $e->student?->user?->name, 'name_alt' => \App\Support\AltName::of($e->student?->user), 'code' => $e->student?->student_id, 'roll' => $e->roll_no,
                 'class' => trim($program . ($e->batch ? ' — ' . $e->batch->name : '')), 'photo' => self::photo($e->student),
                 'qr' => self::qr($e->student?->student_id . '|' . $exam->id)])->values()->all(),
             'blocked_count' => $blocked->count(),

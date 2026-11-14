@@ -26,6 +26,7 @@ class TeacherRequest extends FormRequest
         $uniqueUser = fn (string $col) => Rule::unique('users', $col)->where('institution_id', $inst)->ignore($userId);
         return [
             'name'          => [$post ? 'required' : 'sometimes', 'string', 'max:100'],
+            'name_alt'      => ['nullable', 'string', 'max:150'],   // D214 MAD.3
             'phone'         => [$post ? 'required_without:email' : 'sometimes', 'nullable', 'regex:/^01[3-9]\d{8}$/', $uniqueUser('phone')],
             'email'         => [$post ? 'required_without:phone' : 'sometimes', 'nullable', 'email', 'max:150', $uniqueUser('email')],
             'employee_id'   => ['nullable', 'string', 'max:20', Rule::unique('teachers', 'employee_id')->where('institution_id', $inst)->ignore($this->route('id'))],

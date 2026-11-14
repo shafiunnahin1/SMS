@@ -28,6 +28,7 @@ class CrossTenantRouteTest extends TestCase
             'GET api/v1/parent/children/{id}/results'      => ['parent', "parent/children/{$theirs['student']}/results"],
             'POST api/v1/parent/children/{id}/leave-requests' => ['parent', "parent/children/{$theirs['student']}/leave-requests"],   // D197 AAD.3
             'GET api/v1/parent/children/{id}/final-results' => ['parent', "parent/children/{$theirs['student']}/final-results"],   // D197 AAD.2
+            'GET api/v1/parent/children/{id}/hifz'         => ['parent', "parent/children/{$theirs['student']}/hifz"],   // D214 MAD.1
             'GET api/v1/parent/children/{id}/attendance'   => ['parent', "parent/children/{$theirs['student']}/attendance"],
             'GET api/v1/results/marksheet/{studentId}'     => ['admin', "results/marksheet/{$theirs['student']}?exam_id={$theirs['exam']}&format=json"],
             'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/entry"],
@@ -74,6 +75,7 @@ class CrossTenantRouteTest extends TestCase
     private function tenant(string $slug): array
     {
         $i = $this->makeInstitution($slug, 'school');
+        $i->forceFill(['settings' => array_replace($i->settings ?? [], ['opt_in_modules' => config('institution_types.opt_in')])])->save();   // D214: opt-in modules on, so the tenant boundary (404) answers
         $users = ['admin' => $this->makeUser($i, 'admin')];
         $ids = Tenancy::as($i, function () use ($slug) {
             \Illuminate\Support\Facades\Queue::fake();

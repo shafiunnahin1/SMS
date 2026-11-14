@@ -19,6 +19,7 @@ class ProgramRequest extends FormRequest
         $req = $this->isMethod('post') ? 'required' : 'sometimes';
         return [
             'name'               => "{$req}|string|max:100",
+            'name_alt'           => 'nullable|string|max:150',   // D214 MAD.3
             'numeric_name'       => 'nullable|integer|min:1|max:20',
             'code'               => 'nullable|string|max:20',
             'group_name'         => 'nullable|in:science,humanities,business,general',

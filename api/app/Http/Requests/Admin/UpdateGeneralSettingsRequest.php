@@ -17,6 +17,16 @@ class UpdateGeneralSettingsRequest extends FormRequest
             'use_programs'   => ['sometimes', 'required', 'boolean'],
             'student_portal' => ['sometimes', 'required', 'boolean'],
             'use_gpa'        => ['sometimes', 'required', 'boolean'],
+            'alt_name_locale' => ['sometimes', 'nullable', Rule::in(['ar', 'en'])],   // D214 MAD.3
+            'name_alt'       => ['sometimes', 'nullable', 'string', 'max:150'],
+            // D214 MAD.4: the grading preset; for `labelled` the ranges (may stay empty) and the labels of the preset's grade codes
+            'grading'                => ['sometimes', 'array:preset,rows'],
+            'grading.preset'         => ['required_with:grading', Rule::in(['bd_gpa', 'labelled'])],
+            'grading.rows'           => ['nullable', 'array', 'max:10'],
+            'grading.rows.*.grade'   => ['required', 'string', Rule::in(array_column(config('grading_presets.labelled'), 'grade'))],
+            'grading.rows.*.min'     => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'grading.rows.*.label'   => ['nullable', 'array:bn,en,ar'],
+            'grading.rows.*.label.*' => ['nullable', 'string', 'max:40'],
             // D197 AAD.1: the dues block (academics-advanced.md section 2)
             'fees'                          => ['sometimes', 'array:block_admit_card,block_result,block_threshold,block_message'],
             'fees.block_admit_card'         => ['required_with:fees', 'boolean'],

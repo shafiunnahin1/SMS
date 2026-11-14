@@ -34,7 +34,7 @@ class ResultService
 
         $pct = round($total / $full * 100, 2);
         $pass = $total >= (float) $es->pass_marks && $passComponents;
-        $scale = (Tenancy::current()->settings ?? [])['grading_scale'] ?? config('grading.default_scale');
+        $scale = \App\Support\GradingScale::rowsOrFail();   // D214 MAD.4: refuses while a labelled preset has an empty range
         $row = collect($scale)->first(fn ($r) => $pct >= $r['min']);
         return ['marks_obtained' => $total, 'component_marks' => $defs->isNotEmpty() ? $components : null, 'percentage' => $pct,
                 'grade' => $pass ? $row['grade'] : 'F', 'grade_point' => $pass ? $row['point'] : 0.00, 'is_absent' => false, 'is_pass' => $pass];

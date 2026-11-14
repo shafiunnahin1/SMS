@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useForm, useFieldArray } from 'react-hook-form'
+import AltNameInput, { useAltName } from '../altname/AltNameInput'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
 import api from '../../api/axios'
@@ -20,6 +21,7 @@ export default function BatchForm({ batch, onDone, onCancel }) {
   const usePrograms = useInstitutionStore(s => s.settings?.use_programs) !== false
   const hasTeachers = (useInstitutionStore(s => s.roles) ?? []).includes('teacher')
   const { save } = useCrud('batches')
+  const alt = useAltName()   // D214 MAD.3
   const programs = useCrud('programs', { enabled: usePrograms })
   const teachers = useCrud('teachers', { enabled: hasTeachers })
   const { register, handleSubmit, control, watch, setError, formState: { errors, isSubmitting } } = useForm({
@@ -33,7 +35,7 @@ export default function BatchForm({ batch, onDone, onCancel }) {
 
   const onSubmit = async (v) => {
     const body = clean({
-      ...(usePrograms ? { program_id: v.program_id } : {}), name: v.name, shift: v.shift, room: v.room, max_capacity: v.max_capacity,
+      ...(usePrograms ? { program_id: v.program_id } : {}), name: v.name, ...(alt.on ? { name_alt: v.name_alt ?? '' } : {}), shift: v.shift, room: v.room, max_capacity: v.max_capacity,
       monthly_fee: v.monthly_fee, start_date: v.start_date, end_date: v.end_date, status: v.status,
       ...(hasTeachers ? { teacher_id: v.teacher_id, subject_teachers: v.subject_teachers.filter(r => r.teacher_id !== '').map(r => ({ subject_id: Number(r.subject_id || 0), teacher_id: Number(r.teacher_id) })) } : {}),
     })
@@ -48,6 +50,7 @@ export default function BatchForm({ batch, onDone, onCancel }) {
       {usePrograms && <Select label={term('program')} placeholder={t('academic.pick')} options={(programs.list.data ?? []).map(p => ({ value: p.id, label: p.name }))}
         error={errors.program_id?.message} {...register('program_id', { required: term('program') })} />}
       <Input label={t('academic.name')} error={errors.name?.message} {...register('name', { required: t('academic.name') })} />
+      <AltNameInput register={register} error={errors.name_alt?.message} />
       {hasTeachers && <Select label={t('academic.class_teacher')} placeholder={t('academic.no_teacher')} options={teacherOptions} error={errors.teacher_id?.message} {...register('teacher_id')} />}
       <Select label={t('academic.shift')} placeholder={t('common.none')} options={SHIFTS.map(s => ({ value: s, label: t(`academic.shifts.${s}`) }))} {...register('shift')} />
       <Input label={t('academic.room')} error={errors.room?.message} {...register('room')} />

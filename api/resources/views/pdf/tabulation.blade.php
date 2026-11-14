@@ -25,8 +25,8 @@
   <tbody>
   @forelse ($rows as $r)
     <tr @class(['fail' => !$r['is_pass']])>
-      <td>{{ $r['roll'] ?? '—' }}</td><td class="name">{{ $r['name'] }} <br>{{ $r['code'] }}</td>
-      @foreach ($subjects as $sid => $name)<td>{{ $r['subjects'][$sid]['weighted'] ?? '—' }}</td><td>{{ $r['subjects'][$sid]['grade'] ?? '—' }}</td>@endforeach
+      <td>{{ $r['roll'] ?? '—' }}</td><td class="name">{{ $r['name'] }}@if (!empty($r['name_alt'])) <br><span dir="{{ \App\Support\AltName::dir() }}">{{ $r['name_alt'] }}</span>@endif <br>{{ $r['code'] }}</td>
+      @foreach ($subjects as $sid => $name)<td>{{ $r['subjects'][$sid]['weighted'] ?? '—' }}</td><td>{{ \App\Support\GradingScale::label($r['subjects'][$sid]['grade'] ?? null) ?? '—' }}</td>@endforeach
       <td>{{ $r['total'] ?? '—' }}</td><td>{{ $r['gpa'] ?? '—' }}</td><td>{{ $r['position'] ?? '—' }}</td>
       <td>{{ $r['is_pass'] ? __('pdf.tabulation.passed') : __('pdf.tabulation.failed') }}</td>
     </tr>

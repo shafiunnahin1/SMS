@@ -25,6 +25,46 @@ class InstitutionSettings
         ];
     }
 
+    /** D214 MAD.3 (madrasa.md section 3): second-language names - NOT part of general(), which feeds the bootstrap allow list */
+    public function altName(Institution $i): array
+    {
+        $s = $i->settings ?? [];
+        return ['alt_name_locale' => in_array($s['alt_name_locale'] ?? null, ['ar', 'en'], true) ? $s['alt_name_locale'] : null, 'name_alt' => $s['name_alt'] ?? null];
+    }
+
+    /** D214 MAD.4 (madrasa.md section 5): the grading preset, its rows and whether a range is still empty */
+    public function grading(Institution $i): array
+    {
+        return ['preset' => \App\Support\GradingScale::preset($i), 'rows' => array_map(fn ($r) => ['grade' => $r['grade'], 'min' => $r['min'] ?? null, 'label' => $r['label'] ?? null], \App\Support\GradingScale::rows($i)),
+            'incomplete' => \App\Support\GradingScale::incomplete($i)];
+    }
+
+    /** bd_gpa: back to the default scale (nothing stored); labelled: the preset's grade codes with the institution's ranges and labels */
+    public function setGrading(Institution $i, array $g): void
+    {
+        $s = $i->settings ?? [];
+        unset($s['grading_scale'], $s['grading_preset']);
+        if ($g['preset'] === 'labelled') {
+            $given = collect($g['rows'] ?? [])->keyBy('grade');
+            $rows = [];
+            foreach (config('grading_presets.labelled') as $n => $p) {
+                $r = $given[$p['grade']] ?? [];
+                $min = $p['grade'] === 'F' ? 0 : (isset($r['min']) && $r['min'] !== '' ? round((float) $r['min'], 2) : null);
+                $label = [];
+                foreach (['bn', 'en', 'ar'] as $l) $label[$l] = trim((string) ($r['label'][$l] ?? '')) ?: $p['label'][$l];
+                $rows[] = ['grade' => $p['grade'], 'min' => $min, 'point' => $p['point'], 'label' => $label];
+            }
+            $mins = array_column($rows, 'min');
+            if (!in_array(null, $mins, true)) {
+                for ($k = 1; $k < count($mins); $k++) if ($mins[$k] >= $mins[$k - 1]) throw new \App\Exceptions\BusinessException('ranges must go down', 'grading_order', 422);
+            }
+            $s['grading_scale'] = $rows;
+            $s['grading_preset'] = 'labelled';
+        }
+        $i->forceFill(['settings' => $s])->save();
+        app(ThemeService::class)->flush($i);
+    }
+
     /** D197 AAD.3 (academics-advanced.md section 5): up to this many days a class teacher decides a student's leave; above it, the admin */
     public function studentLeave(Institution $i): array
     {

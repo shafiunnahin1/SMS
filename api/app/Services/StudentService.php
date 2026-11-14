@@ -22,10 +22,10 @@ class StudentService
         return DB::transaction(function () use ($data, $batch, $enrollment) {
             $data['student_id'] = $data['student_id'] ?? $this->generateStudentId($data['admission_date'] ?? null);
             $user = User::create([
-                'institution_id' => Tenancy::current()->id, 'name' => $data['name'], 'username' => $data['student_id'],
+                'institution_id' => Tenancy::current()->id, 'name' => $data['name'], 'name_alt' => $data['name_alt'] ?? null, 'username' => $data['student_id'],
                 'password' => $data['student_id'], 'role' => 'student', 'must_change_password' => true,
             ]);
-            $student = Student::create(['user_id' => $user->id] + collect($data)->except(['name', 'guardian_email'])->all());
+            $student = Student::create(['user_id' => $user->id] + collect($data)->except(['name', 'name_alt', 'guardian_email'])->all());
             if ($this->parentPortalOn()) $this->linkParent($student, $data);
             if ($batch) $this->enrollments->enroll($student, $batch, $enrollment);
             return $student->fresh();
@@ -37,9 +37,10 @@ class StudentService
     {
         return DB::transaction(function () use ($student, $data, $photo) {
             if (array_key_exists('name', $data)) $student->user?->forceFill(['name' => $data['name']])->save();
+            if (array_key_exists('name_alt', $data)) $student->user?->forceFill(['name_alt' => $data['name_alt']])->save();   // D214 MAD.3
             if (isset($data['student_id']) && $student->user) $student->user->forceFill(['username' => $data['student_id']])->save();
             $oldPhone = $student->guardian_phone;
-            $student->fill(collect($data)->except(['name', 'photo'])->all());
+            $student->fill(collect($data)->except(['name', 'name_alt', 'photo'])->all());
             if ($photo) $student->photo = StudentFiles::storePhoto($student, $photo);
             $student->save();
             if (isset($data['guardian_phone']) && User::normalisePhone($data['guardian_phone']) !== User::normalisePhone($oldPhone) && $this->parentPortalOn()) {

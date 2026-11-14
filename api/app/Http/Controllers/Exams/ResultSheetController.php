@@ -78,6 +78,7 @@ class ResultSheetController extends Controller
         $s = $this->draft($id);
         $reason = $request->validate(['reason' => 'nullable|string|max:255'])['reason'] ?? null;
         if (!FinalResult::where('result_sheet_id', $s->id)->exists()) throw new BusinessException('compute first', 'result_sheet_not_computed', 422);
+        if (\App\Support\GradingScale::incomplete()) throw new BusinessException('fill the grade ranges first', 'grading_incomplete', 422);   // D214 MAD.4
         $s->update(['status' => 'published', 'published_at' => now()]);
         AuditLog::record('result_sheet.published', $s, ['reason' => $reason, 'version' => $s->version]);
         return response()->json(['success' => true, 'data' => $this->row($s->fresh(['program:id,name', 'batch:id,name']))]);
@@ -141,11 +142,11 @@ class ResultSheetController extends Controller
     private function table(int $id): array
     {
         $s = ResultSheet::with(['program:id,name', 'batch:id,name'])->findOrFail($id);
-        $results = FinalResult::with(['student.user:id,name', 'student.primaryEnrollment'])->where('result_sheet_id', $s->id)->get();
+        $results = FinalResult::with(['student.user:id,name,name_alt', 'student.primaryEnrollment'])->where('result_sheet_id', $s->id)->get();
         $subjects = [];
         foreach ($results as $r) foreach ($r->details as $d) $subjects[$d['subject_id']] = $d['subject'];
         ksort($subjects);
-        $rows = $results->map(fn ($r) => ['roll' => $r->student?->primaryEnrollment?->roll_no, 'code' => $r->student?->student_id, 'name' => $r->student?->user?->name,
+        $rows = $results->map(fn ($r) => ['roll' => $r->student?->primaryEnrollment?->roll_no, 'code' => $r->student?->student_id, 'name' => $r->student?->user?->name, 'name_alt' => \App\Support\AltName::of($r->student?->user),
             'subjects' => collect($r->details)->keyBy('subject_id')->all(), 'total' => $r->total_percentage, 'gpa' => $r->gpa, 'grade' => $r->grade,
             'position' => $r->position_program, 'is_pass' => $r->is_pass])->sortBy(fn ($r) => [$r['roll'] === null ? 1 : 0, $r['roll'] ?? 0, $r['name']])->values()->all();
         return [$s, $subjects, $rows];

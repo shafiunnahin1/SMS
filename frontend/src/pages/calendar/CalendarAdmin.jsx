@@ -16,6 +16,9 @@ import { Input, Select } from '../../components/FormField'
 import MonthCalendar from './MonthCalendar'
 import EventsAdmin from './EventsAdmin'
 import SeatPlan from './SeatPlan'
+import HijriDate from '../../features/hijri/HijriDate'
+import { useHijri } from '../../features/hijri/useHijri'
+import { occasionOn } from '../../features/hijri/hijri'
 
 // D213 CAL.1 /admin/academic/calendar: (1) the holidays of a year - add one day or a range, edit, delete; (2) academic years -
 // create and set the current one; D213 CAL.2 adds (3) events and (4) the month view; D213 CAL.3 (5) the exam seat plan.
@@ -43,6 +46,8 @@ function Holidays() {
   const [busy, setBusy] = useState(false)
   const q = useQuery({ queryKey: ['holidays', year], queryFn: () => api.get('/holidays', { params: { year } }).then(r => r.data.data) })
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
+  const hijri = useHijri()
+  const occasion = hijri.on && !editId ? occasionOn(f.date, hijri.offset) : null   // D214 MAD.2: a suggestion only
   const types = ['public', 'institution', 'optional'].map(v => ({ value: v, label: t(`cal.type.${v}`) }))
   const save = async (e) => {
     e.preventDefault()
@@ -67,6 +72,13 @@ function Holidays() {
             <Input name="date" type="date" label={editId ? t('cal.date') : t('cal.from')} value={f.date} onChange={set('date')} required />
             {!editId && <Input name="end_date" type="date" label={t('cal.to')} hint={t('cal.to_hint')} value={f.end_date} onChange={set('end_date')} />}
           </div>
+          {occasion && (
+            <p className="text-sm flex flex-wrap items-center gap-2" data-testid="occasion">
+              <span>{t('hijri.suggest', { name: t(`hijri.occasions.${occasion}`) })}</span>
+              <Button variant="ghost" onClick={() => setF({ ...f, title: t(`hijri.occasions.${occasion}`) })} data-action="use-occasion">{t('hijri.use')}</Button>
+              <span className="text-content-muted">{t('hijri.unverified')}</span>
+            </p>
+          )}
           <Select name="type" label={t('cal.type_label')} options={types} value={f.type} onChange={set('type')} />
           <Input name="description" label={t('cal.note')} value={f.description} onChange={set('description')} maxLength={255} />
           {!editId && <p className="text-sm text-muted">{t('cal.notify_hint')}</p>}
@@ -85,7 +97,7 @@ function Holidays() {
           <ul className="flex flex-col divide-y divide-line" data-testid="holiday-list">
             {q.data.map(h => (
               <li key={h.id} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span>{fmtDate(h.date, locale)} · {h.title} <span className="text-muted">({t(`cal.type.${h.type}`)})</span></span>
+                <span>{fmtDate(h.date, locale)}<HijriDate date={h.date} /> · {h.title} <span className="text-muted">({t(`cal.type.${h.type}`)})</span></span>
                 <span className="inline-flex gap-2">
                   <Button variant="ghost" onClick={() => { setEditId(h.id); setF({ ...blank, title: h.title, date: h.date, type: h.type, description: h.description || '' }) }} data-action="edit">{t('cal.edit')}</Button>
                   <Button variant="ghost" onClick={() => remove(h)} data-action="delete">{t('cal.delete')}</Button>

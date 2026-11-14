@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import AltNameInput, { useAltName } from '../../../features/altname/AltNameInput'
 import { useForm } from 'react-hook-form'
 import { Plus } from 'lucide-react'
 import { useTerms } from '../../../hooks/useTerms'
@@ -27,8 +28,9 @@ export default function Subjects() {
   const [editing, setEditing] = useState(null)
   const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting } } = useForm()
   const open = (row) => { reset(row?.id ? { ...row, teacher_id: row.teacher_id ?? '' } : { program_id: programId, full_marks: 100, pass_marks: 33 }); setEditing(row ?? {}) }
+  const alt = useAltName()   // D214 MAD.3
   const onSubmit = async (v) => {
-    const body = clean({ program_id: v.program_id, name: v.name, code: v.code, full_marks: v.full_marks, pass_marks: v.pass_marks,
+    const body = clean({ program_id: v.program_id, name: v.name, ...(alt.on ? { name_alt: v.name_alt ?? '' } : {}), code: v.code, full_marks: v.full_marks, pass_marks: v.pass_marks,
       is_optional: Boolean(v.is_optional), ...(hasTeachers ? { teacher_id: v.teacher_id } : {}) })
     if (await save(body, editing?.id, setError)) setEditing(null)
   }
@@ -52,6 +54,7 @@ export default function Subjects() {
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3 sm:grid-cols-2" noValidate>
           <Select label={term('program')} placeholder={t('academic.pick')} options={programOptions} error={errors.program_id?.message} {...register('program_id', { required: term('program') })} />
           <Input label={t('academic.name')} error={errors.name?.message} {...register('name', { required: t('academic.name') })} />
+          <AltNameInput register={register} error={errors.name_alt?.message} />
           <Input label={t('academic.code')} ltr error={errors.code?.message} {...register('code')} />
           {hasTeachers && <Select label={t('academic.teacher')} placeholder={t('academic.no_teacher')} options={(teachers.list.data ?? []).map(x => ({ value: x.id, label: x.name }))} error={errors.teacher_id?.message} {...register('teacher_id')} />}
           <Input label={t('academic.full_marks')} ltr inputMode="numeric" error={errors.full_marks?.message} {...register('full_marks')} />

@@ -129,6 +129,7 @@ export const MENU = {
       it('payments',  '/admin/settings/payments',  'পেমেন্ট সেটআপ', { module: 'online_payment' }),
       it('sms-sender','/admin/settings/sms',       'SMS Sender ID'),
       it('memo',      '/admin/settings/memo',      'স্মারক নম্বর'),   // D210 MEMO.1
+      it('madrasa',   '/admin/settings/madrasa',   'মাদ্রাসা সেটিংস'),   // D214 MAD.1
       it('memo-register','/admin/memo-register',   'স্মারক রেজিস্টার'),
       it('terms',     '/admin/settings/terminology','শব্দ-কোষ'),
       it('imports',  '/admin/settings/imports',  'ডেটা আমদানি (পুরনো সিস্টেম থেকে)', { module: 'data_migration' }),
@@ -200,6 +201,7 @@ export const MENU = {
     it('attendance','/parent/attendance','উপস্থিতি',{icon:'CalendarCheck',module:'attendance',primary:true}),
     it('homework','/parent/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework'}),
     it('calendar','/parent/calendar','একাডেমিক ক্যালেন্ডার',{icon:'CalendarCheck',module:'academic_calendar'}),   // D213 CAL.2
+    it('hifz','/parent/hifz','হিফজ',{icon:'BookOpen',module:'hifz'}),   // D214 MAD.1
     it('meetings','/parent/meetings','সভা',{icon:'Users',module:'parent_meeting'}),
     it('leave','/parent/leave','ছুটির আবেদন',{icon:'CalendarOff',module:'student_leave'}),
     it('transport','/parent/transport','পরিবহন',{icon:'Bus',module:'transport'}),

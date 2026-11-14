@@ -62,7 +62,7 @@ export function StudentResults() {
             {sheet.subjects.map(s => (
               <li key={s.subject_id} className="flex items-center justify-between h-row gap-2">
                 <span dir="auto">{s.subject}</span>
-                <span className="text-sm"><Ltr>{s.is_absent ? t('status.absent') : `${num(s.marks_obtained)}/${num(s.full_marks)}`}</Ltr>{s.grade && <strong className="ms-2">{s.grade}</strong>}</span>
+                <span className="text-sm"><Ltr>{s.is_absent ? t('status.absent') : `${num(s.marks_obtained)}/${num(s.full_marks)}`}</Ltr>{s.grade && <strong className="ms-2">{s.grade_label ?? s.grade}</strong>}</span>
               </li>
             ))}
           </ul>
