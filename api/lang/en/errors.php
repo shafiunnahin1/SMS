@@ -31,6 +31,9 @@ return [
     'installment_mismatch'   => 'The due no longer matches this installment (it was paid or changed elsewhere).',
     'holiday_exists'         => 'A holiday already exists on one of these days.',   // D213 CAL.1
     'holiday_range_too_long' => 'At most :max days can be added at once.',
+    'hifz_range_order' => 'The start surah/ayah cannot come after the end.',   // D214 MAD.1
+    'hifz_edit_window' => 'Your own entry can be changed only within 24 hours.',
+    'hifz_hidden_from_parents' => 'The institution has not turned on hifz progress for parents.',
     'seat_no_students' => 'This exam has no students.',   // D213 CAL.3
     'seat_capacity_short' => ':students students but :seats seats; add rooms or seats.',
     'seat_unknown_room' => 'This room is not in the seat plan.',

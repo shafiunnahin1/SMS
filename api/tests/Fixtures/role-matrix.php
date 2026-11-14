@@ -297,6 +297,16 @@ return [
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
     'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
+    'GET api/v1/hifz/records' => ['admin', 'teacher'],   // D214 MAD.1
+    'POST api/v1/hifz/records' => ['admin', 'teacher'],
+    'PUT api/v1/hifz/records/{id}' => ['admin', 'teacher'],
+    'DELETE api/v1/hifz/records/{id}' => ['admin', 'teacher'],
+    'GET api/v1/hifz/students/{id}/progress' => ['admin', 'teacher'],
+    'GET api/v1/hifz/batches/{id}/overview' => ['admin', 'teacher'],
+    'GET api/v1/hifz/reports/monthly.pdf' => ['admin', 'teacher'],
+    'GET api/v1/parent/children/{id}/hifz' => ['parent'],
+    'GET api/v1/admin/settings/hifz' => ['admin'],
+    'PUT api/v1/admin/settings/hifz' => ['admin'],
     'POST api/v1/exams/{id}/seat-plan/generate' => ['admin'],   // D213 CAL.3
     'GET api/v1/exams/{id}/seat-plan' => ['admin'],
     'GET api/v1/exams/{id}/seat-plan/print' => ['admin'],

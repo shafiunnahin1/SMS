@@ -18,7 +18,7 @@ return [
             'tuition_fee'   => ['bn' => 'মাসিক বেতন', 'en' => 'Monthly Tuition', 'ar' => 'الرسوم الشهرية'],
         ],
         'modules' => ['students','enrollments','attendance','fees','exams','cashbook','support','syllabus','data_migration','accounting','inventory','attendance_devices','risk_alerts','admission_cycle','hifz','donations','result_sheets','period_attendance','substitution','student_leave','sms','notices','reports',
-            'expenses','routine','homework','academic_calendar','promotion_tc','id_cards','admit_card',
+            'expenses','routine','homework','academic_calendar','hifz','promotion_tc','id_cards','admit_card',
             'behavior','health','certificates','visitors','events','parent_meeting','teacher_attendance',
             'hr_payroll','library','transport','hostel','online_class','online_quiz','scholarships',
             'alumni','fee_installment','analytics','ai_assistant','gps','cpd','multi_branch',
@@ -43,7 +43,7 @@ return [
         ],
         // same as school; a college normally has no behaviour log for small children
         'modules' => ['students','enrollments','attendance','fees','exams','cashbook','support','syllabus','data_migration','accounting','inventory','attendance_devices','risk_alerts','admission_cycle','hifz','donations','result_sheets','period_attendance','substitution','student_leave','sms','notices','reports',
-            'expenses','routine','homework','academic_calendar','promotion_tc','id_cards','admit_card',
+            'expenses','routine','homework','academic_calendar','hifz','promotion_tc','id_cards','admit_card',
             'certificates','visitors','events','teacher_attendance','hr_payroll','library','transport',
             'hostel','online_class','online_quiz','scholarships','alumni','fee_installment','analytics',
             'ai_assistant','cpd','multi_branch','leads','online_payment','public_site','question_bank','quiz'],

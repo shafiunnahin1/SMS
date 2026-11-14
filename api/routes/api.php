@@ -841,6 +841,24 @@ Route::prefix('v1')->group(function () {
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
         });
 
+        // ── D214 MAD.1: hifz ──
+        Route::middleware('module:hifz')->group(function () {
+            Route::middleware('role:admin,teacher')->group(function () {
+                Route::get('/hifz/records',                   [\App\Http\Controllers\Hifz\HifzController::class, 'index']);
+                Route::post('/hifz/records',                  [\App\Http\Controllers\Hifz\HifzController::class, 'store'])->middleware('throttle:120,1');
+                Route::put('/hifz/records/{id}',              [\App\Http\Controllers\Hifz\HifzController::class, 'update'])->whereNumber('id');
+                Route::delete('/hifz/records/{id}',           [\App\Http\Controllers\Hifz\HifzController::class, 'destroy'])->whereNumber('id');
+                Route::get('/hifz/students/{id}/progress',    [\App\Http\Controllers\Hifz\HifzController::class, 'progress'])->whereNumber('id');
+                Route::get('/hifz/batches/{id}/overview',     [\App\Http\Controllers\Hifz\HifzController::class, 'overview'])->whereNumber('id');
+                Route::get('/hifz/reports/monthly.pdf',       [\App\Http\Controllers\Hifz\HifzController::class, 'monthly']);
+            });
+            Route::get('/parent/children/{id}/hifz',          [\App\Http\Controllers\Hifz\HifzController::class, 'child'])->whereNumber('id')->middleware('role:parent');
+        });
+        Route::middleware('role:admin')->group(function () {   // the switch itself is not behind module:hifz
+            Route::get('/admin/settings/hifz',                [\App\Http\Controllers\Hifz\HifzController::class, 'settings']);
+            Route::put('/admin/settings/hifz',                [\App\Http\Controllers\Hifz\HifzController::class, 'updateSettings']);
+        });
+
         // ── D213 CAL.3: exam seat plan (admin) ──
         Route::middleware(['module:exams', 'module:academic_calendar', 'role:admin'])->group(function () {
             Route::post('/exams/{id}/seat-plan/generate',   [\App\Http\Controllers\Calendar\ExamSeatPlanController::class, 'generate'])->whereNumber('id')->middleware('throttle:30,1');
