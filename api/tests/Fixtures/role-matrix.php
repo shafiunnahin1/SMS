@@ -297,6 +297,8 @@ return [
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
     'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
+    'GET api/v1/settings/calendar' => ['admin', 'teacher', 'accountant', 'student', 'parent'],   // D214 MAD.2
+    'PUT api/v1/admin/settings/calendar' => ['admin'],
     'GET api/v1/hifz/records' => ['admin', 'teacher'],   // D214 MAD.1
     'POST api/v1/hifz/records' => ['admin', 'teacher'],
     'PUT api/v1/hifz/records/{id}' => ['admin', 'teacher'],

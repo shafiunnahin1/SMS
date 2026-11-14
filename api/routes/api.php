@@ -841,6 +841,10 @@ Route::prefix('v1')->group(function () {
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
         });
 
+        // ── D214 MAD.2: the secondary (Hijri) calendar - display only ──
+        Route::get('/settings/calendar',                  [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'show'])->middleware('role:admin,teacher,accountant,student,parent');
+        Route::put('/admin/settings/calendar',            [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'update'])->middleware('role:admin');
+
         // ── D214 MAD.1: hifz ──
         Route::middleware('module:hifz')->group(function () {
             Route::middleware('role:admin,teacher')->group(function () {

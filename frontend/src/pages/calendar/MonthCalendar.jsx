@@ -8,6 +8,7 @@ import Loader from '../../components/Loader'
 import DirIcon from '../../components/DirIcon'
 import { ErrorState } from '../../components/StateViews'
 import { fmtDate } from '../../i18n/format'
+import HijriDate from '../../features/hijri/HijriDate'
 
 const pad = (n) => String(n).padStart(2, '0')
 const TAG = { bn: 'bn-BD-u-nu-latn', en: 'en-BD', ar: 'ar-u-nu-latn' }   // I18N.md 3.4: Latin digits
@@ -63,6 +64,7 @@ export default function MonthCalendar({ endpoint = '/calendar' }) {
             {['holiday', 'exam', 'event'].map(k => <li key={k} className={tone[k]}>■ {t(`cal.kind.${k}`)}</li>)}
             <li className="text-content-muted">■ {t('cal.kind.weekly')}</li>
           </ul>
+          <p className="text-sm">{t('hijri.today')}: {fmtDate(new Date(), locale)}<HijriDate date={new Date().toISOString().slice(0, 10)} /></p>
           <MonthList data={q.data} t={t} locale={locale} />
         </>
       )}
@@ -80,7 +82,7 @@ function MonthList({ data, t, locale }) {
   if (!rows.length) return <p className="text-sm text-content-muted">{t('cal.nothing')}</p>
   return (
     <ul className="flex flex-col divide-y divide-line text-sm" data-testid="month-list">
-      {rows.map((r, i) => <li key={i} className="py-1"><span className="text-content-muted">{fmtDate(r.d, locale)}</span> · {t(`cal.kind.${r.k}`)}: {r.l}</li>)}
+      {rows.map((r, i) => <li key={i} className="py-1"><span className="text-content-muted">{fmtDate(r.d, locale)}</span><HijriDate date={r.d} /> · {t(`cal.kind.${r.k}`)}: {r.l}</li>)}
     </ul>
   )
 }
