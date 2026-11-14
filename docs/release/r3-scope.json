@@ -105,7 +105,8 @@
    "fee_installment",
    "homework",
    "academic_calendar",
-   "hifz"
+   "hifz",
+   "risk_alerts"
   ],
   "roles": [
  "super_admin",
