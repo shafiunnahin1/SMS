@@ -31,6 +31,7 @@ return [
     'installment_mismatch'   => 'বকেয়াটি এই কিস্তির সাথে আর মেলে না (অন্যভাবে পরিশোধ বা পরিবর্তন হয়েছে)।',
     'holiday_exists'         => 'এই দিনগুলোর কোনোটিতে আগেই ছুটি আছে।',   // D213 CAL.1
     'holiday_range_too_long' => 'একবারে সর্বোচ্চ :max দিনের ছুটি যোগ করা যায়।',
+    'payment_password_wrong' => 'পাসওয়ার্ড ঠিক নয়।',   // D217 OPAY.3
     'payment_gateway_unavailable' => 'এই পদ্ধতিতে অনলাইন পেমেন্ট এখন চালু নেই।',   // D217 OPAY.1
     'payment_below_minimum' => 'ন্যূনতম পেমেন্ট ৳:min।',
     'payment_in_progress' => 'এই ফি-র জন্য একটি পেমেন্ট চলমান আছে। কয়েক মিনিট পর আবার চেষ্টা করুন।',

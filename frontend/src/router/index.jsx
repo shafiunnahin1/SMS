@@ -45,6 +45,8 @@ const CalendarAdmin = lazy(() => import('../pages/calendar/CalendarAdmin'))   //
 const CalendarView = lazy(() => import('../pages/calendar/CalendarView'))   // D213 CAL.2
 const Hifz = lazy(() => import('../pages/hifz/Hifz'))   // D214 MAD.1
 const Risk = lazy(() => import('../pages/risk/Risk'))   // D216 RISK.2
+const OnlinePayments = lazy(() => import('../pages/payments/OnlinePayments'))   // D217 OPAY.3
+const PaymentSettings = lazy(() => import('../pages/payments/PaymentSettings'))
 const HifzParent = lazy(() => import('../pages/hifz/HifzParent'))
 const MadrasaSettings = lazy(() => import('../pages/admin/MadrasaSettings'))
 const PublicCalendar = lazy(() => import('../pages/public/PublicCalendar'))
@@ -209,6 +211,8 @@ export const tenantRoutes = [
     { path: 'settings/madrasa', element: S(MadrasaSettings) },   // D214 MAD.1
     { path: 'hifz', element: S(Hifz) },
     { path: 'risk', element: S(Risk) },   // D216 RISK.2
+    { path: 'payments', element: S(OnlinePayments) },   // D217 OPAY.3
+    { path: 'settings/payments', element: S(PaymentSettings) },
     { path: 'academic/promotion', element: S(PromotionTc) },   // D210 PTC.1
     { path: 'certificates', element: S(Certificates) },   // D210 CERT.1
     { path: 'letters', element: S(Letters) },   // D210 LTR.1
@@ -242,6 +246,7 @@ export const tenantRoutes = [
     ...(import.meta.env.DEV ? [{ path: 'dev/components', element: S(DevComponents) }] : []),
   ]),
   area('/accountant', 'accountant', [
+    { path: 'payments', element: S(OnlinePayments) },   // D217 OPAY.3 (read only)
     { path: 'dashboard', element: S(Dashboard) },
     { path: 'admission', element: S(AdmissionCycles) },   // D209 ACY.2: the list and cash only
     { path: 'fees/installments', element: S(Installments) },   // D211 INST.2
@@ -297,6 +302,7 @@ export const centralRoutes = [
     { path: 'qb/pricing', element: S(QbPricing) },   // QB.6
     { path: 'qb/blueprints', element: S(QbBlueprints) },   // R2.1.5 (D126)
     { path: 'support', element: S(SupportTickets, { mode: 'super' }) },   // D193 SUP.1
+    { path: 'online-payments', element: S(OnlinePayments, { mode: 'super' }) },   // D217 OPAY.3
     { path: 'exports', element: S(SuperExports) },   // D193 EXP.1
     { path: 'qb/quizzes', element: S(QbQuizAdmin) },   // QB.10
     { path: 'qb/withdrawals', element: S(QbWithdrawals) },   // QB.10b

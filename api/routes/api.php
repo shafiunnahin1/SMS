@@ -102,6 +102,10 @@ Route::prefix('v1')->group(function () {
         // D193 EXP.1 (D38): back an institution up; restore an export / backup as a NEW institution
         Route::post('/institutions/{id}/backup',    [\App\Http\Controllers\Export\SuperExportController::class, 'backup'])->whereNumber('id');
         Route::post('/institutions/import',           [\App\Http\Controllers\Export\SuperExportController::class, 'import']);
+        // D217 OPAY.3: online fee payments of every institution - the review queue
+        Route::get('/online-payments',                [\App\Http\Controllers\Payments\SuperOnlinePaymentController::class, 'index']);
+        Route::post('/online-payments/{id}/resolve',  [\App\Http\Controllers\Payments\SuperOnlinePaymentController::class, 'resolve'])->whereNumber('id');
+        Route::post('/online-payments/{id}/verify',   [\App\Http\Controllers\Payments\SuperOnlinePaymentController::class, 'verify'])->whereNumber('id');
         // D193 SUP.1: the platform's support queue
         Route::get('/support/tickets',                [\App\Http\Controllers\Support\SuperSupportController::class, 'index']);
         Route::get('/support/tickets/{id}',           [\App\Http\Controllers\Support\SuperSupportController::class, 'show'])->whereNumber('id');
@@ -844,6 +848,20 @@ Route::prefix('v1')->group(function () {
             Route::post('/students/{id}/tc',              [\App\Http\Controllers\Documents\TcController::class, 'store'])->whereNumber('id')->middleware('module:students');
             Route::get('/tc/{id}/pdf',                    [\App\Http\Controllers\Documents\TcController::class, 'pdf'])->whereNumber('id');
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
+        });
+
+        // ── D217 OPAY.3: the institution's online payments (the accountant reads) and payment settings (admin) ──
+        Route::middleware(['module:fees', 'module:online_payment'])->group(function () {
+            Route::middleware('role:admin,accountant')->group(function () {
+                Route::get('/admin/payments',                 [\App\Http\Controllers\Payments\PaymentSettingsController::class, 'index']);
+                Route::get('/admin/payments/{id}',            [\App\Http\Controllers\Payments\PaymentSettingsController::class, 'show'])->whereNumber('id');
+            });
+            Route::middleware('role:admin')->group(function () {
+                Route::get('/admin/settings/payments',                          [\App\Http\Controllers\Payments\PaymentSettingsController::class, 'settings']);
+                Route::put('/admin/settings/payments/gateways/{gateway}',       [\App\Http\Controllers\Payments\PaymentSettingsController::class, 'saveGateway'])->middleware('throttle:10,1');
+                Route::post('/admin/settings/payments/gateways/{gateway}/test', [\App\Http\Controllers\Payments\PaymentSettingsController::class, 'testGateway'])->middleware('throttle:10,1');
+                Route::delete('/admin/settings/payments/gateways/{gateway}',    [\App\Http\Controllers\Payments\PaymentSettingsController::class, 'disableGateway']);
+            });
         });
 
         // ── D217 OPAY.2: a parent pays chosen dues online ──

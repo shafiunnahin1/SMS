@@ -297,6 +297,15 @@ return [
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
     'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
+    'GET api/v1/admin/payments' => ['admin', 'accountant'],   // D217 OPAY.3
+    'GET api/v1/admin/payments/{id}' => ['admin', 'accountant'],
+    'GET api/v1/admin/settings/payments' => ['admin'],
+    'PUT api/v1/admin/settings/payments/gateways/{gateway}' => ['admin'],
+    'POST api/v1/admin/settings/payments/gateways/{gateway}/test' => ['admin'],
+    'DELETE api/v1/admin/settings/payments/gateways/{gateway}' => ['admin'],
+    'GET api/v1/super/online-payments' => ['super_admin'],
+    'POST api/v1/super/online-payments/{id}/resolve' => ['super_admin'],
+    'POST api/v1/super/online-payments/{id}/verify' => ['super_admin'],
     'GET api/v1/parent/fees/payment-options' => ['parent'],   // D217 OPAY.2
     'POST api/v1/fees/payment/{gateway}/create' => ['parent'],
     'GET api/v1/parent/online-payments/{ref}' => ['parent'],

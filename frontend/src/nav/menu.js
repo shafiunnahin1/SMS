@@ -216,7 +216,7 @@ export const MENU = {
     it('dues','/accountant/fees/dues','বকেয়া',{icon:'AlertCircle',module:'fees',primary:true}),
     it('installments','/accountant/fees/installments','কিস্তি',{icon:'CalendarCheck',module:'fee_installment'}),   // D211 INST.2
     it('ai','/accountant/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant'}),   // D166 AI-Q4: the help guide
-    it('online','/admin/payments','অনলাইন পেমেন্ট',{icon:'CreditCard',module:'online_payment'}),
+    it('online','/accountant/payments','অনলাইন পেমেন্ট',{icon:'CreditCard',module:'online_payment'}),   // D217 OPAY.3: the accountant's own area
     it('expenses','/accountant/expenses','আয়-ব্যয়',{icon:'Receipt',module:'expenses'}),
     it('payroll','/accountant/hr/payroll','বেতন প্রদান',{icon:'Banknote',module:'hr_payroll'}),
     it('hr-advances','/accountant/hr/advances','অগ্রিম',{icon:'HandCoins',module:'hr_payroll'}),

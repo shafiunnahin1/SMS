@@ -31,6 +31,7 @@ return [
     'installment_mismatch'   => 'The due no longer matches this installment (it was paid or changed elsewhere).',
     'holiday_exists'         => 'A holiday already exists on one of these days.',   // D213 CAL.1
     'holiday_range_too_long' => 'At most :max days can be added at once.',
+    'payment_password_wrong' => 'The password is not correct.',   // D217 OPAY.3
     'payment_gateway_unavailable' => 'Online payment by this method is not available now.',   // D217 OPAY.1
     'payment_below_minimum' => 'The minimum payment is ৳:min.',
     'payment_in_progress' => 'A payment for this fee is in progress. Try again in a few minutes.',
