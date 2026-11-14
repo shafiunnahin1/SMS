@@ -297,6 +297,9 @@ return [
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
     'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
+    'GET api/v1/student/wallet' => ['student'],   // D218 WAL.3
+    'POST api/v1/student/wallet/recharge-requests' => ['student'],
+    'POST api/v1/student/wallet/bkash' => ['student'],
     'POST api/v1/subscription/pay-from-wallet' => ['admin'],   // D218 WAL.2
     'GET api/v1/wallet/recharge-requests' => ['admin'],   // D218 WAL.1
     'POST api/v1/wallet/recharge-requests' => ['admin'],

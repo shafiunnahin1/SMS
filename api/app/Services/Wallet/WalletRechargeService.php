@@ -18,15 +18,16 @@ class WalletRechargeService
     public const MIN = '1.00';
     public const MAX = '500000.00';
 
-    public function file(User $by, array $d, UploadedFile $receipt): WalletRechargeRequest
+    /** $forUser: null = the institution's wallet; a user id = that student's wallet (D218 (5), WAL.3) */
+    public function file(User $by, array $d, UploadedFile $receipt, ?int $forUser = null): WalletRechargeRequest
     {
         $amount = Money::toPaisa((string) $d['amount']);
         if ($amount < Money::toPaisa(self::MIN) || $amount > Money::toPaisa(self::MAX)) throw new BusinessException('amount out of range', 'wallet_amount_range', 422, ['min' => self::MIN, 'max' => self::MAX]);
         $ref = $this->normalRef($d['trx_reference']);
-        return DB::transaction(function () use ($by, $d, $amount, $ref, $receipt) {
+        return DB::transaction(function () use ($by, $d, $amount, $ref, $receipt, $forUser) {
             Institution::whereKey(Tenancy::current()->id)->lockForUpdate()->first();
             if ($this->claimed($d['method'], $ref)) throw new BusinessException('this reference is already filed', 'wallet_reference_used', 422);
-            $r = WalletRechargeRequest::create(['user_id' => null, 'amount' => Money::format($amount), 'method' => $d['method'], 'trx_reference' => $ref,
+            $r = WalletRechargeRequest::create(['user_id' => $forUser, 'amount' => Money::format($amount), 'method' => $d['method'], 'trx_reference' => $ref,
                 'note' => $d['note'] ?? null, 'status' => 'pending', 'requested_by' => $by->id]);
             $path = $receipt->storeAs('institutions/' . Tenancy::current()->id . '/wallet-receipts', $r->id . '-' . Str::uuid() . '.' . $receipt->extension(), 'private');
             if (!$path) throw new BusinessException('the file could not be saved', 'upload_failed', 422);
@@ -56,9 +57,10 @@ class WalletRechargeService
             $locked = Institution::whereKey($i->id)->lockForUpdate()->first();
             $r = WalletRechargeRequest::whereKey($id)->lockForUpdate()->firstOrFail();
             if ($r->status !== 'pending') throw new BusinessException('already decided', 'wallet_request_decided', 422);
-            if ($r->user_id !== null) throw new BusinessException('student wallets come later', 'wallet_request_decided', 422);
             $r->update(['status' => $approve ? 'approved' : 'rejected', 'decided_by' => $superAdmin->id, 'decided_at' => now(), 'decision_note' => $note]);
-            if ($approve) {
+            if ($approve && $r->user_id !== null) {   // D218 WAL.3: a student's wallet
+                app(StudentWalletService::class)->move(User::findOrFail($r->user_id), 'recharge', Money::toPaisa($r->amount), 'manual:' . $r->id, $superAdmin->id);
+            } elseif ($approve) {
                 $balance = Money::toPaisa((string) $locked->sms_balance) + Money::toPaisa($r->amount);
                 $locked->forceFill(['sms_balance' => Money::format($balance)])->save();
                 SmsCreditTransaction::create(['type' => 'purchase', 'amount' => $r->amount, 'balance_after' => Money::format($balance), 'reference' => 'manual:' . $r->id, 'created_by' => $superAdmin->id]);

@@ -2504,6 +2504,32 @@ CREATE TABLE wallet_recharge_requests (
 );
 CREATE INDEX idx_wallet_recharge_status ON wallet_recharge_requests(institution_id, status);
 
+-- D218 WAL.3: a student's own wallet (self-registered learners and institution students who buy from the question bank)
+CREATE TABLE user_wallets (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    balance DECIMAL(10,2) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_user_wallet (institution_id, user_id),
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+-- the student wallet's ledger: append-only (D32); amount signed (+ in, - out); reference unique per user when set (bkash:{ref}, manual:{id})
+CREATE TABLE user_wallet_transactions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    type ENUM('recharge','purchase','adjustment','refund') NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    balance_after DECIMAL(10,2) NOT NULL,
+    reference VARCHAR(100) NULL,
+    created_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id)
+);
+CREATE INDEX idx_user_wallet_txn ON user_wallet_transactions(user_id, created_at);
+
 -- ---------- admission cycle ----------
 CREATE TABLE admission_cycles (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

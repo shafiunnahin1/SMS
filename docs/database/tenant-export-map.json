@@ -206,6 +206,8 @@
   "teacher_subjects",
   "teacher_trainings",
   "training_programs",
+  "user_wallet_transactions",
+  "user_wallets",
   "vehicle_locations",
   "visitor_logs",
   "vouchers",
@@ -1397,6 +1399,19 @@
   },
   "training_programs": {
    "refs": {},
+   "polymorphic": []
+  },
+  "user_wallet_transactions": {
+   "refs": {
+    "created_by": "users",
+    "user_id": "users"
+   },
+   "polymorphic": []
+  },
+  "user_wallets": {
+   "refs": {
+    "user_id": "users"
+   },
    "polymorphic": []
   },
   "vehicle_locations": {

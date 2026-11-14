@@ -303,6 +303,8 @@ php artisan make:migration create_site_posts_table
 php artisan make:migration create_lead_payments_table
 php artisan make:migration create_hifz_records_table
 php artisan make:migration create_wallet_recharge_requests_table   # D218 WAL.1
+php artisan make:migration create_user_wallets_table   # D218 WAL.3 (one migration file creates user_wallets and user_wallet_transactions)
+php artisan make:migration create_user_wallet_transactions_table
 php artisan make:migration create_syllabus_units_table
 php artisan make:migration create_lesson_plans_table
 php artisan make:migration create_syllabus_coverage_table

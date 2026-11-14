@@ -42,6 +42,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['tenant:central', 'throttle:60,1'])->get('/billing/subscription/bkash/callback', [\App\Http\Controllers\Billing\SubscriptionCallbackController::class, 'bkash']);
     // QB.9: bKash brings a student back here after paying for question-bank items (`ref` finds our own order; central host, no login)
     Route::middleware(['tenant:central', 'throttle:60,1'])->get('/qb/student-orders/bkash/callback', [QbStudentOrderCallbackController::class, 'bkash']);
+    // D218 WAL.3: bKash brings a student back here after topping up their own wallet (central host, no login - `ref` finds our record)
+    Route::middleware(['tenant:central', 'throttle:60,1'])->get('/wallet/student/bkash/callback', [\App\Http\Controllers\Wallet\StudentWalletCallbackController::class, 'bkash']);
     // D217 OPAY.1: a payment provider notifies us here (central host, no login - the ref finds the row; the adapter authenticates)
     Route::middleware(['tenant:central', 'throttle:120,1'])->match(['get', 'post'], '/fees/payment/{gateway}/notify', [\App\Http\Controllers\Payments\FeePaymentCallbackController::class, 'notify'])->where('gateway', '[a-z0-9_]{1,30}');
     if (!app()->environment('production')) {   // the fake gateway's "customer paid" simulator: dev and tests only
@@ -665,6 +667,12 @@ Route::prefix('v1')->group(function () {
             // D165 ST.5: an institution's student moves valid purchases to their own learners account
             Route::post('/learner/move',                  [\App\Http\Controllers\Learner\StudentMoveController::class, 'start'])->middleware('throttle:5,1');
             Route::post('/learner/move/verify',           [\App\Http\Controllers\Learner\StudentMoveController::class, 'verify'])->middleware('throttle:10,1');
+        });
+        // D218 WAL.3: a student's own wallet - balance, ledger, manual top-up with the receipt, bKash top-up
+        Route::middleware('role:student')->prefix('student/wallet')->group(function () {
+            Route::get('/',                               [\App\Http\Controllers\Wallet\StudentWalletController::class, 'show']);
+            Route::post('/recharge-requests',             [\App\Http\Controllers\Wallet\StudentWalletController::class, 'request'])->middleware('throttle:10,1');
+            Route::post('/bkash',                         [\App\Http\Controllers\Wallet\StudentWalletController::class, 'bkash'])->middleware('throttle:10,1');
         });
         Route::middleware(['role:student', 'module:question_bank'])->prefix('student/qb')->group(function () {
             Route::get('/curriculum',                     [QbStudentController::class, 'curriculum']);

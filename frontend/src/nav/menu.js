@@ -189,6 +189,7 @@ export const MENU = {
     it('attendance','/student/attendance','উপস্থিতি',{icon:'CalendarCheck',module:'attendance', since: 'R1.1' }),
     it('homework','/student/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework', since: 'R1.1' }),
     it('calendar','/student/calendar','একাডেমিক ক্যালেন্ডার',{icon:'CalendarCheck',module:'academic_calendar'}),   // D213 CAL.2
+    it('wallet','/student/wallet','ওয়ালেট',{icon:'Wallet'}),   // D218 WAL.3
     it('quiz','/student/quiz','অনলাইন পরীক্ষা',{icon:'ClipboardCheck',module:'online_quiz', since: 'R1.1' }),
     it('materials','/student/materials','শিক্ষা-উপকরণ',{icon:'Folder', since: 'R1.1' }),
     it('library','/student/library','লাইব্রেরি',{icon:'Library',module:'library', since: 'R1.1' }),
