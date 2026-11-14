@@ -104,7 +104,8 @@
    "certificates",
    "fee_installment",
    "homework",
-   "academic_calendar"
+   "academic_calendar",
+   "hifz"
   ],
   "roles": [
  "super_admin",
