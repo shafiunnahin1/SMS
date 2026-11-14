@@ -136,6 +136,7 @@ export const MENU = {
       it('exports',  '/admin/settings/exports',  'এক্সপোর্ট / ব্যাকআপ', { since: 'R1.1' }),
       it('support',  '/admin/support',           'সাপোর্ট', { icon: 'LifeBuoy', module: 'support' }),
       it('subscription','/admin/subscription',     'সাবস্ক্রিপশন'),
+      it('wallet',      '/admin/wallet',           'ওয়ালেট'),   // D218 WAL.1
     ]},
   ],
   institution_staff: [
@@ -253,6 +254,7 @@ export const MENU = {
     it('institutions','/super-admin/institutions','প্রতিষ্ঠান',{icon:'Building2'}),
     it('plans','/super-admin/plans','প্ল্যান',{icon:'Tags'}),
     it('billing','/super-admin/billing','সাবস্ক্রিপশন বিল',{icon:'Receipt'}),
+    it('wallet-recharges','/super-admin/wallet-recharges','ওয়ালেট রিচার্জ',{icon:'Wallet'}),   // D218 WAL.1
     it('online','/super-admin/online-payments','অনলাইন ফি পেমেন্ট', {icon:'CreditCard', since: 'R2' }),
     it('payouts','/super-admin/payout-accounts','Payout অ্যাকাউন্ট', {icon:'Landmark', since: 'R2' }),
     it('settlements','/super-admin/settlements','Settlement', {icon:'Handshake', since: 'R2' }),

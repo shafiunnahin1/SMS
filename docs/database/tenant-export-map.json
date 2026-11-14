@@ -209,7 +209,8 @@
   "vehicle_locations",
   "visitor_logs",
   "vouchers",
-  "voucher_lines"
+  "voucher_lines",
+  "wallet_recharge_requests"
  ],
  "json_with_ids": [
   "admission_draws.result",
@@ -1428,6 +1429,14 @@
    "refs": {
     "account_id": "ledger_accounts",
     "voucher_id": "vouchers"
+   },
+   "polymorphic": []
+  },
+  "wallet_recharge_requests": {
+   "refs": {
+    "decided_by": "users",
+    "requested_by": "users",
+    "user_id": "users"
    },
    "polymorphic": []
   }

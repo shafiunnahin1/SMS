@@ -177,6 +177,7 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/notices/{id}/receipts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'GET api/v1/exams/{id}/admit-cards/bulk' => fn (array $other) => $this->seedExam($other),   // D193 ADM.1
             'POST api/v1/exams/{id}/seat-plan/generate' => fn (array $other) => $this->seedExam($other),   // D213 CAL.3
+            'GET api/v1/wallet/recharge-requests/{id}/receipt' => fn (array $other) => $this->seedRechargeRequest($other),   // D218 WAL.1
             'GET api/v1/admin/payments/{id}' => fn (array $other) => $this->seedOnlinePayment($other),   // D217 OPAY.3
             'PUT api/v1/admin/settings/payments/gateways/{gateway}' => null,   // {gateway} is a registry key - CrossTenantRouteTest::NOT_ROW_IDS, PaymentAdminTest
             'POST api/v1/admin/settings/payments/gateways/{gateway}/test' => null,
@@ -387,6 +388,12 @@ class TenantIsolationTest extends TestCase
         $hw = $this->seedHomework($t);
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\HomeworkSubmission::create(['homework_id' => $hw, 'student_id' => $student, 'text_answer' => 'x', 'status' => 'submitted'])->id);
+    }
+
+    private function seedRechargeRequest(array $t): int
+    {
+        $by = $this->seedTeacherUser($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\WalletRechargeRequest::create(['amount' => '10.00', 'method' => 'bkash', 'trx_reference' => 'T' . strtoupper(\Illuminate\Support\Str::random(10)), 'requested_by' => $by])->id);
     }
 
     private function seedOnlinePayment(array $t): int

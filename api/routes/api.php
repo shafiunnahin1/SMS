@@ -102,6 +102,13 @@ Route::prefix('v1')->group(function () {
         // D193 EXP.1 (D38): back an institution up; restore an export / backup as a NEW institution
         Route::post('/institutions/{id}/backup',    [\App\Http\Controllers\Export\SuperExportController::class, 'backup'])->whereNumber('id');
         Route::post('/institutions/import',           [\App\Http\Controllers\Export\SuperExportController::class, 'import']);
+        // D218 WAL.1: manual wallet top-ups of every institution, and where to send the money
+        Route::get('/wallet/recharge-requests',               [\App\Http\Controllers\Wallet\SuperWalletRechargeController::class, 'index']);
+        Route::get('/wallet/recharge-requests/{id}/receipt',  [\App\Http\Controllers\Wallet\SuperWalletRechargeController::class, 'receipt'])->whereNumber('id');
+        Route::post('/wallet/recharge-requests/{id}/approve', [\App\Http\Controllers\Wallet\SuperWalletRechargeController::class, 'approve'])->whereNumber('id');
+        Route::post('/wallet/recharge-requests/{id}/reject',  [\App\Http\Controllers\Wallet\SuperWalletRechargeController::class, 'reject'])->whereNumber('id');
+        Route::get('/wallet/instructions',                    [\App\Http\Controllers\Wallet\SuperWalletRechargeController::class, 'instructions']);
+        Route::put('/wallet/instructions',                    [\App\Http\Controllers\Wallet\SuperWalletRechargeController::class, 'updateInstructions']);
         // D217 OPAY.3: online fee payments of every institution - the review queue
         Route::get('/online-payments',                [\App\Http\Controllers\Payments\SuperOnlinePaymentController::class, 'index']);
         Route::post('/online-payments/{id}/resolve',  [\App\Http\Controllers\Payments\SuperOnlinePaymentController::class, 'resolve'])->whereNumber('id');
@@ -698,6 +705,10 @@ Route::prefix('v1')->group(function () {
                 Route::post('/sms-logs/{id}/discard',     [SmsLogController::class, 'discard'])->whereNumber('id');
             });
             Route::get('/subscription/sms-credits',       [SmsCreditController::class, 'balance'])->middleware('role:admin');
+            // D218 WAL.1: a manual top-up of the central wallet with the receipt
+            Route::get('/wallet/recharge-requests',       [\App\Http\Controllers\Wallet\WalletRechargeController::class, 'index'])->middleware('role:admin');
+            Route::post('/wallet/recharge-requests',      [\App\Http\Controllers\Wallet\WalletRechargeController::class, 'store'])->middleware(['role:admin', 'throttle:10,1']);
+            Route::get('/wallet/recharge-requests/{id}/receipt', [\App\Http\Controllers\Wallet\WalletRechargeController::class, 'receipt'])->whereNumber('id')->middleware('role:admin');
             Route::post('/subscription/sms-credits',      [SmsCreditController::class, 'purchase'])->middleware(['role:admin', 'throttle:10,1']);   // D58: bKash recharge
             // D59: the universal / own API switches and the institution's own BulkSMSBD key + masking sender
             Route::middleware('role:admin')->group(function () {

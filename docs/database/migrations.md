@@ -302,6 +302,7 @@ php artisan make:migration create_gallery_items_table
 php artisan make:migration create_site_posts_table
 php artisan make:migration create_lead_payments_table
 php artisan make:migration create_hifz_records_table
+php artisan make:migration create_wallet_recharge_requests_table   # D218 WAL.1
 php artisan make:migration create_syllabus_units_table
 php artisan make:migration create_lesson_plans_table
 php artisan make:migration create_syllabus_coverage_table

@@ -2483,6 +2483,27 @@ CREATE TABLE risk_flags (
     FOREIGN KEY (student_id) REFERENCES students(id)
 );
 
+-- D218 WAL.1: a manual top-up of a wallet - money sent outside the system, the receipt attached, a Super Admin decides.
+-- user_id NULL = the institution's wallet (institutions.sms_balance); set = that student's wallet (user_wallets). Never deleted (D32).
+CREATE TABLE wallet_recharge_requests (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    method VARCHAR(30) NOT NULL,                  -- bkash | nagad | rocket | upay | bank | other
+    trx_reference VARCHAR(100) NOT NULL,          -- upper case, no spaces; one claim per method + reference platform-wide (pending / approved)
+    receipt_path VARCHAR(500) NULL,               -- private disk; JPG / PNG / PDF up to 5 MB
+    note VARCHAR(255) NULL,
+    status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    requested_by BIGINT UNSIGNED NOT NULL,
+    decided_by BIGINT UNSIGNED NULL,
+    decided_at TIMESTAMP NULL,
+    decision_note VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id)
+);
+CREATE INDEX idx_wallet_recharge_status ON wallet_recharge_requests(institution_id, status);
+
 -- ---------- admission cycle ----------
 CREATE TABLE admission_cycles (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

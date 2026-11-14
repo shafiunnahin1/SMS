@@ -308,3 +308,8 @@ Needed from the owner: a follow-up decision (proposed D189) that authorizes (3)-
 - **Tried:** nothing that edits ModuleGateTest (G5). The rest of MAD.1 (records, progress, stale list, PDF, parent view, switch) is written; the contract tests pass with the opt-in fixtures.
 - **Owner choice needed:** (a) a new decision: the ModuleGateTest example uses the private_batch type (which has no hifz) instead of coaching - the rule it checks stays the same; or (b) take hifz out of the coaching list again (madrasa.md says school and college) - then BootstrapTest's opted-in coaching line also needs changing.
 - **Resolved 2026-11-14:** owner chose (b) - D215: hifz is in the school and college lists only (madrasa preset), not coaching; ModuleGateTest unchanged and passing; BootstrapTest compares an opted-in coaching with the R3 modules minus hifz.
+
+## 2026-11-14 · WAL.1 (D218) · the 1-taka bKash minimum vs SmsRechargeTest
+- **What blocks:** D218 (3) lowers the bKash wallet recharge minimum from 10 to 1 taka. `tests/Feature/Sms/SmsRechargeTest.php` line 101 (`test_only_the_admin_and_only_with...`) still expects `amount => 5` to be refused (422), so it now fails (200). D218 allows amending only the tests of the retired direct checkouts (to expect 410), not this one.
+- **Tried:** nothing that edits the test (G5). The rest of WAL.1 is written and its own tests pass; the commit waits.
+- **Owner choice needed:** a new decision that lets this one line expect a value below the new minimum (for example `amount => '0.50'` refused with 422) - the rule it checks (too small is refused) stays the same.

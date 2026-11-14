@@ -46,6 +46,8 @@ const CalendarView = lazy(() => import('../pages/calendar/CalendarView'))   // D
 const Hifz = lazy(() => import('../pages/hifz/Hifz'))   // D214 MAD.1
 const Risk = lazy(() => import('../pages/risk/Risk'))   // D216 RISK.2
 const OnlinePayments = lazy(() => import('../pages/payments/OnlinePayments'))   // D217 OPAY.3
+const WalletRecharge = lazy(() => import('../pages/wallet/WalletRecharge'))   // D218 WAL.1
+const WalletRecharges = lazy(() => import('../pages/super/WalletRecharges'))
 const PaymentSettings = lazy(() => import('../pages/payments/PaymentSettings'))
 const HifzParent = lazy(() => import('../pages/hifz/HifzParent'))
 const MadrasaSettings = lazy(() => import('../pages/admin/MadrasaSettings'))
@@ -221,6 +223,7 @@ export const tenantRoutes = [
     { path: 'memo-register', element: S(MemoRegister) },
     { path: 'fees/dues', element: S(FeeLedger) },
     { path: 'sms', element: S(SmsCenter) },
+    { path: 'wallet', element: S(WalletRecharge) },   // D218 WAL.1
     { path: 'subscription', element: S(Subscription) },   // D187 SUB.3
     { path: 'settings/sms', element: S(SmsSettings) },
     { path: 'reports', element: S(Reports) },
@@ -303,6 +306,7 @@ export const centralRoutes = [
     { path: 'qb/blueprints', element: S(QbBlueprints) },   // R2.1.5 (D126)
     { path: 'support', element: S(SupportTickets, { mode: 'super' }) },   // D193 SUP.1
     { path: 'online-payments', element: S(OnlinePayments, { mode: 'super' }) },   // D217 OPAY.3
+    { path: 'wallet-recharges', element: S(WalletRecharges) },   // D218 WAL.1
     { path: 'exports', element: S(SuperExports) },   // D193 EXP.1
     { path: 'qb/quizzes', element: S(QbQuizAdmin) },   // QB.10
     { path: 'qb/withdrawals', element: S(QbWithdrawals) },   // QB.10b

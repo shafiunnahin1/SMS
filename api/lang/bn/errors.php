@@ -31,6 +31,9 @@ return [
     'installment_mismatch'   => 'বকেয়াটি এই কিস্তির সাথে আর মেলে না (অন্যভাবে পরিশোধ বা পরিবর্তন হয়েছে)।',
     'holiday_exists'         => 'এই দিনগুলোর কোনোটিতে আগেই ছুটি আছে।',   // D213 CAL.1
     'holiday_range_too_long' => 'একবারে সর্বোচ্চ :max দিনের ছুটি যোগ করা যায়।',
+    'wallet_amount_range' => 'রিচার্জ ৳:min থেকে ৳:max এর মধ্যে হতে হবে।',   // D218 WAL.1
+    'wallet_reference_used' => 'এই লেনদেন নম্বর আগেই জমা দেওয়া হয়েছে।',
+    'wallet_request_decided' => 'এই অনুরোধের সিদ্ধান্ত আগেই হয়ে গেছে।',
     'payment_password_wrong' => 'পাসওয়ার্ড ঠিক নয়।',   // D217 OPAY.3
     'payment_gateway_unavailable' => 'এই পদ্ধতিতে অনলাইন পেমেন্ট এখন চালু নেই।',   // D217 OPAY.1
     'payment_below_minimum' => 'ন্যূনতম পেমেন্ট ৳:min।',

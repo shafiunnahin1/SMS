@@ -50,7 +50,7 @@ class SmsCreditController extends Controller
      *  kept on our side under a short ref (24 h); the callback trusts only that, never the browser or bKash's echo. */
     public function purchase(Request $request, BkashService $bkash)
     {
-        $f = $request->validate(['amount' => ['required', 'numeric', 'regex:/^\d{1,6}(\.\d{1,2})?$/', 'min:10', 'max:50000']]);
+        $f = $request->validate(['amount' => ['required', 'numeric', 'regex:/^\d{1,6}(\.\d{1,2})?$/', 'min:1', 'max:50000']]);   // D218 (3): from 1 taka
         if (!$bkash->configured()) throw new BusinessException('bKash is not configured', 'recharge_unavailable', 503);
         $i = Tenancy::current();
         $amount = Money::format(Money::toPaisa((string) $f['amount']));

@@ -297,6 +297,15 @@ return [
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
     'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
+    'GET api/v1/wallet/recharge-requests' => ['admin'],   // D218 WAL.1
+    'POST api/v1/wallet/recharge-requests' => ['admin'],
+    'GET api/v1/wallet/recharge-requests/{id}/receipt' => ['admin'],
+    'GET api/v1/super/wallet/recharge-requests' => ['super_admin'],
+    'GET api/v1/super/wallet/recharge-requests/{id}/receipt' => ['super_admin'],
+    'POST api/v1/super/wallet/recharge-requests/{id}/approve' => ['super_admin'],
+    'POST api/v1/super/wallet/recharge-requests/{id}/reject' => ['super_admin'],
+    'GET api/v1/super/wallet/instructions' => ['super_admin'],
+    'PUT api/v1/super/wallet/instructions' => ['super_admin'],
     'GET api/v1/admin/payments' => ['admin', 'accountant'],   // D217 OPAY.3
     'GET api/v1/admin/payments/{id}' => ['admin', 'accountant'],
     'GET api/v1/admin/settings/payments' => ['admin'],

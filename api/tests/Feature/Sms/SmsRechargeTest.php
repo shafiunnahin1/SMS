@@ -98,7 +98,7 @@ class SmsRechargeTest extends TestCase
         $host = $this->hostOf($i);
         $this->api('POST', $host, 'subscription/sms-credits', $this->makeUser($i, 'accountant'), ['amount' => 500])->assertForbidden();
         $admin = $this->makeUser($i, 'admin');
-        $this->api('POST', $host, 'subscription/sms-credits', $admin, ['amount' => 5])->assertStatus(422);
+        $this->api('POST', $host, 'subscription/sms-credits', $admin, ['amount' => '0.50'])->assertStatus(422);
         $this->api('POST', $host, 'subscription/sms-credits', $admin, ['amount' => '10.555'])->assertStatus(422);
 
         config(['services.bkash.app_key' => null]);

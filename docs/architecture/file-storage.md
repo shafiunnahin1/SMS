@@ -46,6 +46,7 @@
 | `class_materials.file_path` | institution | private | `institutions/{inst}/learning/materials/{uuid}.{ext}` |
 | `notices.attachment` | institution | private | `institutions/{inst}/notices/{uuid}.{ext}` |
 | `expenses.receipt_path` | institution | private | `institutions/{inst}/finance/expenses/{uuid}.{ext}` |
+| `wallet_recharge_requests.receipt_path` | institution | private | `institutions/{inst}/wallet-receipts/{id}-{uuid}.{ext}` (D218: ওয়ালেট রিচার্জের রসিদ, JPG/PNG/PDF ≤ 5 MB; শুধু ঐ প্রতিষ্ঠানের অ্যাডমিন ও Super Admin দেখেন) |
 | `qb_omr_scans.image_path` | institution | private | `institutions/{inst}/question-bank/omr/{form_id}/{uuid}.{ext}` (D127: ছাত্রের OMR-এর ছবি; ঐচ্ছিক) |
 | `visitor_logs.photo` | visitor | private | `institutions/{inst}/visitors/{uuid}.{ext}` (ব্যক্তিগত তথ্য; `visitor_logs`-এর retention-এর সাথে মোছা) |
 | `staff_members.photo` | staff | private | `institutions/{inst}/staff/{id}/photo-{uuid}.{ext}` |
