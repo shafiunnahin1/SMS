@@ -65,6 +65,8 @@ class CrossTenantRouteTest extends TestCase
         'GET api/v1/question-bank/concepts/{id}', 'GET api/v1/question-bank/resources/{id}', 'GET api/v1/question-bank/questions/{id}',
         'GET api/v1/student/qb/questions/{id}', 'GET api/v1/student/qb/concepts/{id}', 'GET api/v1/student/qb/resources/{id}', 'POST api/v1/student/qb/practice/{id}/submit', 'GET api/v1/student/qb/orders/{ref}',
         'POST api/v1/student/qb/quiz-packages/{id}/buy', 'POST api/v1/student/qb/quizzes/{id}/attempts',   // QB.10: catalogue rows
+        'POST api/v1/fees/payment/{gateway}/create',   // D217 OPAY.2: {gateway} is a registry key, {ref} a payment reference - ParentPaymentApiTest (another institution's ref 404)
+        'GET api/v1/parent/online-payments/{ref}',
         'POST api/v1/events/{id}/register',   // D213 CAL.2: student only; EventTest: another institution's event 404
         'DELETE api/v1/events/{id}/register',
         'POST api/v1/homework/{id}/submit',   // D212 HW.2: student only; HomeworkSubmissionTest: another institution's homework 404

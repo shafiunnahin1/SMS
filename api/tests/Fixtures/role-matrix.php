@@ -297,6 +297,9 @@ return [
     'PUT api/v1/fees/installments/{id}' => ['admin', 'accountant'],
     'GET api/v1/fees/installments/overdue' => ['admin', 'accountant'],   // D211 INST.2
     'POST api/v1/fees/installments/{id}/pay' => ['admin', 'accountant'],
+    'GET api/v1/parent/fees/payment-options' => ['parent'],   // D217 OPAY.2
+    'POST api/v1/fees/payment/{gateway}/create' => ['parent'],
+    'GET api/v1/parent/online-payments/{ref}' => ['parent'],
     'GET api/v1/risk/flags' => ['admin', 'teacher'],   // D216 RISK.2
     'GET api/v1/risk/students/{id}' => ['admin', 'teacher'],
     'POST api/v1/risk/flags/{id}/acknowledge' => ['admin', 'teacher'],

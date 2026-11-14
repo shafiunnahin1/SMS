@@ -846,6 +846,13 @@ Route::prefix('v1')->group(function () {
             Route::post('/tc/{id}/cancel',                [\App\Http\Controllers\Documents\TcController::class, 'cancel'])->whereNumber('id');
         });
 
+        // ── D217 OPAY.2: a parent pays chosen dues online ──
+        Route::middleware(['module:fees', 'module:online_payment', 'role:parent'])->group(function () {
+            Route::get('/parent/fees/payment-options',        [\App\Http\Controllers\Payments\OnlinePaymentController::class, 'options']);
+            Route::post('/fees/payment/{gateway}/create',     [\App\Http\Controllers\Payments\OnlinePaymentController::class, 'create'])->middleware('throttle:20,1');   // the role answers before the gateway key is looked at (the controller 404s an unknown key)
+            Route::get('/parent/online-payments/{ref}',       [\App\Http\Controllers\Payments\OnlinePaymentController::class, 'status'])->middleware('throttle:120,1');
+        });
+
         // ── D216 RISK.2: risk alerts (admin; a teacher for their batches) ──
         Route::middleware('module:risk_alerts')->prefix('risk')->group(function () {
             Route::middleware('role:admin,teacher')->group(function () {

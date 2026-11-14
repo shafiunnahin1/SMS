@@ -177,6 +177,8 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/notices/{id}/receipts' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Notice::create(['title' => 'T', 'content' => 'C', 'target' => 'all'])->id),
             'GET api/v1/exams/{id}/admit-cards/bulk' => fn (array $other) => $this->seedExam($other),   // D193 ADM.1
             'POST api/v1/exams/{id}/seat-plan/generate' => fn (array $other) => $this->seedExam($other),   // D213 CAL.3
+            'POST api/v1/fees/payment/{gateway}/create' => null,   // D217 OPAY.2: not row ids - CrossTenantRouteTest::NOT_ROW_IDS, ParentPaymentApiTest
+            'GET api/v1/parent/online-payments/{ref}' => null,
             'GET api/v1/risk/students/{id}' => fn (array $other) => $this->seedStudent($other),   // D216 RISK.2
             'POST api/v1/risk/flags/{id}/acknowledge' => fn (array $other) => $this->seedRiskFlag($other),
             'POST api/v1/risk/flags/{id}/resolve' => fn (array $other) => $this->seedRiskFlag($other),
