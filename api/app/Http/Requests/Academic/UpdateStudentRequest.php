@@ -17,6 +17,7 @@ class UpdateStudentRequest extends FormRequest
         $inst = Tenancy::current()->id;
         return [
             'name'           => 'sometimes|string|max:100',
+            'name_alt'       => 'nullable|string|max:150',   // D214 MAD.3
             'student_id'     => ['prohibited'],   // D160: an ID never changes after it is given
             'guardian_phone' => ['sometimes', 'string', 'regex:/^(?:\+?88)?01[3-9]\d{8}$/'],
             'father_name'    => 'nullable|string|max:100',

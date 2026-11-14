@@ -6,12 +6,14 @@
   body { font-family: 'Noto Sans Bengali', 'Noto Sans Arabic', 'Noto Sans', sans-serif; font-size: 12px; margin: 0; }
   .pdf-header { border-bottom: 3px solid {{ $theme['primary_color'] }}; padding-bottom: 6px; margin-bottom: 12px; }
   .pdf-header h1 { font-size: 16px; margin: 0; }
+  .pdf-header .alt-name { font-size: 13px; margin: 2px 0 0; }   /* D214 MAD.3 */
 </style>
 </head>
 <body>
   <div class="pdf-header">
     @if (!empty($logo))<img src="{{ $logo }}" height="40" alt="">@endif
     <h1>{{ $institution?->name }}</h1>
+    @if ($altInst = \App\Support\AltName::institution())<div class="alt-name" dir="{{ \App\Support\AltName::dir() }}">{{ $altInst }}</div>@endif
   </div>
   @yield('content')
   {{ $body ?? '' }}

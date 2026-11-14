@@ -13,7 +13,7 @@ import { useLocale } from '../../ui/I18nProvider'
 import { fmtHijri } from '../../features/hijri/hijri'
 
 // D214 MAD.1 /admin/settings/madrasa: the hifz switch and its settings (pages a para, days before "behind", parents' view);
-// D214 MAD.2: the Hijri calendar display
+// D214 MAD.2: the Hijri calendar display; D214 MAD.3: second-language names
 export default function MadrasaSettings() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -46,6 +46,7 @@ export default function MadrasaSettings() {
         </form>
       </Card>
       <HijriSettings />
+      <AltNameSettings />
     </div>
   )
 }
@@ -80,6 +81,38 @@ function HijriSettings() {
         <p className="text-sm" data-testid="hijri-preview">{t('hijri.today')}: {fmtHijri(today, locale, Number(cur.hijri_offset)) ?? t('hijri.unsupported')}</p>
         <p className="text-sm text-content-muted">{t('hijri.note')}</p>
         <div><Button type="submit" disabled={busy} data-action="save-hijri">{t('hifz.save')}</Button></div>
+      </form>
+    </Card>
+  )
+}
+
+// D214 MAD.3: second-language names - which language, and the institution's own second name (saved with the general settings)
+function AltNameSettings() {
+  const { t } = useTranslation()
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['settings', 'general'], queryFn: () => api.get('/admin/settings/general').then(r => r.data.data) })
+  const [f, setF] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const cur = f ?? (q.data ? { alt_name_locale: q.data.alt_name_locale ?? '', name_alt: q.data.name_alt ?? '' } : null)
+  if (q.isPending) return <Loader />
+  if (q.isError || !cur) return <ErrorState onRetry={q.refetch} />
+  const save = async (e) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      await api.put('/admin/settings/general', { alt_name_locale: cur.alt_name_locale || null, name_alt: cur.name_alt.trim() || null })
+      useUiStore.getState().addToast(t('hifz.settings_saved'))
+    } catch { /* the interceptor shows the error */ } finally { setBusy(false); setF(null); qc.invalidateQueries({ queryKey: ['settings', 'general'] }) }
+  }
+  return (
+    <Card>
+      <form className="flex flex-col gap-3 sm:max-w-md" onSubmit={save} data-testid="altname-settings">
+        <h2 className="font-semibold">{t('altname.title')}</h2>
+        <Select name="alt_name_locale" label={t('altname.language')} value={cur.alt_name_locale} onChange={(e) => setF({ ...cur, alt_name_locale: e.target.value })}
+          options={[{ value: '', label: t('altname.off') }, { value: 'ar', label: t('altname.languages.ar') }, { value: 'en', label: t('altname.languages.en') }]} />
+        {cur.alt_name_locale && <Input name="name_alt" label={t('altname.institution')} dir={cur.alt_name_locale === 'ar' ? 'rtl' : 'ltr'} maxLength={150} value={cur.name_alt} onChange={(e) => setF({ ...cur, name_alt: e.target.value })} />}
+        <p className="text-sm text-content-muted">{t('altname.note')}</p>
+        <div><Button type="submit" disabled={busy} data-action="save-altname">{t('hifz.save')}</Button></div>
       </form>
     </Card>
   )

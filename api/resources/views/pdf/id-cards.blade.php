@@ -17,6 +17,7 @@
     <div class="info">
       <div class="bar">{{ __('pdf.idcard.title') }}</div>
       <div><strong>{{ $c['name'] }}</strong></div>
+      @if (!empty($c['name_alt']))<div dir="{{ \App\Support\AltName::dir() }}">{{ $c['name_alt'] }}</div>@endif
       <div>{{ __('pdf.idcard.id') }}: {{ $c['code'] }}</div>
       <div>{{ __('pdf.idcard.class') }}: {{ $c['class'] ?: '—' }}</div>
       <div>{{ __('pdf.idcard.roll') }}: {{ $c['roll'] ?? '—' }}@if ($c['blood_group']) &nbsp; {{ __('pdf.idcard.blood') }}: {{ $c['blood_group'] }}@endif</div>

@@ -16,6 +16,7 @@
 <div class="body">
   @php
     $who = $student->user?->name;
+    if ($altWho = \App\Support\AltName::of($student->user)) $who .= ' (' . $altWho . ')';   // D214 MAD.3
     if ($student->father_name) $who .= ', পিতা: ' . $student->father_name;
     if ($student->mother_name) $who .= ', মাতা: ' . $student->mother_name;
     $span = trim(($from_bn ? $from_bn . ' তারিখ হতে ' : '') . ($to_bn ? $to_bn . ' তারিখ পর্যন্ত' : ''));

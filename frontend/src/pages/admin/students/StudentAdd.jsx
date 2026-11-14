@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
+import AltNameInput from '../../../features/altname/AltNameInput'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../../api/axios'
@@ -50,6 +51,7 @@ export default function StudentAdd({ staff = false }) {
       <Card>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2" noValidate>
           <Input label={t('students.name')} error={errors.name?.message} {...register('name', { required: t('students.name') })} />
+          <AltNameInput register={register} error={errors.name_alt?.message} />
           <Input label={t('students.guardian_phone')} ltr inputMode="tel" placeholder="01XXXXXXXXX" error={errors.guardian_phone?.message} {...register('guardian_phone', { required: t('students.guardian_phone') })} />
           <Input label={t('students.father_name')} error={errors.father_name?.message} {...register('father_name')} />
           <Input label={t('students.mother_name')} error={errors.mother_name?.message} {...register('mother_name')} />

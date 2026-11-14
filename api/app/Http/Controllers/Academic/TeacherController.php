@@ -28,10 +28,10 @@ class TeacherController extends Controller
         }
 
         $request->validate(['q' => 'nullable|string|max:50', 'status' => 'nullable|in:active,inactive,on_leave']);
-        $rows = Teacher::with('user:id,name,phone,email')
+        $rows = Teacher::with('user:id,name,name_alt,phone,email')
             ->when($request->input('status'), fn ($q, $s) => $q->where('status', $s))
             ->when($request->input('q'), fn ($q, $s) => $q->where(fn ($w) => $w->where('employee_id', 'like', "{$s}%")
-                ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")->orWhere('phone', 'like', "%{$s}%"))))
+                ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")->orWhere('name_alt', 'like', "%{$s}%")->orWhere('phone', 'like', "%{$s}%"))))
             ->orderBy('employee_id')->get();
         return TeacherResource::collection($rows)->additional(['success' => true]);
     }
@@ -44,7 +44,7 @@ class TeacherController extends Controller
 
     public function show(int $id)
     {
-        return (new TeacherResource(Teacher::with('user:id,name,phone,email')->findOrFail($id)))->additional(['success' => true]);
+        return (new TeacherResource(Teacher::with('user:id,name,name_alt,phone,email')->findOrFail($id)))->additional(['success' => true]);
     }
 
     public function update(TeacherRequest $request, int $id)

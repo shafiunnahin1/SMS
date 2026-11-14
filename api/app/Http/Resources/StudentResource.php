@@ -14,6 +14,7 @@ class StudentResource extends JsonResource
             'id'             => $this->id,
             'student_id'     => $this->student_id,
             'name'           => $this->user?->name,
+            'name_alt'       => $this->user?->name_alt,   // D214 MAD.3
             'guardian_phone' => $this->guardian_phone,
             'father_name'    => $this->father_name,
             'mother_name'    => $this->mother_name,

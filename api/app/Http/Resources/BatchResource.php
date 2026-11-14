@@ -9,7 +9,7 @@ class BatchResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id' => $this->id, 'name' => $this->name, 'program_id' => $this->program_id,
+            'id' => $this->id, 'name' => $this->name, 'name_alt' => $this->name_alt, 'program_id' => $this->program_id,
             'program' => $this->whenLoaded('program', fn () => $this->program ? ['id' => $this->program->id, 'name' => $this->program->name] : null),
             'teacher_id' => $this->teacher_id,
             'teacher' => $this->whenLoaded('teacher', fn () => $this->teacher ? ['id' => $this->teacher->id, 'name' => $this->teacher->user?->name] : null),

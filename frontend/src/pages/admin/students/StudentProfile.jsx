@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import AltNameInput from '../../../features/altname/AltNameInput'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -26,7 +27,7 @@ import { usePrint } from '../../../hooks/usePrint'
 import DueBlockCard from '../../../features/fees/DueBlockCard'
 
 const GENDERS = ['male', 'female', 'other']
-const PROFILE_FIELDS = ['name', 'student_id', 'guardian_phone', 'father_name', 'mother_name', 'gender', 'date_of_birth', 'blood_group', 'religion', 'address', 'studying_at', 'admission_date']
+const PROFILE_FIELDS = ['name', 'name_alt', 'student_id', 'guardian_phone', 'father_name', 'mother_name', 'gender', 'date_of_birth', 'blood_group', 'religion', 'address', 'studying_at', 'admission_date']
 
 // Step 4.2 /admin/students/:id - profile (edit, photo), enrollments (history, another batch, move, end), consents (paper)
 export default function StudentProfile() {
@@ -87,6 +88,7 @@ function ProfileForm({ student, onSaved }) {
     <Card>
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3 sm:grid-cols-2" noValidate>
         {text('name')}
+        <AltNameInput register={register} error={errors.name_alt?.message} />
         {text('student_id', { ltr: true, readOnly: true })}
         {text('guardian_phone', { ltr: true, inputMode: 'tel' })}
         {text('father_name')}

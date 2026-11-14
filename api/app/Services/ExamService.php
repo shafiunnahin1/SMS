@@ -129,7 +129,7 @@ class ExamService
         $failed = $rows->contains(fn ($r) => $r['is_pass'] === false);        // one failed subject decides it even before the rest is entered
         return [
             'exam' => ['id' => $exam->id, 'name' => $exam->name, 'exam_type' => $exam->exam_type, 'academic_year' => (int) $exam->academic_year, 'status' => $exam->status],
-            'student' => ['id' => $student->id, 'student_id' => $student->student_id, 'name' => $student->user?->name,
+            'student' => ['id' => $student->id, 'student_id' => $student->student_id, 'name' => $student->user?->name, 'name_alt' => \App\Support\AltName::of($student->user),
                 'batch' => $enrollment?->batch?->name, 'program' => $exam->program?->name, 'roll_no' => $enrollment?->roll_no],
             'subjects' => $rows,
             'total' => ['full_marks' => round($full, 2), 'obtained' => round($got, 2), 'percentage' => $full > 0 ? round($got / $full * 100, 2) : null,

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import AltNameInput, { useAltName } from '../../../features/altname/AltNameInput'
 import { useForm } from 'react-hook-form'
 import { Plus } from 'lucide-react'
 import PageHeader from '../../../components/PageHeader'
@@ -23,8 +24,9 @@ export default function TeacherList() {
   const [editing, setEditing] = useState(null)
   const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting } } = useForm()
   const open = (row) => { reset(row?.id ? row : {}); setEditing(row ?? {}) }
+  const alt = useAltName()   // D214 MAD.3
   const onSubmit = async (v) => {
-    const body = clean({ name: v.name, phone: v.phone, email: v.email, employee_id: v.employee_id, designation: v.designation,
+    const body = clean({ name: v.name, ...(alt.on ? { name_alt: v.name_alt ?? '' } : {}), phone: v.phone, email: v.email, employee_id: v.employee_id, designation: v.designation,
       department: v.department, joining_date: v.joining_date, qualification: v.qualification, ...(editing?.id ? { status: v.status } : {}) })
     if (await save(body, editing?.id, setError)) setEditing(null)
   }
@@ -43,6 +45,7 @@ export default function TeacherList() {
       <Modal open={editing !== null} onClose={() => setEditing(null)} title={editing?.id ? t('teachers.edit') : t('teachers.add')}>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3 sm:grid-cols-2" noValidate>
           <Input label={t('teachers.name')} error={errors.name?.message} {...register('name', { required: t('teachers.name') })} />
+          <AltNameInput register={register} error={errors.name_alt?.message} />
           <Input label={t('teachers.phone')} ltr inputMode="tel" placeholder="01XXXXXXXXX" error={errors.phone?.message} {...register('phone')} />
           <Input label={t('teachers.email')} ltr type="email" error={errors.email?.message} {...register('email')} />
           <Input label={t('teachers.employee_id')} ltr hint={t('teachers.auto_id')} error={errors.employee_id?.message} {...register('employee_id')} />

@@ -17,6 +17,8 @@ class UpdateGeneralSettingsRequest extends FormRequest
             'use_programs'   => ['sometimes', 'required', 'boolean'],
             'student_portal' => ['sometimes', 'required', 'boolean'],
             'use_gpa'        => ['sometimes', 'required', 'boolean'],
+            'alt_name_locale' => ['sometimes', 'nullable', Rule::in(['ar', 'en'])],   // D214 MAD.3
+            'name_alt'       => ['sometimes', 'nullable', 'string', 'max:150'],
             // D197 AAD.1: the dues block (academics-advanced.md section 2)
             'fees'                          => ['sometimes', 'array:block_admit_card,block_result,block_threshold,block_message'],
             'fees.block_admit_card'         => ['required_with:fees', 'boolean'],

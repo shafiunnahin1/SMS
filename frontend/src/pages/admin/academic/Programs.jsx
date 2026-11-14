@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import AltNameInput, { useAltName } from '../../../features/altname/AltNameInput'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
@@ -30,10 +31,11 @@ export default function Programs() {
   const siteOn = has('public_site')                     // D202 PUB.2: listed on the public website
   const qbClasses = useQuery({ queryKey: ['qb-class-levels'], queryFn: () => api.get('/qb/class-levels').then(r => r.data.data), enabled: qbOn })
   const [editing, setEditing] = useState(null)          // null = closed, {} = new, row = edit
+  const alt = useAltName()   // D214 MAD.3
   const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting } } = useForm()
   const open = (row) => { reset(row?.id ? { ...row, qb_class_level_id: row.qb_class_level_id ?? '', public_description: row.public_description ?? '' } : { is_active: true, is_public: true, public_description: '', qb_class_level_id: '' }); setEditing(row ?? {}) }
   const onSubmit = async (v) => {
-    const body = clean({ name: v.name, numeric_name: v.numeric_name, code: v.code, course_fee: v.course_fee, is_active: Boolean(v.is_active),
+    const body = clean({ name: v.name, ...(alt.on ? { name_alt: v.name_alt ?? '' } : {}), numeric_name: v.numeric_name, code: v.code, course_fee: v.course_fee, is_active: Boolean(v.is_active),
       ...(qbOn ? { qb_class_level_id: v.qb_class_level_id === '' ? null : Number(v.qb_class_level_id) } : {}),
       ...(siteOn ? { is_public: Boolean(v.is_public), public_description: v.public_description || null } : {}) })
     if (await save(body, editing?.id, setError)) setEditing(null)
@@ -52,6 +54,7 @@ export default function Programs() {
       <Modal open={editing !== null} onClose={() => setEditing(null)} title={t(editing?.id ? 'academic.edit_unit' : 'academic.add_unit', { unit: term('program') })}>
         <form id="program-form" onSubmit={handleSubmit(onSubmit)} className="grid gap-3 sm:grid-cols-2" noValidate>
           <Input label={t('academic.name')} error={errors.name?.message} {...register('name', { required: t('academic.name') })} />
+          <AltNameInput register={register} error={errors.name_alt?.message} />
           <Input label={t('academic.numeric_name')} ltr inputMode="numeric" error={errors.numeric_name?.message} {...register('numeric_name')} />
           <Input label={t('academic.code')} ltr error={errors.code?.message} {...register('code')} />
           <Input label={t('academic.course_fee')} ltr inputMode="decimal" error={errors.course_fee?.message} {...register('course_fee')} />

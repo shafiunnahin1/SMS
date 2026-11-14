@@ -18,7 +18,7 @@
 </style>
 <h2>{{ __('pdf.marksheet.title') }} — {{ $sheet['exam']['name'] }} ({{ $sheet['exam']['academic_year'] }})</h2>
 <table class="meta">
-  <tr><td>{{ __('pdf.marksheet.student') }}</td><td><strong>{{ $sheet['student']['name'] }}</strong> ({{ $sheet['student']['student_id'] }})</td>
+  <tr><td>{{ __('pdf.marksheet.student') }}</td><td><strong>{{ $sheet['student']['name'] }}</strong>@if (!empty($sheet['student']['name_alt'])) / <span dir="{{ \App\Support\AltName::dir() }}">{{ $sheet['student']['name_alt'] }}</span>@endif ({{ $sheet['student']['student_id'] }})</td>
       <td>{{ __('pdf.marksheet.class') }}</td><td>{{ $sheet['student']['program'] }}@if ($sheet['student']['batch']) — {{ $sheet['student']['batch'] }}@endif</td></tr>
   <tr><td>{{ __('pdf.marksheet.roll') }}</td><td>{{ $sheet['student']['roll_no'] ?? '—' }}</td>
       <td>{{ __('pdf.marksheet.issued') }}</td><td>{{ now()->format('d/m/Y') }}</td></tr>

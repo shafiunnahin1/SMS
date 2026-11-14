@@ -25,6 +25,13 @@ class InstitutionSettings
         ];
     }
 
+    /** D214 MAD.3 (madrasa.md section 3): second-language names - NOT part of general(), which feeds the bootstrap allow list */
+    public function altName(Institution $i): array
+    {
+        $s = $i->settings ?? [];
+        return ['alt_name_locale' => in_array($s['alt_name_locale'] ?? null, ['ar', 'en'], true) ? $s['alt_name_locale'] : null, 'name_alt' => $s['name_alt'] ?? null];
+    }
+
     /** D197 AAD.3 (academics-advanced.md section 5): up to this many days a class teacher decides a student's leave; above it, the admin */
     public function studentLeave(Institution $i): array
     {
