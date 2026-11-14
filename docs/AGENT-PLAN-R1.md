@@ -1566,7 +1566,7 @@ CREATE INDEX idx_sms_logs_campaign ON sms_logs(campaign_id);
 CREATE TABLE sms_credit_transactions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
-    type ENUM('purchase','usage','adjustment','refund','qb_purchase') NOT NULL,   -- qb_purchase: D66 (1), question-bank buys from the same wallet
+    type ENUM('purchase','usage','adjustment','refund','qb_purchase','subscription') NOT NULL,   -- qb_purchase: D66 (1), question-bank buys from the same wallet; subscription: D218 (4), a module bill paid from the wallet
     quantity INT NOT NULL DEFAULT 0,             -- D56: SMS parts of a `usage` row (negative); 0 for money moves
     balance_after DECIMAL(10,2) NOT NULL,        -- D56: wallet balance in taka after this row
     reference VARCHAR(100) NULL,                 -- payment trx id / sms_logs id
@@ -2911,7 +2911,7 @@ CREATE TABLE payments (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     institution_id BIGINT UNSIGNED NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
-    method ENUM('bkash','nagad','card','cash','ssl','coupon') NOT NULL,   -- R11: 'coupon' = a free-days coupon redeemed with no money moved
+    method ENUM('bkash','nagad','card','cash','ssl','coupon','wallet') NOT NULL,   -- R11: 'coupon' = a free-days coupon redeemed with no money moved; D220: 'wallet' = paid from the central wallet
     trx_id VARCHAR(100) UNIQUE,
     status ENUM('pending','completed','failed','refunded') DEFAULT 'pending',
     paid_at TIMESTAMP NULL,

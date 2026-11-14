@@ -724,7 +724,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:admin')->prefix('subscription')->group(function () {
             Route::get('/modules',                        [\App\Http\Controllers\Billing\SubscriptionController::class, 'show']);
             Route::post('/quote',                         [\App\Http\Controllers\Billing\SubscriptionController::class, 'quote']);
-            Route::post('/checkout',                      [\App\Http\Controllers\Billing\SubscriptionController::class, 'checkout'])->middleware('throttle:10,1');
+            Route::post('/checkout',                      [\App\Http\Controllers\Billing\SubscriptionController::class, 'checkout'])->middleware('throttle:10,1');   // D218 WAL.2: retired for new payments (410 use_wallet)
+            Route::post('/pay-from-wallet',               [\App\Http\Controllers\Billing\WalletSubscriptionController::class, 'pay'])->middleware('throttle:10,1');   // D218 WAL.2
             Route::post('/coupon',                        [\App\Http\Controllers\Billing\SubscriptionController::class, 'redeem'])->middleware('throttle:10,1');
             Route::post('/modules/cancel',                [\App\Http\Controllers\Billing\SubscriptionController::class, 'cancel']);
             Route::post('/modules/resume',                [\App\Http\Controllers\Billing\SubscriptionController::class, 'resume']);

@@ -40,11 +40,24 @@ class SubscriptionBillingTest extends TestCase
         return User::create(['institution_id' => null, 'name' => 'SA', 'role' => 'super_admin', 'phone' => '01799000029', 'password' => 'Super-pass-2026', 'is_active' => true]);
     }
 
-    private function pay($i, User $admin, array $items, string $status = 'success')
+    /** D220 (2): a bill is paid from the wallet (the bill's amount is put in the wallet first). A bKash checkout started before the
+     *  switch is still completed by its callback: `startedCheckout` records one the way the old checkout did, the callback reads it. */
+    private function pay($i, User $admin, array $items)
     {
-        $r = $this->api('POST', $this->hostOf($i), 'subscription/checkout', $admin, ['items' => $items])->assertOk();
-        Cache::put('t_ref', $r->json('data.ref')); Cache::put('t_total', $r->json('data.total'));
-        return [$r->json('data.ref'), $this->get("http://{$this->central}/api/v1/billing/subscription/bkash/callback?ref={$r->json('data.ref')}&paymentID=PAY1&status={$status}")];
+        $total = $this->api('POST', $this->hostOf($i), 'subscription/quote', $admin, ['items' => $items])->assertOk()->json('data.total');
+        $i->forceFill(['sms_balance' => \App\Support\Money::format(\App\Support\Money::toPaisa((string) $i->fresh()->sms_balance) + \App\Support\Money::toPaisa($total))])->save();
+        $r = $this->api('POST', $this->hostOf($i), 'subscription/pay-from-wallet', $admin, ['items' => $items])->assertOk();
+        $ref = substr($r->json('data.invoice_number'), 4);
+        return [$ref, $r];
+    }
+
+    private function startedCheckout($i, User $admin, array $items, string $status = 'success')
+    {
+        $quote = app(\App\Services\Billing\SubscriptionBillingService::class)->quote($i, $items);
+        $ref = 'SUB' . $i->id . 'P' . strtoupper(\Illuminate\Support\Str::random(8));
+        Cache::put("sub_checkout:{$ref}", ['institution_id' => $i->id, 'quote' => $quote, 'payment_id' => 'PAY1', 'by' => $admin->id, 'return' => 'http://' . $this->hostOf($i)], now()->addDay());
+        Cache::put('t_ref', $ref); Cache::put('t_total', $quote['total']);
+        return [$ref, $this->get("http://{$this->central}/api/v1/billing/subscription/bkash/callback?ref={$ref}&paymentID=PAY1&status={$status}")];
     }
 
     public function test_whole_period_after_trial_prorated_add_and_once_only_recording(): void
@@ -59,7 +72,9 @@ class SubscriptionBillingTest extends TestCase
         $this->assertSame(['300.00', '0.00', '300.00'], [$q['subtotal'], $q['discount'], $q['total']]);
         $this->assertSame(['2026-12-02', '2027-01-02', 31], [substr($q['lines'][0]['period_start'], 0, 10), substr($q['lines'][0]['period_end'], 0, 10), $q['lines'][0]['days']]);
 
-        [$ref, $back] = $this->pay($i, $admin, [['module_key' => 'expenses', 'billing_cycle' => 'monthly']]);
+        // D220 (2): a NEW bKash checkout is retired; a checkout started before the switch still completes, once
+        $this->api('POST', $host, 'subscription/checkout', $admin, ['items' => [['module_key' => 'expenses', 'billing_cycle' => 'monthly']]])->assertStatus(410)->assertJsonPath('error', 'use_wallet');
+        [$ref, $back] = $this->startedCheckout($i, $admin, [['module_key' => 'expenses', 'billing_cycle' => 'monthly']]);
         $back->assertRedirect('http://' . $host . '/admin/subscription?payment=success');
         $this->get("http://{$this->central}/api/v1/billing/subscription/bkash/callback?ref={$ref}&paymentID=PAY1&status=success")->assertRedirect('http://' . $host . '/admin/subscription?payment=success');
         Tenancy::as($i, function () use ($ref) {
@@ -84,7 +99,7 @@ class SubscriptionBillingTest extends TestCase
         $this->api('POST', $host, 'subscription/quote', $admin, ['items' => [['module_key' => 'students', 'billing_cycle' => 'monthly']]])->assertStatus(422)->assertJsonPath('error', 'module_not_billable');
 
         // a cancelled bKash payment records nothing
-        [, $back] = $this->pay($i, $admin, [['module_key' => 'fees', 'billing_cycle' => 'monthly']], 'cancel');
+        [, $back] = $this->startedCheckout($i, $admin, [['module_key' => 'fees', 'billing_cycle' => 'monthly']], 'cancel');
         $back->assertRedirect('http://' . $host . '/admin/subscription?payment=cancelled');
         $this->assertSame(1, Tenancy::as($i, fn () => SubscriptionInvoice::count()));
         $this->api('GET', $host, 'subscription/invoices', $admin)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.lines.0.module_key', 'expenses');
@@ -143,9 +158,9 @@ class SubscriptionBillingTest extends TestCase
         $this->travelTo('2026-11-02 10:00:00');
         $j = $this->makeInstitution('bill-free');
         $ja = $this->makeUser($j, 'admin');
-        $this->api('POST', $this->hostOf($j), 'subscription/checkout', $ja, ['items' => [['module_key' => 'inventory', 'billing_cycle' => 'monthly']]])->assertStatus(422)->assertJsonPath('error', 'nothing_to_pay');
+        $this->api('POST', $this->hostOf($j), 'subscription/pay-from-wallet', $ja, ['items' => [['module_key' => 'inventory', 'billing_cycle' => 'monthly']]])->assertStatus(422)->assertJsonPath('error', 'nothing_to_pay');
         $this->api('POST', $this->hostOf($j), 'subscription/coupon', $ja, ['code' => 'FREE100'])->assertOk();
-        $this->api('POST', $this->hostOf($j), 'subscription/checkout', $ja, ['items' => [['module_key' => 'expenses', 'billing_cycle' => 'yearly']]])->assertOk()->assertJsonPath('data.paid', true)->assertJsonPath('data.total', '0.00');
+        $this->api('POST', $this->hostOf($j), 'subscription/pay-from-wallet', $ja, ['items' => [['module_key' => 'expenses', 'billing_cycle' => 'yearly']]])->assertOk()->assertJsonPath('data.paid', true)->assertJsonPath('data.total', '0.00');
         Tenancy::as($j, fn () => $this->assertSame(['coupon', '0.00'], [Payment::sole()->method, Payment::sole()->amount]));
 
         $rows = collect($this->api('GET', $central, 'super/coupons', $sa)->assertOk()->json('data'))->keyBy('code');

@@ -7,4 +7,8 @@ return [
     'approved_body' => '৳:amount ওয়ালেটে যোগ হয়েছে।',
     'rejected_title' => 'ওয়ালেট রিচার্জ প্রত্যাখ্যাত',
     'rejected_body' => '৳:amount এর অনুরোধ গ্রহণ করা হয়নি। কারণ: :reason',
+    'invoice_title' => 'সাবস্ক্রিপশন বিল',
+    'invoice_body' => 'বিল :number: ৳:total পরিশোধিত।',
+    'grace_title' => 'সাবস্ক্রিপশনের মেয়াদ শেষ',
+    'grace_body' => ':module মডিউলের মেয়াদ শেষ। :days দিনের মধ্যে ওয়ালেট থেকে পরিশোধ না করলে এটি শুধু-দেখা অবস্থায় যাবে।',
 ];

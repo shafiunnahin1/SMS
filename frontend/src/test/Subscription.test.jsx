@@ -20,14 +20,14 @@ const mod = (k, extra = {}) => ({ module_key: k, state: 'trial', billing_cycle: 
 describe('module subscriptions (D187)', () => {
   afterEach(() => vi.clearAllMocks())
 
-  it('quotes the chosen modules, pays with bKash and removes a module from the next period', async () => {
+  it('quotes the chosen modules, pays from the wallet and removes a module from the next period', async () => {   // D220 (3)
     api.get.mockImplementation(url => Promise.resolve({ data: { data: url === '/subscription/modules'
       ? { modules: [mod('expenses'), mod('fees', { state: 'active', billing_cycle: 'monthly', current_period_end: '2027-01-02T10:00:00+06:00' }), mod('cashbook', { requires: ['expenses'] })], grace_days: 7, coupon: null }
       : [] } }))
     api.post.mockImplementation(url => Promise.resolve({ data: { data: url === '/subscription/quote'
       ? { lines: [{ module_key: 'expenses', billing_cycle: 'yearly', period_start: '2026-12-02T10:00:00+06:00', period_end: '2027-12-02T10:00:00+06:00', days: 365, unit_price: '3000.00', amount: '3000.00', discount: '0.00' }],
           subtotal: '3000.00', discount: '0.00', tax: '0.00', total: '3000.00', coupon_id: null }
-      : url === '/subscription/checkout' ? { paid: false, bkash_url: 'https://sandbox.bkash.test/pay/PAY1', ref: 'SUB1PX', total: '3000.00' } : {} } }))
+      : url === '/subscription/pay-from-wallet' ? { paid: true, invoice_number: 'INV-SUB1WX', total: '3000.00', balance: '0.00' } : {} } }))
     const assign = vi.fn()
     vi.stubGlobal('location', { ...window.location, assign })
     const { container } = wrap(<Subscription />)
@@ -38,8 +38,8 @@ describe('module subscriptions (D187)', () => {
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/subscription/quote', { items: [{ module_key: 'expenses', billing_cycle: 'yearly' }] }))
     expect((await screen.findByTestId('bill-total')).textContent).toMatch(/3,000|৩,০০০/)
     fireEvent.click(container.querySelector('[data-action="pay"]'))
-    await waitFor(() => expect(assign).toHaveBeenCalledWith('https://sandbox.bkash.test/pay/PAY1'))
-    expect(api.post).toHaveBeenCalledWith('/subscription/checkout', { items: [{ module_key: 'expenses', billing_cycle: 'yearly' }] })
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/subscription/pay-from-wallet', { items: [{ module_key: 'expenses', billing_cycle: 'yearly' }] }))
+    expect(assign).not.toHaveBeenCalled()
     expect(JSON.stringify(api.post.mock.calls)).not.toMatch(/"amount"|"total"/)          // the client never sends money
     fireEvent.click(container.querySelector('[data-cancel="fees"]'))
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/subscription/modules/cancel', { module_key: 'fees' }))

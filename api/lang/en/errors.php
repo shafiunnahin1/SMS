@@ -31,6 +31,8 @@ return [
     'installment_mismatch'   => 'The due no longer matches this installment (it was paid or changed elsewhere).',
     'holiday_exists'         => 'A holiday already exists on one of these days.',   // D213 CAL.1
     'holiday_range_too_long' => 'At most :max days can be added at once.',
+    'wallet_insufficient' => 'The wallet balance is not enough (balance ৳:balance, needed ৳:total). Top up first.',   // D218 WAL.2
+    'use_wallet' => 'Bills are now paid from the wallet.',
     'wallet_amount_range' => 'A top-up must be between ৳:min and ৳:max.',   // D218 WAL.1
     'wallet_reference_used' => 'This transaction reference was already filed.',
     'wallet_request_decided' => 'This request was already decided.',

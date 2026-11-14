@@ -21,7 +21,13 @@ class SubscriptionsRefresh extends Command
             Tenancy::as($institution, function () use ($institution, $entitlements, &$changed) {
                 foreach ($entitlements->all($institution) as $row) {
                     $state = ModuleEntitlementService::effective($row);
-                    if ($row->status !== 'cancelled' && $row->status !== $state) { $row->update(['status' => $state]); $changed++; }
+                    if ($row->status !== 'cancelled' && $row->status !== $state) {
+                        $row->update(['status' => $state]); $changed++;
+                        // D218 WAL.2: entering grace - the admins are told how long until the module becomes read-only (pay from the wallet)
+                        if ($state === 'grace') foreach (\App\Models\User::where('role', 'admin')->get() as $admin) {
+                            $admin->notify(new \App\Notifications\GeneralNotification(__('wallet.grace_title'), __('wallet.grace_body', ['module' => $row->module_key, 'days' => (int) config('subscriptions.grace_days')]), 'subscription_grace', ['module_key' => $row->module_key]));
+                        }
+                    }
                 }
             });
         }

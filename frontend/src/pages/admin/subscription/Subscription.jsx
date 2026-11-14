@@ -19,7 +19,7 @@ import List from '../../../ui/variants/List'
 const KEY = ['subscription']
 
 // D187 SUB.3 /admin/subscription: each paid module's state (trial / paid / grace / read-only), choose modules and monthly or yearly,
-// see the bill the server prices (prorated add, coupon, tax 0), pay with bKash (back here with ?payment=), redeem a coupon, remove a
+// see the bill the server prices (prorated add, coupon, tax 0), pay from the wallet (D218 WAL.2; a bKash checkout started earlier still comes back here with ?payment=), redeem a coupon, remove a
 // module from the next period (no refund) and the invoices. The client never sends an amount.
 export default function Subscription() {
   const { t } = useTranslation()
@@ -52,8 +52,7 @@ export default function Subscription() {
   const pay = async () => {
     setBusy(true)
     try {
-      const d = (await api.post('/subscription/checkout', { items: items() })).data.data
-      if (d.bkash_url) { window.location.assign(d.bkash_url); return }
+      await api.post('/subscription/pay-from-wallet', { items: items() })   // D218 WAL.2: the bill is paid from the central wallet
       useUiStore.getState().addToast(t('subscription.payment.success'), 'success')
       setPicked({}); refresh()
     } catch (e) { fail(e) } finally { setBusy(false) }
@@ -131,6 +130,7 @@ function Bill({ quote, name, busy, onPay }) {
         <dt>{t('subscription.tax')}</dt><dd><Ltr>{fmtMoney(quote.tax, locale)}</Ltr></dd>
         <dt className="font-semibold">{t('subscription.total')}</dt><dd className="font-semibold" data-testid="bill-total"><Ltr>{fmtMoney(quote.total, locale)}</Ltr></dd>
       </dl>
+      {quote.total !== '0.00' && <p className="text-sm text-content-muted" data-testid="wallet-hint">{t('subscription.wallet_hint')} <a className="underline" href="/admin/wallet">{t('subscription.wallet_link')}</a></p>}
       <div><Button onClick={onPay} loading={busy} data-action="pay">{t(quote.total === '0.00' ? 'subscription.pay_free' : 'subscription.pay')}</Button></div>
     </Card>
   )

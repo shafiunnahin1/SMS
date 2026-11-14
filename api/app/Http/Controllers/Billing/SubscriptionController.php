@@ -45,8 +45,11 @@ class SubscriptionController extends Controller
         return response()->json(['success' => true, 'data' => $this->billing->quote(Tenancy::current(), $this->items($request))]);
     }
 
+    /** D218 WAL.2: a NEW bKash checkout is refused - the bill is paid from the wallet; a checkout already started still completes
+     *  through its callback (SubscriptionCallbackController, unchanged). */
     public function checkout(Request $request, BkashService $bkash)
     {
+        throw new BusinessException('pay from the wallet', 'use_wallet', 410);
         $i = Tenancy::current();
         $quote = $this->billing->quote($i, $this->items($request));
         $ref = 'SUB' . $i->id . 'P' . strtoupper(Str::random(8));                               // <= 20 chars, [A-Z0-9]

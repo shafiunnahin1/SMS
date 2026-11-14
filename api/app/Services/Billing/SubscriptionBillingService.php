@@ -132,6 +132,10 @@ class SubscriptionBillingService
                     'current_period_end' => CarbonImmutable::parse($l['period_end']), 'status' => 'active', 'cancel_at_period_end' => false]);
             }
             if ($quote['coupon_id']) CouponRedemption::create(['coupon_id' => $quote['coupon_id'], 'payment_id' => $payment->id, 'invoice_id' => $invoice->id, 'discount_amount' => $quote['discount']]);
+            // D218 WAL.2: the admins are told an invoice was issued
+            foreach (\App\Models\User::where('role', 'admin')->get() as $admin) {
+                $admin->notify(new \App\Notifications\GeneralNotification(__('wallet.invoice_title'), __('wallet.invoice_body', ['number' => $invoice->invoice_number, 'total' => $quote['total']]), 'subscription_invoice', ['invoice_id' => $invoice->id]));
+            }
             AuditLog::create(['institution_id' => $institution->id, 'user_id' => $by, 'action' => 'subscription.paid', 'model' => 'SubscriptionInvoice',
                 'model_id' => $invoice->id, 'new_data' => ['modules' => array_column($quote['lines'], 'module_key'), 'gateway' => $method], 'ip_address' => request()->ip()]);
             return $invoice;
