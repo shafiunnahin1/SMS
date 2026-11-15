@@ -319,7 +319,7 @@ class QbPaperController extends Controller
         $layout = $frozen?->layout_json ?? $sets->layout($paper, $list, $number, $strategy, $sets->optionCounts($list));
         $questions = QbQuestion::whereIn('id', collect($row['sections'])->flatMap(fn ($s) => collect($s['items'])->pluck('qb_question_id')))->get()->keyBy('id');
         $open = QbUnlock::where('item_type', 'question')->whereIn('item_id', $questions->keys())->pluck('item_id')->map(fn ($v) => (int) $v)->all();
-        $marks = collect($row['sections'])->flatMap(fn ($s) => collect($s['items'])->mapWithKeys(fn ($it) => [$it['qb_question_id'] => $it['marks']]));
+        $marks = collect($row['sections'])->flatMap(fn ($s) => $s['items'])->mapWithKeys(fn ($it) => [$it['qb_question_id'] => $it['marks']]);   // keyed after the flatten: a flatten renumbers numeric keys
         $bySection = collect($row['sections'])->keyBy('id');
         $n = ['mcq' => 0, 'other' => 0];                          // D129: MCQs and written questions have separate serials
         $groups = $sets->groups($list);                           // D171: a stimulus MCQ group's children are numbered MCQs
