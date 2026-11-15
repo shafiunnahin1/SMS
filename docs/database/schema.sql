@@ -2460,7 +2460,7 @@ CREATE TABLE syllabus_coverage (
     teacher_id BIGINT UNSIGNED NOT NULL,
     covered_on DATE NOT NULL,
     note VARCHAR(255) NULL,
-    UNIQUE KEY unique_unit_coverage (batch_id, unit_id),
+    UNIQUE KEY unique_unit_coverage (institution_id, batch_id, unit_id),   -- D224 (5): tenant-bound (D12)
     FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (unit_id) REFERENCES syllabus_units(id)
 );

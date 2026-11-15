@@ -108,7 +108,8 @@
    "hifz",
    "risk_alerts",
    "online_payment",
-   "teacher_payouts"
+   "teacher_payouts",
+   "syllabus"
   ],
   "roles": [
  "super_admin",

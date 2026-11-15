@@ -347,6 +347,12 @@ class TenantIsolationTest extends TestCase
             // QbQuizTest: another student's attempt is a 404
             'POST api/v1/student/qb/quiz-packages/{id}/buy' => null,
             'POST api/v1/student/qb/quiz-packages/{id}/wallet-buy' => null,
+            'PUT api/v1/syllabus/units/{id}' => fn (array $other) => $this->seedSyllabusUnit($other),   // D224 SYL.1
+            'DELETE api/v1/syllabus/units/{id}' => fn (array $other) => $this->seedSyllabusUnit($other),
+            'PUT api/v1/lesson-plans/{id}' => fn (array $other) => $this->seedLessonPlan($other),
+            'DELETE api/v1/lesson-plans/{id}' => fn (array $other) => $this->seedLessonPlan($other),
+            'POST api/v1/lesson-plans/{id}/taught' => fn (array $other) => $this->seedLessonPlan($other),
+            'POST api/v1/lesson-plans/{id}/skipped' => fn (array $other) => $this->seedLessonPlan($other),
             'PUT api/v1/teacher-payouts/{id}' => null,   // D223 TPO.1: coaching / private-batch module; CrossTenantRouteTest NOT_ROW_IDS
             'POST api/v1/teacher-payouts/{id}/approve' => null,
             'POST api/v1/teacher-payouts/{id}/pay' => null,
@@ -405,6 +411,25 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\OnlinePayment::create(['student_id' => $student, 'gateway' => 'fakeqr', 'flow' => 'qr', 'collected_by' => 'institution', 'amount' => '10.00',
             'net_amount' => '10.00', 'status' => 'initiated', 'gateway_ref' => 'F' . strtoupper(\Illuminate\Support\Str::random(19)), 'items' => []])->id);
+    }
+
+    private function seedSyllabusUnit(array $t): int
+    {
+        return Tenancy::as($t['institution'], function () {
+            $p = \App\Models\Program::firstOrCreate(['name' => 'SYL-P']);
+            $sub = \App\Models\Subject::firstOrCreate(['program_id' => $p->id, 'name' => 'SYL-S']);
+            return \App\Models\SyllabusUnit::firstOrCreate(['program_id' => $p->id, 'subject_id' => $sub->id, 'title' => 'Unit'])->id;
+        });
+    }
+
+    private function seedLessonPlan(array $t): int
+    {
+        $teacher = $this->seedTeacher($t);
+        return Tenancy::as($t['institution'], function () use ($teacher) {
+            $p = \App\Models\Program::firstOrCreate(['name' => 'SYL-P']);
+            $sub = \App\Models\Subject::firstOrCreate(['program_id' => $p->id, 'name' => 'SYL-S']);
+            return \App\Models\LessonPlan::firstOrCreate(['subject_id' => $sub->id, 'teacher_id' => $teacher, 'planned_date' => '2026-10-01'])->id;
+        });
     }
 
     private function seedRiskFlag(array $t): int
