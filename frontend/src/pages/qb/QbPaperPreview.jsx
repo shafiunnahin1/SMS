@@ -348,7 +348,7 @@ export default function QbPaperPreview() {
               {opts.map((op, k) => (
                 <div key={k} className="qb-option-cell flex min-w-0 items-start gap-2">
                   <span className="shrink-0 font-semibold">{(LABELS[o.language][k] ?? op.label)})</span>
-                  {o.show.answer && op.is_correct && <span aria-label={L('correct')} className="mt-2 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" />}
+                  {o.show.answer && op.is_correct && <span className="inline-flex h-[1lh] shrink-0 items-center"><span aria-label={L('correct')} className="inline-block h-2.5 w-2.5 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" /></span>}
                   <span className="qb-fit min-w-0 flex-1" dir="auto"><MathText text={op.content_text} allowPreviewFontSize questionId={qid} field="option" optionIndex={k} /></span>
                 </div>
               ))}
@@ -367,7 +367,7 @@ export default function QbPaperPreview() {
                 {(p.prompt_json?.options ?? []).map((op, k) => (
                   <div key={k} className="qb-option-cell flex min-w-0 items-start gap-2">
                     <span className="shrink-0 font-semibold">{LABELS[o.language][k] ?? k + 1})</span>
-                    {o.show.answer && p.answer_json?.correct === k && <span aria-label={L('correct')} className="mt-2 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" />}
+                    {o.show.answer && p.answer_json?.correct === k && <span className="inline-flex h-[1lh] shrink-0 items-center"><span aria-label={L('correct')} className="inline-block h-2.5 w-2.5 rounded-full bg-[currentColor]" data-testid="qb-paper-correct" /></span>}
                     <span className="qb-fit min-w-0 flex-1" dir="auto"><MathText text={String(op)} allowPreviewFontSize questionId={qid} field="child_option" optionIndex={k} itemNo={p.no} /></span>
                   </div>
                 ))}
