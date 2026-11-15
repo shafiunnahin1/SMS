@@ -16,7 +16,7 @@
 @if(\App\Support\Money::toPaisa($receipt['refunded_amount'] ?? '0') > 0)<p>{{ __('refund.refunded') }}: {{ $receipt['refunded_amount'] }}</p>@endif
 <table class="meta">
   <tr><td>{{ __('pdf.receipt.no') }}</td><td><strong>{{ $receipt['receipt_no'] }}</strong></td></tr>
-  <tr><td>{{ __('pdf.receipt.date') }}</td><td>{{ \Illuminate\Support\Carbon::parse($receipt['paid_at'])->format('d/m/Y') }}</td></tr>
+  <tr><td>{{ __('pdf.receipt.date') }}</td><td>{{ \Illuminate\Support\Carbon::parse($receipt['paid_at'])->format('d/m/Y') }}@if($hijri = \App\Support\Hijri::beside($receipt['paid_at'])) ({{ $hijri }})@endif</td></tr>
   <tr><td>{{ __('pdf.receipt.student') }}</td><td>{{ $receipt['student']['name'] }} ({{ $receipt['student']['student_id'] }})</td></tr>
   <tr><td>{{ __('pdf.receipt.method') }}</td><td>{{ Lang::has('pdf.receipt.methods.' . $receipt['payment_method']) ? __('pdf.receipt.methods.' . $receipt['payment_method']) : $receipt['payment_method'] }}</td></tr>
 </table>
