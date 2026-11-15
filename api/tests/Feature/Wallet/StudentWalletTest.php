@@ -50,6 +50,7 @@ class StudentWalletTest extends TestCase
         $this->assertSame($s->id, Tenancy::as($i, fn () => WalletRechargeRequest::find($req)->user_id));
         $super = User::create(['name' => 'Root', 'email' => 'root@example.test', 'password' => Hash::make('x'), 'role' => 'super_admin', 'institution_id' => null]);
         $this->assertSame('student', collect($this->api('GET', $central, 'super/wallet/recharge-requests', $super)->json('data'))->firstWhere('id', $req)['wallet']);
+        $this->assertSame($s->name, collect($this->api('GET', $central, 'super/wallet/recharge-requests', $super)->json('data'))->firstWhere('id', $req)['student']['name']);   // the Super Admin sees whose wallet
         $this->api('POST', $central, "super/wallet/recharge-requests/{$req}/approve", $super)->assertOk();
         $this->assertSame('1.00', $this->api('GET', $h, 'student/wallet', $s)->json('data.balance'));
         $this->assertSame('0.00', (string) $i->fresh()->sms_balance, 'the institution wallet is untouched');

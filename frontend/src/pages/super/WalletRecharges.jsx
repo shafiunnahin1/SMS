@@ -56,7 +56,7 @@ function Queue() {
   const [reasons, setReasons] = useState({})
   const q = useQuery({ queryKey: ['super', 'wallet', 'requests', status], queryFn: () => api.get('/super/wallet/recharge-requests', { params: status ? { status } : {} }).then(r => r.data.data) })
   const refresh = () => qc.invalidateQueries({ queryKey: ['super', 'wallet', 'requests'] })
-  const approve = (r) => useUiStore.getState().openConfirm({ title: t('wallet.approve'), description: t('wallet.approve_confirm', { amount: r.amount, name: r.institution?.name }),
+  const approve = (r) => useUiStore.getState().openConfirm({ title: t('wallet.approve'), description: t('wallet.approve_confirm', { amount: r.amount, name: r.student ? `${r.student.name} (${r.institution?.name})` : r.institution?.name }),
     onConfirm: async () => { try { await api.post(`/super/wallet/recharge-requests/${r.id}/approve`) } catch { /* the interceptor shows the error */ } finally { refresh() } } })
   const reject = async (r) => {
     try { await api.post(`/super/wallet/recharge-requests/${r.id}/reject`, { reason: reasons[r.id] ?? '' }) } catch { /* the interceptor shows the error */ } finally { refresh() }
@@ -70,6 +70,7 @@ function Queue() {
           {q.data.map(r => (
             <li key={r.id} className="py-2 flex flex-col gap-1">
               <span className="flex flex-wrap items-center gap-2"><span className="font-medium"><Ltr>{fmtMoney(r.amount, locale)}</Ltr></span><span>{r.institution?.name}</span>
+                {r.student && <span data-testid="student-wallet">· {t('wallet.student_of', { name: r.student.name })} (<Ltr>{r.student.username}</Ltr>)</span>}
                 <span className="rounded-full px-2 py-0.5 text-xs bg-surface-muted font-medium">{t(`wallet.statuses.${r.status}`)}</span></span>
               <span className="text-content-muted">{r.created_at && fmtDate(r.created_at, locale)} · {t(`wallet.methods.${r.method}`)} · <Ltr>{r.trx_reference}</Ltr>{r.note ? ` · ${r.note}` : ''}</span>
               <span className="flex flex-wrap items-end gap-2">

@@ -19,4 +19,7 @@ class WalletRechargeRequest extends Model
     protected $casts = ['amount' => 'decimal:2', 'decided_at' => 'datetime', 'created_at' => 'datetime'];
 
     protected $hidden = ['receipt_path'];
+
+    /** D218 (5): the student whose wallet this request tops up (null = the institution's wallet) */
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo { return $this->belongsTo(User::class); }
 }

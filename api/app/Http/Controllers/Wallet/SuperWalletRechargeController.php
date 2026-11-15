@@ -18,9 +18,10 @@ class SuperWalletRechargeController extends Controller
     public function index(Request $request)
     {
         $f = $request->validate(['status' => 'nullable|in:pending,approved,rejected']);
-        $rows = WalletRechargeRequest::anyInstitution()->with('institution:id,name')->when($f['status'] ?? null, fn ($q, $v) => $q->where('status', $v))->orderByDesc('id')->limit(500)->get();
+        $rows = WalletRechargeRequest::anyInstitution()->with(['institution:id,name', 'user:id,name,username'])->when($f['status'] ?? null, fn ($q, $v) => $q->where('status', $v))->orderByDesc('id')->limit(500)->get();
         return response()->json(['success' => true, 'data' => $rows->map(fn ($r) => WalletRechargeController::row($r) + ['institution' => ['id' => $r->institution_id, 'name' => $r->institution?->name],
-            'wallet' => $r->user_id ? 'student' : 'institution'])->values()]);
+            'wallet' => $r->user_id ? 'student' : 'institution',
+            'student' => $r->user_id ? ['id' => $r->user_id, 'name' => $r->user?->name, 'username' => $r->user?->username] : null])->values()]);
     }
 
     /** GET /super/wallet/recharge-requests/{id}/receipt */
