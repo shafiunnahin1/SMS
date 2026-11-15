@@ -28,14 +28,15 @@
   .meta { display: flex; justify-content: space-between; font-size: 11px; border-bottom: 1px solid #999999; padding-bottom: 4px; margin-bottom: 8px; }
   .section h3 { font-size: 13px; margin: 10px 0 2px; } .section h4.subject { font-size: 12px; margin: 8px 0 2px; text-decoration: underline; } .section .ins { font-size: 11px; font-style: italic; margin-bottom: 4px; }
   .q { margin: 6px 0; page-break-inside: avoid; } .q .row { display: flex; gap: 6px; } .q .mk { margin-inline-start: auto; font-size: 11px; white-space: nowrap; }
-  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; padding-inline-start: 22px; font-size: 12px; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; padding-inline-start: 22px; }
   .parts { padding-inline-start: 22px; } .ans { padding-inline-start: 22px; font-size: 11px; color: #333333; border-inline-start: 2px solid {{ $theme['primary_color'] }}; margin-top: 2px; }
   .text { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+  .q .text, .opts { font-size: 13px; }   {{-- one size for question and options in every layout; Bengali glyphs read small beside Latin at 12px --}}
   .cols-1, .cols-2, .cols-4, .cols-auto { column-gap: 18px; }
   .cols-1 { column-count: 1; }
   .cols-2 { column-count: 2; } .cols-2 .q { break-inside: avoid; }
-  .cols-4 { column-count: 4; } .cols-4 .q { break-inside: avoid; }
-  .cols-auto { column-count: 1; font-size: clamp(10px, 1.4vw, 12px); }
+  .cols-4 { column-count: 4; } .cols-4 .q { break-inside: avoid; } .cols-4 .q .text, .cols-4 .opts { font-size: 11px; }
+  .cols-auto { column-count: 1; }
   .cols-auto .q { break-inside: avoid; }
   .key { page-break-before: always; } .key table { border-collapse: collapse; } .key td, .key th { border: 1px solid #999999; padding: 2px 8px; font-size: 12px; }
   .qmx-align-center { text-align: center; } .qmx-align-right { text-align: right; } .qmx-align-justify { text-align: justify; }
