@@ -36,7 +36,7 @@
   .cols-1 { column-count: 1; }
   .cols-2 { column-count: 2; } .cols-2 .q { break-inside: avoid; }
   .cols-4 { column-count: 4; } .cols-4 .q { break-inside: avoid; } .cols-4 .q .text, .cols-4 .opts { font-size: 11px; }
-  .cols-auto { column-count: 1; }
+  .cols-auto { column-count: 1; font-size: clamp(12px, 1.4vw, 13px); } .cols-auto .q .text, .cols-auto .opts { font-size: inherit; }   {{-- auto sizes with the page, never below 12px; question and options alike --}}
   .cols-auto .q { break-inside: avoid; }
   .key { page-break-before: always; } .key table { border-collapse: collapse; } .key td, .key th { border: 1px solid #999999; padding: 2px 8px; font-size: 12px; }
   .qmx-align-center { text-align: center; } .qmx-align-right { text-align: right; } .qmx-align-justify { text-align: justify; }
