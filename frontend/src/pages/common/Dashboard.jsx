@@ -17,6 +17,7 @@ import StatusBadge from '../../components/StatusBadge'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import Ltr from '../../components/bidi/Ltr'
 import StatCard from '../../ui/variants/StatCard'
+import HijriToday from '../../features/hijri/HijriToday'   // D214 MAD.2
 
 // Step 4.7: one dashboard per role (docs/modules/panels-and-features.md "6 Panels"), fed by GET /{role}/dashboard
 // (Super Admin: GET /super/dashboard on the central host). Numbers only come from the server.
@@ -32,6 +33,7 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col gap-4" data-testid="dashboard">
       <PageHeader title={t('dashboard.title')} />
+      <HijriToday />
       <p className="text-sm text-content-muted" dir="auto">{t('dashboard.hello', { name: user?.name })}</p>
       {!View ? null : data.isPending ? <Loader type="cards" count={4} /> : data.isError ? <ErrorState onRetry={data.refetch} /> : <View d={data.data} />}
     </div>

@@ -3,8 +3,16 @@
 // The occasion list and its spellings are UNVERIFIED (not yet reviewed by a madrasa teacher) - it only suggests, never adds.
 const TAG = { bn: 'bn-BD-u-ca-islamic-umalqura-nu-latn', en: 'en-u-ca-islamic-umalqura-nu-latn', ar: 'ar-u-ca-islamic-umalqura-nu-latn' }
 
+// a plain date ('2026-03-20') is taken as written; a moment (a Date, or a timestamp such as a notice's published_at) counts on the
+// reader's local calendar day, so a notice published just after midnight in Dhaka carries that day
+const dayOf = (date) => {
+  if (typeof date === 'string' && date.length <= 10) return date
+  const m = new Date(date)
+  return `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}-${String(m.getDate()).padStart(2, '0')}`
+}
+
 const shifted = (date, offset) => {
-  const d = new Date(`${String(date).slice(0, 10)}T12:00:00Z`)
+  const d = new Date(`${dayOf(date)}T12:00:00Z`)
   d.setUTCDate(d.getUTCDate() + (offset || 0))
   return d
 }

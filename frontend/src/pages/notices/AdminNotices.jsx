@@ -8,6 +8,7 @@ import { useLocale } from '../../ui/I18nProvider'
 import { useTerms } from '../../hooks/useTerms'
 import { useModules } from '../../hooks/useModules'
 import { fmtDate } from '../../i18n/format'
+import HijriDate from '../../features/hijri/HijriDate'   // D214 MAD.2
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
@@ -46,7 +47,7 @@ export default function AdminNotices() {
   const columns = [
     { key: 'title', label: t('notices.notice_title'), primary: true, render: r => <span dir="auto">{r.title}</span> },
     { key: 'target', label: t('notices.target'), render: r => t(`notices.targets.${r.target}`) },
-    { key: 'published_at', label: t('notices.published_at'), render: r => r.published_at ? fmtDate(r.published_at, locale) : t('notices.draft') },
+    { key: 'published_at', label: t('notices.published_at'), render: r => r.published_at ? <>{fmtDate(r.published_at, locale)}<HijriDate date={r.published_at} /></> : t('notices.draft') },
     { key: 'memo_no_bn', label: t('memo.memo_no'), render: r => r.memo_no_bn ? <span className="font-mono text-xs" dir="ltr">{r.memo_no_bn}</span> : '—' },   // D210 LTR.1
     { key: 'require_ack', label: t('notices.require_ack'), render: r => r.require_ack ? (r.ack_deadline ? fmtDate(r.ack_deadline, locale) : t('notices.yes')) : t('notices.no') },
     { key: 'actions', label: t('common.actions'), action: true, render: r => (
