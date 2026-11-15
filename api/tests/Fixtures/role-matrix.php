@@ -608,6 +608,21 @@ return [
     'POST api/v1/teacher-payouts/{id}/approve' => ['admin', 'accountant'],
     'POST api/v1/teacher-payouts/{id}/pay' => ['admin', 'accountant'],
     'GET api/v1/teacher/payouts' => ['teacher'],   // D223 TPO.2
+    // D224 SYL.1
+    'GET api/v1/syllabus/units' => ['admin', 'teacher'],
+    'GET api/v1/syllabus/coverage' => ['admin', 'teacher'],
+    'POST api/v1/syllabus/coverage' => ['admin', 'teacher'],
+    'DELETE api/v1/syllabus/coverage' => ['admin', 'teacher'],
+    'GET api/v1/syllabus/behind' => ['admin', 'teacher'],
+    'GET api/v1/lesson-plans' => ['admin', 'teacher'],
+    'POST api/v1/lesson-plans' => ['admin', 'teacher'],
+    'PUT api/v1/lesson-plans/{id}' => ['admin', 'teacher'],
+    'DELETE api/v1/lesson-plans/{id}' => ['admin', 'teacher'],
+    'POST api/v1/lesson-plans/{id}/taught' => ['admin', 'teacher'],
+    'POST api/v1/lesson-plans/{id}/skipped' => ['admin', 'teacher'],
+    'POST api/v1/syllabus/units' => ['admin'],
+    'PUT api/v1/syllabus/units/{id}' => ['admin'],
+    'DELETE api/v1/syllabus/units/{id}' => ['admin'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],

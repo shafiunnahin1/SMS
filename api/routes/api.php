@@ -843,6 +843,26 @@ Route::prefix('v1')->group(function () {
             Route::get('/period-attendance/report',           [\App\Http\Controllers\Academic\PeriodAttendanceController::class, 'report'])->middleware('role:admin,teacher');
         });
 
+        // ── D224 SYL.1: syllabus units, coverage ticks, lesson plans, the behind list (docs/modules/syllabus.md) ──
+        Route::middleware(['module:syllabus', 'role:admin,teacher'])->group(function () {
+            Route::get('/syllabus/units',                     [\App\Http\Controllers\Syllabus\SyllabusUnitController::class, 'index']);
+            Route::get('/syllabus/coverage',                  [\App\Http\Controllers\Syllabus\SyllabusCoverageController::class, 'index']);
+            Route::post('/syllabus/coverage',                 [\App\Http\Controllers\Syllabus\SyllabusCoverageController::class, 'store']);
+            Route::delete('/syllabus/coverage',               [\App\Http\Controllers\Syllabus\SyllabusCoverageController::class, 'destroy']);
+            Route::get('/syllabus/behind',                    [\App\Http\Controllers\Syllabus\SyllabusCoverageController::class, 'behind']);
+            Route::get('/lesson-plans',                       [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'index']);
+            Route::post('/lesson-plans',                      [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'store']);
+            Route::put('/lesson-plans/{id}',                  [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'update'])->whereNumber('id');
+            Route::delete('/lesson-plans/{id}',               [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'destroy'])->whereNumber('id');
+            Route::post('/lesson-plans/{id}/taught',          [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'taught'])->whereNumber('id');
+            Route::post('/lesson-plans/{id}/skipped',         [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'skipped'])->whereNumber('id');
+        });
+        Route::middleware(['module:syllabus', 'role:admin'])->group(function () {
+            Route::post('/syllabus/units',                    [\App\Http\Controllers\Syllabus\SyllabusUnitController::class, 'store']);
+            Route::put('/syllabus/units/{id}',                [\App\Http\Controllers\Syllabus\SyllabusUnitController::class, 'update'])->whereNumber('id');
+            Route::delete('/syllabus/units/{id}',             [\App\Http\Controllers\Syllabus\SyllabusUnitController::class, 'destroy'])->whereNumber('id');
+        });
+
         // ── D223 TPO.1: teacher payouts (coaching-private-batch.md "Teacher Payouts"); pay data (D33): admin and accountant only ──
         Route::middleware(['module:teacher_payouts', 'role:admin,accountant'])->group(function () {
             Route::get('/teacher-payouts',                    [\App\Http\Controllers\Payouts\TeacherPayoutController::class, 'index']);
