@@ -113,6 +113,9 @@ class TeacherPayoutService
             }
             $p->update(['status' => 'paid', 'paid_at' => now()]);
             AuditLog::record('teacher_payout.paid', $p, ['method' => $method]);
+            $user = $p->teacher()->first()?->user;
+            if ($user) DB::afterCommit(fn () => $user->notify(new \App\Notifications\GeneralNotification(__('payouts.paid_title'),
+                __('payouts.paid_body', ['month' => $p->month]), 'teacher_payout_paid', ['teacher_payout_id' => $p->id])));   // D223 (6): in-app only, no SMS, no amount
             return $p->fresh();
         });
     }

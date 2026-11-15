@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm, useFieldArray } from 'react-hook-form'
 import AltNameInput, { useAltName } from '../altname/AltNameInput'
@@ -7,6 +8,7 @@ import api from '../../api/axios'
 import { useTerms } from '../../hooks/useTerms'
 import { useInstitutionStore } from '../../store/institutionStore'
 import Button from '../../components/Button'
+import Loader from '../../components/Loader'
 import { Input, Select } from '../../components/FormField'
 import { useCrud, clean } from './useCrud'
 
@@ -23,6 +25,7 @@ export default function BatchForm({ batch, onDone, onCancel }) {
   const payOn = useInstitutionStore(s => s.hasModule)('teacher_payouts')   // D223 (1): how each teacher is paid for this batch
   const { save } = useCrud('batches')
   const alt = useAltName()   // D214 MAD.3
+  const drawn = useRef(false)
   const programs = useCrud('programs', { enabled: usePrograms })
   const teachers = useCrud('teachers', { enabled: hasTeachers })
   const { register, handleSubmit, control, watch, setError, formState: { errors, isSubmitting } } = useForm({
@@ -45,6 +48,12 @@ export default function BatchForm({ batch, onDone, onCancel }) {
   }
   const teacherOptions = (teachers.list.data ?? []).filter(x => x.status !== 'inactive').map(x => ({ value: x.id, label: x.name }))
   const subjectOptions = [{ value: '0', label: t('academic.all_subjects') }, ...(subjects.data ?? []).map(s => ({ value: String(s.id), label: s.name }))]
+
+  // A select keeps its saved value only if its options are there when it first draws: wait for the lists (otherwise the course and the
+  // subject teachers look empty and saving would drop them - found in the D223 browser check)
+  const ready = (!usePrograms || programs.list.data) && (!hasTeachers || (teachers.list.data && (!programId || subjects.data)))
+  if (ready && !drawn.current) drawn.current = true   // once drawn it stays (a course change refetches the subjects)
+  if (batch?.id && !drawn.current) return <Loader />
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3 sm:grid-cols-2" noValidate>

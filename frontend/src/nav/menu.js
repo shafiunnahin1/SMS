@@ -50,6 +50,7 @@ export const MENU = {
       it('refunds',    '/admin/fees/refunds',    'রিফান্ড', { since: 'R3' }),
     ]},
     it('expenses',   '/admin/expenses',   'আয়-ব্যয়', { icon: 'Receipt', module: 'expenses' }),
+    it('teacher_payouts', '/admin/teacher-payouts', 'শিক্ষকের পারিশ্রমিক', { icon: 'Banknote', module: 'teacher_payouts' }),   // D223 TPO.2
     it('inventory',  '/admin/inventory',  'স্টোর / ইনভেন্টরি', { icon: 'Package', module: 'inventory' }),
     it('id-cards',   '/admin/students/id-cards', 'আইডি কার্ড', { icon: 'IdCard', module: 'id_cards' }),
     it('leads',      '/admin/leads',      'ভর্তি-আবেদন', { icon: 'UserPlus', module: 'leads' }),
@@ -174,6 +175,7 @@ export const MENU = {
     it('syllabus','/teacher/syllabus','সিলেবাস-অগ্রগতি',{icon:'ListTree',module:'syllabus'}),
     it('hifz','/teacher/hifz','হিফজ',{icon:'BookOpen',module:'hifz'}),
     it('risk','/teacher/risk','সহায়তা প্রয়োজন',{icon:'LifeBuoy',module:'risk_alerts'}),
+    it('payouts','/teacher/payouts','আমার পারিশ্রমিক',{icon:'Banknote',module:'teacher_payouts'}),   // D223 TPO.2
     it('student-leave','/teacher/leave/students','ছাত্রের ছুটি',{icon:'CalendarOff',module:'student_leave',teacherFeature:'student_leave'}),
   ],
   student: [
@@ -220,8 +222,9 @@ export const MENU = {
     it('ai','/accountant/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant'}),   // D166 AI-Q4: the help guide
     it('online','/accountant/payments','অনলাইন পেমেন্ট',{icon:'CreditCard',module:'online_payment'}),   // D217 OPAY.3: the accountant's own area
     it('expenses','/accountant/expenses','আয়-ব্যয়',{icon:'Receipt',module:'expenses'}),
+    it('teacher_payouts','/accountant/teacher-payouts','শিক্ষকের পারিশ্রমিক',{icon:'Banknote',module:'teacher_payouts'}),   // D223 TPO.2
     it('payroll','/accountant/hr/payroll','বেতন প্রদান',{icon:'Banknote',module:'hr_payroll'}),
-    it('hr-advances','/accountant/hr/advances','অগ্রিম',{icon:'HandCoins',module:'hr_payroll'}),
+    it('hr-advances','/accountant/hr/advances','অগ্রিম',{icon:'Banknote',module:'hr_payroll'}),
     it('hr-adjustments','/accountant/hr/adjustments','সমন্বয়',{icon:'SlidersHorizontal',module:'hr_payroll'}),
     it('hr-revisions','/accountant/hr/revisions','ইনক্রিমেন্ট প্রস্তাব',{icon:'TrendingUp',module:'hr_payroll'}),
     it('cashbook','/accountant/cashbook','ক্যাশবুক',{icon:'BookOpenCheck',module:'cashbook'}),

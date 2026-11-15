@@ -54,6 +54,15 @@ class TeacherPayoutController extends Controller
             'data' => self::row($this->payouts->pay(TeacherPayout::findOrFail($id), $f['method'], $f['date'], $request->user())->load(['teacher:id,user_id,employee_id', 'teacher.user:id,name', 'batch:id,name']))]);
     }
 
+    /** GET /teacher/payouts - D223 TPO.2: the signed-in teacher's own payouts (approved and paid; drafts are not final), read-only */
+    public function mine(Request $request)
+    {
+        $teacher = \App\Models\Teacher::where('user_id', $request->user()->id)->first();
+        $rows = $teacher ? TeacherPayout::with(['batch:id,name'])->where('teacher_id', $teacher->id)->whereIn('status', ['approved', 'paid'])
+            ->orderByDesc('month')->orderBy('batch_id')->limit(240)->get() : collect();
+        return response()->json(['success' => true, 'data' => $rows->map(fn ($p) => array_diff_key(self::row($p), ['teacher' => 1, 'note' => 1]))->values()]);
+    }
+
     public static function row(TeacherPayout $p): array
     {
         return ['id' => $p->id, 'teacher' => ['id' => $p->teacher_id, 'name' => $p->teacher?->user?->name ?? $p->teacher?->employee_id], 'batch' => $p->batch_id ? ['id' => $p->batch_id, 'name' => $p->batch?->name] : null,

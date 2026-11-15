@@ -851,6 +851,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/teacher-payouts/{id}/approve',      [\App\Http\Controllers\Payouts\TeacherPayoutController::class, 'approve'])->whereNumber('id');
             Route::post('/teacher-payouts/{id}/pay',          [\App\Http\Controllers\Payouts\TeacherPayoutController::class, 'pay'])->whereNumber('id');
         });
+        Route::middleware(['module:teacher_payouts', 'role:teacher'])->get('/teacher/payouts', [\App\Http\Controllers\Payouts\TeacherPayoutController::class, 'mine']);   // D223 TPO.2: own, read-only
 
         // ── D202 PUB.1: admission leads (coaching-private-batch.md "Leads") ──
         Route::middleware(['module:leads'])->group(function () {

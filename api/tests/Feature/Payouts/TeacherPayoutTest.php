@@ -126,4 +126,33 @@ class TeacherPayoutTest extends TestCase
         $list = $this->api('GET', $host, 'batches', $this->makeUser($i, 'teacher'))->assertOk()->getContent();
         $this->assertStringNotContainsString('pay_rate', $list, 'pay data is not for teachers (D33)');
     }
+
+    public function test_a_teacher_sees_only_their_own_final_payouts_and_is_told_when_paid(): void
+    {
+        [$i, $admin, $d] = $this->setUpCoaching('payown');
+        $host = $this->hostOf($i);
+        $me = $this->makeUser($i, 'teacher');
+        $other = \App\Models\User::create(['institution_id' => $i->id, 'name' => 'other', 'email' => 'other-teacher@example.test', 'password' => 'Secret@1234', 'role' => 'teacher', 'is_active' => true]);
+        [$d['fixed'], $d['perclass']] = Tenancy::as($i, function () use ($d, $me, $other) {
+            $t = fn ($u, $e) => Teacher::where('user_id', $u->id)->first() ?? Teacher::create(['user_id' => $u->id, 'employee_id' => $e, 'status' => 'active']);
+            [$a, $b] = [$t($me, 'T-ME'), $t($other, 'T-OT')];
+            BatchTeacher::create(['batch_id' => $d['batch']->id, 'teacher_id' => $a->id, 'subject_id' => 0, 'pay_type' => 'fixed_monthly', 'pay_rate' => '3000.00']);
+            BatchTeacher::create(['batch_id' => $d['batch']->id, 'teacher_id' => $b->id, 'subject_id' => 0, 'pay_type' => 'fixed_monthly', 'pay_rate' => '1000.00']);
+            return [$a, $b];
+        });
+        $rows = collect($this->api('POST', $host, 'teacher-payouts/generate', $admin, ['month' => '2026-10'])->json('data'))->keyBy('teacher.id');
+        $this->assertSame([], $this->api('GET', $host, 'teacher/payouts', $me)->assertOk()->json('data'), 'a draft is not shown');
+        $mine = $rows[$d['fixed']->id]['id'];
+        $this->api('POST', $host, "teacher-payouts/{$mine}/approve", $admin)->assertOk();
+        $this->api('POST', $host, "teacher-payouts/{$mine}/pay", $admin, ['method' => 'bkash', 'date' => '2026-11-10'])->assertOk();
+        $list = $this->api('GET', $host, 'teacher/payouts', $me)->assertOk()->json('data');
+        $this->assertSame([[$mine, '3000.00', 'paid']], array_map(fn ($r) => [$r['id'], $r['amount'], $r['status']], $list));
+        $this->assertArrayNotHasKey('note', $list[0]);
+        $this->assertSame([], $this->api('GET', $host, 'teacher/payouts', $other)->json('data'), "another teacher's payout is not shown");
+        $this->api('GET', $host, 'teacher/payouts', $admin)->assertForbidden();
+        $n = $me->fresh()->notifications()->sole();
+        $this->assertSame('teacher_payout_paid', $n->data['type'] ?? $n->data['kind'] ?? null);
+        $this->assertStringNotContainsString('3000', json_encode($n->data), 'no amount in the notice');
+        $this->assertSame(0, $other->fresh()->notifications()->count());
+    }
 }
