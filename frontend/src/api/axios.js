@@ -18,6 +18,8 @@ api.interceptors.request.use((config) => {
   const token = authStore?.getState().token
   if (token) config.headers.Authorization = `Bearer ${token}`
   config.headers['Accept-Language'] = i18n.language || 'bn'
+  // a FormData body (a file upload) goes as multipart, never under the default JSON type - which would drop the file
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) config.headers['Content-Type'] = 'multipart/form-data'
   // D169 STW.1 (D91): a staff member's request names the selected department; the API checks the duty key there
   const department = useStaffDepartmentStore.getState().department
   const role = authStore?.getState().role

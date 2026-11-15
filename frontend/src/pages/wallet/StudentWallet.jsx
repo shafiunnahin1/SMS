@@ -99,7 +99,7 @@ export default function StudentWallet() {
                 {d.transactions.map(x => (
                   <li key={x.id} className="py-1 flex items-center justify-between gap-2">
                     <span>{t(`wallet.types.${x.type}`)} <span className="text-xs text-content-muted">{x.created_at && fmtDate(x.created_at, locale)}</span></span>
-                    <Ltr>{Number(x.amount) > 0 ? '+' : ''}{fmtMoney(x.amount, locale)}</Ltr>
+                    <Ltr>{Number(x.amount) > 0 ? '+' : '-'}{fmtMoney(Math.abs(Number(x.amount)).toFixed(2), locale)}</Ltr>
                   </li>
                 ))}
               </ul>
