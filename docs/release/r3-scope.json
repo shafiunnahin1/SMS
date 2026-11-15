@@ -107,7 +107,8 @@
    "academic_calendar",
    "hifz",
    "risk_alerts",
-   "online_payment"
+   "online_payment",
+   "teacher_payouts"
   ],
   "roles": [
  "super_admin",
