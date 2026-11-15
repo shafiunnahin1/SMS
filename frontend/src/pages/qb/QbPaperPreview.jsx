@@ -41,7 +41,7 @@ const HEADER_LINES = ['institution', 'exam', 'class', 'subject']
 const DEFAULTS = {
   language: 'bn', showSections: true, restartNumbers: false, pageBreak: false,
   sizes: { institution: 24, exam: 18, class: 16, subject: 14, subjectCode: 14, setCode: 14, time: 14, marks: 14 }, headerStyle: 'simple',
-  show: { question: true, answer: true, explanation: true, source: true },
+  show: { question: true, answer: false, explanation: true, source: true },   // D222: answers hidden until the viewer switches them on
   font: 'SolaimanLipi', fontSize: 14, fontWeight: 400, lineHeight: 1.4,
   columnLine: true, margin: 18, boxBorder: true, boxBottomLine: false, columns: 2,
 }

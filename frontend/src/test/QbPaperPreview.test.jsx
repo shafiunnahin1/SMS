@@ -129,6 +129,7 @@ describe('D133 paper print preview', () => {
 
   it('loads the set with answers and shows the header, answers and explanations as qbank', async () => {
     window.localStorage.clear()
+    window.localStorage.setItem('qb-paper-preview', JSON.stringify({ show: { answer: true } }))   // D222: the viewer switched answers on earlier
     renderPage()
     const paper = await screen.findByTestId('qb-paper')
     expect(api.get).toHaveBeenCalledWith('/question-bank/papers/7/pdf', { params: { set: 'A', answers: 1, format: 'json' } })
@@ -154,8 +155,20 @@ describe('D133 paper print preview', () => {
     expect(styles).toContain('.qb-paper .qb-page{width:210mm;min-height:0;height:auto;margin:0;overflow:visible;box-shadow:none;border:0;border-radius:0;break-after:page;')
   })
 
+  it('opens with answers hidden for a first-time viewer and shows them only when switched on (D222)', async () => {
+    window.localStorage.clear()
+    renderPage()
+    await screen.findByTestId('qb-paper')
+    expect(screen.queryAllByTestId('qb-paper-correct')).toHaveLength(0)
+    expect(screen.queryAllByTestId('qb-paper-answer')).toHaveLength(0)
+    fireEvent.click(screen.getByRole('switch', { name: 'Answer' }))
+    expect(screen.getAllByTestId('qb-paper-correct')).toHaveLength(3)
+    expect(JSON.parse(window.localStorage.getItem('qb-paper-preview'))).toMatchObject({ show: { answer: true } })
+  })
+
   it('customizes the paper: visibility, language, numbering, section order, text box', async () => {
     window.localStorage.clear()
+    window.localStorage.setItem('qb-paper-preview', JSON.stringify({ show: { answer: true } }))   // D222: the viewer switched answers on earlier
     renderPage()
     await screen.findByTestId('qb-paper')
     fireEvent.click(screen.getByRole('switch', { name: 'Answer' }))
@@ -180,6 +193,7 @@ describe('D133 paper print preview', () => {
 
   it('edits a question for this paper only and keeps the edit with the paper and set', async () => {
     window.localStorage.clear()
+    window.localStorage.setItem('qb-paper-preview', JSON.stringify({ show: { answer: true } }))   // D222: the viewer switched answers on earlier
     renderPage()
     await screen.findByTestId('qb-paper')
     fireEvent.click(screen.getAllByRole('button', { name: /নং প্রশ্ন সম্পাদনা/ })[0])

@@ -22,6 +22,7 @@ const PAPER = { id: 8, title: 'Stimulus test', exam_name: '', duration_minutes: 
 describe('D171 stimulus MCQ group in the paper preview', () => {
   it('shows the stimulus once and numbers each child as an MCQ', async () => {
     window.localStorage.clear()
+    window.localStorage.setItem('qb-paper-preview', JSON.stringify({ show: { answer: true } }))   // D222: the viewer switched answers on earlier
     api.get.mockResolvedValue({ data: { data: PAPER } })
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/admin/question-bank/papers/8/preview?set=B']}>
