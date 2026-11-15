@@ -1214,7 +1214,7 @@ CREATE TABLE teacher_payouts (
     paid_at TIMESTAMP NULL,
     note VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_payout (teacher_id, batch_id, month),
+    UNIQUE KEY unique_payout (institution_id, teacher_id, batch_id, month),   -- D223 (7): tenant-bound (D12)
     FOREIGN KEY (teacher_id) REFERENCES teachers(id)
 );
 

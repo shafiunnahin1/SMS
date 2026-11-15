@@ -89,6 +89,15 @@ class ExpenseService
             'payment_method' => $method, 'source' => 'payroll', 'payroll_run_id' => $run->id], $actor->id);
     }
 
+    /** D223 TPO.1 internal operation: one row for a paid teacher payout; the caller holds the cashbook lock */
+    public function recordTeacherPayout(\App\Models\TeacherPayout $payout, string $method, string $date, \App\Models\User $actor): Expense
+    {
+        \Illuminate\Support\Facades\Validator::make(['date' => $date, 'method' => $method], ['date' => 'required|date_format:Y-m-d|before_or_equal:today', 'method' => 'required|in:cash,bank,bkash,nagad,rocket,other'])->validate();
+        app(CashBookService::class)->assertCashWrite($date, $method);
+        return $this->append(['category' => 'teacher_payout', 'title' => 'Teacher payout #' . $payout->id . ' (' . $payout->month . ')', 'amount' => Money::format(Money::toPaisa((string) $payout->amount)),
+            'expense_date' => $date, 'payment_method' => $method, 'source' => 'teacher_payout'], $actor->id);
+    }
+
     public function correct(int $id, ?array $replacement, int $by): Expense
     {
         if ($replacement !== null) $replacement = array_intersect_key($replacement, array_flip(self::INPUT_FIELDS));

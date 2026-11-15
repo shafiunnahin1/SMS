@@ -16,6 +16,6 @@ return [
         'period_attendance' => ['attendance', 'routine'], 'attendance_devices' => ['attendance'], 'student_leave' => ['attendance'],
         'substitution' => ['routine'], 'result_sheets' => ['exams'], 'admit_card' => ['exams'], 'merit_list' => ['exams'],
         'fee_installment' => ['fees'], 'online_payment' => ['fees'], 'cashbook' => ['expenses'], 'scholarships' => ['fees'],
-        'risk_alerts' => ['attendance', 'exams'], 'admission_cycle' => ['leads'], 'quiz' => ['question_bank'],
+        'risk_alerts' => ['attendance', 'exams'], 'teacher_payouts' => ['expenses'], 'admission_cycle' => ['leads'], 'quiz' => ['question_bank'],
     ],
 ];

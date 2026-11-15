@@ -40,6 +40,19 @@ class BatchRequest extends FormRequest
             'subject_teachers'              => 'sometimes|array|max:50',
             'subject_teachers.*.subject_id' => ['required', 'integer', 'min:0'],
             'subject_teachers.*.teacher_id' => ['required', 'integer', Rule::exists('teachers', 'id')->where('institution_id', $inst->id)->whereNull('deleted_at')],
+            // D223 (1): how this teacher is paid for this batch (teacher payouts); left out = kept as it was
+            'subject_teachers.*.pay_type'   => ['sometimes', 'in:salary,fixed_monthly,per_class,percentage'],
+            'subject_teachers.*.pay_rate'   => ['sometimes', 'regex:/^\d{1,8}(\.\d{1,2})?$/'],
         ];
+    }
+
+    /** D223 (1): a percentage rate is at most 100 */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($v) {
+            foreach ((array) $this->input('subject_teachers', []) as $i => $r) {
+                if (($r['pay_type'] ?? null) === 'percentage' && preg_match('/^\d{1,8}(\.\d{1,2})?$/', (string) ($r['pay_rate'] ?? '')) && \App\Support\Money::toPaisa((string) $r['pay_rate']) > 10000) $v->errors()->add("subject_teachers.{$i}.pay_rate", __('validation.max.numeric', ['attribute' => 'pay_rate', 'max' => 100]));
+            }
+        });
     }
 }

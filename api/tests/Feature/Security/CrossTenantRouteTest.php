@@ -73,6 +73,7 @@ class CrossTenantRouteTest extends TestCase
         'POST api/v1/events/{id}/register',   // D213 CAL.2: student only; EventTest: another institution's event 404
         'DELETE api/v1/events/{id}/register',
         'POST api/v1/homework/{id}/submit',   // D212 HW.2: student only; HomeworkSubmissionTest: another institution's homework 404
+        'PUT api/v1/teacher-payouts/{id}', 'POST api/v1/teacher-payouts/{id}/approve', 'POST api/v1/teacher-payouts/{id}/pay',   // D223 TPO.1: coaching / private-batch only (these tenants are schools); TeacherPayoutTest: another institution's payout 404
         'GET api/v1/student/exams/{id}/admit-card',   // D193 ADM.1: own card only (AdmitCardTest: another institution's exam 404)
         'GET api/v1/student/qb/attempts/{id}', 'PUT api/v1/student/qb/attempts/{id}', 'POST api/v1/student/qb/attempts/{id}/submit',   // QB.10: own attempt (QbQuizTest: another student 404)   // QB.9: catalogue rows / own order by ref (QbStudentTest)   // QB.5: platform catalogue rows; QbLibraryTest: another institution's unlock opens nothing
     ];

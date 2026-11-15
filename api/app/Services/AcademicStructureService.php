@@ -84,9 +84,12 @@ class AcademicStructureService
                 throw ValidationException::withMessages(["subject_teachers.{$i}.subject_id" => __('validation.exists', ['attribute' => 'subject'])]);
             }
         }
+        $old = BatchTeacher::where('batch_id', $batch->id)->get()->keyBy(fn ($r) => "{$r->subject_id}:{$r->teacher_id}");   // D223: pay kept unless sent
         BatchTeacher::where('batch_id', $batch->id)->delete();
         foreach (collect($rows)->unique(fn ($r) => "{$r['subject_id']}:{$r['teacher_id']}") as $r) {
-            BatchTeacher::create(['batch_id' => $batch->id, 'teacher_id' => (int) $r['teacher_id'], 'subject_id' => (int) $r['subject_id']]);
+            $was = $old->get("{$r['subject_id']}:{$r['teacher_id']}");
+            BatchTeacher::create(['batch_id' => $batch->id, 'teacher_id' => (int) $r['teacher_id'], 'subject_id' => (int) $r['subject_id'],
+                'pay_type' => $r['pay_type'] ?? $was?->pay_type ?? 'salary', 'pay_rate' => $r['pay_rate'] ?? $was?->pay_rate ?? '0.00']);
         }
     }
 }

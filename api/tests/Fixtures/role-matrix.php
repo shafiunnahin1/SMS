@@ -602,6 +602,11 @@ return [
     'GET api/v1/student/qb/concepts/{id}' => ['student'],
     'POST api/v1/student/qb/orders' => ['student'],
     'POST api/v1/student/qb/wallet-orders' => ['student'],
+    'GET api/v1/teacher-payouts' => ['admin', 'accountant'],   // D223 TPO.1
+    'POST api/v1/teacher-payouts/generate' => ['admin', 'accountant'],
+    'PUT api/v1/teacher-payouts/{id}' => ['admin', 'accountant'],
+    'POST api/v1/teacher-payouts/{id}/approve' => ['admin', 'accountant'],
+    'POST api/v1/teacher-payouts/{id}/pay' => ['admin', 'accountant'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],

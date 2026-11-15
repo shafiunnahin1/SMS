@@ -88,7 +88,7 @@ return [
             'tuition_fee'   => ['bn' => 'মাসিক ফি',    'en' => 'Monthly Fee', 'ar' => 'الرسوم الشهرية'],
         ],
         'modules' => ['students','enrollments','attendance','fees','exams','cashbook','support','syllabus','data_migration','student_leave','sms','notices','reports','expenses',
-            'online_payment','public_site','question_bank','quiz'],   // public_site default OFF for this type; turning it on also enables 'leads' (docs/modules/public-website.md)
+            'online_payment','public_site','question_bank','quiz','teacher_payouts'],   // D223: teacher_payouts; public_site default OFF for this type; turning it on also enables 'leads' (docs/modules/public-website.md)
         'onboarding' => ['public_site' => false, 'programs' => 'default_general', 'batches' => [], 'fee_categories' => ['মাসিক ফি']],
     ],
 

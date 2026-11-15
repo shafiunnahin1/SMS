@@ -20,13 +20,14 @@ export default function BatchForm({ batch, onDone, onCancel }) {
   const term = useTerms()
   const usePrograms = useInstitutionStore(s => s.settings?.use_programs) !== false
   const hasTeachers = (useInstitutionStore(s => s.roles) ?? []).includes('teacher')
+  const payOn = useInstitutionStore(s => s.hasModule)('teacher_payouts')   // D223 (1): how each teacher is paid for this batch
   const { save } = useCrud('batches')
   const alt = useAltName()   // D214 MAD.3
   const programs = useCrud('programs', { enabled: usePrograms })
   const teachers = useCrud('teachers', { enabled: hasTeachers })
   const { register, handleSubmit, control, watch, setError, formState: { errors, isSubmitting } } = useForm({
     defaultValues: batch?.id
-      ? { ...batch, teacher_id: batch.teacher_id ?? '', shift: batch.shift ?? '', subject_teachers: (batch.subject_teachers ?? []).map(r => ({ subject_id: String(r.subject_id), teacher_id: String(r.teacher_id) })) }
+      ? { ...batch, teacher_id: batch.teacher_id ?? '', shift: batch.shift ?? '', subject_teachers: (batch.subject_teachers ?? []).map(r => ({ subject_id: String(r.subject_id), teacher_id: String(r.teacher_id), pay_type: r.pay_type ?? 'salary', pay_rate: r.pay_rate ?? '' })) }
       : { status: 'running', max_capacity: 40, subject_teachers: [] },
   })
   const rows = useFieldArray({ control, name: 'subject_teachers' })
@@ -37,7 +38,7 @@ export default function BatchForm({ batch, onDone, onCancel }) {
     const body = clean({
       ...(usePrograms ? { program_id: v.program_id } : {}), name: v.name, ...(alt.on ? { name_alt: v.name_alt ?? '' } : {}), shift: v.shift, room: v.room, max_capacity: v.max_capacity,
       monthly_fee: v.monthly_fee, start_date: v.start_date, end_date: v.end_date, status: v.status,
-      ...(hasTeachers ? { teacher_id: v.teacher_id, subject_teachers: v.subject_teachers.filter(r => r.teacher_id !== '').map(r => ({ subject_id: Number(r.subject_id || 0), teacher_id: Number(r.teacher_id) })) } : {}),
+      ...(hasTeachers ? { teacher_id: v.teacher_id, subject_teachers: v.subject_teachers.filter(r => r.teacher_id !== '').map(r => ({ subject_id: Number(r.subject_id || 0), teacher_id: Number(r.teacher_id), ...(payOn ? { pay_type: r.pay_type || 'salary', pay_rate: r.pay_type && r.pay_type !== 'salary' ? (r.pay_rate || '0') : '0' } : {}) })) } : {}),
     })
     const saved = await save(body, batch?.id, setError)
     if (saved) onDone(saved)
@@ -67,12 +68,16 @@ export default function BatchForm({ batch, onDone, onCancel }) {
             <div key={f.id} className="flex flex-wrap items-end gap-2">
               <Select label={t('academic.subject')} options={subjectOptions} className="flex-1 min-w-40" error={errors[`subject_teachers.${i}.subject_id`]?.message} {...register(`subject_teachers.${i}.subject_id`)} />
               <Select label={t('academic.teacher')} placeholder={t('academic.pick')} options={teacherOptions} className="flex-1 min-w-40" {...register(`subject_teachers.${i}.teacher_id`)} />
+              {payOn && <Select label={t('payouts.pay_type')} className="min-w-36" options={['salary', 'fixed_monthly', 'per_class', 'percentage'].map(v => ({ value: v, label: t(`payouts.types.${v}`) }))} {...register(`subject_teachers.${i}.pay_type`)} />}
+              {payOn && watch(`subject_teachers.${i}.pay_type`) && watch(`subject_teachers.${i}.pay_type`) !== 'salary' &&
+                <Input label={watch(`subject_teachers.${i}.pay_type`) === 'percentage' ? t('payouts.rate_percent') : t('payouts.rate_taka')} inputMode="decimal" ltr className="w-32"
+                  error={errors[`subject_teachers.${i}.pay_rate`]?.message} {...register(`subject_teachers.${i}.pay_rate`)} />}
               <button type="button" onClick={() => rows.remove(i)} aria-label={t('academic.remove_row')} className="h-10 w-10 inline-flex items-center justify-center rounded-token hover:bg-primary-soft">
                 <X aria-hidden="true" className="h-4 w-4" />
               </button>
             </div>
           ))}
-          <div><Button variant="ghost" onClick={() => rows.append({ subject_id: '0', teacher_id: '' })}><Plus aria-hidden="true" className="h-4 w-4" />{t('academic.add_row')}</Button></div>
+          <div><Button variant="ghost" onClick={() => rows.append({ subject_id: '0', teacher_id: '', pay_type: 'salary', pay_rate: '' })}><Plus aria-hidden="true" className="h-4 w-4" />{t('academic.add_row')}</Button></div>
         </fieldset>
       )}
       <div className="sm:col-span-2 flex justify-end gap-2">

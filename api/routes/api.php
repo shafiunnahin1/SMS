@@ -843,6 +843,15 @@ Route::prefix('v1')->group(function () {
             Route::get('/period-attendance/report',           [\App\Http\Controllers\Academic\PeriodAttendanceController::class, 'report'])->middleware('role:admin,teacher');
         });
 
+        // ── D223 TPO.1: teacher payouts (coaching-private-batch.md "Teacher Payouts"); pay data (D33): admin and accountant only ──
+        Route::middleware(['module:teacher_payouts', 'role:admin,accountant'])->group(function () {
+            Route::get('/teacher-payouts',                    [\App\Http\Controllers\Payouts\TeacherPayoutController::class, 'index']);
+            Route::post('/teacher-payouts/generate',          [\App\Http\Controllers\Payouts\TeacherPayoutController::class, 'generate']);
+            Route::put('/teacher-payouts/{id}',               [\App\Http\Controllers\Payouts\TeacherPayoutController::class, 'update'])->whereNumber('id');
+            Route::post('/teacher-payouts/{id}/approve',      [\App\Http\Controllers\Payouts\TeacherPayoutController::class, 'approve'])->whereNumber('id');
+            Route::post('/teacher-payouts/{id}/pay',          [\App\Http\Controllers\Payouts\TeacherPayoutController::class, 'pay'])->whereNumber('id');
+        });
+
         // ── D202 PUB.1: admission leads (coaching-private-batch.md "Leads") ──
         Route::middleware(['module:leads'])->group(function () {
             Route::get('/leads',                              [\App\Http\Controllers\Leads\LeadController::class, 'index'])->middleware('role:admin,accountant,institution_staff');   // D204 GAP.3: staff with staff.lead.read

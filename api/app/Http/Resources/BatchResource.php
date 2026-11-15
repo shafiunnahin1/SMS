@@ -20,7 +20,7 @@ class BatchResource extends JsonResource
             'subject_teachers' => $this->whenLoaded('subjectTeachers', fn () => $this->subjectTeachers->map(fn ($bt) => [
                 'subject_id' => $bt->subject_id, 'subject' => $bt->subject_id ? $bt->subject?->name : null,
                 'teacher_id' => $bt->teacher_id, 'teacher' => $bt->teacher?->user?->name,
-            ])->values()),
+            ] + (in_array($request->user()?->role, ['admin', 'accountant'], true) ? ['pay_type' => $bt->pay_type, 'pay_rate' => (string) $bt->pay_rate] : []))->values()),   // D223: pay data (D33) for admin / accountant only
         ];
     }
 }
