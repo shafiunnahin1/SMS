@@ -9,4 +9,5 @@ return [
     'book_used' => 'This book has been issued at least once, so it cannot be removed.',
     'overdue_title' => 'A library book is overdue',
     'overdue_body' => '":title" was due back on :date.',
+    'no_student' => 'No student has this ID.',
 ];

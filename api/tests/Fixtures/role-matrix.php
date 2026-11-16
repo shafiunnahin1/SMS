@@ -641,7 +641,7 @@ return [
     'POST api/v1/library/issue' => ['admin', 'institution_staff'],
     'POST api/v1/library/return/{issueId}' => ['admin', 'institution_staff'],
     'GET api/v1/library/issued' => ['admin', 'institution_staff'],
-    'GET api/v1/library/overdue' => ['admin', 'institution_staff'],
+    'GET api/v1/library/overdue' => ['admin', 'accountant', 'institution_staff'],   // LIB.2: the accountant's fine list
     'GET api/v1/library/history/{studentId}' => ['admin', 'institution_staff'],
     'GET api/v1/library/settings' => ['admin'],
     'PUT api/v1/library/settings' => ['admin'],

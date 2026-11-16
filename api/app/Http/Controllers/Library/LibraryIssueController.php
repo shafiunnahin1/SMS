@@ -16,8 +16,10 @@ class LibraryIssueController extends Controller
     /** POST /library/issue {book_id, student_id} */
     public function issue(Request $request)
     {
-        $f = $request->validate(['book_id' => 'required|integer', 'student_id' => 'required|integer']);
-        $row = $this->library->issue(Book::findOrFail($f['book_id']), Student::findOrFail($f['student_id']), $request->user());
+        $f = $request->validate(['book_id' => 'required|integer', 'student_id' => 'required_without:student_code|integer', 'student_code' => 'required_without:student_id|string|max:50']);
+        $student = isset($f['student_id']) ? Student::findOrFail($f['student_id']) : Student::where('student_id', trim($f['student_code']))->first();   // LIB.2: the ID on the card
+        if (!$student) throw \Illuminate\Validation\ValidationException::withMessages(['student_code' => __('library.no_student')]);
+        $row = $this->library->issue(Book::findOrFail($f['book_id']), $student, $request->user());
         return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => LibraryService::row($row->load(['book:id,title', 'student.user:id,name']))], 201);
     }
 

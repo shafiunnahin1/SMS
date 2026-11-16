@@ -149,6 +149,7 @@ export const MENU = {
     it('substitutions','/staff/substitutions','বদলি শিক্ষক',{icon:'Users',module:'substitution',staffKey:'staff.leave_substitution.read',staff_access:true}),   // D201 SUBM.3
     it('leads','/staff/leads','ভর্তি-আবেদন',{icon:'UserPlus',module:'leads',staffKey:'staff.lead.read',staff_access:true}),   // D204 GAP.3
     it('lesson-plans','/staff/lesson-plans','পাঠ-পরিকল্পনা',{icon:'ListTree',module:'syllabus',staffKey:'staff.lesson_plan.read',staff_access:true}),   // D225
+    it('library','/staff/library','লাইব্রেরি',{icon:'Library',module:'library',staffKey:'staff.library.read',staff_access:true}),   // D227 LIB.2
     it('referrals','/staff/referrals','ভর্তির রেফারেল',{icon:'UserPlus',module:'leads',staff_access:true}),   // D203 REF.1: own identity, no duty key
     it('ai','/staff/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant',staff_access:true}),   // D168 AI-Q4S: the help guide
   ],
@@ -177,6 +178,7 @@ export const MENU = {
     it('hifz','/teacher/hifz','হিফজ',{icon:'BookOpen',module:'hifz'}),
     it('risk','/teacher/risk','সহায়তা প্রয়োজন',{icon:'LifeBuoy',module:'risk_alerts'}),
     it('payouts','/teacher/payouts','আমার পারিশ্রমিক',{icon:'Banknote',module:'teacher_payouts'}),   // D223 TPO.2
+    it('library','/accountant/library','লাইব্রেরি জরিমানা',{icon:'Library',module:'library'}),   // D227 LIB.2
     it('student-leave','/teacher/leave/students','ছাত্রের ছুটি',{icon:'CalendarOff',module:'student_leave',teacherFeature:'student_leave'}),
   ],
   student: [
@@ -209,6 +211,7 @@ export const MENU = {
     it('calendar','/parent/calendar','একাডেমিক ক্যালেন্ডার',{icon:'CalendarCheck',module:'academic_calendar'}),   // D213 CAL.2
     it('hifz','/parent/hifz','হিফজ',{icon:'BookOpen',module:'hifz'}),   // D214 MAD.1
     it('syllabus','/parent/syllabus','সিলেবাস',{icon:'ListTree',module:'syllabus'}),   // D224 SYL.3
+    it('library','/parent/library','লাইব্রেরি',{icon:'Library',module:'library'}),   // D227 LIB.2
     it('meetings','/parent/meetings','সভা',{icon:'Users',module:'parent_meeting'}),
     it('leave','/parent/leave','ছুটির আবেদন',{icon:'CalendarOff',module:'student_leave'}),
     it('transport','/parent/transport','পরিবহন',{icon:'Bus',module:'transport'}),

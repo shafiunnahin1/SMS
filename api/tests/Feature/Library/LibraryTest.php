@@ -38,7 +38,9 @@ class LibraryTest extends TestCase
 
         $issue = $this->api('POST', $host, 'library/issue', $admin, ['book_id' => $book['id'], 'student_id' => $student->id])->assertCreated()->json('data');
         $this->assertSame(['2026-11-01', '2026-11-08', 'issued'], [$issue['issue_date'], $issue['due_date'], $issue['status']]);
-        $this->api('POST', $host, 'library/issue', $admin, ['book_id' => $book['id'], 'student_id' => $student->id])->assertCreated();
+        $code = Tenancy::as($i, fn () => Student::find($student->id)->student_id);
+        $this->api('POST', $host, 'library/issue', $admin, ['book_id' => $book['id'], 'student_code' => 'NOPE'])->assertStatus(422)->assertJsonValidationErrors('student_code');
+        $this->api('POST', $host, 'library/issue', $admin, ['book_id' => $book['id'], 'student_code' => $code])->assertCreated()->assertJsonPath('data.student.id', $student->id);   // LIB.2: by the card ID
         $this->api('POST', $host, 'library/issue', $admin, ['book_id' => $book['id'], 'student_id' => $student->id])->assertStatus(422)->assertJsonPath('error', 'book_not_available');
         $this->api('PUT', $host, "library/books/{$book['id']}", $admin, ['total_copies' => 1])->assertStatus(422)->assertJsonValidationErrors('total_copies');
         $this->api('PUT', $host, "library/books/{$book['id']}", $admin, ['total_copies' => 3])->assertOk()->assertJsonPath('data.available_copies', 1);
@@ -52,7 +54,9 @@ class LibraryTest extends TestCase
         $this->assertSame(2, $this->api('GET', $host, 'library/books', $admin)->json('data.0.available_copies'));
 
         $this->api('POST', $host, "library/issues/{$issue['id']}/collect-fine", $this->makeUser($i, 'teacher'), ['method' => 'cash'])->assertForbidden();
-        $receipt = $this->api('POST', $host, "library/issues/{$issue['id']}/collect-fine", $this->makeUser($i, 'accountant'), ['method' => 'cash'])->assertOk()->json('data.receipt_no');
+        $accountant = $this->makeUser($i, 'accountant');
+        $this->assertContains($issue['id'], array_column($this->api('GET', $host, 'library/overdue', $accountant)->assertOk()->json('data'), 'id'), 'LIB.2: the accountant sees the unpaid fine');
+        $receipt = $this->api('POST', $host, "library/issues/{$issue['id']}/collect-fine", $accountant, ['method' => 'cash'])->assertOk()->json('data.receipt_no');
         Tenancy::as($i, function () use ($receipt, $issue, $student) {
             $p = FeePayment::where('receipt_no', $receipt)->sole();
             $this->assertSame(['10.00', $student->id, 'লাইব্রেরি জরিমানা'], [(string) $p->paid_amount, $p->student_id, $p->feeCategory->name]);

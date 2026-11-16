@@ -961,7 +961,6 @@ Route::prefix('v1')->group(function () {
             Route::post('/library/issue',                     [\App\Http\Controllers\Library\LibraryIssueController::class, 'issue']);
             Route::post('/library/return/{issueId}',          [\App\Http\Controllers\Library\LibraryIssueController::class, 'return']);   // the id is checked in the controller (a route pattern would answer 404 before the role check)
             Route::get('/library/issued',                     [\App\Http\Controllers\Library\LibraryIssueController::class, 'issued']);
-            Route::get('/library/overdue',                    [\App\Http\Controllers\Library\LibraryIssueController::class, 'overdue']);
             Route::get('/library/history/{studentId}',        [\App\Http\Controllers\Library\LibraryIssueController::class, 'history']);
         });
         Route::middleware(['module:library', 'role:admin'])->group(function () {
@@ -969,6 +968,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/library/settings',                   [\App\Http\Controllers\Library\LibraryIssueController::class, 'updateSettings']);
             Route::post('/library/issues/{id}/waive',         [\App\Http\Controllers\Library\LibraryIssueController::class, 'waive'])->whereNumber('id');
         });
+        Route::middleware(['module:library', 'role:admin,accountant,institution_staff'])->get('/library/overdue', [\App\Http\Controllers\Library\LibraryIssueController::class, 'overdue']);   // LIB.2: the accountant collects the fines listed here (D227 (4))
         Route::middleware(['module:library', 'role:admin,accountant'])->post('/library/issues/{id}/collect-fine', [\App\Http\Controllers\Library\LibraryIssueController::class, 'collectFine'])->whereNumber('id');
         Route::middleware(['module:library', 'role:parent'])->get('/parent/children/{id}/library', [\App\Http\Controllers\Library\LibraryIssueController::class, 'child'])->whereNumber('id');
 
