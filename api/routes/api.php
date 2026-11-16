@@ -850,6 +850,9 @@ Route::prefix('v1')->group(function () {
             Route::post('/syllabus/coverage',                 [\App\Http\Controllers\Syllabus\SyllabusCoverageController::class, 'store']);
             Route::delete('/syllabus/coverage',               [\App\Http\Controllers\Syllabus\SyllabusCoverageController::class, 'destroy']);
             Route::get('/syllabus/behind',                    [\App\Http\Controllers\Syllabus\SyllabusCoverageController::class, 'behind']);
+        });
+        // D225: lesson plans also for department staff with the exact duty key (StaffIdentityBoundary, DepartmentRouteCatalog)
+        Route::middleware(['module:syllabus', 'role:admin,teacher,institution_staff'])->group(function () {
             Route::get('/lesson-plans',                       [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'index']);
             Route::post('/lesson-plans',                      [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'store']);
             Route::put('/lesson-plans/{id}',                  [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'update'])->whereNumber('id');
@@ -858,6 +861,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/lesson-plans/{id}/skipped',         [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'skipped'])->whereNumber('id');
         });
         Route::middleware(['module:syllabus', 'role:admin'])->group(function () {
+            Route::post('/syllabus/units/clone',              [\App\Http\Controllers\Syllabus\SyllabusImportController::class, 'clone']);   // D224 SYL.2
+            Route::get('/syllabus/qb-subjects',               [\App\Http\Controllers\Syllabus\SyllabusImportController::class, 'qbSubjects']);
+            Route::post('/syllabus/units/from-question-bank', [\App\Http\Controllers\Syllabus\SyllabusImportController::class, 'fromQuestionBank']);
+            Route::get('/syllabus/overview',                  [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'overview']);
+            Route::get('/syllabus/settings',                  [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'settings']);
+            Route::put('/syllabus/settings',                  [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'updateSettings']);
             Route::post('/syllabus/units',                    [\App\Http\Controllers\Syllabus\SyllabusUnitController::class, 'store']);
             Route::put('/syllabus/units/{id}',                [\App\Http\Controllers\Syllabus\SyllabusUnitController::class, 'update'])->whereNumber('id');
             Route::delete('/syllabus/units/{id}',             [\App\Http\Controllers\Syllabus\SyllabusUnitController::class, 'destroy'])->whereNumber('id');
@@ -941,6 +950,9 @@ Route::prefix('v1')->group(function () {
         // ── D214 MAD.2: the secondary (Hijri) calendar - display only ──
         Route::get('/settings/calendar',                  [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'show'])->middleware('role:admin,teacher,accountant,student,parent');
         Route::put('/admin/settings/calendar',            [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'update'])->middleware('role:admin');
+
+        // ── D224 SYL.2: the parent's view of a child's syllabus (only when turned on) ──
+        Route::get('/parent/children/{id}/syllabus',      [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'child'])->whereNumber('id')->middleware(['role:parent', 'module:syllabus']);   // D224 SYL.2
 
         // ── D214 MAD.1: hifz ──
         Route::middleware('module:hifz')->group(function () {
@@ -1169,6 +1181,7 @@ Route::prefix('v1')->group(function () {
         // ── D195 STP.1: the student's own portal (the student comes from the login, never from the request) ──
         Route::middleware('role:student')->group(function () {
             Route::get('/student/dashboard',              [DashboardController::class, 'student']);
+            Route::get('/student/syllabus',               [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'mine'])->middleware('module:syllabus');   // D224 SYL.2
             Route::get('/student/results',                [ResultController::class, 'forStudent'])->middleware('module:exams');
             Route::get('/student/fees',                   [FeeController::class, 'forStudent'])->middleware('module:fees');
             Route::get('/student/attendance',             [AttendanceController::class, 'forStudent'])->middleware('module:attendance');

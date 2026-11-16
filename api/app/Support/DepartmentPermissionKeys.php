@@ -186,9 +186,18 @@ final class DepartmentPermissionKeys
         'staff.leave_substitution.refresh_source',
     ];
 
+    /** D225: department staff working lesson plans - one key each, none implies another */
+    public const D225 = [
+        'staff.lesson_plan.create',
+        'staff.lesson_plan.delete',
+        'staff.lesson_plan.mark',
+        'staff.lesson_plan.read',
+        'staff.lesson_plan.update',
+    ];
+
     /** every key a duty may hold: the D90 contract plus owner-approved later additions */
     public static function known(): array
     {
-        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204];
+        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204, ...self::D225];
     }
 }

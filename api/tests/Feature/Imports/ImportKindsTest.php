@@ -22,7 +22,7 @@ class ImportKindsTest extends TestCase
         $host = $this->hostOf($i);
         $file = fn () => UploadedFile::fake()->createWithContent('t.csv', "name,phone\nA,01711111111\n");
 
-        $this->assertSame(['students', 'teachers', 'fee_structure', 'fee_history', 'results', 'attendance'], config('release.import_kinds'));
+        $this->assertSame(['students', 'teachers', 'fee_structure', 'fee_history', 'results', 'attendance', 'syllabus'], config('release.import_kinds'));
         foreach (['staff', 'fees', 'exams'] as $kind) {
             $this->api('POST', $host, 'imports', $admin, ['kind' => $kind, 'file' => $file()])->assertStatus(422)->assertJsonPath('error', 'kind_not_available');
             $this->api('GET', $host, "imports/templates/{$kind}.xlsx", $admin)->assertStatus(422)->assertJsonPath('error', 'kind_not_available');

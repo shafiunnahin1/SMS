@@ -112,4 +112,46 @@ class SyllabusTest extends TestCase
         $this->api('POST', $otherHost, 'syllabus/coverage', $otherAdmin, ['batch_id' => $d['a']->id, 'unit_id' => $u])->assertNotFound();
         $this->assertSame([], $this->api('GET', $otherHost, 'lesson-plans', $otherAdmin)->json('data'));
     }
+
+    /** D225: department staff with one exact key each */
+    public function test_department_staff_work_lesson_plans_with_their_exact_keys(): void
+    {
+        [$i, $admin, $teacher, $d, $host] = $this->school('sylstaff');
+        $i->forceFill(['staff_department_mode' => 'department'])->save();
+        $staff = function (string $name, array $keys) use ($i, $admin) {
+            $u = User::create(['institution_id' => $i->id, 'name' => $name, 'email' => strtolower($name) . '@example.test', 'password' => 'Secret@1234', 'role' => 'institution_staff', 'is_active' => true]);
+            $u->forceFill(['must_change_password' => false])->save();
+            $dep = Tenancy::as($i, function () use ($u, $name, $keys, $admin) {
+                $svc = app(\App\Services\DepartmentService::class);
+                $dep = $svc->create($admin, ['name' => "Dept {$name}"]);
+                $m = $svc->addMember($admin, $dep->id, ['user_id' => $u->id]);
+                $duty = $svc->createDuty($admin, $dep->id, ['code' => strtoupper($name), 'name' => $name, 'permission_keys' => $keys]);
+                $svc->assignDuties($admin, $m->id, ['duty_ids' => [$duty->id]]);
+                return $dep->id;
+            });
+            return [$u, $dep];
+        };
+        $as = function (User $u, ?int $dep, string $method, string $path, array $body = []) use ($host) {
+            $this->app['auth']->forgetGuards();
+            return $this->json($method, "http://{$host}/api/v1/{$path}", $body, ['Authorization' => 'Bearer ' . $u->createToken('t')->plainTextToken] + ($dep ? ['X-Department-Id' => (string) $dep] : []));
+        };
+        $u = $this->tree($host, $admin, $d)[0];
+        [$writer, $wd] = $staff('Writer', ['staff.lesson_plan.read', 'staff.lesson_plan.create', 'staff.lesson_plan.update']);
+        [$reader, $rd] = $staff('Reader', ['staff.lesson_plan.read']);
+        [$marker, $md] = $staff('Marker', ['staff.lesson_plan.mark', 'staff.lesson_plan.delete']);
+        $body = ['batch_id' => $d['a']->id, 'subject_id' => $d['math']->id, 'unit_id' => $u, 'planned_date' => '2026-11-12'];
+
+        $as($writer, null, 'POST', 'lesson-plans', $body + ['teacher_id' => $d['t']->id])->assertForbidden();               // no department chosen
+        $as($writer, $wd, 'POST', 'lesson-plans', $body)->assertStatus(422)->assertJsonValidationErrors('teacher_id');       // names a teacher of that subject
+        $plan = $as($writer, $wd, 'POST', 'lesson-plans', $body + ['teacher_id' => $d['t']->id])->assertCreated()->json('data.id');
+        $as($writer, $wd, 'PUT', "lesson-plans/{$plan}", ['objective' => 'ভগ্নাংশ'])->assertOk();
+        $as($writer, $wd, 'POST', "lesson-plans/{$plan}/taught")->assertForbidden();                                          // mark is another key
+        $as($reader, $rd, 'POST', 'lesson-plans', $body + ['teacher_id' => $d['t']->id])->assertForbidden();
+        $this->assertCount(1, $as($reader, $rd, 'GET', 'lesson-plans')->assertOk()->json('data'), 'staff see every batch');
+        $as($reader, $wd, 'GET', 'lesson-plans')->assertForbidden();                                                          // not their department
+        $as($marker, $md, 'POST', "lesson-plans/{$plan}/taught")->assertOk();
+        $as($marker, $md, 'DELETE', "lesson-plans/{$plan}")->assertStatus(409);                                              // taught: final for everyone
+        $this->assertSame([$u], Tenancy::as($i, fn () => SyllabusCoverage::pluck('unit_id')->all()));
+        $as($writer, $wd, 'GET', 'syllabus/coverage', ['batch_id' => $d['a']->id, 'subject_id' => $d['math']->id])->assertForbidden();   // only lesson plans are staff work
+    }
 }

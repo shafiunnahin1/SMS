@@ -348,6 +348,7 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/student/qb/quiz-packages/{id}/buy' => null,
             'POST api/v1/student/qb/quiz-packages/{id}/wallet-buy' => null,
             'PUT api/v1/syllabus/units/{id}' => fn (array $other) => $this->seedSyllabusUnit($other),   // D224 SYL.1
+            'GET api/v1/parent/children/{id}/syllabus' => null,   // D224 SYL.2: parent only; CrossTenantRouteTest plan
             'DELETE api/v1/syllabus/units/{id}' => fn (array $other) => $this->seedSyllabusUnit($other),
             'PUT api/v1/lesson-plans/{id}' => fn (array $other) => $this->seedLessonPlan($other),
             'DELETE api/v1/lesson-plans/{id}' => fn (array $other) => $this->seedLessonPlan($other),

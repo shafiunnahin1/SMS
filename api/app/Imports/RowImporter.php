@@ -49,6 +49,7 @@ abstract class RowImporter
             'fee_history' => app(FeeHistoryRowImporter::class),
             'results' => app(ResultRowImporter::class),
             'attendance' => app(AttendanceRowImporter::class),
+            'syllabus' => app(SyllabusRowImporter::class),   // D224 (1)
         };
     }
 }

@@ -20,6 +20,12 @@ final class Lookup
         return $this->cache['b'][$p->id][$v] ??= $this->one(Batch::where('program_id', $p->id), $v);
     }
 
+    /** D224: a subject of the class, by id or exact name */
+    public function subject(Program $p, string $v): ?\App\Models\Subject
+    {
+        return $this->cache['sub'][$p->id][$v] ??= $this->one(\App\Models\Subject::where('program_id', $p->id), $v);
+    }
+
     public function category(string $v): ?FeeCategory
     {
         return $this->cache['c'][$v] ??= $this->one(FeeCategory::query(), $v);

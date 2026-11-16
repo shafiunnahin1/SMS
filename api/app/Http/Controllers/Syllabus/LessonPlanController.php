@@ -73,7 +73,7 @@ class LessonPlanController extends Controller
     {
         $plan = LessonPlan::findOrFail($id);
         $own = $this->syllabus->teacherOf($request->user());
-        if ($request->user()->role !== 'admin' && (!$own || (int) $plan->teacher_id !== (int) $own->id)) abort(404);
+        if (!in_array($request->user()->role, ['admin', 'institution_staff'], true) && (!$own || (int) $plan->teacher_id !== (int) $own->id)) abort(404);
         return $plan;
     }
 

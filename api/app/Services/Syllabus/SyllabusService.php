@@ -19,7 +19,7 @@ class SyllabusService
     /** May this user work on this batch's subject? Admin: always; teacher: through batch_teachers. */
     public function mayTeach(User $u, int $batchId, int $subjectId): bool
     {
-        if ($u->role === 'admin') return true;
+        if (in_array($u->role, ['admin', 'institution_staff'], true)) return true;   // D225: staff (their duty key checked before) on every batch
         $t = $this->teacherOf($u);
         return $t !== null && BatchTeacher::where('batch_id', $batchId)->where('teacher_id', $t->id)->whereIn('subject_id', [0, $subjectId])->exists();
     }
@@ -30,9 +30,15 @@ class SyllabusService
     }
 
     /** {percent, covered, leaves, tree} for a batch's subject; each node: id, title, term, leaf, covered (leaves: stored; parents: derived) */
-    public function coverage(Batch $batch, int $subjectId): array
+    public function coverage(Batch $batch, int $subjectId, ?string $term = null): array
     {
         $units = $this->units($batch->program_id, $subjectId);
+        if ($term !== null && $term !== '') {                                   // a term: its chapters (and their lessons) only
+            $top = $units->filter(fn ($u) => !$u->parent_id && $u->term === $term)->pluck('id')->all();
+            $keep = $top; $grew = true;
+            while ($grew) { $more = $units->filter(fn ($u) => in_array((int) $u->parent_id, $keep, true) && !in_array($u->id, $keep, true))->pluck('id')->all(); $grew = $more !== []; $keep = [...$keep, ...$more]; }
+            $units = $units->filter(fn ($u) => in_array($u->id, $keep, true))->values();
+        }
         $done = SyllabusCoverage::where('batch_id', $batch->id)->whereIn('unit_id', $units->pluck('id'))->get()->keyBy('unit_id');
         $kids = $units->groupBy(fn ($u) => (int) $u->parent_id);
         $leaves = $units->filter(fn ($u) => !$kids->has($u->id));
@@ -46,6 +52,24 @@ class SyllabusService
         };
         return ['percent' => self::percent($covered, $leaves->count()), 'covered' => $covered, 'leaves' => $leaves->count(),
             'tree' => ($kids->get(0) ?? collect())->map($node)->values()->all()];
+    }
+
+    /** D224: settings.syllabus.show_parents (off by default) */
+    public function showParents(): bool
+    {
+        return (bool) data_get(\App\Support\Tenancy::current()?->settings ?? [], 'syllabus.show_parents', false);
+    }
+
+    /** The parent / student view: per subject of the student's batch, only the completed chapters - no percent per teacher, no behind */
+    public function completedFor(\App\Models\Student $s): array
+    {
+        $batch = $s->batch ?? Batch::find($s->batch_id);
+        if (!$batch) return [];
+        $subjects = \App\Models\Subject::where('program_id', $batch->program_id)->orderBy('id')->get(['id', 'name']);
+        return $subjects->map(function ($sub) use ($batch) {
+            $c = $this->coverage($batch, $sub->id);
+            return ['subject' => $sub->name, 'chapters' => collect($c['tree'])->filter(fn ($n) => $n['covered'])->pluck('title')->values()->all(), 'total_chapters' => count($c['tree'])];
+        })->filter(fn ($r) => $r['total_chapters'] > 0)->values()->all();
     }
 
     /** "60.00" for 12 of 20; "0.00" when there are no units (never a division by zero) */

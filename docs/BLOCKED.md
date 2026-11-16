@@ -328,3 +328,8 @@ Needed from the owner: a follow-up decision (proposed D189) that authorizes (3)-
 - **What blocks:** the preview opens with answers shown (`show.answer: true`); its PDF / image / print then carry the correct-answer dots and written answers unless the teacher switches them off. The owner asked for them hidden at first, but `QbPaperPreview.test.jsx` (2 tests) and `QbPaperStimulus.test.jsx` (1 test) check the answer marks on a first-time preview.
 - **Tried:** nothing that edits those tests.
 - **Owner choice needed:** decision D222 (drafted as owner/approve-D222.ps1): hidden until switched on, the choice remembered per browser as now; the three tests switch answers on before checking the marks, everything else stays, plus one check that a first-time preview shows no answer.
+
+## 2026-11-15 · SYL.2 (D224) · the Excel import kind `syllabus` vs ImportKindsTest
+- **What blocks:** D224 (1) adds the data-migration import kind `syllabus` (config `release.import_kinds`), but `tests/Feature/Imports/ImportKindsTest.php` asserts the exact old list of six kinds, and D224 does not name that test among the files it may touch. Everything else of SYL.2 is written; the full suite has only this failure (1288 passed).
+- **Tried:** nothing that edits the test or hides the kind from the list (that would defeat the test's purpose).
+- **Owner choice needed:** decision D226 (drafted as owner/approve-D226.ps1): the test's expected list gains `syllabus` as its seventh kind; every other assertion stays.
