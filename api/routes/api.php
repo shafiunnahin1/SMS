@@ -854,6 +854,7 @@ Route::prefix('v1')->group(function () {
         // D225: lesson plans also for department staff with the exact duty key (StaffIdentityBoundary, DepartmentRouteCatalog)
         Route::middleware(['module:syllabus', 'role:admin,teacher,institution_staff'])->group(function () {
             Route::get('/lesson-plans',                       [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'index']);
+            Route::get('/lesson-plans/assignments',           [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'assignments']);   // D224 SYL.3
             Route::post('/lesson-plans',                      [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'store']);
             Route::put('/lesson-plans/{id}',                  [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'update'])->whereNumber('id');
             Route::delete('/lesson-plans/{id}',               [\App\Http\Controllers\Syllabus\LessonPlanController::class, 'destroy'])->whereNumber('id');

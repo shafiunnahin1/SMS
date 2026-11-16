@@ -27,6 +27,7 @@ export const KINDS = {
   fee_history: { fields: ['student_id', 'fee_category', 'amount', 'paid_at', 'receipt_no', 'month', 'payment_method'], required: ['student_id', 'fee_category', 'amount', 'paid_at', 'receipt_no'] },
   results: { fields: ['exam_name', 'academic_year', 'student_id', 'subject', 'marks', 'is_absent'], required: ['exam_name', 'student_id', 'subject', 'marks'] },
   attendance: { fields: ['student_id', 'date', 'status', 'batch', 'note'], required: ['student_id', 'date', 'status'] },
+  syllabus: { fields: ['program', 'subject', 'chapter', 'lesson', 'term', 'periods'], required: ['program', 'subject', 'chapter'] },   // D224 (1)
 }
 const err = (e) => useUiStore.getState().addToast(e.response?.data?.errors ? Object.values(e.response.data.errors)[0][0] : e.response?.data?.message, 'error')
 
@@ -39,7 +40,7 @@ export default function Imports() {
   const qc = useQueryClient()
   const [jobId, setJobId] = useState(null)
   const [uploading, setUploading] = useState(false)
-  const [kind, setKind] = useState('students')
+  const [kind, setKind] = useState(() => { try { const k = new URLSearchParams(window.location.search).get('kind'); return k && KINDS[k] ? k : 'students' } catch { return 'students' } })   // D224 SYL.3: ?kind=syllabus
   const term = useTerms()
   const jobs = useQuery({ queryKey: ['imports'], queryFn: () => api.get('/imports').then(r => r.data.data) })
 

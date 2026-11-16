@@ -104,6 +104,7 @@ class SyllabusTest extends TestCase
         $this->api('POST', $host, 'syllabus/coverage', $teacher, ['batch_id' => $d['b']->id, 'unit_id' => $u])->assertForbidden();
         $this->api('POST', $host, 'lesson-plans', $teacher, ['batch_id' => $d['b']->id, 'subject_id' => $d['math']->id, 'planned_date' => '2026-11-12'])->assertForbidden();
         $mine = $this->api('POST', $host, 'lesson-plans', $teacher, ['batch_id' => $d['a']->id, 'subject_id' => $d['math']->id, 'planned_date' => '2026-11-12'])->assertCreated()->json('data.id');
+        $this->assertSame([[$d['a']->id, 'Math']], array_map(fn ($r) => [$r['batch_id'], $r['subject']], $this->api('GET', $host, 'lesson-plans/assignments', $teacher)->assertOk()->json('data')), 'SYL.3: the teacher sees what they teach');
         $this->api('GET', $host, 'syllabus/coverage', $this->makeUser($i, 'parent'), ['batch_id' => $d['a']->id, 'subject_id' => $d['math']->id])->assertForbidden();
 
         [$j, $otherAdmin, , , $otherHost] = $this->school('sylacc2');
@@ -148,6 +149,8 @@ class SyllabusTest extends TestCase
         $as($writer, $wd, 'POST', "lesson-plans/{$plan}/taught")->assertForbidden();                                          // mark is another key
         $as($reader, $rd, 'POST', 'lesson-plans', $body + ['teacher_id' => $d['t']->id])->assertForbidden();
         $this->assertCount(1, $as($reader, $rd, 'GET', 'lesson-plans')->assertOk()->json('data'), 'staff see every batch');
+        $this->assertCount(1, $as($reader, $rd, 'GET', 'lesson-plans/assignments')->assertOk()->json('data'), 'SYL.3: staff pickers (read key)');
+        $as($marker, $md, 'GET', 'lesson-plans/assignments')->assertForbidden();
         $as($reader, $wd, 'GET', 'lesson-plans')->assertForbidden();                                                          // not their department
         $as($marker, $md, 'POST', "lesson-plans/{$plan}/taught")->assertOk();
         $as($marker, $md, 'DELETE', "lesson-plans/{$plan}")->assertStatus(409);                                              // taught: final for everyone

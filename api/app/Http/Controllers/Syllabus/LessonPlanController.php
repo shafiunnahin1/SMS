@@ -28,6 +28,25 @@ class LessonPlanController extends Controller
         return response()->json(['success' => true, 'data' => $rows->map(fn ($p) => self::row($p))->values()]);
     }
 
+    /** GET /lesson-plans/assignments - D224 SYL.3: who teaches which subject in which batch (the screens' pickers). A teacher: their
+     *  own rows; the admin and department staff: every row. Subject 0 (every subject) is spread over the batch's program subjects. */
+    public function assignments(Request $request)
+    {
+        $own = $this->syllabus->teacherOf($request->user());
+        if ($request->user()->role === 'teacher' && !$own) return response()->json(['success' => true, 'data' => []]);
+        $rows = \App\Models\BatchTeacher::with(['batch:id,name,program_id', 'teacher:id,user_id,employee_id', 'teacher.user:id,name'])
+            ->when($own, fn ($q) => $q->where('teacher_id', $own->id))->get();
+        $subjects = \App\Models\Subject::whereIn('program_id', $rows->pluck('batch.program_id')->filter()->unique())->orderBy('id')->get(['id', 'program_id', 'name'])->groupBy('program_id');
+        $out = [];
+        foreach ($rows as $r) {
+            if (!$r->batch) continue;
+            $list = (int) $r->subject_id === 0 ? ($subjects->get($r->batch->program_id) ?? collect()) : ($subjects->get($r->batch->program_id) ?? collect())->where('id', (int) $r->subject_id);
+            foreach ($list as $s) $out[$r->batch_id . ':' . $s->id . ':' . $r->teacher_id] = ['batch_id' => $r->batch_id, 'batch' => $r->batch->name, 'program_id' => $r->batch->program_id,
+                'subject_id' => $s->id, 'subject' => $s->name, 'teacher_id' => $r->teacher_id, 'teacher' => $r->teacher?->user?->name ?? $r->teacher?->employee_id];
+        }
+        return response()->json(['success' => true, 'data' => array_values($out)]);
+    }
+
     /** POST /lesson-plans */
     public function store(Request $request)
     {

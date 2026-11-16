@@ -615,6 +615,7 @@ return [
     'DELETE api/v1/syllabus/coverage' => ['admin', 'teacher'],
     'GET api/v1/syllabus/behind' => ['admin', 'teacher'],
     'GET api/v1/lesson-plans' => ['admin', 'teacher', 'institution_staff'],
+    'GET api/v1/lesson-plans/assignments' => ['admin', 'teacher', 'institution_staff'],   // D224 SYL.3
     'POST api/v1/lesson-plans' => ['admin', 'teacher', 'institution_staff'],
     'PUT api/v1/lesson-plans/{id}' => ['admin', 'teacher', 'institution_staff'],
     'DELETE api/v1/lesson-plans/{id}' => ['admin', 'teacher', 'institution_staff'],

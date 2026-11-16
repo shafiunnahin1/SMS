@@ -148,6 +148,7 @@ export const MENU = {
     it('attendance','/staff/attendance','উপস্থিতি',{icon:'CalendarCheck',module:'attendance',staffKey:'staff.attendance.store',staff_access:true}),   // D169 STW.5
     it('substitutions','/staff/substitutions','বদলি শিক্ষক',{icon:'Users',module:'substitution',staffKey:'staff.leave_substitution.read',staff_access:true}),   // D201 SUBM.3
     it('leads','/staff/leads','ভর্তি-আবেদন',{icon:'UserPlus',module:'leads',staffKey:'staff.lead.read',staff_access:true}),   // D204 GAP.3
+    it('lesson-plans','/staff/lesson-plans','পাঠ-পরিকল্পনা',{icon:'ListTree',module:'syllabus',staffKey:'staff.lesson_plan.read',staff_access:true}),   // D225
     it('referrals','/staff/referrals','ভর্তির রেফারেল',{icon:'UserPlus',module:'leads',staff_access:true}),   // D203 REF.1: own identity, no duty key
     it('ai','/staff/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant',staff_access:true}),   // D168 AI-Q4S: the help guide
   ],
@@ -192,6 +193,7 @@ export const MENU = {
     it('homework','/student/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework', since: 'R1.1' }),
     it('calendar','/student/calendar','একাডেমিক ক্যালেন্ডার',{icon:'CalendarCheck',module:'academic_calendar'}),   // D213 CAL.2
     it('wallet','/student/wallet','ওয়ালেট',{icon:'Wallet'}),   // D218 WAL.3
+    it('syllabus','/student/syllabus','সিলেবাস',{icon:'ListTree',module:'syllabus'}),   // D224 SYL.3
     it('quiz','/student/quiz','অনলাইন পরীক্ষা',{icon:'ClipboardCheck',module:'online_quiz', since: 'R1.1' }),
     it('materials','/student/materials','শিক্ষা-উপকরণ',{icon:'Folder', since: 'R1.1' }),
     it('library','/student/library','লাইব্রেরি',{icon:'Library',module:'library', since: 'R1.1' }),
@@ -206,6 +208,7 @@ export const MENU = {
     it('homework','/parent/homework','হোমওয়ার্ক',{icon:'BookOpen',module:'homework'}),
     it('calendar','/parent/calendar','একাডেমিক ক্যালেন্ডার',{icon:'CalendarCheck',module:'academic_calendar'}),   // D213 CAL.2
     it('hifz','/parent/hifz','হিফজ',{icon:'BookOpen',module:'hifz'}),   // D214 MAD.1
+    it('syllabus','/parent/syllabus','সিলেবাস',{icon:'ListTree',module:'syllabus'}),   // D224 SYL.3
     it('meetings','/parent/meetings','সভা',{icon:'Users',module:'parent_meeting'}),
     it('leave','/parent/leave','ছুটির আবেদন',{icon:'CalendarOff',module:'student_leave'}),
     it('transport','/parent/transport','পরিবহন',{icon:'Bus',module:'transport'}),

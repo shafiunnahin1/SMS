@@ -165,7 +165,7 @@ class StaffIdentityBoundary
                 'POST api/v1/leads', 'PUT api/v1/leads/{id}'], true);
         // D225: lesson plans - list, create, update, delete, taught / skipped with one key each
         $lessonPlans = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Syllabus\LessonPlanController::class.'@')
-            && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/lesson-plans', 'HEAD api/v1/lesson-plans', 'POST api/v1/lesson-plans', 'PUT api/v1/lesson-plans/{id}',
+            && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/lesson-plans', 'HEAD api/v1/lesson-plans', 'GET api/v1/lesson-plans/assignments', 'HEAD api/v1/lesson-plans/assignments', 'POST api/v1/lesson-plans', 'PUT api/v1/lesson-plans/{id}',
                 'DELETE api/v1/lesson-plans/{id}', 'POST api/v1/lesson-plans/{id}/taught', 'POST api/v1/lesson-plans/{id}/skipped'], true);
         if ($request->user()?->role === 'institution_staff'
             && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$substitution && !$leads && !$lessonPlans && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money && !$hr && !$inventory && !$aiChat && !$studentView) {
