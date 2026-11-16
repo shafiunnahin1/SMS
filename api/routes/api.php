@@ -952,6 +952,26 @@ Route::prefix('v1')->group(function () {
         Route::get('/settings/calendar',                  [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'show'])->middleware('role:admin,teacher,accountant,student,parent');
         Route::put('/admin/settings/calendar',            [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'update'])->middleware('role:admin');
 
+        // ── D227 LIB.1: library (docs/modules/library.md); staff work with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
+        Route::middleware(['module:library', 'role:admin,institution_staff'])->group(function () {
+            Route::get('/library/books',                      [\App\Http\Controllers\Library\LibraryBookController::class, 'index']);
+            Route::post('/library/books',                     [\App\Http\Controllers\Library\LibraryBookController::class, 'store']);
+            Route::put('/library/books/{id}',                 [\App\Http\Controllers\Library\LibraryBookController::class, 'update'])->whereNumber('id');
+            Route::delete('/library/books/{id}',              [\App\Http\Controllers\Library\LibraryBookController::class, 'destroy'])->whereNumber('id');
+            Route::post('/library/issue',                     [\App\Http\Controllers\Library\LibraryIssueController::class, 'issue']);
+            Route::post('/library/return/{issueId}',          [\App\Http\Controllers\Library\LibraryIssueController::class, 'return']);   // the id is checked in the controller (a route pattern would answer 404 before the role check)
+            Route::get('/library/issued',                     [\App\Http\Controllers\Library\LibraryIssueController::class, 'issued']);
+            Route::get('/library/overdue',                    [\App\Http\Controllers\Library\LibraryIssueController::class, 'overdue']);
+            Route::get('/library/history/{studentId}',        [\App\Http\Controllers\Library\LibraryIssueController::class, 'history']);
+        });
+        Route::middleware(['module:library', 'role:admin'])->group(function () {
+            Route::get('/library/settings',                   [\App\Http\Controllers\Library\LibraryIssueController::class, 'settings']);
+            Route::put('/library/settings',                   [\App\Http\Controllers\Library\LibraryIssueController::class, 'updateSettings']);
+            Route::post('/library/issues/{id}/waive',         [\App\Http\Controllers\Library\LibraryIssueController::class, 'waive'])->whereNumber('id');
+        });
+        Route::middleware(['module:library', 'role:admin,accountant'])->post('/library/issues/{id}/collect-fine', [\App\Http\Controllers\Library\LibraryIssueController::class, 'collectFine'])->whereNumber('id');
+        Route::middleware(['module:library', 'role:parent'])->get('/parent/children/{id}/library', [\App\Http\Controllers\Library\LibraryIssueController::class, 'child'])->whereNumber('id');
+
         // ── D224 SYL.2: the parent's view of a child's syllabus (only when turned on) ──
         Route::get('/parent/children/{id}/syllabus',      [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'child'])->whereNumber('id')->middleware(['role:parent', 'module:syllabus']);   // D224 SYL.2
 
@@ -1182,6 +1202,7 @@ Route::prefix('v1')->group(function () {
         // ── D195 STP.1: the student's own portal (the student comes from the login, never from the request) ──
         Route::middleware('role:student')->group(function () {
             Route::get('/student/dashboard',              [DashboardController::class, 'student']);
+            Route::get('/student/library',                [\App\Http\Controllers\Library\LibraryIssueController::class, 'mine'])->middleware('module:library');   // D227 LIB.1
             Route::get('/student/syllabus',               [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'mine'])->middleware('module:syllabus');   // D224 SYL.2
             Route::get('/student/results',                [ResultController::class, 'forStudent'])->middleware('module:exams');
             Route::get('/student/fees',                   [FeeController::class, 'forStudent'])->middleware('module:fees');

@@ -50,7 +50,8 @@ class RoleMatrixContractTest extends TestCase
                     'DELETE api/v1/hr/leaves/{leave}/substitution-slots/{slot}/offer', 'PATCH api/v1/hr/leaves/{leave}/substitution-slots/{slot}/refresh-source' /* D201 SUBM.3: cover reviewers */,
                     'GET api/v1/referrals', 'POST api/v1/referrals' /* D203 REF.1: own referrals */,
                     'GET api/v1/leads', 'GET api/v1/leads/referral-summary', 'POST api/v1/leads', 'PUT api/v1/leads/{id}' /* D204 GAP.3: lead duties */,
-                    'GET api/v1/lesson-plans', 'GET api/v1/lesson-plans/assignments', 'POST api/v1/lesson-plans', 'PUT api/v1/lesson-plans/{id}', 'DELETE api/v1/lesson-plans/{id}', 'POST api/v1/lesson-plans/{id}/taught', 'POST api/v1/lesson-plans/{id}/skipped' /* D225: lesson-plan duties */], true) ? [...self::ROLES, 'institution_staff'] : self::ROLES;
+                    'GET api/v1/lesson-plans', 'GET api/v1/lesson-plans/assignments', 'POST api/v1/lesson-plans', 'PUT api/v1/lesson-plans/{id}', 'DELETE api/v1/lesson-plans/{id}', 'POST api/v1/lesson-plans/{id}/taught', 'POST api/v1/lesson-plans/{id}/skipped' /* D225: lesson-plan duties */,
+                    'GET api/v1/library/books', 'POST api/v1/library/books', 'PUT api/v1/library/books/{id}', 'DELETE api/v1/library/books/{id}', 'POST api/v1/library/issue', 'POST api/v1/library/return/{issueId}', 'GET api/v1/library/issued', 'GET api/v1/library/overdue', 'GET api/v1/library/history/{studentId}' /* D227: library duties */], true) ? [...self::ROLES, 'institution_staff'] : self::ROLES;
             $this->assertSame([], array_values(array_diff($roles, $knownRoles)), "{$key}: unknown role");
             if (str_starts_with(explode(' ', $key, 2)[1], 'api/v1/super/')) $this->assertSame(['super_admin'], $roles, "{$key}: the platform panel is Super Admin only");
         }

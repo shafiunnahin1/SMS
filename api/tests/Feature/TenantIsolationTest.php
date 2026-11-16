@@ -348,6 +348,13 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/student/qb/quiz-packages/{id}/buy' => null,
             'POST api/v1/student/qb/quiz-packages/{id}/wallet-buy' => null,
             'PUT api/v1/syllabus/units/{id}' => fn (array $other) => $this->seedSyllabusUnit($other),   // D224 SYL.1
+            'PUT api/v1/library/books/{id}' => fn (array $other) => $this->seedBook($other),   // D227 LIB.1
+            'DELETE api/v1/library/books/{id}' => fn (array $other) => $this->seedBook($other),
+            'POST api/v1/library/return/{issueId}' => fn (array $other) => $this->seedBookIssue($other),
+            'GET api/v1/library/history/{studentId}' => fn (array $other) => $this->seedStudent($other),
+            'POST api/v1/library/issues/{id}/waive' => fn (array $other) => $this->seedBookIssue($other),
+            'POST api/v1/library/issues/{id}/collect-fine' => fn (array $other) => $this->seedBookIssue($other),
+            'GET api/v1/parent/children/{id}/library' => null,   // parent only: CrossTenantRouteTest plan
             'GET api/v1/parent/children/{id}/syllabus' => null,   // D224 SYL.2: parent only; CrossTenantRouteTest plan
             'DELETE api/v1/syllabus/units/{id}' => fn (array $other) => $this->seedSyllabusUnit($other),
             'PUT api/v1/lesson-plans/{id}' => fn (array $other) => $this->seedLessonPlan($other),
@@ -412,6 +419,19 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\OnlinePayment::create(['student_id' => $student, 'gateway' => 'fakeqr', 'flow' => 'qr', 'collected_by' => 'institution', 'amount' => '10.00',
             'net_amount' => '10.00', 'status' => 'initiated', 'gateway_ref' => 'F' . strtoupper(\Illuminate\Support\Str::random(19)), 'items' => []])->id);
+    }
+
+    private function seedBook(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\Book::firstOrCreate(['title' => 'LIB-B'], ['total_copies' => 2, 'available_copies' => 2])->id);
+    }
+
+    private function seedBookIssue(array $t): int
+    {
+        $book = $this->seedBook($t);
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\BookIssue::firstOrCreate(['book_id' => $book, 'student_id' => $student],
+            ['issued_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'issue_date' => '2026-10-01', 'due_date' => '2026-10-15', 'status' => 'returned', 'fine_amount' => '10.00', 'fine_paid' => false])->id);
     }
 
     private function seedSyllabusUnit(array $t): int

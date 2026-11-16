@@ -163,16 +163,19 @@ class StaffIdentityBoundary
         $leads = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Leads\LeadController::class.'@')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/leads', 'HEAD api/v1/leads', 'GET api/v1/leads/referral-summary', 'HEAD api/v1/leads/referral-summary',
                 'POST api/v1/leads', 'PUT api/v1/leads/{id}'], true);
+        // D227: library - books, issue / return and the lists with one key each; settings, waiver and fines stay closed to staff
+        $library = str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\Library\\')
+            && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/library/books', 'HEAD api/v1/library/books', 'POST api/v1/library/books', 'PUT api/v1/library/books/{id}', 'DELETE api/v1/library/books/{id}', 'POST api/v1/library/issue', 'POST api/v1/library/return/{issueId}', 'GET api/v1/library/issued', 'HEAD api/v1/library/issued', 'GET api/v1/library/overdue', 'HEAD api/v1/library/overdue', 'GET api/v1/library/history/{studentId}', 'HEAD api/v1/library/history/{studentId}'], true);
         // D225: lesson plans - list, create, update, delete, taught / skipped with one key each
         $lessonPlans = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Syllabus\LessonPlanController::class.'@')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/lesson-plans', 'HEAD api/v1/lesson-plans', 'GET api/v1/lesson-plans/assignments', 'HEAD api/v1/lesson-plans/assignments', 'POST api/v1/lesson-plans', 'PUT api/v1/lesson-plans/{id}',
                 'DELETE api/v1/lesson-plans/{id}', 'POST api/v1/lesson-plans/{id}/taught', 'POST api/v1/lesson-plans/{id}/skipped'], true);
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$substitution && !$leads && !$lessonPlans && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money && !$hr && !$inventory && !$aiChat && !$studentView) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$substitution && !$leads && !$lessonPlans && !$library && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money && !$hr && !$inventory && !$aiChat && !$studentView) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         // D101 money routes: context and exact duty key are checked here, before any FormRequest validation can answer 422
-        if (($money || $hr || $inventory || $substitution || $leads || $lessonPlans) && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
+        if (($money || $hr || $inventory || $substitution || $leads || $lessonPlans || $library) && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
         // D169 STW.3: admission too - the selected department's key is checked before validation can answer 422
         if ($studentView && $request->isMethod('POST') && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
         // D101: staff never write their own pay row (a revision, adjustment or advance naming themselves as payee)

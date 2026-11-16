@@ -195,9 +195,16 @@ final class DepartmentPermissionKeys
         'staff.lesson_plan.update',
     ];
 
+    /** D227: department staff running the library - one key each, none implies another */
+    public const D227 = [
+        'staff.library.circulate',
+        'staff.library.manage',
+        'staff.library.read',
+    ];
+
     /** every key a duty may hold: the D90 contract plus owner-approved later additions */
     public static function known(): array
     {
-        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204, ...self::D225];
+        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204, ...self::D225, ...self::D227];
     }
 }

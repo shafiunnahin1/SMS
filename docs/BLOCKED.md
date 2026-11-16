@@ -333,3 +333,8 @@ Needed from the owner: a follow-up decision (proposed D189) that authorizes (3)-
 - **What blocks:** D224 (1) adds the data-migration import kind `syllabus` (config `release.import_kinds`), but `tests/Feature/Imports/ImportKindsTest.php` asserts the exact old list of six kinds, and D224 does not name that test among the files it may touch. Everything else of SYL.2 is written; the full suite has only this failure (1288 passed).
 - **Tried:** nothing that edits the test or hides the kind from the list (that would defeat the test's purpose).
 - **Owner choice needed:** decision D226 (drafted as owner/approve-D226.ps1): the test's expected list gains `syllabus` as its seventh kind; every other assertion stays.
+
+## 2026-11-16 · LIB.1 (D227) · two tests still describe the library as unshipped / for every type
+- **What blocks:** (1) `tests/Feature/ReleaseGateTest.php::test_an_unshipped_module_is_off_even_with_a_super_admin_override` uses `library` as its example of an unshipped module; D227 ships it. (2) `tests/Feature/BootstrapTest.php::test_a_tenant_host_gets_terms_modules_and_a_full_theme` expects a coaching institution to get every release module except the opt-in ones; D227 gives the library to school and college only. Full suite: 1289 passed, only these 2 failed.
+- **Tried:** nothing that edits the tests.
+- **Owner choice needed:** decision D228 (drafted as owner/approve-D228.ps1): the release-gate test uses `transport` (still unshipped) in place of `library`; the two coaching expectations of the bootstrap test also leave out `library`; every other assertion stays.
