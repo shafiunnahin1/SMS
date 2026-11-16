@@ -109,7 +109,8 @@
    "risk_alerts",
    "online_payment",
    "teacher_payouts",
-   "syllabus"
+   "syllabus",
+   "library"
   ],
   "roles": [
  "super_admin",
