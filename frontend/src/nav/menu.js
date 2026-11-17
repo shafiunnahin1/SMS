@@ -149,6 +149,7 @@ export const MENU = {
     it('substitutions','/staff/substitutions','বদলি শিক্ষক',{icon:'Users',module:'substitution',staffKey:'staff.leave_substitution.read',staff_access:true}),   // D201 SUBM.3
     it('leads','/staff/leads','ভর্তি-আবেদন',{icon:'UserPlus',module:'leads',staffKey:'staff.lead.read',staff_access:true}),   // D204 GAP.3
     it('lesson-plans','/staff/lesson-plans','পাঠ-পরিকল্পনা',{icon:'ListTree',module:'syllabus',staffKey:'staff.lesson_plan.read',staff_access:true}),   // D225
+    it('transport','/staff/transport','পরিবহন',{icon:'Bus',module:'transport',staffKey:'staff.transport.read',staff_access:true}),   // D229 TRN.2
     it('library','/staff/library','লাইব্রেরি',{icon:'Library',module:'library',staffKey:'staff.library.read',staff_access:true}),   // D227 LIB.2
     it('referrals','/staff/referrals','ভর্তির রেফারেল',{icon:'UserPlus',module:'leads',staff_access:true}),   // D203 REF.1: own identity, no duty key
     it('ai','/staff/ai','AI সহকারী',{icon:'MessageCircle',module:'ai_assistant',staff_access:true}),   // D168 AI-Q4S: the help guide
@@ -198,6 +199,7 @@ export const MENU = {
     it('syllabus','/student/syllabus','সিলেবাস',{icon:'ListTree',module:'syllabus'}),   // D224 SYL.3
     it('quiz','/student/quiz','অনলাইন পরীক্ষা',{icon:'ClipboardCheck',module:'online_quiz', since: 'R1.1' }),
     it('materials','/student/materials','শিক্ষা-উপকরণ',{icon:'Folder', since: 'R1.1' }),
+    it('transport','/student/transport','পরিবহন',{icon:'Bus',module:'transport'}),   // D229 TRN.2
     it('library','/student/library','লাইব্রেরি',{icon:'Library',module:'library', since: 'R1.1' }),
     it('notices','/notices','নোটিশ',{icon:'Megaphone',module:'notices', since: 'R1.1' }),
   ],
