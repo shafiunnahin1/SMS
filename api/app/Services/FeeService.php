@@ -70,8 +70,12 @@ class FeeService
         $prorate = ((Tenancy::current()->settings ?? [])['fee_proration'] ?? 'none') === 'half_after_15';
         $lines = collect();
 
-        foreach ($s->activeEnrollments()->with(['batch', 'program'])->orderBy('id')->get() as $e) {
+        $enrollments = $s->activeEnrollments()->with(['batch', 'program'])->orderBy('id')->get();
+        // D229 TRN.1: the transport fee is the student's route fee per month, once per student, never a per-enrollment due
+        $transport = $categories->firstWhere('name', \App\Services\Transport\TransportService::FEE_CATEGORY);
+        foreach ($enrollments as $e) {
             foreach ($categories as $c) {
+                if ($transport && $c->id === $transport->id) continue;
                 $gross = $this->resolveAmount($e, $c);
                 if ($gross === null) continue;
                 foreach ($this->periodsFor($c, $e) as $period) {
@@ -94,6 +98,7 @@ class FeeService
                 }
             }
         }
+        if ($transport) $lines = $lines->concat(app(\App\Services\Transport\TransportService::class)->dueLines($s, $enrollments->first(), $transport))->values();
         return $lines;
     }
 
