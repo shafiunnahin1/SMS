@@ -110,7 +110,8 @@
    "online_payment",
    "teacher_payouts",
    "syllabus",
-   "library"
+   "library",
+   "transport"
   ],
   "roles": [
  "super_admin",

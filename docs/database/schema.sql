@@ -607,6 +607,8 @@ CREATE TABLE student_transport (
     route_id BIGINT UNSIGNED NOT NULL,
     stop_id BIGINT UNSIGNED,
     direction ENUM('both','pickup_only','drop_only') DEFAULT 'both',
+    started_on DATE NOT NULL,                     -- D229: the transport fee is due from this month
+    ended_on DATE NULL,                           -- D229: a route change or leaving ends the row; never deleted
     FOREIGN KEY (student_id) REFERENCES students(id),
     FOREIGN KEY (route_id) REFERENCES transport_routes(id)
 );
