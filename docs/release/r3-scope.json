@@ -111,7 +111,8 @@
    "teacher_payouts",
    "syllabus",
    "library",
-   "transport"
+   "transport",
+   "online_class"
   ],
   "roles": [
  "super_admin",
