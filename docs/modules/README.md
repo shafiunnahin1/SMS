@@ -45,7 +45,7 @@
 | `hr_payroll` | স্টাফ, বেতন-কাঠামো, ইনক্রিমেন্ট/ডিক্রিমেন্ট, বোনাস, অগ্রিম, payroll, payslip, PF | [`staff-payroll.md`](staff-payroll.md), [`hr-payroll.md`](hr-payroll.md) (শুধু ছুটি) | Phase 7 · #6 | plan | ✓✓✓– |
 | `fee_installment` | ফি কিস্তি | [`extended-features.md`](extended-features.md) | Phase 7 · #7 | plan | ✓✓✓– |
 | `online_quiz` | অনলাইন পরীক্ষা/কুইজ | [`extended-features.md`](extended-features.md) | Phase 7 · #8 | plan | ✓✓✓– |
-| `online_class` | অনলাইন ক্লাস (Zoom/Meet লিংক) | [`online-class.md`](online-class.md) | Phase 7 · #9 | plan | ✓✓✓– |
+| `online_class` | অনলাইন ক্লাস (Zoom/Meet লিংক) | [`online-class.md`](online-class.md) | Phase 7 · #9 | plan | ✓✓✓✓ |
 | `library` | লাইব্রেরি | [`library.md`](library.md) | Phase 7 · #10 | plan | ✓✓–– |
 | `transport` | পরিবহন, রুট, ভাড়া | [`transport.md`](transport.md) | Phase 7 · #10 | plan | ✓✓–– |
 | `hostel` | হোস্টেল | [`hostel.md`](hostel.md) | Phase 7 · #10 | plan | ✓✓–– |
