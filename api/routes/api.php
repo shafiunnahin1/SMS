@@ -952,6 +952,25 @@ Route::prefix('v1')->group(function () {
         Route::get('/settings/calendar',                  [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'show'])->middleware('role:admin,teacher,accountant,student,parent');
         Route::put('/admin/settings/calendar',            [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'update'])->middleware('role:admin');
 
+        // ── D229 TRN.1: transport (docs/modules/transport.md); staff work with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
+        Route::middleware(['module:transport', 'role:admin,institution_staff'])->group(function () {
+            Route::get('/transport/vehicles',                 [\App\Http\Controllers\Transport\TransportVehicleController::class, 'index']);
+            Route::post('/transport/vehicles',                [\App\Http\Controllers\Transport\TransportVehicleController::class, 'store']);
+            Route::put('/transport/vehicles/{id}',            [\App\Http\Controllers\Transport\TransportVehicleController::class, 'update'])->whereNumber('id');
+            Route::delete('/transport/vehicles/{id}',         [\App\Http\Controllers\Transport\TransportVehicleController::class, 'destroy'])->whereNumber('id');
+            Route::get('/transport/routes',                   [\App\Http\Controllers\Transport\TransportRouteController::class, 'index']);
+            Route::post('/transport/routes',                  [\App\Http\Controllers\Transport\TransportRouteController::class, 'store']);
+            Route::put('/transport/routes/{id}',              [\App\Http\Controllers\Transport\TransportRouteController::class, 'update'])->whereNumber('id');
+            Route::delete('/transport/routes/{id}',           [\App\Http\Controllers\Transport\TransportRouteController::class, 'destroy'])->whereNumber('id');
+            Route::post('/transport/routes/{id}/stops',       [\App\Http\Controllers\Transport\TransportRouteController::class, 'addStop'])->whereNumber('id');
+            Route::get('/transport/routes/{id}/students',     [\App\Http\Controllers\Transport\TransportRouteController::class, 'students'])->whereNumber('id');
+            Route::put('/transport/stops/{id}',               [\App\Http\Controllers\Transport\TransportRouteController::class, 'updateStop'])->whereNumber('id');
+            Route::delete('/transport/stops/{id}',            [\App\Http\Controllers\Transport\TransportRouteController::class, 'destroyStop'])->whereNumber('id');
+            Route::post('/transport/assign',                  [\App\Http\Controllers\Transport\TransportAssignmentController::class, 'assign']);
+            Route::post('/transport/students/{id}/unassign',  [\App\Http\Controllers\Transport\TransportAssignmentController::class, 'unassign'])->whereNumber('id');
+        });
+        Route::middleware(['module:transport', 'role:parent'])->get('/parent/children/{id}/transport', [\App\Http\Controllers\Transport\TransportAssignmentController::class, 'child'])->whereNumber('id');
+
         // ── D227 LIB.1: library (docs/modules/library.md); staff work with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
         Route::middleware(['module:library', 'role:admin,institution_staff'])->group(function () {
             Route::get('/library/books',                      [\App\Http\Controllers\Library\LibraryBookController::class, 'index']);
@@ -1203,6 +1222,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:student')->group(function () {
             Route::get('/student/dashboard',              [DashboardController::class, 'student']);
             Route::get('/student/library',                [\App\Http\Controllers\Library\LibraryIssueController::class, 'mine'])->middleware('module:library');   // D227 LIB.1
+            Route::get('/student/transport',              [\App\Http\Controllers\Transport\TransportAssignmentController::class, 'mine'])->middleware('module:transport');   // D229 TRN.1
             Route::get('/student/syllabus',               [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'mine'])->middleware('module:syllabus');   // D224 SYL.2
             Route::get('/student/results',                [ResultController::class, 'forStudent'])->middleware('module:exams');
             Route::get('/student/fees',                   [FeeController::class, 'forStudent'])->middleware('module:fees');

@@ -348,6 +348,16 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/student/qb/quiz-packages/{id}/buy' => null,
             'POST api/v1/student/qb/quiz-packages/{id}/wallet-buy' => null,
             'PUT api/v1/syllabus/units/{id}' => fn (array $other) => $this->seedSyllabusUnit($other),   // D224 SYL.1
+            'PUT api/v1/transport/vehicles/{id}' => fn (array $other) => $this->seedVehicle($other),   // D229 TRN.1
+            'DELETE api/v1/transport/vehicles/{id}' => fn (array $other) => $this->seedVehicle($other),
+            'PUT api/v1/transport/routes/{id}' => fn (array $other) => $this->seedRoute($other),
+            'DELETE api/v1/transport/routes/{id}' => fn (array $other) => $this->seedRoute($other),
+            'POST api/v1/transport/routes/{id}/stops' => fn (array $other) => $this->seedRoute($other),
+            'GET api/v1/transport/routes/{id}/students' => fn (array $other) => $this->seedRoute($other),
+            'PUT api/v1/transport/stops/{id}' => fn (array $other) => $this->seedStop($other),
+            'DELETE api/v1/transport/stops/{id}' => fn (array $other) => $this->seedStop($other),
+            'POST api/v1/transport/students/{id}/unassign' => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/parent/children/{id}/transport' => null,   // parent only: CrossTenantRouteTest plan
             'PUT api/v1/library/books/{id}' => fn (array $other) => $this->seedBook($other),   // D227 LIB.1
             'DELETE api/v1/library/books/{id}' => fn (array $other) => $this->seedBook($other),
             'POST api/v1/library/return/{issueId}' => fn (array $other) => $this->seedBookIssue($other),
@@ -432,6 +442,22 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\BookIssue::firstOrCreate(['book_id' => $book, 'student_id' => $student],
             ['issued_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'issue_date' => '2026-10-01', 'due_date' => '2026-10-15', 'status' => 'returned', 'fine_amount' => '10.00', 'fine_paid' => false])->id);
+    }
+
+    private function seedVehicle(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\Vehicle::firstOrCreate(['number_plate' => 'TRN-V'], ['name' => 'Bus', 'capacity' => 30])->id);
+    }
+
+    private function seedRoute(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\TransportRoute::firstOrCreate(['name' => 'TRN-R'], ['monthly_fee' => '500.00'])->id);
+    }
+
+    private function seedStop(array $t): int
+    {
+        $route = $this->seedRoute($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\RouteStop::firstOrCreate(['route_id' => $route, 'stop_name' => 'TRN-S'], ['sequence' => 1])->id);
     }
 
     private function seedSyllabusUnit(array $t): int

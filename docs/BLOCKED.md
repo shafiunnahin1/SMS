@@ -338,3 +338,8 @@ Needed from the owner: a follow-up decision (proposed D189) that authorizes (3)-
 - **What blocks:** (1) `tests/Feature/ReleaseGateTest.php::test_an_unshipped_module_is_off_even_with_a_super_admin_override` uses `library` as its example of an unshipped module; D227 ships it. (2) `tests/Feature/BootstrapTest.php::test_a_tenant_host_gets_terms_modules_and_a_full_theme` expects a coaching institution to get every release module except the opt-in ones; D227 gives the library to school and college only. Full suite: 1289 passed, only these 2 failed.
 - **Tried:** nothing that edits the tests.
 - **Owner choice needed:** decision D228 (drafted as owner/approve-D228.ps1): the release-gate test uses `transport` (still unshipped) in place of `library`; the two coaching expectations of the bootstrap test also leave out `library`; every other assertion stays.
+
+## 2026-11-17 · TRN.1 (D229) · the bootstrap test still gives transport to coaching
+- **What blocks:** `tests/Feature/BootstrapTest.php::test_a_tenant_host_gets_terms_modules_and_a_full_theme` expects a coaching tenant to get every R3 module except opt-in ones and `library`; D229 ships `transport` for school and college only.
+- **Tried:** nothing that edits the test.
+- **Owner choice needed:** decision D230 (drafted as owner/approve-D230.ps1): the two coaching expectations also leave out `transport`. Resolved: D230 approved and merged; the test is amended in TRN.1.
