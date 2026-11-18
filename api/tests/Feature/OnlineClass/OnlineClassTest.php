@@ -63,6 +63,9 @@ class OnlineClassTest extends TestCase
         $this->api('POST', $host, 'online-classes', $tu, ['meeting_link' => 'http://meet.example.test/x'] + $base)->assertStatus(422)->assertJsonValidationErrors('meeting_link');
         $this->api('POST', $host, 'online-classes', $tu, ['scheduled_at' => '2026-11-19 18:00'] + $base)->assertStatus(422)->assertJsonValidationErrors('scheduled_at');
         $this->api('POST', $host, 'online-classes', $tu, ['batch_id' => $d['c']->id] + $base)->assertStatus(422)->assertJsonValidationErrors('batch_id');
+        $opts = $this->api('GET', $host, 'online-classes/options', $tu)->assertOk()->json('data');
+        $this->assertSame([[], 2], [$opts['teachers'], count($opts['programs'])], 'OCL.2: a teacher gets the lists, no teacher list');
+        $this->assertCount(2, $this->api('GET', $host, 'online-classes/options', $admin)->assertOk()->json('data.teachers'));
         $own = $this->api('POST', $host, 'online-classes', $tu, $base + ['teacher_id' => $t2->id])->assertCreated()->json('data');
         $this->assertSame([$t->id, 'scheduled', '2026-11-21 18:45'], [$own['teacher']['id'], $own['status'], $own['ends_at']], 'a teacher always schedules as themselves');
 

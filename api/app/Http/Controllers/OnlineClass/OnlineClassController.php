@@ -29,6 +29,18 @@ class OnlineClassController extends Controller
         return response()->json(['success' => true, 'data' => $q->limit(200)->get()->map(fn ($c) => self::row($c, true))->values()]);
     }
 
+    /** GET /online-classes/options - what the form needs: programs, batches, subjects; teachers only for the admin and staff */
+    public function options(Request $request)
+    {
+        $teacher = $this->classes->teacherOf($request->user());
+        return response()->json(['success' => true, 'data' => [
+            'programs' => Program::orderBy('name')->get(['id', 'name']),
+            'batches' => Batch::orderBy('name')->get(['id', 'name', 'program_id']),
+            'subjects' => Subject::orderBy('name')->get(['id', 'name', 'program_id']),
+            'teachers' => $teacher ? [] : Teacher::with('user:id,name')->where('status', 'active')->get()->map(fn ($t) => ['id' => $t->id, 'name' => $t->user?->name])->sortBy('name')->values(),
+        ]]);
+    }
+
     /** POST /online-classes */
     public function store(Request $request)
     {

@@ -955,6 +955,7 @@ Route::prefix('v1')->group(function () {
         // ── D231 OCL.1: online classes (docs/modules/online-class.md); staff with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
         Route::middleware(['module:online_class', 'role:admin,teacher,institution_staff'])->group(function () {
             Route::get('/online-classes',                     [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'index']);
+            Route::get('/online-classes/options',             [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'options']);   // D231 OCL.2: the form's lists
             Route::post('/online-classes',                    [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'store']);
             Route::put('/online-classes/{id}',                [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'update'])->whereNumber('id');
             Route::delete('/online-classes/{id}',             [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'destroy'])->whereNumber('id');

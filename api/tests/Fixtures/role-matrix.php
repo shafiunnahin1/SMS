@@ -668,6 +668,7 @@ return [
     'GET api/v1/student/transport' => ['student'],
     // D231 OCL.1
     'GET api/v1/online-classes' => ['admin', 'teacher', 'institution_staff'],
+    'GET api/v1/online-classes/options' => ['admin', 'teacher', 'institution_staff'],
     'POST api/v1/online-classes' => ['admin', 'teacher', 'institution_staff'],
     'PUT api/v1/online-classes/{id}' => ['admin', 'teacher', 'institution_staff'],
     'DELETE api/v1/online-classes/{id}' => ['admin', 'teacher', 'institution_staff'],

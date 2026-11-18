@@ -149,6 +149,7 @@ export const MENU = {
     it('substitutions','/staff/substitutions','বদলি শিক্ষক',{icon:'Users',module:'substitution',staffKey:'staff.leave_substitution.read',staff_access:true}),   // D201 SUBM.3
     it('leads','/staff/leads','ভর্তি-আবেদন',{icon:'UserPlus',module:'leads',staffKey:'staff.lead.read',staff_access:true}),   // D204 GAP.3
     it('lesson-plans','/staff/lesson-plans','পাঠ-পরিকল্পনা',{icon:'ListTree',module:'syllabus',staffKey:'staff.lesson_plan.read',staff_access:true}),   // D225
+    it('online-class','/staff/online-class','অনলাইন ক্লাস',{icon:'Video',module:'online_class',staffKey:'staff.online_class.read',staff_access:true}),   // D231 OCL.2
     it('transport','/staff/transport','পরিবহন',{icon:'Bus',module:'transport',staffKey:'staff.transport.read',staff_access:true}),   // D229 TRN.2
     it('library','/staff/library','লাইব্রেরি',{icon:'Library',module:'library',staffKey:'staff.library.read',staff_access:true}),   // D227 LIB.2
     it('referrals','/staff/referrals','ভর্তির রেফারেল',{icon:'UserPlus',module:'leads',staff_access:true}),   // D203 REF.1: own identity, no duty key
@@ -175,6 +176,7 @@ export const MENU = {
     it('leave','/teacher/leave','ছুটি',{icon:'Plane',module:'hr_payroll',teacherFeature:'own_leave'}),
     it('periods','/teacher/periods','আমার period',{icon:'ListChecks',module:'period_attendance',teacherFeature:'period_attendance'}),
     it('substitutions','/teacher/substitutions','বদলি ক্লাস',{icon:'Users',module:'substitution',teacherFeature:'substitution'}),   // D200 SUBL.5
+    it('online-class','/teacher/online-class','অনলাইন ক্লাস',{icon:'Video',module:'online_class'}),   // D231 OCL.2
     it('syllabus','/teacher/syllabus','সিলেবাস-অগ্রগতি',{icon:'ListTree',module:'syllabus'}),
     it('hifz','/teacher/hifz','হিফজ',{icon:'BookOpen',module:'hifz'}),
     it('risk','/teacher/risk','সহায়তা প্রয়োজন',{icon:'LifeBuoy',module:'risk_alerts'}),
@@ -199,6 +201,7 @@ export const MENU = {
     it('syllabus','/student/syllabus','সিলেবাস',{icon:'ListTree',module:'syllabus'}),   // D224 SYL.3
     it('quiz','/student/quiz','অনলাইন পরীক্ষা',{icon:'ClipboardCheck',module:'online_quiz', since: 'R1.1' }),
     it('materials','/student/materials','শিক্ষা-উপকরণ',{icon:'Folder', since: 'R1.1' }),
+    it('online-class','/student/online-class','অনলাইন ক্লাস',{icon:'Video',module:'online_class'}),   // D231 OCL.2
     it('transport','/student/transport','পরিবহন',{icon:'Bus',module:'transport'}),   // D229 TRN.2
     it('library','/student/library','লাইব্রেরি',{icon:'Library',module:'library', since: 'R1.1' }),
     it('notices','/notices','নোটিশ',{icon:'Megaphone',module:'notices', since: 'R1.1' }),
@@ -213,6 +216,7 @@ export const MENU = {
     it('calendar','/parent/calendar','একাডেমিক ক্যালেন্ডার',{icon:'CalendarCheck',module:'academic_calendar'}),   // D213 CAL.2
     it('hifz','/parent/hifz','হিফজ',{icon:'BookOpen',module:'hifz'}),   // D214 MAD.1
     it('syllabus','/parent/syllabus','সিলেবাস',{icon:'ListTree',module:'syllabus'}),   // D224 SYL.3
+    it('online-class','/parent/online-class','অনলাইন ক্লাস',{icon:'Video',module:'online_class'}),   // D231 OCL.2
     it('library','/parent/library','লাইব্রেরি',{icon:'Library',module:'library'}),   // D227 LIB.2
     it('meetings','/parent/meetings','সভা',{icon:'Users',module:'parent_meeting'}),
     it('leave','/parent/leave','ছুটির আবেদন',{icon:'CalendarOff',module:'student_leave'}),
