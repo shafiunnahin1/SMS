@@ -195,6 +195,12 @@ final class DepartmentPermissionKeys
         'staff.lesson_plan.update',
     ];
 
+    /** D231: department staff running online classes - read does not imply manage */
+    public const D231 = [
+        'staff.online_class.manage',
+        'staff.online_class.read',
+    ];
+
     /** D229: department staff running transport - read does not imply manage */
     public const D229 = [
         'staff.transport.manage',
@@ -211,6 +217,6 @@ final class DepartmentPermissionKeys
     /** every key a duty may hold: the D90 contract plus owner-approved later additions */
     public static function known(): array
     {
-        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204, ...self::D225, ...self::D227, ...self::D229];
+        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204, ...self::D225, ...self::D227, ...self::D229, ...self::D231];
     }
 }

@@ -348,6 +348,10 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/student/qb/quiz-packages/{id}/buy' => null,
             'POST api/v1/student/qb/quiz-packages/{id}/wallet-buy' => null,
             'PUT api/v1/syllabus/units/{id}' => fn (array $other) => $this->seedSyllabusUnit($other),   // D224 SYL.1
+            'PUT api/v1/online-classes/{id}' => fn (array $other) => $this->seedOnlineClass($other),   // D231 OCL.1
+            'DELETE api/v1/online-classes/{id}' => fn (array $other) => $this->seedOnlineClass($other),
+            'PATCH api/v1/online-classes/{id}/complete' => fn (array $other) => $this->seedOnlineClass($other),
+            'GET api/v1/parent/children/{id}/online-classes' => null,   // parent only: CrossTenantRouteTest plan
             'PUT api/v1/transport/vehicles/{id}' => fn (array $other) => $this->seedVehicle($other),   // D229 TRN.1
             'DELETE api/v1/transport/vehicles/{id}' => fn (array $other) => $this->seedVehicle($other),
             'PUT api/v1/transport/routes/{id}' => fn (array $other) => $this->seedRoute($other),
@@ -442,6 +446,16 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\BookIssue::firstOrCreate(['book_id' => $book, 'student_id' => $student],
             ['issued_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'issue_date' => '2026-10-01', 'due_date' => '2026-10-15', 'status' => 'returned', 'fine_amount' => '10.00', 'fine_paid' => false])->id);
+    }
+
+    private function seedOnlineClass(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], function () use ($t, $student) {
+            $program = \App\Models\Enrollment::where('student_id', $student)->value('program_id') ?? \App\Models\Program::create(['name' => 'OCL-P'])->id;
+            $teacher = \App\Models\Teacher::value('id') ?? \App\Models\Teacher::create(['user_id' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'employee_id' => 'OCL-T', 'status' => 'active'])->id;
+            return \App\Models\OnlineClass::firstOrCreate(['title' => 'OCL-C'], ['teacher_id' => $teacher, 'program_id' => $program, 'meeting_link' => 'https://meet.example.test/x', 'scheduled_at' => '2030-01-01 10:00:00'])->id;
+        });
     }
 
     private function seedVehicle(array $t): int

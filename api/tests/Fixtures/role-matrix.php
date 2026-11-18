@@ -666,6 +666,14 @@ return [
     'POST api/v1/transport/students/{id}/unassign' => ['admin', 'institution_staff'],
     'GET api/v1/parent/children/{id}/transport' => ['parent'],
     'GET api/v1/student/transport' => ['student'],
+    // D231 OCL.1
+    'GET api/v1/online-classes' => ['admin', 'teacher', 'institution_staff'],
+    'POST api/v1/online-classes' => ['admin', 'teacher', 'institution_staff'],
+    'PUT api/v1/online-classes/{id}' => ['admin', 'teacher', 'institution_staff'],
+    'DELETE api/v1/online-classes/{id}' => ['admin', 'teacher', 'institution_staff'],
+    'PATCH api/v1/online-classes/{id}/complete' => ['admin', 'teacher', 'institution_staff'],
+    'GET api/v1/parent/children/{id}/online-classes' => ['parent'],
+    'GET api/v1/student/online-classes' => ['student'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],

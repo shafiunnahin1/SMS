@@ -952,6 +952,16 @@ Route::prefix('v1')->group(function () {
         Route::get('/settings/calendar',                  [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'show'])->middleware('role:admin,teacher,accountant,student,parent');
         Route::put('/admin/settings/calendar',            [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'update'])->middleware('role:admin');
 
+        // ── D231 OCL.1: online classes (docs/modules/online-class.md); staff with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
+        Route::middleware(['module:online_class', 'role:admin,teacher,institution_staff'])->group(function () {
+            Route::get('/online-classes',                     [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'index']);
+            Route::post('/online-classes',                    [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'store']);
+            Route::put('/online-classes/{id}',                [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'update'])->whereNumber('id');
+            Route::delete('/online-classes/{id}',             [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'destroy'])->whereNumber('id');
+            Route::patch('/online-classes/{id}/complete',     [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'complete'])->whereNumber('id');
+        });
+        Route::middleware(['module:online_class', 'role:parent'])->get('/parent/children/{id}/online-classes', [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'child'])->whereNumber('id');
+
         // ── D229 TRN.1: transport (docs/modules/transport.md); staff work with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
         Route::middleware(['module:transport', 'role:admin,institution_staff'])->group(function () {
             Route::get('/transport/vehicles',                 [\App\Http\Controllers\Transport\TransportVehicleController::class, 'index']);
@@ -1223,6 +1233,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/student/dashboard',              [DashboardController::class, 'student']);
             Route::get('/student/library',                [\App\Http\Controllers\Library\LibraryIssueController::class, 'mine'])->middleware('module:library');   // D227 LIB.1
             Route::get('/student/transport',              [\App\Http\Controllers\Transport\TransportAssignmentController::class, 'mine'])->middleware('module:transport');   // D229 TRN.1
+            Route::get('/student/online-classes',         [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'mineStudent'])->middleware('module:online_class');   // D231 OCL.1
             Route::get('/student/syllabus',               [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'mine'])->middleware('module:syllabus');   // D224 SYL.2
             Route::get('/student/results',                [ResultController::class, 'forStudent'])->middleware('module:exams');
             Route::get('/student/fees',                   [FeeController::class, 'forStudent'])->middleware('module:fees');
