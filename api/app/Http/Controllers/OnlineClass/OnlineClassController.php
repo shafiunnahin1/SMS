@@ -23,10 +23,13 @@ class OnlineClassController extends Controller
         $q = OnlineClass::with(['teacher.user:id,name', 'program:id,name', 'batch:id,name', 'subject:id,name'])
             ->when($teacher, fn ($q) => $q->where('teacher_id', $teacher->id))
             ->when($f['batch_id'] ?? null, fn ($q, $b) => $q->where('batch_id', $b));
-        $q = ($f['when'] ?? 'upcoming') === 'past'
-            ? $q->where('scheduled_at', '<', now()->subHours(6))->orderByDesc('scheduled_at')
-            : $q->where('scheduled_at', '>=', now()->subHours(6))->orderBy('scheduled_at');
-        return response()->json(['success' => true, 'data' => $q->limit(200)->get()->map(fn ($c) => self::row($c, true))->values()]);
+        // upcoming = scheduled or live now; past = ended, completed or cancelled (a class lasts at most 480 minutes)
+        $upcoming = ($f['when'] ?? 'upcoming') !== 'past';
+        $q = $upcoming
+            ? $q->whereNotIn('status', ['completed', 'cancelled'])->where('scheduled_at', '>=', now()->subMinutes(480))->orderBy('scheduled_at')
+            : $q->where(fn ($w) => $w->whereIn('status', ['completed', 'cancelled'])->orWhere('scheduled_at', '<', now()))->orderByDesc('scheduled_at');
+        $rows = $q->limit(300)->get()->filter(fn ($c) => in_array($c->displayStatus(), ['scheduled', 'live'], true) === $upcoming)->take(200);
+        return response()->json(['success' => true, 'data' => $rows->map(fn ($c) => self::row($c, true))->values()]);
     }
 
     /** GET /online-classes/options - what the form needs: programs, batches, subjects; teachers only for the admin and staff */

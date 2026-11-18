@@ -96,6 +96,8 @@ class OnlineClassTest extends TestCase
         $this->api('PATCH', $host, "online-classes/{$own['id']}/complete", $tu, ['recording_url' => 'https://drive.example.test/rec'])->assertOk()->assertJsonPath('data.status', 'completed');
 
         $this->api('DELETE', $host, "online-classes/{$whole['id']}", $admin)->assertOk()->assertJsonPath('data.status', 'cancelled');
+        $this->assertSame([], $this->api('GET', $host, 'online-classes', $admin)->json('data'), 'OCL.2: completed and cancelled classes leave the upcoming list at once');
+        $this->assertSame(['completed', 'cancelled'], array_column($this->api('GET', $host, 'online-classes', $admin, ['when' => 'past'])->json('data'), 'status'));
         $this->api('DELETE', $host, "online-classes/{$whole['id']}", $admin)->assertStatus(409);
         $this->assertSame(2, Tenancy::as($i, fn () => OnlineClass::count()), 'cancelled, never deleted');
         $this->assertContains('online_class_cancelled', $mitu->fresh()->notifications()->get()->pluck('data.type')->all());
