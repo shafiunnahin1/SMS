@@ -112,7 +112,8 @@
    "syllabus",
    "library",
    "transport",
-   "online_class"
+   "online_class",
+   "hostel"
   ],
   "roles": [
  "super_admin",
