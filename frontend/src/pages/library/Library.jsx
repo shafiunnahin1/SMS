@@ -14,6 +14,7 @@ import Ltr from '../../components/bidi/Ltr'
 import Tabs from '../../ui/variants/Tabs'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select } from '../../components/FormField'
+import { useStaffCan } from '../../features/staff/StaffDepartment'
 
 const fieldErrors = (e) => Object.fromEntries(Object.entries(e.response?.data?.errors ?? {}).map(([k, m]) => [k, m[0]]))
 
@@ -23,7 +24,8 @@ const fieldErrors = (e) => Object.fromEntries(Object.entries(e.response?.data?.e
 export default function Library() {
   const { t } = useTranslation()
   const role = useAuthStore((s) => s.user?.role)
-  const tabs = role === 'accountant' ? ['overdue'] : ['books', 'issue', 'issued', 'overdue', ...(role === 'admin' ? ['settings'] : [])]
+  const circulate = useStaffCan('staff.library.circulate')
+  const tabs = role === 'accountant' ? ['overdue'] : ['books', ...(circulate ? ['issue'] : []), 'issued', 'overdue', ...(role === 'admin' ? ['settings'] : [])]
   const [tab, setTab] = useState(tabs[0])
   return (
     <div className="flex flex-col gap-4" data-testid="library">
@@ -41,6 +43,7 @@ export default function Library() {
 function Books() {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const canManage = useStaffCan('staff.library.manage')
   const [q, setQ] = useState('')
   const [category, setCategory] = useState('')
   const list = useQuery({ queryKey: ['library', 'books', q, category], queryFn: () => api.get('/library/books', { params: { q: q || undefined, category: category || undefined } }).then(r => r.data) })
@@ -61,7 +64,7 @@ function Books() {
   const edit = (b) => { setEditing(b.id); setF(Object.fromEntries(Object.keys(blank).map(k => [k, b[k] == null ? '' : String(b[k])]))) }
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      <Card className="lg:col-span-2 flex flex-col gap-3">
+      <Card className={`${canManage ? 'lg:col-span-2' : 'lg:col-span-3'} flex flex-col gap-3`}>
         <div className="flex flex-wrap items-end gap-2">
           <Input name="q" label={t('lib.search')} value={q} onChange={(e) => setQ(e.target.value)} className="flex-1 min-w-40" />
           <Select name="category" label={t('lib.category')} placeholder={t('lib.all')} value={category} onChange={(e) => setCategory(e.target.value)} className="min-w-36"
@@ -75,14 +78,14 @@ function Books() {
                 {b.author && <span className="text-sm text-content-muted" dir="auto">· {b.author}</span>}
                 {b.shelf_location && <span className="text-xs text-content-muted" dir="auto">· {b.shelf_location}</span>}
                 <span className="ms-auto text-sm">{t('lib.copies', { available: b.available_copies, total: b.total_copies })}</span>
-                <Button variant="ghost" onClick={() => edit(b)} data-action="edit">{t('common.edit')}</Button>
-                <Button variant="ghost" onClick={() => remove(b)} data-action="remove">{t('common.delete')}</Button>
+                {canManage && <Button variant="ghost" onClick={() => edit(b)} data-action="edit">{t('common.edit')}</Button>}
+                {canManage && <Button variant="ghost" onClick={() => remove(b)} data-action="remove">{t('common.delete')}</Button>}
               </li>
             ))}
           </ul>
         )}
       </Card>
-      <Card>
+      {canManage && <Card>
         <form className="flex flex-col gap-2" onSubmit={save} data-testid="book-form">
           <h2 className="font-semibold">{editing ? t('lib.edit_book') : t('lib.add_book')}</h2>
           {['title', 'author', 'isbn', 'category', 'shelf_location'].map(k => <Input key={k} name={k} label={t(`lib.f.${k}`)} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} error={errors[k]} required={k === 'title'} />)}
@@ -92,7 +95,7 @@ function Books() {
           </div>
           <div className="flex gap-2"><Button type="submit" data-action="save-book">{t('common.save')}</Button>{editing && <Button variant="ghost" onClick={() => { setEditing(null); setF(blank) }}>{t('common.cancel')}</Button>}</div>
         </form>
-      </Card>
+      </Card>}
     </div>
   )
 }
@@ -130,6 +133,7 @@ function Out({ kind, role }) {
   const { locale } = useLocale()
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['library', kind], queryFn: () => api.get(`/library/${kind}`).then(r => r.data.data) })
+  const circulate = useStaffCan('staff.library.circulate')
   const [method, setMethod] = useState('cash')
   const run = async (fn) => { try { const r = await fn(); qc.invalidateQueries({ queryKey: ['library'] }); return r } catch { return null } }
   const back = (i) => run(() => api.post(`/library/return/${i.id}`)).then(r => r && useUiStore.getState().addToast(Number(r.data.data.fine_amount) > 0 ? t('lib.returned_fine', { fine: r.data.data.fine_amount }) : t('lib.returned')))
@@ -153,7 +157,7 @@ function Out({ kind, role }) {
             {i.fine_so_far && Number(i.fine_so_far) > 0 && <span className="text-sm">{t('lib.so_far')}: <Ltr>{fmtMoney(i.fine_so_far, locale)}</Ltr></span>}
             {i.status === 'returned' && Number(i.fine_amount) > 0 && <span className="text-sm">{t('lib.fine')}: <Ltr>{fmtMoney(i.fine_amount, locale)}</Ltr></span>}
             <span className="ms-auto flex gap-2">
-              {i.status !== 'returned' && role !== 'accountant' && <Button variant="secondary" onClick={() => back(i)} data-action="return">{t('lib.return')}</Button>}
+              {i.status !== 'returned' && role !== 'accountant' && circulate && <Button variant="secondary" onClick={() => back(i)} data-action="return">{t('lib.return')}</Button>}
               {i.status === 'returned' && !i.fine_paid && Number(i.fine_amount) > 0 && ['admin', 'accountant'].includes(role) && <Button onClick={() => collect(i)} data-action="collect">{t('lib.collect')}</Button>}
               {i.status === 'returned' && !i.fine_paid && Number(i.fine_amount) > 0 && role === 'admin' && <Button variant="ghost" onClick={() => waive(i)} data-action="waive">{t('lib.waive')}</Button>}
             </span>

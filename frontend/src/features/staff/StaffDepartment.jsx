@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Building2 } from 'lucide-react'
 import { useStaffDepartmentStore } from '../../store/staffDepartmentStore'
 import { EmptyState } from '../../components/StateViews'
@@ -35,4 +35,12 @@ export function RequireDepartment({ permission, children }) {
     return <EmptyState title={t('staff_context.no_permission')} description={t('staff_context.no_permission_hint')} />
   }
   return children
+}
+
+/** STW + D227/D229/D231: on a /staff/ page a control shows only when the selected department holds `key`; elsewhere (admin, teacher pages) always.
+ *  The server checks every action again - this only hides what would be refused. */
+export function useStaffCan(key) {
+  const { pathname } = useLocation()
+  const permissions = useStaffDepartmentStore(s => s.permissions)
+  return !pathname.startsWith('/staff/') || permissions.includes(key)
 }

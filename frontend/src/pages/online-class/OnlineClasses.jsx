@@ -13,6 +13,7 @@ import Ltr from '../../components/bidi/Ltr'
 import Tabs from '../../ui/variants/Tabs'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select, Textarea } from '../../components/FormField'
+import { useStaffCan } from '../../features/staff/StaffDepartment'
 
 const fieldErrors = (e) => Object.fromEntries(Object.entries(e.response?.data?.errors ?? {}).map(([k, m]) => [k, m[0]]))
 const PLATFORMS = ['google_meet', 'zoom', 'jitsi', 'custom']
@@ -26,6 +27,7 @@ export default function OnlineClasses() {
   const qc = useQueryClient()
   const role = useAuthStore((s) => s.user?.role)
   const [when, setWhen] = useState('upcoming')
+  const canManage = useStaffCan('staff.online_class.manage')   // staff without the manage key only read
   const list = useQuery({ queryKey: ['online-classes', when], queryFn: () => api.get('/online-classes', { params: { when } }).then(r => r.data.data) })
   const opts = useQuery({ queryKey: ['online-classes', 'options'], queryFn: () => api.get('/online-classes/options').then(r => r.data.data) })
   const blank = { title: '', program_id: '', batch_id: '', subject_id: '', teacher_id: '', platform: 'google_meet', meeting_link: '', meeting_id: '', passcode: '', date: '', time: '', duration_minutes: '60', description: '' }
@@ -64,7 +66,7 @@ export default function OnlineClasses() {
     <div className="flex flex-col gap-4" data-testid="online-classes">
       <PageHeader title={t('ocl.title')} />
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2 flex flex-col gap-3">
+        <Card className={`${canManage ? 'lg:col-span-2' : 'lg:col-span-3'} flex flex-col gap-3`}>
           <Tabs label={t('ocl.title')} value={when} onChange={setWhen} items={['upcoming', 'past'].map(k => ({ key: k, label: t(`ocl.tabs.${k}`) }))} />
           {list.isPending ? <Loader type="skeleton" rows={3} /> : list.isError ? <ErrorState onRetry={list.refetch} /> : !list.data.length ? <EmptyState title={t(`ocl.none_${when}`)} /> : (
             <ul className="flex flex-col divide-y divide-line">
@@ -80,7 +82,7 @@ export default function OnlineClasses() {
                   <div className="flex flex-wrap gap-2">
                     {c.meeting_link && ['scheduled', 'live'].includes(c.status) && <a className="text-sm font-medium text-primary-fg underline" href={c.meeting_link} target="_blank" rel="noopener noreferrer">{t('ocl.join')}</a>}
                     {c.recording_url && <a className="text-sm font-medium text-primary-fg underline" href={c.recording_url} target="_blank" rel="noopener noreferrer">{t('ocl.recording')}</a>}
-                    {['scheduled', 'live', 'ended'].includes(c.status) && <span className="ms-auto flex gap-1">
+                    {canManage && ['scheduled', 'live', 'ended'].includes(c.status) && <span className="ms-auto flex gap-1">
                       {c.status === 'scheduled' && <Button variant="ghost" onClick={() => edit(c)} data-action="edit">{t('common.edit')}</Button>}
                       {c.status !== 'scheduled' && <Button variant="secondary" onClick={() => complete(c)} data-action="complete">{t('ocl.complete')}</Button>}
                       <Button variant="ghost" onClick={() => cancel(c)} data-action="cancel">{t('ocl.cancel')}</Button>
@@ -91,7 +93,7 @@ export default function OnlineClasses() {
             </ul>
           )}
         </Card>
-        <Card>
+        {canManage && <Card>
           <form className="flex flex-col gap-2" onSubmit={save} data-testid="class-form">
             <h2 className="font-semibold">{editing ? t('ocl.edit') : t('ocl.new')}</h2>
             <Input name="title" label={t('ocl.f.title')} value={f.title} onChange={set('title')} error={errors.title} required />
@@ -118,7 +120,7 @@ export default function OnlineClasses() {
             <p className="text-xs text-content-muted">{t('ocl.notice_hint')}</p>
             <div className="flex gap-2"><Button type="submit" data-action="save-class">{editing ? t('common.save') : t('ocl.schedule')}</Button>{editing && <Button variant="ghost" onClick={() => { setEditing(null); setF(blank) }}>{t('common.cancel')}</Button>}</div>
           </form>
-        </Card>
+        </Card>}
       </div>
     </div>
   )
