@@ -4,6 +4,7 @@ import { Building2 } from 'lucide-react'
 import { useStaffDepartmentStore } from '../../store/staffDepartmentStore'
 import { EmptyState } from '../../components/StateViews'
 import Button from '../../components/Button'
+import Loader from '../../components/Loader'
 
 const PICKER = '/staff/departments'
 
@@ -25,7 +26,8 @@ export function StaffDepartmentBar() {
 /** D169 STW.1: a staff work page renders only with a selected department that holds `permission` (one key or a list); otherwise it says what is missing */
 export function RequireDepartment({ permission, children }) {
   const { t } = useTranslation()
-  const { department, permissions } = useStaffDepartmentStore()
+  const { department, permissions, restoring } = useStaffDepartmentStore()
+  if (!department && restoring) return <Loader type="page" />   // D232: the kept department is being checked again
   if (!department) {
     return <EmptyState title={t('staff_context.pick_first')} description={t('staff_context.pick_first_hint')}
       action={<Link to={PICKER}><Button variant="secondary">{t('staff_context.choose')}</Button></Link>} />

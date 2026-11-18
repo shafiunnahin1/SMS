@@ -49,7 +49,7 @@ export function MyDepartments() {
   // D169 STW.1: opening a department selects it for every staff page (with the duty keys held there); a refused one is cleared
   const portal = useQuery({ queryKey: ['staff/portal', current], queryFn: () => api.get(`/staff/departments/${current}/portal`).then(r => r.data), enabled: Boolean(current), retry: false })
   useEffect(() => {
-    if (portal.data) select({ id: portal.data.data.id, name: portal.data.data.name }, portal.data.permissions ?? [])
+    if (portal.data) select({ id: portal.data.data.id, name: portal.data.data.name }, portal.data.permissions ?? [], useAuthStore.getState().user?.id ?? null)   // D232: kept per tab
     else if (portal.isError && selected?.id === current) useStaffDepartmentStore.getState().clear()
   }, [portal.data, portal.isError])   // eslint-disable-line react-hooks/exhaustive-deps
   const rows = list.data ?? []

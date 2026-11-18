@@ -14,6 +14,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 import { PLATFORM_ROLES } from '../router/roleHome'
 import { useStaffDepartmentStore } from '../store/staffDepartmentStore'
 import { StaffDepartmentBar } from '../features/staff/StaffDepartment'
+import { useRestoreStaffDepartment } from '../hooks/useRestoreStaffDepartment'
 
 // docs/THEMING.md "layouts/AppShell.jsx": ONE shell for every role; the layout comes from theme.layout_key; pages never know it
 export default function AppShell() {
@@ -25,6 +26,7 @@ export default function AppShell() {
   const staffKeys = useStaffDepartmentStore(s => s.permissions)   // D169: the staff menu follows the selected department
   const { off: featuresOff } = useTeacherFeatures()                  // D205 PERM.2: a teacher's switched-off features leave the menu
   const { member: teacherInDepartments } = useTeacherDepartments()   // D206 TDM.4
+  useRestoreStaffDepartment(user.role === 'institution_staff' || Boolean(teacherInDepartments))   // D232 STW.6: a reload keeps the tab's department
 
   const narrow = useMediaQuery('(max-width: 1023px)')
   // THEMING.md edge cases: Super Admin (and the D65 writers - no institution theme) always gets the default; students and parents below 1024px always get the app-like tab bar
