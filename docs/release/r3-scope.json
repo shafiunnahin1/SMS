@@ -113,7 +113,8 @@
    "library",
    "transport",
    "online_class",
-   "hostel"
+   "hostel",
+   "parent_meeting"
   ],
   "roles": [
  "super_admin",
