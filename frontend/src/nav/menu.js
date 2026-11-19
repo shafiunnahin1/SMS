@@ -149,6 +149,7 @@ export const MENU = {
     it('substitutions','/staff/substitutions','বদলি শিক্ষক',{icon:'Users',module:'substitution',staffKey:'staff.leave_substitution.read',staff_access:true}),   // D201 SUBM.3
     it('leads','/staff/leads','ভর্তি-আবেদন',{icon:'UserPlus',module:'leads',staffKey:'staff.lead.read',staff_access:true}),   // D204 GAP.3
     it('lesson-plans','/staff/lesson-plans','পাঠ-পরিকল্পনা',{icon:'ListTree',module:'syllabus',staffKey:'staff.lesson_plan.read',staff_access:true}),   // D225
+    it('hostel','/staff/hostel','হোস্টেল',{icon:'Building2',module:'hostel',staffKey:'staff.hostel.read',staff_access:true}),   // D233 HST.2
     it('online-class','/staff/online-class','অনলাইন ক্লাস',{icon:'Video',module:'online_class',staffKey:'staff.online_class.read',staff_access:true}),   // D231 OCL.2
     it('transport','/staff/transport','পরিবহন',{icon:'Bus',module:'transport',staffKey:'staff.transport.read',staff_access:true}),   // D229 TRN.2
     it('library','/staff/library','লাইব্রেরি',{icon:'Library',module:'library',staffKey:'staff.library.read',staff_access:true}),   // D227 LIB.2
@@ -201,6 +202,7 @@ export const MENU = {
     it('syllabus','/student/syllabus','সিলেবাস',{icon:'ListTree',module:'syllabus'}),   // D224 SYL.3
     it('quiz','/student/quiz','অনলাইন পরীক্ষা',{icon:'ClipboardCheck',module:'online_quiz', since: 'R1.1' }),
     it('materials','/student/materials','শিক্ষা-উপকরণ',{icon:'Folder', since: 'R1.1' }),
+    it('hostel','/student/hostel','হোস্টেল',{icon:'Building2',module:'hostel'}),   // D233 HST.2
     it('online-class','/student/online-class','অনলাইন ক্লাস',{icon:'Video',module:'online_class'}),   // D231 OCL.2
     it('transport','/student/transport','পরিবহন',{icon:'Bus',module:'transport'}),   // D229 TRN.2
     it('library','/student/library','লাইব্রেরি',{icon:'Library',module:'library', since: 'R1.1' }),
@@ -216,6 +218,7 @@ export const MENU = {
     it('calendar','/parent/calendar','একাডেমিক ক্যালেন্ডার',{icon:'CalendarCheck',module:'academic_calendar'}),   // D213 CAL.2
     it('hifz','/parent/hifz','হিফজ',{icon:'BookOpen',module:'hifz'}),   // D214 MAD.1
     it('syllabus','/parent/syllabus','সিলেবাস',{icon:'ListTree',module:'syllabus'}),   // D224 SYL.3
+    it('hostel','/parent/hostel','হোস্টেল',{icon:'Building2',module:'hostel'}),   // D233 HST.2
     it('online-class','/parent/online-class','অনলাইন ক্লাস',{icon:'Video',module:'online_class'}),   // D231 OCL.2
     it('library','/parent/library','লাইব্রেরি',{icon:'Library',module:'library'}),   // D227 LIB.2
     it('meetings','/parent/meetings','সভা',{icon:'Users',module:'parent_meeting'}),
