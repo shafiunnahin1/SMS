@@ -98,6 +98,24 @@ class ExpenseService
             'expense_date' => $date, 'payment_method' => $method, 'source' => 'teacher_payout'], $actor->id);
     }
 
+    /** D233 HST.3: a hostel bazar entry as an expense (source hostel_mess); corrected only through reverseHostelBazar */
+    public function recordHostelBazar(\App\Models\HostelMessBazar $bazar, string $hostelName, string $method, \App\Models\User $actor): Expense
+    {
+        \Illuminate\Support\Facades\Validator::make(['method' => $method], ['method' => 'required|in:cash,bank,bkash,nagad,rocket,other'])->validate();
+        app(CashBookService::class)->assertCashWrite($bazar->date->format('Y-m-d'), $method);
+        return $this->append(['category' => 'hostel_mess', 'title' => 'Hostel mess bazar - ' . $hostelName, 'amount' => Money::format(Money::toPaisa((string) $bazar->amount)),
+            'expense_date' => $bazar->date->format('Y-m-d'), 'note' => $bazar->note, 'payment_method' => $method, 'source' => 'hostel_mess'], $actor->id);
+    }
+
+    /** D233 HST.3: the expense of a reversed bazar entry is reversed the same day, never deleted (D32) */
+    public function reverseHostelBazar(Expense $original, \App\Models\User $actor): Expense
+    {
+        $values = $original->only(self::FIELDS);
+        $values['expense_date'] = $original->expense_date->format('Y-m-d');
+        app(CashBookService::class)->assertCashWrite($values['expense_date'], $values['payment_method']);
+        return $this->append(array_replace($values, ['amount' => Money::format(-Money::toPaisa((string) $original->amount)), 'reversal_of_id' => $original->id]), $actor->id);
+    }
+
     public function correct(int $id, ?array $replacement, int $by): Expense
     {
         if ($replacement !== null) $replacement = array_intersect_key($replacement, array_flip(self::INPUT_FIELDS));

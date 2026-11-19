@@ -348,6 +348,18 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/student/qb/quiz-packages/{id}/buy' => null,
             'POST api/v1/student/qb/quiz-packages/{id}/wallet-buy' => null,
             'PUT api/v1/syllabus/units/{id}' => fn (array $other) => $this->seedSyllabusUnit($other),   // D224 SYL.1
+            'GET api/v1/hostel/{id}/mess' => fn (array $other) => $this->seedHostel($other),   // D233 HST.3
+            'PUT api/v1/hostel/{id}/mess' => fn (array $other) => $this->seedHostel($other),
+            'GET api/v1/hostel/{id}/meals' => fn (array $other) => $this->seedHostel($other),
+            'PUT api/v1/hostel/{id}/meals' => fn (array $other) => $this->seedHostel($other),
+            'GET api/v1/hostel/{id}/bazar' => fn (array $other) => $this->seedHostel($other),
+            'POST api/v1/hostel/{id}/bazar' => fn (array $other) => $this->seedHostel($other),
+            'POST api/v1/hostel/bazar/{id}/reverse' => fn (array $other) => $this->seedHostelBazar($other),
+            'POST api/v1/hostel/{id}/mess/close' => fn (array $other) => $this->seedHostel($other),
+            'GET api/v1/hostel/{id}/mess/bills' => fn (array $other) => $this->seedHostel($other),
+            'POST api/v1/hostel/mess-bills/{id}/adjust' => fn (array $other) => $this->seedHostelMessBill($other),
+            'PUT api/v1/hostel/allocations/{id}/mess' => fn (array $other) => $this->seedHostelAllocation($other),
+            'GET api/v1/parent/children/{id}/hostel/mess' => null,   // parent only: CrossTenantRouteTest plan
             'PUT api/v1/hostel/{id}' => fn (array $other) => $this->seedHostel($other),   // D233 HST.1
             'DELETE api/v1/hostel/{id}' => fn (array $other) => $this->seedHostel($other),
             'GET api/v1/hostel/{id}/rooms' => fn (array $other) => $this->seedHostel($other),
@@ -459,6 +471,22 @@ class TenantIsolationTest extends TestCase
     private function seedHostel(array $t): int
     {
         return Tenancy::as($t['institution'], fn () => \App\Models\Hostel::firstOrCreate(['name' => 'HST-H'], ['type' => 'boys', 'total_rooms' => 1])->id);
+    }
+
+    private function seedHostelBazar(array $t): int
+    {
+        $hostel = $this->seedHostel($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\HostelMessBazar::firstOrCreate(['hostel_id' => $hostel, 'note' => 'HST-B'], ['date' => '2026-10-02', 'amount' => '500.00'])->id);
+    }
+
+    private function seedHostelMessBill(array $t): int
+    {
+        $hostel = $this->seedHostel($t);
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], function () use ($hostel, $student) {
+            $m = \App\Models\HostelMessMonth::firstOrCreate(['hostel_id' => $hostel, 'month' => '2026-09'], ['mode' => 'fixed_monthly', 'closed_at' => now()]);
+            return \App\Models\HostelMessBill::firstOrCreate(['mess_month_id' => $m->id, 'student_id' => $student], ['amount' => '2000.00'])->id;
+        });
     }
 
     private function seedHostelAllocation(array $t): int

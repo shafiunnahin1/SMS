@@ -14,4 +14,12 @@ return [
     'room_exists' => 'This room number already exists in the hostel.',
     'capacity_below' => 'Seats cannot be fewer than the :n students living here.',
     'no_student' => 'No student has this ID.',
+    'mess_rate_needed' => 'Enter the amount this mess mode needs.',
+    'month_closed' => 'This mess month is already closed.',
+    'too_far' => 'Meals can be marked off at most a month ahead.',
+    'not_member_that_day' => 'A student in the list was not a mess member that day.',
+    'bazar_not_active' => 'This bazar entry cannot be reversed.',
+    'no_mess' => 'This hostel has no mess.',
+    'month_not_over' => 'Only a month that has ended can be closed.',
+    'adjust_zero' => 'An adjustment cannot be zero.',
 ];

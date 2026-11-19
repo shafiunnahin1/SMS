@@ -11,8 +11,8 @@ class HostelAllocation extends Model
     use BelongsToInstitution;
 
     public $timestamps = false;
-    protected $fillable = ['institution_id', 'student_id', 'room_id', 'check_in_date', 'check_out_date', 'status'];
-    protected $casts = ['check_in_date' => 'date:Y-m-d', 'check_out_date' => 'date:Y-m-d'];
+    protected $fillable = ['institution_id', 'student_id', 'room_id', 'check_in_date', 'check_out_date', 'status', 'with_mess'];   // D233 HST.3: with_mess
+    protected $casts = ['check_in_date' => 'date:Y-m-d', 'check_out_date' => 'date:Y-m-d', 'with_mess' => 'boolean'];
 
     public function student() { return $this->belongsTo(Student::class); }
     public function room() { return $this->belongsTo(HostelRoom::class, 'room_id'); }

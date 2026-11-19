@@ -967,8 +967,21 @@ Route::prefix('v1')->group(function () {
             Route::get('/hostel/allocations', [\App\Http\Controllers\Hostel\HostelAllocationController::class, 'index']);
             Route::post('/hostel/allocate', [\App\Http\Controllers\Hostel\HostelAllocationController::class, 'allocate']);
             Route::patch('/hostel/allocations/{id}/checkout', [\App\Http\Controllers\Hostel\HostelAllocationController::class, 'checkout'])->whereNumber('id');
+            // D233 HST.3: mess
+            Route::get('/hostel/{id}/mess', [\App\Http\Controllers\Hostel\HostelMessController::class, 'show'])->whereNumber('id');
+            Route::put('/hostel/{id}/mess', [\App\Http\Controllers\Hostel\HostelMessController::class, 'update'])->whereNumber('id');
+            Route::get('/hostel/{id}/meals', [\App\Http\Controllers\Hostel\HostelMessController::class, 'meals'])->whereNumber('id');
+            Route::put('/hostel/{id}/meals', [\App\Http\Controllers\Hostel\HostelMessController::class, 'markMeals'])->whereNumber('id');
+            Route::get('/hostel/{id}/bazar', [\App\Http\Controllers\Hostel\HostelMessController::class, 'bazar'])->whereNumber('id');
+            Route::post('/hostel/{id}/bazar', [\App\Http\Controllers\Hostel\HostelMessController::class, 'addBazar'])->whereNumber('id');
+            Route::post('/hostel/bazar/{id}/reverse', [\App\Http\Controllers\Hostel\HostelMessController::class, 'reverseBazar'])->whereNumber('id');
+            Route::post('/hostel/{id}/mess/close', [\App\Http\Controllers\Hostel\HostelMessController::class, 'close'])->whereNumber('id');
+            Route::get('/hostel/{id}/mess/bills', [\App\Http\Controllers\Hostel\HostelMessController::class, 'bills'])->whereNumber('id');
+            Route::post('/hostel/mess-bills/{id}/adjust', [\App\Http\Controllers\Hostel\HostelMessController::class, 'adjust'])->whereNumber('id');
+            Route::put('/hostel/allocations/{id}/mess', [\App\Http\Controllers\Hostel\HostelMessController::class, 'setMember'])->whereNumber('id');
         });
         Route::middleware(['module:hostel', 'role:parent'])->get('/parent/children/{id}/hostel', [\App\Http\Controllers\Hostel\HostelController::class, 'child'])->whereNumber('id');
+        Route::middleware(['module:hostel', 'role:parent'])->get('/parent/children/{id}/hostel/mess', [\App\Http\Controllers\Hostel\HostelMessController::class, 'child'])->whereNumber('id');   // D233 HST.3
 
         // ── D231 OCL.1: online classes (docs/modules/online-class.md); staff with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
         Route::middleware(['module:online_class', 'role:admin,teacher,institution_staff'])->group(function () {
@@ -1254,6 +1267,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/student/transport',              [\App\Http\Controllers\Transport\TransportAssignmentController::class, 'mine'])->middleware('module:transport');   // D229 TRN.1
             Route::get('/student/online-classes',         [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'mineStudent'])->middleware('module:online_class');   // D231 OCL.1
             Route::get('/student/hostel',                 [\App\Http\Controllers\Hostel\HostelController::class, 'mine'])->middleware('module:hostel');   // D233 HST.1
+            Route::get('/student/hostel/mess',            [\App\Http\Controllers\Hostel\HostelMessController::class, 'mine'])->middleware('module:hostel');   // D233 HST.3
             Route::get('/student/syllabus',               [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'mine'])->middleware('module:syllabus');   // D224 SYL.2
             Route::get('/student/results',                [ResultController::class, 'forStudent'])->middleware('module:exams');
             Route::get('/student/fees',                   [FeeController::class, 'forStudent'])->middleware('module:fees');
