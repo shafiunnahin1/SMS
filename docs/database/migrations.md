@@ -303,6 +303,11 @@ php artisan make:migration create_site_posts_table
 php artisan make:migration create_lead_payments_table
 php artisan make:migration create_hifz_records_table
 php artisan make:migration create_wallet_recharge_requests_table   # D218 WAL.1
+php artisan make:migration add_mess_to_hostels_table   # D233 HST.3: mess mode, fee, rates, weights; allocation with_mess
+php artisan make:migration create_hostel_meal_offs_table   # D233 HST.3
+php artisan make:migration create_hostel_mess_bazar_table   # D233 HST.3
+php artisan make:migration create_hostel_mess_months_table   # D233 HST.3
+php artisan make:migration create_hostel_mess_bills_table   # D233 HST.3
 php artisan make:migration create_user_wallets_table   # D218 WAL.3 (one migration file creates user_wallets and user_wallet_transactions)
 php artisan make:migration create_user_wallet_transactions_table
 php artisan make:migration create_syllabus_units_table

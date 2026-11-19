@@ -136,6 +136,10 @@
   "hostels",
   "hostel_rooms",
   "hostel_allocations",
+  "hostel_meal_offs",
+  "hostel_mess_bazar",
+  "hostel_mess_months",
+  "hostel_mess_bills",
   "inventory_items",
   "inventory_movements",
   "lead_payments",
@@ -819,6 +823,38 @@
   "hostel_allocations": {
    "refs": {
     "room_id": "hostel_rooms",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "hostel_meal_offs": {
+   "refs": {
+    "hostel_id": "hostels",
+    "marked_by": "users",
+    "student_id": "students"
+   },
+   "polymorphic": []
+  },
+  "hostel_mess_bazar": {
+   "refs": {
+    "expense_id": "expenses",
+    "hostel_id": "hostels",
+    "recorded_by": "users",
+    "reversal_of_id": "hostel_mess_bazar"
+   },
+   "polymorphic": []
+  },
+  "hostel_mess_months": {
+   "refs": {
+    "closed_by": "users",
+    "hostel_id": "hostels"
+   },
+   "polymorphic": []
+  },
+  "hostel_mess_bills": {
+   "refs": {
+    "created_by": "users",
+    "mess_month_id": "hostel_mess_months",
     "student_id": "students"
    },
    "polymorphic": []

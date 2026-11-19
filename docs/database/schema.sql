@@ -648,6 +648,79 @@ CREATE TABLE hostel_allocations (
     FOREIGN KEY (room_id) REFERENCES hostel_rooms(id)
 );
 
+-- D233 HST.3: hostel mess - each hostel picks its billing mode; meals are three a day for a with-mess member unless marked off;
+-- a month is closed per hostel into frozen bills (never edited or deleted - a correction is a new adjustment row, D32)
+ALTER TABLE hostels ADD COLUMN mess_mode ENUM('none','fixed_monthly','per_meal','meal_rate') NOT NULL DEFAULT 'none';
+ALTER TABLE hostels ADD COLUMN mess_monthly_fee DECIMAL(8,2) NULL;      -- fixed_monthly
+ALTER TABLE hostels ADD COLUMN breakfast_rate DECIMAL(8,2) NULL;        -- per_meal
+ALTER TABLE hostels ADD COLUMN lunch_rate DECIMAL(8,2) NULL;
+ALTER TABLE hostels ADD COLUMN dinner_rate DECIMAL(8,2) NULL;
+ALTER TABLE hostels ADD COLUMN breakfast_weight DECIMAL(4,2) NOT NULL DEFAULT 1.00;   -- meal_rate: a breakfast may count as half a meal
+ALTER TABLE hostels ADD COLUMN lunch_weight DECIMAL(4,2) NOT NULL DEFAULT 1.00;
+ALTER TABLE hostels ADD COLUMN dinner_weight DECIMAL(4,2) NOT NULL DEFAULT 1.00;
+ALTER TABLE hostel_allocations ADD COLUMN with_mess TINYINT(1) NOT NULL DEFAULT 1;
+
+CREATE TABLE hostel_meal_offs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    hostel_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,
+    date DATE NOT NULL,
+    meal ENUM('breakfast','lunch','dinner') NOT NULL,
+    marked_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_hostel_meal_off (institution_id, student_id, date, meal),
+    FOREIGN KEY (hostel_id) REFERENCES hostels(id),
+    FOREIGN KEY (student_id) REFERENCES students(id)
+);
+
+CREATE TABLE hostel_mess_bazar (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    hostel_id BIGINT UNSIGNED NOT NULL,
+    date DATE NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,                 -- a reversal is a negative row pointing at the original
+    note VARCHAR(255) NULL,
+    reversal_of_id BIGINT UNSIGNED NULL,
+    expense_id BIGINT UNSIGNED NULL,               -- the expense row written with it (source hostel_mess)
+    recorded_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_hostel_bazar_month (institution_id, hostel_id, date),
+    FOREIGN KEY (hostel_id) REFERENCES hostels(id),
+    FOREIGN KEY (reversal_of_id) REFERENCES hostel_mess_bazar(id)
+);
+
+CREATE TABLE hostel_mess_months (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    hostel_id BIGINT UNSIGNED NOT NULL,
+    month CHAR(7) NOT NULL,                        -- YYYY-MM
+    mode ENUM('fixed_monthly','per_meal','meal_rate') NOT NULL,
+    total_meals DECIMAL(10,2) NOT NULL DEFAULT 0,
+    total_bazar DECIMAL(12,2) NOT NULL DEFAULT 0,
+    meal_rate DECIMAL(10,4) NULL,                  -- meal_rate mode: total_bazar / total_meals
+    closed_by BIGINT UNSIGNED NULL,                -- NULL = closed by the nightly job
+    closed_at TIMESTAMP NOT NULL,
+    UNIQUE KEY unique_hostel_mess_month (institution_id, hostel_id, month),
+    FOREIGN KEY (hostel_id) REFERENCES hostels(id)
+);
+
+CREATE TABLE hostel_mess_bills (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    mess_month_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,
+    kind ENUM('bill','adjustment') NOT NULL DEFAULT 'bill',
+    meals DECIMAL(8,2) NOT NULL DEFAULT 0,
+    amount DECIMAL(10,2) NOT NULL,                 -- an adjustment may be negative
+    note VARCHAR(255) NULL,
+    created_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_hostel_mess_bills_student (institution_id, student_id),
+    FOREIGN KEY (mess_month_id) REFERENCES hostel_mess_months(id),
+    FOREIGN KEY (student_id) REFERENCES students(id)
+);
+
 -- Online Classes & Materials
 CREATE TABLE online_classes (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
