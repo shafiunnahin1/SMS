@@ -161,3 +161,19 @@ PUT  /hostel/allocations/{id}/mess       {with_mess}
 GET  /student/hostel/mess?month=         own meals and bills
 GET  /parent/children/{id}/hostel/mess?month=
 ```
+
+## Visitor log and night attendance (D233, HST.4)
+- `hostel_visitors`: who came to see which resident (name, relation, phone, purpose, in time, out time, recorded by). Staff add an entry and set the out time; a correction updates the row with the old values in the audit log; never deleted. The parent sees their own child's visitors.
+- `hostel_attendance`: one row per resident per night (present / absent / leave). The whole hostel is marked on one page, present by default; submitting a night again updates it. A resident newly marked absent sends an in-app notice to their parents (no SMS). The student and the parent see the student's own nights.
+
+### API (HST.4)
+```
+GET  /hostel/{id}/visitors?date=                     a day's visitors
+POST /hostel/{id}/visitors                           {student_id | student_code, visitor_name, relation?, phone?, purpose?, in_at?}
+PUT  /hostel/visitors/{id}                           {out_at? and corrections}
+GET  /hostel/{id}/attendance?date=                   the residents that night with their status (present by default)
+PUT  /hostel/{id}/attendance                         {date, marks: [{student_id, status}]}
+GET  /student/hostel/attendance?month=
+GET  /parent/children/{id}/hostel/attendance?month=
+GET  /parent/children/{id}/hostel/visitors
+```

@@ -721,6 +721,41 @@ CREATE TABLE hostel_mess_bills (
     FOREIGN KEY (student_id) REFERENCES students(id)
 );
 
+-- D233 HST.4: the hostel's visitor log (corrected with an audit trail, never deleted) and the night attendance
+CREATE TABLE hostel_visitors (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    hostel_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,           -- whom the visitor came to see
+    visitor_name VARCHAR(100) NOT NULL,
+    relation VARCHAR(50) NULL,
+    phone VARCHAR(20) NULL,
+    purpose VARCHAR(255) NULL,
+    in_at TIMESTAMP NOT NULL,
+    out_at TIMESTAMP NULL,
+    recorded_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_hostel_visitors_day (institution_id, hostel_id, in_at),
+    FOREIGN KEY (hostel_id) REFERENCES hostels(id),
+    FOREIGN KEY (student_id) REFERENCES students(id)
+);
+
+CREATE TABLE hostel_attendance (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id BIGINT UNSIGNED NOT NULL,
+    hostel_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,
+    date DATE NOT NULL,
+    status ENUM('present','absent','leave') NOT NULL DEFAULT 'present',
+    marked_by BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY unique_hostel_attendance (institution_id, student_id, date),
+    INDEX idx_hostel_attendance_day (institution_id, hostel_id, date),
+    FOREIGN KEY (hostel_id) REFERENCES hostels(id),
+    FOREIGN KEY (student_id) REFERENCES students(id)
+);
+
 -- Online Classes & Materials
 CREATE TABLE online_classes (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

@@ -308,6 +308,8 @@ php artisan make:migration create_hostel_meal_offs_table   # D233 HST.3
 php artisan make:migration create_hostel_mess_bazar_table   # D233 HST.3
 php artisan make:migration create_hostel_mess_months_table   # D233 HST.3
 php artisan make:migration create_hostel_mess_bills_table   # D233 HST.3
+php artisan make:migration create_hostel_visitors_table   # D233 HST.4
+php artisan make:migration create_hostel_attendance_table   # D233 HST.4
 php artisan make:migration create_user_wallets_table   # D218 WAL.3 (one migration file creates user_wallets and user_wallet_transactions)
 php artisan make:migration create_user_wallet_transactions_table
 php artisan make:migration create_syllabus_units_table
