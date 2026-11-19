@@ -14,6 +14,7 @@ import Tabs from '../../ui/variants/Tabs'
 import { EmptyState, ErrorState } from '../../components/StateViews'
 import { Input, Select } from '../../components/FormField'
 import { useStaffCan } from '../../features/staff/StaffDepartment'
+import { HostelPicker, Mess, Meals, Bazar, Visitors, Attendance } from './HostelDaily'
 
 const fieldErrors = (e) => Object.fromEntries(Object.entries(e.response?.data?.errors ?? {}).map(([k, m]) => [k, m[0]]))
 const nul = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v === '' ? null : v]))
@@ -27,7 +28,9 @@ export default function Hostel() {
   return (
     <div className="flex flex-col gap-4" data-testid="hostel">
       <PageHeader title={t('hst.title')} />
-      <Tabs label={t('hst.title')} value={tab} onChange={setTab} items={['allocations', 'hostels', 'rooms', 'report'].map(k => ({ key: k, label: t(`hst.tabs.${k}`) }))} />
+      <Tabs label={t('hst.title')} value={tab} onChange={setTab} items={TABS.map(k => ({ key: k, label: t(`hst.tabs.${k}`) }))} />
+      {DAILY[tab] && <HostelPicker value={hostel} onChange={setHostel} />}
+      {DAILY[tab] && (() => { const Part = DAILY[tab]; return <Part hostelId={hostel} /> })()}
       {tab === 'hostels' && <Hostels onRooms={(h) => { setHostel(h.id); setTab('rooms') }} />}
       {tab === 'rooms' && <Rooms hostelId={hostel} onPick={setHostel} />}
       {tab === 'allocations' && <Allocations />}
@@ -35,6 +38,10 @@ export default function Hostel() {
     </div>
   )
 }
+
+// D233 HST.5: the daily parts work on the picked hostel
+const TABS = ['allocations', 'attendance', 'meals', 'mess', 'bazar', 'visitors', 'hostels', 'rooms', 'report']
+const DAILY = { attendance: Attendance, meals: Meals, mess: Mess, bazar: Bazar, visitors: Visitors }
 
 const useHostels = () => useQuery({ queryKey: ['hostel', 'list'], queryFn: () => api.get('/hostel').then(r => r.data.data) })
 
@@ -172,6 +179,7 @@ function Allocations() {
       setA({ student_code: '', room_id: '', check_in_date: '' }); qc.invalidateQueries({ queryKey: ['hostel'] }); useUiStore.getState().addToast(t('hst.allocated'))
     } catch (err) { setErrors(fieldErrors(err)) }
   }
+  const setMess = async (x) => { try { await api.put(`/hostel/allocations/${x.id}/mess`, { with_mess: !x.with_mess }); qc.invalidateQueries({ queryKey: ['hostel'] }) } catch { /* shown by the interceptor */ } }
   const checkout = (x) => useUiStore.getState().openConfirm({ title: t('hst.checkout'), description: t('hst.checkout_hint', { name: x.student.name ?? '' }), confirmLabel: t('hst.checkout'),
     onConfirm: async () => { try { await api.patch(`/hostel/allocations/${x.id}/checkout`, {}); qc.invalidateQueries({ queryKey: ['hostel'] }) } catch { /* shown by the interceptor */ } } })
   return (
@@ -194,7 +202,8 @@ function Allocations() {
                 <span className="font-medium" dir="auto">{x.student.name}</span><Ltr className="text-content-muted">{x.student.student_id}</Ltr>
                 <span dir="auto">· {x.hostel.name} · {t('hst.room_n', { n: x.room.room_number })}</span>
                 <span className="text-content-muted">{t('hst.since')} <Ltr>{x.check_in_date}</Ltr>{x.check_out_date && <> – <Ltr>{x.check_out_date}</Ltr></>}</span>
-                {canManage && x.status === 'active' && <Button variant="ghost" className="ms-auto" onClick={() => checkout(x)} data-action="checkout">{t('hst.checkout')}</Button>}
+                {x.status === 'active' && <label className="ms-auto inline-flex items-center gap-1.5"><input type="checkbox" checked={x.with_mess} disabled={!canManage} onChange={() => setMess(x)} data-action="with-mess" />{t('hst.with_mess')}</label>}
+                {canManage && x.status === 'active' && <Button variant="ghost" onClick={() => checkout(x)} data-action="checkout">{t('hst.checkout')}</Button>}
               </li>
             ))}
           </ul>

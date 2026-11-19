@@ -67,11 +67,19 @@ describe('hostel screens (D233)', () => {
 
   it('the parent sees the child\'s room and can call the warden', async () => {
     useAuthStore.setState({ user: { role: 'parent' } })
-    api.get.mockImplementation((u) => Promise.resolve({ data: { data: u === '/parent/children' ? [{ id: 7, name: 'Rafi' }] : { hostel: 'Shahjalal Hall', type: 'boys', room_number: '101', floor: 1, monthly_fee: '1500.00', check_in_date: '2026-11-01', warden_name: 'Karim', warden_phone: '01811111111' } } }))
+    api.get.mockImplementation((u) => Promise.resolve({ data: { data: u === '/parent/children' ? [{ id: 7, name: 'Rafi' }]
+      : u.endsWith('/mess') ? { with_mess: true, current: { month: '2026-11', meals: { breakfast: 9, lunch: 10, dinner: 8 } }, bills: [{ month: '2026-10', meals: '84.00', amount: '4200.00', adjusted: true }] }
+      : u.endsWith('/attendance') ? { month: '2026-11', counts: { present: 9, absent: 1, leave: 0 }, nights: [{ date: '2026-11-04', status: 'absent' }] }
+      : u.endsWith('/visitors') ? [{ id: 1, visitor_name: 'Abdul', relation: 'Father', in_at: '2026-11-08 17:00', out_at: '2026-11-08 18:00' }]
+      : { hostel: 'Shahjalal Hall', type: 'boys', room_number: '101', floor: 1, monthly_fee: '1500.00', check_in_date: '2026-11-01', warden_name: 'Karim', warden_phone: '01811111111' } } }))
     at('/parent/hostel', <MyHostel />)
     const box = await screen.findByTestId('my-room')
     expect(box).toHaveTextContent('Shahjalal Hall (Boys)')
     expect(box.querySelector('a[href="tel:01811111111"]')).not.toBeNull()
     expect(api.get).toHaveBeenCalledWith('/parent/children/7/hostel')
+    expect(await screen.findByTestId('family-mess')).toHaveTextContent('breakfast 9')
+    expect(screen.getByTestId('family-bill')).toHaveTextContent('Adjustment')
+    expect(screen.getByTestId('family-nights')).toHaveTextContent('Absent 1')
+    expect(await screen.findByTestId('family-visitors')).toHaveTextContent('Abdul (Father)')
   })
 })

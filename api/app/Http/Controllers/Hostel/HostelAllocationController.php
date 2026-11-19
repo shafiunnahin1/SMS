@@ -45,7 +45,7 @@ class HostelAllocationController extends Controller
 
     public static function row(HostelAllocation $a): array
     {
-        return ['id' => $a->id, 'status' => $a->status, 'check_in_date' => $a->check_in_date->toDateString(), 'check_out_date' => $a->check_out_date?->toDateString(),
+        return ['id' => $a->id, 'status' => $a->status, 'with_mess' => (bool) ($a->with_mess ?? true), 'check_in_date' => $a->check_in_date->toDateString(), 'check_out_date' => $a->check_out_date?->toDateString(),   // with_mess: D233 HST.5
             'student' => ['id' => $a->student_id, 'name' => $a->student?->user?->name, 'student_id' => $a->student?->student_id, 'gender' => $a->student?->gender],
             'room' => ['id' => $a->room_id, 'room_number' => $a->room?->room_number, 'floor' => (int) ($a->room?->floor ?? 1)],
             'hostel' => ['id' => $a->room?->hostel_id, 'name' => $a->room?->hostel?->name]];
