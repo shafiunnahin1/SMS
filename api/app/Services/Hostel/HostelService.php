@@ -80,6 +80,14 @@ class HostelService
         Hostel::whereKey($hostelId)->update(['total_rooms' => HostelRoom::where('hostel_id', $hostelId)->count()]);
     }
 
+    /** D233 HST.4: the students living in a hostel on a date (checked in on or before it, not yet checked out) */
+    public function residents(Hostel $h, string $date): Collection
+    {
+        return HostelAllocation::with(['student.user:id,name', 'room:id,room_number,hostel_id'])->whereIn('room_id', HostelRoom::where('hostel_id', $h->id)->select('id'))
+            ->where('check_in_date', '<=', $date)->where(fn ($q) => $q->whereNull('check_out_date')->orWhere('check_out_date', '>', $date))->get()
+            ->unique('student_id')->sortBy(fn ($a) => [$a->room?->room_number, $a->student?->user?->name])->values();
+    }
+
     /** the room-fee dues of a student, in FeeService::dueLines shape */
     public function dueLines(Student $s, ?Enrollment $first, FeeCategory $c): Collection
     {

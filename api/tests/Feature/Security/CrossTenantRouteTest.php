@@ -35,6 +35,8 @@ class CrossTenantRouteTest extends TestCase
             'GET api/v1/parent/children/{id}/online-classes' => ['parent', "parent/children/{$theirs['student']}/online-classes"],   // D231 OCL.1
             'GET api/v1/parent/children/{id}/hostel'       => ['parent', "parent/children/{$theirs['student']}/hostel"],   // D233 HST.1
             'GET api/v1/parent/children/{id}/hostel/mess'  => ['parent', "parent/children/{$theirs['student']}/hostel/mess"],   // D233 HST.3
+            'GET api/v1/parent/children/{id}/hostel/attendance' => ['parent', "parent/children/{$theirs['student']}/hostel/attendance"],   // D233 HST.4
+            'GET api/v1/parent/children/{id}/hostel/visitors' => ['parent', "parent/children/{$theirs['student']}/hostel/visitors"],
             'PUT api/v1/hostel/{id}/rooms/{roomId}'        => ['admin', "hostel/{$theirs['hostel']}/rooms/{$theirs['room']}"],
             'DELETE api/v1/hostel/{id}/rooms/{roomId}'     => ['admin', "hostel/{$theirs['hostel']}/rooms/{$theirs['room']}"],
             'GET api/v1/parent/children/{id}/attendance'   => ['parent', "parent/children/{$theirs['student']}/attendance"],

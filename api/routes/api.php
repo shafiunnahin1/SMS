@@ -979,9 +979,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/hostel/{id}/mess/bills', [\App\Http\Controllers\Hostel\HostelMessController::class, 'bills'])->whereNumber('id');
             Route::post('/hostel/mess-bills/{id}/adjust', [\App\Http\Controllers\Hostel\HostelMessController::class, 'adjust'])->whereNumber('id');
             Route::put('/hostel/allocations/{id}/mess', [\App\Http\Controllers\Hostel\HostelMessController::class, 'setMember'])->whereNumber('id');
+            // D233 HST.4: visitors, night attendance
+            Route::get('/hostel/{id}/visitors', [\App\Http\Controllers\Hostel\HostelVisitorController::class, 'index'])->whereNumber('id');
+            Route::post('/hostel/{id}/visitors', [\App\Http\Controllers\Hostel\HostelVisitorController::class, 'store'])->whereNumber('id');
+            Route::put('/hostel/visitors/{id}', [\App\Http\Controllers\Hostel\HostelVisitorController::class, 'update'])->whereNumber('id');
+            Route::get('/hostel/{id}/attendance', [\App\Http\Controllers\Hostel\HostelAttendanceController::class, 'index'])->whereNumber('id');
+            Route::put('/hostel/{id}/attendance', [\App\Http\Controllers\Hostel\HostelAttendanceController::class, 'store'])->whereNumber('id');
         });
         Route::middleware(['module:hostel', 'role:parent'])->get('/parent/children/{id}/hostel', [\App\Http\Controllers\Hostel\HostelController::class, 'child'])->whereNumber('id');
         Route::middleware(['module:hostel', 'role:parent'])->get('/parent/children/{id}/hostel/mess', [\App\Http\Controllers\Hostel\HostelMessController::class, 'child'])->whereNumber('id');   // D233 HST.3
+        Route::middleware(['module:hostel', 'role:parent'])->get('/parent/children/{id}/hostel/attendance', [\App\Http\Controllers\Hostel\HostelAttendanceController::class, 'child'])->whereNumber('id');   // D233 HST.4
+        Route::middleware(['module:hostel', 'role:parent'])->get('/parent/children/{id}/hostel/visitors', [\App\Http\Controllers\Hostel\HostelVisitorController::class, 'child'])->whereNumber('id');
 
         // ── D231 OCL.1: online classes (docs/modules/online-class.md); staff with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
         Route::middleware(['module:online_class', 'role:admin,teacher,institution_staff'])->group(function () {
@@ -1268,6 +1276,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/student/online-classes',         [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'mineStudent'])->middleware('module:online_class');   // D231 OCL.1
             Route::get('/student/hostel',                 [\App\Http\Controllers\Hostel\HostelController::class, 'mine'])->middleware('module:hostel');   // D233 HST.1
             Route::get('/student/hostel/mess',            [\App\Http\Controllers\Hostel\HostelMessController::class, 'mine'])->middleware('module:hostel');   // D233 HST.3
+            Route::get('/student/hostel/attendance',      [\App\Http\Controllers\Hostel\HostelAttendanceController::class, 'mine'])->middleware('module:hostel');   // D233 HST.4
             Route::get('/student/syllabus',               [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'mine'])->middleware('module:syllabus');   // D224 SYL.2
             Route::get('/student/results',                [ResultController::class, 'forStudent'])->middleware('module:exams');
             Route::get('/student/fees',                   [FeeController::class, 'forStudent'])->middleware('module:fees');

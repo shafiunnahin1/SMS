@@ -22,4 +22,7 @@ return [
     'no_mess' => 'This hostel has no mess.',
     'month_not_over' => 'Only a month that has ended can be closed.',
     'adjust_zero' => 'An adjustment cannot be zero.',
+    'not_resident' => 'This student does not live in this hostel on that date.',
+    'absent_title' => 'Absent from the hostel',
+    'absent_body' => 'Your child was marked absent at :hostel on the night of :date.',
 ];

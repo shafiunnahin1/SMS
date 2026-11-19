@@ -360,6 +360,13 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/hostel/mess-bills/{id}/adjust' => fn (array $other) => $this->seedHostelMessBill($other),
             'PUT api/v1/hostel/allocations/{id}/mess' => fn (array $other) => $this->seedHostelAllocation($other),
             'GET api/v1/parent/children/{id}/hostel/mess' => null,   // parent only: CrossTenantRouteTest plan
+            'GET api/v1/hostel/{id}/visitors' => fn (array $other) => $this->seedHostel($other),   // D233 HST.4
+            'POST api/v1/hostel/{id}/visitors' => fn (array $other) => $this->seedHostel($other),
+            'PUT api/v1/hostel/visitors/{id}' => fn (array $other) => $this->seedHostelVisitor($other),
+            'GET api/v1/hostel/{id}/attendance' => fn (array $other) => $this->seedHostel($other),
+            'PUT api/v1/hostel/{id}/attendance' => fn (array $other) => $this->seedHostel($other),
+            'GET api/v1/parent/children/{id}/hostel/attendance' => null,   // parent only: CrossTenantRouteTest plan
+            'GET api/v1/parent/children/{id}/hostel/visitors' => null,
             'PUT api/v1/hostel/{id}' => fn (array $other) => $this->seedHostel($other),   // D233 HST.1
             'DELETE api/v1/hostel/{id}' => fn (array $other) => $this->seedHostel($other),
             'GET api/v1/hostel/{id}/rooms' => fn (array $other) => $this->seedHostel($other),
@@ -471,6 +478,13 @@ class TenantIsolationTest extends TestCase
     private function seedHostel(array $t): int
     {
         return Tenancy::as($t['institution'], fn () => \App\Models\Hostel::firstOrCreate(['name' => 'HST-H'], ['type' => 'boys', 'total_rooms' => 1])->id);
+    }
+
+    private function seedHostelVisitor(array $t): int
+    {
+        $hostel = $this->seedHostel($t);
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\HostelVisitor::firstOrCreate(['hostel_id' => $hostel, 'student_id' => $student, 'visitor_name' => 'HST-V'], ['in_at' => '2026-10-02 10:00:00'])->id);
     }
 
     private function seedHostelBazar(array $t): int
