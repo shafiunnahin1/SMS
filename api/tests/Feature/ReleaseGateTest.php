@@ -25,9 +25,9 @@ class ReleaseGateTest extends TestCase
     {
         $gate = app(ModuleGate::class);
         $school = Institution::create(['name' => 'S', 'slug' => 'school', 'institution_type' => 'school', 'status' => 'active',
-            'enabled_modules' => ['hostel' => true, 'scholarships' => true]]);   // D228: library ships with D227; D229: transport ships; D231: online_class ships, scholarships does not
+            'enabled_modules' => ['alumni' => true, 'scholarships' => true]]);   // D228: library ships with D227; D229: transport ships; D231: online_class ships, scholarships does not; D233: hostel ships, alumni does not
 
-        $this->assertFalse($gate->allows($school, 'hostel'));
+        $this->assertFalse($gate->allows($school, 'alumni'));
         $this->assertFalse($gate->allows($school, 'scholarships'));
         $this->assertTrue($gate->allows($school, 'students'));
     }
@@ -35,10 +35,10 @@ class ReleaseGateTest extends TestCase
     public function test_an_unshipped_modules_route_is_403_module_disabled(): void
     {
         $school = Institution::create(['name' => 'S', 'slug' => 'school', 'institution_type' => 'school', 'status' => 'active',
-            'enabled_modules' => ['hostel' => true]]);
-        Route::middleware(['tenant', 'module:hostel'])->get('api/v1/test/hostel', fn () => response()->json(['ok' => true]));
+            'enabled_modules' => ['alumni' => true]]);
+        Route::middleware(['tenant', 'module:alumni'])->get('api/v1/test/alumni', fn () => response()->json(['ok' => true]));
 
-        $this->api('GET', $this->hostOf($school), 'test/hostel')->assertForbidden()->assertJson(['error' => 'module_disabled']);
+        $this->api('GET', $this->hostOf($school), 'test/alumni')->assertForbidden()->assertJson(['error' => 'module_disabled']);
     }
 
     public function test_enabled_modules_never_lists_an_unshipped_module(): void
@@ -46,7 +46,7 @@ class ReleaseGateTest extends TestCase
         $gate = app(ModuleGate::class);
         foreach (['school', 'college', 'coaching', 'private_batch'] as $type) {
             $i = Institution::create(['name' => $type, 'slug' => "r-{$type}", 'institution_type' => $type, 'status' => 'active',
-                'enabled_modules' => ['hostel' => true, 'transport' => true]]);
+                'enabled_modules' => ['alumni' => true, 'transport' => true]]);
             $this->assertSame([], array_values(array_diff($gate->enabledModules($i), config('release.modules'))), "{$type} lists unshipped modules");
         }
     }

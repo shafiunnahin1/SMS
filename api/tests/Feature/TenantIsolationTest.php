@@ -348,6 +348,14 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/student/qb/quiz-packages/{id}/buy' => null,
             'POST api/v1/student/qb/quiz-packages/{id}/wallet-buy' => null,
             'PUT api/v1/syllabus/units/{id}' => fn (array $other) => $this->seedSyllabusUnit($other),   // D224 SYL.1
+            'PUT api/v1/hostel/{id}' => fn (array $other) => $this->seedHostel($other),   // D233 HST.1
+            'DELETE api/v1/hostel/{id}' => fn (array $other) => $this->seedHostel($other),
+            'GET api/v1/hostel/{id}/rooms' => fn (array $other) => $this->seedHostel($other),
+            'POST api/v1/hostel/{id}/rooms' => fn (array $other) => $this->seedHostel($other),
+            'PUT api/v1/hostel/{id}/rooms/{roomId}' => null,   // two ids - CrossTenantRouteTest plans it
+            'DELETE api/v1/hostel/{id}/rooms/{roomId}' => null,
+            'PATCH api/v1/hostel/allocations/{id}/checkout' => fn (array $other) => $this->seedHostelAllocation($other),
+            'GET api/v1/parent/children/{id}/hostel' => null,   // parent only: CrossTenantRouteTest plan
             'PUT api/v1/online-classes/{id}' => fn (array $other) => $this->seedOnlineClass($other),   // D231 OCL.1
             'DELETE api/v1/online-classes/{id}' => fn (array $other) => $this->seedOnlineClass($other),
             'PATCH api/v1/online-classes/{id}/complete' => fn (array $other) => $this->seedOnlineClass($other),
@@ -446,6 +454,21 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\BookIssue::firstOrCreate(['book_id' => $book, 'student_id' => $student],
             ['issued_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'issue_date' => '2026-10-01', 'due_date' => '2026-10-15', 'status' => 'returned', 'fine_amount' => '10.00', 'fine_paid' => false])->id);
+    }
+
+    private function seedHostel(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\Hostel::firstOrCreate(['name' => 'HST-H'], ['type' => 'boys', 'total_rooms' => 1])->id);
+    }
+
+    private function seedHostelAllocation(array $t): int
+    {
+        $hostel = $this->seedHostel($t);
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], function () use ($hostel, $student) {
+            $room = \App\Models\HostelRoom::firstOrCreate(['hostel_id' => $hostel, 'room_number' => 'HST-1'], ['capacity' => 4]);
+            return \App\Models\HostelAllocation::firstOrCreate(['student_id' => $student, 'room_id' => $room->id], ['check_in_date' => '2026-10-01', 'status' => 'active'])->id;
+        });
     }
 
     private function seedOnlineClass(array $t): int

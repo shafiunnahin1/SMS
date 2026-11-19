@@ -73,9 +73,11 @@ class FeeService
         $enrollments = $s->activeEnrollments()->with(['batch', 'program'])->orderBy('id')->get();
         // D229 TRN.1: the transport fee is the student's route fee per month, once per student, never a per-enrollment due
         $transport = $categories->firstWhere('name', \App\Services\Transport\TransportService::FEE_CATEGORY);
+        $hostel = $categories->firstWhere('name', \App\Services\Hostel\HostelService::FEE_CATEGORY);   // D233 HST.1: the same rule for the room fee
         foreach ($enrollments as $e) {
             foreach ($categories as $c) {
                 if ($transport && $c->id === $transport->id) continue;
+                if ($hostel && $c->id === $hostel->id) continue;
                 $gross = $this->resolveAmount($e, $c);
                 if ($gross === null) continue;
                 foreach ($this->periodsFor($c, $e) as $period) {
@@ -99,6 +101,7 @@ class FeeService
             }
         }
         if ($transport) $lines = $lines->concat(app(\App\Services\Transport\TransportService::class)->dueLines($s, $enrollments->first(), $transport))->values();
+        if ($hostel) $lines = $lines->concat(app(\App\Services\Hostel\HostelService::class)->dueLines($s, $enrollments->first(), $hostel))->values();
         return $lines;
     }
 

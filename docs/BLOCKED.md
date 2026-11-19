@@ -343,3 +343,8 @@ Needed from the owner: a follow-up decision (proposed D189) that authorizes (3)-
 - **What blocks:** `tests/Feature/BootstrapTest.php::test_a_tenant_host_gets_terms_modules_and_a_full_theme` expects a coaching tenant to get every R3 module except opt-in ones and `library`; D229 ships `transport` for school and college only.
 - **Tried:** nothing that edits the test.
 - **Owner choice needed:** decision D230 (drafted as owner/approve-D230.ps1): the two coaching expectations also leave out `transport`. Resolved: D230 approved and merged; the test is amended in TRN.1.
+
+## 2026-11-18 · HST.1 (D233) · a third test still treats the hostel as unshipped
+- **What blocks:** `api/tests/Feature/SuperAdmin/SuperInstitutionTest.php::test_a_module_override_changes_the_tenants_menu_at_once` expects a Super Admin override of `hostel` to be refused (422) as an unshipped module (its last line); D233 ships `hostel`, so the override is accepted (200). D233 (11) names only ReleaseGateTest and BootstrapTest.
+- **Tried:** nothing that edits the test.
+- **Owner choice needed:** decision D234 (drafted as owner/approve-D234.ps1): that line uses `alumni` (still unshipped) in place of `hostel`; every other assertion stays. Resolved: D234 approved and merged; the line is amended in HST.1.

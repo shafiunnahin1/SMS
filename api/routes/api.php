@@ -952,6 +952,24 @@ Route::prefix('v1')->group(function () {
         Route::get('/settings/calendar',                  [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'show'])->middleware('role:admin,teacher,accountant,student,parent');
         Route::put('/admin/settings/calendar',            [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'update'])->middleware('role:admin');
 
+        // ── D233 HST.1: hostel (docs/modules/hostel.md); staff with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
+        Route::middleware(['module:hostel', 'role:admin,institution_staff'])->group(function () {
+            Route::get('/hostel', [\App\Http\Controllers\Hostel\HostelController::class, 'index']);
+            Route::post('/hostel', [\App\Http\Controllers\Hostel\HostelController::class, 'store']);
+            Route::put('/hostel/{id}', [\App\Http\Controllers\Hostel\HostelController::class, 'update'])->whereNumber('id');
+            Route::delete('/hostel/{id}', [\App\Http\Controllers\Hostel\HostelController::class, 'destroy'])->whereNumber('id');
+            Route::get('/hostel/reports/occupancy', [\App\Http\Controllers\Hostel\HostelController::class, 'occupancy']);
+            Route::get('/hostel/available-rooms', [\App\Http\Controllers\Hostel\HostelRoomController::class, 'available']);
+            Route::get('/hostel/{id}/rooms', [\App\Http\Controllers\Hostel\HostelRoomController::class, 'index'])->whereNumber('id');
+            Route::post('/hostel/{id}/rooms', [\App\Http\Controllers\Hostel\HostelRoomController::class, 'store'])->whereNumber('id');
+            Route::put('/hostel/{id}/rooms/{roomId}', [\App\Http\Controllers\Hostel\HostelRoomController::class, 'update'])->whereNumber('id');
+            Route::delete('/hostel/{id}/rooms/{roomId}', [\App\Http\Controllers\Hostel\HostelRoomController::class, 'destroy'])->whereNumber('id');
+            Route::get('/hostel/allocations', [\App\Http\Controllers\Hostel\HostelAllocationController::class, 'index']);
+            Route::post('/hostel/allocate', [\App\Http\Controllers\Hostel\HostelAllocationController::class, 'allocate']);
+            Route::patch('/hostel/allocations/{id}/checkout', [\App\Http\Controllers\Hostel\HostelAllocationController::class, 'checkout'])->whereNumber('id');
+        });
+        Route::middleware(['module:hostel', 'role:parent'])->get('/parent/children/{id}/hostel', [\App\Http\Controllers\Hostel\HostelController::class, 'child'])->whereNumber('id');
+
         // ── D231 OCL.1: online classes (docs/modules/online-class.md); staff with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
         Route::middleware(['module:online_class', 'role:admin,teacher,institution_staff'])->group(function () {
             Route::get('/online-classes',                     [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'index']);
@@ -1235,6 +1253,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/student/library',                [\App\Http\Controllers\Library\LibraryIssueController::class, 'mine'])->middleware('module:library');   // D227 LIB.1
             Route::get('/student/transport',              [\App\Http\Controllers\Transport\TransportAssignmentController::class, 'mine'])->middleware('module:transport');   // D229 TRN.1
             Route::get('/student/online-classes',         [\App\Http\Controllers\OnlineClass\OnlineClassController::class, 'mineStudent'])->middleware('module:online_class');   // D231 OCL.1
+            Route::get('/student/hostel',                 [\App\Http\Controllers\Hostel\HostelController::class, 'mine'])->middleware('module:hostel');   // D233 HST.1
             Route::get('/student/syllabus',               [\App\Http\Controllers\Syllabus\SyllabusReportController::class, 'mine'])->middleware('module:syllabus');   // D224 SYL.2
             Route::get('/student/results',                [ResultController::class, 'forStudent'])->middleware('module:exams');
             Route::get('/student/fees',                   [FeeController::class, 'forStudent'])->middleware('module:fees');

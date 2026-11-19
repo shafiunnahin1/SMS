@@ -33,6 +33,9 @@ class CrossTenantRouteTest extends TestCase
             'GET api/v1/parent/children/{id}/library'      => ['parent', "parent/children/{$theirs['student']}/library"],   // D227 LIB.1
             'GET api/v1/parent/children/{id}/transport'    => ['parent', "parent/children/{$theirs['student']}/transport"],   // D229 TRN.1
             'GET api/v1/parent/children/{id}/online-classes' => ['parent', "parent/children/{$theirs['student']}/online-classes"],   // D231 OCL.1
+            'GET api/v1/parent/children/{id}/hostel'       => ['parent', "parent/children/{$theirs['student']}/hostel"],   // D233 HST.1
+            'PUT api/v1/hostel/{id}/rooms/{roomId}'        => ['admin', "hostel/{$theirs['hostel']}/rooms/{$theirs['room']}"],
+            'DELETE api/v1/hostel/{id}/rooms/{roomId}'     => ['admin', "hostel/{$theirs['hostel']}/rooms/{$theirs['room']}"],
             'GET api/v1/parent/children/{id}/attendance'   => ['parent', "parent/children/{$theirs['student']}/attendance"],
             'GET api/v1/results/marksheet/{studentId}'     => ['admin', "results/marksheet/{$theirs['student']}?exam_id={$theirs['exam']}&format=json"],
             'GET api/v1/exams/{id}/subjects/{subjectId}/entry' => ['admin', "exams/{$theirs['exam']}/subjects/{$theirs['subject']}/entry"],
@@ -95,7 +98,9 @@ class CrossTenantRouteTest extends TestCase
             $student = app(StudentService::class)->create(['name' => "Child {$slug}", 'guardian_phone' => '01711111111'], $batch);
             $subject = Subject::create(['program_id' => $program->id, 'name' => 'Math']);
             $exam = app(ExamService::class)->create(['name' => 'Term', 'program_id' => $program->id, 'exam_type' => 'term', 'academic_year' => 2026]);
-            return ['student' => $student->id, 'exam' => $exam->id, 'subject' => ExamSubject::where('exam_id', $exam->id)->value('subject_id') ?? $subject->id];
+            $hostel = \App\Models\Hostel::create(['name' => "H {$slug}", 'type' => 'boys', 'total_rooms' => 1]);   // D233 HST.1
+            $room = \App\Models\HostelRoom::create(['hostel_id' => $hostel->id, 'room_number' => '101', 'capacity' => 2]);
+            return ['student' => $student->id, 'exam' => $exam->id, 'subject' => ExamSubject::where('exam_id', $exam->id)->value('subject_id') ?? $subject->id, 'hostel' => $hostel->id, 'room' => $room->id];
         });
         $users['parent'] = Tenancy::as($i, fn () => Student::find($ids['student'])->parents()->first());
         $users['parent']->forceFill(['must_change_password' => false])->save();
