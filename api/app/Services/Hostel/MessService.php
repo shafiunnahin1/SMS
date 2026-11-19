@@ -219,7 +219,7 @@ class MessService
             $now = ['month' => now()->format('Y-m'), 'mode' => $h->mess_mode, 'meals' => $c];
         }
         $bills = HostelMessBill::with('month')->where('student_id', $s->id)->orderByDesc('id')->limit(60)->get()
-            ->groupBy(fn ($b) => $b->month->month)->map(fn ($rows, $m) => ['month' => $m, 'mode' => $rows->first()->month->mode, 'meals' => $rows->where('kind', 'bill')->sum(fn ($b) => (float) $b->meals),
+            ->groupBy(fn ($b) => $b->month->month)->map(fn ($rows, $m) => ['month' => $m, 'mode' => $rows->first()->month->mode, 'meals' => Money::format($rows->where('kind', 'bill')->sum(fn ($b) => Money::toPaisa((string) $b->meals))),   // meals x 100 kept exact, no float (G9)
                 'amount' => Money::format($rows->sum(fn ($b) => Money::toPaisa((string) $b->amount))), 'adjusted' => $rows->where('kind', 'adjustment')->isNotEmpty()])->sortKeysDesc()->values();
         return ['with_mess' => (bool) ($a?->with_mess ?? false), 'current' => $now, 'bills' => $bills];
     }
