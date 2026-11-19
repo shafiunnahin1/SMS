@@ -952,6 +952,23 @@ Route::prefix('v1')->group(function () {
         Route::get('/settings/calendar',                  [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'show'])->middleware('role:admin,teacher,accountant,student,parent');
         Route::put('/admin/settings/calendar',            [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'update'])->middleware('role:admin');
 
+        // ── D235 MTG.1: parent meetings (extended-features.md section 14); staff with exact duty keys ──
+        Route::middleware(['module:parent_meeting', 'role:admin,teacher,institution_staff'])->group(function () {
+            Route::get('/meetings', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'index']);
+            Route::post('/meetings', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'store']);
+            Route::put('/meetings/{id}', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'update'])->whereNumber('id');
+            Route::patch('/meetings/{id}/cancel', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'cancel'])->whereNumber('id');
+            Route::patch('/meetings/{id}/complete', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'complete'])->whereNumber('id');
+        });
+        Route::middleware(['module:parent_meeting', 'role:parent'])->group(function () {
+            Route::get('/parent/meetings', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'parentIndex']);
+            Route::post('/parent/meetings', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'parentStore']);
+            Route::patch('/parent/meetings/{id}/confirm', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'confirm'])->whereNumber('id');
+            Route::patch('/parent/meetings/{id}/reschedule', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'reschedule'])->whereNumber('id');
+            Route::patch('/parent/meetings/{id}/cancel', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'parentCancel'])->whereNumber('id');
+            Route::get('/parent/children/{id}/teachers', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'childTeachers'])->whereNumber('id');
+        });
+
         // ── D233 HST.1: hostel (docs/modules/hostel.md); staff with exact duty keys (StaffIdentityBoundary, DepartmentRouteCatalog) ──
         Route::middleware(['module:hostel', 'role:admin,institution_staff'])->group(function () {
             Route::get('/hostel', [\App\Http\Controllers\Hostel\HostelController::class, 'index']);

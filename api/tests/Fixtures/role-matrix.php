@@ -714,6 +714,18 @@ return [
     'GET api/v1/parent/children/{id}/hostel/attendance' => ['parent'],
     'GET api/v1/parent/children/{id}/hostel/visitors' => ['parent'],
     'GET api/v1/student/hostel/attendance' => ['student'],
+    // D235 MTG.1
+    'GET api/v1/meetings' => ['admin', 'teacher', 'institution_staff'],
+    'POST api/v1/meetings' => ['admin', 'teacher', 'institution_staff'],
+    'PUT api/v1/meetings/{id}' => ['admin', 'teacher', 'institution_staff'],
+    'PATCH api/v1/meetings/{id}/cancel' => ['admin', 'teacher', 'institution_staff'],
+    'PATCH api/v1/meetings/{id}/complete' => ['admin', 'teacher', 'institution_staff'],
+    'GET api/v1/parent/meetings' => ['parent'],
+    'POST api/v1/parent/meetings' => ['parent'],
+    'PATCH api/v1/parent/meetings/{id}/confirm' => ['parent'],
+    'PATCH api/v1/parent/meetings/{id}/reschedule' => ['parent'],
+    'PATCH api/v1/parent/meetings/{id}/cancel' => ['parent'],
+    'GET api/v1/parent/children/{id}/teachers' => ['parent'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],

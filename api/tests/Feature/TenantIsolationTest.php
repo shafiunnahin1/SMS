@@ -367,6 +367,13 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/hostel/{id}/attendance' => fn (array $other) => $this->seedHostel($other),
             'GET api/v1/parent/children/{id}/hostel/attendance' => null,   // parent only: CrossTenantRouteTest plan
             'GET api/v1/parent/children/{id}/hostel/visitors' => null,
+            'PUT api/v1/meetings/{id}' => fn (array $other) => $this->seedMeeting($other),   // D235 MTG.1
+            'PATCH api/v1/meetings/{id}/cancel' => fn (array $other) => $this->seedMeeting($other),
+            'PATCH api/v1/meetings/{id}/complete' => fn (array $other) => $this->seedMeeting($other),
+            'PATCH api/v1/parent/meetings/{id}/confirm' => null,   // parent only: CrossTenantRouteTest plan
+            'PATCH api/v1/parent/meetings/{id}/reschedule' => null,
+            'PATCH api/v1/parent/meetings/{id}/cancel' => null,
+            'GET api/v1/parent/children/{id}/teachers' => null,
             'PUT api/v1/hostel/{id}' => fn (array $other) => $this->seedHostel($other),   // D233 HST.1
             'DELETE api/v1/hostel/{id}' => fn (array $other) => $this->seedHostel($other),
             'GET api/v1/hostel/{id}/rooms' => fn (array $other) => $this->seedHostel($other),
@@ -473,6 +480,15 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\BookIssue::firstOrCreate(['book_id' => $book, 'student_id' => $student],
             ['issued_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'issue_date' => '2026-10-01', 'due_date' => '2026-10-15', 'status' => 'returned', 'fine_amount' => '10.00', 'fine_paid' => false])->id);
+    }
+
+    private function seedMeeting(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], function () use ($t, $student) {
+            $teacher = \App\Models\Teacher::value('id') ?? \App\Models\Teacher::create(['user_id' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'employee_id' => 'MTG-T', 'status' => 'active'])->id;
+            return \App\Models\ParentMeeting::firstOrCreate(['subject' => 'MTG-M'], ['student_id' => $student, 'teacher_id' => $teacher, 'proposed_date' => '2030-01-01', 'proposed_time' => '10:00'])->id;
+        });
     }
 
     private function seedHostel(array $t): int

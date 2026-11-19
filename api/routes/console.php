@@ -43,6 +43,7 @@ Artisan::command('ops:alert-test', function () {
 \Illuminate\Support\Facades\Schedule::command('risk:evaluate')->dailyAt('05:20')->withoutOverlapping();   // D216 RISK.1
 \Illuminate\Support\Facades\Schedule::command('library:overdue')->dailyAt('07:30')->timezone('Asia/Dhaka')->withoutOverlapping();   // D227 (8)
 \Illuminate\Support\Facades\Schedule::command('hostel:mess-close')->dailyAt('00:30')->timezone('Asia/Dhaka')->withoutOverlapping();   // D233 HST.3: last month on the 1st (idempotent daily)
+\Illuminate\Support\Facades\Schedule::command('meetings:remind')->dailyAt('18:00')->timezone('Asia/Dhaka')->withoutOverlapping();   // D235 MTG.1: the evening before
 \Illuminate\Support\Facades\Schedule::command('syllabus:digest')->weeklyOn(6, '08:00')->timezone('Asia/Dhaka')->withoutOverlapping();   // D224 (3): Saturday morning
 \Illuminate\Support\Facades\Schedule::command('risk:prune')->dailyAt('05:40')->withoutOverlapping();
 \Illuminate\Support\Facades\Schedule::command('payments:reconcile')->everyFiveMinutes()->withoutOverlapping();   // D217 OPAY.1
