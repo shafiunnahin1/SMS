@@ -44,10 +44,14 @@ class FeeService
         return $tuition ? $this->resolveAmount($e, $tuition) : null;
     }
 
-    /** Release 1 grants no automatic discount; waivers and sibling discount plug in here with their release */
-    public function discountFor(Student $s, FeeCategory $c, string $gross): string
+    private ?\App\Services\Scholarship\ScholarshipService $scholarships = null;
+
+    /** D236 SCH.1: a percentage scholarship lowers one month of the tuition; waivers and sibling discount plug in here with their release */
+    public function discountFor(Student $s, FeeCategory $c, string $gross, ?string $period = null): string
     {
-        return '0.00';
+        if ($period === null) return '0.00';
+        $this->scholarships ??= app(\App\Services\Scholarship\ScholarshipService::class);
+        return Money::format($this->scholarships->tuitionDiscount($s, $c, Money::toPaisa($gross), $period));
     }
 
     /** Monthly: from the enrollment month (at most 12 months back) to now */
@@ -90,7 +94,7 @@ class FeeService
                     if ($prorate && $c->frequency === 'monthly' && $period === $e->enrolled_at->format('Y-m') && $e->enrolled_at->day > 15) {
                         $g = Money::ratio($g, 1, 2);
                     }
-                    $disc = Money::toPaisa($this->discountFor($s, $c, Money::format($g)));
+                    $disc = Money::toPaisa($this->discountFor($s, $c, Money::format($g), $period));
                     $payable = $g - $disc - $paid->sum(fn ($p) => Money::toPaisa($p->paid_amount));
                     if ($payable <= 0) continue;
 

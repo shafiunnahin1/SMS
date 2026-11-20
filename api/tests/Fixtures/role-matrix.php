@@ -742,6 +742,17 @@ return [
     'POST api/v1/behavior/{id}/notify-parent' => ['admin', 'teacher', 'institution_staff'],
     'GET api/v1/behavior/summary/{studentId}' => ['admin', 'teacher', 'institution_staff'],
     'GET api/v1/parent/children/{id}/behavior' => ['parent'],
+    // D236 SCH.1
+    'GET api/v1/scholarships' => ['admin', 'institution_staff'],
+    'POST api/v1/scholarships' => ['admin', 'institution_staff'],
+    'PUT api/v1/scholarships/{id}' => ['admin', 'institution_staff'],
+    'PATCH api/v1/scholarships/{id}/close' => ['admin', 'institution_staff'],
+    'GET api/v1/scholarships/{id}/applications' => ['admin', 'institution_staff'],
+    'PATCH api/v1/scholarships/applications/{id}/award' => ['admin', 'institution_staff'],
+    'PATCH api/v1/scholarships/applications/{id}/revoke' => ['admin', 'institution_staff'],
+    'POST api/v1/scholarships/{id}/apply' => ['admin', 'institution_staff', 'parent', 'student'],
+    'GET api/v1/student/scholarships' => ['student'],
+    'GET api/v1/parent/children/{id}/scholarships' => ['parent'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],

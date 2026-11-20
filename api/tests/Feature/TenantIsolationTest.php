@@ -373,6 +373,13 @@ class TenantIsolationTest extends TestCase
             'POST api/v1/behavior/{id}/notify-parent' => fn (array $other) => $this->seedBehavior($other),
             'GET api/v1/behavior/summary/{studentId}' => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/parent/children/{id}/behavior' => null,   // parent only: CrossTenantRouteTest plan
+            'PUT api/v1/scholarships/{id}' => fn (array $other) => $this->seedScholarship($other),   // D236 SCH.1
+            'PATCH api/v1/scholarships/{id}/close' => fn (array $other) => $this->seedScholarship($other),
+            'GET api/v1/scholarships/{id}/applications' => fn (array $other) => $this->seedScholarship($other),
+            'POST api/v1/scholarships/{id}/apply' => fn (array $other) => $this->seedScholarship($other),
+            'PATCH api/v1/scholarships/applications/{id}/award' => fn (array $other) => $this->seedScholarshipApplication($other),
+            'PATCH api/v1/scholarships/applications/{id}/revoke' => fn (array $other) => $this->seedScholarshipApplication($other),
+            'GET api/v1/parent/children/{id}/scholarships' => null,   // parent only: CrossTenantRouteTest plan
             'GET api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),   // D235 HLT.1
             'PUT api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/health/reports/{programId}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Program::value('id') ?? \App\Models\Program::create(['name' => 'HLT-P'])->id),
@@ -490,6 +497,18 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\BookIssue::firstOrCreate(['book_id' => $book, 'student_id' => $student],
             ['issued_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'issue_date' => '2026-10-01', 'due_date' => '2026-10-15', 'status' => 'returned', 'fine_amount' => '10.00', 'fine_paid' => false])->id);
+    }
+
+    private function seedScholarship(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\Scholarship::firstOrCreate(['name' => 'SCH-B'], ['percentage' => '50.00', 'total_slots' => 2, 'available_slots' => 2, 'status' => 'open'])->id);
+    }
+
+    private function seedScholarshipApplication(array $t): int
+    {
+        $scholarship = $this->seedScholarship($t);
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\ScholarshipApplication::firstOrCreate(['scholarship_id' => $scholarship, 'student_id' => $student], ['reason' => 'need', 'status' => 'pending'])->id);
     }
 
     private function seedBehavior(array $t): int

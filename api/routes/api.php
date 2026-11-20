@@ -964,6 +964,20 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware(['module:behavior', 'role:parent'])->get('/parent/children/{id}/behavior', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'child'])->whereNumber('id');
 
+        // ── D236 SCH.1: scholarships (advanced-features.md section 8); staff with exact duty keys; a percentage award lowers the monthly tuition ──
+        Route::middleware(['module:scholarships', 'role:admin,institution_staff'])->group(function () {
+            Route::get('/scholarships', [\App\Http\Controllers\Scholarship\ScholarshipController::class, 'index']);
+            Route::post('/scholarships', [\App\Http\Controllers\Scholarship\ScholarshipController::class, 'store']);
+            Route::put('/scholarships/{id}', [\App\Http\Controllers\Scholarship\ScholarshipController::class, 'update'])->whereNumber('id');
+            Route::patch('/scholarships/{id}/close', [\App\Http\Controllers\Scholarship\ScholarshipController::class, 'close'])->whereNumber('id');
+            Route::get('/scholarships/{id}/applications', [\App\Http\Controllers\Scholarship\ScholarshipApplicationController::class, 'index'])->whereNumber('id');
+            Route::patch('/scholarships/applications/{id}/award', [\App\Http\Controllers\Scholarship\ScholarshipApplicationController::class, 'award'])->whereNumber('id');
+            Route::patch('/scholarships/applications/{id}/revoke', [\App\Http\Controllers\Scholarship\ScholarshipApplicationController::class, 'revoke'])->whereNumber('id');
+        });
+        Route::middleware(['module:scholarships', 'role:admin,institution_staff,parent,student', 'throttle:30,1'])->post('/scholarships/{id}/apply', [\App\Http\Controllers\Scholarship\ScholarshipApplicationController::class, 'apply'])->whereNumber('id');
+        Route::middleware(['module:scholarships', 'role:student'])->get('/student/scholarships', [\App\Http\Controllers\Scholarship\ScholarshipApplicationController::class, 'mine']);
+        Route::middleware(['module:scholarships', 'role:parent'])->get('/parent/children/{id}/scholarships', [\App\Http\Controllers\Scholarship\ScholarshipApplicationController::class, 'child'])->whereNumber('id');
+
         // ── D235 HLT.1: student health records (extended-features.md section 6) - a child's sensitive data; staff with exact duty keys ──
         Route::middleware(['module:students', 'module:health', 'role:admin,teacher,institution_staff'])->get('/students/{id}/health', [\App\Http\Controllers\Health\HealthRecordController::class, 'show'])->whereNumber('id');
         Route::middleware(['module:health', 'role:admin,institution_staff'])->group(function () {

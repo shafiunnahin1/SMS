@@ -25,10 +25,10 @@ class ReleaseGateTest extends TestCase
     {
         $gate = app(ModuleGate::class);
         $school = Institution::create(['name' => 'S', 'slug' => 'school', 'institution_type' => 'school', 'status' => 'active',
-            'enabled_modules' => ['alumni' => true, 'scholarships' => true]]);   // D228: library ships with D227; D229: transport ships; D231: online_class ships, scholarships does not; D233: hostel ships, alumni does not
+            'enabled_modules' => ['alumni' => true, 'events' => true]]);   // D236: scholarships ships, events does not; D228: library ships with D227; D229: transport ships; D231: online_class ships, scholarships does not; D233: hostel ships, alumni does not
 
         $this->assertFalse($gate->allows($school, 'alumni'));
-        $this->assertFalse($gate->allows($school, 'scholarships'));
+        $this->assertFalse($gate->allows($school, 'events'));
         $this->assertTrue($gate->allows($school, 'students'));
     }
 
