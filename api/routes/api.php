@@ -955,6 +955,7 @@ Route::prefix('v1')->group(function () {
         // ── D235 BHV.1: behaviour log (extended-features.md section 5); staff with exact duty keys ──
         Route::middleware(['module:behavior', 'role:admin,teacher,institution_staff'])->group(function () {
             Route::get('/behavior', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'index']);
+            Route::get('/behavior/find', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'find']);   // BHV.2
             Route::get('/students/{id}/behavior', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'forStudent'])->whereNumber('id')->middleware('module:students');
             Route::post('/students/{id}/behavior', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'store'])->whereNumber('id')->middleware('module:students');
             Route::put('/behavior/{id}', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'update'])->whereNumber('id');

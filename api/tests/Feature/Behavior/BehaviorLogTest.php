@@ -48,6 +48,10 @@ class BehaviorLogTest extends TestCase
         $this->api('GET', $host, "students/{$nila->id}/behavior", $tu)->assertForbidden();
         $this->assertCount(3, $this->api('GET', $host, 'behavior', $tu)->json('data'), 'a teacher lists their batches');
         $this->api('GET', $host, 'behavior', $tu, ['batch_id' => $b->id])->assertForbidden();
+        $code = fn ($s) => Tenancy::as($i, fn () => Student::find($s->id)->student_id);
+        $this->api('GET', $host, 'behavior/find', $tu, ['student_code' => $code($rafi)])->assertOk()->assertJsonPath('data.id', $rafi->id);   // BHV.2
+        $this->api('GET', $host, 'behavior/find', $tu, ['student_code' => $code($nila)])->assertForbidden();
+        $this->api('GET', $host, 'behavior/find', $tu, ['student_code' => 'NOPE'])->assertStatus(422);
 
         $parent = Tenancy::as($i, fn () => Student::find($rafi->id)->parents()->first());
         $parent->forceFill(['must_change_password' => false])->save();

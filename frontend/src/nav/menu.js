@@ -149,6 +149,7 @@ export const MENU = {
     it('substitutions','/staff/substitutions','বদলি শিক্ষক',{icon:'Users',module:'substitution',staffKey:'staff.leave_substitution.read',staff_access:true}),   // D201 SUBM.3
     it('leads','/staff/leads','ভর্তি-আবেদন',{icon:'UserPlus',module:'leads',staffKey:'staff.lead.read',staff_access:true}),   // D204 GAP.3
     it('lesson-plans','/staff/lesson-plans','পাঠ-পরিকল্পনা',{icon:'ListTree',module:'syllabus',staffKey:'staff.lesson_plan.read',staff_access:true}),   // D225
+    it('behavior','/staff/behavior','আচরণ-লগ',{icon:'Smile',module:'behavior',staffKey:'staff.behavior.read',staff_access:true}),   // D235 BHV.2
     it('health','/staff/health','স্বাস্থ্য-রেকর্ড',{icon:'HeartPulse',module:'health',staffKey:'staff.health.read',staff_access:true}),   // D235 HLT.2
     it('meetings','/staff/meetings','অভিভাবক সভা',{icon:'Users',module:'parent_meeting',staffKey:'staff.meeting.read',staff_access:true}),   // D235 MTG.2
     it('hostel','/staff/hostel','হোস্টেল',{icon:'Building2',module:'hostel',staffKey:'staff.hostel.read',staff_access:true}),   // D233 HST.2
@@ -179,6 +180,7 @@ export const MENU = {
     it('leave','/teacher/leave','ছুটি',{icon:'Plane',module:'hr_payroll',teacherFeature:'own_leave'}),
     it('periods','/teacher/periods','আমার period',{icon:'ListChecks',module:'period_attendance',teacherFeature:'period_attendance'}),
     it('substitutions','/teacher/substitutions','বদলি ক্লাস',{icon:'Users',module:'substitution',teacherFeature:'substitution'}),   // D200 SUBL.5
+    it('behavior','/teacher/behavior','আচরণ-লগ',{icon:'Smile',module:'behavior'}),   // D235 BHV.2
     it('health','/teacher/health','শিক্ষার্থীর জরুরি স্বাস্থ্য-তথ্য',{icon:'HeartPulse',module:'health'}),   // D235 HLT.2
     it('meetings','/teacher/meetings','অভিভাবক সভা',{icon:'Users',module:'parent_meeting'}),   // D235 MTG.2
     it('online-class','/teacher/online-class','অনলাইন ক্লাস',{icon:'Video',module:'online_class'}),   // D231 OCL.2

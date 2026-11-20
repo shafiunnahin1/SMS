@@ -735,6 +735,7 @@ return [
     'GET api/v1/parent/children/{id}/health' => ['parent'],
     // D235 BHV.1
     'GET api/v1/behavior' => ['admin', 'teacher', 'institution_staff'],
+    'GET api/v1/behavior/find' => ['admin', 'teacher', 'institution_staff'],
     'GET api/v1/students/{id}/behavior' => ['admin', 'teacher', 'institution_staff'],
     'POST api/v1/students/{id}/behavior' => ['admin', 'teacher', 'institution_staff'],
     'PUT api/v1/behavior/{id}' => ['admin', 'teacher', 'institution_staff'],

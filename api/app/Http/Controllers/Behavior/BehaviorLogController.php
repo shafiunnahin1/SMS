@@ -27,6 +27,16 @@ class BehaviorLogController extends Controller
         return response()->json(['success' => true, 'data' => $rows->map(fn ($b) => self::row($b))->values()]);
     }
 
+    /** GET /behavior/find?student_code= - BHV.2: the student behind an ID card number (a teacher: only their own batches) */
+    public function find(Request $request)
+    {
+        $f = $request->validate(['student_code' => 'required|string|max:50']);
+        $s = Student::with('user:id,name')->where('student_id', trim($f['student_code']))->first();
+        if (!$s) throw \Illuminate\Validation\ValidationException::withMessages(['student_code' => __('meeting.no_student')]);
+        $this->student($request, $s->id);
+        return response()->json(['success' => true, 'data' => ['id' => $s->id, 'name' => $s->user?->name, 'student_id' => $s->student_id]]);
+    }
+
     /** GET /students/{id}/behavior */
     public function forStudent(Request $request, int $id)
     {

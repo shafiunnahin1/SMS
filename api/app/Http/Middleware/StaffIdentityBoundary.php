@@ -165,7 +165,7 @@ class StaffIdentityBoundary
                 'POST api/v1/leads', 'PUT api/v1/leads/{id}'], true);
         // D235: behaviour log with staff.behavior.read / staff.behavior.manage
         $behavior = str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\Behavior\\')
-            && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/behavior', 'HEAD api/v1/behavior', 'GET api/v1/students/{id}/behavior', 'HEAD api/v1/students/{id}/behavior', 'POST api/v1/students/{id}/behavior', 'PUT api/v1/behavior/{id}', 'POST api/v1/behavior/{id}/notify-parent', 'GET api/v1/behavior/summary/{studentId}', 'HEAD api/v1/behavior/summary/{studentId}'], true);
+            && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/behavior', 'HEAD api/v1/behavior', 'GET api/v1/behavior/find', 'HEAD api/v1/behavior/find', 'GET api/v1/students/{id}/behavior', 'HEAD api/v1/students/{id}/behavior', 'POST api/v1/students/{id}/behavior', 'PUT api/v1/behavior/{id}', 'POST api/v1/behavior/{id}/notify-parent', 'GET api/v1/behavior/summary/{studentId}', 'HEAD api/v1/behavior/summary/{studentId}'], true);
         // D235: health records with staff.health.read / staff.health.manage
         $health = str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\Health\\')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/students/{id}/health', 'HEAD api/v1/students/{id}/health', 'PUT api/v1/students/{id}/health', 'GET api/v1/health/reports', 'HEAD api/v1/health/reports', 'GET api/v1/health/reports/{programId}', 'HEAD api/v1/health/reports/{programId}'], true);
