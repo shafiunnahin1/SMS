@@ -114,7 +114,8 @@
    "transport",
    "online_class",
    "hostel",
-   "parent_meeting"
+   "parent_meeting",
+   "health"
   ],
   "roles": [
  "super_admin",
