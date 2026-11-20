@@ -163,6 +163,9 @@ class StaffIdentityBoundary
         $leads = str_starts_with(ltrim($request->route()->getActionName(), '\\'), \App\Http\Controllers\Leads\LeadController::class.'@')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/leads', 'HEAD api/v1/leads', 'GET api/v1/leads/referral-summary', 'HEAD api/v1/leads/referral-summary',
                 'POST api/v1/leads', 'PUT api/v1/leads/{id}'], true);
+        // D235: behaviour log with staff.behavior.read / staff.behavior.manage
+        $behavior = str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\Behavior\\')
+            && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/behavior', 'HEAD api/v1/behavior', 'GET api/v1/students/{id}/behavior', 'HEAD api/v1/students/{id}/behavior', 'POST api/v1/students/{id}/behavior', 'PUT api/v1/behavior/{id}', 'POST api/v1/behavior/{id}/notify-parent', 'GET api/v1/behavior/summary/{studentId}', 'HEAD api/v1/behavior/summary/{studentId}'], true);
         // D235: health records with staff.health.read / staff.health.manage
         $health = str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\Health\\')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/students/{id}/health', 'HEAD api/v1/students/{id}/health', 'PUT api/v1/students/{id}/health', 'GET api/v1/health/reports', 'HEAD api/v1/health/reports', 'GET api/v1/health/reports/{programId}', 'HEAD api/v1/health/reports/{programId}'], true);
@@ -186,11 +189,11 @@ class StaffIdentityBoundary
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/lesson-plans', 'HEAD api/v1/lesson-plans', 'GET api/v1/lesson-plans/assignments', 'HEAD api/v1/lesson-plans/assignments', 'POST api/v1/lesson-plans', 'PUT api/v1/lesson-plans/{id}',
                 'DELETE api/v1/lesson-plans/{id}', 'POST api/v1/lesson-plans/{id}/taught', 'POST api/v1/lesson-plans/{id}/skipped'], true);
         if ($request->user()?->role === 'institution_staff'
-            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$substitution && !$leads && !$lessonPlans && !$library && !$transport && !$onlineClass && !$hostel && !$meetings && !$health && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money && !$hr && !$inventory && !$aiChat && !$studentView) {
+            && !in_array($request->method().' '.$request->route()->uri(), self::OWN_IDENTITY, true) && !$substitution && !$leads && !$lessonPlans && !$library && !$transport && !$onlineClass && !$hostel && !$meetings && !$health && !$behavior && !$ownBatches && !$ownPrograms && !$batchList && !$batchShow && !$programShow && !$subjectList && !$subjectShow && !$ownTeacherAdvances && !$ownTeacherDashboard && !$accountantDashboard && !$smsLogs && !$financialReport && !$ownSalaryHistory && !$attendance && !$results && !$questionBank && !$money && !$hr && !$inventory && !$aiChat && !$studentView) {
             return response()->json(['success' => false, 'error' => 'forbidden', 'message' => __('errors.forbidden')], 403);
         }
         // D101 money routes: context and exact duty key are checked here, before any FormRequest validation can answer 422
-        if (($money || $hr || $inventory || $substitution || $leads || $lessonPlans || $library || $transport || $onlineClass || $hostel || $meetings || $health) && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
+        if (($money || $hr || $inventory || $substitution || $leads || $lessonPlans || $library || $transport || $onlineClass || $hostel || $meetings || $health || $behavior) && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
         // D169 STW.3: admission too - the selected department's key is checked before validation can answer 422
         if ($studentView && $request->isMethod('POST') && $request->user()?->role === 'institution_staff') app(\App\Services\DepartmentRequestContextService::class)->forRoute($request);
         // D101: staff never write their own pay row (a revision, adjustment or advance naming themselves as payee)

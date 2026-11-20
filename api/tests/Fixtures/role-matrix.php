@@ -733,6 +733,14 @@ return [
     'GET api/v1/health/reports/{programId}' => ['admin', 'institution_staff'],
     'GET api/v1/health/my-students' => ['teacher'],
     'GET api/v1/parent/children/{id}/health' => ['parent'],
+    // D235 BHV.1
+    'GET api/v1/behavior' => ['admin', 'teacher', 'institution_staff'],
+    'GET api/v1/students/{id}/behavior' => ['admin', 'teacher', 'institution_staff'],
+    'POST api/v1/students/{id}/behavior' => ['admin', 'teacher', 'institution_staff'],
+    'PUT api/v1/behavior/{id}' => ['admin', 'teacher', 'institution_staff'],
+    'POST api/v1/behavior/{id}/notify-parent' => ['admin', 'teacher', 'institution_staff'],
+    'GET api/v1/behavior/summary/{studentId}' => ['admin', 'teacher', 'institution_staff'],
+    'GET api/v1/parent/children/{id}/behavior' => ['parent'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],

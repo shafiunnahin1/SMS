@@ -952,6 +952,17 @@ Route::prefix('v1')->group(function () {
         Route::get('/settings/calendar',                  [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'show'])->middleware('role:admin,teacher,accountant,student,parent');
         Route::put('/admin/settings/calendar',            [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'update'])->middleware('role:admin');
 
+        // ── D235 BHV.1: behaviour log (extended-features.md section 5); staff with exact duty keys ──
+        Route::middleware(['module:behavior', 'role:admin,teacher,institution_staff'])->group(function () {
+            Route::get('/behavior', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'index']);
+            Route::get('/students/{id}/behavior', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'forStudent'])->whereNumber('id')->middleware('module:students');
+            Route::post('/students/{id}/behavior', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'store'])->whereNumber('id')->middleware('module:students');
+            Route::put('/behavior/{id}', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'update'])->whereNumber('id');
+            Route::post('/behavior/{id}/notify-parent', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'notify'])->whereNumber('id');
+            Route::get('/behavior/summary/{studentId}', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'summaryOf']);
+        });
+        Route::middleware(['module:behavior', 'role:parent'])->get('/parent/children/{id}/behavior', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'child'])->whereNumber('id');
+
         // ── D235 HLT.1: student health records (extended-features.md section 6) - a child's sensitive data; staff with exact duty keys ──
         Route::middleware(['module:students', 'module:health', 'role:admin,teacher,institution_staff'])->get('/students/{id}/health', [\App\Http\Controllers\Health\HealthRecordController::class, 'show'])->whereNumber('id');
         Route::middleware(['module:health', 'role:admin,institution_staff'])->group(function () {

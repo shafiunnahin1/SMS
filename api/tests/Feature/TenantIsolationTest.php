@@ -367,6 +367,12 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/hostel/{id}/attendance' => fn (array $other) => $this->seedHostel($other),
             'GET api/v1/parent/children/{id}/hostel/attendance' => null,   // parent only: CrossTenantRouteTest plan
             'GET api/v1/parent/children/{id}/hostel/visitors' => null,
+            'GET api/v1/students/{id}/behavior' => fn (array $other) => $this->seedStudent($other),   // D235 BHV.1
+            'POST api/v1/students/{id}/behavior' => fn (array $other) => $this->seedStudent($other),
+            'PUT api/v1/behavior/{id}' => fn (array $other) => $this->seedBehavior($other),
+            'POST api/v1/behavior/{id}/notify-parent' => fn (array $other) => $this->seedBehavior($other),
+            'GET api/v1/behavior/summary/{studentId}' => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/parent/children/{id}/behavior' => null,   // parent only: CrossTenantRouteTest plan
             'GET api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),   // D235 HLT.1
             'PUT api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/health/reports/{programId}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Program::value('id') ?? \App\Models\Program::create(['name' => 'HLT-P'])->id),
@@ -484,6 +490,12 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\BookIssue::firstOrCreate(['book_id' => $book, 'student_id' => $student],
             ['issued_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'issue_date' => '2026-10-01', 'due_date' => '2026-10-15', 'status' => 'returned', 'fine_amount' => '10.00', 'fine_paid' => false])->id);
+    }
+
+    private function seedBehavior(array $t): int
+    {
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\BehaviorLog::firstOrCreate(['title' => 'BHV-B'], ['student_id' => $student, 'reported_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'type' => 'negative', 'date' => '2026-10-01'])->id);
     }
 
     private function seedMeeting(array $t): int
