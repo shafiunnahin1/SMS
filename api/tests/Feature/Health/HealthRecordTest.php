@@ -50,6 +50,10 @@ class HealthRecordTest extends TestCase
         $t = $this->api('GET', $host, "students/{$rafi->id}/health", $tu)->assertOk()->json('data.record');
         $this->assertSame(['blood_group', 'medical_conditions', 'emergency_contact', 'emergency_phone'], array_keys($t));
         $this->api('GET', $host, "students/{$nila->id}/health", $tu)->assertForbidden();
+        $mine = collect($this->api('GET', $host, 'health/my-students', $tu)->assertOk()->json('data'))->keyBy('student.name');
+        $this->assertSame(['Mitu', 'Rafi'], $mine->keys()->sort()->values()->all(), 'HLT.2: own batch only, not Nila');
+        $this->assertSame(['blood_group', 'medical_conditions', 'emergency_contact', 'emergency_phone'], array_keys($mine['Rafi']['record']));
+        $this->api('GET', $host, 'health/my-students', $admin)->assertForbidden();
         $this->api('PUT', $host, "students/{$rafi->id}/health", $tu, ['blood_group' => 'A+'])->assertForbidden();
 
         $parent = Tenancy::as($i, fn () => Student::find($rafi->id)->parents()->first());
@@ -61,7 +65,11 @@ class HealthRecordTest extends TestCase
         $report = $this->api('GET', $host, "health/reports/{$p->id}", $admin)->assertOk()->json('data');
         $this->assertSame([3, 2, 1, ['B+' => 1, 'O+' => 1], 1, 1], [$report['students'], $report['records'], $report['missing'], $report['blood_groups'], $report['with_conditions'], $report['no_blood_group']]);
         $this->assertSame(1, $this->api('GET', $host, "health/reports/{$p->id}", $admin, ['batch_id' => $b->id])->json('data.missing'));
+        $this->assertSame([['Mitu', true, 'O+'], ['Nila', false, null], ['Rafi', true, 'B+']], array_map(fn ($r) => [$r['name'], $r['has_record'], $r['blood_group']], $report['rows']), 'HLT.2: whom to open, no health text');
+        $this->assertArrayNotHasKey('medical_conditions', $report['rows'][0]);
         $this->api('GET', $host, 'health/reports/abc', $admin)->assertNotFound();
+        $ov = $this->api('GET', $host, 'health/reports', $admin)->assertOk()->json('data.0');
+        $this->assertSame([3, 2, ['A', 'B']], [$ov['students'], $ov['records'], array_column($ov['batches'], 'name')], 'HLT.2: the class overview');
 
         $i->forceFill(['staff_department_mode' => 'department'])->save();
         $staff = function (string $name, array $keys) use ($i, $admin) {

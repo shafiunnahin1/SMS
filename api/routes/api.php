@@ -956,8 +956,10 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['module:students', 'module:health', 'role:admin,teacher,institution_staff'])->get('/students/{id}/health', [\App\Http\Controllers\Health\HealthRecordController::class, 'show'])->whereNumber('id');
         Route::middleware(['module:health', 'role:admin,institution_staff'])->group(function () {
             Route::put('/students/{id}/health', [\App\Http\Controllers\Health\HealthRecordController::class, 'update'])->whereNumber('id')->middleware('module:students');
+            Route::get('/health/reports', [\App\Http\Controllers\Health\HealthRecordController::class, 'overview']);   // HLT.2
             Route::get('/health/reports/{programId}', [\App\Http\Controllers\Health\HealthRecordController::class, 'report']);   // the id is checked in the controller (a route pattern would answer 404 before the role check)
         });
+        Route::middleware(['module:health', 'role:teacher'])->get('/health/my-students', [\App\Http\Controllers\Health\HealthRecordController::class, 'myStudents']);   // HLT.2
         Route::middleware(['module:health', 'role:parent'])->get('/parent/children/{id}/health', [\App\Http\Controllers\Health\HealthRecordController::class, 'child'])->whereNumber('id');
 
         // ── D235 MTG.1: parent meetings (extended-features.md section 14); staff with exact duty keys ──

@@ -42,6 +42,18 @@ class HealthRecordController extends Controller
         return response()->json(['success' => true, 'message' => __('messages.saved'), 'data' => $this->row($s, $r->fresh(), StudentHealthRecord::FIELDS)]);
     }
 
+    /** GET /health/reports - HLT.2: every class with its students and records (counts only) and its batches, to pick from */
+    public function overview()
+    {
+        $records = StudentHealthRecord::pluck('student_id')->flip();
+        $rows = Program::with('batches:id,name,program_id')->orderBy('name')->get()->map(function ($p) use ($records) {
+            $ids = Student::inProgram($p->id)->active()->pluck('id');
+            return ['id' => $p->id, 'name' => $p->name, 'students' => $ids->count(), 'records' => $ids->filter(fn ($i) => $records->has($i))->count(),
+                'batches' => $p->batches->map(fn ($b) => ['id' => $b->id, 'name' => $b->name])->values()];
+        })->values();
+        return response()->json(['success' => true, 'data' => $rows]);
+    }
+
     /** GET /health/reports/{programId}?batch_id= - blood groups, how many with conditions, how many records missing */
     public function report(Request $request, string $programId)
     {
@@ -52,9 +64,23 @@ class HealthRecordController extends Controller
         $students = (!empty($f['batch_id']) ? Student::inBatch((int) $f['batch_id']) : Student::inProgram($p->id))->active()->pluck('id');
         $records = StudentHealthRecord::whereIn('student_id', $students)->get();
         $groups = $records->whereNotNull('blood_group')->countBy('blood_group')->sortKeys();
-        return response()->json(['success' => true, 'data' => ['program' => ['id' => $p->id, 'name' => $p->name], 'students' => $students->count(), 'records' => $records->count(),
+        $byStudent = $records->keyBy('student_id');
+        $rows = Student::with('user:id,name')->whereIn('id', $students)->get()->sortBy(fn ($s) => $s->user?->name)->values()   // HLT.2: whom to open, never the health text
+            ->map(fn ($s) => ['id' => $s->id, 'name' => $s->user?->name, 'student_id' => $s->student_id, 'has_record' => $byStudent->has($s->id), 'blood_group' => $byStudent[$s->id]->blood_group ?? null]);
+        return response()->json(['success' => true, 'data' => ['program' => ['id' => $p->id, 'name' => $p->name], 'students' => $students->count(), 'records' => $records->count(), 'rows' => $rows,
             'missing' => $students->count() - $records->count(), 'blood_groups' => $groups, 'with_conditions' => $records->filter(fn ($r) => trim((string) $r->medical_conditions) !== '')->count(),
             'no_blood_group' => $students->count() - $records->whereNotNull('blood_group')->count()]]);
+    }
+
+    /** GET /health/my-students - D235 (6) HLT.2: a teacher's own batches' students with the emergency fields only */
+    public function myStudents(Request $request)
+    {
+        $t = Teacher::where('user_id', $request->user()->id)->firstOrFail();
+        $batches = BatchTeacher::where('teacher_id', $t->id)->pluck('batch_id')->unique();
+        $students = Student::with(['user:id,name', 'activeEnrollments.batch:id,name'])->whereHas('activeEnrollments', fn ($q) => $q->whereIn('batch_id', $batches))->active()->get();
+        $records = StudentHealthRecord::whereIn('student_id', $students->pluck('id'))->get()->keyBy('student_id');
+        return response()->json(['success' => true, 'data' => $students->sortBy(fn ($s) => $s->user?->name)->values()->map(fn ($s) => $this->row($s, $records[$s->id] ?? null, StudentHealthRecord::TEACHER_FIELDS)
+            + ['batch' => $s->activeEnrollments->whereIn('batch_id', $batches)->first()?->batch?->name])]);
     }
 
     /** GET /parent/children/{id}/health */

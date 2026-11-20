@@ -165,7 +165,7 @@ class StaffIdentityBoundary
                 'POST api/v1/leads', 'PUT api/v1/leads/{id}'], true);
         // D235: health records with staff.health.read / staff.health.manage
         $health = str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\Health\\')
-            && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/students/{id}/health', 'HEAD api/v1/students/{id}/health', 'PUT api/v1/students/{id}/health', 'GET api/v1/health/reports/{programId}', 'HEAD api/v1/health/reports/{programId}'], true);
+            && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/students/{id}/health', 'HEAD api/v1/students/{id}/health', 'PUT api/v1/students/{id}/health', 'GET api/v1/health/reports', 'HEAD api/v1/health/reports', 'GET api/v1/health/reports/{programId}', 'HEAD api/v1/health/reports/{programId}'], true);
         // D235: parent meetings with staff.meeting.read / staff.meeting.manage
         $meetings = str_starts_with(ltrim($request->route()->getActionName(), '\\'), 'App\\Http\\Controllers\\Meeting\\')
             && in_array($request->method().' '.$request->route()->uri(), ['GET api/v1/meetings', 'HEAD api/v1/meetings', 'POST api/v1/meetings', 'PUT api/v1/meetings/{id}', 'PATCH api/v1/meetings/{id}/cancel', 'PATCH api/v1/meetings/{id}/complete'], true);
