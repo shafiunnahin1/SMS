@@ -726,6 +726,11 @@ return [
     'PATCH api/v1/parent/meetings/{id}/reschedule' => ['parent'],
     'PATCH api/v1/parent/meetings/{id}/cancel' => ['parent'],
     'GET api/v1/parent/children/{id}/teachers' => ['parent'],
+    // D235 HLT.1
+    'GET api/v1/students/{id}/health' => ['admin', 'teacher', 'institution_staff'],
+    'PUT api/v1/students/{id}/health' => ['admin', 'institution_staff'],
+    'GET api/v1/health/reports/{programId}' => ['admin', 'institution_staff'],
+    'GET api/v1/parent/children/{id}/health' => ['parent'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],

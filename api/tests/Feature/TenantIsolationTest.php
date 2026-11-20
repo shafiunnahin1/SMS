@@ -367,6 +367,10 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/hostel/{id}/attendance' => fn (array $other) => $this->seedHostel($other),
             'GET api/v1/parent/children/{id}/hostel/attendance' => null,   // parent only: CrossTenantRouteTest plan
             'GET api/v1/parent/children/{id}/hostel/visitors' => null,
+            'GET api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),   // D235 HLT.1
+            'PUT api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),
+            'GET api/v1/health/reports/{programId}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Program::value('id') ?? \App\Models\Program::create(['name' => 'HLT-P'])->id),
+            'GET api/v1/parent/children/{id}/health' => null,   // parent only: CrossTenantRouteTest plan
             'PUT api/v1/meetings/{id}' => fn (array $other) => $this->seedMeeting($other),   // D235 MTG.1
             'PATCH api/v1/meetings/{id}/cancel' => fn (array $other) => $this->seedMeeting($other),
             'PATCH api/v1/meetings/{id}/complete' => fn (array $other) => $this->seedMeeting($other),

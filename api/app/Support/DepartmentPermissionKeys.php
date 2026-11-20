@@ -195,6 +195,12 @@ final class DepartmentPermissionKeys
         'staff.lesson_plan.update',
     ];
 
+    /** D235: department staff keeping health records - read does not imply manage */
+    public const D235_HEALTH = [
+        'staff.health.manage',
+        'staff.health.read',
+    ];
+
     /** D235: department staff running parent meetings - read does not imply manage */
     public const D235_MEETING = [
         'staff.meeting.manage',
@@ -229,6 +235,6 @@ final class DepartmentPermissionKeys
     /** every key a duty may hold: the D90 contract plus owner-approved later additions */
     public static function known(): array
     {
-        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204, ...self::D225, ...self::D227, ...self::D229, ...self::D231, ...self::D233, ...self::D235_MEETING];
+        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204, ...self::D225, ...self::D227, ...self::D229, ...self::D231, ...self::D233, ...self::D235_MEETING, ...self::D235_HEALTH];
     }
 }

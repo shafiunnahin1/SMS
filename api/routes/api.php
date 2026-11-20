@@ -952,6 +952,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/settings/calendar',                  [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'show'])->middleware('role:admin,teacher,accountant,student,parent');
         Route::put('/admin/settings/calendar',            [\App\Http\Controllers\Admin\MadrasaSettingsController::class, 'update'])->middleware('role:admin');
 
+        // ── D235 HLT.1: student health records (extended-features.md section 6) - a child's sensitive data; staff with exact duty keys ──
+        Route::middleware(['module:students', 'module:health', 'role:admin,teacher,institution_staff'])->get('/students/{id}/health', [\App\Http\Controllers\Health\HealthRecordController::class, 'show'])->whereNumber('id');
+        Route::middleware(['module:health', 'role:admin,institution_staff'])->group(function () {
+            Route::put('/students/{id}/health', [\App\Http\Controllers\Health\HealthRecordController::class, 'update'])->whereNumber('id')->middleware('module:students');
+            Route::get('/health/reports/{programId}', [\App\Http\Controllers\Health\HealthRecordController::class, 'report']);   // the id is checked in the controller (a route pattern would answer 404 before the role check)
+        });
+        Route::middleware(['module:health', 'role:parent'])->get('/parent/children/{id}/health', [\App\Http\Controllers\Health\HealthRecordController::class, 'child'])->whereNumber('id');
+
         // ── D235 MTG.1: parent meetings (extended-features.md section 14); staff with exact duty keys ──
         Route::middleware(['module:parent_meeting', 'role:admin,teacher,institution_staff'])->group(function () {
             Route::get('/meetings', [\App\Http\Controllers\Meeting\ParentMeetingController::class, 'index']);
