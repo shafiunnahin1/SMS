@@ -8,6 +8,8 @@ import { useUiStore } from '../store/uiStore'
 import { useAuthStore } from '../store/authStore'
 import { useStaffDepartmentStore } from '../store/staffDepartmentStore'
 import Scholarships from '../pages/scholarship/Scholarships'
+import MyScholarships, { ChildScholarships } from '../pages/scholarship/FamilyScholarships'
+import { StaffScholarships } from '../pages/staff/StaffCampus'
 
 vi.mock('../api/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() }, bindAuthStore: () => {} }))
 const at = (path, el) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter initialEntries={[path]}>{el}</MemoryRouter></QueryClientProvider>)
@@ -72,5 +74,53 @@ describe('scholarship admin screen (D236)', () => {
     await screen.findAllByTestId('application')
     expect(document.querySelector('[data-action=approve]')).toBeNull()
     expect(document.querySelector('[data-action=revoke]')).toBeNull()
+  })
+})
+
+// D236 SCH.3: the family pages - open scholarships, apply once, the application status; the staff page needs the read key
+describe('scholarship family screens (D236)', () => {
+  const fam = { open: [{ ...half, applied: false }, { ...grant, id: 5, status: 'open', applied: true }], applications: [{ id: 21, status: 'approved', scholarship: { id: 9, name: 'Old merit', benefit: 'percentage', percentage: '25.00', amount: null } }] }
+  beforeEach(() => {
+    for (const f of ['get', 'post', 'patch']) api[f].mockReset()
+    i18n.changeLanguage('en')
+    useUiStore.setState({ addToast: () => {}, openConfirm: (c) => c.onConfirm() })
+    useStaffDepartmentStore.getState().clear()
+    api.get.mockImplementation((u) => Promise.resolve({ data: { data: u === '/parent/children' ? [{ id: 7, name: 'Rafi' }] : fam } }))
+    api.post.mockResolvedValue({ data: { data: {} } })
+  })
+
+  it('a parent applies for the child', async () => {
+    useAuthStore.setState({ user: { role: 'parent' } })
+    at('/parent/child/scholarships', <ChildScholarships />)
+    const open = await screen.findAllByTestId('open-scholarship')
+    expect(open[1]).toHaveTextContent('Application submitted')
+    expect(open[1].querySelector('[data-action=apply]')).toBeNull()
+    expect(api.get).toHaveBeenCalledWith('/parent/children/7/scholarships')
+    expect(screen.getByTestId('my-application')).toHaveTextContent('Approved')
+    fireEvent.click(open[0].querySelector('[data-action=apply]'))
+    const form = await screen.findByTestId('apply-form')
+    fireEvent.change(form.querySelector('[name=reason]'), { target: { value: 'Top of the class' } })
+    fireEvent.change(form.querySelector('[name=gpa]'), { target: { value: '4.8' } })
+    fireEvent.submit(form)
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/scholarships/3/apply', { reason: 'Top of the class', gpa: '4.8', household_income: null, student_id: 7 }))
+  })
+
+  it('a student applies for themself (no student id sent)', async () => {
+    useAuthStore.setState({ user: { role: 'student' } })
+    at('/student/scholarships', <MyScholarships />)
+    fireEvent.click((await screen.findAllByTestId('open-scholarship'))[0].querySelector('[data-action=apply]'))
+    const form = await screen.findByTestId('apply-form')
+    fireEvent.change(form.querySelector('[name=reason]'), { target: { value: 'Need books' } })
+    fireEvent.submit(form)
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/scholarships/3/apply', { reason: 'Need books', gpa: null, household_income: null }))
+    expect(api.get).toHaveBeenCalledWith('/student/scholarships')
+  })
+
+  it('staff without the scholarship key do not get the page', async () => {
+    useAuthStore.setState({ user: { id: 60, role: 'institution_staff' } })
+    useStaffDepartmentStore.getState().select({ id: 2, name: 'Office' }, ['staff.behavior.read'])
+    at('/staff/scholarships', <StaffScholarships />)
+    await waitFor(() => expect(screen.queryByTestId('scholarships')).toBeNull())
+    expect(api.get).not.toHaveBeenCalledWith('/scholarships', expect.anything())
   })
 })

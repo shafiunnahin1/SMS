@@ -149,6 +149,7 @@ export const MENU = {
     it('substitutions','/staff/substitutions','বদলি শিক্ষক',{icon:'Users',module:'substitution',staffKey:'staff.leave_substitution.read',staff_access:true}),   // D201 SUBM.3
     it('leads','/staff/leads','ভর্তি-আবেদন',{icon:'UserPlus',module:'leads',staffKey:'staff.lead.read',staff_access:true}),   // D204 GAP.3
     it('lesson-plans','/staff/lesson-plans','পাঠ-পরিকল্পনা',{icon:'ListTree',module:'syllabus',staffKey:'staff.lesson_plan.read',staff_access:true}),   // D225
+    it('scholarships','/staff/scholarships','বৃত্তি',{icon:'Medal',module:'scholarships',staffKey:'staff.scholarship.read',staff_access:true}),   // D236 SCH.3
     it('behavior','/staff/behavior','আচরণ-লগ',{icon:'Smile',module:'behavior',staffKey:'staff.behavior.read',staff_access:true}),   // D235 BHV.2
     it('health','/staff/health','স্বাস্থ্য-রেকর্ড',{icon:'HeartPulse',module:'health',staffKey:'staff.health.read',staff_access:true}),   // D235 HLT.2
     it('meetings','/staff/meetings','অভিভাবক সভা',{icon:'Users',module:'parent_meeting',staffKey:'staff.meeting.read',staff_access:true}),   // D235 MTG.2
@@ -210,6 +211,7 @@ export const MENU = {
     it('materials','/student/materials','শিক্ষা-উপকরণ',{icon:'Folder', since: 'R1.1' }),
     it('hostel','/student/hostel','হোস্টেল',{icon:'Building2',module:'hostel'}),   // D233 HST.2
     it('online-class','/student/online-class','অনলাইন ক্লাস',{icon:'Video',module:'online_class'}),   // D231 OCL.2
+    it('scholarships','/student/scholarships','বৃত্তি',{icon:'Medal',module:'scholarships'}),   // D236 SCH.3
     it('transport','/student/transport','পরিবহন',{icon:'Bus',module:'transport'}),   // D229 TRN.2
     it('library','/student/library','লাইব্রেরি',{icon:'Library',module:'library', since: 'R1.1' }),
     it('notices','/notices','নোটিশ',{icon:'Megaphone',module:'notices', since: 'R1.1' }),
@@ -230,6 +232,7 @@ export const MENU = {
     it('meetings','/parent/meetings','সভা',{icon:'Users',module:'parent_meeting'}),
     it('leave','/parent/leave','ছুটির আবেদন',{icon:'CalendarOff',module:'student_leave'}),
     it('transport','/parent/transport','পরিবহন',{icon:'Bus',module:'transport'}),
+    it('scholarships','/parent/child/scholarships','বৃত্তি',{icon:'Medal',module:'scholarships'}),   // D236 SCH.3
     it('behavior','/parent/child/behavior','আচরণ',{icon:'Smile',module:'behavior'}),
     it('health','/parent/child/health','স্বাস্থ্য',{icon:'HeartPulse',module:'health'}),
     it('messages','/parent/messages','বার্তা', {icon:'MessageCircle', since: 'R2' }),
