@@ -71,6 +71,7 @@ const TeacherHealth = lazy(() => import('../pages/health/TeacherHealth'))
 const ChildHealth = lazy(() => import('../pages/health/ChildHealth'))
 const StaffHealth = lazy(() => import('../pages/staff/StaffCampus').then(m => ({ default: m.StaffHealth })))
 const Behavior = lazy(() => import('../pages/behavior/Behavior'))   // D235 BHV.2
+const Scholarships = lazy(() => import('../pages/scholarship/Scholarships'))   // D236 SCH.2
 const ChildBehavior = lazy(() => import('../pages/behavior/ChildBehavior'))
 const StaffBehavior = lazy(() => import('../pages/staff/StaffCampus').then(m => ({ default: m.StaffBehavior })))
 const OnlinePayments = lazy(() => import('../pages/payments/OnlinePayments'))   // D217 OPAY.3
@@ -239,6 +240,7 @@ export const tenantRoutes = [
     { path: 'meetings', element: S(Meetings) },   // D235 MTG.2
     { path: 'health', element: S(Health) },   // D235 HLT.2
     { path: 'behavior', element: S(Behavior) },   // D235 BHV.2
+    { path: 'scholarships', element: S(Scholarships) },   // D236 SCH.2
     { path: 'support', element: S(SupportTickets, { mode: 'institution' }) },
     { path: 'settings/exports', element: S(DataExport) },
     { path: 'settings/general', element: S(GeneralSettings) },

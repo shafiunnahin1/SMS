@@ -103,7 +103,7 @@ export const MENU = {
       it('quiz', '/admin/quiz', 'অনলাইন পরীক্ষা', { module: 'online_quiz' }),
     ]},
     { key: 'welfare', label: 'শিক্ষার্থী কল্যাণ', icon: 'HeartHandshake', children: [
-      it('behavior', '/admin/behavior', 'আচরণ', { module: 'behavior' }), it('health', '/admin/health', 'স্বাস্থ্য', { module: 'health' }),
+      it('behavior', '/admin/behavior', 'আচরণ', { module: 'behavior' }), it('health', '/admin/health', 'স্বাস্থ্য', { module: 'health' }), it('scholarships', '/admin/scholarships', 'বৃত্তি', { module: 'scholarships' }),
       it('hifz', '/admin/hifz', 'হিফজ', { module: 'hifz' }),
       it('certificates', '/admin/certificates', 'সনদ', { module: 'certificates' }), it('visitors', '/admin/visitors', 'ভিজিটর', { module: 'visitors' }),
       it('meetings', '/admin/meetings', 'অভিভাবক সভা', { module: 'parent_meeting' }),
