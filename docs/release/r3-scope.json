@@ -115,7 +115,8 @@
    "online_class",
    "hostel",
    "parent_meeting",
-   "health"
+   "health",
+   "behavior"
   ],
   "roles": [
  "super_admin",
