@@ -244,6 +244,7 @@ return [
     // D165
     'learner_phone_taken' => 'This mobile number already has an account. Log in, or reset the password if you forgot it.',
     'learner_batch_invalid' => 'This exam batch is not for your class or is already over.',
+    'mistakes_none' => 'There are no wrong questions here to practise again.',
     'practice_nothing_open' => 'You have no open multiple-choice questions here. Buy questions or a pack to practise.',
     'practice_submitted' => 'This practice round is already submitted.',
     'learner_move_password' => 'This number has no own account yet - give a password for the new account.',

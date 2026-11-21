@@ -691,6 +691,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/practice',                       [\App\Http\Controllers\Learner\QbPracticeController::class, 'stats']);
             Route::post('/practice',                      [\App\Http\Controllers\Learner\QbPracticeController::class, 'start'])->middleware('throttle:30,1');
             Route::post('/practice/{id}/submit',          [\App\Http\Controllers\Learner\QbPracticeController::class, 'submit'])->whereNumber('id');
+            // D238 MST.1: my mistakes - derived from the student's own practice rounds and quizzes; a practice round from them
+            Route::get('/mistakes',                       [\App\Http\Controllers\Learner\QbMistakeController::class, 'index']);
+            Route::post('/mistakes/practice',             [\App\Http\Controllers\Learner\QbMistakeController::class, 'practice'])->middleware('throttle:30,1');
         });
         // ── Question bank (D66, QB.10): the student's quizzes - free / public / package (while access lasts); marked on the server ──
         Route::middleware(['role:student', 'module:quiz'])->prefix('student/qb')->group(function () {

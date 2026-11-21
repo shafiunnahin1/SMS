@@ -592,6 +592,8 @@ return [
     'GET api/v1/student/qb/practice' => ['student'],
     'POST api/v1/student/qb/practice' => ['student'],
     'POST api/v1/student/qb/practice/{id}/submit' => ['student'],
+    'GET api/v1/student/qb/mistakes' => ['student'],   // D238 MST.1
+    'POST api/v1/student/qb/mistakes/practice' => ['student'],
     'GET api/v1/super/qb/exam-batches' => ['super_admin'],
     'POST api/v1/super/qb/exam-batches' => ['super_admin'],
     'PUT api/v1/super/qb/exam-batches/{id}' => ['super_admin'],
