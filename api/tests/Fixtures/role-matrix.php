@@ -763,6 +763,7 @@ return [
     'PUT api/v1/visitors/{id}' => ['admin'],
     // D242 EVT.1
     'GET api/v1/events/points' => ['admin', 'institution_staff'],
+    'GET api/v1/events/competitions' => ['admin', 'institution_staff'],
     'GET api/v1/events/{id}/competition' => ['admin', 'institution_staff'],
     'PATCH api/v1/events/{id}/attendance' => ['admin', 'institution_staff'],
     'PATCH api/v1/events/{id}/attendance/{studentId}' => ['admin', 'institution_staff'],

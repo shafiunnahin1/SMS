@@ -1170,6 +1170,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['module:academic_calendar', 'module:events'])->group(function () {
             Route::middleware('role:admin,institution_staff')->group(function () {
                 Route::get('/events/points', [\App\Http\Controllers\Calendar\EventResultController::class, 'points']);
+                Route::get('/events/competitions', [\App\Http\Controllers\Calendar\EventResultController::class, 'index']);   // EVT.2
                 Route::get('/events/{id}/competition', [\App\Http\Controllers\Calendar\EventResultController::class, 'show'])->whereNumber('id');
                 Route::patch('/events/{id}/attendance', [\App\Http\Controllers\Calendar\EventResultController::class, 'attendanceAll'])->whereNumber('id');
                 Route::patch('/events/{id}/attendance/{studentId}', [\App\Http\Controllers\Calendar\EventResultController::class, 'attendance'])->whereNumber('id');   // the student id is checked in the controller

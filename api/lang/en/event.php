@@ -9,5 +9,6 @@ return [
     'notice_title' => 'Competition result',
     'notice_body' => 'Your child won :award at ":event". Congratulations!',
     'position' => 'position :n',
+    'no_student' => 'No student with this ID.',
     'result' => 'an award',
 ];

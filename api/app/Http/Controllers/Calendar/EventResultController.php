@@ -14,6 +14,18 @@ use Illuminate\Validation\ValidationException;
 // parents per result; the student and the parent see the awards; nothing goes to the public site. Points per class for a date range.
 class EventResultController extends Controller
 {
+    /** GET /events/competitions?month=YYYY-MM - EVT.2: the month's events with their registration and result counts (staff cannot use the D213 admin list) */
+    public function index(Request $request)
+    {
+        $f = $request->validate(['month' => 'nullable|date_format:Y-m']);
+        $month = $f['month'] ?? now()->format('Y-m');
+        $rows = InstitutionEvent::withCount('registrations')->where('event_date', 'like', $month . '-%')->orderBy('event_date')->orderBy('id')->get();
+        $results = EventResult::whereIn('event_id', $rows->pluck('id'))->selectRaw('event_id, count(*) as n')->groupBy('event_id')->pluck('n', 'event_id');
+        return response()->json(['success' => true, 'data' => $rows->map(fn ($e) => ['id' => $e->id, 'title' => $e->title, 'type' => $e->type, 'event_date' => $e->event_date->toDateString(),
+            'registration_required' => (bool) $e->registration_required, 'registrations_count' => (int) $e->registrations_count, 'results_count' => (int) ($results[$e->id] ?? 0),
+            'started' => !$e->event_date->isFuture()])->values()]);
+    }
+
     /** GET /events/{id}/competition - registrations with their status, and the results */
     public function show(int $id)
     {
@@ -53,8 +65,9 @@ class EventResultController extends Controller
     public function store(Request $request, int $id)
     {
         $e = $this->started($id);
-        $f = $request->validate(['student_id' => 'required|integer'] + $this->fields());
-        $s = Student::findOrFail($f['student_id']);
+        $f = $request->validate(['student_id' => 'required_without:student_code|nullable|integer', 'student_code' => 'required_without:student_id|nullable|string|max:50'] + $this->fields());
+        $s = !empty($f['student_id']) ? Student::findOrFail($f['student_id']) : Student::where('student_id', trim($f['student_code']))->first();
+        if (!$s) throw ValidationException::withMessages(['student_code' => __('event.no_student')]);
         if ($e->registration_required && !EventRegistration::where('event_id', $e->id)->where('student_id', $s->id)->where('status', 'attended')->exists()) {
             throw ValidationException::withMessages(['student_id' => __('event.not_attended')]);
         }

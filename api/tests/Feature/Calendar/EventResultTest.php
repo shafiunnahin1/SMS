@@ -39,7 +39,9 @@ class EventResultTest extends TestCase
         $win = $this->api('POST', $h, "events/{$race}/results", $admin, ['student_id' => $s['mine']->id, 'position' => 1, 'award' => 'Gold', 'points' => 10])->assertCreated()->json('data');
         $this->api('POST', $h, "events/{$race}/results", $admin, ['student_id' => $s['mine']->id, 'position' => 2])->assertStatus(422);
         // no registration needed: any student
-        $this->api('POST', $h, "events/{$quiz}/results", $admin, ['student_id' => $s['sister']->id, 'position' => 1, 'points' => 6])->assertCreated();
+        $this->assertSame([[2, 1, true], [0, 0, true]], array_map(fn ($e) => [$e['registrations_count'], $e['results_count'], $e['started']], $this->api('GET', $h, 'events/competitions', $admin, ['month' => '2026-11'])->assertOk()->json('data')));
+        $this->api('POST', $h, "events/{$quiz}/results", $admin, ['student_code' => 'NOPE'])->assertStatus(422)->assertJsonValidationErrors('student_code');
+        $this->api('POST', $h, "events/{$quiz}/results", $admin, ['student_code' => $s['sister']->student_id, 'position' => 1, 'points' => 6])->assertCreated();
         $third = $this->api('POST', $h, "events/{$quiz}/results", $admin, ['student_id' => $s['other']->id, 'position' => 3, 'points' => 2])->assertCreated()->json('data.id');
 
         $c = $this->api('GET', $h, "events/{$race}/competition", $admin)->assertOk()->json('data');
