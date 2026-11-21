@@ -2,6 +2,7 @@ import { RequireDepartment } from '../../features/staff/StaffDepartment'
 import Scholarships from '../scholarship/Scholarships'
 import Visitors from '../visitor/Visitors'
 import Competitions from '../event/Competitions'
+import Alumni from '../alumni/Alumni'
 import OnlineClasses from '../online-class/OnlineClasses'
 import Library from '../library/Library'
 import Transport from '../transport/Transport'
@@ -22,3 +23,4 @@ export const StaffBehavior = () => <RequireDepartment permission="staff.behavior
 export const StaffScholarships = () => <RequireDepartment permission="staff.scholarship.read"><Scholarships /></RequireDepartment>   // D236 SCH.3
 export const StaffVisitors = () => <RequireDepartment permission="staff.visitor.read"><Visitors /></RequireDepartment>   // D240 VIS.2
 export const StaffCompetitions = () => <RequireDepartment permission="staff.event.read"><Competitions /></RequireDepartment>   // D242 EVT.2
+export const StaffAlumni = () => <RequireDepartment permission="staff.alumni.read"><Alumni /></RequireDepartment>   // D243 ALM.2

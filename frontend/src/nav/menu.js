@@ -149,6 +149,7 @@ export const MENU = {
     it('substitutions','/staff/substitutions','বদলি শিক্ষক',{icon:'Users',module:'substitution',staffKey:'staff.leave_substitution.read',staff_access:true}),   // D201 SUBM.3
     it('leads','/staff/leads','ভর্তি-আবেদন',{icon:'UserPlus',module:'leads',staffKey:'staff.lead.read',staff_access:true}),   // D204 GAP.3
     it('lesson-plans','/staff/lesson-plans','পাঠ-পরিকল্পনা',{icon:'ListTree',module:'syllabus',staffKey:'staff.lesson_plan.read',staff_access:true}),   // D225
+    it('alumni','/staff/alumni','প্রাক্তন শিক্ষার্থী',{icon:'GraduationCap',module:'alumni',staffKey:'staff.alumni.read',staff_access:true}),   // D243 ALM.2
     it('events','/staff/events','ইভেন্ট',{icon:'Trophy',module:'events',staffKey:'staff.event.read',staff_access:true}),   // D242 EVT.2
     it('visitors','/staff/visitors','দর্শনার্থী-খাতা',{icon:'UserRound',module:'visitors',staffKey:'staff.visitor.read',staff_access:true}),   // D240 VIS.2
     it('scholarships','/staff/scholarships','বৃত্তি',{icon:'Medal',module:'scholarships',staffKey:'staff.scholarship.read',staff_access:true}),   // D236 SCH.3
