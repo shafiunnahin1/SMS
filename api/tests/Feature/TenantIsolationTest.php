@@ -380,6 +380,8 @@ class TenantIsolationTest extends TestCase
             'PATCH api/v1/scholarships/applications/{id}/award' => fn (array $other) => $this->seedScholarshipApplication($other),
             'PATCH api/v1/scholarships/applications/{id}/revoke' => fn (array $other) => $this->seedScholarshipApplication($other),
             'GET api/v1/parent/children/{id}/scholarships' => null,   // parent only: CrossTenantRouteTest plan
+            'PATCH api/v1/visitors/{id}/check-out' => fn (array $other) => $this->seedVisitor($other),   // D240 VIS.1
+            'PUT api/v1/visitors/{id}' => fn (array $other) => $this->seedVisitor($other),
             'GET api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),   // D235 HLT.1
             'PUT api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/health/reports/{programId}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Program::value('id') ?? \App\Models\Program::create(['name' => 'HLT-P'])->id),
@@ -497,6 +499,11 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\BookIssue::firstOrCreate(['book_id' => $book, 'student_id' => $student],
             ['issued_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'issue_date' => '2026-10-01', 'due_date' => '2026-10-15', 'status' => 'returned', 'fine_amount' => '10.00', 'fine_paid' => false])->id);
+    }
+
+    private function seedVisitor(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\VisitorLog::firstOrCreate(['visitor_name' => 'VIS-B'], ['purpose' => 'meeting', 'check_in' => now(), 'created_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id')])->id);
     }
 
     private function seedScholarship(array $t): int

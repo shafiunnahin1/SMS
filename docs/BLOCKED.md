@@ -348,3 +348,8 @@ Needed from the owner: a follow-up decision (proposed D189) that authorizes (3)-
 - **What blocks:** `api/tests/Feature/SuperAdmin/SuperInstitutionTest.php::test_a_module_override_changes_the_tenants_menu_at_once` expects a Super Admin override of `hostel` to be refused (422) as an unshipped module (its last line); D233 ships `hostel`, so the override is accepted (200). D233 (11) names only ReleaseGateTest and BootstrapTest.
 - **Tried:** nothing that edits the test.
 - **Owner choice needed:** decision D234 (drafted as owner/approve-D234.ps1): that line uses `alumni` (still unshipped) in place of `hostel`; every other assertion stays. Resolved: D234 approved and merged; the line is amended in HST.1.
+
+## 2026-11-21 · VIS.1 (D240) · the bootstrap test still gives the visitor log to coaching
+- **What blocks:** `api/tests/Feature/BootstrapTest.php::test_a_tenant_host_gets_terms_modules_and_a_full_theme` expects a coaching tenant to get every R3 module except opt-in ones and the listed school-only modules. D240 ships `visitors` for school and college only, so both coaching expectations need `visitors` added to the left-out list. D240 does not name this test.
+- **Tried:** nothing committed that edits the test. The one-word change is staged locally, and the full suite is run only to confirm nothing else breaks.
+- **Owner choice needed:** decision D241 (drafted for the owner): the two coaching expectations of the bootstrap test also leave out `visitors`; every other assertion stays. Resolved: D241 approved and merged; the test is amended in VIS.1.

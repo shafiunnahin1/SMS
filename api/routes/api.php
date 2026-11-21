@@ -967,6 +967,15 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware(['module:behavior', 'role:parent'])->get('/parent/children/{id}/behavior', [\App\Http\Controllers\Behavior\BehaviorLogController::class, 'child'])->whereNumber('id');
 
+        // ── D240 VIS.1: visitor log (extended-features.md section 8); staff with exact duty keys; the admin corrects the same day ──
+        Route::middleware(['module:visitors', 'role:admin,institution_staff'])->group(function () {
+            Route::get('/visitors', [\App\Http\Controllers\Visitor\VisitorLogController::class, 'index']);
+            Route::get('/visitors/report', [\App\Http\Controllers\Visitor\VisitorLogController::class, 'report']);
+            Route::post('/visitors/check-in', [\App\Http\Controllers\Visitor\VisitorLogController::class, 'checkIn'])->middleware('throttle:60,1');
+            Route::patch('/visitors/{id}/check-out', [\App\Http\Controllers\Visitor\VisitorLogController::class, 'checkOut'])->whereNumber('id');
+        });
+        Route::middleware(['module:visitors', 'role:admin'])->put('/visitors/{id}', [\App\Http\Controllers\Visitor\VisitorLogController::class, 'update'])->whereNumber('id');
+
         // ── D236 SCH.1: scholarships (advanced-features.md section 8); staff with exact duty keys; a percentage award lowers the monthly tuition ──
         Route::middleware(['module:scholarships', 'role:admin,institution_staff'])->group(function () {
             Route::get('/scholarships', [\App\Http\Controllers\Scholarship\ScholarshipController::class, 'index']);

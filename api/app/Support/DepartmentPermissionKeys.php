@@ -196,6 +196,12 @@ final class DepartmentPermissionKeys
     ];
 
     /** D235: department staff keeping the behaviour log - read does not imply manage */
+    /** D240: department staff keeping the visitor log - read does not imply manage */
+    public const D240_VISITOR = [
+        'staff.visitor.manage',
+        'staff.visitor.read',
+    ];
+
     /** D236: department staff keeping scholarships - read does not imply manage */
     public const D236_SCHOLARSHIP = [
         'staff.scholarship.manage',
@@ -247,6 +253,6 @@ final class DepartmentPermissionKeys
     /** every key a duty may hold: the D90 contract plus owner-approved later additions */
     public static function known(): array
     {
-        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204, ...self::D225, ...self::D227, ...self::D229, ...self::D231, ...self::D233, ...self::D235_MEETING, ...self::D235_HEALTH, ...self::D235_BEHAVIOR, ...self::D236_SCHOLARSHIP];
+        return [...self::ALL, ...self::D102, ...self::D201, ...self::D204, ...self::D225, ...self::D227, ...self::D229, ...self::D231, ...self::D233, ...self::D235_MEETING, ...self::D235_HEALTH, ...self::D235_BEHAVIOR, ...self::D236_SCHOLARSHIP, ...self::D240_VISITOR];
     }
 }

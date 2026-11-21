@@ -755,6 +755,12 @@ return [
     'POST api/v1/scholarships/{id}/apply' => ['admin', 'institution_staff', 'parent', 'student'],
     'GET api/v1/student/scholarships' => ['student'],
     'GET api/v1/parent/children/{id}/scholarships' => ['parent'],
+    // D240 VIS.1
+    'GET api/v1/visitors' => ['admin', 'institution_staff'],
+    'GET api/v1/visitors/report' => ['admin', 'institution_staff'],
+    'POST api/v1/visitors/check-in' => ['admin', 'institution_staff'],
+    'PATCH api/v1/visitors/{id}/check-out' => ['admin', 'institution_staff'],
+    'PUT api/v1/visitors/{id}' => ['admin'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],
