@@ -884,9 +884,9 @@ Do not replace assertions or skip failures to obtain a green result.
 
 #### P0-B. SVR.1 verifier/schema baseline
 
-[PROGRESS.md](/e:/Projects/School%20Management/docs/PROGRESS.md) records `SVR.1` `[ ]`; its D188 implementation has 10 deep-verifier failures that require owner/approved scope resolution.
+[PROGRESS.md](docs/PROGRESS.md) records `SVR.1` `[ ]`; its D188 implementation has 10 deep-verifier failures that require owner/approved scope resolution.
 
-Inspect [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md) under `2026-11-02 | SVR.1` before editing. Required work is narrow baseline repair only:
+Inspect [BLOCKED.md](docs/BLOCKED.md) under `2026-11-02 | SVR.1` before editing. Required work is narrow baseline repair only:
 
 - foreign-key/schema corrections already identified by D188;
 - migration/DATABASE inventory reconciliation;
@@ -912,7 +912,7 @@ Re-run against an approved disposable test DB. Keep stale selectors out of this 
 
 #### P1-A. QBO.1/D179
 
-File [PROGRESS.md](/e:/Projects/School%20Management/docs/PROGRESS.md) has duplicate WIP and accepted lines. QBO.1 is also listed `[x]` together with QBO.2/D180 after D184, while the first WIP line remains `[ ]`. Do not mark or unmark from prose alone; reconcile acceptance only after all required backend and browser evidence is green.
+File [PROGRESS.md](docs/PROGRESS.md) has duplicate WIP and accepted lines. QBO.1 is also listed `[x]` together with QBO.2/D180 after D184, while the first WIP line remains `[ ]`. Do not mark or unmark from prose alone; reconcile acceptance only after all required backend and browser evidence is green.
 
 Check:
 
@@ -925,7 +925,7 @@ Check:
 
 #### P1-B. SETC.1/D173
 
-SETC.1 remains `[ ]`. Current WIP may conflict with D173-era test expectations. Before continuing read [LOCKED-DECISIONS.md](/e:/Projects/School%20Management/docs/LOCKED-DECISIONS.md) D173 and the relevant entries in [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md). Run:
+SETC.1 remains `[ ]`. Current WIP may conflict with D173-era test expectations. Before continuing read [LOCKED-DECISIONS.md](docs/LOCKED-DECISIONS.md) D173 and the relevant entries in [BLOCKED.md](docs/BLOCKED.md). Run:
 
 - `cd api && php artisan test --filter='QbPaper|QbOmr|QbStimulus|ExamPaper'`
 - focused QbPaper/QbOmr frontend suites.
@@ -960,13 +960,13 @@ Do not activate R2.1 merely because code or routes are present. Follow D83: plan
 
 ### 5. P2 — npm/dependency upgrade
 
-The frontend package upgrade is blocked by G7 in [AGENTS.md](/e:/Projects/School%20Management/AGENTS.md). Dependency changes are frozen outside scaffold tasks 0.1–0.3 and require an owner-authored Change-Request.
+The frontend package upgrade is blocked by G7 in [AGENTS.md](AGENTS.md). Dependency changes are frozen outside scaffold tasks 0.1–0.3 and require an owner-authored Change-Request.
 
 Do not run package upgrades, lockfile updates or protected workflow changes until explicitly authorized. A read-only scan is the only completed step.
 
 ### 6. P2 — Git/push safety and D155
 
-D155 is not an owner-approved implementation instruction; only a proposal exists in [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md). Do not edit protected `infra/**`, AGENTS or guardrails until a separate owner decision commit authorizes it.
+D155 is not an owner-approved implementation instruction; only a proposal exists in [BLOCKED.md](docs/BLOCKED.md). Do not edit protected `infra/**`, AGENTS or guardrails until a separate owner decision commit authorizes it.
 
 Before any push, still perform D155's current required checks:
 
@@ -998,18 +998,18 @@ Adapters/placeholders may remain only if they do not claim live integration.
 
 Review without silently editing protected specs:
 
-- [README.md](/e:/Projects/School%20Management/README.md), [PRODUCT.md](/e:/Projects/School%20Management/PRODUCT.md), [AGENTS.md](/e:/Projects/School%20Management/AGENTS.md) still contain historical claims that no code existed.
-- [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md) retains old resolved QB.11 and older baseline entries; resolved/rejected evidence must not be rewritten by an agent.
+- [README.md](README.md), [PRODUCT.md](PRODUCT.md), [AGENTS.md](AGENTS.md) still contain historical claims that no code existed.
+- [BLOCKED.md](docs/BLOCKED.md) retains old resolved QB.11 and older baseline entries; resolved/rejected evidence must not be rewritten by an agent.
 - Generated plan and progress ordering has discrepancies in older QB.13/QB.14 handoff evidence. Do not reorder history or tasks; owner approval is required for protected plan changes.
 - R1, R3 and R2.1 planning artifacts must remain independently consistent with `docs/release/*.json`, `docs/database/schema.sql`, route catalogs and release config.
 
 ### 9. Claude's required execution order
 
-1. Read [AGENTS.md](/e:/Projects/School%20Management/AGENTS.md), [LOCKED-DECISIONS.md](/e:/Projects/School%20Management/docs/LOCKED-DECISIONS.md), [BUILD-SEQUENCE.md](/e:/Projects/School%20Management/docs/BUILD-SEQUENCE.md), [PROGRESS.md](/e:/Projects/School%20Management/docs/PROGRESS.md), [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md) and this section.
+1. Read [AGENTS.md](AGENTS.md), [LOCKED-DECISIONS.md](docs/LOCKED-DECISIONS.md), [BUILD-SEQUENCE.md](docs/BUILD-SEQUENCE.md), [PROGRESS.md](docs/PROGRESS.md), [BLOCKED.md](docs/BLOCKED.md) and this section.
 2. Inspect only the highest-priority P0 blocker and make no unrelated changes.
 3. Use a task/Change-Request where the repository requires one; otherwise stop and write one new precise `docs/BLOCKED.md` entry instead of guessing.
 4. Run focused tests first, then the smallest required full suite, theme lint/build/deep verifier and staged guard.
-5. Update only [PROGRESS.md](/e:/Projects/School%20Management/docs/PROGRESS.md), [DECISIONS.md](/e:/Projects/School%20Management/docs/DECISIONS.md), [IDEAS.md](/e:/Projects/School%20Management/docs/IDEAS.md), [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md), [AGENT-HANDOFF.md](/e:/Projects/School%20Management/AGENT-HANDOFF.md) or code allowed for the active task.
+5. Update only [PROGRESS.md](docs/PROGRESS.md), [DECISIONS.md](docs/DECISIONS.md), [IDEAS.md](docs/IDEAS.md), [BLOCKED.md](docs/BLOCKED.md), [AGENT-HANDOFF.md](AGENT-HANDOFF.md) or code allowed for the active task.
 6. Never mark `[x]` unless every Done-When command actually passes in the exact candidate tree.
 7. Commit one task per commit with `Task: <id>` and required `Change-Request: D<n>` trailers plus the repository Co-authored-by trailer.
 8. Push only on explicit owner instruction and only after fetch, clean worktree, stash review and pre-push guard pass.
