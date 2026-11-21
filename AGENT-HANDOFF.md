@@ -848,3 +848,168 @@ Evidence owner/d96-source-history-checkpoint.md. py -3.14 infra/spec-verify/test
 R1/R3 generation then --check and full --check fresh; export --check fresh151tenant/129exported/22excluded/0 unresolved, --roundtrip258rows/0problems; schema parity139copies/189definitions/0divergence; gen_invariants.py --check fresh/invariants unchanged. py -3.14 %TEMP%/school-D96-source-history-stage.py and preservation.py PASS18 original dirty prefixes and operational metadata unchanged; only7 own source/doc paths staged. py -3.14 %TEMP%/school-D96-source-history-index-snapshot.py PASS1298 files/blob identity, tested treea0e9027178ca39f8a805dc04624570ecb00ac2e3. With Git Bash PATH/UTF8/no-bytecode/unbuffered, uv run --offline --with PyYAML --no-project --python 3.14 <index-root>/infra/spec-verify/verify.py <index-root> --deep =>ALL CHECKS PASSED/3 existing warnings (%TEMP%/school-D96-source-history-deep.log), including11/11 unique proofs and77hot-query checks. Existing D94/D95 drafts/runtime and user files excluded; final logs/report evidence-only append must retain tested blobs. Initial staged guard --msg-file %TEMP%/school-D96-source-history-msg.txt PASS0/0; diff check clean. Next bounded work: read/picker/resource/department binding review and delivery primitive scope; full writer/classification, portable import, accepted dependencies and runtime checks remain gates.
 
 Final checkpoint gate: all tested schema/contract/test/generated blobs unchanged after evidence-only additions; py -3.14 infra/guard/agent_guard.py --staged --msg-file %TEMP%/school-D96-source-history-msg.txt PASS0 failures/0 warnings with D96/D99 trailers; git diff --cached --check PASS; precommit fetch/rev-list0/0. Exact11-path stage excludes previous D94/D95 work.
+
+
+## 2026-11-22 — Claude deep-remediation handoff
+
+Purpose: এই sectionটি Claude-এর জন্য সম্পূর্ণ repository remediation handoff। এটি chat থেকে লেখা নয়; `git status`, `docs/PROGRESS.md`, `docs/BLOCKED.md`, release plans এবং latest test evidence থেকে সংগ্রহ করা হয়েছে। Claude-এর solved work GitHub-এ push করলে এই agent branch থেকে pull করে শেষ অবস্থা যাচাই করবে।
+
+### 1. Repository state
+
+- Repository: `E:\Projects\School Management`
+- GitHub: `shafiunnahin1/SMS`
+- Branch: `claude/r216-omr-d127`
+- HEAD: `90b3d592 EVT.2: competition screens — events of the month, attendance, results by ID, points per class; awards for students and parents`
+- `git status --short --branch`: clean; no ahead/behind mismatch; origin equals HEAD.
+- Latest full evidence at 2026-11-22: Laravel `1308` passed, frontend Vitest `501` passed, theme lint `0`, build successful, deep verifier `ALL CHECKS PASSED`.
+- The legacy `E:\Projects\exam-management` repository is read-only evidence only; do not modify, stage, commit or push it.
+- Do not inspect or commit `.env`, credentials, OTP secrets, production keys or real gateway credentials.
+
+### 2. P0 — required before new feature acceptance
+
+#### P0-A. Authorized MySQL test database
+
+The test account `edu` cannot access `edu_saas_test`:
+
+`SQLSTATE[HY000] [1044] Access denied for user 'edu'@'localhost' to database 'edu_saas_test'`
+
+Fix only with an approved local/test environment. Required gates:
+
+1. `cd api && php artisan test --filter='test_the_print_accepts_qbo1_layout_settings|test_the_print_shows_the_set_code_columns_and_the_answer_key'`
+2. `cd api && php artisan test --filter=QbAllQuestionsFilterTest`
+3. Full `cd api && php artisan test`
+4. Full frontend suite, theme lint and build.
+
+Do not replace assertions or skip failures to obtain a green result.
+
+#### P0-B. SVR.1 verifier/schema baseline
+
+[PROGRESS.md](/e:/Projects/School%20Management/docs/PROGRESS.md) records `SVR.1` `[ ]`; its D188 implementation has 10 deep-verifier failures that require owner/approved scope resolution.
+
+Inspect [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md) under `2026-11-02 | SVR.1` before editing. Required work is narrow baseline repair only:
+
+- foreign-key/schema corrections already identified by D188;
+- migration/DATABASE inventory reconciliation;
+- R1 source-plan correction/regeneration;
+- D12 classification of the three named one-to-one FK UNIQUE constraints;
+- full deep-verifier green with no skipped or weakened check.
+
+Do not change R2.1 runtime or feature scope under SVR.1.
+
+#### P0-C. R2.1.9 acceptance/E2E
+
+R2.1.9 remains `[ ]`. Evidence: API `1163` passed and Vitest `310/310` passed in its checkpoint, but Playwright remains blocked by UI drift:
+
+- `math-pdf-entry`
+- QB.3 image-width control
+- QB.12 table preview
+- QB.OMR save form
+- QB.4/QB.13 passage sub-question fields
+
+Re-run against an approved disposable test DB. Keep stale selectors out of this fix unless UI drift is proven and the test contract is authoritative. Do not weaken assertions.
+
+### 3. P1 — incomplete Question Bank work
+
+#### P1-A. QBO.1/D179
+
+File [PROGRESS.md](/e:/Projects/School%20Management/docs/PROGRESS.md) has duplicate WIP and accepted lines. QBO.1 is also listed `[x]` together with QBO.2/D180 after D184, while the first WIP line remains `[ ]`. Do not mark or unmark from prose alone; reconcile acceptance only after all required backend and browser evidence is green.
+
+Check:
+
+- paper preview option columns and real page output;
+- print/PDF/JPG page parity;
+- formula fit and option wrapping;
+- selected-text sizing;
+- browser-only paper preferences;
+- D171 stimulus overrides.
+
+#### P1-B. SETC.1/D173
+
+SETC.1 remains `[ ]`. Current WIP may conflict with D173-era test expectations. Before continuing read [LOCKED-DECISIONS.md](/e:/Projects/School%20Management/docs/LOCKED-DECISIONS.md) D173 and the relevant entries in [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md). Run:
+
+- `cd api && php artisan test --filter='QbPaper|QbOmr|QbStimulus|ExamPaper'`
+- focused QbPaper/QbOmr frontend suites.
+
+#### P1-C. QBF.1/D175
+
+UI code and focused UI tests exist, but the API acceptance remains blocked by test DB access. Do not accept QBF.1 until curriculum filtering and descendant matching pass on MySQL.
+
+#### P1-D. STIM.1/D171 and STIM.3/D171
+
+- STIM.1 paper support is WIP and not accepted.
+- STIM.3 writer cards/list UI is incomplete.
+- Child serial/marks/key/OMR behavior must stay consistent with D171.
+- A child without marks must be rejected with `qb_group_marks_missing`.
+- Existing ordinary MCQ behavior must remain unchanged.
+
+#### P1-E. QBG.1/D178
+
+The implementation is accepted in later progress evidence. Preserve the D128 test's explicit `group_by_subject=false` expectation and do not silently alter it. Verify no later paper-builder path bypasses the D178 default.
+
+### 4. P1 — R2.1 and R1 gaps
+
+- R2.1.2 gap-fill authoring is in progress.
+- R2.1.2 AI prompt library is in progress.
+- R2.1.2 language/curriculum is scoped and not runtime-approved for broader execution.
+- R2.1.3 import moderation/TOON work remains blocked by release gates and the separate locked decision process.
+- R2.1.9 remains an acceptance task, not a runtime-switch approval.
+- Release 1 tasks `5.1` Signup/Onboarding and `5.2` Subscription/Billing remain `[ ]` in the R1 ledger. D47 prohibits plan-size/plan-limit implementation.
+- Milestone acceptance remains `[ ]`: M3.A, M5.A, M6.A, M7.A and M8.A.
+
+Do not activate R2.1 merely because code or routes are present. Follow D83: planning only until owner-approved executable scope and R3.A/prerequisite gates are satisfied.
+
+### 5. P2 — npm/dependency upgrade
+
+The frontend package upgrade is blocked by G7 in [AGENTS.md](/e:/Projects/School%20Management/AGENTS.md). Dependency changes are frozen outside scaffold tasks 0.1–0.3 and require an owner-authored Change-Request.
+
+Do not run package upgrades, lockfile updates or protected workflow changes until explicitly authorized. A read-only scan is the only completed step.
+
+### 6. P2 — Git/push safety and D155
+
+D155 is not an owner-approved implementation instruction; only a proposal exists in [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md). Do not edit protected `infra/**`, AGENTS or guardrails until a separate owner decision commit authorizes it.
+
+Before any push, still perform D155's current required checks:
+
+1. `git status --short --branch` must be clean.
+2. `git stash list` must be reviewed; never apply/delete an implementation stash.
+3. `git fetch --prune`.
+4. Verify local commits are represented in `origin/claude/r216-omr-d127`.
+5. Run `infra/guard/pre_push_guard.py` and `infra/guard/agent_guard.py --staged` before commit/push as applicable.
+
+Do not force-push, reset, rebase or push dirty/stashed work.
+
+### 7. P2 — external data and integrations
+
+No agent may invent the following live interfaces or credentials:
+
+- Bangla QR: bank/PSP, API, merchant format and callback fields are unresolved.
+- Nagad: real endpoint/credentials/format unresolved.
+- SMS gateway: provider, Unicode count/DLR behavior and sender ID details remain external.
+- Bank payroll disbursement format: unresolved `TODO(OD-bank-format)`.
+- VAT/subscription legal invoice format: unresolved by the owner/lawyer/accountant.
+- Platform and subscription merchant accounts: sandbox/public credentials unavailable.
+- CAPTCHA provider and public-website CAPTCHA fields: unresolved.
+- PF/tax/gratuity/legal rates: don't infer from code or implement without approved sources.
+- Real PDF/receipt/marksheet signatures or account formats: require owner samples/approval.
+
+Adapters/placeholders may remain only if they do not claim live integration.
+
+### 8. P3 — documentation drift
+
+Review without silently editing protected specs:
+
+- [README.md](/e:/Projects/School%20Management/README.md), [PRODUCT.md](/e:/Projects/School%20Management/PRODUCT.md), [AGENTS.md](/e:/Projects/School%20Management/AGENTS.md) still contain historical claims that no code existed.
+- [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md) retains old resolved QB.11 and older baseline entries; resolved/rejected evidence must not be rewritten by an agent.
+- Generated plan and progress ordering has discrepancies in older QB.13/QB.14 handoff evidence. Do not reorder history or tasks; owner approval is required for protected plan changes.
+- R1, R3 and R2.1 planning artifacts must remain independently consistent with `docs/release/*.json`, `docs/database/schema.sql`, route catalogs and release config.
+
+### 9. Claude's required execution order
+
+1. Read [AGENTS.md](/e:/Projects/School%20Management/AGENTS.md), [LOCKED-DECISIONS.md](/e:/Projects/School%20Management/docs/LOCKED-DECISIONS.md), [BUILD-SEQUENCE.md](/e:/Projects/School%20Management/docs/BUILD-SEQUENCE.md), [PROGRESS.md](/e:/Projects/School%20Management/docs/PROGRESS.md), [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md) and this section.
+2. Inspect only the highest-priority P0 blocker and make no unrelated changes.
+3. Use a task/Change-Request where the repository requires one; otherwise stop and write one new precise `docs/BLOCKED.md` entry instead of guessing.
+4. Run focused tests first, then the smallest required full suite, theme lint/build/deep verifier and staged guard.
+5. Update only [PROGRESS.md](/e:/Projects/School%20Management/docs/PROGRESS.md), [DECISIONS.md](/e:/Projects/School%20Management/docs/DECISIONS.md), [IDEAS.md](/e:/Projects/School%20Management/docs/IDEAS.md), [BLOCKED.md](/e:/Projects/School%20Management/docs/BLOCKED.md), [AGENT-HANDOFF.md](/e:/Projects/School%20Management/AGENT-HANDOFF.md) or code allowed for the active task.
+6. Never mark `[x]` unless every Done-When command actually passes in the exact candidate tree.
+7. Commit one task per commit with `Task: <id>` and required `Change-Request: D<n>` trailers plus the repository Co-authored-by trailer.
+8. Push only on explicit owner instruction and only after fetch, clean worktree, stash review and pre-push guard pass.
