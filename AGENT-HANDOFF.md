@@ -21,6 +21,18 @@ This is the resumable work log for any agent. Keep the current snapshot concise 
 
 ## Event Log
 
+## 2026-11-21 — cloud session re-check of the "deep remediation" P0 list (all already resolved here)
+
+Checked on the cloud checkout of `claude/r216-omr-d127` at 3548449 (after ALM.2). Its MySQL test DB is `edu_saas_test` with root, as in phpunit.xml.
+- MySQL-backed tests: `php artisan test --filter='test_the_print_accepts_qbo1_layout_settings|test_the_print_shows_the_set_code_columns_and_the_answer_key'` -> 2 passed (15 assertions). `php artisan test --filter=QbAllQuestionsFilterTest` -> 2 passed (36 assertions). `php artisan test` -> 1309 passed.
+- Deep verifier: `python3 infra/spec-verify/verify.py . --deep` -> ALL CHECKS PASSED (2 warnings). SVR.1 has been accepted since 2026-11-08 under D188/D189 (docs/BLOCKED.md entry marked Resolved). The one new failure of 2026-11-22 was this file's absolute `/e:/...` links, fixed in 487e484.
+- Status in docs/PROGRESS.md: QBO.1, QBO.2, QBO.3, QBF.1, QBG.1, STIM.1, STIM.3 and R2.1.9 are `[x]`, each with its D-number. R2.1.9 runs inside runtime R3 with no release switch (D192). Nothing was re-marked.
+- Not re-run in this check: the R2.1.9 Playwright E2E gate (accepted earlier with every command green).
+- Remaining PC-only item: if the owner's Windows checkout still fails the MySQL tests, the local MySQL user in `api/.env` needs rights on `edu_saas_test` (`GRANT ALL PRIVILEGES ON edu_saas_test.* TO '<user>'@'localhost'`). This is a local machine setting, not a code change.
+- External items (Bangla QR, Nagad, bank / PSP, SMS gateway, VAT, bank disbursement formats) remain owner decisions. Nothing was assumed.
+- Next task: the remaining modules (cpd, attendance_devices, gps, multi_branch, online_quiz, analytics), each only after an owner D-decision.
+
+
 ## 2026-10-28 — D182 QBO planning alignment (verification blocked)
 
 D182 owner commit `5a83ec5` is local. Updated only D182-scoped planning source/logic/tests and regenerated R2.1 plan artifacts to represent QBO.1/D179 after QBS.1, QBO.2/D180 after QBO.1 (one `qb_paper_revisions` table and the revision-list route), and QBO.3/D181 after QBO.1. Global runtime remains R3; `implementation_authorized` and `runtime_switch.authorized` remain false; the ten imported task order, gates and acceptance catalogue remain unchanged. No feature task was checked off and no application/schema/release-config change was made.
