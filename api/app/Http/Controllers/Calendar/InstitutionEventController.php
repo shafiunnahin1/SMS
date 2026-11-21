@@ -50,6 +50,8 @@ class InstitutionEventController extends Controller
     public function destroy(int $id)
     {
         $e = InstitutionEvent::findOrFail($id);
+        // D242: an event with competition results is kept (the awards are a record)
+        if (\App\Models\EventResult::where('event_id', $e->id)->exists()) throw new BusinessException(__('event.has_results'), 'event_has_results', 422);
         DB::transaction(function () use ($e) {
             $e->registrations()->delete();
             $e->delete();

@@ -761,6 +761,16 @@ return [
     'POST api/v1/visitors/check-in' => ['admin', 'institution_staff'],
     'PATCH api/v1/visitors/{id}/check-out' => ['admin', 'institution_staff'],
     'PUT api/v1/visitors/{id}' => ['admin'],
+    // D242 EVT.1
+    'GET api/v1/events/points' => ['admin', 'institution_staff'],
+    'GET api/v1/events/{id}/competition' => ['admin', 'institution_staff'],
+    'PATCH api/v1/events/{id}/attendance' => ['admin', 'institution_staff'],
+    'PATCH api/v1/events/{id}/attendance/{studentId}' => ['admin', 'institution_staff'],
+    'POST api/v1/events/{id}/results' => ['admin', 'institution_staff'],
+    'PUT api/v1/event-results/{id}' => ['admin', 'institution_staff'],
+    'DELETE api/v1/event-results/{id}' => ['admin', 'institution_staff'],
+    'GET api/v1/student/awards' => ['student'],
+    'GET api/v1/parent/children/{id}/awards' => ['parent'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],

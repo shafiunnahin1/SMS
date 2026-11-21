@@ -382,6 +382,13 @@ class TenantIsolationTest extends TestCase
             'GET api/v1/parent/children/{id}/scholarships' => null,   // parent only: CrossTenantRouteTest plan
             'PATCH api/v1/visitors/{id}/check-out' => fn (array $other) => $this->seedVisitor($other),   // D240 VIS.1
             'PUT api/v1/visitors/{id}' => fn (array $other) => $this->seedVisitor($other),
+            'GET api/v1/events/{id}/competition' => fn (array $other) => $this->seedEvent($other),   // D242 EVT.1
+            'PATCH api/v1/events/{id}/attendance' => fn (array $other) => $this->seedEvent($other),
+            'PATCH api/v1/events/{id}/attendance/{studentId}' => fn (array $other) => $this->seedEvent($other),
+            'POST api/v1/events/{id}/results' => fn (array $other) => $this->seedEvent($other),
+            'PUT api/v1/event-results/{id}' => fn (array $other) => $this->seedEventResult($other),
+            'DELETE api/v1/event-results/{id}' => fn (array $other) => $this->seedEventResult($other),
+            'GET api/v1/parent/children/{id}/awards' => null,   // parent only: CrossTenantRouteTest plan
             'GET api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),   // D235 HLT.1
             'PUT api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/health/reports/{programId}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Program::value('id') ?? \App\Models\Program::create(['name' => 'HLT-P'])->id),
@@ -499,6 +506,13 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\BookIssue::firstOrCreate(['book_id' => $book, 'student_id' => $student],
             ['issued_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'issue_date' => '2026-10-01', 'due_date' => '2026-10-15', 'status' => 'returned', 'fine_amount' => '10.00', 'fine_paid' => false])->id);
+    }
+
+    private function seedEventResult(array $t): int
+    {
+        $event = $this->seedEvent($t);
+        $student = $this->seedStudent($t);
+        return Tenancy::as($t['institution'], fn () => \App\Models\EventResult::firstOrCreate(['event_id' => $event, 'student_id' => $student], ['position' => 1, 'points' => 5])->id);
     }
 
     private function seedVisitor(array $t): int

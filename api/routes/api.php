@@ -1166,6 +1166,21 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // ── D242 EVT.1: event competitions (on top of the D213 events): attendance, results, points; staff with exact duty keys ──
+        Route::middleware(['module:academic_calendar', 'module:events'])->group(function () {
+            Route::middleware('role:admin,institution_staff')->group(function () {
+                Route::get('/events/points', [\App\Http\Controllers\Calendar\EventResultController::class, 'points']);
+                Route::get('/events/{id}/competition', [\App\Http\Controllers\Calendar\EventResultController::class, 'show'])->whereNumber('id');
+                Route::patch('/events/{id}/attendance', [\App\Http\Controllers\Calendar\EventResultController::class, 'attendanceAll'])->whereNumber('id');
+                Route::patch('/events/{id}/attendance/{studentId}', [\App\Http\Controllers\Calendar\EventResultController::class, 'attendance'])->whereNumber('id');   // the student id is checked in the controller
+                Route::post('/events/{id}/results', [\App\Http\Controllers\Calendar\EventResultController::class, 'store'])->whereNumber('id');
+                Route::put('/event-results/{id}', [\App\Http\Controllers\Calendar\EventResultController::class, 'update'])->whereNumber('id');
+                Route::delete('/event-results/{id}', [\App\Http\Controllers\Calendar\EventResultController::class, 'destroy'])->whereNumber('id');
+            });
+            Route::get('/student/awards', [\App\Http\Controllers\Calendar\EventResultController::class, 'mine'])->middleware('role:student');
+            Route::get('/parent/children/{id}/awards', [\App\Http\Controllers\Calendar\EventResultController::class, 'child'])->whereNumber('id')->middleware('role:parent');
+        });
+
         // ── D212 HW.1: homework ──
         Route::middleware('module:homework')->group(function () {
             Route::middleware('role:admin,teacher')->group(function () {
