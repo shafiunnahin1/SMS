@@ -118,7 +118,8 @@
    "health",
    "behavior",
    "scholarships",
-   "visitors"
+   "visitors",
+   "events"
   ],
   "roles": [
  "super_admin",
