@@ -1477,6 +1477,14 @@
    }
   },
   "qbz": {
+   "save_saved": "All answers saved",
+   "save_saving": "Saving…",
+   "save_failed": "Not saved - check the internet. Trying again…",
+   "leave_unsaved": "An answer is not saved yet. Leave anyway?",
+   "confirm_title": "Submit the quiz?",
+   "confirm_counts": "Answered {{answered}} of {{total}}; {{left}} left.",
+   "confirm_open": "Unanswered: {{list}}.",
+   "confirm_all": "Every question is answered.",
    "title": "Quizzes",
    "admin_title": "Question bank: quizzes and packages",
    "public_title": "Quizzes for everyone",
