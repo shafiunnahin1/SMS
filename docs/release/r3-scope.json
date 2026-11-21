@@ -117,7 +117,8 @@
    "parent_meeting",
    "health",
    "behavior",
-   "scholarships"
+   "scholarships",
+   "visitors"
   ],
   "roles": [
  "super_admin",
