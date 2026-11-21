@@ -25,9 +25,9 @@ class ReleaseGateTest extends TestCase
     {
         $gate = app(ModuleGate::class);
         $school = Institution::create(['name' => 'S', 'slug' => 'school', 'institution_type' => 'school', 'status' => 'active',
-            'enabled_modules' => ['alumni' => true, 'cpd' => true]]);   // D242: events ships, cpd does not; D236: scholarships ships; D228: library ships with D227; D229: transport ships; D231: online_class ships, scholarships does not; D233: hostel ships, alumni does not
+            'enabled_modules' => ['gps' => true, 'cpd' => true]]);   // D243: alumni ships, gps does not; D242: events ships, cpd does not; D236: scholarships ships; D228: library ships with D227; D229: transport ships; D231: online_class ships, scholarships does not; D233: hostel ships, alumni does not
 
-        $this->assertFalse($gate->allows($school, 'alumni'));
+        $this->assertFalse($gate->allows($school, 'gps'));
         $this->assertFalse($gate->allows($school, 'cpd'));
         $this->assertTrue($gate->allows($school, 'students'));
     }
@@ -35,10 +35,10 @@ class ReleaseGateTest extends TestCase
     public function test_an_unshipped_modules_route_is_403_module_disabled(): void
     {
         $school = Institution::create(['name' => 'S', 'slug' => 'school', 'institution_type' => 'school', 'status' => 'active',
-            'enabled_modules' => ['alumni' => true]]);
-        Route::middleware(['tenant', 'module:alumni'])->get('api/v1/test/alumni', fn () => response()->json(['ok' => true]));
+            'enabled_modules' => ['gps' => true]]);   // D243: alumni ships, gps does not
+        Route::middleware(['tenant', 'module:gps'])->get('api/v1/test/gps', fn () => response()->json(['ok' => true]));
 
-        $this->api('GET', $this->hostOf($school), 'test/alumni')->assertForbidden()->assertJson(['error' => 'module_disabled']);
+        $this->api('GET', $this->hostOf($school), 'test/gps')->assertForbidden()->assertJson(['error' => 'module_disabled']);
     }
 
     public function test_enabled_modules_never_lists_an_unshipped_module(): void

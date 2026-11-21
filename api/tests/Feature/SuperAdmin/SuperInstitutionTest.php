@@ -112,7 +112,7 @@ class SuperInstitutionTest extends TestCase
         $this->assertNull($i->fresh()->enabled_modules, 'null = back to the type default');
         $this->assertContains('exams', $this->json('GET', "http://{$host}/api/v1/bootstrap")->json('data.modules'));
 
-        $this->api('PUT', $this->central, "super/institutions/{$i->id}", $this->super, ['modules' => ['alumni' => true]])->assertStatus(422);   // D234: hostel ships (D233), alumni does not
+        $this->api('PUT', $this->central, "super/institutions/{$i->id}", $this->super, ['modules' => ['gps' => true]])->assertStatus(422);   // D243: alumni ships, gps does not; D234: hostel ships (D233)
     }
 
     public function test_the_list_filters_and_counts(): void

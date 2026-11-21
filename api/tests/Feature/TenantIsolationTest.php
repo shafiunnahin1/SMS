@@ -389,6 +389,10 @@ class TenantIsolationTest extends TestCase
             'PUT api/v1/event-results/{id}' => fn (array $other) => $this->seedEventResult($other),
             'DELETE api/v1/event-results/{id}' => fn (array $other) => $this->seedEventResult($other),
             'GET api/v1/parent/children/{id}/awards' => null,   // parent only: CrossTenantRouteTest plan
+            'GET api/v1/alumni/{id}' => fn (array $other) => $this->seedAlumnus($other),   // D243 ALM.1
+            'PUT api/v1/alumni/{id}' => fn (array $other) => $this->seedAlumnus($other),
+            'PATCH api/v1/alumni/{id}/verify' => fn (array $other) => $this->seedAlumnus($other),
+            'DELETE api/v1/alumni/{id}' => fn (array $other) => $this->seedAlumnus($other),
             'GET api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),   // D235 HLT.1
             'PUT api/v1/students/{id}/health' => fn (array $other) => $this->seedStudent($other),
             'GET api/v1/health/reports/{programId}' => fn (array $other) => Tenancy::as($other['institution'], fn () => \App\Models\Program::value('id') ?? \App\Models\Program::create(['name' => 'HLT-P'])->id),
@@ -506,6 +510,11 @@ class TenantIsolationTest extends TestCase
         $student = $this->seedStudent($t);
         return Tenancy::as($t['institution'], fn () => \App\Models\BookIssue::firstOrCreate(['book_id' => $book, 'student_id' => $student],
             ['issued_by' => \App\Models\User::where('institution_id', $t['institution']->id)->value('id'), 'issue_date' => '2026-10-01', 'due_date' => '2026-10-15', 'status' => 'returned', 'fine_amount' => '10.00', 'fine_paid' => false])->id);
+    }
+
+    private function seedAlumnus(array $t): int
+    {
+        return Tenancy::as($t['institution'], fn () => \App\Models\Alumnus::firstOrCreate(['name' => 'ALM-B'], ['graduation_year' => 2020])->id);
     }
 
     private function seedEventResult(array $t): int

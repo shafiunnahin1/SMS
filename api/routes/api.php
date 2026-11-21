@@ -247,6 +247,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/admission/cycles', [\App\Http\Controllers\Admission\PublicAdmissionStatusController::class, 'cycles'])->middleware('module:admission_cycle');   // D209 ACY.5
         Route::get('/verify/{code}', [\App\Http\Controllers\Documents\CertificateController::class, 'verify'])->where('code', '[A-Za-z0-9]{1,16}')->middleware(['module:certificates', 'throttle:verify-code']);   // D210 CERT.1
         Route::get('/calendar',    [\App\Http\Controllers\Calendar\PublicCalendarController::class, 'show'])->middleware('module:academic_calendar');   // D213 CAL.2
+        Route::get('/alumni',      [\App\Http\Controllers\Alumni\AlumniController::class, 'directory'])->middleware('module:alumni');   // D243 ALM.1: verified entries only, no contact data; 404 while switched off
         Route::get('/admission/cycle/{id}/transparency', [\App\Http\Controllers\Admission\AdmissionListController::class, 'transparency'])->whereNumber('id')->middleware('module:admission_cycle');   // D209 ACY.3
     });
 
@@ -1165,6 +1166,20 @@ Route::prefix('v1')->group(function () {
                 Route::get('/student/events',                 [\App\Http\Controllers\Calendar\InstitutionEventController::class, 'mine']);
             });
         });
+
+        // ── D243 ALM.1: alumni (extended-features.md section 16); staff with exact duty keys; the directory switch is the admin's ──
+        Route::middleware(['module:alumni', 'role:admin,institution_staff'])->group(function () {
+            Route::get('/alumni', [\App\Http\Controllers\Alumni\AlumniController::class, 'index']);
+            Route::get('/alumni/candidates', [\App\Http\Controllers\Alumni\AlumniController::class, 'candidates']);
+            Route::get('/alumni/stats', [\App\Http\Controllers\Alumni\AlumniController::class, 'stats']);
+            Route::post('/alumni', [\App\Http\Controllers\Alumni\AlumniController::class, 'store']);
+            Route::post('/alumni/from-students', [\App\Http\Controllers\Alumni\AlumniController::class, 'fromStudents']);
+            Route::get('/alumni/{id}', [\App\Http\Controllers\Alumni\AlumniController::class, 'show'])->whereNumber('id');
+            Route::put('/alumni/{id}', [\App\Http\Controllers\Alumni\AlumniController::class, 'update'])->whereNumber('id');
+            Route::patch('/alumni/{id}/verify', [\App\Http\Controllers\Alumni\AlumniController::class, 'verify'])->whereNumber('id');
+            Route::delete('/alumni/{id}', [\App\Http\Controllers\Alumni\AlumniController::class, 'destroy'])->whereNumber('id');
+        });
+        Route::middleware(['module:alumni', 'role:admin'])->match(['get', 'put'], '/alumni/settings', [\App\Http\Controllers\Alumni\AlumniController::class, 'settings']);
 
         // ── D242 EVT.1: event competitions (on top of the D213 events): attendance, results, points; staff with exact duty keys ──
         Route::middleware(['module:academic_calendar', 'module:events'])->group(function () {

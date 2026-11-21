@@ -772,6 +772,18 @@ return [
     'DELETE api/v1/event-results/{id}' => ['admin', 'institution_staff'],
     'GET api/v1/student/awards' => ['student'],
     'GET api/v1/parent/children/{id}/awards' => ['parent'],
+    // D243 ALM.1
+    'GET api/v1/alumni' => ['admin', 'institution_staff'],
+    'GET api/v1/alumni/candidates' => ['admin', 'institution_staff'],
+    'GET api/v1/alumni/stats' => ['admin', 'institution_staff'],
+    'POST api/v1/alumni' => ['admin', 'institution_staff'],
+    'POST api/v1/alumni/from-students' => ['admin', 'institution_staff'],
+    'GET api/v1/alumni/{id}' => ['admin', 'institution_staff'],
+    'PUT api/v1/alumni/{id}' => ['admin', 'institution_staff'],
+    'PATCH api/v1/alumni/{id}/verify' => ['admin', 'institution_staff'],
+    'DELETE api/v1/alumni/{id}' => ['admin', 'institution_staff'],
+    'GET api/v1/alumni/settings' => ['admin'],
+    'PUT api/v1/alumni/settings' => ['admin'],
     'GET api/v1/student/qb/orders/{ref}' => ['student'],
     'GET api/v1/student/qb/quizzes' => ['student'],   // QB.10: quizzes (module quiz)
     'GET api/v1/student/qb/quiz-packages' => ['student'],
