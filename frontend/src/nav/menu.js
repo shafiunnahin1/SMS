@@ -103,7 +103,7 @@ export const MENU = {
       it('quiz', '/admin/quiz', 'অনলাইন পরীক্ষা', { module: 'online_quiz' }),
     ]},
     { key: 'welfare', label: 'শিক্ষার্থী কল্যাণ', icon: 'HeartHandshake', children: [
-      it('behavior', '/admin/behavior', 'আচরণ', { module: 'behavior' }), it('health', '/admin/health', 'স্বাস্থ্য', { module: 'health' }), it('scholarships', '/admin/scholarships', 'বৃত্তি', { module: 'scholarships' }),
+      it('behavior', '/admin/behavior', 'আচরণ', { module: 'behavior' }), it('health', '/admin/health', 'স্বাস্থ্য', { module: 'health' }),
       it('hifz', '/admin/hifz', 'হিফজ', { module: 'hifz' }),
       it('certificates', '/admin/certificates', 'সনদ', { module: 'certificates' }), it('visitors', '/admin/visitors', 'ভিজিটর', { module: 'visitors' }),
       it('meetings', '/admin/meetings', 'অভিভাবক সভা', { module: 'parent_meeting' }),
@@ -149,6 +149,7 @@ export const MENU = {
     it('substitutions','/staff/substitutions','বদলি শিক্ষক',{icon:'Users',module:'substitution',staffKey:'staff.leave_substitution.read',staff_access:true}),   // D201 SUBM.3
     it('leads','/staff/leads','ভর্তি-আবেদন',{icon:'UserPlus',module:'leads',staffKey:'staff.lead.read',staff_access:true}),   // D204 GAP.3
     it('lesson-plans','/staff/lesson-plans','পাঠ-পরিকল্পনা',{icon:'ListTree',module:'syllabus',staffKey:'staff.lesson_plan.read',staff_access:true}),   // D225
+    it('visitors','/staff/visitors','দর্শনার্থী-খাতা',{icon:'UserRound',module:'visitors',staffKey:'staff.visitor.read',staff_access:true}),   // D240 VIS.2
     it('scholarships','/staff/scholarships','বৃত্তি',{icon:'Medal',module:'scholarships',staffKey:'staff.scholarship.read',staff_access:true}),   // D236 SCH.3
     it('behavior','/staff/behavior','আচরণ-লগ',{icon:'Smile',module:'behavior',staffKey:'staff.behavior.read',staff_access:true}),   // D235 BHV.2
     it('health','/staff/health','স্বাস্থ্য-রেকর্ড',{icon:'HeartPulse',module:'health',staffKey:'staff.health.read',staff_access:true}),   // D235 HLT.2
