@@ -6,6 +6,7 @@ import BrandLogo from './parts/BrandLogo'
 import NavItem from './parts/NavItem'
 import UserMenu from './parts/UserMenu'
 import LanguageSwitcher from './parts/LanguageSwitcher'
+import ColorModeSwitch from './parts/ColorModeSwitch'
 import PoweredBy from './parts/PoweredBy'
 import { navIcon } from './parts/navIcons'
 import PlanBanner from './parts/PlanBanner'
@@ -32,7 +33,7 @@ export default function MobileCompactLayout({ nav, user, institution, theme, chi
       {more && (
         <div className="fixed inset-0 z-40 bg-black/40 flex items-end print:hidden" onClick={() => setMore(false)}>
           <nav aria-label={t('common.more')} className="w-full max-w-md mx-auto bg-surface rounded-t-[var(--radius)] p-3 flex flex-col gap-1 max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-end pb-2"><LanguageSwitcher /></div>
+            <div className="flex justify-end gap-2 pb-2"><ColorModeSwitch /><LanguageSwitcher /></div>
             {items.map(i => <NavItem key={i.key + i.path} item={i} onNavigate={() => setMore(false)} />)}
           </nav>
         </div>

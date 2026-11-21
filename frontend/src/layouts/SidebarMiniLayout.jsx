@@ -7,6 +7,7 @@ import NavDrawer from './parts/NavDrawer'
 import MenuButton from './parts/MenuButton'
 import UserMenu from './parts/UserMenu'
 import LanguageSwitcher from './parts/LanguageSwitcher'
+import ColorModeSwitch from './parts/ColorModeSwitch'
 import PlanBanner from './parts/PlanBanner'
 import PoweredBy from './parts/PoweredBy'
 import NotificationBell from '../components/NotificationBell'
@@ -52,7 +53,7 @@ export default function SidebarMiniLayout({ nav, user, institution, theme, child
         <header data-testid="app-topbar" className="h-14 flex items-center gap-3 px-4 bg-surface border-b print:hidden">
           <MenuButton />
           <div className="min-w-0"><BrandLogo institution={institution} theme={theme} /></div>
-          <div className="ms-auto flex items-center gap-2"><LanguageSwitcher /><NotificationBell /><UserMenu user={user} /></div>
+          <div className="ms-auto flex items-center gap-2"><ColorModeSwitch /><LanguageSwitcher /><NotificationBell /><UserMenu user={user} /></div>
         </header>
         <PlanBanner institution={institution} />
         <main className="flex-1 p-density overflow-y-auto">{children}</main>

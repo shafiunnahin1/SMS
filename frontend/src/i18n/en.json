@@ -127,6 +127,8 @@
    }
   },
   "common": {
+   "color_mode": "Light or dark",
+   "color_modes": {"institution": "Theme: institution", "light": "Light", "dark": "Dark"},
    "loading": "Loading…",
    "retry": "Try again",
    "save": "Save",

@@ -7,6 +7,7 @@ import NavDrawer from './parts/NavDrawer'
 import MenuButton from './parts/MenuButton'
 import UserMenu from './parts/UserMenu'
 import LanguageSwitcher from './parts/LanguageSwitcher'
+import ColorModeSwitch from './parts/ColorModeSwitch'
 import PlanBanner from './parts/PlanBanner'
 import PoweredBy from './parts/PoweredBy'
 import NotificationBell from '../components/NotificationBell'
@@ -34,7 +35,7 @@ export default function SidebarClassicLayout({ nav, user, institution, theme, ch
             {collapsed ? <PanelLeftOpen aria-hidden="true" className="h-5 w-5" /> : <PanelLeftClose aria-hidden="true" className="h-5 w-5" />}
           </button>
           <div className="lg:hidden min-w-0"><BrandLogo institution={institution} theme={theme} compact /></div>
-          <div className="ms-auto flex items-center gap-2"><LanguageSwitcher /><NotificationBell /><UserMenu user={user} /></div>
+          <div className="ms-auto flex items-center gap-2"><ColorModeSwitch /><LanguageSwitcher /><NotificationBell /><UserMenu user={user} /></div>
         </header>
         <PlanBanner institution={institution} />
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-density">{children}</main>

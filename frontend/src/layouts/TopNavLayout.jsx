@@ -7,6 +7,7 @@ import NavItem from './parts/NavItem'
 import MenuButton from './parts/MenuButton'
 import UserMenu from './parts/UserMenu'
 import LanguageSwitcher from './parts/LanguageSwitcher'
+import ColorModeSwitch from './parts/ColorModeSwitch'
 import PlanBanner from './parts/PlanBanner'
 import PoweredBy from './parts/PoweredBy'
 import NotificationBell from '../components/NotificationBell'
@@ -41,7 +42,7 @@ export default function TopNavLayout({ nav, user, institution, theme, children }
               <NavLink key={i.key} to={i.path} className={({ isActive }) => `${item} ${isActive ? 'bg-primary-soft font-semibold' : 'hover:bg-primary-soft'}`}>{i.label}</NavLink>
             ))}
           </nav>
-          <div className="ms-auto shrink-0 flex items-center gap-2"><LanguageSwitcher /><NotificationBell /><UserMenu user={user} /></div>
+          <div className="ms-auto shrink-0 flex items-center gap-2"><ColorModeSwitch /><LanguageSwitcher /><NotificationBell /><UserMenu user={user} /></div>
         </div>
       </header>
       {sidebarOpen && (
